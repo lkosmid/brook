@@ -14,7 +14,6 @@ namespace brook {
   {
   public:
     typedef void* TextureHandle;
-    typedef void* SurfaceHandle;
     typedef void* PixelShaderHandle;
     typedef void* VertexShaderHandle;
 
@@ -26,17 +25,24 @@ namespace brook {
       kTextureFormat_Float4
     };
 
-    virtual bool isValidShaderNameString( const char* inNameString ) = 0;
-    virtual bool isTextureExtentValid( unsigned int inExtent ) { return true; }
-    virtual size_t getMaximumOutputCount() { return 1; }
-    virtual GPURect getStreamPositionInterpolant( GPUStream* inStream ) = 0;
-    virtual GPURect getStreamOutputRectangle( GPUStream* inStream ) = 0;
+    virtual bool isTextureExtentValid( unsigned int inExtent ) { return true; }    
+    virtual size_t  getMaximumOutputCount() { return 1; }
+    virtual GPURect getStreamPositionInterpolant( TextureHandle* texture ) = 0;
+    virtual GPURect getStreamOutputRectangle( TextureHandle* texture ) = 0;
 
-    virtual TextureHandle createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat ) = 0;
+    virtual TextureHandle createTexture2D( unsigned int inWidth, 
+                                           unsigned int inHeight, 
+                                           TextureFormat inFormat ) = 0;
     virtual void releaseTexture( TextureHandle inTexture ) = 0;
 
-    virtual void setTextureData( TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount ) = 0;
-    virtual void getTextureData( TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount ) = 0;
+    virtual void setTextureData( TextureHandle inTexture, 
+                                 const float* inData, 
+                                 unsigned int inStrideBytes, 
+                                 unsigned int inElemCount ) = 0;
+    virtual void getTextureData( TextureHandle inTexture, 
+                                 float* outData, 
+                                 unsigned int inStrideBytes, 
+                                 unsigned int inElemCount ) = 0;
 
     virtual PixelShaderHandle createPixelShader( const char* inSource ) = 0;
 
@@ -46,17 +52,21 @@ namespace brook {
     virtual void beginScene() = 0;
     virtual void endScene() = 0;
 
-
-    virtual void bindConstant( size_t inIndex, const float4& inValue ) = 0;
-    virtual void bindTexture( size_t inIndex, TextureHandle inTexture ) = 0;
-    virtual void bindOutput( size_t inIndex, SurfaceHandle inSurface ) = 0;
-    virtual void disableOutput( size_t inIndex ) = 0;
+    virtual void bindConstant( unsigned int inIndex, 
+                               const float4& inValue ) = 0;
+    virtual void bindTexture( unsigned int inIndex, 
+                              TextureHandle inTexture ) = 0;
+    virtual void bindOutput( unsigned int inIndex, 
+                             SurfaceHandle inSurface ) = 0;
+    virtual void disableOutput( unsigned int inIndex ) = 0;
 
     virtual void bindPixelShader( PixelShaderHandle inPixelShader ) = 0;
     virtual void bindVertexShader( VertexShaderHandle inVertexShader ) = 0;
 
     virtual void drawRectangle(
-      const GPUFatRect& inVertexRectangle, const GPUFatRect* inTextureRectangles, size_t inTextureRectangleCount ) = 0;
+      const GPUFatRect& inVertexRectangle, 
+      const GPUFatRect* inTextureRectangles, 
+      unsigned int inTextureRectangleCount ) = 0;
   };
 }
 

@@ -25,14 +25,19 @@
 #define GPUWARN \
   std::cerr << "Brook Runtime (gpu) - "
 
-#ifndef BROOK_NDEBUG
-
-inline void GPUAssertImpl( const char* fileName, int lineNumber, const char* comment )
+inline void GPUAssertImpl( const char* fileName, 
+                           int lineNumber, 
+                           const char* comment )
 {
   GPUWARN << fileName << "(" << lineNumber << "): " << comment << std::endl;
   assert(false);
   exit(1);
 }
+
+#define GPUError( _message ) \
+  GPUAssertImpl( __FILE__, __LINE__, _message )
+
+#ifndef BROOK_NDEBUG
 
 #define GPUAssert( _condition, _message ) \
   if(_condition) {} else GPUAssertImpl( __FILE__, __LINE__, _message )

@@ -172,7 +172,8 @@ namespace brook
 
   void GPUKernel::Map()
   {
-    GPUAssert( _outputArguments.size() != 0, "Must have at least some outputs for Map." );
+    GPUAssert( _outputArguments.size() != 0, 
+               "Must have at least some outputs for Map." );
 
     GPUStream* outputStream = _outputArguments[0];
     _outputRect = outputStream->getOutputRect();
