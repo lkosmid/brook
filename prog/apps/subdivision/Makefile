@@ -1,8 +1,8 @@
 ROOTDIR = ../../..
 EXECUTABLE = subdivision
-FILES = loop model splyload voutfloatN vout1dfloatN 
+FILES = subdiv model splyload voutfloatN vout1dfloatN 
 #nurbs subdivision 
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = 
+BRCCFLAGS = -k
 include $(ROOTDIR)/common.mk
 
