@@ -36,7 +36,7 @@ class BRTGPUKernelDef : public BRTKernelDef
     void printCode(std::ostream& out) const;
 };
 
-
+void compileCpp(class BRTCPUKernelDef *cpuDef);
 class BRTCPUKernelDef : public BRTKernelDef
 {
   public:
