@@ -253,6 +253,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   float3 vp;
   float3 up;
   float EPSILON=.000001;
+  float3 z3ro = {0,0,0};
   float b,c,max;
   float ret,coplanar;
   float b_biggest,c_biggest;
@@ -263,11 +264,11 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   du = float3(dot(N1,U0)+d1,
               dot(N1,U1)+d1,
               dot(N1,U2)+d1);
-  du=du*(float3)(abs(du)>=EPSILON);
+  du=abs(du)>=EPSILON?du:z3ro;
   du0du1 = du.x *du.y;
   du0du2 = du.x *du.z;
   
-  ret= (float) (du0du1<= 0.0f||du0du2<= 0.0f);
+  ret= (du0du1<= 0.0f||du0du2<= 0.0f)?1:0;
   E1 = U1-U0;
   E2 = U2-U0;
   N2 = cross(E1,E2);
@@ -275,10 +276,10 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   dv = float3(dot(N2,V0)+d2,
               dot(N2,V1)+d2,
               dot(N2,V2)+d2);
-  dv *= (float3)(abs(dv)>=EPSILON);
+  dv = abs(dv)>=EPSILON?dv:z3ro;
   dv0dv1 = dv.x*dv.y;
   dv0dv2 = dv.x*dv.z;
-  ret= (float)(ret&&(dv0dv1<= 0.0f || dv0dv2 <=0.0f));
+  ret= (ret&&(dv0dv1<= 0.0f || dv0dv2 <=0.0f))?1:0;
       
   D = cross(N2,N1);
   // compute and index to the largest component of D 
@@ -287,28 +288,30 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   up=float3(U0.x,U1.x,U2.x);
   b = abs  (D .y);
   c = abs  (D .z);
-  b_biggest = (float)(b>max&&!(c>b));
-  c_biggest = (float)(c>max);
-  vp  = ((float3)b_biggest)? make_float3(V0.y,V1.y,V2.y)
-                          : (((float3)c_biggest) ? make_float3(V0.z,V1.z,V2.z)
-                                                 : vp);
-  up  = ((float3)b_biggest)? make_float3(U0.y,U1.y,U2.y)
-                          : (((float3)c_biggest) ? make_float3(U0.z,U1.z,U2.z)
-                                                : up);
-
-    
-  max = b_biggest? b : (c_biggest?c:max);
+  b_biggest = (b>max&&!(c>b))?1:0;
+  c_biggest = (c>max)?1:0;
+  vp = (c_biggest) ? make_float3(V0.z,V1.z,V2.z) : vp;
+  vp = (b_biggest) ? make_float3(V0.y,V1.y,V2.y) : vp;
+  up = (c_biggest) ? make_float3(U0.z,U1.z,U2.z) : up;
+  up = (b_biggest)? make_float3(U0.y,U1.y,U2.y) : up;
+  max = c_biggest?c:max;
+  max = b_biggest? b:max;
  
   // this is the simplified projection onto L
   // compute interval for triangle 1 
-  coplanar= (float)(COMPUTE_INTERVALS (vp,dv,dv0dv1,dv0dv2,isect1)
-                    ||COMPUTE_INTERVALS (up,du,du0du1,du0du2,isect2));
+  coplanar= (COMPUTE_INTERVALS (vp,dv,dv0dv1,dv0dv2,isect1)
+             ||COMPUTE_INTERVALS (up,du,du0du1,du0du2,isect2))?1:0;
   ret= (ret&&coplanar)?coplanar_tri_tri (N1, V0,V1,V2, U0,U1,U2):ret;
   // compute interval for triangle 2
   isect1 = sort2 (isect1);
   isect2 = sort2 (isect2);
     
-  ret= (ret&&!coplanar)?(float) !(isect1 .y < isect2 .x || isect2 .y < isect1 .x):ret;    
+  ret= (ret&&!coplanar)
+     ?
+     ((!(isect1 .y < isect2 .x || isect2 .y < isect1 .x))
+      ?1
+      :0)
+     :ret;    
   
   return ret;
 }

@@ -29,7 +29,7 @@ typedef struct Tri_t {
 */
 #define USE_EPSILON_TEST	1
 
-const   float EPSILON=.000001;
+const   float EPSILON=.000001f;
 float ABS (float x) {
   return x>=0?x:-x;
 }
@@ -639,9 +639,9 @@ int main (int argc, char ** argv) {
     bool hit = (rez[i].x!=-1);
     bool khitnodiv = (rez_nodiv[i].x!=-1);
     bool hitnodiv = tri_contact_nodiv(a[i*3],a[i*3+1],a[i*3+2],
-                                      b[i*3],b[i*3+1],b[i*3+2]);
+                                      b[i*3],b[i*3+1],b[i*3+2])?1:0;
     bool hitdiv = tri_contact(a[i*3],a[i*3+1],a[i*3+2],
-                              b[i*3],b[i*3+1],b[i*3+2]);
+                              b[i*3],b[i*3+1],b[i*3+2])?1:0;
     assert(hit==hitdiv);
     //    assert(khitnodiv==hitnodiv);
     if (hit!=hitnodiv)
