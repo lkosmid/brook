@@ -8,22 +8,23 @@ typedef struct NHType_t
 
 
 kernel void Cinv_kernel(float2 constants, NHType F<>, 
-                        out float q<>,  out NHType Cinv<>)
+			out NHType Cinv<>,
+			out float q<>)
 {
 
    Cinv.row1 = float3(1,2,3);
    Cinv.row2 = float3(2,3,4);
    Cinv.row3 = float3(5,6,7);
-
+   
    q = 8;
 }
 
 
 kernel void Cinv_kernel_nostruct(float2 constants, NHType F<>, 
-                                 out float q<>,  
-                                 out float3 Cinv1<>, 
+				 out float3 Cinv1<>, 
                                  out float3 Cinv2<>, 
-                                 out float3 Cinv3<>)
+                                 out float3 Cinv3<>,
+				 out float q<>)
 {
 
    Cinv1 = float3(1,2,3);
@@ -45,11 +46,20 @@ float3    Cinvstream2<NUM>;
 float3    Cinvstream3<NUM>;
 NHType    F<NUM>;
 float     q[NUM];
+float     r[NUM];
 float     qstream<NUM>;
+float     q2stream<NUM>;
 
 int main (void) {
 
-  Cinv_kernel (float2(3.0f,2.0f), F, qstream, Cinvstream);
+  streamRead(Cinvstream, S);
+  streamRead(Cinvstream1, S1);
+  streamRead(Cinvstream2, S2);
+  streamRead(Cinvstream3, S3);
+  streamRead(qstream,  q);
+  streamRead(q2stream, q);
+
+  Cinv_kernel (float2(3.0f,2.0f), F, Cinvstream, qstream);
 
   streamWrite(Cinvstream, S);
   streamWrite(qstream, q);
@@ -60,18 +70,18 @@ int main (void) {
   printf ("%3.2f\n\n", q[0]);
 
   // Same thing except we eliminated the structure
-  Cinv_kernel_nostruct (float2(3.0f,2.0f), F, qstream, Cinvstream1, 
-                        Cinvstream2, Cinvstream3 );
+  Cinv_kernel_nostruct (float2(3.0f,2.0f), F, 
+			Cinvstream1, Cinvstream2, Cinvstream3,
+			q2stream);
 
   streamWrite(Cinvstream1, S1);
   streamWrite(Cinvstream2, S2);
   streamWrite(Cinvstream3, S3);
-  streamWrite(qstream, q);
+  streamWrite(q2stream, q);
 
   printf ("%3.2f %3.2f %3.2f\n", S1[0].x, S1[0].y, S1[0].z);
   printf ("%3.2f %3.2f %3.2f\n", S2[0].x, S2[0].y, S2[0].z);
   printf ("%3.2f %3.2f %3.2f\n", S3[0].x, S3[0].y, S3[0].z);
   printf ("%3.2f\n\n", q[0]);
-
   return 0;	
 }
