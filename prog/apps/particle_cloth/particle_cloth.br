@@ -245,20 +245,22 @@ void iterate( int inSize )
 
   dump = fopen("./dump.dump","wb");
   
-  fwrite( &inSize, sizeof(inSize), 1, dump );
+//  fwrite( &inSize, sizeof(inSize), 1, dump );
 
   streamRead( dynamicParticles, dynamicParticles_data );
   streamRead( staticParticles, staticParticles_data );
 
-  for( i = 0; i < 10000; i++ )
+  for( i = 0; i < 10; i++ )
   {
-	if( i % 100 == 0 )
+//	if( i % 100 == 0 )
 	{
 		streamWrite( dynamicParticles, dynamicParticles_data );
+		printf( "positions:\n" );
 		for( j = 0; j < particleCount; j++ )
 		{
 			p = dynamicParticles_data[j].position;
-			fwrite( &p, sizeof(p), 1, dump );
+			printf( "{%5.3f %5.3f}\n", p.x, p.y );
+//			fwrite( &p, sizeof(p), 1, dump );
 		}
 	}
     
@@ -421,9 +423,4 @@ void iterate( int inSize )
   }
   
   fclose( dump );
-}
-
-int main()
-{
-  iterate( 16 );
 }
