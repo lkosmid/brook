@@ -28,9 +28,9 @@ void Tessellate (const vector<float4> &inputv, float toler, vector<float4> &outp
     float heightx, heighty,centerx,centery,centerz;
     heightx = curve(input->x,input->y);
     heighty = curve(input->z,input->w);
-    centerx = .5*input->x+.5*input->z;
-    centery = .5*input->y+.5*input->w;
-    centerz = .5*heightx+.5*heighty;
+    centerx = .5f*input->x+.5f*input->z;
+    centery = .5f*input->y+.5f*input->w;
+    centerz = .5f*heightx+.5f*heighty;
     float fheight=curve(centerx,centery);
     float error=evaluateError(centerz,fheight);
     if (error>=toler) {
@@ -69,8 +69,8 @@ int haupt (int argc, char ** argv) {
   ite=0;
   do {
     int lastsizeint;ite++;
-    lastsize=polys.size();
-    lastsizeint=(int)lastsize;
+    lastsize=(float)polys.size();
+    lastsizeint=polys.size();
     {      
       vector<float4> nextPolys;
       Tessellate(polys,toler,nextPolys);
