@@ -66,7 +66,7 @@ DX9RunTime::DX9RunTime()
 	deviceDesc.Windowed = TRUE;
 	deviceDesc.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	deviceDesc.BackBufferFormat = D3DFMT_UNKNOWN;
-	deviceDesc.EnableAutoDepthStencil = TRUE;
+	deviceDesc.EnableAutoDepthStencil = FALSE;
 	deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
 
 	HRESULT result = direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
@@ -140,7 +140,7 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
 DX9Texture* DX9RunTime::getReductionBuffer() {
   if( reductionBuffer != NULL ) return reductionBuffer;
 
-  reductionBuffer = DX9Texture::create( this, kReductionBufferSize, kReductionBufferSize, 4 );
+  reductionBuffer = DX9Texture::create( this, kDX9ReductionBufferWidth, kDX9ReductionBufferHeight, 4 );
   return reductionBuffer;
 }
 

@@ -11,6 +11,11 @@ namespace brook {
 
   extern const char* DX9_RUNTIME_STRING;
 
+  enum {
+    kDX9ReductionBufferWidth = 1024,
+    kDX9ReductionBufferHeight = 512
+  };
+
   class DX9Kernel : public Kernel {
   public:
     DX9Kernel(DX9RunTime* runtime, const void* source[]);
@@ -105,7 +110,6 @@ namespace brook {
     void execute( const DX9Rect& outputRect, const DX9Rect* inputRects );
 
   private:
-    static const int kReductionBufferSize = 1024;
 
     void initializeVertexBuffer();
 
