@@ -43,7 +43,7 @@ typedef struct Neighbor_t {
   float4 AAC;// w = AC->A.z
 }Neighbor;
 
-unsigned char debugLoop=1;
+unsigned char debugLoop=0;
 int counterMax = 2;
 extern float neighboreps;
 int low_texture_ram=0;
@@ -221,7 +221,9 @@ kernel void copyFinalTriangles (Tri tri<>,
 kernel void writeFinalTriangles (Tri triangles[][],
                                  float2 indices<>,
                                  out float3 triList<>) {
-  copyFinalTriangles(triangles[indices],triList);
+  float2 zero2=0;
+  float2 ind = (indices>=0&&indices<8192)?indices:zero2;
+  copyFinalTriangles(triangles[ind],triList);
 }
 //since we don't have proper float4 constructors, we need to manufacture one
 kernel float4 addN(float3 inxyz, float inw) {
@@ -635,6 +637,10 @@ int main (int argc, char**argv) {
   for (i=0;i<(unsigned int)argc;++i) {
     char match=0;
     int j;
+    if (strcmp(argv[i],"-debug")==0) {
+      match=1;
+      debugLoop=1;
+    }
     if (strncmp(argv[i],"-epsilon",8)==0) {
       epsilon = (float)atof(argv[i]+8);
       match=1;
