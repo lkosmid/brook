@@ -91,6 +91,8 @@ public:
   /// Recursively test collisions of bounding boxes.
   static int CollideRecursive (csCdBBox *b1, csCdBBox *b2,
   	const csMatrix3& R, const csVector3& T);
+  static int CollideBreadth (csCdBBox *b1, csCdBBox *b2,
+  	const csMatrix3& R, const csVector3& T);
 
   /**
     * Global variables

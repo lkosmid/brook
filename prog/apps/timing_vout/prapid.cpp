@@ -989,8 +989,8 @@ int obb_disjoint (const csMatrix3& B, const csVector3& T,
   return 0;  // should equal 0
 }
 std::vector<std::vector<csTraverser> > guide;
+extern bool debug_rapid;
 
-#if 0
 
 int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
 	const csMatrix3& R, const csVector3& T)
@@ -1071,14 +1071,7 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
 
   return false;
 }
-#else
-static void Barken() {
-
-}
-static void Bark() {
-
-}
-int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
+int csRapidCollider::CollideBreadth (csCdBBox *b1, csCdBBox *b2,
                                        const csMatrix3& R, const csVector3& T)
 {
   std::queue <csTraverser> breadth;
@@ -1094,12 +1087,14 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
     pass_count=0;
     static int lastCount=0;
     static int lastCheckCount=0;
-    printf ("Pass %d Num Triangles %d num nodes %d\n",num_passes,csRapidCollider::trianglesTested-lastCheckCount,pass_size);
-    if (csRapidCollider::numHits-lastCheckCount) {
-         printf ("Detected %d hits\n",csRapidCollider::numHits-lastCount);      
+    if (debug_rapid) {
+      printf ("Pass %d Num Triangles %d num nodes %d\n",num_passes,csRapidCollider::trianglesTested-lastCheckCount,pass_size);
+      if (csRapidCollider::numHits-lastCheckCount) {
+        printf ("Detected %d hits\n",csRapidCollider::numHits-lastCount);      
+      }
+      guide.push_back(temp_guide);
+      temp_guide.clear();
     }
-    guide.push_back(temp_guide);
-    temp_guide.clear();
     lastCount = csRapidCollider::numHits;
     lastCheckCount = csRapidCollider::trianglesTested;
     num_passes++;
@@ -1112,17 +1107,12 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
   R = breadth.front().R;
   T = breadth.front().T;
   //if (pass_count!=1)
-  temp_guide.push_back(breadth.front());
+  if (debug_rapid) {
+    temp_guide.push_back(breadth.front());
+  }
   breadth.pop();
   // test top level
   csRapidCollider::boxesTested++;
-  if (num_passes==12) {
-    if (pass_count==216) {
-      Barken();
-    }
-    if (pass_count==186)
-      Bark();
-  }
   int f1 = obb_disjoint (R, T, b1->GetRadius(), b2->GetRadius());
 
   if (f1 != 0)
@@ -1192,7 +1182,6 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
   return false;
 }
 
-#endif
 typedef struct traverser_t {
   float4 index;//.xy is index into the aTree  .zw is index into bTree
   float3 Translation; 

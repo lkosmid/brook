@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "rapcol.h"
 #include "prapid.h"
+#include "timing.h"
 bool debug_rapid=false;
 extern bool forcevanilla;
 extern void LoadPly (const char * file, std::vector<Tri> &ret);
@@ -74,11 +75,21 @@ int rapidCollideMain (int argc, char ** argv) {
 
 
 
+  start = GetTimeMillis();
   collide.CollideRecursive(const_cast<csCdBBox*>( collide.GetBbox()),
                            const_cast<csCdBBox*>(collide.GetBbox()),
                            rot,
                            trans);
+  stop = GetTimeMillis();
 
+  printf ("CPU Time: %f\n",(float)(stop-start));
+  start = GetTimeMillis();
+  collide.CollideBreadth(const_cast<csCdBBox*>( collide.GetBbox()),
+                         const_cast<csCdBBox*>(collide.GetBbox()),
+                         rot,
+                         trans);
+  stop = GetTimeMillis();
+  printf ("CPU Time: %f\n",(float)(stop-start));
   fprintf (stderr,"Num Collisions %d Num BBoxes %d Num Triangles %d\n",
            csRapidCollider::numHits,
            bboxes.size(),

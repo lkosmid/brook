@@ -142,7 +142,8 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
   vector <brook::stream> trioutT;
   vector <brook::stream> nextNodeT;
   vector <brook::stream> hitsT;
-  for (int rr=0;rr<5;++rr) {
+  int lim = debug_rapid?3:5;
+  for (int rr=0;rr<lim;++rr) {
     Traverser  baseTraverser;
 
     if (rr==0) {
