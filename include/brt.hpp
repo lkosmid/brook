@@ -247,7 +247,31 @@ void streamPrint(brook::StreamInterface*s, bool flatten=false);
 inline static void streamWrite( brook::Stream *s, void *p) {
   s->Write(p);
 }
+
 void readItem(brook::StreamInterface *s, void * p, ... );
+inline static float4 streamSize(::brook::stream &s) {
+   float4 ret(0.0f,0.0f,0.0f,0.0f);
+   const unsigned int * extents = s->getExtents();
+   unsigned int dim = s->getDimension();
+   switch (s->getDimension()) {
+   case 3:
+      ret.z=(float)extents[dim-3];
+   case 2:
+      ret.y=(float)extents[dim-2];
+   case 1:
+      ret.x=(float)extents[dim-1];
+      break;
+   case 4:
+   default:{
+      for (unsigned int i=0;i<dim-3;++i) ret.w+=(float)extents[i];
+      ret.z=(float)extents[dim-3];
+      ret.y=(float)extents[dim-2];
+      ret.x=(float)extents[dim-1];
+      break;
+   }
+   }
+   return ret;
+}
 inline static void streamSwap(::brook::stream &x, ::brook::stream &y) {
    x.swap(y);
 }
