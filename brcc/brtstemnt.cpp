@@ -90,7 +90,15 @@ BRTKernelDef::print(std::ostream& out, int) const
       sd.print(out,0);
    }
 }
-
+bool incrementBoolVec(std::vector<bool> &vec) {
+   if (vec.empty()) return false;
+   bool carry =true;
+   for (std::vector<bool>::iterator i=vec.begin();carry&&i!=vec.end();++i){
+      carry = *i;
+      *i = !(*i);
+   }
+   return !carry;
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTKernelDef::printStub(std::ostream& out) const
@@ -101,90 +109,92 @@ BRTKernelDef::printStub(std::ostream& out) const
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
    unsigned int num_templates=0;
+   std::vector <bool> streamOrVal;
    for (i = 0; i < fType->nArgs; i++) {
       if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
-         num_templates++;
+         streamOrVal.push_back(false);
       }
    }
-   if (num_templates) {//to do codegen
-      out << "template <";
-      for (unsigned int i=0;i<num_templates;++i) {
-         if (i!=0)
-            out << ", ";
-         out << "class _T"<<i;
+   do {
+      unsigned int reducecount=0;
+      fType->subType->printType(out, NULL, true, 0);
+      out << " " << *FunctionName() << " (";
+      for (i = 0; i < fType->nArgs; i++) {
+         if (i) out << ",\n\t\t";
+         
+         if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
+            if (streamOrVal[reducecount++]) {
+               Symbol name;name.name = "& "+fType->args[i]->name->name;
+               Type * t = fType->args[i]->form;
+               if (fType->args[i]->isStream())
+                  t = static_cast<ArrayType*>(fType->args[i]->form)->subType;                  
+               t->printType(out,&name,true,0);
+            }else{
+               out << "__BRTStream& "<< *fType->args[i]->name;
+            }
+         } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
+            out << "const __BRTIter& " << *fType->args[i]->name;
+         } else if (recursiveIsStream(fType->args[i]->form) ||
+                    recursiveIsGather(fType->args[i]->form)) {
+            out << "const __BRTStream& " << *fType->args[i]->name;
+         } else {
+            out << "const ";
+            Symbol name;name.name = fType->args[i]->name->name;
+            //XXX -- C++ backend needs values to be passed by value...
+            // It's a one time per kernel call hit--worth it to keep
+            // Values from being aliased --Daniel
+            //hence we only do the & for reduction vars
+            fType->args[i]->form->printType(out,&name,true,0);
+         }
       }
-      out <<">"<<std::endl;
-   }
-   fType->subType->printType(out, NULL, true, 0);
-   out << " " << *FunctionName() << " (";
-   num_templates=0;
-   for (i = 0; i < fType->nArgs; i++) {
-      if (i) out << ",\n\t\t";
+      out << ") {\n";
 
-      if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
-         out << "_T"<<num_templates++<<" &" << fType->args[i]->name->name;
-      } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
-         out << "const __BRTIter& " << *fType->args[i]->name;
-      } else if (recursiveIsStream(fType->args[i]->form) ||
-                 recursiveIsGather(fType->args[i]->form)) {
-         out << "const __BRTStream& " << *fType->args[i]->name;
-      } else {
-         out << "const ";
-         Symbol name;name.name = fType->args[i]->name->name;
-         //XXX -- C++ backend needs values to be passed by value...
-         // It's a one time per kernel call hit--worth it to keep
-         // Values from being aliased --Daniel
-         //hence we only do the & for reduction vars
-         fType->args[i]->form->printType(out,&name,true,0);
+      out << "  static const void *__" << *FunctionName() << "_fp[] = {";
+      out << std::endl;
+      out << "     \"fp30\", __" << *FunctionName() << "_fp30," << std::endl;
+      out << "     \"ps20\", __" << *FunctionName() << "_ps20," << std::endl;
+      out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;
+      if (this->decl->isReduce()||reduceNeeded(this)) {
+         out << "     \"ndcpu\", (void *) __" << *FunctionName() << "_ndcpu,"<<std::endl;
+         if (globals.multiThread) {//only make combiner if needed
+            out << "     \"combine\", (void *) __";
+            out << *FunctionName() << "__combine_cpu,";
+            out << std::endl;
+         }
       }
-   }
-   out << ") {\n";
-
-   out << "  static const void *__" << *FunctionName() << "_fp[] = {";
-   out << std::endl;
-   out << "     \"fp30\", __" << *FunctionName() << "_fp30," << std::endl;
-   out << "     \"ps20\", __" << *FunctionName() << "_ps20," << std::endl;
-   out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;
-   if (this->decl->isReduce()||reduceNeeded(this)) {
-      out << "     \"ndcpu\", (void *) __" << *FunctionName() << "_ndcpu,"<<std::endl;
-      if (globals.multiThread) {//only make combiner if needed
-         out << "     \"combine\", (void *) __";
-         out << *FunctionName() << "__combine_cpu,";
+      if (!globals.multiThread) {
+         out << "     \"combine\", 0,";//this signals to runtime
+         //not to use multithreading
          out << std::endl;
       }
-   }
-   if (!globals.multiThread) {
-      out << "     \"combine\", 0,";//this signals to runtime
-      //not to use multithreading
-      out << std::endl;
-   }
-   out << "     NULL, NULL };"<<std::endl;
-
-   out << "  static __BRTKernel k("
-       << "__" << *FunctionName() << "_fp);\n\n";
-   for (i=0; i < fType->nArgs; i++) {
-      if (recursiveIsStream(fType->args[i]->form) &&
-          (fType->args[i]->form->getQualifiers()&TQ_Out)!=0) {
+      out << "     NULL, NULL };"<<std::endl;
+      
+      out << "  static __BRTKernel k("
+          << "__" << *FunctionName() << "_fp);\n\n";
+      for (i=0; i < fType->nArgs; i++) {
+         if (recursiveIsStream(fType->args[i]->form) &&
+             (fType->args[i]->form->getQualifiers()&TQ_Out)!=0) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
-      } else if ((fType->args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
-         out << "  k->PushReduce(&" << *fType->args[i]->name;
-         out << ", __BRTReductionType(&" << *fType->args[i]->name <<"));\n";
-      } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
-         out << "  k->PushIter(" << *fType->args[i]->name << ");\n";
-      } else if (recursiveIsStream(fType->args[i]->form)) {
-         out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
-      } else if (recursiveIsGather(fType->args[i]->form)) {
-         out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
-      } else {
-         out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
+         } else if ((fType->args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
+            out << "  k->PushReduce(&" << *fType->args[i]->name;
+            out << ", __BRTReductionType(&" << *fType->args[i]->name <<"));\n";
+         } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
+            out << "  k->PushIter(" << *fType->args[i]->name << ");\n";
+         } else if (recursiveIsStream(fType->args[i]->form)) {
+            out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
+         } else if (recursiveIsGather(fType->args[i]->form)) {
+            out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
+         } else {
+            out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
+         }
       }
-   }
-   if (decl->isReduce()) {
-      out << "  k->Reduce();\n";
-   }else {
-      out << "  k->Map();\n";
-   }
-   out << "\n}\n\n";
+      if (decl->isReduce()) {
+         out << "  k->Reduce();\n";
+      }else {
+         out << "  k->Map();\n";
+      }
+      out << "\n}\n\n";
+   }while (incrementBoolVec(streamOrVal));
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

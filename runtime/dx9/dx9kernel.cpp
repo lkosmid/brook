@@ -191,6 +191,7 @@ IDirect3DDevice9* DX9Kernel::getDevice() {
 }
 
 void DX9Kernel::initialize( const char* source ) {
+  int i;
   pixelShader = DX9PixelShader::create( runtime, source );
 
   // TIM: look for our annotations...
@@ -205,7 +206,7 @@ void DX9Kernel::initialize( const char* source ) {
   std::string argumentCountString = s.substr( 0, s.find("\n") );
   int argumentCount = atoi( argumentCountString.c_str() );
 
-  for( int i = 0; i < argumentCount; i++ )
+  for( i = 0; i < argumentCount; i++ )
   {
     s = s.substr( s.find("\n")+1 );
     s = s.substr( s.find("//")+2 );
@@ -216,7 +217,7 @@ void DX9Kernel::initialize( const char* source ) {
 
   // TIM: initialize all the rects, just in case
   outputRect = DX9Rect(0,0,0,0);
-  for( int i = 0; i < 8; i++ )
+  for( i = 0; i < 8; i++ )
   {
     inputRects[i] = DX9Rect(0,0,0,0);
     inputTextures[i] = NULL;
