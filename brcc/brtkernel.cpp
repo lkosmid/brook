@@ -258,6 +258,31 @@ void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&
 	  break;
         }
 }
+
+void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
+                                                 bool nDcube,
+                                                 unsigned int ref){
+	if (a->isReduce())
+		return;
+	if (!a->isStream())
+		return;
+	bool isOut = (a->form->getQualifiers()&TQ_Out)!=0;
+	if (!nDcube&&(reduceFunc||isOut))
+           return;
+	if (!nDcube) {
+           indent(out,3);
+		out << "iter"<<index<<"=getIndexOf(i+mapbegin,";
+                out << "extents["<<index<<"],";
+                out << "dim, extents["<<ref<<"]);";
+		out << std::endl;           
+        }else {
+           indent(out,3);
+		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapend,";
+                out << "extents["<<index<<"], ";
+                out << "dim, extents["<<ref<<"]);";
+		out << std::endl;           
+        }   
+}
 void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out, 
                                               bool nDcube, 
                                               unsigned int ref) {
@@ -274,8 +299,12 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 		out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){";
                 out << std::endl;
 		indent(out,3);
-		out << "ratioiter"<<index<<"=0;";
+		out << "ratioiter"<<index<<"=0;"<<std::endl;
 		indent(out,3);
+                out << "++iter"<<index<<";"<<std::endl;
+                indent(out,2);
+                out << "}"<<std::endl;
+                /*
 		out << "if (++iter"<<index<<"%extents["<<index<<"]";
                 out << "[dim-1]==0) {";
                 out << std::endl;
@@ -288,17 +317,23 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 		out << "}"<<std::endl;
 		indent(out,2);
 		out << "}"<<std::endl;
+                */
 	}else {
-		indent(out,2);
-		if(!isOut){
-			out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){"<<std::endl;
-			indent(out,3);
-			out << "ratioiter=0;"<<std::endl;
-			indent(out,3);
-		}
-		out << "++arg"<<index<<";"<<std::endl;
+           indent(out,2);
+           if(!isOut){
+              out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){"<<std::endl;
+              indent(out,3);
+              out << "ratioiter=0;"<<std::endl;
+              indent(out,3);
+           }
+           out << "++iter"<<index<<";"<<std::endl;
+           if (!isOut) {
+              indent(out,2);
+              out << "}"<<std::endl;			
+           }
+                /*
 		indent(out,!isOut?2:3);
-		out << "if (arg"<<index<<" == x"<<index<<") {"<<std::endl;
+		out << "if (i%(mapend[dim-1]-mapbegin[dim-1])) {"<<std::endl;
 		indent(out,!isOut?3:4);
 		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapend,";
                 out << "extents["<<index<<"], ";
@@ -308,10 +343,7 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 		out << "x"<<index<<" = arg"<<index<<" + delta_x"<<index<<";"<<std::endl;
 		indent(out,!isOut?2:3);
 		out << "}"<<std::endl;
-		if (!isOut) {
-			indent(out,2);
-			out << "}"<<std::endl;			
-		}
+                */
 	}
 }
 void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out, 
@@ -340,14 +372,6 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
            out << "extents["<<index<<"], ";
            out << "dim, extents["<<ref<<"]);"<<std::endl;
            indent(out,1);
-           if (nDcube) {
-              out << "unsigned int x_delta"<<index<<" = ";
-              out << "arg"<<index<<" + mapend[0] - mapbegin[0];";
-              out << std::endl;
-              indent(out,1);
-              out << "unsigned int x"<<index<<" = ";
-              out << "arg"<<index<<" + x_delta"<<index<<";"<<std::endl;
-           }
 	}
 }
 void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, 
@@ -723,6 +747,13 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
        {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].Increment(out,false,reference_stream);
        }}
+       indent(out,2);
+       out << "if (i%extents["<<reference_stream<<"][dim-1]==0) {"<<std::endl;
+       {for (unsigned int i=0;i<myArgs.size();++i) {
+          myArgs[i].ResetNewLine(out,false,reference_stream);
+       }}       
+       indent(out,2);
+       out << "}"<<std::endl;
        incrementIndexOf(out);
        indent(out,1); out <<"}"<<std::endl;
     }
@@ -745,6 +776,13 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     {for (unsigned int i=0;i<myArgs.size();++i) {
        myArgs[i].Increment(out,false,reference_stream);
     }}
+    indent(out,2);
+    out << "if (i%extents["<<reference_stream<<"][dim-1]==0) {"<<std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+       myArgs[i].ResetNewLine(out,false,reference_stream);
+    }}       
+    indent(out,2);
+    out << "}"<<std::endl;
 
     indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {

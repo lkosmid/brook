@@ -83,6 +83,7 @@ class BRTCPUKernelCode : public BRTKernelCode
 		}
 		enum STAGE {HEADER,DEF,USE,CLEANUP};
 		void Increment(std::ostream&out, bool nDcube, unsigned int ref);
+		void ResetNewLine(std::ostream&out,bool nDcube,unsigned int ref);
 		void InitialSet(std::ostream&out, bool nDcube, unsigned int ref);
 		void printDimensionlessGatherStream(std::ostream&out,STAGE s);
 		void printArrayStream(std::ostream &out, STAGE s);
