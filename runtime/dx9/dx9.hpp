@@ -77,7 +77,7 @@ namespace brook {
     IDirect3DDevice9* device;
     DX9PixelShader* pixelShader;
     DX9FatRect inputRects[8]; // TIM: TODO: named constant?
-    float4 inputConstants[8];
+    float4 inputConstants[32];
     DX9Stream* inputStreams[8];
     IDirect3DTexture9* inputTextures[8];
     DX9FatRect outputRect;
