@@ -1,6 +1,3 @@
-#ifdef _WIN32
-#pragma warning(disable:4244)
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -220,14 +217,15 @@ void CountValuesBRT_TYPE(BRT_TYPE list_stream <>,
    float2 maxvalue;
    unsigned int logN;
 
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;
+   maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightBRT_TYPE (list_stream,output_stream,sign,maxvalue);   
+   NanToRightBRT_TYPE (list_stream,output_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightBRT_TYPE (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
-      else
-         NanToRightBRT_TYPE (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+    if (i%2)
+      NanToRightBRT_TYPE(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
+    else
+      NanToRightBRT_TYPE(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
      streamSwap(tmp_stream,output_stream);
@@ -246,22 +244,22 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift;
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightBRT_TYPE (list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightBRT_TYPE (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
-         NanToRightBRT_TYPE (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
+         NanToRightBRT_TYPE(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
       else
-         NanToRightBRT_TYPE (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
+         NanToRightBRT_TYPE(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
      if (sign==-1) {
-       index.y = WIDTH-1; index.x = LENGTH-1;
+       index.y = (float)(WIDTH-1); index.x = (float)(LENGTH-1);
      }else {
        index.y=index.x=0;
      }
@@ -274,28 +272,28 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
    EstablishGuessBRT_TYPE(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
                           list_stream,
-                          (1 << LogNMinusK),
+                          (float)(1 << LogNMinusK),
                           maxvalue,
-                          1<<i,
-                          sign);
+                          (float)(1<<i),
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
          UpdateGuessBRT_TYPE (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              sign);
+                              (float)sign);
       else
          UpdateGuessBRT_TYPE (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              sign);
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -308,7 +306,7 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
         RelativeGatherBRT_TYPE(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
                                list_stream,
-                               float2(sign,1/floor(.5)),
+                               float2((float)sign,1.0f/(float)floor(.5)),
                                maxvalue);
         streamSwap(output_stream,proper_output_stream);
       }
@@ -875,18 +873,18 @@ void combineStreamsBRT_TYPE (BRT_TYPE (**streams)<>,
    case 2:
       BRT_TYPEstreamCombine2f(*streams[0],
                       *streams[1],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 3:
       BRT_TYPEstreamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 4:
@@ -894,9 +892,9 @@ void combineStreamsBRT_TYPE (BRT_TYPE (**streams)<>,
                       *streams[1],
                       *streams[2],
                       *streams[3],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 5:
@@ -906,9 +904,9 @@ void combineStreamsBRT_TYPE (BRT_TYPE (**streams)<>,
                       *streams[2],
                       *streams[3],
                       *streams[4],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
@@ -919,10 +917,10 @@ void combineStreamsBRT_TYPE (BRT_TYPE (**streams)<>,
          combineStreamsHelperBRT_TYPE(streams+5,
                                       num-5,
                                       output,
-                                      num,
-                                      5-.5,
-                                      length,
-                                      lengthmodmodulus);
+                                      (float)num,
+                                      (float)(5-.5),
+                                      (float)length,
+                                      (float)lengthmodmodulus);
       }
       /*
       break;
@@ -1033,8 +1031,8 @@ unsigned int  voutCombineBRT_TYPE(BRT_TYPE outleft_stream<>,
                                BRT_TYPE output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
-   maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
-   maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
+   maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
+   maxrightvalue.x=(float)LENGTH;maxrightvalue.y=(float)RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
                 -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
