@@ -72,11 +72,11 @@ int main( int argc, char** argv )
 
   std::cout << iterations << "\t";
   std::cout << time << "\t";
-  if( mout )
+/*  if( mout )
   {
 	  std::cout << "1way: " << onewayBandwidth << "\t";
 	  std::cout << "2way: " << twowayBandwidth << "\t";
-  }
+  }*/
   std::cout << megaflops << std::endl;
 
 
