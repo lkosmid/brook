@@ -93,7 +93,9 @@ unsigned int findNaN(std::vector<float4> v) {
 }
 float4* consolidateVertices(ppm &fp,float4 ss/*stream size*/) {
    unsigned int siz = fp.vertices.size();
-   fp.vertices.insert(fp.vertices.end(),ss.x*ss.y,float4(0,0,0,0));
+   fp.vertices.insert(fp.vertices.end(),
+                      (unsigned int)ss.x*(unsigned int)ss.y,
+                      float4(0.0f,0.0f,0.0f,0.0f));
    return &fp.vertices[siz];
    unsigned int size = (unsigned int)ss.x*(unsigned int)ss.y;
    unsigned int nanloc= findNaN(fp.vertices);
