@@ -17,7 +17,7 @@ iterator_test (float d_prime<>, float d[10][10], out float e<>)
 
 int
 main (int argc, char *argv[]) {
-   //float2 i<200, 100> = BRTIter(float2(0,0), float2(200, 100));
+   float2 iter<200, 100> = BRTIter(0.0f, 0.0f, 200.0f, 100.0f);
    float d<10, 10>;
    float e<10, 10>;
 
