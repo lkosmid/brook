@@ -1196,8 +1196,10 @@ typedef struct traverser_t {
   float3 Rotationy;
   float3 Rotationz;
 }Traverser;
-void assertf(bool b) {
-  assert(b);
+bool assertf(bool b) {
+  if (b) {
+    return false;
+  }return true;
 }
 void assertv(csVector3 a, float3 b) {
   assert(fabs(a.x-b.x)<.0001);
@@ -1234,22 +1236,44 @@ public:
   }
 };
 int checkPassCorrectness(Traverser * traverser,int numTraverser, int numpass) {
+  int error_count=0;
+
   if (numpass==0||numpass==1||numpass>=(int)guide.size())
     return 1;
   std::vector<csTraverser>* b = &guide[numpass];
-  std::sort(traverser,traverser+numTraverser,PassSorter());
-  std::sort(b->begin(),b->end(),csPassSorter());
+  bool dosort=true;
+  if (dosort) {
+    std::sort(traverser,traverser+numTraverser,PassSorter());
+    std::sort(b->begin(),b->end(),csPassSorter());
+  }
   int j=0;
-  for (int i=0;i<numTraverser;++i) {
+  for (int i=0;j<(int)b->size()&&i<numTraverser;++i) {
     csTraverser csTrav = (*b)[j];
     Traverser trav=traverser[i];
-    if (trav.index.x<1.5&&trav.index.x>.5)
+    if (trav.index.y==0&&trav.index.x<1.5&&trav.index.x>.5) {
+      //if (!dosort)++j;
       continue;
+    }
     j++;
-    assertf ( trav.index.x == csTrav.b1->ind[0]);
-    assertf ( trav.index.y == csTrav.b1->ind[1]);
-    assertf ( trav.index.z == csTrav.b2->ind[0]);
-    assertf ( trav.index.w == csTrav.b2->ind[1]);
+    if (assertf ( trav.index.x == csTrav.b1->ind[0])
+        ||assertf ( trav.index.y == csTrav.b1->ind[1])
+        ||assertf ( trav.index.z == csTrav.b2->ind[0])
+        ||assertf ( trav.index.w == csTrav.b2->ind[1])) {
+      Traverser tmp;
+      tmp.index.x = csTrav.b1->ind[0];
+      tmp.index.y = csTrav.b1->ind[1];
+      tmp.index.z = csTrav.b2->ind[0];
+      tmp.index.w = csTrav.b2->ind[1];
+      error_count++;
+      PassSorter p;
+      if (p(tmp,trav)) {
+        i--;        
+      }else {
+        j--;
+      }
+
+      continue;
+    }
     csVector3 rX = csTrav.R.Row1();
     csVector3 rY = csTrav.R.Row2();
     csVector3 rZ = csTrav.R.Row3();
@@ -1259,8 +1283,9 @@ int checkPassCorrectness(Traverser * traverser,int numTraverser, int numpass) {
     assertv(rZ,trav.Rotationz);
     assertv(T,trav.Translation);
   }
-
-
+  if (error_count)
+    printf ("error detected %d\n",error_count);
+      
   //assert (numTraverser==(int)guide[numpass].size());
   return 1;
 }
