@@ -12,7 +12,7 @@
 #define DO_VERIFY               1 
 
 
-#define USE_VIRTUAL_ADDRESSING  1
+#define USE_VIRTUAL_ADDRESSING  0
 
 
 
@@ -51,7 +51,7 @@ reduce void sumRows(float a<>, reduce float result<>) {
 }
 
 
-reduce void sumRowsfloat4(float4 a<>, reduce float result<>) {
+reduce void sumRowsfloat4(float4 a<>, reduce float4 result<>) {
   result += a;
 }
 
