@@ -8,14 +8,14 @@
 
 //packed version (float4 in/out)
 kernel void test_iter( float4 img[][], float diff_strength,
-                              float inv_grad_cutoff, float loww, float highw,
-                              iter float2 it0<>, iter float2 it1<>, 
-			      iter float2 it2<>, iter float2 it3<>, 
-			      iter float2 it4<>, out float4 o_img<> ) {
-     o_img.x = it0.x;
-     o_img.y = it0.y;
-     o_img.z = it1.x;
-     o_img.w = it1.y;
+                       float inv_grad_cutoff, float loww, float highw,
+                       iter float2 it0<>, iter float2 it1<>, 
+                       iter float2 it2<>, iter float2 it3<>, 
+                       iter float2 it4<>, out float4 o_img<> ) {
+    o_img.x = it0.x;
+    o_img.y = it0.y;
+    o_img.z = it1.x;
+    o_img.w = it1.y;
 }
 
 
@@ -23,8 +23,8 @@ kernel void test_iter( float4 img[][], float diff_strength,
 kernel void process_img_pack( float4 img[][], float diff_strength,
                               float inv_grad_cutoff, float loww, float highw,
                               iter float2 it0<>, iter float2 it1<>, 
-			      iter float2 it2<>, iter float2 it3<>, 
-			      iter float2 it4<>, out float4 o_img<> ) {
+                              iter float2 it2<>, iter float2 it3<>, 
+                              iter float2 it4<>, out float4 o_img<> ) {
     float e = 2.7182817f;
     float4 R0;
     float4 R1;
@@ -113,162 +113,179 @@ int PMLSeg_main(int argc, char* argv[]) {
     float highw = 1.0f;//2000./65535.0f;
 
     if(argc < 4){
-          char buf[255];
-          fprintf(stderr, "Usage: %s <size x> <size y> <loop count>\n", argv[0]);
-	  fprintf(stderr, "Size in X: ");
-	  fgets(buf, 254, stdin);
-	  xsize = atoi(buf);
-	  fprintf(stderr, "Size in Y: ");
-	  fgets(buf, 254, stdin);
-	  ysize = atoi(buf);
-          xsize = xsize/2 + xsize%2; //round up
-	  fprintf(stderr, "# of loops: ");
-	  fgets(buf, 254, stdin);
-	  loop_count = atoi(buf);
-          xsizef = (float)xsize;
-          ysizef = (float)ysize;
+        char buf[255];
+        fprintf(stderr, "Usage: %s <size x> <size y> <loop count>\n", argv[0]);
+        fprintf(stderr, "Size in X: ");
+        fgets(buf, 254, stdin);
+        xsize = atoi(buf);
+        fprintf(stderr, "Size in Y: ");
+        fgets(buf, 254, stdin);
+        ysize = atoi(buf);
+        xsize = xsize/2 + xsize%2; //round up
+        fprintf(stderr, "# of loops: ");
+        fgets(buf, 254, stdin);
+        loop_count = atoi(buf);
+        xsizef = (float)xsize;
+        ysizef = (float)ysize;
     }
     else{
         xsize = atoi(argv[1]);
         ysize = atoi(argv[2]);
-	xsize = xsize/2 + xsize%2; //round up
+        xsize = xsize/2 + xsize%2; //round up
         xsizef = (float)xsize;
         ysizef = (float)ysize;
         loop_count = atoi(argv[3]);
     }
-
-
+    
+    
     //run sanity check first!
     // MCH: It makes me ill that I have to open a new scope to get this to work.
     {
-	 float test[64];
-	 float ep = 0.005;
-	 int error = 0;
-	 // Setup the iterators to do a north/south/east/west/local lookup into the image
-	 iter float2 it0<8,4> = iter( float2(0.0f,  0.0f), float2(4.0,      8.0) );
-	 iter float2 it1<8,4> = iter( float2(-1.0f, 0.0f), float2(4.0-1.0f, 8.0) );
-	 iter float2 it2<8,4> = iter( float2(1.0f,  0.0f), float2(4.0+1.0f, 8.0) );
-	 iter float2 it3<8,4> = iter( float2(0.0f, -1.0f), float2(4.0,      8.0-1.0f) );
-	 iter float2 it4<8,4> = iter( float2(0.0f,  1.0f), float2(4.0,      8.0+1.0f) );
-	 float4 img<8,4>;
-	 float4 o_img<8,4>;
-	 
-	 input  = (float*)malloc(2*8*8*sizeof(float));
-	 output = (float*)malloc(2*8*8*sizeof(float));
-	 
-	 // Our test should return these values +/- epsilon
-	 test[0] = 0.0;
-	 test[1] = 0.0;
-	 test[2] = 0.006;
-	 test[3] = 0.006;
-	 test[4] = 0.006;
-	 test[5] = 0.0;
-	 test[6] = 0.0;
-	 test[7] = 0.0;
-
-	 test[8] = 0.0;
-	 test[9]  = 0.010;
-	 test[10] = 0.019;
-	 test[11] = 0.035;
-	 test[12] = 0.019;
-	 test[13] = 0.010;
-	 test[14] = 0.0;
-	 test[15] = 0.0;
-
-	 test[16] = 0.006;
-	 test[17] = 0.019;
-	 test[18] = 0.058;
-	 test[19] = 0.064;
-	 test[20] = 0.058;
-	 test[21] = 0.019;
-	 test[22] = 0.006;
-	 test[23] = 0.0;
-
-	 test[24] = 0.006;
-	 test[25] = 0.035;
-	 test[26] = 0.064;
-	 test[27] = 0.098;
-	 test[28] = 0.064;
-	 test[29] = 0.035;
-	 test[30] = 0.006;
-	 test[31] = 0.003;
-
-	 test[32] = 0.006;
-	 test[33] = 0.019;
-	 test[34] = 0.058;
-	 test[35] = 0.064;
-	 test[36] = 0.058;
-	 test[37] = 0.019;
-	 test[38] = 0.006;
-	 test[39] = 0.0;
-
-	 test[40] = 0.0;
-	 test[41] = 0.010;
-	 test[42] = 0.019;
-	 test[43] = 0.035;
-	 test[44] = 0.019;
-	 test[45] = 0.010;
-	 test[46] = 0.0;
-	 test[47] = 0.0;
-
-	 test[48] = 0.0;
-	 test[49] = 0.0;
-	 test[50] = 0.006;
-	 test[51] = 0.006;
-	 test[52] = 0.006;
-	 test[53] = 0.0;
-	 test[54] = 0.0;
-	 test[55] = 0.0;
-
-	 test[56] = 0.0;
-	 test[57] = 0.0;
-	 test[58] = 0.0;
-	 test[59] = 0.003;
-	 test[60] = 0.0;
-	 test[61] = 0.0;
-	 test[62] = 0.0;
-	 test[63] = 0.0;
-
-	 // Fill an image with random data and set up the seed point in the middle
-	 for(i=0; i<2*8*8; i++){
-	      input[i] = 0.0f;
-	 } 
-	 //Let's insert some seed data in the middle
-	
-	 input[27*2+1] = 1.0f;
-	 
-	 //Build the input stream out of the image and seed data
-	 streamRead(img, input);
-	 
-	 //Do the requested number of iterations
-	 for(i=0; i<4; i++){
-	      //We can't use the input and output buffers without hosing things
-	      //so we'll need to "ping-pong" between them
-	      if(i%2==0)
-		   process_img_pack(img, diff_strength, inv_grad_cutoff, 
-				    loww, highw, 
-				    it0, it1, it2, it3, it4, o_img );
-	      else
-		   process_img_pack(o_img, diff_strength, inv_grad_cutoff, 
-				    loww, highw,
-				    it0, it1, it2, it3, it4, img );
-	      
-	 }
-	 if(i%2==0)
-	      streamWrite(img, output);
-	 else
-	      streamWrite(o_img, output);
-
-	 //Let's check the results!
-	 for(i=0; i<64; i++){
-	      if((output[2*i+1]>(test[i]+ep)) || (output[2*i+1]<(test[i]-ep))){
-		   fprintf(stderr, "Mismatch @ %d; expected %1.4f, got %1.4f\n", i, test[i], output[2*i+1]);
-		   error = 1;
-	      }    
-	 }
-	 if(error){
-	      printf("\n");
-	 }
+        float test[80];
+        float ep = 0.005;
+        int error = 0;
+        
+        // Setup the iterators to do a north/south/east/west/local lookup into the image
+        iter float2 it0<8,5> = iter( float2(0.0f,  0.0f), float2(5.0,      8.0) );
+        iter float2 it1<8,5> = iter( float2(-1.0f, 0.0f), float2(5.0-1.0f, 8.0) );
+        iter float2 it2<8,5> = iter( float2(1.0f,  0.0f), float2(5.0+1.0f, 8.0) );
+        iter float2 it3<8,5> = iter( float2(0.0f, -1.0f), float2(5.0,      8.0-1.0f) );
+        iter float2 it4<8,5> = iter( float2(0.0f,  1.0f), float2(5.0,      8.0+1.0f) );
+        float4 img<8,5>;
+        float4 o_img<8,5>;
+        
+        input  = (float*)malloc(2*8*10*sizeof(float));
+        output = (float*)malloc(2*8*10*sizeof(float));
+        
+        // Our test should return these values +/- epsilon
+        test[0] = 0.0;
+        test[1] = 0.0;
+        test[2] = 0.0;
+        test[3] = 0.0;
+        test[4] = 0.006;
+        test[5] = 0.006;
+        test[6] = 0.006;
+        test[7] = 0.0;
+        test[8] = 0.0;
+        test[9] = 0.0;
+        
+        test[10] = 0.0;
+        test[11] = 0.0;
+        test[12] = 0.0;
+        test[13] = 0.010;
+        test[14] = 0.019;
+        test[15] = 0.035;
+        test[16] = 0.019;
+        test[17] = 0.010;
+        test[18] = 0.0;
+        test[19] = 0.0;
+        
+        test[20] = 0.0;
+        test[21] = 0.0;
+        test[22] = 0.006;
+        test[23] = 0.019;
+        test[24] = 0.058;
+        test[25] = 0.064;
+        test[26] = 0.058;
+        test[27] = 0.019;
+        test[28] = 0.006;
+        test[29] = 0.0;
+        
+        test[30] = 0.0;
+        test[31] = 0.0;
+        test[32] = 0.006;
+        test[33] = 0.035;
+        test[34] = 0.064;
+        test[35] = 0.098;
+        test[36] = 0.064;
+        test[37] = 0.035;
+        test[38] = 0.006;
+        test[39] = 0.003;
+        
+        test[40] = 0.0;
+        test[41] = 0.0;
+        test[42] = 0.006;
+        test[43] = 0.019;
+        test[44] = 0.058;
+        test[45] = 0.064;
+        test[46] = 0.058;
+        test[47] = 0.019;
+        test[48] = 0.006;
+        test[49] = 0.0;
+        
+        test[50] = 0.0;
+        test[51] = 0.0;
+        test[52] = 0.0;
+        test[53] = 0.010;
+        test[54] = 0.019;
+        test[55] = 0.035;
+        test[56] = 0.019;
+        test[57] = 0.010;
+        test[58] = 0.0;
+        test[59] = 0.0;
+        
+        test[60] = 0.0;
+        test[61] = 0.0;
+        test[62] = 0.0;
+        test[63] = 0.0;
+        test[64] = 0.006;
+        test[65] = 0.006;
+        test[66] = 0.006;
+        test[67] = 0.0;
+        test[68] = 0.0;
+        test[69] = 0.0;
+        
+        test[70] = 0.0;
+        test[71] = 0.0;
+        test[72] = 0.0;
+        test[73] = 0.0;
+        test[74] = 0.0;
+        test[75] = 0.003;
+        test[76] = 0.0;
+        test[77] = 0.0;
+        test[78] = 0.0;
+        test[79] = 0.0;
+        
+        // Fill an image with random data and set up the seed point in the middle
+        for(i=0; i<2*8*10; i++){
+            input[i] = 0.0f;
+        } 
+        //Let's insert some seed data in the middle
+        
+        input[35*2+1] = 1.0f;
+        
+        //Build the input stream out of the image and seed data
+        streamRead(img, input);
+        
+        //Do the requested number of iterations
+        for(i=0; i<4; i++){
+            //We can't use the input and output buffers without hosing things
+            //so we'll need to "ping-pong" between them
+            if(i%2==0)
+                process_img_pack(img, diff_strength, inv_grad_cutoff, 
+                                 loww, highw, 
+                                 it0, it1, it2, it3, it4, o_img );
+            else
+                process_img_pack(o_img, diff_strength, inv_grad_cutoff, 
+                                 loww, highw,
+                                 it0, it1, it2, it3, it4, img );
+            
+        }
+        if(i%2==0)
+            streamWrite(img, output);
+        else
+            streamWrite(o_img, output);
+        
+        //Let's check the results!
+        for(i=0; i<80; i++){
+            if((output[2*i+1]>(test[i]+ep)) || (output[2*i+1]<(test[i]-ep))){
+                fprintf(stderr, "Mismatch @ %d; expected %1.4f, got %1.4f\n", i, test[i], output[2*i+1]);
+                error = 1;
+            }    
+        }
+        if(error){
+            printf("\n");
+        }
     }
 
     //Run the actual test!
