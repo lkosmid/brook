@@ -15,16 +15,6 @@ kernel void mult_complex2(float4 a <>, float2 b <>, out float4 c <>)
 
 }
 #define DOTIMES 2
-kernel void DoDFTVerticalInner (float4 r<>,
-                                float4 t<>,
-                                float2 W<>,
-                                out float4 s_prime<>) {
-   if (round(fmod((indexof s_prime).y,2))==1) {
-      mult_complex2(r-t,W,s_prime);
-   }else {
-      s_prime=r+t;
-   }
-}
 kernel void DoDFTHorizontalInner (float2 r<>, 
                                   float2 t<>, 
                                   float2 W <>, 
@@ -42,18 +32,29 @@ DFTX (float4 s[][],
   float2 index = {floor((indexof s_prime).x/2),(indexof s_prime).y};
   float4 r,t;
   float2 temp,twiddle;
-  twiddle = W[index.x-fmod(index.x,StrideNo4.x)];
+  twiddle = W[(indexof s_prime).x-fmod((indexof s_prime).x,StrideNo4.x)];
   temp = float2(StrideNo4.y,0);
   r = s[index]; t = s[index+temp];
   temp.x = round(fmod((indexof s_prime).x,2))==1;
-  DoDFTHorizontalInner (temp.xx?r.xy:r.zw,temp.xx?t.xy:t.zw,twiddle,s_prime);
+  DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,twiddle,s_prime);
 } 
+
+kernel void DoDFTVerticalInner (float4 r<>,
+                                float4 t<>,
+                                float2 W<>,
+                                out float4 s_prime<>) {
+   if (round(fmod((indexof s_prime).y,2))==1) {
+      mult_complex2(r-t,W,s_prime);
+   }else {
+      s_prime=r+t;
+   }
+}
 kernel void
 DFTY (float4 s[][], 
         float2 W[],
         float2 StrideNo2,
         out float4 s_prime<>) {
-  float2 index = (indexof s_prime).xy;
+  float2 index = {(indexof s_prime).x,floor((indexof s_prime).y/2)};
   float2 temp,twiddle;
   twiddle = W[index.y-fmod(index.y,StrideNo2.x)];
   temp = float2(0,StrideNo2.y);
@@ -131,7 +132,7 @@ void computeFFT2d(float2 *input,
                   int M,
                   int twod){
    float4 s<N,(M/2)>;
-   float2 s_out<N,(M/2)>;
+   float4 s_out<N,(M/2)>;
    float2 W_horiz<M>;
    float2 W_vert<M>;
    float2 * dat;
@@ -157,16 +158,25 @@ void computeFFT2d(float2 *input,
    for (thereAndBack=0;thereAndBack<DOTIMES;++thereAndBack) {
    if (1==N*M) streamSwap(s_out,s);
    else {
-         nPass=nBits=logM;
+      nPass=nBits=logM;if (0)
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
             DFTX(s,W_horiz,float2((float) nStride, (float) (M/4)),s_out);
+            if (debug_fft) {
+               printf ("\nX STAGE %d\n",nPassCounter);
+               streamPrint(s_out);
+            }
             streamSwap(s,s_out);
          }
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
             DFTY(s,W_vert,float2((float) nStride, (float) (N/2)),s_out);
+            if (debug_fft) {
+               printf ("\nY STAGE %d\n",nPassCounter);
+               streamPrint(s_out);
+            }
+
             streamSwap(s,s_out);
          }
    }

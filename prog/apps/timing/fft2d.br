@@ -126,12 +126,16 @@ void compute2dFFT(float2 *input,
    }
    for (thereAndBack=0;thereAndBack<DOTIMES;++thereAndBack) {
    if (1==N*M) streamSwap(s_out,s);
-   else {
+   else {if (0)
       if (twod==FFT_2D||twod==FFT_HORIZONTAL) {
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
             DoDFTX(s,W_horiz,float2((float) nStride, (float) M),s_horiz);
+            if (debug_fft) {
+               printf ("\nX STAGE %d\n",nPassCounter);
+               streamPrint(s_horiz);
+            }
             flattenSX(s,s_horiz);
          }
       }
@@ -140,7 +144,12 @@ void compute2dFFT(float2 *input,
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
             DoDFTY(s,W_vert,float2((float) nStride, (float) N),s_vert);
+            if (debug_fft) {
+               printf ("\nY STAGE %d\n",nPassCounter);
+            }
             flattenSY(s,s_vert);
+            streamPrint(s);
+               
          }
       }
    }
