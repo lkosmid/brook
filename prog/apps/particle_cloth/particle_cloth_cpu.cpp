@@ -196,7 +196,7 @@ void cpuAccumulateSpringForces(
   relVel.z = vel0.z - vel1.z;
 
   float lengthSquared = relPos.x*relPos.x + relPos.y*relPos.y + relPos.z*relPos.z;
-  float length = sqrtf( lengthSquared );
+  float length = (float) sqrt( (double) lengthSquared );
   float invLength = 1.0f / length;
 
   float3 springAxis;
@@ -351,7 +351,7 @@ void cpuIterate( int inSize, int inIterations, int& outMicroseconds )
 //  springSets[1].dampingConstant = springSets[0].dampingConstant;
   springSets[1].springConstant = 0;
   springSets[1].dampingConstant = 0;
-  springSets[1].restLength = springSets[0].restLength * sqrtf(2.0f);
+  springSets[1].restLength = springSets[0].restLength * sqrt(2.0);
 
   // bend
   springSets[2].offset0 = 2;

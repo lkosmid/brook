@@ -2,6 +2,7 @@
 // Tests use of structures for input parameters.
 
 #include <stdio.h>
+#include <math.h>
 
 #include "timing.hpp"
 
@@ -238,7 +239,7 @@ int startTime, endTime;
   force_data = (float3*)malloc( particleCount*sizeof(float3) );
   
   directRestLength = 1.0f / (float)(inSize-1);
-  diagonalRestLength = directRestLength * sqrtf(2.0f);
+  diagonalRestLength = directRestLength * sqrt(2.0);
   bendRestLength = 2.0f * directRestLength;
   springConstant = 0.0f;
   dampingConstant = 0.0f;
