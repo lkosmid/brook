@@ -271,7 +271,7 @@ void computeFFT2d(float2 *input,
           (float)(DOTIMES*10.*(logN+logM)*M*N) / (float) (sstop - sstart), name);
 
 void doOptFFT(int logN) {
-   int logM = logN; 
+   int logM = logN-1; 
    int i,N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
