@@ -48,7 +48,7 @@ template <> class GetValueOf <char> {public:
 template <> class GetValueOf <bool> {public:
     typedef bool type;
 };
-#if defined (_MSC_VER) && _MSC_VER <=1200
+#if defined (_MSC_VER)
 template <class T> class Holder {
 public:
     static typename GetValueOf<T>::type getAt (const T&t, int i) {
