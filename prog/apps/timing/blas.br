@@ -26,7 +26,7 @@ reduce void sumReduceKernel(float4 x<>, reduce float4 result<>) {
 }
 
 
-kernel void forceReadBack(out float result<>) {
+kernel void forceReadBack(float4 input<>, out float result<>) {
   result = 0.0f;
 }
 
@@ -116,21 +116,22 @@ void saxpy_2d(int dim1, int dim2, float *x, float *y, float alpha, int num_iter,
   float4 xStrm<dim1, dim2>;
   float4 yStrm<dim1, dim2>;
   int i;
+  int millisStart, millisStop;
 
   streamRead(xStrm, x);
   streamRead(yStrm, y);
 
-  mid = GetTime();
+  millisStart = GetTimeMillis();
 
   for (i=1;i<=num_iter;i++)
     saxpyKernel(xStrm, yStrm, alpha, xStrm);
 
-  forceReadBack(forceStrm);
+  forceReadBack(xStrm, forceStrm);
   streamRead(forceStrm, force);
 
-  mid2 = GetTime();
+  millisStop = GetTimeMillis();
 
-  *innerTime = (int)(mid2-mid);
+  *innerTime = (int)(millisStop-millisStart);
 
   streamWrite(xStrm, y);
 }
@@ -142,6 +143,7 @@ void do_saxpy(int length, int num_iter, int* timing, float* flops) {
   float *x, *y, *tmp;
   float alpha;
   int paddedLength, dim1, dim2;
+  int millisStart, millisStop;
   int innerTime;
 
   //printf("TimeBlas - saxpy: Running saxpy test. (vector size = %d)\n", length);
@@ -166,21 +168,19 @@ void do_saxpy(int length, int num_iter, int* timing, float* flops) {
 
   alpha = 2.0f;
 
-  start = GetTime();
+  millisStart = GetTimeMillis();
   saxpy_2d(dim1, dim2, x, y, alpha, num_iter, &innerTime);
-  stop = GetTime();
+  millisStop = GetTimeMillis();
 
   // Computation of ax + y requires:
   // N mults
   // N adds
   // ----------------
   // 2N float operations
-  //printf("TimeBlas - saxpy: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f*length)/(float)(stop-start) );
-
-  timing[0] = (int)(stop-start);
+  timing[0] = (int)(millisStop-millisStart);
   timing[1] = innerTime;
-  flops[0] = (2.0f*num_iter*length)/(float)(timing[0]);
-  flops[1] = (2.0f*num_iter*length)/(float)(timing[1]);
+  flops[0] = (2.0f*num_iter*length)/(float)(timing[0]) / 1000.0f;
+  flops[1] = (2.0f*num_iter*length)/(float)(timing[1]) / 1000.0f;
 
   if (DO_VERIFY) {
 
@@ -225,23 +225,24 @@ void sdot_2d(int dim1, int dim2, float* x, float* y, float* result, int num_iter
   float4 yStrm<dim1, dim2>;
   float4 tmpStrm<dim1, dim2>;
   int i;
+  int millisStart, millisStop;
 
   streamRead(xStrm, x);
   streamRead(yStrm, y);
 
-  mid = GetTime();
+  millisStart = GetTimeMillis();
 
   for (i=1;i<=num_iter;i++) {
     multKernel(xStrm, yStrm, tmpStrm);
     sumReduceKernel(tmpStrm, sums);
   }
 
-  forceReadBack(forceStrm);
+  forceReadBack(tmpStrm, forceStrm);
   streamRead(forceStrm, force);
 
-  mid2 = GetTime();
+  millisStop = GetTimeMillis();
 
-  *innerTime = (int)(mid2-mid);
+  *innerTime = (int)(millisStop - millisStart);
 
   *result = sums.x + sums.y + sums.z + sums.w;
 }
@@ -255,6 +256,7 @@ void do_sdot(int length, int num_iter, int* timing, float* flops) {
   float val;
   int i;
   int paddedLength, dim1, dim2;
+  int millisStart, millisStop;
   int innerTime;
 
   //printf("TimeBlas - sdot: Running sdot test. (vector size = %d)\n", length);
@@ -273,21 +275,19 @@ void do_sdot(int length, int num_iter, int* timing, float* flops) {
   fillArray(x+length, paddedLength-length, 0.0f);
   fillArray(y+length, paddedLength-length, 0.0f);
 
-  start = GetTime();
+  millisStart = GetTimeMillis();
   sdot_2d( dim1, dim2, x, y, &result, num_iter, &innerTime);
-  stop = GetTime();
+  millisStop = GetTimeMillis();
 
   // Computation of xTy requires:
   // N mults
   // N-1 adds
   // ----------------
   // 2N-1 float operations
-  //printf("TimeBlas - sdot: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f*length - 1.0f)/(float)(stop-start) );
-
-  timing[0] = (int)(stop-start);
+  timing[0] = (int)(millisStop-millisStart);
   timing[1] = innerTime;
-  flops[0] = (2.0f*num_iter*length - 1.0f)/(float)(timing[0]);
-  flops[1] = (2.0f*num_iter*length - 1.0f)/(float)(timing[1]);
+  flops[0] = (2.0f*num_iter*length - 1.0f)/(float)(timing[0]) / 1000.0f;
+  flops[1] = (2.0f*num_iter*length - 1.0f)/(float)(timing[1]) / 1000.0f;
 
   if (DO_VERIFY) {
 
@@ -315,6 +315,7 @@ void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
   float forceStrm<1>;
 
   int i;
+  int millisStart, millisStop;
   float4 xStrm<1,dim>;
   float4 yStrm<dim, 1>;
   float4 AStrm<dim, wideDim>;
@@ -331,7 +332,7 @@ void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
   streamRead(yStrm, y);
   streamRead(AStrm, A);
 
-  mid = GetTime();
+  millisStart = GetTimeMillis();
 
   for (i=1;i<=num_iter;i++) {
     denseMatVecKernel(it1, it2, it3, it4, AStrm, xStrm, tmpStrm);
@@ -339,13 +340,12 @@ void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
     denseMatVecScaleAddKernel(yStrm, resultStrm, yStrm, alpha, beta);
   }
 
-  forceReadBack(forceStrm);
+  forceReadBack(yStrm, forceStrm);
   streamRead(forceStrm, force);
 
+  millisStop = GetTimeMillis();
 
-  mid2 = GetTime();
-
-  *innerTime = (int)(mid2-mid);
+  *innerTime = (int)(millisStop - millisStart);
 
   streamWrite(yStrm, y);
 }
@@ -372,6 +372,7 @@ void do_sgemv(int length, int num_iter, int* timing, float* flops) {
   float val[4];
   int i,j,k, base;
   int innerTime;
+  int millisStart, millisStop;
 
   //printf("TimeBlas - sgemv: Running sgemv test. (vector & matrix size = %d)\n", length);
 
@@ -408,21 +409,19 @@ void do_sgemv(int length, int num_iter, int* timing, float* flops) {
   for (i=0;i<length;i++)
     tmp[i] = y[i];
 
-  start = GetTime();
+  millisStart = GetTimeMillis();
   sgemv(length/4, x, y, A, alpha, beta, num_iter, &innerTime);
-  stop = GetTime();
+  millisStop = GetTimeMillis();
 
   // Computation of aAx + by for general dense matrix:
   // 2N + N^2 mults
   // N + N(N-1) adds
   // ----------------
   // 2 * (N^2 + N) float operations
-  // printf("TimeBlas - sgemv: Computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f * (length*length + length))/(float)(stop-start) );
-
-  timing[0] = (int)(stop-start);
+  timing[0] = (int)(millisStop-millisStart);
   timing[1] = innerTime;
-  flops[0] = (2.0f * num_iter * (length*length + length))/ (float)(timing[0]);
-  flops[1] = (2.0f * num_iter * (length*length + length))/ (float)(timing[1]);
+  flops[0] = (2.0f * num_iter * (length*length + length)) / (float)(timing[0]) / 1000.0f;
+  flops[1] = (2.0f * num_iter * (length*length + length)) / (float)(timing[1]) / 1000.0f;
 
   if (DO_VERIFY) {
 
@@ -452,41 +451,69 @@ void do_sgemv(int length, int num_iter, int* timing, float* flops) {
   free(A);
 }
 
-#define MAX_ITER 10
+
+kernel void fooKernel(float a<>, out float b<>) {
+  b = a;
+}
+
+void startup() {
+
+  float a[1];
+  float aStrm<1>;
+  float bStrm<1>;
+
+  streamRead(aStrm, a);
+  fooKernel(aStrm, bStrm);
+  streamWrite(bStrm, a);
+}
 
 
-void Blas_Time(int streamLength) {
+#define MAX_ITER 5
+
+
+void Blas_Time(int streamLength, int num_iter) {
 
   int i;
   int* times;
   float* flops;
 
-  times = (int*)malloc(sizeof(int) * 3 * 2 * MAX_ITER);
-  flops = (float*)malloc(sizeof(float) * 3 * 2 * MAX_ITER);
+  num_iter = MAX_ITER;
 
-  for (i=0; i<MAX_ITER;i++) {
+  times = (int*)malloc(sizeof(int) * 3 * 2 * num_iter);
+  flops = (float*)malloc(sizeof(float) * 3 * 2 * num_iter);
+
+  startup();
+
+  for (i=0; i<num_iter;i++) {
     do_sdot(streamLength, i+1, &times[2*(3*i)], &flops[2*(3*i)]);
     do_saxpy(streamLength, i+1, &times[2*(3*i+1)], &flops[2*(3*i+1)]);
     do_sgemv(streamLength, i+1, &times[2*(3*i+2)], &flops[2*(3*i+2)]);
+
+    printf(".");
+
+    if ( (i+1) % 50 == 0)
+      printf("\n");
   }
+  
   
   printf("\n\n");
   printf("Data set size = %d\n", streamLength);
 
+  
   printf("\n\n");
-  printf("sdot\n");
-  for (i=0;i<MAX_ITER;i++)
-    printf("%2d  %9d  %5.6f    %9d  %5.6f\n", i+1, times[2*(3*i)], flops[2*(3*i)], times[2*(3*i) + 1], flops[2*(3*i) + 1]);
+  printf("sdot: \n");
+  for (i=0;i<num_iter;i++)
+    printf("%2d   %9d   %5.6f    %9d   %5.6f\n", i+1, times[2*(3*i)], flops[2*(3*i)], times[2*(3*i) + 1], flops[2*(3*i) + 1]);
  
   printf("\n\n");
-  printf("saxpy\n");
-  for (i=0;i<MAX_ITER;i++)
-    printf("%2d  %9d  %5.6f    %9d  %5.6f\n", i+1, times[2*(3*i+1)], flops[2*(3*i+1)], times[2*(3*i+1) + 1], flops[2*(3*i+1) + 1]);
+  printf("saxpy: \n");
+  for (i=0;i<num_iter;i++)
+    printf("%2d   %9d   %5.6f    %9d   %5.6f\n", i+1, times[2*(3*i+1)], flops[2*(3*i+1)], times[2*(3*i+1) + 1], flops[2*(3*i+1) + 1]);
 
   printf("\n\n");
-  printf("sgemv\n");
-  for (i=0;i<MAX_ITER;i++)
-    printf("%2d  %9d  %5.6f    %9d  %5.6f\n", i+1, times[2*(3*i+2)], flops[2*(3*i+2)], times[2*(3*i+2) + 1], flops[2*(3*i+2) + 1]);
+  printf("sgemv: \n");
+  for (i=0;i<num_iter;i++)
+    printf("%2d   %9d   %5.6f    %9d   %5.6f\n", i+1, times[2*(3*i+2)], flops[2*(3*i+2)], times[2*(3*i+2) + 1], flops[2*(3*i+2) + 1]);
 
 
   free(times);
