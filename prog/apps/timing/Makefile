@@ -3,7 +3,7 @@ EXECUTABLE = timing
 FILES = main readwrite runkernel blas oneway_matmult_4x4 fourway_matmult_4x4 \
         fft fft2d qfft reduction wfft sparseMat
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = -N
+BRCCFLAGS = 
 GRAPHDIR = graphs
 SLOP = graphs
 
