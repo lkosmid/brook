@@ -24,8 +24,16 @@ Medium
 
    * Other language extensions?
 
+   * Be able to switch between backends (fallback to cpp).
+
+   * Type verification for kernel calls (not passing float streams as float2
+     streams, etc.)
+
 Long
 ----
+
+   * Allow kernels to call other kernels (as whole stream operations, not
+     combinatorial explosion).
 
    * Stream allocation
 
