@@ -6,9 +6,6 @@ only doing the simulation, so we don't have a vertex program.
 Therefore we need to force the user to provide some of the information
 and we need to generate some of it ourselves in the code below. */
 
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,7 +15,7 @@ kernel float noise4(float4 vec, float p[], float4 g[])
     float4 u, v, u0, v0, u1, v1;
     float i0, i1, i00, i10, i01, i11;
     float i000, i100, i010, i110, i001, i101, i011, i111;
-    float4 temp;
+    float4 temp1, temp2, temp3, temp4;
     float4 s;
     float2 a;
 
@@ -51,52 +48,49 @@ kernel float noise4(float4 vec, float p[], float4 g[])
     // sample 16 neighbors and calculate 16 dot-products
 
     // sample at x = 0
-    u0.x = dot(g[i000 + b0.w], r0);
-    temp = float4(0., 1., 0., 0.);
-    temp = temp > 0. ? r1:r0;
-    u0.y = dot(g[i010 + b0.w], temp);
-    temp = float4(0., 0., 0., 1.);
-    temp = temp > 0. ? r1:r0;
-    u0.z = dot(g[i000 + b1.w], temp);
-    temp = float4(0., 1., 0., 1.);
-    temp = temp > 0. ? r1:r0;
-    u0.w = dot(g[i010 + b1.w], temp);
-    temp = float4(0., 0., 1., 0.);
-    temp = temp > 0. ? r1:r0;
-    v0.x = dot(g[i001 + b0.w], temp);
-    temp = float4(0., 1., 1., 0.);
-    temp = temp > 0. ? r1:r0;
-    v0.y = dot(g[i011 + b0.w], temp);
-    temp = float4(0., 0., 1., 1.);
-    temp = temp > 0. ? r1:r0;
-    v0.z = dot(g[i001 + b1.w], temp);
-    temp = float4(0., 1., 1., 1.);
-    temp = temp > 0. ? r1:r0;
-    v0.w = dot(g[i011 + b1.w], temp);
+    temp1 = float4(0., 1., 0., 0.);
+    temp1 = temp1 > 0. ? r1:r0;
+    temp2 = float4(0., 0., 0., 1.);
+    temp2 = temp2 > 0. ? r1:r0;
+    temp3 = float4(0., 1., 0., 1.);
+    temp3 = temp3 > 0. ? r1:r0;
+    u0 = float4(dot(g[i000 + b0.w], r0),    dot(g[i010 + b0.w], temp1),  
+		dot(g[i000 + b1.w], temp2), dot(g[i010 + b1.w], temp3));  
+
+    temp1 = float4(0., 0., 1., 0.);
+    temp1 = temp1 > 0. ? r1:r0;
+    temp2 = float4(0., 1., 1., 0.);
+    temp2 = temp2 > 0. ? r1:r0;
+    temp3 = float4(0., 0., 1., 1.);
+    temp3 = temp3 > 0. ? r1:r0;
+    temp4 = float4(0., 1., 1., 1.);
+    temp4 = temp4 > 0. ? r1:r0;
+
+    v0 = float4( dot(g[i001 + b0.w], temp1), dot(g[i011 + b0.w], temp2), 
+		 dot(g[i001 + b1.w], temp3), dot(g[i011 + b1.w], temp4));
 
     // sample at x = 1
-    temp = float4(1., 0., 0., 0.);
-    temp = temp > 0. ? r1:r0;
-    u1.x = dot(g[i100 + b0.w], temp);
-    temp = float4(1., 1., 0., 0.);
-    temp = temp > 0. ? r1:r0;
-    u1.y = dot(g[i110 + b0.w], temp);
-    temp = float4(1., 0., 0., 1.);
-    temp = temp > 0. ? r1:r0;
-    u1.z = dot(g[i100 + b1.w], temp);
-    temp = float4(1., 1., 0., 1.);
-    temp = temp > 0. ? r1:r0;
-    u1.w = dot(g[i110 + b1.w], temp);
-    temp = float4(1., 0., 1., 0.);
-    temp = temp > 0. ? r1:r0;
-    v1.x = dot(g[i101 + b0.w], temp);
-    temp = float4(1., 1., 1., 0.);
-    temp = temp > 0. ? r1:r0;
-    v1.y = dot(g[i111 + b0.w], temp);
-    temp = float4(1., 0., 1., 1.);
-    temp = temp > 0. ? r1:r0; 
-    v1.z = dot(g[i101 + b1.w], temp);
-    v1.w = dot(g[i111 + b1.w], r1);
+    temp1 = float4(1., 0., 0., 0.);
+    temp1 = temp1 > 0. ? r1:r0;
+    temp2 = float4(1., 1., 0., 0.);
+    temp2 = temp2 > 0. ? r1:r0;
+    temp3 = float4(1., 0., 0., 1.);
+    temp3 = temp3 > 0. ? r1:r0;
+    temp4 = float4(1., 1., 0., 1.);
+    temp4 = temp4 > 0. ? r1:r0;
+
+    u1 = float4(dot(g[i100 + b0.w], temp1), dot(g[i110 + b0.w], temp2), 
+		dot(g[i100 + b1.w], temp3), dot(g[i110 + b1.w], temp4)); 
+
+    temp1 = float4(1., 0., 1., 0.);
+    temp1 = temp1 > 0. ? r1:r0;
+    temp2 = float4(1., 1., 1., 0.);
+    temp2 = temp2 > 0. ? r1:r0;
+    temp3 = float4(1., 0., 1., 1.);
+    temp3 = temp3 > 0. ? r1:r0; 
+    
+    v1 = float4( dot(g[i101 + b0.w], temp1), dot(g[i111 + b0.w], temp2), 
+		 dot(g[i101 + b1.w], temp3), dot(g[i111 + b1.w], r1));
 
     // now, perform quadro-cubic interpolation between these 16 noise samples
 
@@ -147,7 +141,7 @@ kernel void fireFP(float  p[],       // permutations texture
                    float turb_scale, // turbulence scale
                    float z_pos,      // what slice do you want?
                    float time,       // the time factor 
-                   iter float4 it<>, // hold position information
+                   iter float2 it<>, // hold position information
                    out float4 fire<>)
 {
 
@@ -159,18 +153,13 @@ kernel void fireFP(float  p[],       // permutations texture
     float4 frag_pos;
 	
     frag_pos = it;
-    uv.x = frag_pos.x;
-    uv.y = z_pos;
+    uv = float2( frag_pos.x, z_pos );
     uv += uv;
     uv *= uv;
 
-    v = frag_pos;
-    v.y += (10000.0f - time);
+    v = float4( frag_pos.x, frag_pos.y+(10000.0f - time), z_pos, 1);
 
-    uv.x = sqrt(uv.x + uv.y);    // radial mapping
-
-    // perturb texture coordinates with turbulence() function
-    uv.y = frag_pos.y + sqrt(frag_pos.y) * turb_scale * turbulence4(v * 1.5, p, g);    
+    uv = float2( sqrt(uv.x + uv.y), frag_pos.y + sqrt(frag_pos.y) * turb_scale * turbulence4(v * 1.5, p, g));   
 
     fire = firetex[uv];
 }
