@@ -45,6 +45,13 @@ namespace brook{
 	}
         Cleanup();
     }
+    void CPUKernel::PushIter(Iter * i) {
+       Stream * s = i->makeStream();
+       PushStream(s);
+       //assert same size as output
+       assert (iteroutsize==0||iteroutsize==s->getTotalSize());
+       iteroutsize=s->getTotalSize();
+    }
     void CPUKernel::PushStream(Stream *s){
 	unsigned int total_size=s->getTotalSize();
 	if (totalsize==0){//this is necessary for reductions
@@ -102,6 +109,7 @@ namespace brook{
     }
     void CPUKernel::PushOutput(Stream *s){
         args.push_back(s->getData(brook::Stream::WRITE));
+        assert (iteroutsize==0||iteroutsize==s->getTotalSize());
 	totalsize=s->getTotalSize();
         dim=s->getDimension();
         extent= s->getExtents();
@@ -112,6 +120,7 @@ namespace brook{
     void CPUKernel::Cleanup() {
         reductions.clear();
         args.clear();
+        iteroutsize=0;
         extents.clear();
         dims.clear();
 	totalsize=0;

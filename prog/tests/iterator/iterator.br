@@ -5,11 +5,14 @@
  */
 
 #include <stdio.h>
-
+void __kprintf_cpu_inner(float f) {
+   fprintf(stderr,"%f | ",f);
+}
 /* This kernel should make a matrix of 1 and a diagonal of 0's*/
 kernel void
 iterator_test (float d<>, iter float iterator<>, out float e<>)
 {
+   kprintf(iterator);
    e = iterator + d;
 }
 
@@ -29,7 +32,7 @@ main (int argc, char *argv[]) {
    }
 
    streamRead(d, data_d);
-   iterator_test(d,d,e);
+   iterator_test(d,tim,e);
    streamWrite(e, data_e);
 
    for (i=0; i<10; i++) {

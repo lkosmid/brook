@@ -266,8 +266,9 @@ void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
 		return;
 	if (!a->isStream())
 		return;
-	bool isOut = (a->form->getQualifiers()&TQ_Out)!=0;
-	if (!nDcube&&(reduceFunc||isOut))
+	bool isIter = (a->form->getQualifiers()&TQ_Iter)!=0;
+        
+	if (!nDcube&&(ref==index||isIter))
            return;
 	if (!nDcube) {
            indent(out,3);

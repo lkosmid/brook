@@ -23,18 +23,43 @@
 __StreamScatterAssign STREAM_SCATTER_ASSIGN;
 __StreamScatterAdd STREAM_SCATTER_ADD;
 __StreamScatterMul STREAM_SCATTER_MUL;
-
+static float lerp (unsigned int i, unsigned int end,float lower,float upper) {
+   float frac=end>1?((float)i)/(float)(end-1):(float)upper;
+   return (1-frac)*lower+frac*upper;
+}
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
   Stream * Iter::allocateStream(int dims, 
                                 int extents[],
                                 float ranges[])const {
-     assert(0);
+     Stream * s = new CPUStream (type,dims,extents);
+     float * data = (float *)s->getData(brook::Stream::READ);
+     if (dims<2) {
+        for (unsigned int i=0;i<extents[0];++i) {
+           for (unsigned int j=0;j<type;++j) {
+              data[i*type+j]=lerp(i,extents[0],ranges[j],ranges[j+type]);
+           }
+        }
+     }else if (dims==2){
+        //now we know dims == data type;
+        unsigned int i[2]={0,0};
+        for (i[0]=0;i[0]<extents[0];++i[0]) {
+           for (i[1]=0;i[1]<extents[1];++i[1]) {
+              for (unsigned int k=0;k<2;++k) {
+                 data[(i[0]*extents[1]+i[1])*2+k]=
+                    lerp (i[k],extents[k],ranges[k],ranges[2+k]);
+              }
+           }
+        }
+     }else {
+        assert(0);
+     }
+     s->releaseData(brook::Stream::READ);
        //XXX daniel this needs to be done
        //will use standard brook BRTCreateStream syntax and then copy data in
        //dx9 can then call this to easily fallback if cpu is necessary
-     return 0;
+     return s;
   }
     
 

@@ -36,7 +36,7 @@ namespace brook {
   public:
     Kernel() {}
     virtual void PushStream(Stream *s) = 0;
-    virtual void PushIter(...) { assert(0); };
+    virtual void PushIter(class Iter * v) { assert(0); };
     virtual void PushConstant(const float &val) = 0;  
     virtual void PushConstant(const float2 &val) = 0;  
     virtual void PushConstant(const float3 &val) = 0; 

@@ -13,6 +13,7 @@ namespace brook {
        virtual void PushConstant(const float2 &val);  
        virtual void PushConstant(const float3 &val); 
        virtual void PushConstant(const float4 &val);
+       virtual void PushIter(class Iter * i);
        virtual void PushGatherStream(Stream *s);
        virtual void PushReduce (void * val, __BRTStreamType type);
        virtual void PushOutput(Stream *s);
@@ -55,6 +56,7 @@ namespace brook {
        brook::Stream  * streamReduction;
        std::vector<ReductionArg> reductions;
        unsigned int totalsize;
+       unsigned int iteroutsize;
        unsigned int dim;
        const unsigned int *extent;
        void Cleanup();
