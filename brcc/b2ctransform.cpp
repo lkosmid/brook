@@ -138,11 +138,11 @@ Expression * MaskConverter (Expression * e) {
 			if (lval->op()==BO_Member) {
 				if (lval->rightExpr()->etype==ET_Variable&&(vmask = dynamic_cast<Variable*>(lval->rightExpr()))) {
 					if (looksLikeMask(vmask->name->name)) {
-						printf ("mask detected");
+						printf ("mask detected %s\n",vmask->name->name.c_str());
 						BinaryOp bo =TranslatePlusGets (ae->op());
 						if (bo!=BO_Assign) {
 							//now we	 		need to move the lval to the right
-							ae->_rightExpr = new BinaryExpr(bo,ae->lValue()->dup(),ae->rValue(),ae->location);
+							ae->_rightExpr = new BinaryExpr(bo,ae->lValue()->dup(),ae->_rightExpr,ae->location);
 							ae->aOp=AO_Equal;
 						}
 						ret = new MaskExpr (lval->leftExpr()->dup(),ae->rValue()->dup(),vmask->name->name,lval->location);
@@ -154,24 +154,39 @@ Expression * MaskConverter (Expression * e) {
 	return ret;
 	
 }
-void ConvertToMask (Statement * s) {
-	ExpressionStemnt * es = dynamic_cast <ExpressionStemnt*> (s);
-	if (es) {
-		Expression * e = MaskConverter (es->expression);
-		if (e) {
-			delete es->expression;
-			es->expression=e;
-		}
+class ChainExpression:public Expression {
+public:
+	ChainExpression (Expression * e):Expression(e->etype,e->location) {
+		next = e;
+	}
+	virtual void print (std::ostream & out)const{
+		next->print(out);
+	}
+	virtual Expression * dup0() const {
+		return new ChainExpression(next);
+	}
+};
+void ConvertToMask (Expression * expression) {
+	Expression * e = MaskConverter (expression);
+	if (e) {
+//		(*expression)=ChainExpression(e);
+		Expression * k = new ChainExpression(e);
+		memcpy (expression,k,sizeof(Expression));
+		e->findExpr(ConvertToMask);
+		
 	}
 }
-
+void FindMask (Statement * s) {
+	s->findExpr (ConvertToMask);
+}
 bool compileCpp() {
 	Project proj;
 	TransUnit * tu = proj.parse(globals.sourcename,false,NULL,false,NULL,NULL,NULL);
 	if (tu) {
 		std::ofstream out;
 //		tu->findFunctionDef (ConvertToMask);
-		tu->findStemnt(ConvertToMask);		
+		tu->findStemnt(FindMask);
+		tu->findStemnt(FindMask);				
 		tu->findStemnt (ConvertToSwizzle);
 		std::string s (globals.coutputname);
 		s+="pp";
