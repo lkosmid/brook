@@ -49,6 +49,7 @@ compile_fxc (const char *name,
 
   char* targetstring = "";
   bool targetUsesRect = false;
+  bool targetIsShaderModel3 = false;
   switch (target) {
   case CODEGEN_PS2B:
     targetstring = ps2b;
@@ -74,15 +75,18 @@ compile_fxc (const char *name,
      break;
   case CODEGEN_PS30:
      targetstring = ps30_targetstring;
+     targetIsShaderModel3 = true;
      break;
   default:
      fprintf(stderr, "Unsupported fxc target.\n");
      return NULL;
   }
   char DUSERECT [] ="/DUSERECT=1";
+  char DSHADERMODEL3 [] ="/DSHADERMODEL3=1";
   char *argv[] = { "fxc", targetstring,
                    inValidate ? nothin : validate, "/nologo", 0, 0, 
-                   "/DDXPIXELSHADER=1", targetUsesRect ? DUSERECT : 0, NULL };
+                   "/DDXPIXELSHADER=1", targetUsesRect ? DUSERECT : nothin,
+                   targetIsShaderModel3 ? DSHADERMODEL3 : nothin, NULL };
   char *fpcode,  *errcode;
 
   std::string inputfname  = std::string(name) + ".cg";

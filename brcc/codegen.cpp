@@ -948,9 +948,15 @@ generate_shader_support(std::ostream& shader)
   shader << "#define _stype1   sampler2D\n";
   shader << "#define _stype2   sampler2D\n";
   shader << "#define _stype3   sampler3D\n";
+  shader << "#if defined(SHADERMODEL3)\n";
+  shader << "#define __sample1(s,i) tex2Dlod((s),float4(i,0,0,0))\n";
+  shader << "#define __sample2(s,i) tex2Dlod((s),float4(i,0,0))\n";
+  shader << "#define __sample3(s,i) tex3Dlod((s),float4(i,0))\n";
+  shader << "#else\n";
   shader << "#define __sample1(s,i) tex2D((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) tex2D((s),(i))\n";
   shader << "#define __sample3(s,i) tex3D((s),(i))\n";
+  shader << "#endif\n";
   shader << "#else\n";
   shader << "#define _stype1  samplerRECT\n";
   shader << "#define _stype2  samplerRECT\n";
