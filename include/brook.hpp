@@ -50,8 +50,7 @@ inline unsigned int getIndexOf(unsigned int i,
                                unsigned int dim,
                                const unsigned int *refextent) {
    unsigned int ret=mapbegin[0]/*+i%mapextent[dim-1]*/;
-   //commented out region above is zero whenever this function is invoked
-   
+   //commented out region above is zero whenever this function is invoked   
    for (unsigned int j=1;j<dim;++j) {
       ret*=refextent[j];
       unsigned ij = i;

@@ -102,6 +102,8 @@ class BRTCPUKernelCode : public BRTKernelCode
     static std::vector<PrintCPUArg>getPrintableArgs(FunctionDef * fDef,
                                                     bool shadowOutput);
     void incrementIndexOf(std::ostream &out)const;
+    void incrementAllLocals(std::ostream &out,
+                            std::vector<PrintCPUArg>)const;
     void initializeIndexOf(std::ostream &out)const;
     void printIndexOfCallingArgs(std::ostream & out)const;
     void printCombineCode(std::ostream& out,bool constructInnerFunction)const;

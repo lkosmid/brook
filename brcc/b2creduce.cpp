@@ -80,7 +80,6 @@ Expression * FirstQuestionColon (std::string reducename,
    searchedexpressions.insert(ifFirst);
    searchedexpressions.insert(ifFuture);
    Location l (ifFirst->location);
-   fprintf (stderr,"firstquestioncolon %s\n",reducename.c_str());
    Decl * reducebool =reductionBools[reducename];
    return 
       new TrinaryExpr(ReduceVar(reducebool,l),

@@ -698,6 +698,23 @@ void BRTCPUKernelCode::incrementIndexOf(std::ostream&out)const {
       out<<std::endl;
    }
 }
+void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
+                                          std::vector<PrintCPUArg> myArgs
+                                          ) const{
+       indent(out,2); out << "i++;"<<std::endl;
+       incrementIndexOf(out);
+       unsigned int reference_stream = getReferenceStream(this->fDef);
+       {for (unsigned int i=0;i<myArgs.size();++i) {
+          myArgs[i].Increment(out,false,reference_stream);
+       }}
+       indent(out,2);
+       out << "if (i%newline==0) {"<<std::endl;
+       {for (unsigned int i=0;i<myArgs.size();++i) {
+          myArgs[i].ResetNewLine(out,false,reference_stream);
+       }}          
+       indent(out,2);
+       out << "}";
+}
 void BRTCPUKernelCode::printTightLoop(std::ostream&out, 
                                       FunctionDef * fDef, 
                                       std::vector<PrintCPUArg> myArgs,
@@ -746,18 +763,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
        }}
        printIndexOfCallingArgs(out);
        out << ");"<<std::endl;
-       indent(out,2); out << "i++;"<<std::endl;;
-       {for (unsigned int i=0;i<myArgs.size();++i) {
-          myArgs[i].Increment(out,false,reference_stream);
-       }}
-       indent(out,2);
-       out << "if (i%newline==0) {"<<std::endl;
-       {for (unsigned int i=0;i<myArgs.size();++i) {
-          myArgs[i].ResetNewLine(out,false,reference_stream);
-       }}       
-       indent(out,2);
-       out << "}"<<std::endl;
-       incrementIndexOf(out);
+       incrementAllLocals(out,myArgs);
        indent(out,1); out <<"}"<<std::endl;
     }
     indent(out,1);
@@ -773,20 +779,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     }}
     printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;
-    indent(out,2);
-    out << "++i;"<<std::endl;
-    incrementIndexOf(out);
-    {for (unsigned int i=0;i<myArgs.size();++i) {
-       myArgs[i].Increment(out,false,reference_stream);
-    }}
-    indent(out,2);
-    out << "if (i%newline==0) {"<<std::endl;
-    {for (unsigned int i=0;i<myArgs.size();++i) {
-       myArgs[i].ResetNewLine(out,false,reference_stream);
-    }}       
-    indent(out,2);
-    out << "}"<<std::endl;
-
+    incrementAllLocals(out,myArgs);
     indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
