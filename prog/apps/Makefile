@@ -1,5 +1,5 @@
 ROOTDIR := ../..
-REGRESSIONDIRS := spMatrixVec
+REGRESSIONDIRS := spMatrixVec fft
 SUBDIRS := $(REGRESSIONDIRS) PMLSeg benchmark bitonic_sort bsearch \
 	   conjugate_gradient imageproc particle_cloth timing raytracer
 
