@@ -1,13 +1,10 @@
 
 ROOTDIR = ../..
 STATIC_LIBRARY = nv30gl
-FILES = nv30glkernel nv30glruntime nv30glstream nv30glwindow \
-	nv30glfunc nv30glcheckgl nv30gliter
+
+GLFILES = glfunc gliter glkernel glstream glwindow glcheckgl glruntime
+NV30FILES = nv30glkernel nv30glruntime nv30glstream nv30glwindow 
+
+FILES = $(GLFILES) $(NV30FILES)
 
 include ../../common.mk
-
-
-
-
-
-

@@ -1,15 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "nv30gl.hpp"
+#include <iostream>
+
+#include "glruntime.hpp"
 
 using namespace brook;
 
-NV30GLIter::NV30GLIter (NV30GLRunTime *rt,
-                        __BRTStreamType type, int dims, 
-                        int extents[], float ranges[])
-  : Iter(type), runtime(rt) { 
-  
+GLIter::GLIter (GLRunTime *rt, __BRTStreamType type, int dims,
+                int extents[], float ranges[])
+  : Iter(type), runtime(rt)
+{
+
   int i;
 
   // Initialize width and height
@@ -23,26 +25,25 @@ NV30GLIter::NV30GLIter (NV30GLRunTime *rt,
      width = extents[0];
      break;
   default:
-     fprintf (stderr, 
-              "NV30GL Backend only supports 1D and 2D iters");
+     std::cerr << "GL: Only have support for 1D and 2D iters\n";
      exit(1);
   }
-  
+
   // Initialize ncomp
   ncomp = type;
   if (ncomp < 1 || ncomp > 4) {
-     fprintf (stderr, "NV30GL: Unsupported iter type created\n");
+     std::cerr << "GL: Unsupported iter type created\n";
      exit(1);
   }
 
   if (dims > 1 && (dims != 2 || ncomp != 2)) {
-     fprintf (stderr, "NV30GL: Only 1D or 2D float2 iter streams supported\n");
+     std::cerr << "GL: Only 1D or 2D float2 iter streams supported\n";
      exit(1);
   }
-  
+
   // Initialize the cacheptr
   cacheptr = NULL;
-  
+
   // Initialize extents
   for (i=0; i<dims; i++)
     this->extents[i] = extents[i];
@@ -63,7 +64,7 @@ NV30GLIter::NV30GLIter (NV30GLRunTime *rt,
      min.y = ranges[1];
      max.y = ranges[ncomp+1];
   case 1:
-     min.x = ranges[0]; 
+     min.x = ranges[0];
      max.x = ranges[ncomp];
      break;
   default:
@@ -71,9 +72,10 @@ NV30GLIter::NV30GLIter (NV30GLRunTime *rt,
   }
 }
 
-void * 
-NV30GLIter::getData (unsigned int flags) {
-   assert (! (flags & StreamInterface::WRITE));  
+void *
+GLIter::getData (unsigned int flags)
+{
+   assert (! (flags & StreamInterface::WRITE));
 
    if (cacheptr == NULL) {
       unsigned int i,j;
@@ -114,7 +116,7 @@ NV30GLIter::getData (unsigned int flags) {
          incr.x = (max.x - min.x) / width;
          incr.y = (max.y - min.y) / height;
          p = cacheptr;
-         for (i=0; i<height; i++) 
+         for (i=0; i<height; i++)
             for (j=0; j<width; j++) {
                float2 v;
                v.x = min.x + incr.x*j;
@@ -128,13 +130,15 @@ NV30GLIter::getData (unsigned int flags) {
    return (void *) cacheptr;
 }
 
-void 
-NV30GLIter::releaseData (unsigned int flags) {
-   // Do nothing
+void
+GLIter::releaseData (unsigned int flags)
+{
+   // Do nothing (we'll free cacheptr at delete time instead).
 }
 
 
-NV30GLIter::~NV30GLIter () {
+GLIter::~GLIter ()
+{
   if (cacheptr)
      free (cacheptr);
 }

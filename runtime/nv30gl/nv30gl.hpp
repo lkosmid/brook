@@ -1,39 +1,18 @@
 #ifndef NV30GL_H
 #define NV30GL_H
 
-#include "../runtime.hpp"
+#include "glruntime.hpp"
 
-#ifdef WIN32
-#include <windows.h>
-#include <GL/gl.h>
-#include "wglext.h"
-#else
-#include <X11/Xlib.h>
-#define GL_GLEXT_LEGACY
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glx.h>
-#endif
+#define NV30GL_MAXCONSTS        GL_MAX_CONSTS
+#define NV30GL_MAX_TEXCOORDS    GL_MAX_TEXCOORDS
 
-#include "nv30glext.h"
-
-#ifdef WIN32   
-extern PFNWGLCREATEPBUFFERARBPROC      wglCreatePbufferARB;
-extern PFNWGLGETPBUFFERDCARBPROC       wglGetPbufferDCARB;
-extern PFNWGLCHOOSEPIXELFORMATARBPROC  wglChoosePixelFormatARB;
-extern PFNWGLBINDTEXIMAGEARBPROC       wglBindTexImageARB;
-extern PFNWGLRELEASETEXIMAGEARBPROC    wglReleaseTexImageARB;
-extern PFNWGLRELEASEPBUFFERDCARBPROC   wglReleasePbufferDCARB;
-extern PFNWGLDESTROYPBUFFERARBPROC     wglDestroyPbufferARB;
-extern PFNGLMULTITEXCOORD2FARBPROC     glMultiTexCoord2fARB;
-extern PFNGLMULTITEXCOORD4FARBPROC     glMultiTexCoord4fARB;
-extern PFNGLACTIVETEXTUREARBPROC       glActiveTextureARB;
-extern PFNGLGENPROGRAMSNVPROC          glGenProgramsNV;
-extern PFNGLLOADPROGRAMNVPROC          glLoadProgramNV;
-extern PFNGLBINDPROGRAMNVPROC          glBindProgramNV;
-extern PFNGLPROGRAMNAMEDPARAMETER4FNVPROC
-                            glProgramNamedParameter4fNV;
-#endif 
+/*
+ * This file is actually pulled in by glruntime.hpp because it has a bunch
+ * of core GL definitions in addition to nv30 ones, but is left here too
+ * because the multiple inclusion is harmless and this is actually its
+ * logical point of inclusion.  --Jeremy.
+ */
+//#include "nv30glext.h"
 
 namespace brook {
 
@@ -42,191 +21,56 @@ namespace brook {
    class NV30GLStream;
    class NV30GLIter;
 
-   typedef struct{
-      float x, y;
-   } nvfloat2;
-
-   typedef struct{
-      float x, y, z;
-   } nvfloat3;
-
-   typedef struct{
-      float x, y, z, w;
-   } nvfloat4;
-
-   const GLenum GLtype[] =   {0, GL_FLOAT_R32_NV, GL_FLOAT_RG32_NV, 
-                              GL_FLOAT_RGB32_NV, GL_FLOAT_RGBA32_NV};
-   
-   // Is there a GL_RG?  I'm not sure that LUMINANCE_ALPHA is correct here
-   const GLenum GLformat[] = {0, GL_RED, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA};
-
-
-void __check_gl(int line, char *file);
-#define CHECK_GL() __check_gl(__LINE__, __FILE__);
-
-   void initglfunc(void);
-
-#define NV30GL_MAXCONSTS 128
-
-#define NV30GL_MAX_TEXCOORDS 8
-
    extern const char* NV30GL_RUNTIME_STRING;
 
-   class NV30GLKernel : public Kernel {
+   class NV30GLRunTime : public GLRunTime {
    public:
-      NV30GLKernel(NV30GLRunTime * runtime,
-                   const void *[] );
-      void PushStream(Stream *s);
-      void PushIter(Iter *s);
-      void PushConstant(const float &val); 
-      void PushConstant(const float2 &val);
-      void PushConstant(const float3 &val); 
-      void PushConstant(const float4 &val);
-      void PushReduce(void * val, __BRTStreamType type);
-      void PushGatherStream(Stream *s);
-      void PushOutput(Stream *s);
+      NV30GLRunTime();
+
+      Kernel *CreateKernel(const void*[]);
+      Stream *CreateStream(int fieldCount, const __BRTStreamType fieldTypes[],
+                           int dims, const int extents[]);
+      Iter *CreateIter(__BRTStreamType type, int dims, int e[],float r[]);
+
+     void createPBuffer(int ncomponents);
+
+   protected:
+#ifdef WIN32
+     void createPBufferWGL(int ncomponents);
+#else
+     void createPBufferGLX(int ncomponents);
+#endif
+   };
+
+   class NV30GLKernel : public GLKernel {
+   public:
+      NV30GLKernel(NV30GLRunTime *runtime, const void *[]);
+      virtual ~NV30GLKernel() { /* Everything is done in ~GLKernel() */ };
+
       void Map();
-      void Reduce();
-      void Release() {delete this;}
-      void ResetStateMachine();
-    
-      NV30GLRunTime * runtime;
 
-      GLuint *pass_id;
-      unsigned int *pass_out;
-      unsigned int npasses;
-      
-      unsigned int nout;
-      int sreg;
-      int treg;
-      int creg;
-      int argcount;
-
-      void *reduceVal;
-      __BRTStreamType reduceType;
-      int  reduceTreg;
-      int  reduceSreg;
-      NV30GLStream *inputReduceStream;
-      int  inputReduceStreamTreg;
-      int  inputReduceStreamSreg;
-      
+   protected:
       void ReduceScalar();
       void ReduceStream();
-      
-      NV30GLStream *tmpReduceStream[5];
-      NV30GLStream *sreg0;
-
-      char **constnames;
-
-      NV30GLStream **outstream;
-      bool         *argumentUsesIndexof;
-      NV30GLStream *sargs[NV30GL_MAX_TEXCOORDS];
-      NV30GLIter   *iargs[NV30GL_MAX_TEXCOORDS];
-
-      virtual ~NV30GLKernel();
   };
 
-  class NV30GLStream : public Stream {
+  class NV30GLStream : public GLStream {
   public:
      NV30GLStream (NV30GLRunTime * runtime, int fieldCount,
                    const __BRTStreamType type[],
                    int dims, const int extents[]);
-    void Read(const void* inData);
-    void Write(void* outData);
-    void * getData (unsigned int flags);
-    void releaseData(unsigned int flags);
-    const unsigned int * getExtents() const {return extents;}
-    unsigned int getDimension() const {return dims;}
+     virtual ~NV30GLStream() { /* Everything is done in ~GLStream() */ };
 
-    virtual int getFieldCount() const {return nfields;}
-    virtual __BRTStreamType getIndexedFieldType(int i) const {
-      return (__BRTStreamType) ncomp[i];
-    }
-
-     void GLReadData (void *p);
-     void GLWriteData (const void *p);
-
-     __BRTStreamType elementType;
-     unsigned int width, height;
-     unsigned int extents[3];
-     unsigned int dims;
-     unsigned int *ncomp;
-     unsigned int *stride;
-     unsigned int nfields;
-     unsigned int elemsize;
-     GLuint *id;
-     void *cacheptr;
-
-     NV30GLStream *prev;
-     NV30GLStream *next;
-
-     NV30GLRunTime *runtime;
-     virtual ~NV30GLStream ();
+     void GLReadData(void *src);
+     void GLWriteData(const void *dst);
   };
 
-  class NV30GLIter : public Iter {
+  class NV30GLIter : public GLIter {
   public:
-    
-     NV30GLIter (NV30GLRunTime * runtime, 
-                 __BRTStreamType type,
-                 int dims, 
-                 int extents[],
-                 float ranges[]);
-     ~NV30GLIter();
-
-     void * getData (unsigned int flags);
-     void releaseData(unsigned int flags);
-     const unsigned int * getExtents() const {return extents;}
-     unsigned int getDimension() const {return dims;}
-
-     unsigned int width, height;
-     unsigned int ncomp;
-     unsigned int dims;
-     unsigned int extents[3];
-     float4 min, max;
-     float *cacheptr;
-     NV30GLRunTime *runtime;
-  };
-
-  class NV30GLRunTime : public RunTime {
-  public:
-     NV30GLRunTime();
-     Kernel* CreateKernel(const void*[]);
-     Stream* CreateStream(int fieldCount, const __BRTStreamType fieldTypes[],
-      int dims, const int extents[]);
-     Iter* CreateIter(__BRTStreamType type,
-                             int dims, int e[],float r[]);
-     ~NV30GLRunTime();
-
-     NV30GLStream *streamlist;
-
-#ifdef _WIN32
-     HWND hwnd;
-     HDC  hdc_window;
-     HGLRC hglrc_window;
-     HGLRC hpbufferglrc;
-     HPBUFFERARB hpbuffer;
-     HDC hpbufferdc;
-#else
-     Display    *pDisplay;
-     GLXPbuffer  glxPbuffer;
-     GLXContext  glxContext;
-#endif
-
-     unsigned int pbuffer_ncomp;
-
-     GLuint passthrough_id;
-
-     enum WORKSPACESIZE{
-        workspace = 2048
-        //visual C++ 6.0 doesn't know about static const int
-     };
-
-     void createWindow(void);
-     void createWindowGLContext(void);
-     void createPBuffer(int ncomponents);
-
+     NV30GLIter(NV30GLRunTime *runtime, __BRTStreamType type,
+                 int dims, int extents[], float ranges[])
+        : GLIter(runtime, type, dims, extents, ranges) {};
+     virtual ~NV30GLIter() { /* GLIter::GLIter() does all the work */ };
   };
 }
-
 #endif

@@ -1,4 +1,4 @@
-#include "nv30gl.hpp"
+#include "glruntime.hpp"
 
 using namespace brook;
 
