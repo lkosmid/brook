@@ -350,7 +350,7 @@ float clamp (float x) {
 unsigned char float2char(float x) {
 	return (char)(clamp(x)*255);
 }
-int main (int argc, char **argv) {
+int maino (int argc, char **argv) {
   int numdat=(argc-1)/2;
   float4 *data = (float4*)malloc(sizeof(float)*numdat*4);
   int i,logm,logn,N=numdat,M=2;
@@ -381,7 +381,7 @@ int main (int argc, char **argv) {
   free(data);
   return 0;
 }
-int maino (int argc, char ** argv) {
+int main (int argc, char ** argv) {
 	unsigned char *imgdata;
 	unsigned int width, height, len;
 	int channels=3;
