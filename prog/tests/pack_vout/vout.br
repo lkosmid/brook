@@ -23,25 +23,29 @@ kernel void calculateDividedIndex(float4 index,
                                   float modulus, 
                                   float length, 
                                   out float2 newindex<>){
-   float epsilon=1.0f/32.0f;//this is needed because the division may result in
+   float epsilon=1.0f/32.0f;
+   //this is needed because the division may result in
    // loss of accuracy.  We know that for a 2048 texture the mantissa holds 
    // 1/32 precision
    newindex=float2(index.x,index.y);
    newindex/=modulus;
-   newindex.x += frac(newindex.y)*length;
-   newindex=floor(newindex+epsilon);
+   newindex.x=floor(fmod(newindex.x+frac(newindex.y)*length+epsilon,length));
+   newindex.y=floor(newindex.y+epsilon);
+
 }
 kernel void calculateIndexModulus (float4 index, 
-                                   float modulus, 
+                                   float modulus,
+                                   float mod, 
                                    float offset,
                                    float lengthmodmodulus, 
                                    out float which <>) {
-   which= fmod(fmod(index.y,modulus)*lengthmodmodulus 
-                + fmod(index.x,modulus),
-               modulus)-offset;
+   which= round(fmod(round(index.y*lengthmodmodulus 
+                + fmod(index.x,5.0f)),
+	               modulus)-offset);
 }
 kernel void streamCombine1(float input0[][],
                            float modulus,
+                           float mod, 
                            float offset,
                            float length, 
                            float lengthmodmodulus,
@@ -52,7 +56,7 @@ kernel void streamCombine1(float input0[][],
    indexof(output);
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          offset,
                          lengthmodmodulus,
                          whichmod);
@@ -61,11 +65,13 @@ kernel void streamCombine1(float input0[][],
    }else {
       output=oldoutput;
    }
+
 }
 
 kernel void streamCombine2f(float input0[][],
                             float input1[][],
                             float modulus,
+                           float mod,
                             float length, 
                             float lengthmodmodulus,
                             out float output <>) {
@@ -73,7 +79,7 @@ kernel void streamCombine2f(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod, 
                          0.0f,
                          lengthmodmodulus,
                          whichmod);
@@ -82,11 +88,13 @@ kernel void streamCombine2f(float input0[][],
    }else {
       output=input1[newindex];
    }
+//output=newindex.x;
 }
 
 kernel void streamCombine2(float input0[][],
                            float input1[][],
                            float modulus,
+                           float mod,
                            float offset,
                            float length, 
                            float lengthmodmodulus,
@@ -96,7 +104,7 @@ kernel void streamCombine2(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod, 
                          offset,
                          lengthmodmodulus,
                          whichmod);
@@ -113,6 +121,7 @@ kernel void streamCombine3f(float input0[][],
                             float input1[][],
                             float input2[][],
                             float modulus,
+                           float mod,
                             float length, 
                             float lengthmodmodulus,
                             out float output <>) {
@@ -120,7 +129,7 @@ kernel void streamCombine3f(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod, 
                          0.0f,
                          lengthmodmodulus,
                          whichmod);
@@ -137,6 +146,7 @@ kernel void streamCombine3(float input0[][],
                            float input1[][],
                            float input2[][],
                            float modulus,
+                           float mod,
                            float offset,
                            float length, 
                            float lengthmodmodulus,
@@ -146,7 +156,7 @@ kernel void streamCombine3(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod, 
                          offset,
                          lengthmodmodulus,
                          whichmod);
@@ -166,6 +176,7 @@ kernel void streamCombine4f(float input0[][],
                             float input2[][],
                             float input3[][],
                             float modulus,
+                           float mod,
                             float length, 
                             float lengthmodmodulus,
                             out float output <>) {
@@ -173,7 +184,7 @@ kernel void streamCombine4f(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod, 
                          0.0f,
                          lengthmodmodulus,
                          whichmod);
@@ -193,6 +204,7 @@ kernel void streamCombine4(float input0[][],
                            float input2[][],
                            float input3[][],
                            float modulus,
+                           float mod,
                            float offset,
                            float length, 
                            float lengthmodmodulus,
@@ -202,7 +214,7 @@ kernel void streamCombine4(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          offset,
                          lengthmodmodulus,
                          whichmod);
@@ -225,6 +237,7 @@ kernel void streamCombine5f(float input0[][],
                             float input3[][],
                             float input4[][],
                             float modulus,
+                           float mod,
                             float length, 
                             float lengthmodmodulus,
                             out float output <>) {
@@ -232,7 +245,7 @@ kernel void streamCombine5f(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          0.0f,
                          lengthmodmodulus,
                          whichmod);
@@ -247,6 +260,7 @@ kernel void streamCombine5f(float input0[][],
    }else {
       output=input4[newindex];
    }
+   
 }
 
 kernel void streamCombine5(float input0[][],
@@ -255,6 +269,7 @@ kernel void streamCombine5(float input0[][],
                            float input3[][],
                            float input4[][],
                            float modulus,
+                           float mod,
                            float offset,
                            float length, 
                            float lengthmodmodulus,
@@ -264,7 +279,7 @@ kernel void streamCombine5(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          offset,
                          lengthmodmodulus,
                          whichmod);
@@ -291,6 +306,7 @@ kernel void streamCombine6f(float input0[][],
                             float input4[][],
                             float input5[][],
                             float modulus,
+                           float mod,
                             float length, 
                             float lengthmodmodulus,
                             out float output <>) {
@@ -298,7 +314,7 @@ kernel void streamCombine6f(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          0.0f,
                          lengthmodmodulus,
                          whichmod);
@@ -316,7 +332,7 @@ kernel void streamCombine6f(float input0[][],
       output=input5[newindex];
    }
 }
-
+/*
 kernel void streamCombine6(float input0[][],
                            float input1[][],
                            float input2[][],
@@ -324,6 +340,7 @@ kernel void streamCombine6(float input0[][],
                            float input4[][],
                            float input5[][],
                            float modulus,
+                           float mod,
                            float offset,
                            float length, 
                            float lengthmodmodulus,
@@ -333,7 +350,7 @@ kernel void streamCombine6(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          offset,
                          lengthmodmodulus,
                          whichmod);
@@ -362,6 +379,7 @@ kernel void streamCombine7f(float input0[][],
                             float input5[][],
                             float input6[][],
                             float modulus,
+                           float mod,
                             float length, 
                             float lengthmodmodulus,
                             out float output <>) {
@@ -369,7 +387,7 @@ kernel void streamCombine7f(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          0.0f,
                          lengthmodmodulus,
                          whichmod);
@@ -398,6 +416,7 @@ kernel void streamCombine7(float input0[][],
                            float input5[][],
                            float input6[][],
                            float modulus,
+                           float mod,
                            float offset,
                            float length, 
                            float lengthmodmodulus,
@@ -407,7 +426,7 @@ kernel void streamCombine7(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          offset,
                          lengthmodmodulus,
                          whichmod);
@@ -429,7 +448,7 @@ kernel void streamCombine7(float input0[][],
       output=oldoutput;
    }
 }
-/*
+
 kernel void streamCombine8f(float input0[][],
                             float input1[][],
                             float input2[][],
@@ -439,6 +458,7 @@ kernel void streamCombine8f(float input0[][],
                             float input6[][],
                             float input7[][],
                             float modulus,
+                           float mod,
                             float length, 
                             float lengthmodmodulus,
                             out float output <>) {
@@ -446,7 +466,7 @@ kernel void streamCombine8f(float input0[][],
    float whichmod;
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
-                         modulus,
+                         modulus, mod,
                          0.0f,
                          lengthmodmodulus,
                          whichmod);
@@ -479,7 +499,7 @@ void combineStreamsHelper (struct __BRTStream **streams,
    switch (num) {
    case 1:
       streamCombine1(*streams[0],
-                     modulus,
+                     modulus, modulus,
                      offset,
                      length,
                      lengthmodmodulus,
@@ -489,7 +509,7 @@ void combineStreamsHelper (struct __BRTStream **streams,
    case 2:
       streamCombine2(*streams[0],
                      *streams[1],
-                     modulus,
+                     modulus, modulus, 
                      offset,
                      length,
                      lengthmodmodulus,
@@ -500,7 +520,7 @@ void combineStreamsHelper (struct __BRTStream **streams,
       streamCombine3(*streams[0],
                      *streams[1],
                      *streams[2],
-                     modulus,
+                     modulus, modulus,
                      offset,
                      length,
                      lengthmodmodulus,
@@ -512,7 +532,7 @@ void combineStreamsHelper (struct __BRTStream **streams,
                      *streams[1],
                      *streams[2],
                      *streams[3],
-                     modulus,
+                     modulus, modulus,
                      offset,
                      length,
                      lengthmodmodulus,
@@ -520,52 +540,24 @@ void combineStreamsHelper (struct __BRTStream **streams,
                      *output);
       break;
    case 5:
+   default:
       streamCombine5(*streams[0],
                      *streams[1],
                      *streams[2],
                      *streams[3],
                      *streams[4],
-                     modulus,
+                     modulus, modulus,
                      offset,
                      length,
                      lengthmodmodulus,
                      *output,
                      *output);
-      break;
-   case 6:
-      streamCombine6(*streams[0],
-                     *streams[1],
-                     *streams[2],
-                     *streams[3],
-                     *streams[4],
-                     *streams[5],
-                     modulus,
-                     offset,
-                     length,
-                     lengthmodmodulus,
-                     *output,
-                     *output);
-      break;
-   default:
-      streamCombine7(*streams[0],
-                     *streams[1],
-                     *streams[2],
-                     *streams[3],
-                     *streams[4],
-                     *streams[5],
-                     *streams[6],
-                     modulus,
-                     offset,
-                     length,
-                     lengthmodmodulus,
-                     *output,
-                     *output);
-      if (num>7) {
-         combineStreamsHelper(streams+7,
-                              num-7,
+      if (num>5) {
+         combineStreamsHelper(streams+5,
+                              num-5,
                               output,
                               modulus,
-                              7+offset,
+                              5+offset,
                               length,
                               lengthmodmodulus);         
       }      
@@ -588,7 +580,7 @@ void combineStreams (struct __BRTStream **streams,
    case 2:
       streamCombine2f(*streams[0],
                       *streams[1],
-                      num,
+                      num, num,
                       length,
                       lengthmodmodulus,
                       *output);
@@ -597,7 +589,7 @@ void combineStreams (struct __BRTStream **streams,
       streamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
-                      num,
+                      num, num,
                       length,
                       lengthmodmodulus,
                       *output);
@@ -607,7 +599,7 @@ void combineStreams (struct __BRTStream **streams,
                       *streams[1],
                       *streams[2],
                       *streams[3],
-                      num,
+                      num, num,
                       length,
                       lengthmodmodulus,
                       *output);
@@ -618,33 +610,20 @@ void combineStreams (struct __BRTStream **streams,
                       *streams[2],
                       *streams[3],
                       *streams[4],
-                      num,
+                      num, num,
                       length,
                       lengthmodmodulus,
                       *output);
       break;
    case 6:
+   default:
       streamCombine6f(*streams[0],
                       *streams[1],
                       *streams[2],
                       *streams[3],
                       *streams[4],
                       *streams[5],
-                      num,
-                      length,
-                      lengthmodmodulus,
-                      *output);
-      break;
-   case 7:
-   default:
-      streamCombine7f(*streams[0],
-                      *streams[1],
-                      *streams[2],
-                      *streams[3],
-                      *streams[4],
-                      *streams[5],
-                      *streams[6],
-                      num,
+                      num, num,
                       length,
                       lengthmodmodulus,
                       *output);
@@ -653,12 +632,12 @@ void combineStreams (struct __BRTStream **streams,
                   "vout stream not reconstituted properly. %s%d streams",
                   "Too little precision for more than ",MAX_VOUT_STREAMS);
       }
-      if (num>8) {
-         combineStreamsHelper(streams+7,
-                              num-7,
+      if (num>6) {
+         combineStreamsHelper(streams+6,
+                              num-6,
                               output,
                               num,
-                              7,
+                              6,
                               length,
                               lengthmodmodulus);
       }
