@@ -102,7 +102,7 @@ namespace brook {
       if( result != NULL ) return result;
       fprintf(stderr, 
 	      "Unable to initialize DX9 runtime, falling back to CPU\n");
-      return new CPURunTime();
+      return new CPURunTime(false);
     }
 #endif
 

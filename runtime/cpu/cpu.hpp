@@ -2,6 +2,11 @@
 #define _BROOK_CPU_HPP
 #include <vector>
 #include "../runtime.hpp"
+#ifdef _WIN32
+#define THREADRETURNTYPE unsigned long 
+#else
+#define THREADRETURNTYPE void *
+#endif
 
 namespace brook {
     extern const char* CPU_RUNTIME_STRING;	
@@ -107,7 +112,7 @@ namespace brook {
        };
        
        //frees reduceToStreamInput, input
-       static void * staticReduceToStream(void * inp);
+       static THREADRETURNTYPE staticReduceToStream(void * inp);
 
        // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
        // Maps arguments to staticSubMap
@@ -123,7 +128,7 @@ namespace brook {
           unsigned int mapbegin;
           unsigned int mapend;             
        };
-       static void * staticSubMap(void * inp);
+       static THREADRETURNTYPE staticSubMap(void * inp);
     };
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

@@ -8,12 +8,11 @@
 #include <windows.h>
 #endif
 #endif
-
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 struct BrtThread {
 #ifdef USE_THREADS
 #ifdef _WIN32
-  DWORD Id;
+  HANDLE Id;
 #else
   pthread_t Id;
 #endif
@@ -36,12 +35,14 @@ static unsigned int getNumThreads() {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // Cross platform version of pthreads
-static void BrtCreateThread(void* (*func)(void *), void* arg, BrtThread & ret){
+static void BrtCreateThread(THREADRETURNTYPE (*func)(void *), 
+                            void* arg, 
+                            BrtThread & ret){
   bool oncpu=true;
   ret.active=false;
 #ifdef USE_THREADS
 #ifdef _WIN32
-    oncpu= (CreateThread(NULL,0,func,arg,0,&ret.Id)==NULL)
+    oncpu= ((ret.Id=CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)func,arg,0,NULL))==NULL);
 #else
     oncpu= (pthread_create(&ret.Id,NULL,func,arg)!=0);
 #endif
@@ -260,7 +261,7 @@ namespace brook{
    // This version of submap does the same thing as submap except that it 
    // is passed a new'd subMapInput struct that it will destroy.
    // The function has this signature because the thread create will invoke it
-    void* CPUKernel::staticSubMap (void * inp) {
+    THREADRETURNTYPE CPUKernel::staticSubMap (void * inp) {
        subMapInput * submap = (subMapInput*)inp;
        (*submap->thus->func)(*submap,
                              submap->thus->extents,
@@ -380,7 +381,7 @@ namespace brook{
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
    ///This function duplicates the input args and then calls ReduceToStream
-   void * CPUKernel::staticReduceToStream(void * inp) {
+   THREADRETURNTYPE CPUKernel::staticReduceToStream(void * inp) {
       reduceToStreamInput * red = (reduceToStreamInput*)inp;
       red->thus->ReduceToStream(*red,
                                 red->cur,
