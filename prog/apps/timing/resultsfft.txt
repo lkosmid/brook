@@ -1,3 +1,29 @@
+newgraph
+  xaxis min 0 
+    label : Length on a side of input image
+  yaxis min 0 max 1024
+    label : Time to perform 128 FFT operations 
+  newcurve 
+    linetype dotdash
+    label : Angel GPU FFT (4 Real->4 Complex)
+    pts 256 3.106 512 11.30 1024 47.31
+  newcurve 
+    linetype dashed 
+    label : FFTW (4 Real->4 Complex)
+    pts 128 .223000 256    .969000  512    5.168000  1024    25.241000   2048    113.334000
+  newcurve
+    linetype solid
+    label : Brook GPU FFT (Complex->Complex)
+    pts 256    2.217823 512    9.734216 1024   44.953809 2048   196.228151
+  newcurve
+    linetype dotted
+    label : FFTW (Complex->Complex)
+    pts 128   175000  256     2.481000 512    15.610000 1024   75.968000 2048   340.396000
+ 
+
+
+
+
 Angel Results:
 rez     #   seconds          length/#
 256    128 3.106283.000000  24267.835938
