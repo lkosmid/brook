@@ -173,7 +173,7 @@ kernel void processTrianglesNoCompact(out float3 trianglesA<>,
                                       out float3 trianglesE<>, 
                                       float4 vertices1<>,
                                       float3 volumeTriangles[][]) {
-  float4 whichVolumeTriangle={fmod((indexof trianglesA).x,3),vertices1.w,0,0};
+  float4 whichVolumeTriangle={round(fmod((indexof trianglesA).x,3)),vertices1.w,0,0};
   float3 vertices=vertices1.xyz;
   if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
 
