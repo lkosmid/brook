@@ -1,0 +1,68 @@
+#include <stdio.h>
+
+kernel void foo (float a<>, float b<>, float4 c,
+		 float d[10][10], vout [4]float e<>) {
+  e = a+b;
+  push(e);
+  if (round(fmod( (indexof a).x,2))!=1) {
+    e = 2;
+    push (e);
+  }
+  if (round(fmod((indexof a).y,3))!=1) {
+     e=3;
+     push (e);
+     e=-3;
+     push (e);
+  }
+}
+
+int main (int argc, char * argv[]) {
+  int i;
+  int verbose=1;
+  int repeat=1;
+  for (i=0;i<argc;++i) {
+    char match=0;
+    int j;
+    if (strcmp(argv[i],"-quiet")==0) {
+      match=1;
+      verbose=0;
+    }
+    if (strncmp(argv[i],"-repeat",7)==0) {
+      match=1;
+      repeat=atoi(argv[i]+7);
+    }
+    if (match) {
+      for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
+      argc--;
+      i--;
+    }
+  }
+  {
+  int WID=(argc>1?atoi(argv[1]):10);
+  int LEN=(argc>2?atoi(argv[2]):(argc>1?atoi(argv[1]):10));
+  float a<WID, LEN>;
+  float b<1,1>;
+  int TOT=WID*LEN;
+  if (verbose) {
+    float * mem = (float*)malloc(TOT*sizeof(float));
+    for (i=0;i<TOT;++i) {
+      if (rand()%2) 
+        mem[i]=1./floor(0);
+      else
+        mem[i]=0;
+    }
+    streamRead(a,mem);
+    printf ("%d by %d stream\n",WID,LEN);
+    streamPrint(a);
+    printf ("\n results in \n");
+    free(mem);
+  }
+    shiftValuesfloat(a,&b,WID,LEN,-1);
+  if (verbose) {
+    streamPrint(b);
+    printf ("\n");
+  }
+  //  streamPrint(f);
+  return 0;
+}
+}
