@@ -173,6 +173,8 @@ kernel void EstablishGuessBRT_TYPE(float scatterindex[][],
                           sign);
     }
 }
+
+
 kernel void UpdateGuessBRT_TYPE(float scatterindex[][],
                                 out float output<>,
                                 BRT_TYPE value[][],
@@ -193,13 +195,22 @@ kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
                                 float gatherindex[][],
                                 BRT_TYPE value[][],
                                 float2 sign,
-                                float2 maxvalue) {
+                                float2 maxvalue,
+                                float maxshift) {
    float2 nextPlaceToLook;
+   float2 isoffedge;
    getIndexAt(indexof(output),
               -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   valueAtBRT_TYPE(value,nextPlaceToLook,output,maxvalue,sign.y);   
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
+   if (isoffedge.y>=maxvalue.y
+       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+     output=sign.y;
+   }else {
+     output=value[nextPlaceToLook];
+   }
+
 }
 
 
@@ -280,7 +291,8 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
                                  float2((float)sign,1.0f/(float)floor(.5)),
-                                 maxvalue);
+                                 maxvalue,
+                                 maxshift);
         }
         streamSwap(output_stream,proper_output_stream);
       }
