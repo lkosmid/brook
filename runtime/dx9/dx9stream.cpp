@@ -23,16 +23,22 @@ static int kKnownTypeComponentCounts[] =
 };
 
 DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int extents[])
-  : Stream(type), runtime(runtime)
+  : Stream(type), runtime(runtime), elementType(type), dimensionCount(dims)
 {
   DX9Trace("DX9Stream::DX9Stream");
   // XXX: TO DO
   // for now allocate a 1D float4 texture with
   // the number of elements requested...
 
+  totalSize = 1;
+  for( int d = 0; d < dimensionCount; d++ )
+  {
+    this->extents[d] = extents[d];
+    totalSize *= extents[d];
+  }
+
   int width;
   int height;
-  int components = 0;
 
   switch( dims )
   {
@@ -55,27 +61,27 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int e
   int i = 0;
   switch (type) {
   case __BRTFLOAT:
-     components=1;
+     componentCount=1;
      break;
   case __BRTFLOAT2:
-     components=2;
+     componentCount=2;
      break;
   case __BRTFLOAT3:
-     components=3;
+     componentCount=3;
      break;
   case __BRTFLOAT4:
-     components=4;
+     componentCount=4;
      break;
   default:
-     components=0;
+     componentCount=0;
   }
-  if( components == 0 )
+  if( componentCount == 0 )
   {
     DX9Trace( "DX9Stream failure, unknown element type %d\n", (int)type );
     assert(false);
   }
 
-  texture = DX9Texture::create( runtime, width, height, components );
+  texture = DX9Texture::create( runtime, width, height, componentCount );
 
   inputRect = DX9Rect( 0, 1, 1, 0 );
   outputRect = DX9Rect( -1, -1, 1, 1 );
@@ -126,4 +132,28 @@ DX9Rect DX9Stream::getTextureSubRect( int l, int t, int r, int b ) {
 
 DX9Rect DX9Stream::getSurfaceSubRect( int l, int t, int r, int b ) {
   return texture->getSurfaceSubRect( l, t, r, b );
+}
+
+void* DX9Stream::getData (unsigned int flags)
+{
+  void* result = texture->getSystemDataBuffer();
+  if( flags & Stream::READ )
+    texture->validateSystemData();
+  return result;
+}
+
+void DX9Stream::releaseData(unsigned int flags)
+{
+  if( flags & Stream::WRITE )
+    texture->markSystemDataChanged();
+}
+
+void DX9Stream::validateGPUData()
+{
+  texture->validateCachedData();
+}
+
+void DX9Stream::markGPUDataChanged()
+{
+  texture->markCachedDataChanged();
 }

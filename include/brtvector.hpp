@@ -256,10 +256,10 @@ public:
     }        
 #define ASSIGN_OP(op) template <class BRT_TYPE> \
          vec<VALUE,tsize>& operator op (const BRT_TYPE & in) {  \
-        f[0] op GetAt<BRT_TYPE>(in,0);  \
-        if (tsize>1) f[1] op GetAt<BRT_TYPE>(in,1);  \
-        if (tsize>2) f[2] op GetAt<BRT_TYPE>(in,2);  \
-        if (tsize>3) f[3] op GetAt<BRT_TYPE>(in,3);  \
+        f[0] op (VALUE)(GetAt<BRT_TYPE>(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<BRT_TYPE>(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<BRT_TYPE>(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<BRT_TYPE>(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);

@@ -6,7 +6,7 @@
 using namespace brook;
 
 DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents )
-	: width(inWidth), height(inHeight), components(inComponents), internalComponents(inComponents)
+	: width(inWidth), height(inHeight), components(inComponents), internalComponents(inComponents), systemDataBuffer(NULL), dirtyFlags(kSystemDataDirty)
 {
 	device = inContext->getDevice();
 	HRESULT result;
@@ -60,48 +60,99 @@ DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight
 
 void DX9Texture::setData( const float* inData )
 {
-	HRESULT result;
-	D3DLOCKED_RECT info;
-
-	result = shadowSurface->LockRect( &info, NULL, 0 );
-	DX9CheckResult( result );
-
-	int pitch = info.Pitch;
-	if( pitch % 4 != 0 )
-		throw 1;
-	int pitchFloats = pitch / 4;
-	float* outputLine = (float*)info.pBits;
-
-	const float* input = inData;
-
-	for( int y = 0; y < height; y++ )
-	{
-		float* outputPixel = outputLine;
-		for( int x = 0; x < width; x++ )
-		{
-      float* output = outputPixel;
-			for( int c = 0; c < components; c++ )
-			{
-				*output++ = *input++;
-			}
-      outputPixel += internalComponents;
-		}
-		outputLine += pitchFloats;
-	}
-
-	result = shadowSurface->UnlockRect();
-	DX9CheckResult( result );
-
-	result = device->UpdateSurface( shadowSurface, NULL, surfaceHandle, NULL );
-	DX9CheckResult( result );
+	setShadowData( inData );
+  markShadowDataChanged();
 }
 
 void DX9Texture::getData( float* outData )
 {
-	HRESULT result;
+  if( !(dirtyFlags & kShadowDataDirty) )
+    getShadowData( outData );
+  else if( !(dirtyFlags & kSystemDataDirty) )
+    memcpy( outData, systemDataBuffer, systemDataBufferSize );
+  else
+  {
+    flushCachedToShadow();
+    getShadowData( outData );
+  }
+}
 
-	result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
+void DX9Texture::markCachedDataChanged()
+{
+  DX9Trace("mark cached changed %x", this);
+  dirtyFlags = kShadowDataDirty | kSystemDataDirty;
+}
+
+void DX9Texture::markShadowDataChanged()
+{
+  DX9Trace("mark shadow changed %x", this);
+  dirtyFlags = kCachedDataDirty | kSystemDataDirty;
+}
+
+void DX9Texture::markSystemDataChanged()
+{
+  DX9Trace("mark system changed %x", this);
+  dirtyFlags = kCachedDataDirty | kShadowDataDirty;
+}
+
+void DX9Texture::validateCachedData()
+{
+  DX9Trace("validate cached %x", this);
+  if( !(dirtyFlags & kCachedDataDirty) ) return;
+  if( dirtyFlags & kShadowDataDirty )
+    flushSystemToShadow();
+  flushShadowToCached();
+}
+
+void DX9Texture::validateSystemData()
+{
+  DX9Trace("validate system %x", this);
+  if( !(dirtyFlags & kSystemDataDirty) ) return;
+  if( dirtyFlags & kShadowDataDirty )
+    flushCachedToShadow();
+  flushShadowToSystem();
+}
+
+void DX9Texture::flushCachedToShadow()
+{
+  DX9Trace("cached -> shadow %x", this);
+  HRESULT result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
 	DX9CheckResult( result );
+  dirtyFlags &= ~kCachedDataDirty;
+}
+
+void DX9Texture::flushShadowToSystem()
+{
+  DX9Trace("shadow -> system %x", this);
+  getShadowData( getSystemDataBuffer() );
+  dirtyFlags &= ~kSystemDataDirty;
+}
+
+void DX9Texture::flushSystemToShadow()
+{
+  DX9Trace("system -> shadow %x", this);
+  setShadowData( getSystemDataBuffer() );
+  dirtyFlags &= ~kShadowDataDirty;
+}
+
+void DX9Texture::flushShadowToCached()
+{
+  HRESULT result = device->UpdateSurface( shadowSurface, NULL, surfaceHandle, NULL );
+	DX9CheckResult( result );
+  dirtyFlags &= ~kCachedDataDirty;
+}
+
+void* DX9Texture::getSystemDataBuffer()
+{
+  if( systemDataBuffer != NULL ) return systemDataBuffer;
+  systemDataBufferSize = width * height * components * sizeof(float);
+  systemDataBuffer = malloc( systemDataBufferSize );
+  return systemDataBuffer;
+}
+
+void DX9Texture::getShadowData( void* outData )
+{
+  HRESULT result;
 
 	D3DLOCKED_RECT info;
 	result = shadowSurface->LockRect( &info, NULL, D3DLOCK_READONLY );
@@ -113,7 +164,7 @@ void DX9Texture::getData( float* outData )
 	int pitchFloats = pitch / 4;
 	const float* inputLine = (const float*)info.pBits;
 
-	float* output = outData;
+	float* output = (float*)outData;
 
 	for( int y = 0; y < height; y++ )
 	{
@@ -128,6 +179,41 @@ void DX9Texture::getData( float* outData )
       inputPixel += internalComponents;
 		}
 		inputLine += pitchFloats;
+	}
+
+	result = shadowSurface->UnlockRect();
+	DX9CheckResult( result );
+}
+
+void DX9Texture::setShadowData( const void* inData )
+{
+  HRESULT result;
+	D3DLOCKED_RECT info;
+
+	result = shadowSurface->LockRect( &info, NULL, 0 );
+	DX9CheckResult( result );
+
+	int pitch = info.Pitch;
+	if( pitch % 4 != 0 )
+		throw 1;
+	int pitchFloats = pitch / 4;
+	float* outputLine = (float*)info.pBits;
+
+	const float* input = (const float*)inData;
+
+	for( int y = 0; y < height; y++ )
+	{
+		float* outputPixel = outputLine;
+		for( int x = 0; x < width; x++ )
+		{
+      float* output = outputPixel;
+			for( int c = 0; c < components; c++ )
+			{
+				*output++ = *input++;
+			}
+      outputPixel += internalComponents;
+		}
+		outputLine += pitchFloats;
 	}
 
 	result = shadowSurface->UnlockRect();

@@ -106,6 +106,7 @@ void DX9Kernel::PushOutput(Stream *s) {
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DSurface9* surfaceHandle = stream->getSurfaceHandle();
 
+  outputStream = stream;
   outputSurface = surfaceHandle;
   outputRect = stream->getOutputRect();
 }
@@ -139,6 +140,7 @@ void DX9Kernel::Map() {
   int i;
   for( i = 0; i < samplerCount; i++ )
   {
+    inputStreams[i]->validateGPUData();
     result = getDevice()->SetTexture( i, inputTextures[i] );
     DX9CheckResult( result );
   }
@@ -153,10 +155,12 @@ void DX9Kernel::Map() {
 
   runtime->execute( outputRect, inputRects );
 
+  outputStream->markGPUDataChanged();
+
   result = getDevice()->EndScene();
   DX9CheckResult( result );
-  result = getDevice()->Present( NULL, NULL, NULL, NULL );
-  DX9CheckResult( result );
+//  result = getDevice()->Present( NULL, NULL, NULL, NULL );
+//  DX9CheckResult( result );
 }
 
 void DX9Kernel::Reduce() {
@@ -193,6 +197,8 @@ void DX9Kernel::PushSampler( DX9Stream* s )
   int samplerIndex = argumentSamplerIndex++;
   DX9Trace("PushSampler[%d]",samplerIndex);
   IDirect3DTexture9* texture = s->getTextureHandle();
+
+  inputStreams[samplerIndex] = s;
   inputTextures[samplerIndex] = texture;
 }
 
@@ -256,6 +262,9 @@ void DX9Kernel::ReduceToStream()
 
   result = getDevice()->EndScene();
   DX9CheckResult( result );
+
+  outputStream->markGPUDataChanged();
+
   ClearInputs();
 }
 
@@ -316,6 +325,7 @@ void DX9Kernel::ReduceToValue()
 
   inputRects[0] = inputStream->getTextureSubRect( 0, 0, inputWidth, inputHeight );
   outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, inputWidth, inputHeight );
+  inputStream->validateGPUData();
   result = getDevice()->SetTexture( 0, inputStream->getTextureHandle() );
   DX9CheckResult( result );
   runtime->execute( outputRect, inputRects );
@@ -327,6 +337,7 @@ void DX9Kernel::ReduceToValue()
   for( i = 0; i < samplerCount; i++ )
   {
     if( i == sampler0 || i == sampler1 ) continue;
+    inputStreams[i]->validateGPUData();
     result = getDevice()->SetTexture( i, inputTextures[i] );
     DX9CheckResult( result );
   }
@@ -586,6 +597,7 @@ void DX9Kernel::CopyStreamIntoReductionBuffer( DX9Stream* inStream )
   int inputWidth = inStream->getWidth();
   int inputHeight = inStream->getHeight();
 
+  inStream->validateGPUData();
   result = getDevice()->SetTexture( 0, inStream->getTextureHandle() );
   DX9CheckResult( result );
   inputRects[0] = inStream->getTextureSubRect( 0, 0, inputWidth, inputHeight );
@@ -623,6 +635,7 @@ void DX9Kernel::BindReductionOperationState()
   for( int i = 0; i < samplerCount; i++ )
   {
     if( i == sampler0 || i == sampler1 ) continue;
+    inputStreams[i]->validateGPUData();
     result = getDevice()->SetTexture( i, inputTextures[i] );
     DX9CheckResult( result );
   }

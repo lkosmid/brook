@@ -76,8 +76,10 @@ namespace brook {
     DX9PixelShader* pixelShader;
     DX9Rect inputRects[8]; // TIM: TODO: named constant?
     float4 inputConstants[8];
+    DX9Stream* inputStreams[8];
     IDirect3DTexture9* inputTextures[8];
     DX9Rect outputRect;
+    DX9Stream* outputStream;
     IDirect3DSurface9* outputSurface;
     void* outputReductionData;
     __BRTStreamType outputReductionType;
@@ -134,16 +136,25 @@ namespace brook {
     DX9Rect getTextureSubRect( int l, int t, int r, int b );
     DX9Rect getSurfaceSubRect( int l, int t, int r, int b );
 
-     virtual void * getData (unsigned int flags){assert(0);return 0;}
-     virtual void releaseData(unsigned int flags){assert(0);0;}
-     virtual const unsigned int * getExtents() const{assert(0);return 0;}
-     virtual unsigned int getDimension() const {assert(0);return 0;}
-     virtual __BRTStreamType getStreamType ()const{assert(0);return type;}
-     virtual unsigned int getTotalSize() const {assert(0);return 0;}
+     virtual void* getData (unsigned int flags);
+     virtual void releaseData(unsigned int flags);
+     virtual const unsigned int* getExtents() const { return extents; }
+     virtual unsigned int getDimension() const { return dimensionCount; }
+     virtual __BRTStreamType getStreamType() const { return elementType; }
+     virtual unsigned int getTotalSize() const { return totalSize; }
+
+     void validateGPUData();
+     void markGPUDataChanged();
 
   private:
     virtual ~DX9Stream ();
     IDirect3DDevice9* getDevice();
+
+    int dimensionCount;
+    unsigned int extents[8];
+    __BRTStreamType elementType;
+    unsigned int totalSize;
+    int componentCount;
 
     DX9RunTime* runtime;
     DX9Texture* texture;

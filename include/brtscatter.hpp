@@ -100,7 +100,7 @@ void streamScatterOp4 (brook::StreamInterface *s,
       (const __BrtFloat4 *) s->getData(brook::Stream::READ);
    streamScatterOpIndexDet(data,index,array,bounds,op);
    s->releaseData(brook::Stream::READ); 
-   array->releaseData(brook::Stream::READ);      
+   array->releaseData(brook::Stream::WRITE);      
    index->releaseData(brook::Stream::READ);
 }   
 template <class Functor> void streamScatterOp3 (brook::StreamInterface *s, 
@@ -112,7 +112,7 @@ template <class Functor> void streamScatterOp3 (brook::StreamInterface *s,
       (const __BrtFloat3 *) s->getData(brook::Stream::READ);
    streamScatterOpIndexDet(data,index,array,bounds,op);
    s->releaseData(brook::Stream::READ); 
-   array->releaseData(brook::Stream::READ);      
+   array->releaseData(brook::Stream::WRITE);      
    index->releaseData(brook::Stream::READ);
 }   
 template <class Functor> void streamScatterOp2 (brook::StreamInterface *s, 
@@ -124,7 +124,7 @@ template <class Functor> void streamScatterOp2 (brook::StreamInterface *s,
       (const __BrtFloat2 *) s->getData(brook::Stream::READ);
    streamScatterOpIndexDet(data,index,array,bounds,op);
    s->releaseData(brook::Stream::READ); 
-   array->releaseData(brook::Stream::READ);      
+   array->releaseData(brook::Stream::WRITE);      
    index->releaseData(brook::Stream::READ);
 }   
 template <class Functor> void streamScatterOp1 (brook::StreamInterface *s, 
@@ -136,7 +136,7 @@ template <class Functor> void streamScatterOp1 (brook::StreamInterface *s,
       (const __BrtFloat1 *) s->getData(brook::Stream::READ);
    streamScatterOpIndexDet(data,index,array,bounds,op);
    s->releaseData(brook::Stream::READ); 
-   array->releaseData(brook::Stream::READ);      
+   array->releaseData(brook::Stream::WRITE);      
    index->releaseData(brook::Stream::READ);
 }   
 #endif

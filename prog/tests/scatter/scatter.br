@@ -31,9 +31,9 @@ int main () {
 
   for (i=0; i<10; i++)
     for (j=0; j<10; j++) {
-      data_a[i][j] = i+10*j;;
-      data_b[i][j] = 99-(i+10*j);
-      data_d[i][j] = 10*i+j;
+      data_a[i][j] = (float)(i+10*j);
+      data_b[i][j] = (float)(99-(i+10*j));
+      data_d[i][j] = (float)(10*i+j);
     }
 
   streamRead(a, data_a);
