@@ -55,7 +55,7 @@ public:
 };
 #define HOLDER(TYP) template <> class Holder<TYP> { \
 public: \
-    inline float getAt(TYP t, int i) { \
+    inline TYP getAt(TYP t, int i) { \
         return t; \
     } \
 }
