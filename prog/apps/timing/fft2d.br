@@ -117,7 +117,7 @@ void compute2dFFT(float2 *input,
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
-            DoDFTX(s,W_horiz,float2(nStride,M),s_horiz);
+            DoDFTX(s,W_horiz,float2((float) nStride, (float) M),s_horiz);
             flattenSX(s,s_horiz);
          }
       }
@@ -125,7 +125,7 @@ void compute2dFFT(float2 *input,
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
-            DoDFTY(s,W_vert,float2(nStride,N),s_vert);
+            DoDFTY(s,W_vert,float2((float) nStride, (float) N),s_vert);
             flattenSY(s,s_vert);
          }
       }
