@@ -632,9 +632,6 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
     unsigned int reference_stream = getReferenceStream(this->fDef);
     indent(out,1);
     out << "unsigned int dim=dims["<<reference_stream<<"];"<<std::endl;
-    indent(out,1);
-    out << "unsigned int newline=extents["<<reference_stream<<"][dim-1];";
-    out << std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].InitialSet(out,false,reference_stream);
     }}
