@@ -682,7 +682,7 @@ void Blas_Time(int argc, char** argv) {
   startup();
 
   // hack to get around bug in DX9 code
-  if (length <= 2048) {
+  if (length < 2048) {
     for (i=0; i<num_iter;i++) {
       iterations = skip*(i+1);
       do_sdot(length*length, iterations, ms, flops);
@@ -708,7 +708,7 @@ void Blas_Time(int argc, char** argv) {
 
   printf("\n");  
 
-  if (length <= 2048) {
+  if (length < 2048) {
     for (i=0; i<num_iter;i++) {
       iterations = skip*(i+1);
       do_spMatVec(length, iterations, ms, flops);
