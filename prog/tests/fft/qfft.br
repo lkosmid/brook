@@ -292,7 +292,7 @@ void computeFFT2d(float2 *input,
 
 
 void doOptFFT(int logN, int logM, float2 * data) {
-   int i,N = (1<<logN);
+   int N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
    start = GetTimeMillis();
