@@ -18,12 +18,12 @@ void brook::__check_gl(int line, char *file) {
    GLenum r = glGetError();
    if (r != GL_NO_ERROR) {
       if (r - GL_INVALID_ENUM >= nerrors)
-         fprintf (stderr, "Unknown GL error on line %d of %s\n", 
+         fprintf (stderr, "NV30GL: Unknown GL error on line %d of %s\n", 
                   line, file);
       else
-         fprintf (stderr, "glGetError returned %s on line %d of %s\n", 
+         fprintf (stderr, "NV30GL: glGetError returned %s on line %d of %s\n", 
                   error_txt[r - GL_INVALID_ENUM], line, file);
-      exit(1);
+      abort();
   }
   return;
 }

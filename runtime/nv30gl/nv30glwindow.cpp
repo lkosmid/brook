@@ -144,7 +144,7 @@ NV30GLRunTime::createPBuffer (void) {
 			  WGL_ALPHA_BITS_ARB,      32,
 			  WGL_DEPTH_BITS_ARB,      0,
 			  WGL_STENCIL_BITS_ARB,    0, 
-			  WGL_DOUBLE_BUFFER_ARB,   GL_TRUE,
+			  WGL_DOUBLE_BUFFER_ARB,   GL_FALSE,
 			  0,                       0};
   unsigned int numFormats;
   BOOL status;
@@ -154,22 +154,6 @@ NV30GLRunTime::createPBuffer (void) {
 
   HDC hdc = GetDC(hwnd);
   HDC hpbufferdc;
-  
-  wglCreatePbufferARB = (PFNWGLCREATEPBUFFERARBPROC)
-    wglGetProcAddress("wglCreatePbufferARB");
-  wglGetPbufferDCARB = (PFNWGLGETPBUFFERDCARBPROC)
-    wglGetProcAddress("wglGetPbufferDCARB");
-  wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)
-    wglGetProcAddress("wglChoosePixelFormatARB");
-  
-  wglBindTexImageARB = (PFNWGLBINDTEXIMAGEARBPROC)
-    wglGetProcAddress("wglBindTexImageARB");
-  wglReleaseTexImageARB = (PFNWGLRELEASETEXIMAGEARBPROC)
-    wglGetProcAddress("wglReleaseTexImageARB");
-  
-  assert (wglCreatePbufferARB && wglGetPbufferDCARB &&
-	  wglChoosePixelFormatARB && wglBindTexImageARB &&
-	  wglReleaseTexImageARB);
   
   status = wglChoosePixelFormatARB(hdc, iAttributes, fAttributes, 1,
 				   &pixelformat, &numFormats);
@@ -198,17 +182,16 @@ NV30GLRunTime::createPBuffer (void) {
   
   hpbufferglrc = wglCreateContext( hpbufferdc );
   assert (hpbufferglrc);
+
+  assert (wglMakeCurrent( hpbufferdc, hpbufferglrc ));
+
+  glDrawBuffer(GL_FRONT);
+  glReadBuffer(GL_FRONT);
+  
+  CHECK_GL();
 }
-
-
-
-
 
 #if 0
-
-void showwindow(HWND hwnd) {
-  ShowWindow(hwnd, SW_SHOWNORMAL);
-}
 
 void clearoutput(float x, float y, float z, float w) {
   glClearColor(x, y, z, w);
@@ -258,23 +241,5 @@ void releasepbuffer(void) {
   assert(wglReleaseTexImageARB(hpbuffer, wglfront_back[isfront]));
   pbufferbound = 0;
 }
-
-void eventloop (void) {
-  MSG msg;
-  BOOL bRet; 
-  
-  while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
-    { 
-      if (bRet == -1)
-        {
-	  // handle the error and possibly exit
-        }
-      else
-        {
-	  TranslateMessage(&msg); 
-	  DispatchMessage(&msg); 
-        }
-    } 
-} 
 
 #endif

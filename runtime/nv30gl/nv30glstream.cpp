@@ -4,12 +4,6 @@
 
 using namespace brook;
 
-const GLenum GLtype[] =   {0, GL_FLOAT_R32_NV, GL_FLOAT_RG32_NV, 
-			   GL_FLOAT_RGB32_NV, GL_FLOAT_RGBA32_NV};
-
-// Is there a GL_RG?  I'm not ssure that LUMINANCE_ALPHA is correct here
-const GLenum GLformat[] = {0, GL_RED, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA};
-
 NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
                             __BRTStreamType type, int dims, int extents[])
   : Stream(type), runtime(rt) { 

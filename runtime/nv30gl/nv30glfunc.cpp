@@ -11,6 +11,8 @@ PFNGLACTIVETEXTUREARBPROC       brook::glActiveTextureARB;
 PFNGLGENPROGRAMSNVPROC          brook::glGenProgramsNV;
 PFNGLLOADPROGRAMNVPROC          brook::glLoadProgramNV;
 PFNGLBINDPROGRAMNVPROC          brook::glBindProgramNV;
+PFNGLPROGRAMNAMEDPARAMETER4FNVPROC  brook::glProgramNamedParameter4fNV;
+PFNGLMULTITEXCOORD2FARBPROC     brook::glMultiTexCoord2fARB;
 
 #define   XXX(B,A) A = (B) wglGetProcAddress(#A); assert(A);
 
@@ -24,5 +26,7 @@ void brook::initglfunc(void) {
    XXX(PFNGLGENPROGRAMSNVPROC,         glGenProgramsNV);
    XXX(PFNGLLOADPROGRAMNVPROC,         glLoadProgramNV);
    XXX(PFNGLBINDPROGRAMNVPROC,         glBindProgramNV);
+   XXX(PFNGLPROGRAMNAMEDPARAMETER4FNVPROC, glProgramNamedParameter4fNV);
+   XXX(PFNGLMULTITEXCOORD2FARBPROC,    glMultiTexCoord2fARB);
 }
 
