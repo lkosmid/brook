@@ -94,12 +94,12 @@ kernel void processVirtualSlice(vout[1] float3 vertex<>,
          float cur<(dat.height),(dat.width)>;
          float next<(dat.height),(dat.width)>;
          float v<1,(dat.width)>;
-         iter float2 curiter <(dat.height),(dat.width)> = iter (float2(0,0),
+         iter float2 curiter <(dat.height),(dat.width)> = iter (float2(0.0f,0.0f),
                                                            float2(dat.width,
                                                                   dat.height));
-         iter float2 nextiter <(dat.height),(dat.width)> = iter (float2(1,1),
-                                                           float2(1+dat.width,
-                                                                  1+dat.height));
+         iter float2 nextiter <(dat.height),(dat.width)> = iter (float2(1.0f,1.0f),
+                                                           float2(1.0f+dat.width,
+                                                                  1.0f+dat.height));
                                                          
          readPPM3dSlice(dat,0,slice);
          streamRead(cur,slice);
