@@ -109,7 +109,7 @@ void readPPM3dSlice(const ppm &fp,
                    unsigned int whichslice,
                    float *data) {
    unsigned int size = fp.width*fp.height;
-   static bool dorandom=false;
+   static bool dorandom=true;
    if (fp.fp) {
       char * readindata = (char *) data;
       fseek (fp.fp,fp.start+whichslice*size*sizeof(char),SEEK_SET);

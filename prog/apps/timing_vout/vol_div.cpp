@@ -350,7 +350,7 @@ int volume_division (int argc, char ** argv) {
    std::vector<int> sizesy;
    // now we begin the actual algorithm
    ::brook::stream vbak(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
-   for (unsigned int rr=0;rr<4;++rr) {
+   for (unsigned int rr=0;rr<1;++rr) {
      ::brook::stream v(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
 
      count=0;
