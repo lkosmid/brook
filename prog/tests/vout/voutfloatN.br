@@ -233,7 +233,7 @@ kernel void RelativeGatherfloat(out float output<>,
    valueAtfloat(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-float CountValuesfloat(struct StreamHolder list_stream,
+void CountValuesfloat(struct StreamHolder list_stream,
                           struct StreamHolder output_stream,
                           int WIDTH, 
                           int LENGTH, 
@@ -1261,7 +1261,7 @@ kernel void RelativeGatherfloat2(out float2 output<>,
    valueAtfloat2(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-float CountValuesfloat2(struct StreamHolder list_stream,
+void CountValuesfloat2(struct StreamHolder list_stream,
                           struct StreamHolder output_stream,
                           int WIDTH, 
                           int LENGTH, 
@@ -2289,7 +2289,7 @@ kernel void RelativeGatherfloat3(out float3 output<>,
    valueAtfloat3(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-float CountValuesfloat3(struct StreamHolder list_stream,
+void CountValuesfloat3(struct StreamHolder list_stream,
                           struct StreamHolder output_stream,
                           int WIDTH, 
                           int LENGTH, 
@@ -3317,7 +3317,7 @@ kernel void RelativeGatherfloat4(out float4 output<>,
    valueAtfloat4(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-float CountValuesfloat4(struct StreamHolder list_stream,
+void CountValuesfloat4(struct StreamHolder list_stream,
                           struct StreamHolder output_stream,
                           int WIDTH, 
                           int LENGTH, 

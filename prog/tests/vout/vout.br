@@ -210,7 +210,7 @@ kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
    valueAtBRT_TYPE(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-float CountValuesBRT_TYPE(struct StreamHolder list_stream,
+void CountValuesBRT_TYPE(struct StreamHolder list_stream,
                           struct StreamHolder output_stream,
                           int WIDTH, 
                           int LENGTH, 
