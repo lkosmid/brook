@@ -9,6 +9,7 @@ Release v0.4 (X/XX/04)
    * Regression test failures summarized at end of make regression
 
    * Fixed Variable Output bugs for 0-sized streams; improved search performance
+   * gcc-3.4 compliant
 
 Release v0.3 (1/29/04)
 
