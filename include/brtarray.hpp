@@ -40,20 +40,34 @@ public:
 template <class VALUE, unsigned int dims, bool copy_data> class BrtArray {
 	unsigned int extents[dims];
 	VALUE * data;
+	unsigned int getSize() const{
+			unsigned int size=1;
+			for (unsigned int i=0;i<dims;++i) {
+				size*=extents[i];
+			}
+	}
 public:
 	BrtArray(VALUE * data, const unsigned int *extents) {
 		memcpy (this->extents,extents,sizeof(unsigned int)*dims);		
 		if (!copy_data)
 			this->data =data;
 		else {
-			unsigned int size=1;
-			for (unsigned int i=0;i<dims;++i) {
-				size*=extents[i];
-			}
+			unsigned int size = getSize();
 			this->data = (VALUE *)malloc(sizeof(VALUE)*size);
 			memcpy (this->data,data,sizeof(VALUE)*size);
 		}
 
+	}
+	BrtArray(const BrtArray&c) {
+		for (unsigned int i=0;i<dims;++i) {
+			extents[i]=c.extents[i];
+		}
+		this->data = c.data;
+		if (copy_data) {
+			unsigned int size = getSize();
+			this->data = (VALUE *)malloc(sizeof(VALUE)*size);
+			memcpy(this->data,c.data,sizeof(VALUE)*size);
+		}
 	}
 	~BrtArray() {
 		if (copy_data)
