@@ -4,7 +4,7 @@ namespace brook{
 
     }
     Kernel * CPURunTime::CreateKernel(const void* blah[]) {
-	return new CPUKernel(this,blah);
+	return new CPUKernel(blah);
     }
     Stream *CreateStream(const char type[],int dims, int extents[]) {
 	return new CPUStream(type,dims,extents);
