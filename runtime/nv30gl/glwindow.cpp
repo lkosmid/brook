@@ -154,6 +154,13 @@ GLRunTime::createPBufferWGL(int ncomponents)
 
    static bool ati_not_nv;
 
+   /* XXX:  I have to treat all float2 streams as float4 */
+   if (ncomponents == 2)
+      ncomponents = 4; 
+
+   if (pbuffer_ncomp == ncomponents)
+      return;
+
    if (!runOnce) {
       BOOL status;
       int iAttributes[40];

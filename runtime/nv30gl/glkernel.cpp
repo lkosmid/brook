@@ -596,10 +596,8 @@ GLKernel::Map()
           * pbuffer.
           */
 
-         if (runtime->pbuffer_ncomp != curOutput->ncomp[field_idx]) {
-            runtime->createPBuffer(curOutput->ncomp[field_idx]);
-         }
-
+         runtime->createPBuffer(curOutput->ncomp[field_idx]);
+         
          glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[pass_idx]);
 
          /*
@@ -662,7 +660,7 @@ issue_reduce_poly (int x1, int y1,
 }
 
 
-   void
+void
 GLKernel::ReduceScalar()
 {
    /* First reduce in the x direction */
@@ -682,6 +680,9 @@ GLKernel::ReduceScalar()
       return;
    }
 
+   // Initialize the pbuffer to the right dimension
+   runtime->createPBuffer(ncomp);
+   
    /* Construct the temp stream */
    if (tmpReduceStream[ncomp] &&
          (tmpReduceStream[ncomp]->width < (unsigned int) w ||
@@ -840,7 +841,7 @@ GLKernel::ReduceScalar()
       ((float *)reduceVal)[i] = ((float *)&readback)[i];
 }
 
-   void
+void
 GLKernel::ReduceStream()
 {
    int w = inputReduceStream->width;
@@ -883,6 +884,9 @@ GLKernel::ReduceStream()
       r->Read((void *)&data);
       return;
    }
+
+   // Initialize the pbuffer to the right dimension
+   runtime->createPBuffer(ncomp);
 
    /* Construct the temp stream */
    if (tmpReduceStream[ncomp] &&

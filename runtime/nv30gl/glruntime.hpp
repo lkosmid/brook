@@ -220,27 +220,22 @@ namespace brook {
         static GLenum lookup[5];
 
         if (!runonce) {
-           if (strstr((const char *) glGetString(GL_EXTENSIONS), 
-                      "ATI_texture_float")) {
+           switch (getGLArch()) {
+           case ARCH_NV30:
+              lookup[1] = GL_FLOAT_R32_NV;
+              lookup[2] = GL_FLOAT_RG32_NV;
+              lookup[3] = GL_FLOAT_RGB32_NV;
+              lookup[4] = GL_FLOAT_RGBA32_NV;
+              break;
+           default: 
+              fprintf(stderr, "Unknown ARCH, assuming ATI.\n");
+           case ARCH_ATI:
               lookup[1] = GL_INTENSITY_FLOAT32_ATI;
               /* ATI does not have a RG type and cgc expects float2 to 
               ** be stored xy. */
-              lookup[2] = GL_RGB_FLOAT32_ATI;  
+              lookup[2] = GL_RGBA_FLOAT32_ATI;  
               lookup[3] = GL_RGB_FLOAT32_ATI;
               lookup[4] = GL_RGBA_FLOAT32_ATI;
-           } else {
-              if (strstr((const char *) glGetString(GL_EXTENSIONS),
-                         "NV_float_buffer")) {
-                 lookup[1] = GL_FLOAT_R32_NV;
-                 lookup[2] = GL_FLOAT_RG32_NV;
-                 lookup[3] = GL_FLOAT_RGB32_NV;
-                 lookup[4] = GL_FLOAT_RGBA32_NV;
-              } else {
-                 fprintf (stderr, "Graphics adaptor %s does not support\n"
-                          "known floating point render target types.\n",
-                          glGetString(GL_RENDERER));
-                 exit(1);
-              }
            }
            runonce = true;
         }     
@@ -253,34 +248,25 @@ namespace brook {
         static GLenum lookup[5];
 
         if (!runonce) {
-           if (strstr((const char *) glGetString(GL_EXTENSIONS), 
-                      "ATI_texture_float")) {
-              // This was different but I'm trying this out
-              // It might be slow from a performance standpoint
+           switch (getGLArch()) {
+           case ARCH_NV30:
               lookup[1] = GL_RED;
               lookup[2] = GL_LUMINANCE_ALPHA;
               lookup[3] = GL_RGB;
               lookup[4] = GL_RGBA;
-           } else {
-              if (strstr((const char *) glGetString(GL_EXTENSIONS),
-                         "NV_float_buffer")) {
-                 lookup[1] = GL_RED;
-                 lookup[2] = GL_LUMINANCE_ALPHA;
-                 lookup[3] = GL_RGB;
-                 lookup[4] = GL_RGBA;
-              } else {
-                 fprintf (stderr, "Graphics adaptor %s does not support\n"
-                          "known floating point render target types.\n",
-                          glGetString(GL_RENDERER));
-                 exit(1);
-              }
+              break;
+           default: 
+              fprintf(stderr, "Unknown ARCH, assuming ATI.\n");
+           case ARCH_ATI:
+              lookup[1] = GL_RED;
+              lookup[2] = GL_RGBA;
+              lookup[3] = GL_RGB;
+              lookup[4] = GL_RGBA;
            }
            runonce = true;
         }     
         return lookup[i];
      }
-
-
 
 
   protected:

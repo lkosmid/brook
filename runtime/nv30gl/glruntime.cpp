@@ -31,6 +31,7 @@ GLRunTime::GLRunTime()
    int i, n;
 
    streamlist = NULL;
+   pbuffer_ncomp = -1;
 
 #ifdef _WIN32
    createWindow();
