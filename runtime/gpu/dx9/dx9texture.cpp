@@ -409,8 +409,8 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride,  size_t toElement
           *output++ = *input++;
       else {
           if (fromElementStride!=toElementStride&&toElementStride==1)
-              input+=fromElementStride-1;//offset the input if writing to it
-          for( size_t i =((output+=toElementStride-1),0); i <(numElements>3?3:numElements); i++ )//offset the output, but remember the alpha channel is separate
+            input+=(fromElementStride==4?fromElementStride-2:fromElementStride-1);//offset the input if writing to it
+          for( size_t i =((output+=(toElementStride==1?1:toElementStride-1)),0); i <(numElements>3?3:numElements); i++ )//offset the output, but remember the alpha channel is separate
               *--output = *input++;// I've always wanted to do that
         if(numElements>3)
             output[3]=*input++;//now to copy alpha
@@ -500,8 +500,8 @@ void DX9Texture::copyAllDataAT( void* toBuffer, size_t toRowStride, size_t toEle
           *output++ = *input++;
       else {
           if (fromElementStride!=toElementStride&&toElementStride==1)
-              input+=fromElementStride-1;//offset the input if writing to it
-          for( size_t i =((output+=toElementStride-1),0); i <(numElements>3?3:numElements); i++ )//offset the output, but remember the alpha channel is separate
+            input+=(fromElementStride==4?fromElementStride-2:fromElementStride-1);//offset the input if writing to it
+          for( size_t i =((output+=(toElementStride==1?1:toElementStride-1)),0); i <(numElements>3?3:numElements); i++ )//offset the output, but remember the alpha channel is separate
               *--output = *input++;// I've always wanted to do that
         if(numElements>3)
             output[3]=*input++;//now to copy alpha
