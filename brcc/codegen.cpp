@@ -40,8 +40,9 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
   int texcoord, i;
 
   cg << "#define _WORKSPACE " << globals.workspace << std::endl;
-  cg << "#define _WORKSPACE_INV " << std::setprecision(9.9) <<
-        1.0 / globals.workspace << std::endl;
+  cg << "#define _WORKSPACE_INV " 
+     << std::setprecision((std::streamsize) 9.9) 
+     << 1.0 / globals.workspace << std::endl;
 
   cg << fp30_assist;
 
@@ -134,14 +135,22 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
   std::ostringstream hlsl;
   Decl *outArg = NULL;
   int texcoord, constreg, i;
-  
-  hlsl << "#define _WORKSPACE " << globals.workspace << std::endl;
-  hlsl << "#define _WORKSPACE_INV " << std::setprecision(9.9) <<
-    1.0 / globals.workspace << std::endl;
+
+
+  // Add the workspace variable
+
+  //  hlsl << "#define _WORKSPACE " << globals.workspace << std::endl;
+  //  hlsl << "#define _WORKSPACE_INV " << std::setprecision(9.9)
+  //       <<  1.0 / globals.workspace << std::endl;
+
+  constreg = 0;
+  hlsl << "float2 _workspace    : register (c" 
+       << constreg++ << ");\n";
+  hlsl << "float2 _workspaceinv : register (c"
+       << constreg++ << ");\n";
   
   /* Print out the texture stream */
   texcoord = 0;
-  constreg = 0;
   for (i=0; i < nArgs; i++) {
     /* Don't put the output in the argument list */
     if (args[i]->form->getQualifiers() & TQ_Out) {
@@ -150,14 +159,16 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
     }
     
     if (args[i]->isStream()) {
-      hlsl << "sampler _tex_" << *args[i]->name;
-      hlsl << " : register (s" << texcoord++ << ");\n";
+       hlsl << "sampler _tex_" << *args[i]->name;
+       hlsl << " : register (s" << texcoord++ << ");\n";
     } else if (args[i]->isArray()) {
        hlsl << "sampler " << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
+       hlsl << "float2 " << *args[i]->name << "_scale" 
+            << " : register (c" << constreg++ << ");\n";
     } else {
-      args[i]->print(hlsl, true);
-      hlsl << " : register (c" << constreg++ << ");\n";
+       args[i]->print(hlsl, true);
+       hlsl << " : register (c" << constreg++ << ");\n";
     }
   }
   hlsl << "\n";
@@ -334,11 +345,16 @@ compile_hlsl_code (char *hlslcode) {
   while ((i = fgetc(fp)) != EOF) {
      
 #if 1
-     // don't copy the comment lines
+     // Remove comment lines
      if (incomment) {
-        if (i == (int) '\n')
-           incomment = false;
-        continue;
+       if (i == (int) '\n') {
+         incomment = false;
+         while ((i = fgetc(fp)) != EOF &&
+                i == (int) '\n');
+         if (i == EOF)
+           break;
+       } else
+         continue;
      }  else if (pos > 0 && 
               fpcode[pos-1] == '/' &&
               i == (int) '/') {
@@ -567,25 +583,29 @@ CodeGen_FP30GenerateCode(Type *retType, const char *name,
   char *cgcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   cgcode = generate_cg_code(args, nArgs, body);
-  //std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
+  if (globals.verbose)
+    std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
 
   fpcode = compile_cg_code(cgcode);
   free(cgcode);
-  //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
   if (fpcode) {
+    if (globals.verbose)
+      std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
      fpcode_with_brccinfo =
        append_argument_information("##", fpcode, args, nArgs, body);
      free(fpcode);
-     //std::cerr << "***Produced this instrumented fpcode:\n"
-     //          << fpcode_with_brccinfo << "\n";
+     if (globals.verbose)
+       std::cerr << "***Produced this instrumented fpcode:\n"
+                 << fpcode_with_brccinfo << "\n";
   } else {
      fpcode_with_brccinfo = NULL;
   }
 
   c_code = generate_c_fp30_code(fpcode_with_brccinfo, name);
   free(fpcode_with_brccinfo);
-  //std::cerr << "***Produced this C code:\n" << c_code;
+  if (globals.verbose)
+    std::cerr << "***Produced this C code:\n" << c_code;
 
   return c_code;
 }
@@ -609,19 +629,25 @@ CodeGen_PS20GenerateCode(Type *retType, const char *name,
   char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   hlslcode = generate_hlsl_code(args, nArgs, body);
-  //std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
+
+  if (globals.verbose)
+    std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
 
   fpcode = compile_hlsl_code(hlslcode);
   free(hlslcode);
-  //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
   if (fpcode) {
+   
+    if (globals.verbose)
+      std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
+
      fpcode_with_brccinfo =
        append_argument_information("//", fpcode, args, nArgs, body);
      free(fpcode);
 
-     //std::cerr << "***Produced this instrumented fpcode:\n"
-     //          << fpcode_with_brccinfo << "\n";
+     if (globals.verbose)
+       std::cerr << "***Produced this instrumented fpcode:\n"
+                 << fpcode_with_brccinfo << "\n";
   } else {
      fpcode_with_brccinfo = NULL;
   }
@@ -629,7 +655,8 @@ CodeGen_PS20GenerateCode(Type *retType, const char *name,
   c_code = generate_c_ps20_code(fpcode_with_brccinfo, name);
   free(fpcode_with_brccinfo);
 
-  //std::cerr << "***Produced this C code:\n" << c_code;
+  if (globals.verbose)
+    std::cerr << "***Produced this C code:\n" << c_code;
 
   return c_code;
 }

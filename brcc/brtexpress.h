@@ -13,6 +13,8 @@ public:
    ~BrtGatherExpr () {/* do nothing*/}
 
    void print (std::ostream& out) const;
+   
+   int ndims;
 
    Expression *base;
    ExprVector dims;

@@ -32,9 +32,9 @@ BRTFP30KernelCode::printCode(std::ostream& out) const
 
    fDef->Block::print(wrapOut, 0);
    if (globals.verbose) {
-      out << "***Wrapping\n";
-      fDef->decl->print(out, true);
-      out << std::endl << wrapOut.str() << "\n***\n";
+      std::cerr << "***Wrapping\n";
+      fDef->decl->print(std::cerr, true);
+      std::cerr << std::endl << wrapOut.str() << "\n***\n";
    }
 
    assert (fDef->decl->form->type == TT_Function);
@@ -83,9 +83,9 @@ BRTPS20KernelCode::printCode(std::ostream& out) const
 
    fDef->Block::print(wrapOut, 0);
    if (globals.verbose) {
-      out << "***Wrapping\n";
+      std::cerr << "***Wrapping\n";
       fDef->decl->print(out, true);
-      out << std::endl << wrapOut.str() << "\n***\n";
+      std::cerr << std::endl << wrapOut.str() << "\n***\n";
    }
 
    assert (fDef->decl->form->type == TT_Function);

@@ -1,6 +1,5 @@
 #include "brtexpress.h"
 
-
 BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr) 
    : Expression (ET_BrtGatherExpr, expr->location)
 {
@@ -20,17 +19,44 @@ BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr)
      dims.push_back(t[i]);
 
   base = (Expression *) p->dup0();
+  
+#if 0
+  /* XXXXXXXXXX
+  ** There is a problem here
+  ** Ctool doesn't keep around the type of 
+  ** the variable which is needed to do
+  ** gather conversion
+  */
+
+  assert(base->etype == ET_Variable);
+  Variable *v = (Variable *) base;
+
+  assert (v->type->isArray());
+  ArrayType *a = (ArrayType *) v->type;
+
+  const ArrayType *pp;
+  ndims = 1;
+  for (pp = a; 
+       pp->subType && pp->subType->isArray(); 
+       pp = (ArrayType *)pp->subType)
+     ndims++;
+#else
+  ndims = 2;  //IAB XXX Assume all gathers are 2D
+#endif
 }
 
 void
 BrtGatherExpr::print (std::ostream& out) const
 {
-   out << "tex" << dims.size() << "D(";
+   out << "tex" << ndims << "D(";
    base->print(out);
-   out << ",float" << dims.size() << "(";
+   out << ",float" << ndims << "(";
    for (unsigned int i=0; i<dims.size(); i++) {
       if (i) out << ",";
       dims[i]->print(out);
+      out << "*";
+      base->print(out);
+      out << "_scale";
    }
    out << "))";
 }

@@ -32,7 +32,7 @@ static void
 usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
-  fprintf (stderr, "brcc [-v] [-n] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
+  fprintf (stderr, "brcc [-v] [-n] [-d] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
 
   exit(1);
 }
@@ -57,7 +57,7 @@ parse_args (int argc, char *argv[]) {
   globals.workspace    = 1024;
   globals.compilername = argv[0];
 
-  while ((opt = getopt(argc, argv, "no:p:vw:")) != EOF) {
+  while ((opt = getopt(argc, argv, "no:p:vwd:")) != EOF) {
      switch(opt) {
      case 'n':
         globals.parseOnly = true;
@@ -75,8 +75,10 @@ parse_args (int argc, char *argv[]) {
 	break;
      case 'v':
 	globals.verbose = 1;
-        Project::gDebug = true;
 	break;
+     case 'd':
+        Project::gDebug = true;
+        break;
      case 'w':
 	globals.workspace = strtol(optarg, NULL, 0);
 	if (globals.workspace < 16 ||
