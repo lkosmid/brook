@@ -42,9 +42,6 @@ int main() {
     float mask_stream<3,3>;
     int i, j;
 
-    // NOTE: This should range from 1 to INSIZE-1
-    //       Since the compiler is BROKEN and doesn't run the
-    //       Preprocessor, YOU MUST DO THIS MANUALLY!!!
     iter float2 it<OUTSIZE,OUTSIZE> = iter( float2(1.0f, 1.0f), float2(INSIZE-1, INSIZE-1) );
     float img<INSIZE,INSIZE>;
     float o_img<OUTSIZE,OUTSIZE>;
@@ -59,7 +56,7 @@ int main() {
             mask[i][j] = 0.;
         }
     }
-    mask[1][1] = 1.;
+    mask[1][0] = 1.;
 
     for(i=0; i<INSIZE; i++){
         for(j=0; j<INSIZE; j++){
@@ -90,7 +87,7 @@ int main() {
     // Let's look at the values
     for(i=0; i<OUTSIZE; i++){
         for(j=0; j<OUTSIZE; j++){
-            if(output[i*OUTSIZE+j] != input[(i+1)*INSIZE+(j+1)]){
+            if(output[i*OUTSIZE+j] != input[(i+1)*INSIZE+(j)]){
                 fprintf(stderr, "Mismatch - output[%d][%d]: %u, input[%d][%d]: %u\n",
                       i, j, output[i*OUTSIZE+j], i+1, j+1, input[(i+1)*INSIZE+(j+1)]);
             }
