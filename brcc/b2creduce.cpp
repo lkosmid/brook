@@ -5,13 +5,14 @@
 #include "ctool.h"
 #include <set>
 #include <string>
+#include <vector>
 static std::set <std::string>reducenames;
 static std::string functionmodifier;
 static void (*ModifyAssignExpr)(AssignExpr*ae)=0;
 static Expression * (*ModifyFunctionCall)(FunctionCall *, 
                                           unsigned int, 
                                           unsigned int)=0;
-
+const std::string dual_reduction_arg="__partial_";
 
 static void DemoteAssignExpr (AssignExpr * ae) {
    ae->aOp=AO_Equal;   
@@ -19,7 +20,7 @@ static void DemoteAssignExpr (AssignExpr * ae) {
 Expression *ChangeVariable(Expression * lv) {
    if (lv->etype==ET_Variable) {
       Variable * v = static_cast<Variable*>(lv);
-      v->name->name="__"+v->name->name;
+      v->name->name=dual_reduction_arg+v->name->name;
    }
    return lv;
 }
@@ -152,6 +153,22 @@ void BrookCombine_ConvertKernel(FunctionDef *fDef) {
    fDef->findStemnt(&FindFirstReduceFunctionCall);
    //   fDef->decl->name = fDef->decl->name->dup();
    fDef->decl->name->name+=functionmodifier;
+   if (1) {
+      FunctionType*  func=static_cast<FunctionType*>(fDef->decl->form);
+      std::vector <Decl *>AdditionalDecl;
+      unsigned int i;
+      for (i=0;i<func->nArgs;++i) {
+         if (func->args[i]->isReduce()) {
+            AdditionalDecl.push_back(func->args[i]->dup());
+            AdditionalDecl.back()->name->name=
+               dual_reduction_arg+
+               AdditionalDecl.back()->name->name;
+         }
+      }
+      for (i=0;i<AdditionalDecl.size();++i) {
+         func->addArg(AdditionalDecl[i]);
+      }
+   }
 }
 
 
