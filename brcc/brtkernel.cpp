@@ -513,6 +513,17 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
               out <<"if (scale"<<index<<"<1) scale"<<index<<" = 1;"<<std::endl;
               indent(out,1);
               out << "unsigned int ratioiter"<<index<<" = 0;"<<std::endl;
+              indent (out,1);
+              out << "if (ratioiter"<<index<<") ";
+              if (nDcube) {
+                 out << "ratioiter"<<index<<" = mapbegin[dim-1]%";
+                 out << "ratio"<<index<<";";
+              }else {
+                 out << "ratioiter"<<index<<" = mapbegin%";
+                 out << "ratio"<<index<<";";
+              }
+
+              out<<std::endl;
            }
            indent (out,1);
            out << "unsigned int iter"<<index<<" = getIndexOf(";
