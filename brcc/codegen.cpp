@@ -14,6 +14,7 @@
 #endif
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 extern "C" {
 #include <stdio.h>
 #include <string.h>
@@ -300,25 +301,22 @@ compile_hlsl_code (char *hlslcode) {
   char *argv[] = { "fxc", "/Tps_2_0", "/nologo", 0, 0, NULL };
   char *fpcode,  *errcode;
 
-  char *fname = tmpnam(NULL);
-  if (fname == NULL) {
-    fprintf (stderr, "Unable to get tmp file name\n");
-    return NULL;
-  }
-  FILE *fp = fopen (fname, "wb+");
+  FILE *fp = fopen (globals.shaderoutputname, "wb+");
   if (fp == NULL) {
-    fprintf (stderr, "Unable to open tmp file %s\n", fname);
+    fprintf (stderr, "Unable to open tmp file %s\n", globals.shaderoutputname);
     return NULL;
   }
   fwrite(hlslcode, sizeof(char), strlen(hlslcode), fp);
   fclose(fp);
   
-  argv[3] = (char *) malloc (strlen("/Fc.ps") + strlen(fname) + 1);
-  sprintf (argv[3], "/Fc%s.ps", fname);
-  argv[4] = fname;
+  argv[3] = (char *) malloc(strlen("/Fc.ps") +
+                            strlen(globals.shaderoutputname) + 1);
+  sprintf (argv[3], "/Fc%s.ps", globals.shaderoutputname);
+  argv[4] = globals.shaderoutputname;
   errcode = Subprocess_Run(argv, NULL);
-  remove(fname);
+  if (!globals.keepFiles) remove(globals.shaderoutputname);
   if (errcode == NULL) {
+     remove(argv[3]+3);
      return NULL;
   }
 
@@ -371,6 +369,8 @@ compile_hlsl_code (char *hlslcode) {
   }  
   fpcode[pos] = '\0';
 
+  fclose(fp);
+  remove(argv[3]+3);
   free(argv[3]);
 #if 0
   //daniel: ==20000==   //looks like this is the result of mktemp which stores its result in some static place
@@ -491,10 +491,20 @@ CodeGen_GenerateCode(Type *retType, const char *name,
   if (shadercode) {
      if (globals.verbose)
        std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
-     if (ps20_not_fp30)
-       fpcode = compile_hlsl_code(shadercode);
-     else
-       fpcode = compile_cg_code(shadercode);
+
+     if (globals.keepFiles) {
+        std::ofstream out;
+
+        out.open(globals.shaderoutputname);
+        if (out.fail()) {
+           std::cerr << "***Unable to open " <<globals.shaderoutputname<< "\n";
+        } else {
+           out << shadercode;
+           out.close();
+        }
+     }
+
+     fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
      free(shadercode);
   } else {
      fpcode = NULL;

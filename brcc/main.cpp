@@ -32,7 +32,16 @@ static void
 usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
-  fprintf (stderr, "brcc [-v] [-n] [-d] [-o outputfileprefix] [-w workspace] [-p ps20|cpu|fp30|arb] foo.br\n");
+  fprintf (stderr,
+        "brcc [-hvnd] [-o prefix] [-w workspace] [-p shader ] foo.br\n\n"
+        "\t-h\t\thelp (print this message)\n"
+        "\t-v\t\tverbose (print intermediate generated code)\n"
+        "\t-n\t\tno codegen (just parse and reemit the input)\n"
+        "\t-d\t\tdebug (print cTool internal state)\n"
+        "\t-o prefix\tprefix prepended to all output files\n"
+        "\t-w workspace\tworkspace size (16 - 2048, default 1024)\n"
+        "\t-p shader\tcpu / ps20 / fp30 (can specify multiple)\n"
+        "\n");
 
   exit(1);
 }
@@ -53,12 +62,16 @@ parse_args (int argc, char *argv[]) {
    * zero initialization from the bss will take care of the rest of the
    * defaults.
    */
-  globals.target       = 0;
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-  globals.multiThread = false;
-  while ((opt = getopt(argc, argv, "mno:p:vwd:")) != EOF) {
+  while ((opt = getopt(argc, argv, "d:hkmno:p:vw")) != EOF) {
      switch(opt) {
+     case 'h':
+        usage();
+        break;
+     case 'k':
+        globals.keepFiles = true;
+        break;
      case 'm':
         globals.multiThread = true;
         break;
@@ -104,8 +117,8 @@ parse_args (int argc, char *argv[]) {
 
   argv += optind;
   argc -= optind;
-  /* if (argc < 1) usage(); */
-  globals.sourcename = (char *) (argc < 1 ? "toy.br" : argv[0]);
+  if (argc < 1) usage();
+  globals.sourcename = (char *) argv[0];
 
   n = strlen(globals.sourcename);
   if (n < 4 || strcmp (globals.sourcename + n - 3, ".br"))
@@ -116,9 +129,9 @@ parse_args (int argc, char *argv[]) {
     outputprefix[n-3] = (char)  '\0';
   }
 
-  globals.cgoutputname = (char *) malloc (strlen(outputprefix) +
-					  strlen(".cg") + 1);
-  sprintf (globals.cgoutputname, "%s.cg",outputprefix);
+  globals.shaderoutputname = (char *) malloc (strlen(outputprefix) +
+                                              strlen(".cg") + 1);
+  sprintf (globals.shaderoutputname, "%s.cg",outputprefix);
 
   globals.coutputname = (char *) malloc (strlen(outputprefix) +
 					 strlen(".cpp") + 1);

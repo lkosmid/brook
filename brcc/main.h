@@ -10,9 +10,10 @@ struct globals_struct {
   bool multiThread;
   bool verbose;
   bool parseOnly;
+  bool keepFiles;
   char *sourcename;
   char *compilername;
-  char *cgoutputname;
+  char *shaderoutputname;
   char *houtputname;
   char *coutputname;
   int fponly;
