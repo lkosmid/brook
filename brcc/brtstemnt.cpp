@@ -224,7 +224,7 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 		if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
 			out << "const ";//kernels are only allowed to touch out params
 		}
-		if ((tq&TQ_Out)==0)
+		if ((tq&TQ_Out)==0&&form->type!=TT_Array/*no gather*/)
 			func->args[j]->name->name=std::string("&")+func->args[j]->name->name;
 	}
 	func->args[j]->form = form;
