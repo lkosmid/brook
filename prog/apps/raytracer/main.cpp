@@ -310,8 +310,8 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
 
    float3 gridDim((float) grid.dim.x, (float) grid.dim.y, (float) grid.dim.z);
    int numVoxels = grid.dim.x * grid.dim.y * grid.dim.z;
-   int maxIters, lastLive, ii;
-   float now;
+   int maxIters, lastLive, ii, aa, bb;
+   float now, t, iterTime, iterTimeSquare;
    RayState *states;
 
    /*
@@ -338,18 +338,26 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
    stream listOffset = stream::create<GridTrilistOffset>(numVoxels);
 
    stream rays = stream::create<Ray>(imageW, imageH);
-   stream rayStates = stream::create<RayState>(imageW, imageH);
-   stream hits = stream::create<Hit>(imageW, imageH);
-   stream candidateHits = stream::create<Hit>(imageW, imageH);
-   stream travDatDyn = stream::create<TraversalDataDyn>(imageW, imageH);
    stream travDatStatic = stream::create<TraversalDataStatic>(imageW, imageH);
    stream pixels = stream::create<Pixel>(imageW, imageH);
 
-   // The lack of read-modify-write means we have to ping pong writing
-   // between two copies of our dynamic state, which is a big waste of space.
-   stream BrayStates = stream::create<RayState>(imageW, imageH);
-   stream Bhits = stream::create<Hit>(imageW, imageH);
-   stream BtravDatDyn = stream::create<TraversalDataDyn>(imageW, imageH);
+   /*
+    * The lack of read-modify-write means we have to ping pong writing
+    * between two copies of our dynamic state, which is a big waste of space.
+    */
+   stream rayStates[] = {
+      stream::create<RayState>(imageW, imageH),
+      stream::create<RayState>(imageW, imageH),
+   };
+   stream hits[] = {
+      stream::create<Hit>(imageW, imageH),
+      stream::create<Hit>(imageW, imageH),
+   };
+   stream candidateHits = stream::create<Hit>(imageW, imageH);
+   stream travDatDyn[] = {
+      stream::create<TraversalDataDyn>(imageW, imageH),
+      stream::create<TraversalDataDyn>(imageW, imageH),
+   };
 
    Timer_Reset();
 
@@ -378,7 +386,10 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
     * Set .x (which is ray t) to HUGE so that any true hits will have a lower
     * t (i.e. happen closer to the eye position).
     */
-   krnFloat4Set(float4(999999, 0, 0, -1), hits);
+   krnFloat4Set(float4(999999, 0, 0, -1), hits[0]);
+
+   now = Timer_GetMS();
+   printf("Filling streams took %3.2f seconds\n", now / 1000.0);
 
 
    /*
@@ -399,41 +410,36 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
 
    printf("Initializing traversal data and ray states\n");
    krnSetupTraversal(rays, grid.min, grid.vsize,
-                     gridDim, travDatDyn, travDatStatic, rayStates);
+                     gridDim, travDatDyn[0], travDatStatic, rayStates[0]);
+
+   t = Timer_GetMS();
+   printf("Setup kernels took %3.2f seconds\n", (t - now)/1000.0);
+   now = t;
 
    printf("Traversing and intersecting (up to %d iterations)\n", maxIters);
    states = new RayState [imageW * imageH];
    lastLive = imageW * imageH;
    printf("%6d Live rays.", lastLive);
-   now = Timer_GetMS();
-   for (lastLive = -1, ii = 0; ii < maxIters; ii++) {
+   iterTime = iterTimeSquare = 0;
+   for (lastLive = -1, aa = 0, bb = 1, ii = 0; ii < maxIters; ii++) {
       int jj, live;
 
-      //fprintf(stderr, "traverse voxel %i\n", ii);
-      krnTraverseVoxel(rays, travDatStatic, travDatDyn, rayStates,
-                       listOffset, gridDim, BtravDatDyn, BrayStates);
-#if 1
-      krnTraverseVoxel(rays, travDatStatic, BtravDatDyn, BrayStates,
-                       listOffset, gridDim, travDatDyn, rayStates);
-
-
-      //fprintf(stderr, "intersect triangle %i\n", ii);
-      krnIntersectTriangle(rays, tris, rayStates, trilist, candidateHits);
+      t = Timer_GetMS();
+      krnTraverseVoxel(rays, travDatStatic, travDatDyn[aa], rayStates[0],
+                       listOffset, gridDim, travDatDyn[bb], rayStates[1]);
+      krnIntersectTriangle(rays, tris, rayStates[1], trilist, candidateHits);
       krnValidateIntersection(rays, candidateHits, grid.min, grid.vsize,
-                              gridDim, hits, travDatDyn, rayStates, trilist,
-                              Bhits, BrayStates);
-#endif
-      krnIntersectTriangle(rays, tris, BrayStates, trilist, candidateHits);
-      krnValidateIntersection(rays, candidateHits, grid.min, grid.vsize,
-                              gridDim, Bhits, travDatDyn, BrayStates, trilist,
-                              hits, rayStates);
+                              gridDim, hits[aa], travDatDyn[bb], rayStates[1],
+                              trilist, hits[bb], rayStates[0]);
+      aa = bb;
+      bb = 1 - bb;
 
       /*
        * Early termination: determine how many rays are actually still live
        * and bail when all have either left the grid or hit something.
        */
 
-      rayStates.write(states);
+      rayStates[0].write(states);
       for (live = 0, jj = 0; jj < imageW * imageH; jj++) {
          if (states[jj].x > 0 || states[jj].y > 0) {
             live++;
@@ -445,10 +451,16 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
 
          if (live == 0) break;
       }
+
+      t = Timer_GetMS() - t;
+      iterTime += t; iterTimeSquare += t * t;
    }
-   now = Timer_GetMS() - now;
+   t = Timer_GetMS();
    delete [] states;
-   printf("\nFinished in %d iterations (%3.2f seconds).\n", ii, now / 1000.0f);
+   printf("\nFinished in %d iterations (%3.2f seconds, %3.2f mean, %3.2f std. dev).\n",
+          ii, (t - now) / 1000.0f, iterTime / 1000.0f / ii,
+          sqrt(iterTimeSquare) / 1000.0f / ii);
+   now = t;
 
 #if 0
    for (ii = 0; ii < grid.nTris; ii++) {
@@ -468,11 +480,12 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
       shadInfoDat[ii].c2 = float3(tric2[3*ii+0], tric2[3*ii+1], tric2[3*ii+2]);
    }
    shadInfo.read(shadInfoDat);
-   krnShadeHits(rays, hits, tris, shadInfo, pointLight, rayStates, pixels);
-
+   krnShadeHits(rays,
+                hits[aa], tris, shadInfo, pointLight, rayStates[0], pixels);
    pixels.write(imageBuf);
-   now = Timer_GetMS();
-   printf("TraceRays took %3.2f seconds.\n", now / 1000.0f);
+   t = Timer_GetMS();
+   printf("Shading plus readback took %3.2f seconds\n", (t - now) / 1000.0f);
+   printf("TraceRays took %3.2f seconds.\n", t / 1000.0f);
 }
 
 
