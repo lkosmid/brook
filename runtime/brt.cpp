@@ -51,6 +51,10 @@ inline float isnan_flt (float x) {
 
 #include "logger.hpp"
 
+static int convertGatherIndexToInt( float inIndex ) {
+  return (int) (inIndex + 0.5f);
+}
+
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
@@ -573,7 +577,7 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
     // do everything as z,y,x and the user specifies as
     // x,y,z
     for (i=0; i<(unsigned int) index_type; i++)
-      index_intptr[i] = (int) index_ptr[index_type - 1 - i];
+      index_intptr[i] = convertGatherIndexToInt( index_ptr[index_type - 1 - i] );
 
     // get the src value
     void *src_ptr = src->fetchItemPtr(src_data, 
