@@ -150,9 +150,9 @@ inline float sign_float (float x) {
    return x==0.0f?0.0f:x<0.0f?-1.0f:1.0f;
 }
 inline float exp2_float (float x) {
-   return (float)pow(2,x);
+   return (float)pow(2.0f,x);
 }
-static const float _const_log2 = log(2);
+static const float _const_log2 = log(2.0f);
 inline float log2_float (float x) {
    return (float)log (x)/_const_log2;
 }
@@ -177,13 +177,13 @@ inline float frc_float (float x) {
 inline float frexp_float (float x, float & oout) {
    int exp;
    x = frexp(x,&exp);
-   oout=exp;
+   oout=(float)exp;
    return x;
 }
 inline float modf_float (float x, float & oout) {
    double exp;
-   x = modf(x,&exp);
-   oout=exp;
+   x = (float)modf(x,&exp);
+   oout=(float)exp;
    return x;
 }
 inline finite_float (float x) {
