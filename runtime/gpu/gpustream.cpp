@@ -508,4 +508,23 @@ namespace brook
     _data->unmap( flags );
   }
 
+  // TIM: hacky magic stuff for rendering
+  void* GPUStream::getIndexedFieldRenderData(unsigned int i)
+  {
+    GPUContext* context = _data->_context;
+    TextureHandle texture = getIndexedFieldTexture( i );
+    return context->getTextureRenderData( texture );
+  }
+
+  void   GPUStream::synchronizeRenderData()
+  {
+    GPUContext* context = _data->_context;
+    unsigned int fieldCount = getFieldCount();
+    for( unsigned int f = 0; f < fieldCount; f++ )
+    {
+      TextureHandle texture = getIndexedFieldTexture( f );
+      context->synchronizeTextureRenderData( texture );
+    }
+  }
+
 }

@@ -5,7 +5,7 @@
 
 using namespace fibble;
 
-const char* Window::kWindowClassName = "DX9Window_Class";
+const char* Window::kWindowClassName = "Fibble_WindowClass";
 
 Window::Window( int inWidth, int inHeight )
 {

@@ -213,6 +213,10 @@ namespace brook {
     virtual void drawRectangle( const GPURegion &outputRegion, 
                                 const GPUInterpolant *interpolants, 
                                 unsigned int numInterpolants ) = 0;
+
+    /* hacky functions for rendering - will be deprecated soon */
+    virtual void* getTextureRenderData( TextureHandle inTexture ) = 0;
+    virtual void synchronizeTextureRenderData( TextureHandle inTexture ) = 0;
   };
 }
 

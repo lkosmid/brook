@@ -212,6 +212,10 @@ namespace brook {
         float4 getATTextureShapeConstant();
         float4 getATDomainMinConstant();
 
+        // TIM: hacky magic stuff for rendering
+        void* getIndexedFieldRenderData(unsigned int i);
+        void   synchronizeRenderData();
+
 
   private:
         virtual ~GPUStream ();

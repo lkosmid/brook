@@ -13,7 +13,7 @@ namespace brook
   class GPURuntimeDX9 : public GPURuntime
   {
   public:
-    static GPURuntimeDX9* create();
+    static GPURuntimeDX9* create( void* inContextValue = 0 );
 
   private:
     GPURuntimeDX9() {}

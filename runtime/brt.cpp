@@ -119,7 +119,7 @@ namespace brook {
 #ifdef BUILD_DX9
     if (!strcmp(env, DX9_RUNTIME_STRING))
     {
-      Runtime* result = GPURuntimeDX9::create();
+      Runtime* result = GPURuntimeDX9::create( inContextValue );
       if( result )
         return result;
 
@@ -165,6 +165,13 @@ namespace brook {
       fflush(stderr);
     }
     return new CPURuntime();
+  }
+
+  void* StreamInterface::getIndexedFieldRenderData(unsigned int i) {
+    return NULL;
+  }
+
+  void StreamInterface::synchronizeRenderData() {
   }
 
   unsigned int StreamInterface::getElementSize() const

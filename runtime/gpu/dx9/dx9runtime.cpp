@@ -67,7 +67,7 @@ namespace brook
   class GPUContextDX9Impl : public GPUContextDX9
   {
   public:
-    static GPUContextDX9Impl* create();
+    static GPUContextDX9Impl* create( void* inContextValue );
 
     virtual bool isRenderTextureFormatValid( D3DFORMAT inFormat );
     virtual IDirect3DDevice9* getDevice() {
@@ -179,9 +179,14 @@ namespace brook
       const GPUInterpolant* interpolants, 
       unsigned int numInterpolants );
 
+    /* hacky functions for rendering - will be deprecated soon */
+    virtual void* getTextureRenderData( TextureHandle inTexture );
+    virtual void synchronizeTextureRenderData( TextureHandle inTexture );
+
+
   private:
     GPUContextDX9Impl();
-    bool initialize();
+    bool initialize( void* inContextValue );
 
     DX9Window* _window;
     IDirect3D9* _direct3D;
@@ -210,9 +215,9 @@ namespace brook
 	bool _shouldBiasInterpolants;
   };
 
-  GPURuntimeDX9* GPURuntimeDX9::create()
+  GPURuntimeDX9* GPURuntimeDX9::create( void* inContextValue )
   {
-    GPUContextDX9Impl* context = GPUContextDX9Impl::create();
+    GPUContextDX9Impl* context = GPUContextDX9Impl::create( inContextValue );
     if( !context )
       return NULL;
 
@@ -226,10 +231,10 @@ namespace brook
     return result;
   }
 
-  GPUContextDX9Impl* GPUContextDX9Impl::create()
+  GPUContextDX9Impl* GPUContextDX9Impl::create( void* inContextValue )
   {
     GPUContextDX9Impl* result = new GPUContextDX9Impl();
-    if( result->initialize() )
+    if( result->initialize( inContextValue ) )
       return result;
     delete result;
     return NULL;
@@ -239,39 +244,49 @@ namespace brook
   {
   }
 
-  bool GPUContextDX9Impl::initialize()
+  bool GPUContextDX9Impl::initialize( void* inContextValue )
   {
-    _window = DX9Window::create();
-    if( _window == NULL )
+    HRESULT result;
+    if( inContextValue == NULL )
     {
-      DX9WARN << "Could not create offscreen window.";
-      return false;
+      _window = DX9Window::create();
+      if( _window == NULL )
+      {
+        DX9WARN << "Could not create offscreen window.";
+        return false;
+      }
+
+      HWND windowHandle = _window->getWindowHandle();
+
+      _direct3D = Direct3DCreate9( D3D_SDK_VERSION );
+      if( _direct3D == NULL )
+      {
+        DX9WARN << "Could not create Direct3D interface.";
+        return false;
+      }
+
+      D3DPRESENT_PARAMETERS deviceDesc;
+      ZeroMemory( &deviceDesc, sizeof(deviceDesc) );
+
+      deviceDesc.Windowed = TRUE;
+      deviceDesc.SwapEffect = D3DSWAPEFFECT_DISCARD;
+      deviceDesc.BackBufferFormat = D3DFMT_UNKNOWN;
+      deviceDesc.EnableAutoDepthStencil = FALSE;
+      deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
+
+      result = _direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
+        D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &_device );
+      if( FAILED(result) )
+      {
+        DX9WARN << "Could not create Direct3D device.";
+        return false;
+      }
     }
-
-    HWND windowHandle = _window->getWindowHandle();
-
-    _direct3D = Direct3DCreate9( D3D_SDK_VERSION );
-    if( _direct3D == NULL )
+    else
     {
-      DX9WARN << "Could not create Direct3D interface.";
-      return false;
-    }
-
-    D3DPRESENT_PARAMETERS deviceDesc;
-    ZeroMemory( &deviceDesc, sizeof(deviceDesc) );
-
-    deviceDesc.Windowed = TRUE;
-    deviceDesc.SwapEffect = D3DSWAPEFFECT_DISCARD;
-    deviceDesc.BackBufferFormat = D3DFMT_UNKNOWN;
-    deviceDesc.EnableAutoDepthStencil = FALSE;
-    deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
-
-    HRESULT result = _direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
-      D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &_device );
-    if( FAILED(result) )
-    {
-      DX9WARN << "Could not create Direct3D device.";
-      return false;
+      _window = NULL;
+      _device = (IDirect3DDevice9*)inContextValue;
+      _device->GetDirect3D( &_direct3D );
     }
 
     // retrieve adapter format
@@ -772,6 +787,18 @@ namespace brook
   {
     HRESULT result = _device->SetVertexShader( (IDirect3DVertexShader9*)inVertexShader );
     GPUAssert( !FAILED(result), "SetVertexShader failed" );
+  }
+
+  void* GPUContextDX9Impl::getTextureRenderData( TextureHandle inTexture )
+  {
+    DX9Texture* texture = (DX9Texture*)inTexture;
+    return texture->getTextureHandle();
+  }
+
+  void GPUContextDX9Impl::synchronizeTextureRenderData( TextureHandle inTexture )
+  {
+    DX9Texture* texture = (DX9Texture*)inTexture;
+    texture->validateCachedData();
   }
 
   void GPUContextDX9Impl::drawRectangle(

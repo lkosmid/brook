@@ -180,8 +180,8 @@ namespace brook {
 
     // functions for getting at low-level representation,
     // so that an application can render and simulate
-    virtual void * getIndexedFieldRenderData(unsigned int i) const { return 0; }
-    virtual void   synchronizeRenderData() {}
+    virtual void * getIndexedFieldRenderData(unsigned int i);
+    virtual void   synchronizeRenderData();
 
     /* Used CPU Runtime Only */
     virtual void * fetchElem(const unsigned int pos[], 

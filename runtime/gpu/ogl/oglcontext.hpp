@@ -171,6 +171,14 @@ namespace brook {
                                 const GPUInterpolant *interpolants, 
                                 unsigned int numInterpolants );
 
+    /* hacky functions for rendering - will be deprecated soon */
+    virtual void* getTextureRenderData( TextureHandle inTexture ) {
+      return 0;
+    }
+
+    virtual void synchronizeTextureRenderData( TextureHandle inTexture ) {
+    }
+
     virtual ~OGLContext();
 
   protected:        
