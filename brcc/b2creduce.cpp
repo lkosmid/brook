@@ -104,6 +104,8 @@ static Expression * ArrayAssign (Expression * lval, Expression* rval, const Loca
    //now we have the job of making a comma separated expression that assigns all the values in type t
    //prepare ship for ludicrous speed.
    std::vector <Expression*>bounds;
+   Type * orig=t;
+#if 0
    while (t->type==TT_Array) {
       ArrayType * at= static_cast<ArrayType*>(t);
       if (!at->size) {
@@ -123,17 +125,14 @@ static Expression * ArrayAssign (Expression * lval, Expression* rval, const Loca
          cur = new BinaryExpr(BO_Mult,size->dup(),cur->dup(),l);
       }
    }
+#endif
    Symbol * mymemcpy = new Symbol();mymemcpy->name="memcpy";
    mymemcpy->entry = new SymEntry(FctDeclEntry);
    FunctionCall * fc =  new FunctionCall(new Variable(mymemcpy,l),l);
    fc->addArg(lval);
    fc->addArg(rval);
-   fc->addArg(new BinaryExpr(BO_Mult,new SizeofExpr(t->getBase(),l),cur,l));
+   fc->addArg(new SizeofExpr(orig,l));
    return fc;
-   return new AssignExpr(AO_Equal,
-                         lval,
-                         rval,
-                         l);///XXX FIXME   
 }
 static Expression* FunctionCallToAssign(FunctionCall *func,
                                         unsigned int reduce,
