@@ -26,6 +26,16 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
               "NV30GL Backend only supports 1D and 2D streams");
      exit(1);
   }
+
+  if (width > NV30GLRunTime::workspace
+      || height > NV30GLRunTime::workspace) {
+
+    fprintf (stderr, 
+             "NV30GL: Cannot create streams larger than: %d %d\n",
+             NV30GLRunTime::workspace, NV30GLRunTime::workspace);
+    exit(1);
+  }
+
   
   // Initialize ncomp
   ncomp = type;
