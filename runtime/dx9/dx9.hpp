@@ -88,7 +88,33 @@ namespace brook {
     int outputReductionVarSamplerIndex;
     int outputReductionVarTexCoordIndex;
   };
-
+  class DX9Iter : public Iter {
+     int dims;
+     int extents[2];
+     float ranges[4];//maximum possible values for dx
+  public:
+     DX9Iter(DX9RunTime * runtime,
+             __BRTStreamType type,
+             int dims,
+             int extents[], 
+             float ranges[]):Iter(type){
+        if (dims>2)
+           dims=2;//memory out of bounds check change to assert?
+        this->dims=dims;
+        for (unsigned int i=0;i<dims;++i) {
+           this->extents[i]=extents[i];
+        }
+        unsigned int numranges=type*dims;
+        if (numranges>4)
+           numranges=4;//memory out of bounds check change to assert?
+        memcpy(this->ranges,ranges,sizeof(float)*numranges);
+     }
+     virtual Stream  * makeStream() {
+        if (!madeStream)
+           madeStream=makeStream(dims,extents,ranges);
+        return madeStream;
+     }
+  };
   class DX9Stream : public Stream {
   public:
     DX9Stream (DX9RunTime* runtime,__BRTStreamType type, int dims, int extents[]);
@@ -122,6 +148,10 @@ namespace brook {
     DX9RunTime();
     virtual Kernel* CreateKernel(const void*[]);
     virtual Stream* CreateStream(__BRTStreamType type, int dims, int extents[]);
+    virtual Iter* CreateIter(__BRTStreamType type, 
+                                 int dims, 
+                                 int extents[],
+                                 float range[]);
     virtual ~DX9RunTime();
 
     IDirect3DDevice9* getDevice() { return device; }

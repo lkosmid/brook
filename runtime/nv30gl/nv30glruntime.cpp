@@ -35,6 +35,10 @@ Stream * NV30GLRunTime::CreateStream(__BRTStreamType type, int dims, int extents
   // XXX: TO DO
   return (Stream *) 0;
 }
+Iter * NV30GLRunTime::CreateIter(__BRTStreamType type, int dims, int extents[],float r[]) {
+  // XXX: TO DO
+  return (Iter *) 0;
+}
 
 NV30GLRunTime::~NV30GLRunTime() {
   // Does nothing

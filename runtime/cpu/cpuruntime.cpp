@@ -10,5 +10,11 @@ namespace brook{
     Stream * CPURunTime::CreateStream(__BRTStreamType type,int dims, int extents[]) {
 	return new CPUStream(type,dims,extents);
     }
+    Iter * CPURunTime::CreateIter(__BRTStreamType type,
+                                 int dims, 
+                                 int extents[], 
+                                 float ranges[]) {
+       return new CPUIter(type,dims,extents,ranges);
+    }
 
 }

@@ -69,6 +69,25 @@ namespace brook {
     __BRTStreamType type;
     virtual ~Stream() {}
   };
+
+
+  class Iter {
+  public:
+    Iter (__BRTStreamType type) {this->type=type;madeStream=0;}
+    virtual void Release() {delete this;}
+    virtual Stream * makeStream(int dims, int extents[],float ranges[]) {
+       assert(0);return 0;//XXX daniel this needs to be done
+       //will use standard brook BRTCreateStream syntax and then copy data in
+       //dx9 can then call this to easily fallback if cpu is necessary
+    };
+    virtual Stream * makeStream(){return madeStream;}
+    virtual __BRTStreamType getStreamType ()const{return type;}
+  protected:
+    __BRTStreamType type;
+    Stream * madeStream;
+    virtual ~Iter() {if (madeStream) madeStream->Release();}
+  };
+
 }
 
 
@@ -96,8 +115,24 @@ private:
 
 class __BRTIter {
 public:
-  __BRTIter(...) { assert(0); };
-  ~__BRTIter() { assert(0); };
+  __BRTIter(__BRTStreamType , ...);
+  ~__BRTIter()
+  {
+    if( iter != 0 )
+      iter->Release();
+  }
+
+  operator brook::Iter*() const {
+    return iter;
+  }
+
+  brook::Iter* operator->() const {
+    return iter;
+  }
+
+private:
+  __BRTIter( const __BRTIter& ); // no copy constructor
+  brook::Iter* iter;
 };
 
 class __BRTKernel {

@@ -290,8 +290,8 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 		return;
 	if (!a->isStream())
 		return;
-	bool isOut = (a->form->getQualifiers()&TQ_Out)!=0;
-	if (!nDcube&&ref==index) {
+        bool isIter = (a->form->getQualifiers()&TQ_Iter)!=0;
+	if (!nDcube&&(isIter||ref==index)) {
            indent(out,2);
            out << "++arg"<<index<<";"<<std::endl;
 	}else if (!nDcube) {
@@ -304,20 +304,6 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
                 out << "++iter"<<index<<";"<<std::endl;
                 indent(out,2);
                 out << "}"<<std::endl;
-                /*
-		out << "if (++iter"<<index<<"%extents["<<index<<"]";
-                out << "[dim-1]==0) {";
-                out << std::endl;
-		indent(out,4);
-		out << "iter"<<index<<"=getIndexOf(i+mapbegin,";
-                out << "extents["<<index<<"],";
-                out << "dim, extents["<<ref<<"]);";
-		out << std::endl;
-		indent(out,3);
-		out << "}"<<std::endl;
-		indent(out,2);
-		out << "}"<<std::endl;
-                */
 	}else {
            indent(out,2);
            if(ref!=index){
@@ -331,19 +317,6 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
               indent(out,2);
               out << "}"<<std::endl;			
            }
-                /*
-		indent(out,!isOut?2:3);
-		out << "if (i%mapextent[dim-1]) {"<<std::endl;
-		indent(out,!isOut?3:4);
-		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapextent,";
-                out << "extents["<<index<<"], ";
-                out << "dim, extents["<<ref<<"]);";
-		out << std::endl;
-		indent(out,!isOut?3:4);
-		out << "x"<<index<<" = arg"<<index<<" + delta_x"<<index<<";"<<std::endl;
-		indent(out,!isOut?2:3);
-		out << "}"<<std::endl;
-                */
 	}
 }
 void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out, 
@@ -353,7 +326,8 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
 		return;
 	if (!a->isStream())
 		return;
-	if (!nDcube&&ref==index) {
+        bool isIter=(a->form->getQualifiers()&TQ_Iter)!=0;
+	if (!nDcube&&(isIter||ref==index)) {
            indent(out,1);
            out << "arg"<<index<<"+=mapbegin;"<<std::endl;
 	}else {
@@ -379,12 +353,12 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
 void BRTCPUKernelCode::PrintCPUArg::Use(std::ostream &out, 
                                         bool nDcube,
                                         unsigned int ref) {
-   bool isOut = (a->form->getQualifiers()&TQ_Out)!=0;
+   bool isIter = (a->form->getQualifiers()&TQ_Iter)!=0;
    bool isReduceArg=(a->form->getQualifiers()&TQ_Reduce)!=0;
    if (useShadowOutput()||isGather()) {
       out << "arg"<<index;
    }else {
-      if (isStream()&&(reduceFunc||isOut)&&!nDcube) {
+      if (isStream()&&(ref==index||isIter)&&!nDcube) {
          out <<"*arg"<<index;
       }else if (isReduceArg||!isStream()) {
          out << "*arg"<<index;
@@ -398,7 +372,6 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out,
                                                      STAGE s) {
         Type * t=a->form;
         bool isOut = (t->getQualifiers()&TQ_Out)!=0;
-        bool isReduceArg = (t->getQualifiers()&TQ_Reduce)!=0;
 	//temporarily dissect type.
         assert (t->type==TT_Stream||t->type==TT_Array);
         bool isStream=false;
@@ -471,7 +444,6 @@ void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
 void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
         TypeQual tq= t->getQualifiers();
-        bool isReduceArg = (tq&TQ_Reduce)!=0;
         bool isOut = (tq&TQ_Out)!=0;
         bool isStream = (t->type==TT_Stream);        
         switch(s) {
@@ -532,7 +504,6 @@ bool BRTCPUKernelCode::PrintCPUArg::useShadowOutput()const {
 }
 void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out, 
                                              STAGE s) {
-      Type * t = a->form;
       if (useShadowOutput()) {
          printShadowArg(out,s);
       }else {

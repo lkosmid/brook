@@ -78,11 +78,22 @@ namespace brook {
 	unsigned int totalsize;
 	virtual ~CPUStream();
     };
+  class CPUIter:public Iter {
+  public:
+    CPUIter(__BRTStreamType type, int dims, int extents[], float ranges[])
+    :Iter(type){
+      madeStream=makeStream(dims,extents,ranges);//now we always have this
+    }
+  };
     class CPURunTime: public brook::RunTime {
     public:
 	CPURunTime();
 	virtual Kernel * CreateKernel(const void*[]);
 	virtual Stream * CreateStream(__BRTStreamType type, int dims, int extents[]);
+	virtual Iter * CreateIter(__BRTStreamType type, 
+                                  int dims, 
+                                  int extents[],
+                                  float ranges[]);
 	virtual ~CPURunTime(){}
     };
 }

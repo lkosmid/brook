@@ -56,8 +56,7 @@ namespace brook {
 __BRTStream::__BRTStream(__BRTStreamType type, ...)
   : stream(NULL)
 {
-  int dimensions = 0;
-  int extents[brook::MAXSTREAMDIMS];
+  std::vector<int> extents;
 
   va_list args;
   va_start(args,type);
@@ -65,12 +64,56 @@ __BRTStream::__BRTStream(__BRTStreamType type, ...)
   {
     int extent = va_arg(args,int);
     if( extent == -1 ) break;
-    extents[dimensions++] = extent;
+    extents.push_back(extent);
   }
   va_end(args);
 
-  stream = brook::RunTime::GetInstance()->CreateStream( type, dimensions, extents );
+  stream = brook::RunTime::GetInstance()->CreateStream( type, extents.size(), &extents[0] );
 }
+
+
+__BRTIter::__BRTIter(__BRTStreamType type, ...)
+  : iter(NULL)
+{
+  std::vector<int> extents;
+  std::vector<float> ranges;
+  va_list args;
+  va_start(args,type);
+  for(;;)
+  {
+    int extent = va_arg(args,int);
+    if( extent == -1 ) break;
+    extents.push_back(extent);
+  }
+  for (unsigned int i=0;i<extents.size();++i) {
+     switch (type) {
+     case __BRTFLOAT4:
+        ranges.push_back(va_arg(args,float));
+        ranges.push_back(va_arg(args,float));
+        ranges.push_back(va_arg(args,float));
+        ranges.push_back(va_arg(args,float));
+        break;
+     case __BRTFLOAT3:
+        ranges.push_back(va_arg(args,float));
+        ranges.push_back(va_arg(args,float));
+        ranges.push_back(va_arg(args,float));
+        break;
+     case __BRTFLOAT2:
+        ranges.push_back(va_arg(args,float));
+        ranges.push_back(va_arg(args,float));
+        break;
+     default:
+        ranges.push_back(va_arg(args,float));
+     }
+  }
+  va_end(args);
+
+  iter = brook::RunTime::GetInstance()->CreateIter( type, 
+                                                    extents.size(), 
+                                                    &extents[0],
+                                                    &ranges[0]);
+}
+
 
 __BRTKernel::__BRTKernel(const void* code[])
   : kernel(NULL)

@@ -86,8 +86,13 @@ Kernel * DX9RunTime::CreateKernel(const void* source[]) {
 }
 
 Stream * DX9RunTime::CreateStream(__BRTStreamType type, int dims, int extents[]) {
-  // XXX: TO DO
   return new DX9Stream( this, type, dims, extents );
+}
+Iter* DX9RunTime::CreateIter(__BRTStreamType type, 
+                             int dims, 
+                             int extents[], 
+                             float r[]) {
+  return new DX9Iter( this, type, dims, extents , r );
 }
 
 DX9RunTime::~DX9RunTime() {
