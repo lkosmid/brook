@@ -101,7 +101,8 @@ void BRTCPUReduceCode::printCode(std::ostream& out) const
         out << std::endl;
     }}
     initializeIndexOf(out);
-	indent(out,1); out << "if (mapbegin<mapend) {"<<std::endl;
+	indent(out,1); out << "unsigned int i=mapbegin;"<<std::endl;
+	indent(out,1); out << "if (i<mapend) {"<<std::endl;
 	//out = in
 	Decl * output=NULL;Decl *input=NULL;
 	unsigned int outint=0,inint=0;
@@ -124,10 +125,12 @@ void BRTCPUReduceCode::printCode(std::ostream& out) const
 		}else{
 			out <<"*arg"<<outint<<" = *arg"<<inint<<"++;"<<std::endl;
 		}
+		indent(out,2);
+		out <<"i++;"<<std::endl;		
 	}
 	indent(out,1); out <<"}"<<std::endl;
     indent(out,1);
-    out << "for (unsigned int i=mapbegin+1;i<mapend;++i) {";
+    out << "for (;i<mapend;++i) {";
     out << std::endl;
     indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner (";
     out<<std::endl;

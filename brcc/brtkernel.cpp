@@ -256,6 +256,9 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s)
             t->printType(out,&s,true,0);
             out << ")";
 			out<<"args["<<index<<"];";
+			if (isStream)
+				out<<" arg"<<index<<"+=mapbegin;";
+
             break;
         }
         case USE:{
@@ -379,7 +382,7 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
              out << ","<<std::endl<<long_name;
           myArgs[i].printCPU(out,PrintCPUArg::HEADER);
        }
-       fprintf (stderr, "Check %s %d\n",origname.c_str(),FunctionProp[origname].p);
+//       fprintf (stderr, "Check %s %d\n",origname.c_str(),FunctionProp[origname].p);
        if (FunctionProp[origname].p&FP_INDEXOF) {
           if (i!=0)
              out << ","<<std::endl<<long_name;
@@ -523,9 +526,9 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
         out << std::endl;
     }}
     initializeIndexOf(out);
+	indent(out,1); out << "unsigned int i=mapbegin;"<<std::endl;
     if (reduceneeded) {
-       indent(out,1); out << "if (mapbegin<mapend) {"<<std::endl;
-       indent(out,2); out << "unsigned int i=mapbegin;"<<std::endl;
+       indent(out,1); out << "if (i<mapend) {"<<std::endl;
        
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
        out << std::endl;
@@ -537,12 +540,12 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
        }}
        printIndexOfCallingArgs(out);
        out << ");"<<std::endl;
-       indent(out,2); out << "mapbegin+=1;"<<std::endl;;
+       indent(out,2); out << "i++;"<<std::endl;;
        incrementIndexOf(out);
        indent(out,1); out <<"}"<<std::endl;
     }
     indent(out,1);
-    out << "for (unsigned int i=mapbegin;i<mapend;++i) {";
+    out << "for (;i<mapend;++i) {";
     out << std::endl;
     indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner (";
     out<<std::endl;
