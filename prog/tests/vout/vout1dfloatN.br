@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 extern unsigned int debug_vout;
+extern float absolutezero;
 
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
@@ -174,7 +175,6 @@ kernel void RelativeGatherfloat1d(out float output<>,
    valueAtfloat1d(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-
 float shiftValues1dfloat(float list_stream <>,
                             float (*output_stream)<>,
                        int WIDTH, 
@@ -241,7 +241,7 @@ float shiftValues1dfloat(float list_stream <>,
           RelativeGatherfloat1d(proper_output_stream,
                                    guess_stream,
                                    list_stream,
-                                   float2((float)sign,1.0f/(float)floor(.5)),
+                                   float2((float)sign,1.0f/absolutezero),
                                    maxvalue);
         }
         streamSwap(*output_stream,proper_output_stream);
@@ -896,7 +896,7 @@ unsigned int  voutCombinefloat1d(float outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;
@@ -1055,7 +1055,6 @@ kernel void RelativeGatherfloat21d(out float2 output<>,
    valueAtfloat21d(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-
 float shiftValues1dfloat2(float2 list_stream <>,
                             float2 (*output_stream)<>,
                        int WIDTH, 
@@ -1122,7 +1121,7 @@ float shiftValues1dfloat2(float2 list_stream <>,
           RelativeGatherfloat21d(proper_output_stream,
                                    guess_stream,
                                    list_stream,
-                                   float2((float)sign,1.0f/(float)floor(.5)),
+                                   float2((float)sign,1.0f/absolutezero),
                                    maxvalue);
         }
         streamSwap(*output_stream,proper_output_stream);
@@ -1777,7 +1776,7 @@ unsigned int  voutCombinefloat21d(float2 outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;
@@ -1936,7 +1935,6 @@ kernel void RelativeGatherfloat31d(out float3 output<>,
    valueAtfloat31d(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-
 float shiftValues1dfloat3(float3 list_stream <>,
                             float3 (*output_stream)<>,
                        int WIDTH, 
@@ -2003,7 +2001,7 @@ float shiftValues1dfloat3(float3 list_stream <>,
           RelativeGatherfloat31d(proper_output_stream,
                                    guess_stream,
                                    list_stream,
-                                   float2((float)sign,1.0f/(float)floor(.5)),
+                                   float2((float)sign,1.0f/absolutezero),
                                    maxvalue);
         }
         streamSwap(*output_stream,proper_output_stream);
@@ -2658,7 +2656,7 @@ unsigned int  voutCombinefloat31d(float3 outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;
@@ -2817,7 +2815,6 @@ kernel void RelativeGatherfloat41d(out float4 output<>,
    valueAtfloat41d(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-
 float shiftValues1dfloat4(float4 list_stream <>,
                             float4 (*output_stream)<>,
                        int WIDTH, 
@@ -2884,7 +2881,7 @@ float shiftValues1dfloat4(float4 list_stream <>,
           RelativeGatherfloat41d(proper_output_stream,
                                    guess_stream,
                                    list_stream,
-                                   float2((float)sign,1.0f/(float)floor(.5)),
+                                   float2((float)sign,1.0f/absolutezero),
                                    maxvalue);
         }
         streamSwap(*output_stream,proper_output_stream);
@@ -3539,7 +3536,7 @@ unsigned int  voutCombinefloat41d(float4 outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;

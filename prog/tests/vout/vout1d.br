@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 extern unsigned int debug_vout;
+extern float absolutezero;
 
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
@@ -164,7 +165,6 @@ kernel void RelativeGatherBRT_TYPE1d(out BRT_TYPE output<>,
    valueAtBRT_TYPE1d(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-
 float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
                             BRT_TYPE (*output_stream)<>,
                        int WIDTH, 
@@ -231,7 +231,7 @@ float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
           RelativeGatherBRT_TYPE1d(proper_output_stream,
                                    guess_stream,
                                    list_stream,
-                                   float2((float)sign,1.0f/(float)floor(.5)),
+                                   float2((float)sign,1.0f/absolutezero),
                                    maxvalue);
         }
         streamSwap(*output_stream,proper_output_stream);
@@ -886,7 +886,7 @@ unsigned int  voutCombineBRT_TYPE1d(BRT_TYPE outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;

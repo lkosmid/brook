@@ -1,29 +1,19 @@
-#line 1 "brtvector.hpp"
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 
 unsigned int debug_vout = 0;
+float absolutezero=0.0f;
+
 unsigned int toui(float f) {
    return (unsigned int)f;
 }
@@ -91,7 +81,6 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
-#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -1026,7 +1015,6 @@ kernel void combinefloat (float input1[][],
       output=input1[indexof(output)];
    }
 }
-
 unsigned int  voutCombinefloat(float outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -1061,7 +1049,7 @@ unsigned int  voutCombinefloat(float outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;
@@ -1096,7 +1084,6 @@ unsigned int totalCombineVoutfloat (float list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -2031,7 +2018,6 @@ kernel void combinefloat2 (float2 input1[][],
       output=input1[indexof(output)];
    }
 }
-
 unsigned int  voutCombinefloat2(float2 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -2066,7 +2052,7 @@ unsigned int  voutCombinefloat2(float2 outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;
@@ -2101,7 +2087,6 @@ unsigned int totalCombineVoutfloat2 (float2 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -3036,7 +3021,6 @@ kernel void combinefloat3 (float3 input1[][],
       output=input1[indexof(output)];
    }
 }
-
 unsigned int  voutCombinefloat3(float3 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -3071,7 +3055,7 @@ unsigned int  voutCombinefloat3(float3 outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;
@@ -3106,7 +3090,6 @@ unsigned int totalCombineVoutfloat3 (float3 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -4041,7 +4024,6 @@ kernel void combinefloat4 (float4 input1[][],
       output=input1[indexof(output)];
    }
 }
-
 unsigned int  voutCombinefloat4(float4 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -4076,7 +4058,7 @@ unsigned int  voutCombinefloat4(float4 outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;
@@ -4111,16 +4093,10 @@ unsigned int totalCombineVoutfloat4 (float4 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 1075 "brtvector.hpp"
-#line 1075 "brtvector.hpp"
 
-#line 1075 "brtvector.hpp"
 
-#line 1075 "brtvector.hpp"
 
-#line 1075 "brtvector.hpp"
 
-#line 1075 "brtvector.hpp"
 
 
 

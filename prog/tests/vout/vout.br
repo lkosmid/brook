@@ -2,6 +2,8 @@
 #include <stdlib.h>
 
 unsigned int debug_vout = 0;
+float absolutezero=0.0f;
+
 unsigned int toui(float f) {
    return (unsigned int)f;
 }
@@ -1003,7 +1005,6 @@ kernel void combineBRT_TYPE (BRT_TYPE input1[][],
       output=input1[indexof(output)];
    }
 }
-
 unsigned int  voutCombineBRT_TYPE(BRT_TYPE outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -1038,7 +1039,7 @@ unsigned int  voutCombineBRT_TYPE(BRT_TYPE outleft_stream<>,
                    startsecond,
                    endsecond,
                    maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   1.0f/absolutezero);
       streamSwap (*output,output_stream);
    }
    return totalsize;
