@@ -144,168 +144,199 @@ krnTraverseVoxel(Ray ray<>, TraversalDataStatic travdatstatic<>,
                  GridTrilistOffset listoffset[], float3 grid_dim,
                  out TraversalDataDyn travdatdyn<>, out RayState raystate<>)
 {
-  float3 compmask;
-  float minval;
-  float offsetaddr;
-  float trilistpos;
+   float3 compmask;
+   float minval;
+   float offsetaddr;
+   float trilistpos;
 
-  if (oldraystate.state.x > 0) {
+   if (oldraystate.state.x > 0) {
+      minval = min(min(travdatdynold.tMax.x,
+                       travdatdynold.tMax.y), travdatdynold.tMax.z);
 
-    //minval = min( min(travdatdynold.tMax.x, travdatdynold.tMax.y),
-    //		  min(travdatdynold.tMax.x, travdatdynold.tMax.z) );
-    minval = min( min(travdatdynold.tMax.x, travdatdynold.tMax.y), travdatdynold.tMax.z );
+      if (minval == travdatdynold.tMax.x) {
+         compmask = float3(1,0,0);
+      } else if (minval == travdatdynold.tMax.y) {
+         compmask = float3(0,1,0);
+      } else if (minval == travdatdynold.tMax.z) {
+         compmask = float3(0,0,1);
+      }
 
-    if (minval == travdatdynold.tMax.x)
-      compmask = float3(1,0,0);
-    else if (minval == travdatdynold.tMax.y)
-      compmask = float3(0,1,0);
-    else if (minval == travdatdynold.tMax.z)
-      compmask = float3(0,0,1);
+      if (travdatdynold.voxNo.x == travdatstatic.outNo.x ||
+            travdatdynold.voxNo.y == travdatstatic.outNo.y ||
+            travdatdynold.voxNo.z == travdatstatic.outNo.z ||
+            dot(travdatdynold.tMax, compmask) > 999999) { //should be tmax, but busted now...
 
-    if (travdatdynold.voxNo.x == travdatstatic.outNo.x ||
-	travdatdynold.voxNo.y == travdatstatic.outNo.y ||
-	travdatdynold.voxNo.z == travdatstatic.outNo.z ||
-	dot(travdatdynold.tMax, compmask) > 999999) { //should be tmax, but busted now...
+         // ray is out of grid, do nothing
+         travdatdyn.voxNo = travdatdynold.voxNo;
+         travdatdyn.tMax = travdatdynold.tMax;
+         travdatdyn.voxToUse = travdatdynold.voxToUse;
+         raystate.state = float4(0,0,0,0);
+      } else {
 
-      // ray is out of grid, do nothing
+         // use linear offset of current voxel to fetch offset into the
+         // triangle list The list of triangles located in this voxel starts
+         // at this offset in the global triangle list
+         offsetaddr = grid_dim.z*(travdatdynold.voxNo.x*grid_dim.y +
+                                  travdatdynold.voxNo.y) + travdatdynold.voxNo.z;
+         trilistpos = listoffset[offsetaddr].listOffset;
+         travdatdyn.voxToUse = travdatdynold.voxNo;
+
+         // update dynamic ray state to next voxel
+         travdatdyn.voxNo = travdatdynold.voxNo + compmask*travdatstatic.step;
+         travdatdyn.tMax = travdatdynold.tMax + compmask*travdatstatic.tDelta;
+
+         if (trilistpos >= 0) {
+            // go into isect state if triangles in this voxel
+            raystate.state = float4(0,1,0,trilistpos);
+         } else {
+            raystate.state = float4(1,0,0,0); // no triangles, continue stepping
+         }
+      }
+   } else {
+      // do nothing, ray not in traversal state
       travdatdyn.voxNo = travdatdynold.voxNo;
       travdatdyn.tMax = travdatdynold.tMax;
       travdatdyn.voxToUse = travdatdynold.voxToUse;
-      raystate.state = float4(0,0,0,0);
-    } else {
-
-      // use linear offset of current voxel to fetch offset into the
-      // triangle list The list of triangles located in this voxel starts at
-      // this offset in the global triangle list
-      offsetaddr = grid_dim.z*(travdatdynold.voxNo.x*grid_dim.y +
-                               travdatdynold.voxNo.y) + travdatdynold.voxNo.z;
-      trilistpos = listoffset[offsetaddr].listOffset;
-      travdatdyn.voxToUse = travdatdynold.voxNo;
-
-      // update dynamic ray state to next voxel
-      travdatdyn.voxNo = travdatdynold.voxNo + compmask*travdatstatic.step;
-      travdatdyn.tMax = travdatdynold.tMax + compmask*travdatstatic.tDelta;
-
-      if (trilistpos >= 0) {
-	raystate.state = float4(0,1,0,trilistpos);   // go into isect state if triangles in this voxel
-      } else {
-	raystate.state = float4(1,0,0,0); // no triangles, continue stepping
-      }
-    }
-  } else {
-    // do nothing, ray not in traversal state
-    travdatdyn.voxNo = travdatdynold.voxNo;
-    travdatdyn.tMax = travdatdynold.tMax;
-    travdatdyn.voxToUse = travdatdynold.voxToUse;
-    raystate.state = oldraystate.state;
-  }
+      raystate.state = oldraystate.state;
+   }
 }
 
 
-// performs first part of ray-triangle intersection for rays in the
-// intersect state (projects ray onto triangle, does not determine if
-// projected point lies within triangle, this is done later in
-// krnValidateIntersection)
+/*
+ * krnIntersectTriangle --
+ *
+ *      First stage of ray-triangle intersection.  Projects the ray into the
+ *      plane of the current triangle and records the point of intersection
+ *      for additional checks in krnValidateIntersection.
+ *
+ * Results:
+ *      candidateHit reflects where the ray would hit the triangle (if it
+ *      hits it at all).
+ */
+
 kernel void
-krnIntersectTriangle(Ray ray<>, Triangle tris[], RayState oldraystate<>,
-                     GridTrilist trilist[], out Hit candidatehit<>)
+krnIntersectTriangle(Ray ray<>, Triangle tris[], RayState rayState<>,
+                     GridTrilist trilist[], out Hit candidateHit<>)
 {
-  float idx, det, inv_det;
-  float3 edge1, edge2, pvec, tvec, qvec;
+   float idx, det, inv_det;
+   float3 edge1, edge2, pvec, tvec, qvec;
 
-  if (oldraystate.state.y > 0) {
-    // starting index of triangle list to search is stored in oldraystate.state.w
-    // first get a triangle number
-    idx = trilist[oldraystate.state.w].triNum;
+   if (rayState.state.y > 0) {
+      // starting index of triangle list to search is stored in rayState.state.w
+      // first get a triangle number
+      idx = trilist[rayState.state.w].triNum;
 
-    edge1 = tris[idx].v1 - tris[idx].v0;
-    edge2 = tris[idx].v2 - tris[idx].v0;
-    pvec = cross(ray.d, edge2);
-    det = dot(edge1, pvec);
-    inv_det = 1.0f/det;
-    tvec = ray.o - tris[idx].v0;
-    candidatehit.data.y = dot( tvec, pvec ) * inv_det;
-    qvec = cross( tvec, edge1 );
-    candidatehit.data.z = dot( ray.d, qvec ) * inv_det;
-    candidatehit.data.x = dot( edge2, qvec ) * inv_det;
-    candidatehit.data.w = idx;
-  } else {
-    candidatehit.data = float4(0,0,0,-1);
-  }
+      edge1 = tris[idx].v1 - tris[idx].v0;
+      edge2 = tris[idx].v2 - tris[idx].v0;
+      pvec = cross(ray.d, edge2);
+      det = dot(edge1, pvec);
+      inv_det = 1.0f/det;
+      tvec = ray.o - tris[idx].v0;
+      qvec = cross( tvec, edge1 );
 
+      candidateHit.data.x = dot(edge2, qvec) * inv_det;   // ray tHit
+      candidateHit.data.y = dot(tvec, pvec) * inv_det;    // uu
+      candidateHit.data.z = dot(ray.d, qvec) * inv_det;   // vv
+      candidateHit.data.w = idx;                          // triangleNum
+   } else {
+      candidateHit.data = float4(0,0,0,-1);
+   }
 }
 
 
-// determines if a triangle hit computed by krnIntersectTriangle is indeed
-// a valid hit.  Valid hits are scheduled for shading
+/*
+ * krnValidateIntersection --
+ *
+ *      Does the second phase of ray-triangle intersection.  The candidate
+ *      hits that come have already been projected into the plane of the
+ *      triangle they're testing.  This routine checks if the rays hit inside
+ *      the triangle and that they're closer than any hits already found.
+ *      Once it's done, it updates the rayState so that the next triangle is
+ *      tested, the next voxel is entered, or the ray is marked done and
+ *      ready for shading.
+ *
+ * Results:
+ *      prevHit and oldRayState are both stale with hit and rayState
+ *      containing the now current data.
+ */
+
 kernel void
-krnValidateIntersection(Ray ray<>, Hit candidatehit<>,
+krnValidateIntersection(Ray ray<>, Hit candidateHit<>,
                         float3 grid_min, float3 grid_vsize, float3 grid_dim,
-                        Hit oldhit<>, TraversalDataDyn travdatdyn<>,
-                        RayState oldraystate<>, GridTrilist trilist[],
-                        out Hit hit<>, out RayState raystate<>)
+                        Hit prevHit<>, TraversalDataDyn travdatdyn<>,
+                        RayState oldRayState<>, GridTrilist trilist[],
+                        out Hit hit<>, out RayState rayState<>)
 {
-  float triNum;
-  float validhit;
-  float3 hitp, myvox;
-  float3 fudgeup, fudgedown;
+   if (oldRayState.state.y > 0) {
+      float triNum;
+      float validHit;
 
-  if (oldraystate.state.y > 0) {
+      /*
+       * In order for us to consider it 'valid' a hit must have:
+       *
+       *  - Non-negative u, v barycentric coordinates
+       *  - u + v less than one (i.e. the third coordinate also positive)
+       *  - A hit time less than the hit time of the curent best hit.
+       *  - A non-negative hit time.
+       */
 
-    // checks for valid bary coords u,v and makes sure the hit it before all previously found hits
-    validhit = (candidatehit.data.y >= 0.0f && candidatehit.data.z >= 0.0f &&
-               (candidatehit.data.y + candidatehit.data.z) <= 1.0f &&
-               candidatehit.data.x <= oldhit.data.x &&
-               candidatehit.data.x >= 0.0f) ? 1 : 0;
+      validHit = (candidateHit.data.y >= 0.0f && candidateHit.data.z >= 0.0f &&
+                 (candidateHit.data.y + candidateHit.data.z) <= 1.0f &&
+                 candidateHit.data.x <= prevHit.data.x &&
+                 candidateHit.data.x >= 0.0f) ? 1 : 0;
 
+      /*
+       * We also make sure the candidate hit intersects the portion of the
+       * triangle that lies in the current voxel.  Otherwise we'll record it
+       * when we get to the relevant voxel (if it's still the best hit).
+       */
 
-    if (validhit) {
-      // fudge .01 to elimate speckles...
-      hitp = ray.o + ray.d*(candidatehit.data.x - 0.01f);
-      myvox = floor( (hitp - grid_min)/grid_vsize );
-      myvox.x = myvox.x >= grid_dim.x ? myvox.x-1 : myvox.x;
-      myvox.y = myvox.y >= grid_dim.y ? myvox.y-1 : myvox.y;
-      myvox.z = myvox.z >= grid_dim.z ? myvox.z-1 : myvox.z;
+      if (validHit) {
+         float3 hitP, myVox;
+         float3 fudgeUp, fudgeDown;
 
-      // fudge more since equality is busted...
-      fudgeup = travdatdyn.voxToUse + 0.1f;
-      fudgedown = travdatdyn.voxToUse - 0.1f;
+         // fudge .01 to elimate speckles...
+         hitP = ray.o + ray.d*(candidateHit.data.x - 0.01f);
+         myVox = floor((hitP - grid_min) / grid_vsize);
+         myVox.x = myVox.x >= grid_dim.x ? myVox.x-1 : myVox.x;
+         myVox.y = myVox.y >= grid_dim.y ? myVox.y-1 : myVox.y;
+         myVox.z = myVox.z >= grid_dim.z ? myVox.z-1 : myVox.z;
 
-      // Ensure the intersection with the triangle occurs in the current
-      // voxel.  If not, we'll end up finding the hit again later
-      validhit = (myvox.x >= fudgedown.x && myvox.x <= fudgeup.x &&
-		  myvox.y >= fudgedown.y && myvox.y <= fudgeup.y &&
-		  myvox.z >= fudgedown.z && myvox.z <= fudgeup.z) ? validhit : 0;
-    }
+         // fudge more since equality is busted...
+         fudgeUp = travdatdyn.voxToUse + 0.1f;
+         fudgeDown = travdatdyn.voxToUse - 0.1f;
 
+         validHit = (myVox.x >= fudgeDown.x && myVox.x <= fudgeUp.x &&
+                     myVox.y >= fudgeDown.y && myVox.y <= fudgeUp.y &&
+                     myVox.z >= fudgeDown.z && myVox.z <= fudgeUp.z) ? 1 : 0;
+       }
 
-    if (validhit > 0) {
-      hit.data = candidatehit.data;
-    } else {
-      hit.data = oldhit.data;
-    }
+      // Either propagate any hit we've already found or replace it.
+      hit.data = validHit > 0 ? candidateHit.data : prevHit.data;
 
-    // move on to next triangle, see if we've hit the end of the triangle list
-    triNum = trilist[oldraystate.state.w+1].triNum;
+      /*
+       * We're done with this hit.  Adjust rayState either to check the next
+       * triangle in the voxel, continue traversing if we've checked all of
+       * this voxel's triangles without collision, or stop traversing and mark
+       * for shading if we've checked all of this voxel's triangles and found
+       * a hit.
+       */
 
-    if (triNum < 0) {
-      // Have come to end of the triangle list for this voxel
-      // If we found a hit, mark the ray for shading
-      if (validhit > 0 || oldhit.data.w >= 0) {
-	raystate.state = float4(0,0,1,0);
+      triNum = trilist[oldRayState.state.w+1].triNum;
+      if (triNum < 0) {
+         if (hit.data.w >= 0) {
+            rayState.state = float4(0,0,1,0);
+         } else {
+            rayState.state = float4(1,0,0,0);
+         }
       } else {
-	// no hits, return the grid traversal state
-	raystate.state = float4(1,0,0,0);
+         rayState.state = float4(0,1,0, oldRayState.state.w + 1);
       }
-    } else {
-      raystate.state = float4(0,1,0,oldraystate.state.w+1);
-    }
-  } else {
-    // not in intersection mode, do nothing
-    hit.data = oldhit.data;
-    raystate.state = oldraystate.state;
-  }
-
+   } else {
+      // Not in intersection mode, just propagate values.
+      hit.data = prevHit.data;
+      rayState.state = oldRayState.state;
+   }
 }
 
 
