@@ -1,3 +1,6 @@
+/* vc7 floating point paranoia.  This program is in serious violation. */
+#pragma warning(disable:4244)
+
 extern void sort (struct __BRTStream *list_stream,int WIDTH, int LENGTH);
 void __printf_cpu_inner(float inx, float iny, float outx, float outy) {
    printf("%g %g -> %g %g\n",inx,iny,outx,outy);
@@ -829,7 +832,7 @@ float shiftValues(struct __BRTStream *list_stream,
    float tmp_stream<WIDTH,LENGTH>;
    float ret_stream<WIDTH,LENGTH>;
    float guess_stream<WIDTH,LENGTH>;
-   int i;
+   unsigned int i;
    float2 maxvalue;
    unsigned int seed=215891;
    unsigned int logN;
@@ -1133,11 +1136,4 @@ int main (int argc,char ** argv) {
    }
    return 0;
 }
-
-
-
-
-
-
-
 
