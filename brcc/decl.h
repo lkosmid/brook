@@ -507,7 +507,7 @@ class FunctionType : public Type
 
     bool            KnR_decl;    // old-style function declaration?
     unsigned int    nArgs;
-    int             size;
+    unsigned int    size;
     Decl          **args;
 
     Type           *subType;    // The return type

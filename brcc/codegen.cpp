@@ -77,6 +77,7 @@ static StructDef* findStructureDef( Type* inType )
 	return tag->entry->uStructDef->stDefn;
 }
 
+#if 0
 static void printShaderStructureDef( std::ostream& out, StructDef* structure )
 {
 	out << "struct " << structure->tag->name << " {\n";
@@ -93,6 +94,7 @@ static void printShaderStructureDef( std::ostream& out, StructDef* structure )
 	}
 	out << "};\n\n";
 }
+#endif
 
 int getGatherStructureSamplerCount( StructDef* structure )
 {
@@ -456,6 +458,7 @@ static void exandStreamSamplerDecls( std::ostream& shader, const std::string& in
 	}
 }
 
+#if 0
 static void printSwizzle( std::ostream& shader, Type* inForm )
 {
 	assert( inForm );
@@ -481,6 +484,7 @@ static void printSwizzle( std::ostream& shader, Type* inForm )
 			abort();
 	}
 }
+#endif
 
 static void expandStreamStructureFetches( std::ostream& shader, const std::string& argumentName, const std::string& fieldName, StructDef* structure, int& ioIndex )
 {
@@ -586,7 +590,6 @@ static void expandStreamFetches( std::ostream& shader, const std::string& argume
 
 static char *
 generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFirstOutput, int inOutputCount, bool fullAddressTrans ) {
-  const char xyzw[] = "xyzw";
   std::ostringstream shader;
   bool isReduction = false;
   int texcoord, constreg, samplerreg, i;

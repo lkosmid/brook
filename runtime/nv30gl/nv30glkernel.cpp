@@ -69,7 +69,7 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
        for( i = 0; i < argumentCount; i++ ) {
          s = s.substr( s.find("\n")+1 );
          s = s.substr( s.find("##")+2 );
-         char typeCode = s[0];
+         // char typeCode = s[0];
          char indexofHint = s[1];
          argumentUsesIndexof[i] = (indexofHint == 'i');
        }
@@ -430,8 +430,8 @@ void NV30GLKernel::Map() {
 
    for (j=0; j<npasses; ) {
       
-     if (w != outstream[scount]->width ||
-         h != outstream[scount]->height) {
+     if (w != (int) outstream[scount]->width ||
+         h != (int) outstream[scount]->height) {
 
        // Compute texture coords
 
@@ -474,7 +474,7 @@ void NV30GLKernel::Map() {
       
      unsigned int nfields = outstream[scount]->nfields;
      NV30GLStream *outp = outstream[scount];
-     for (unsigned int k=0; k < nfields; k++) {
+     for (unsigned int k=0; k < (unsigned int) nfields; k++) {
         if (runtime->pbuffer_ncomp != outp->ncomp[k])
            runtime->createPBuffer(outp->ncomp[k]);
         
