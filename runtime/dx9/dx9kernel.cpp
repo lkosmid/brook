@@ -319,7 +319,7 @@ void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
   int inputWidth = inputStream->getWidth();
   int inputHeight = inputStream->getHeight();
 
-  DX9Assert( (inputWidth < kDX9ReductionBufferWidth/2) && (inputHeight < kDX9ReductionBufferHeight/2),
+  DX9Assert( (inputWidth <= kDX9ReductionBufferWidth/2) && (inputHeight <= kDX9ReductionBufferHeight/2),
     "A stream to be reduced was too large for the reduction buffer." );
 
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();

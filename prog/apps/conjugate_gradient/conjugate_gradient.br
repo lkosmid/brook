@@ -4,23 +4,19 @@
 
 
 #define MAX_NZ_PER_ROW  7
-#define NUM_ROWS        140
+#define NUM_ROWS        200
 #define MAX_NZ          (NUM_ROWS*MAX_NZ_PER_ROW)
 
 
 /*** Kernels needed for Sparse Matrix-Vector multiplication *****************************************/
 
-kernel void gather(float index<>, float x[], out float result<>) {
-  result = x[index];
-}
-
 kernel void mult(float a<>, float b<>, out float c<>) {
   c = a*b;
 }
 
-kernel void sparse_matmult_product( float index<>, float x[], float A<>, out float result<> )
+kernel void sparse_matmult_product( float index<>, float x[][], float A<>, out float result<> )
 {
-  result = x[index] * A;
+  result = x[index][0] * A;
 }
 
 
@@ -173,19 +169,19 @@ int main(int argc, char** argv) {
   //float  zeros[NUM_ROWS];
   //float  tmp[NUM_ROWS];
 
-  float  AStrm<MAX_NZ>;
-  float  cIdxStrm<MAX_NZ>;
-  float  productsStrm<MAX_NZ>;
-  float  vecGatherStrm<MAX_NZ>;
+  float  AStrm<NUM_ROWS,MAX_NZ_PER_ROW>;
+  float  cIdxStrm<NUM_ROWS,MAX_NZ_PER_ROW>;
+  float  productsStrm<NUM_ROWS,MAX_NZ_PER_ROW>;
+  float  vecGatherStrm<NUM_ROWS,MAX_NZ_PER_ROW>;
 
-  float  xStrm<NUM_ROWS>;
-  float  bStrm<NUM_ROWS>;
+  float  xStrm<NUM_ROWS,1>;
+  float  bStrm<NUM_ROWS,1>;
 
 
-  float  rStrm<NUM_ROWS>;
-  float  qStrm<NUM_ROWS>;
-  float  dStrm<NUM_ROWS>;
-  float  tmpStrm<NUM_ROWS>;
+  float  rStrm<NUM_ROWS,1>;
+  float  qStrm<NUM_ROWS,1>;
+  float  dStrm<NUM_ROWS,1>;
+  float  tmpStrm<NUM_ROWS,1>;
   
 
 
@@ -374,7 +370,8 @@ int main(int argc, char** argv) {
     sum(tmpStrm, resNew);
 
 	  it++;
-	  printf("iteration %d.  Current residual norm: %f\n", it, resNew);
+    if( (it % 10) == 1 )
+  	  printf("iteration %d.  Current residual norm: %f\n", it, resNew);
   }      
 
 

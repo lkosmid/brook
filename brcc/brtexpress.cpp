@@ -56,9 +56,9 @@ BrtGatherExpr::print (std::ostream& out) const
      dims[0]->print(out);
    else if (dims.size() == 2) {
      out << "float2(";
-     dims[0]->print(out);
-     out << ",";
      dims[1]->print(out);
+     out << ",";
+     dims[0]->print(out);
      out << ")";
    } else {
      std::cerr << location
@@ -88,9 +88,9 @@ BrtGatherExpr::print (std::ostream& out) const
      dims[0]->print(out);
    else if (dims.size() == 2) {
      out << "float2(";
-     dims[0]->print(out);
-     out << ",";
      dims[1]->print(out);
+     out << ",";
+     dims[0]->print(out);
      out << ")";
    } else {
      std::cerr << location
