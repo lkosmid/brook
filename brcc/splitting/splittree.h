@@ -125,10 +125,15 @@ private:
 
   void dumpPassConfiguration( std::ostream& inStream );
 
+  void accumulateChildSplits( SplitNode* inSplit );
+  void accumulateChildSplitsRec( SplitNode* inSplit, SplitNode* inDescenent );
+  void accumulateParentSplits( SplitNode* inSplit );
+  void accumulateParentSplitsRec( SplitNode* inSplit, SplitNode* inAncestor );
+
   void rdsAccumulatePassAncestors( SplitPassInfo* ioPass );
-  void rdsAccumulatePassAncestorsRec( SplitNode* inNode, SplitPassInfo* ioPass );
+//  void rdsAccumulatePassAncestorsRec( SplitNode* inNode, SplitPassInfo* ioPass );
   void rdsAccumulatePassDescendents( SplitPassInfo* ioPass );
-  void rdsAccumulatePassDescendentsRec( SplitNode* inNode, SplitPassInfo* ioPass );
+//  void rdsAccumulatePassDescendentsRec( SplitNode* inNode, SplitPassInfo* ioPass );
 
   void unmark( int inMarkBit ) const;
 

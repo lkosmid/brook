@@ -215,6 +215,7 @@ private:
   NodeSet _spanningBucket;
 
   SplitNodeSet _parentSplits;
+  SplitNodeSet _childSplits;
 
   bool _rdsFixedMarked;
   bool _rdsFixedUnmarked;

@@ -17,10 +17,10 @@
 //#define SPLIT_SEARCH_EXHAUSTIVE
 
 // uncomment this to turn on the greedy merging that improves RDS
-//#define SPLIT_SEARCH_MERGE
+#define SPLIT_SEARCH_MERGE
 
 // uncomment this line for RDS + an after-the-fact merge
-#define SPLIT_SEARCH_MERGE_AFTER
+//#define SPLIT_SEARCH_MERGE_AFTER
 
 // uncomment this line to allow RDS*merge to remove useless nodes
 // during the incremental search, not just at the end
@@ -135,7 +135,7 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
   std::cout << "time compile " << timeCompilingCounter << std::endl;
   std::cout << "time print " << timePrintingCounter << std::endl;
 
-  dumpPassConfiguration( std::cout );
+  dumpPassConfiguration( std::ofstream("configuration.dump") );
 
   for( PassSet::iterator p = _passes.begin(); p != _passes.end(); ++p )
     rdsPrintPass( *p, inStream );
@@ -345,6 +345,12 @@ void SplitTree::rdsMergePasses( bool inLastTime )
 
   for( PassSet::iterator j = _passes.begin(); j != _passes.end(); ++j )
   {
+    accumulateChildSplits( (*j)->singletonNode );
+    accumulateParentSplits( (*j)->singletonNode );
+  }
+
+  for( PassSet::iterator j = _passes.begin(); j != _passes.end(); ++j )
+  {
     rdsAccumulatePassAncestors( *j );
     rdsAccumulatePassDescendents( *j );
   }
@@ -447,49 +453,79 @@ SplitPassInfo* SplitTree::rdsCreatePass( SplitNode* inNode )
   return result;
 }
 
+void SplitTree::accumulateChildSplits( SplitNode* inSplit )
+{
+  unmark( SplitNode::kMarkBit_Descendent );
+  inSplit->_childSplits.clear();
+
+  size_t childCount = inSplit->getGraphChildCount();
+  for( size_t i = 0; i < childCount; i++ )
+  accumulateChildSplitsRec( inSplit, inSplit->getIndexedGraphChild(i) );
+}
+
+void SplitTree::accumulateChildSplitsRec( SplitNode* inSplit, SplitNode* inDescenent )
+{
+  if( inDescenent->isMarked( SplitNode::kMarkBit_Descendent ) ) return;
+  inDescenent->mark( SplitNode::kMarkBit_Descendent );
+
+  if( inDescenent->isMarkedAsSplit() )
+  {
+    inSplit->_childSplits.insert( inDescenent );
+  }
+  else
+  {
+    size_t childCount = inDescenent->getGraphChildCount();
+    for( size_t i = 0; i < childCount; i++ )
+      accumulateChildSplitsRec( inSplit, inDescenent->getIndexedGraphChild(i) );
+  }
+}
+
+void SplitTree::accumulateParentSplits( SplitNode* inSplit )
+{
+  unmark( SplitNode::kMarkBit_Ancestor );
+  inSplit->_parentSplits.clear();
+
+  size_t parentCount = inSplit->getGraphParentCount();
+  for( size_t i = 0; i < parentCount; i++ )
+    accumulateParentSplitsRec( inSplit, inSplit->getIndexedGraphParent(i) );
+}
+
+void SplitTree::accumulateParentSplitsRec( SplitNode* inSplit, SplitNode* inAncestor )
+{
+  if( inAncestor->isMarked( SplitNode::kMarkBit_Ancestor ) ) return;
+  inAncestor->mark( SplitNode::kMarkBit_Ancestor );
+
+  if( inAncestor->isMarkedAsSplit() )
+  {
+    inSplit->_parentSplits.insert( inAncestor );
+  }
+  else
+  {
+    size_t parentCount = inAncestor->getGraphParentCount();
+    for( size_t i = 0; i < parentCount; i++ )
+      accumulateParentSplitsRec( inSplit, inAncestor->getIndexedGraphParent(i) );
+  }
+}
+
 void SplitTree::rdsAccumulatePassAncestors( SplitPassInfo* ioPass )
 {
   if( ioPass->ancestorVisited ) return;
   ioPass->ancestorVisited = true;
 
-  unmark( SplitNode::kMarkBit_Ancestor );
-
   for( SplitNodeSet::iterator i = ioPass->allOutputs.begin(); i != ioPass->allOutputs.end(); ++i )
   {
     SplitNode* node = _dagOrderNodeList[ *i ];
-    size_t parentCount = node->getGraphParentCount();
-    for( size_t j = 0; j < parentCount; j++ )
-      rdsAccumulatePassAncestorsRec( node->getIndexedGraphParent(j), ioPass );
-  }
-}
 
-void SplitTree::rdsAccumulatePassAncestorsRec( SplitNode* inNode, SplitPassInfo* ioPass )
-{
-  if( inNode->isMarked( SplitNode::kMarkBit_Ancestor ) ) return;
-  inNode->mark( SplitNode::kMarkBit_Ancestor );
+    for( SplitNodeSet::iterator j = node->_parentSplits.begin(); j != node->_parentSplits.end(); ++j )
+    {
+      SplitNode* parentSplit = _dagOrderNodeList[ *j ];
+      SplitPassInfo* parentPass = parentSplit->_assignedPass;
 
-  if( inNode->isMarkedAsSplit() )
-  {
-    SplitPassInfo* pass = inNode->_assignedPass;
-    assert( pass );
+      rdsAccumulatePassAncestors( parentPass );
 
-    rdsAccumulatePassAncestors( pass );
-
-    ioPass->ancestors |= pass->ancestors;
-    ioPass->ancestors |= inNode;
-
-    // TIM: bad - assume there is only one output
-/*
-    std::cout << "noticing that split " << (void*)(*ioPass->outputs.begin())
-      << " has parent " << (void*)inNode << std::endl;
-*/
-    ioPass->singletonNode->_parentSplits.insert( inNode );
-  }
-  else
-  {
-    size_t parentCount = inNode->getGraphParentCount();
-    for( size_t i = 0; i < parentCount; i++ )
-      rdsAccumulatePassAncestorsRec( inNode->getIndexedGraphParent(i), ioPass );
+      ioPass->ancestors |= parentPass->ancestors;
+      ioPass->ancestors |= parentSplit;
+    }
   }
 }
 
@@ -498,37 +534,20 @@ void SplitTree::rdsAccumulatePassDescendents( SplitPassInfo* ioPass )
   if( ioPass->descendentVisited ) return;
   ioPass->descendentVisited = true;
 
-  unmark( SplitNode::kMarkBit_Descendent );
-
   for( SplitNodeSet::iterator i = ioPass->allOutputs.begin(); i != ioPass->allOutputs.end(); ++i )
   {
     SplitNode* node = _dagOrderNodeList[ *i ];
-    size_t childCount = node->getGraphChildCount();
-    for( size_t j = 0; j < childCount; j++ )
-      rdsAccumulatePassDescendentsRec( node->getIndexedGraphChild(j), ioPass );
-  }
-}
 
-void SplitTree::rdsAccumulatePassDescendentsRec( SplitNode* inNode, SplitPassInfo* ioPass )
-{
-  if( inNode->isMarked( SplitNode::kMarkBit_Descendent ) ) return;
-  inNode->mark( SplitNode::kMarkBit_Descendent );
+    for( SplitNodeSet::iterator j = node->_childSplits.begin(); j != node->_childSplits.end(); ++j )
+    {
+      SplitNode* childSplit = _dagOrderNodeList[ *j ];
+      SplitPassInfo* childPass = childSplit->_assignedPass;
 
-  if( inNode->isMarkedAsSplit() )
-  {
-    SplitPassInfo* pass = inNode->_assignedPass;
-    assert( pass );
+      rdsAccumulatePassDescendents( childPass );
 
-    rdsAccumulatePassDescendents( pass );
-
-    ioPass->descendents |= pass->descendents;
-    ioPass->descendents |= inNode;
-  }
-  else
-  {
-    size_t childCount = inNode->getGraphChildCount();
-    for( size_t i = 0; i < childCount; i++ )
-      rdsAccumulatePassDescendentsRec( inNode->getIndexedGraphChild(i), ioPass );
+      ioPass->descendents |= childPass->descendents;
+      ioPass->descendents |= childSplit;
+    }
   }
 }
 
