@@ -57,6 +57,33 @@ Software Prerequisites
      must have the 'include' directory of the brook distribution in your
      system include path.
 
+   * In general the BRCC compiler can be invoked on a Brook file foo.br as:
+     
+     brcc foo.br
+     
+     This will generate a file foo.cpp that can then be compiled with your
+     favorite C++ compiler. A few additional options to BRCC that may
+     be useful are:
+
+     -h         print a help message listing command-line options
+     -k         keep generated Cg/HLSL fragment program code (in foo.cg)
+     -y         generate code that assumes 4-output hardware support
+     -o prefix  prepend a prefix to all output file names
+     -p shader  generate code for specified shader architecture
+     -f cgc|fxc favor a particular compiler when both can generate code
+     -a arch    assume a particular GPU when generating code
+
+     The '-p shader' can appear multiple times to specify multiple
+     shader targets (if no -p is used, all targets are generated). Valid
+     shader formats include cpu, ps20, ps2a, ps2b, arb, fp30 and fp40.
+
+     By default BRCC generates arb code by translating ps20 code created
+     by fxc (because fxc generates more compatible code for ATI cards).
+     As an example of using the various flags, to compile foo.br to use
+     ARB fragment program on a GeForce 6800, one would execute:
+
+     brcc -p arb -f cgc -a 6800 foo.br
+
    * In order to build BRCC and the Brook runtime on Windows using Cygwin
      you will need:
 
@@ -114,7 +141,7 @@ Software Prerequisites
      With these tools installed the system can be built by executing 'make'
      at the top level of the Brook distribution.
 
-Building and Runnint Example Brook Programs
+Building and Running Example Brook Programs
 
    This distribution includeds various programs that test the Brook
    compiler and runtime infrastructure. Various regression tests can

@@ -2,14 +2,37 @@
 
 Release v0.4 (X/XX/04)
 
-   * Corrected Indexof precedence
+   * Added domain() operator with support under all runtimes
+
+   * Runtime fixes:
+
+      * Integrated GL/DX runtimes into single GPU runtime:
+
+      * Both GL and DX run on nv3x r3xx nv4x and r4xx
+
+      * Address translation is supported under GL/DX for nv3x nv4x
+        Added indexof, iterator and domain support for address trans.
+
+      * Fixed Variable Output bugs for 0-sized streams,
+        Improved search performance
+
+      * Gather addressing precision improved
+      
+      * gcc-3.4 compliant
+
+   * Build environment fixes:
+
+      * Added Visual Studio 7.1 build files
+
+      * Regression test failures summarized at end of make regression
+
+   * BRCC fixes:
+
+      * Corrected Indexof precedence
  
-   * Allow casts in variable declarations
+      * Allow casts in variable declarations
 
-   * Regression test failures summarized at end of make regression
-
-   * Fixed Variable Output bugs for 0-sized streams; improved search performance
-   * gcc-3.4 compliant
+      * Added code generation for fp40 ps2a ps2b ps3.0
 
 Release v0.3 (1/29/04)
 
@@ -61,19 +84,62 @@ Known Issues In BRCC
    
    * GatherOps and ScatterOps require the CPU runtime and programs using
      them must compile for at least the CPU target.
+
+   * In addition to the above problem with GatherOp/ScatterOp, any program
+     that uses reductions will generate some boilerplate CPU code. This code
+     will fail to compile unless the CPU compile target is enabled.
      
 Known Issues in the Runtimes
 
    * In general, error conditions result in undefined behaviors and
      incorrect results, not necessarily crashes or reported errors.
    
-   * The dx9 runtime cannot allocate streams that are longer than 2048 in
-     any dimension or perform reductions on streams longer than 1024 in any
-     dimension.
+   * OpenGL runtime performance is sub-optimal, because of issues with
+     allocating and switching pbuffers. Of particular note:
 
-   * The cpu runtime only supports a subset of the builtin Cg / HLSL
+        * Switching from one output stream type to another may degrade
+          performance. For best results all output streams should be of
+          a single type.
+
+        * Switching the number of outputs being written may degrade
+          performance on hardware that is capable of multiple outputs
+          per pass.
+
+     Once a stable spec and implementation of the frame_buffer_object
+     OpenGL extension becomes available, some of these issues may be
+     resolved.
+
+   * The Linux OpenGL runtime is even slower and more constrained than
+     the Windows OpenGL runtime, as a result of driver bugs.
+
+   * When writing to multiple outputs on a GPU runtime, incorrect results
+     may be generated unless all outputs are of the same type.
+
+   * The dx9 runtime cannot allocate streams that are longer than 2048 in
+     any dimension.
+
+   * The CPU runtime only supports a subset of the builtin Cg / HLSL
      functions.
 
+   * The domain functionality is not fully orthogonal:
+
+        * indexof values for stream domains are incorrect on the GPU
+
+        * The domain operator cannot be applied to iterators
+
+   * The reduction functionality is not fully orthogonal:
+    
+        * Reductions of domain() streams are not implemented
+
+        * Reductions of streams of structure type are not implemented
+
+        * Reductions of streams using address translation unimplemented
+
+   * The constant argument functionality is not fully orthogonal
+
+        * Constant arguments of structure type are unsupported
+
+        * Constant arguments of array types are unsupported
 
 Revision History
 
