@@ -405,8 +405,8 @@ RunKernelKickBRT(void)
    streamWrite(o, d);
 
    if (CHECK_MISMATCH && d[0] != 12.34f) {
-      fprintf(stderr, "RunKernelKickBRT: Mismatch!  Got %.2f expecting %.2f\n",
-              d[0], 12.34f);
+      printf("RunKernelKickBRT: Mismatch!  Got %f expecting %f\n",
+             d[0], 12.34f);
    }
 }
 

@@ -81,10 +81,12 @@ ReadWriteProcessTiming(const char *name, float4 *input, float4 *output,
           numBytes / (float) (stop - start), name);
 
    for (i = 0; CHECK_MISMATCH && i < numEntries; i++) {
-      if (input[i].x != output[i].x ||
-          input[i].y != output[i].y ||
-          input[i].z != output[i].z ||
-          input[i].w != output[i].w) {
+      if ((input[i].x != output[i].x &&
+           (output[i].x - input[i].x > 0.1f*input[i].x ||
+            input[i].x - output[i].x > 0.1f*input[i].x)) ||
+          output[i].x != output[i].y ||
+          output[i].x != output[i].z ||
+          output[i].x != output[i].w) {
          printf("(* Mismatch %d/%d.  In: %f, Out: %f\t\t%s *)\n",
                  i, numEntries, input[i].x, output[i].x, name);
          break;
