@@ -141,4 +141,8 @@ foreach $file ( @files ) {
   foreach $deps ( depends($file) ) {
     print "$obj: $deps\n";
   }
+
+  $brfile = $file;
+  $brfile =~ s/\.cpp$/.br/;
+  print "$file: $brfile \$(ROOTDIR)/bin/brcc\$(BINSUFFIX)\n" if -e ($brfile);
 }
