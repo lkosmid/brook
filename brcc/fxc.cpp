@@ -42,19 +42,23 @@ compile_fxc (const char *name,
   char validate[]="/Vd";
   char software[]="/Tps_2_sw";
   char hardware[]="/Tps_2_0";
+  char ps2b[]="/Tps_2_b";
   char ps30_targetstring[]="/Tps_3_0";
   char nothin[]=""; //gcc does not like ?: with ""
 
   char* targetstring = "";
   switch (target) {
+  case CODEGEN_PS2B:
+    targetstring = ps2b;
+    break;
   case CODEGEN_PS20:
-  case CODEGEN_ARB: 
+  case CODEGEN_ARB:
      targetstring = hardware;
      break;
   case CODEGEN_PS30:
      targetstring = ps30_targetstring;
      break;
-  default: 
+  default:
      fprintf(stderr, "Unsupported fxc target.\n");
      return NULL;
   }

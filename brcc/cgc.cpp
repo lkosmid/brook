@@ -48,12 +48,18 @@ compile_cgc (const char * /*name*/,
   char fp30[]="fp30";
   char fp40[]="fp40";
   char ps20[]="ps_2_0";
+  char ps2b[]="ps_2_x";
+  char ps2b_opt[] = "-profileopts NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
   char userect[]="-DUSERECT=1";
   char maxindirections[]="-profileopts MaxTexIndirections=4";
 
   switch (target) {
   case CODEGEN_PS20:
      argv[4] = ps20;
+     break;
+  case CODEGEN_PS2B:
+     argv[4] = ps2b;
+     argv[5] = ps2b_opt;
      break;
   case CODEGEN_FP30:
      argv[4] = fp30;
@@ -63,7 +69,7 @@ compile_cgc (const char * /*name*/,
      argv[4] = fp40;
      argv[5] = userect;
      break;
-  case CODEGEN_ARB: 
+  case CODEGEN_ARB:
      argv[4] = arbfp;
      argv[5] = userect;
      argv[6] = maxindirections;
@@ -84,7 +90,8 @@ compile_cgc (const char * /*name*/,
      return NULL;
   }
 
-  if (target == CODEGEN_PS20)
+  if (target == CODEGEN_PS20 ||
+      target == CODEGEN_PS2B)
      return fpcode;
 
   // cgc has this annoying feature that it outputs warnings

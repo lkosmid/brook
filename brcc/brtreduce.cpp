@@ -48,11 +48,16 @@ BRTPS20ReduceCode::BRTPS20ReduceCode(const FunctionDef& _fDef)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BRTPS2BReduceCode::BRTPS2BReduceCode(const FunctionDef& _fDef)
+  : BRTPS2BKernelCode(_fDef)//converts gathers
+{
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BRTPS30ReduceCode::BRTPS30ReduceCode(const FunctionDef& _fDef)
 		: BRTPS30KernelCode(_fDef)//converts gathers
 {
 }
-
 
 void
 BRTPS20ReduceCode::printCode(std::ostream& out) const
@@ -61,12 +66,16 @@ BRTPS20ReduceCode::printCode(std::ostream& out) const
 }
 
 void
+BRTPS2BReduceCode::printCode(std::ostream& out) const
+{
+	this->BRTPS2BKernelCode::printCode(out);
+}
+
+void
 BRTPS30ReduceCode::printCode(std::ostream& out) const
 {
 	this->BRTPS30KernelCode::printCode(out);
 }
-
-
 
 
 extern bool recursiveIsGather(Type*);

@@ -183,6 +183,7 @@ namespace brook
     DX9Texture* _boundOutputs[4];
 
     D3DCAPS9 _deviceCaps;
+    bool _supportsPS2B;
     bool _supportsPS30;
     bool _isNV;
     bool _isATI;
@@ -261,8 +262,12 @@ namespace brook
     // get device caps
     result = _device->GetDeviceCaps( &_deviceCaps );
     DX9AssertResult( result, "GetDeviceCaps failed" );
+    
+    _supportsPS2B = _deviceCaps.PS20Caps.NumInstructionSlots >= 512 &&
+      _deviceCaps.PS20Caps.NumTemps >= 32 &&
+      _deviceCaps.PS20Caps.Caps & D3DPS20CAPS_NOTEXINSTRUCTIONLIMIT;
 
-    _supportsPS30 = _deviceCaps.MaxPixelShader30InstructionSlots >= 512;
+    _supportsPS30 = (_deviceCaps.MaxPixelShader30InstructionSlots >= 512);
 
     // TIM: this is *not* future-proof, but I don't know a way to
     // get something like the GL vendor string from DX
@@ -278,7 +283,6 @@ namespace brook
 
     result = _device->CreateVertexDeclaration( kDX9VertexElements, &_vertexDecl );
     DX9AssertResult( result, "CreateVertexDeclaration failed" );
-
 
     // TIM: set up initial state
     result = _device->SetRenderState( D3DRS_ZENABLE, D3DZB_FALSE );
@@ -309,9 +313,11 @@ namespace brook
   int GPUContextDX9Impl::getShaderFormatRank( const char* inNameString ) const
   {
     if( strcmp( "ps20", inNameString ) == 0 )
-        return 1;
+      return 1;
+    if( _supportsPS2B && strcmp( "ps2b", inNameString ) == 0 )
+      return 2;
     if( _supportsPS30 && strcmp( "ps30", inNameString ) == 0 )
-        return 2;
+      return 3;
     return -1;
   }
 

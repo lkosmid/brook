@@ -53,6 +53,16 @@ class BRTPS20ReduceCode : public BRTPS20KernelCode
     void printCode(std::ostream& out) const;
 };
 
+class BRTPS2BReduceCode : public BRTPS2BKernelCode
+{
+  public:
+    BRTPS2BReduceCode(const FunctionDef& fDef);
+   ~BRTPS2BReduceCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
+
+    BRTKernelCode *dup0() const { return new BRTPS2BReduceCode(*this->fDef); }
+    void printCode(std::ostream& out) const;
+};
+
 class BRTPS30ReduceCode : public BRTPS30KernelCode
 {
   public:

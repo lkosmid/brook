@@ -116,6 +116,7 @@ CodeGen_Init(void) {
    switch (globals.favorcompiler) {
    case COMPILER_DEFAULT:
       shadercompile[CODEGEN_PS20] = compile_fxc;
+      shadercompile[CODEGEN_PS2B] = compile_fxc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
@@ -123,6 +124,7 @@ CodeGen_Init(void) {
       break;
    case COMPILER_CGC:
       shadercompile[CODEGEN_PS20] = compile_cgc;
+      shadercompile[CODEGEN_PS2B] = compile_cgc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
@@ -130,6 +132,7 @@ CodeGen_Init(void) {
       break;
    case COMPILER_FXC:
       shadercompile[CODEGEN_PS20] = compile_fxc;
+      shadercompile[CODEGEN_PS2B] = compile_fxc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
@@ -1587,6 +1590,7 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
      switch(target)
      {
      case CODEGEN_PS20:
+     case CODEGEN_PS2B:
      case CODEGEN_PS30:
          commentString = "//";
          break;
@@ -1618,7 +1622,10 @@ generateShaderTechnique(Decl** args, int nArgs, const char* name,
   bool isReduction = false;
   int outputCount = getShaderOutputCount( nArgs, args, isReduction );
   int maxOutputsPerPass = 1;
-  if( target == CODEGEN_PS20 && !isReduction && globals.allowDX9MultiOut )
+  if( (target == CODEGEN_PS20 || 
+       target == CODEGEN_PS2B) &&
+      !isReduction && 
+      globals.allowDX9MultiOut )
     maxOutputsPerPass = 4;
 
   outTechnique.reductionFactor = reductionFactor;
@@ -1746,7 +1753,8 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
   std::auto_ptr<SplitCompiler> compiler;
   switch( target )
   {
-  case CODEGEN_PS20:{
+  case CODEGEN_PS20:
+  case CODEGEN_PS2B:{
     std::auto_ptr<SplitCompiler> tmp( new SplitCompilerHLSL() );
     compiler = tmp;
     break;

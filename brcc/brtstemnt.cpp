@@ -98,6 +98,7 @@ BRTKernelDef::print(std::ostream& out, int) const
    }
  
    PRINT_CODE(PS20, ps20);
+   PRINT_CODE(PS2B, ps2b);
    PRINT_CODE(PS30, ps30);
    PRINT_CODE(FP30, fp30);
    PRINT_CODE(FP40, fp40);
@@ -465,6 +466,7 @@ BRTKernelDef::printStub(std::ostream& out) const
       out << "     \"fp40\", __" << *FunctionName() << "_fp40," << std::endl;
       out << "     \"arb\", __" << *FunctionName() << "_arb," << std::endl;
       out << "     \"ps20\", __" << *FunctionName() << "_ps20," << std::endl;
+      out << "     \"ps2b\", __" << *FunctionName() << "_ps2b," << std::endl;
       out << "     \"ps30\", __" << *FunctionName() << "_ps30," << std::endl;
       out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;
       if (this->decl->isReduce()||reduceNeeded(this)) {
