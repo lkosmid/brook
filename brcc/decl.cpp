@@ -86,14 +86,14 @@ static
 void
 printQual( std::ostream& out, TypeQual qualifier )
 {
+    if (qualifier & TQ_Out)
+        out << "out ";
+
     if (qualifier & TQ_Const)
         out << "const ";
 
     if (qualifier & TQ_Volatile)
         out << "volatile ";
-
-    if (qualifier & TQ_Out)
-        out << "out ";
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

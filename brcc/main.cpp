@@ -77,6 +77,7 @@ parse_args (int argc, char *argv[]) {
 	break;
      case 'v':
 	globals.verbose = 1;
+        Project::gDebug = true;
 	break;
      case 'w':
 	globals.workspace = strtol(optarg, NULL, 0);
@@ -171,7 +172,7 @@ main(int argc, char *argv[])
    TransUnit *tu;
 
    parse_args(argc, argv);
-   fprintf(stderr, "Compiling %s\n", globals.sourcename);
+   std::cerr << "***Compiling " << globals.sourcename << "\n";
 
    proj = new Project();
    tu = proj->parse(globals.sourcename, false, NULL, false, NULL, NULL, NULL);

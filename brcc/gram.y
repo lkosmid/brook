@@ -2163,6 +2163,7 @@ stream_decl: direct_declarator_reentrance COMP_LESS comma_constants COMP_GRTR
             $$ = $1;
             ArrayType * at = new ArrayType(TT_Stream, $3);
             Type * extended = $$->extend(at);
+
             if (extended &&
                 extended->isFunction())
                 yyerr ("Wrong type combination") ;

@@ -27,6 +27,7 @@ extern "C" {
 
 #include "main.h"
 #include "decl.h"
+#include "project.h"
 
 #define READ_HANDLE 0
 #define WRITE_HANDLE 1
@@ -61,7 +62,7 @@ check_semantics (Type *retType, Decl **args, int nArgs) {
         }
         outArg = args[i];
 
-        if (args[i]->storage != ST_Stream) {
+        if (!args[i]->isStream()) {
            std::cerr << "Output is not a stream: ";
            args[i]->print(std::cerr, true);
            std::cerr << ".\n";
@@ -129,9 +130,9 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 
      if (i) cg <<  ",\n\t\t";
 
-     if (args[i]->storage == ST_Stream) {
-       cg << "uniform texobjRECT _tex_" << args[i]->name << ",\n\t\t";
-       cg << "float2 _tex_" << args[i]->name << "_pos : TEX"
+     if (args[i]->isStream()) {
+       cg << "uniform texobjRECT _tex_" << *args[i]->name << ",\n\t\t";
+       cg << "float2 _tex_" << *args[i]->name << "_pos : TEX"
           << (texcoord < 1) ? texcoord++ : texcoord;
      } else {
        cg << "uniform ";
@@ -142,10 +143,18 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 
   /* Declare the stream variables */
   for (i=0; i < nArgs; i++) {
-     if (args[i]->storage == ST_Stream) {
+     if (args[i] == outArg) {
+        TypeQual qualifier = outArg->form->getBase()->qualifier;
+
+        outArg->form->getBase()->qualifier &= ~TQ_Out;
         cg << "\t";
         args[i]->form->printBase(cg, 0);
-        cg << " " << args[i]->name << ";\n";
+        cg << " " << *args[i]->name << ";\n";
+        outArg->form->getBase()->qualifier = qualifier;
+     } else if (args[i]->isStream()) {
+        cg << "\t";
+        args[i]->form->printBase(cg, 0);
+        cg << " " << *args[i]->name << ";\n";
      }
   }
 
@@ -156,12 +165,12 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
   for (i=0; i < nArgs; i++) {
      if (args[i] == outArg) continue;
 
-     if (args[i]->storage == ST_Stream) {
+     if (args[i]->isStream()) {
         int dimension = FloatDimension(args[i]->form->getBase()->typemask);
         assert(dimension > 0);
 
-        cg << "\t" << args[i]->name << " = f" << (char) (dimension + '0')
-           << "texRECT (_tex_" << args[i]->name << ", _tex_" << args[i]->name
+        cg << "\t" << *args[i]->name << " = f" << (char) (dimension + '0')
+           << "texRECT (_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
            << "_pos);\n";
      }
   }
@@ -174,7 +183,7 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
      int dimension = FloatDimension(outArg->form->getBase()->typemask);
 
      for (i=0; i < dimension; i++) {
-        cg << "\t_OUT.col." << xyzw[i] << "= " << outArg->name << "."
+        cg << "\t_OUT.col." << xyzw[i] << "= " << *outArg->name << "."
            << xyzw[i] << ";\n";
      }
 
@@ -195,6 +204,7 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 static char *
 compile_cg_code (char *cgcode) {
 
+  bool debug = Project::gDebug;
   int hStdOut;
   int hStdOutPipe[2];
   int hStdIn;
@@ -332,7 +342,7 @@ compile_cg_code (char *cgcode) {
   }
 
   /* Feed the cg code to the compiler */
-  fprintf(stderr, "Sending CG code to the compiler\n");
+  if (debug) fprintf(stderr, "Sending CG code to the compiler\n");
 #if WIN32
   _write (hStdInPipe[WRITE_HANDLE], cgcode, strlen(cgcode));
 #else
@@ -340,7 +350,7 @@ compile_cg_code (char *cgcode) {
        char eof_holder = EOF;
 
        /* fprintf(stderr, "Writing\n[35;1m%s[0m\n", cgcode); */
-       fprintf(stderr, "Writing...\n");
+       if (debug) fprintf(stderr, "Writing...\n");
        if(write (hStdInPipe[WRITE_HANDLE], cgcode, strlen(cgcode))
 	  != strlen(cgcode)){
 	    perror("Write problem: ");
@@ -348,7 +358,7 @@ compile_cg_code (char *cgcode) {
        write(hStdInPipe[WRITE_HANDLE], &eof_holder, 1);
   }
 #endif
-  fprintf(stderr, "Closing pipe to cgc\n");
+  if (debug) fprintf(stderr, "Closing pipe to cgc\n");
   if(close(hStdInPipe[WRITE_HANDLE]) !=0){
        fprintf(stderr, "Write close error\n");
   }
@@ -358,7 +368,7 @@ compile_cg_code (char *cgcode) {
   fpcode_pos   = 0;
 
   while (1) {
-    fprintf(stderr, "Reading pipe from cgc...\n");
+    if (debug) fprintf(stderr, "Reading pipe from cgc...\n");
 #ifdef WIN32
     ret = _read(hStdOutPipe[READ_HANDLE], buf, 1023);
 #else
@@ -366,7 +376,7 @@ compile_cg_code (char *cgcode) {
 #endif
 
     if (ret == 0) {
-      fprintf(stderr, "Got everything from cgc.\n");
+      if (debug) fprintf(stderr, "Got everything from cgc.\n");
       break;
     } else if (ret == -1) {
       fprintf (stderr, "Error reading output compiler pipe.\n");
@@ -374,7 +384,7 @@ compile_cg_code (char *cgcode) {
     }
     buf[ret]='\0';
 
-    fprintf(stderr, "Read %d bytes\n", ret);
+    if (debug) fprintf(stderr, "Read %d bytes\n", ret);
     /*fprintf(stderr, "Read %d bytes '%s'\n", ret, buf);*/
     while (fpcode_alloc - fpcode_pos  <= ret) {
       fpcode = (char *) realloc (fpcode, fpcode_alloc*2);
@@ -413,7 +423,7 @@ compile_cg_code (char *cgcode) {
   endline += strlen("\nEND");
   *endline = '\0';
   endline++;
-  fprintf(stderr, "Summary information from cgc:");
+  fprintf(stderr, "***Summary information from cgc:\n");
   fwrite (endline, strlen(endline), 1, stderr);
   return fpcode;
 }
@@ -429,7 +439,7 @@ static char *
 append_argument_information (char *fpcode,
                              Decl **args, int nArgs, const char *body)
 {
-  std::ostringstream fp;
+  std::ostringstream fp(fpcode);
 
   /* Add the brcc flag */
   fp << "\n#!!BRCC\n";
@@ -444,13 +454,13 @@ append_argument_information (char *fpcode,
 
      if (args[i]->form->getQualifiers() & TQ_Out) {
         type = 'o';
-     } else if (args[i]->storage == ST_Stream) {
+     } else if (args[i]->isStream()) {
         type = 's';
      } else {
         type = 'c';
      }
 
-     fp << "#" << type << ":" << dimension << ":" << args[i]->name << "\n";
+     fp << "#" << type << ":" << dimension << ":" << *args[i]->name << "\n";
   }
 
   fp << "#workspace:" << globals.workspace << std::endl;
@@ -480,7 +490,7 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
 
   fp << "#include<brook.h>\n\n";
 
-  fp << "static const char %s_fp[] = " << name << std::endl;
+  fp << "static const char " << name << "_fp[] = " << std::endl;
 
   fp << "\"";
   while ((i = *fpcode++) != '\0') {
@@ -493,12 +503,13 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
 
   fp << "static int p = 0;\n\n";
 
-  fp << retType << " " << name << " (";
+  retType->printType(fp, NULL, true, 0);
+  fp << " " << name << " (";
 
   for (i = 0; i < nArgs; i++) {
      if (i) fp << ",\n\t";
 
-     if (args[i]->storage == ST_Stream) {
+     if (args[i]->isStream()) {
         fp << "stream arg_" << i;
      } else {
         args[i]->form->printBase(fp, 0);
@@ -511,7 +522,7 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
   fp << "  if (!p) p = LoadKernelText(" << name << "_fp);\n";
   fp << "  KernelMap (p, ";
   for (i=0; i < nArgs; i++) {
-    if (i) fp << ",";
+    if (i) fp << ", ";
     fp << "arg_" << i;
   }
   fp << ");\n}\n\n";
@@ -577,12 +588,13 @@ generate_header_file (Type *retType, const char *name, Decl **args, int nArgs)
   fp << "#ifndef _HEADER_" << name << std::endl;
   fp << "#define _HEADER_" << name << std::endl << std::endl;
 
-  fp << retType << " " << name << " (";
+  retType->printType(fp, NULL, true, 0);
+  fp << " " << name << " (";
 
   for (int i = 0; i < nArgs; i++) {
-     if (i) fp << ",";
+     if (i) fp << ", ";
 
-     if (args[i]->storage == ST_Stream) {
+     if (args[i]->isStream()) {
         fp << "stream ";
      } else {
         args[i]->form->printBase(fp, 0);
@@ -661,6 +673,7 @@ CodeGen_Kernel(Type *retType, const char *name,
   check_semantics(retType, args, nArgs);
 
   cgcode = generate_cg_code(args, nArgs, body);
+  std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
   if (globals.cgonly) {
     dump_to_file(globals.cgoutputname, cgcode);
     free(cgcode);
@@ -669,9 +682,12 @@ CodeGen_Kernel(Type *retType, const char *name,
 
   fpcode = compile_cg_code(cgcode);
   free(cgcode);
+  std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
   fpcode_with_brccinfo = append_argument_information(fpcode, args, nArgs, body);
   free(fpcode);
+  std::cerr << "***Produced this instrumented fpcode:\n"
+            << fpcode_with_brccinfo << "\n";
 
   if (globals.fponly) {
     dump_to_file(globals.fpoutputname, fpcode_with_brccinfo);
@@ -681,11 +697,15 @@ CodeGen_Kernel(Type *retType, const char *name,
 
   c_code = generate_c_code(fpcode_with_brccinfo, retType, name, args, nArgs);
   free(fpcode_with_brccinfo);
-  dump_to_file(globals.coutputname, c_code);
+  std::cerr << "***Produced this C code:\n" << c_code;
+  //dump_to_file(globals.coutputname, c_code);
   free(c_code);
 
   h_code = generate_header_file(retType, name, args, nArgs);
-  dump_to_file(globals.houtputname, h_code);
+  std::cerr << "***Produced this header code:\n" << h_code;
+  //dump_to_file(globals.houtputname, h_code);
   free(h_code);
+
+  std::cerr << "***\n";
 }
 

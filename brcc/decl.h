@@ -508,7 +508,9 @@ class Decl
     bool    isTypedef() const { return (storage == ST_Typedef); }
     bool    isStatic() const { return (storage == ST_Static); }
     bool    isKernel() const { return (storage == ST_Kernel); }
-    bool    isStream() const { return (storage == ST_Stream); }
+    bool    isStream() const {
+       return (storage == ST_Stream ||
+               form->type == TT_Stream || form->type == TT_BrtStream); }
 
     void    clear();
 
