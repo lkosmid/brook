@@ -6,6 +6,7 @@
 #include "brt.hpp"
 #include "brtvector.hpp"
 #include "brtarray.hpp"
+#include "brtscatter.hpp"
 #endif
 
 
