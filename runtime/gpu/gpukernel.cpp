@@ -240,7 +240,7 @@ namespace brook
 
         unsigned int rank = stream->getRank();
         if( rank != outRank )
-            shapeMismatch = true;
+			GPUError( "input and output stream ranks do not match" );
 
         if( !shapeMismatch )
         {
@@ -249,10 +249,17 @@ namespace brook
 
             for( unsigned int r = 0; r < rank; r++ )
             {
-                unsigned int extent = domainMax[r] - domainMin[r];
-                unsigned int outExtent = outDomainMax[r] - outDomainMin[r];
-                if( extent != outExtent )
-                    shapeMismatch = true;
+				if( domainMin[r] != outDomainMin[r] )
+				{
+					shapeMismatch = true;
+					break;
+				}
+
+				if( domainMax[r] != outDomainMax[r] )
+				{
+					shapeMismatch = true;
+					break;
+				}
             }
         }
     }
@@ -319,7 +326,10 @@ namespace brook
         _globalConstants.push_back( hackConstant );
 
         GPUInterpolant outputInterpolant;
-        outputStream->getStreamInterpolant( _outTextureWidth, _outTextureHeight, outputInterpolant );
+		unsigned int fakeDomainMin[2] = { 0, 0 };
+		unsigned int fakeDomainMax[2] = { _outTextureHeight, _outTextureWidth };
+		_context->getStreamInterpolant( outputStream->getIndexedFieldTexture(0),
+			2, fakeDomainMin, fakeDomainMax, _outTextureWidth, _outTextureHeight, outputInterpolant );
         _globalInterpolants.push_back( outputInterpolant );
 
         float2 addressStart = float2(0.5f,0.5f);
