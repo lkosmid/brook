@@ -3,6 +3,7 @@
 #include "dx9pixelshader.hpp"
 #include "dx9vertexshader.hpp"
 #include "dx9texture.hpp"
+#include <string>
 
 using namespace brook;
 
@@ -37,6 +38,7 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
 }
 
 void DX9Kernel::PushStream(Stream *s) {
+  int arg = argumentIndex++;
   DX9Stream* stream = (DX9Stream*)s;
 
   // reduction stream is always the first/last/only stream pushed
@@ -46,10 +48,19 @@ void DX9Kernel::PushStream(Stream *s) {
 
   PushSampler( stream );
   PushTexCoord( stream->getInputRect() );
-  PushConstant( stream->getIndexofConstant() );
+  if( argumentUsesIndexof[arg] )
+    PushConstantImpl( stream->getIndexofConstant() );
+}
+
+void DX9Kernel::PushIter(class Iter * v)
+{
+  int arg = argumentIndex++;
+  DX9Iter* iterator = (DX9Iter*)v;
+  PushTexCoord( iterator->getRect() );
 }
 
 void DX9Kernel::PushReduce(void * val, __BRTStreamType type) {
+  int arg = argumentIndex++;
   DX9Trace("PushReduce");
   argumentReductionIndex++;
   outputReductionData = val;
@@ -87,16 +98,14 @@ void DX9Kernel::PushConstant(const float3 &val) {
 }
 
 void DX9Kernel::PushConstant(const float4 &val) {
-  int arg = argumentConstantIndex++;
-  int constantIndex = arg;
-  DX9Trace("PushConstant[%d] < %3.2f, %3.2f, %3.2f, %3.2f >",
-    constantIndex+kBaseConstantIndex, val.x, val.y, val.z, val.w );
-  inputConstants[constantIndex] = val;
+  argumentIndex++;
+  PushConstantImpl(val);
 }
 
 void DX9Kernel::PushGatherStream(Stream *s) {
+  argumentIndex++;
   DX9Stream* stream = (DX9Stream*)s;
-  PushConstant( stream->getGatherConstant() );
+  PushConstantImpl( stream->getGatherConstant() );
   PushSampler( stream );
 }
 
@@ -184,6 +193,27 @@ IDirect3DDevice9* DX9Kernel::getDevice() {
 void DX9Kernel::initialize( const char* source ) {
   pixelShader = DX9PixelShader::create( runtime, source );
 
+  // TIM: look for our annotations...
+  std::string s = source;
+
+  s = s.substr( s.find("!!BRCC") );
+
+  // next is the narg line
+  s = s.substr( s.find("\n")+1 );
+  s = s.substr( s.find(":")+1 );
+
+  std::string argumentCountString = s.substr( 0, s.find("\n") );
+  int argumentCount = atoi( argumentCountString.c_str() );
+
+  for( int i = 0; i < argumentCount; i++ )
+  {
+    s = s.substr( s.find("\n")+1 );
+    s = s.substr( s.find("//")+2 );
+    char typeCode = s[0];
+    char indexofHint = s[1];
+    argumentUsesIndexof[i] = (indexofHint == 'i');
+  }
+
   // TIM: initialize all the rects, just in case
   outputRect = DX9Rect(0,0,0,0);
   for( int i = 0; i < 8; i++ )
@@ -210,8 +240,17 @@ void DX9Kernel::PushTexCoord( const DX9Rect& r )
   inputRects[textureUnit] = r;
 }
 
+void DX9Kernel::PushConstantImpl(const float4 &val) {
+  int arg = argumentConstantIndex++;
+  int constantIndex = arg;
+  DX9Trace("PushConstant[%d] < %3.2f, %3.2f, %3.2f, %3.2f >",
+    constantIndex+kBaseConstantIndex, val.x, val.y, val.z, val.w );
+  inputConstants[constantIndex] = val;
+}
+
 void DX9Kernel::ClearInputs()
 {
+  argumentIndex = 0;
   argumentSamplerIndex = 0;
   argumentTexCoordIndex = 0;
   argumentConstantIndex = 0;

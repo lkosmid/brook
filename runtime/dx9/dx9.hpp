@@ -20,6 +20,7 @@ namespace brook {
   public:
     DX9Kernel(DX9RunTime* runtime, const void* source[]);
     virtual void PushStream(Stream *s);
+    virtual void PushIter(class Iter * v);
     virtual void PushConstant(const float &val);  
     virtual void PushConstant(const float2 &val);  
     virtual void PushConstant(const float3 &val); 
@@ -42,6 +43,7 @@ namespace brook {
 
     void PushSampler( DX9Stream* s );
     void PushTexCoord( const DX9Rect& r );
+    void PushConstantImpl(const float4 &val);
     void ClearInputs();
 
     void ReduceToStream();
@@ -66,11 +68,14 @@ namespace brook {
     void DumpReduceDimensionState( int currentSide, int outputExtent,
       int remainingExtent, int remainingOtherExtent, int slopBufferCount, int dim );
 
+    int argumentIndex;
     int argumentSamplerIndex;
     int argumentTexCoordIndex;
     int argumentConstantIndex;
     int argumentOutputIndex;
     int argumentReductionIndex;
+
+    bool argumentUsesIndexof[32];
 
     DX9RunTime* runtime;
     DX9PixelShader* pixelShader;
@@ -91,33 +96,28 @@ namespace brook {
     int outputReductionVarTexCoordIndex;
   };
   class DX9Iter : public Iter {
-     int dims;
-     int extents[2];
-     float ranges[4];//maximum possible values for dx
   public:
      DX9Iter(DX9RunTime * runtime,
              __BRTStreamType type,
              int dims,
              int extents[], 
-             float ranges[]):Iter(type){
-        if (dims>2)
-           dims=2;//memory out of bounds check change to assert?
-        this->dims=dims;
-        for (int i=0;i<dims;++i) {
-           this->extents[i]=extents[i];
-        }
-        unsigned int numranges=type*dims;
-        if (numranges>4)
-           numranges=4;//memory out of bounds check change to assert?
-        memcpy(this->ranges,ranges,sizeof(float)*numranges);
-     }
-     virtual void * getData (unsigned int flags){assert(0);return 0;}
-     virtual void releaseData(unsigned int flags){assert(0);0;}
-     virtual const unsigned int * getExtents() const{assert(0);return 0;}
-     virtual unsigned int getDimension() const {assert(0);return 0;}
-     virtual __BRTStreamType getStreamType ()const{assert(0);return type;}
-     virtual unsigned int getTotalSize() const {assert(0);return 0;}
-     
+             float ranges[]);
+
+     const DX9Rect& getRect() { return rect; }
+
+     virtual void* getData (unsigned int flags);
+     virtual void releaseData(unsigned int flags);
+     virtual const unsigned int* getExtents() const { return extents; }
+     virtual unsigned int getDimension() const { return dimensionCount; }
+     virtual __BRTStreamType getStreamType () const { return elementType; }
+     virtual unsigned int getTotalSize() const { return totalSize; }
+
+  private:
+     __BRTStreamType elementType;
+     int dimensionCount;
+     unsigned int extents[2];
+     int totalSize;
+     DX9Rect rect;
   };
   class DX9Stream : public Stream {
   public:

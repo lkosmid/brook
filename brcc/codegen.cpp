@@ -22,6 +22,7 @@ extern "C" {
 #include "main.h"
 #include "decl.h"
 #include "subprocess.h"
+#include "b2ctransform.h"
 
 static const char fp30_assist[] =
 #include "fp30_assist.cg.bin"
@@ -144,7 +145,7 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
  */
 
 static char *
-generate_hlsl_code (Decl **args, int nArgs, const char *body) {
+generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtionName) {
   const char xyzw[] = "xyzw";
   std::ostringstream hlsl;
   Decl *outArg = NULL;
@@ -177,8 +178,11 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
     } else if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
        hlsl << "sampler _tex_" << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
-       hlsl << "float4 " << *args[i]->name << "_invscalebias"
-            << " : register (c" << constreg++ << ");\n";
+       if( FunctionProp[funtionName].contains(i) )
+       {
+          hlsl << "float4 " << *args[i]->name << "_invscalebias"
+               << " : register (c" << constreg++ << ");\n";
+       }
     } else if (args[i]->isArray()) {
        hlsl << "sampler " << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
@@ -253,10 +257,14 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
         hlsl << "\t" << *args[i]->name << " = tex2D"
              << "(_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
              << "_pos);\n";
-        hlsl << "\t" << "float4 __indexof_" << *args[i]->name << " = "
-          << "float4( _tex_" << *args[i]->name << "_pos*"
-          << *args[i]->name << "_invscalebias.xy + "
-          << *args[i]->name << "_invscalebias.zw,0,0);\n";
+
+        if( FunctionProp[funtionName].contains(i) )
+        {
+          hlsl << "\t" << "float4 __indexof_" << *args[i]->name << " = "
+            << "float4( _tex_" << *args[i]->name << "_pos*"
+            << *args[i]->name << "_invscalebias.xy + "
+            << *args[i]->name << "_invscalebias.zw,0,0);\n";
+        }
      }
   }
 
@@ -423,7 +431,7 @@ compile_hlsl_code (char *hlslcode) {
 
 static char *
 append_argument_information (const char *commentstring, char *fpcode,
-                             Decl **args, int nArgs, const char *body)
+                             Decl **args, int nArgs, const char *body, const char* functionName)
 {
   std::ostringstream fp;
 
@@ -448,8 +456,10 @@ append_argument_information (const char *commentstring, char *fpcode,
         type = 'c';
      }
 
-     fp << commentstring << type << ":" << dimension 
-        << ":" << *args[i]->name << "\n";
+     fp << commentstring << type;
+     if( FunctionProp[functionName].contains(i) )
+       fp << "i";
+     fp << ":" << dimension << ":" << *args[i]->name << "\n";
   }
 
   fp << commentstring << "workspace:" << globals.workspace << std::endl;
@@ -628,7 +638,7 @@ CodeGen_FP30GenerateCode(Type *retType, const char *name,
     if (globals.verbose)
       std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
      fpcode_with_brccinfo =
-       append_argument_information("##", fpcode, args, nArgs, body);
+       append_argument_information("##", fpcode, args, nArgs, body, name);
      free(fpcode);
      if (globals.verbose)
        std::cerr << "***Produced this instrumented fpcode:\n"
@@ -663,7 +673,7 @@ CodeGen_PS20GenerateCode(Type *retType, const char *name,
 {
   char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
-  hlslcode = generate_hlsl_code(args, nArgs, body);
+  hlslcode = generate_hlsl_code(args, nArgs, body, name);
   if (hlslcode) {
      if (globals.verbose)
        std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
@@ -678,7 +688,7 @@ CodeGen_PS20GenerateCode(Type *retType, const char *name,
       std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
      fpcode_with_brccinfo =
-       append_argument_information("//", fpcode, args, nArgs, body);
+       append_argument_information("//", fpcode, args, nArgs, body, name);
      free(fpcode);
 
      if (globals.verbose)
