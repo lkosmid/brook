@@ -6,14 +6,19 @@ int main () {
   float b<10, 10>;
   float d<10, 10>;
   float e<10, 10>;
-  
+  float4 f<2,2>;
+  float4 g<2,2>;
+  float2 index<2,2>;
   float data_a[10][10];
   float data_b[10][10];
   float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
   float data_d[10][10];
   float data_e[10][10];
   float d_broken = 0.0f;
-
+  float4 data_f[2][2]={{{0,0,0,0},{1,-1,1,-1}},{{2,-2,2,-2},{3,-3,3,-3}}};
+  float4 data_g[2][2];
+  float2 data_i[2][2]={{{0,1},{1,0}},
+                       {{1,1},{0,0}}};
   int i,j;
 
   for (i=0; i<10; i++)
@@ -26,12 +31,26 @@ int main () {
   streamRead(a, data_a);
   streamRead(b, data_b);
   streamRead(d, data_d);
+  streamRead(f, data_f);
+  streamRead(index, data_i);
   streamScatterOp(a,b,e,STREAM_SCATTER_ASSIGN);
   streamScatterOp(a,b,e,STREAM_SCATTER_FLOAT_MUL);
   //foo(a,b,c,d_broken,e);
-
+  streamScatterOp(f,index,g,STREAM_SCATTER_ASSIGN);
+  //  streamScatterOp(f,i,g,STREAM_SCATTER_FLOAT_MUL);
+  streamWrite(g,data_g);
   streamWrite(e, data_e);
-  
+  for (i=0;i<2;++i) {
+     for (j=0;j<2;++j) {
+        printf("{%3.2f %3.2f %3.2f %3.2f}",
+               data_g[i][j].x,
+               data_g[i][j].y,
+               data_g[i][j].z,
+               data_g[i][j].w);
+     }
+     printf("\n");
+  }
+  printf("\n\n");
   for (i=0; i<10; i++) {
     for (j=0; j<10; j++) {
       printf ("%3.2f ", data_e[i][j]);

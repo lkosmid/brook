@@ -1,3 +1,5 @@
+#ifndef BRTARRAY_H_
+#define BRTARRAY_H_
 #ifndef MULTIPLE_ARRAY_BOUNDS_LOOKUPS
 
 template <class VALUE, unsigned int dims, bool copy_data> class __BrtArray {
@@ -225,4 +227,5 @@ OPXD(/=)
 OPXD(-=)
 #undef OPXD	
 
+#endif
 #endif

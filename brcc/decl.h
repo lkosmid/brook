@@ -144,6 +144,7 @@ enum StorageType
     ST_Static,
     ST_Typedef,
     ST_Kernel,
+    ST_Scatter
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -551,6 +552,9 @@ class Decl
     bool    isKernel() const {
        /// XXX Fixme: A kernel is not a reduce...but in the CPU side they are the same --Daniel
        return (storage == ST_Kernel)||isReduce(); 
+    }
+    bool    isScatter() const {
+       return storage == ST_Scatter; 
     }
     bool    isStream() const {
        return (form->type == TT_Stream || form->type == TT_BrtStream); }

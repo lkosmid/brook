@@ -221,6 +221,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->storage = ST_Kernel;
                       return(err_tok = KERNEL);
                     }
+<INITIAL>"scatter"   {
+                      lvalp->storage = ST_Scatter;
+                      return(err_tok = SCATTER);
+                    }
 <INITIAL>"typedef"  {
                       lvalp->storage = ST_Typedef;
                       return(err_tok = TYPEDEF);

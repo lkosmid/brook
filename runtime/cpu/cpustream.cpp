@@ -55,7 +55,9 @@ unsigned int knownTypeSize (__BRTStreamType type) {
 }
 namespace brook{
     CPUStream::CPUStream(__BRTStreamType type, int dims, int extents[]):Stream(type){
+       
 	this->extents = (unsigned int *)malloc(dims*sizeof(unsigned int));
+        this->dims = dims;
 	totalsize=1;
 	for(int i=0;i<dims;++i) {
 	    this->extents[i]=extents[i];

@@ -75,7 +75,7 @@ extern int err_top_level;
 
 /* the reserved words */
 %token <typeQual>   CONST VOLATILE OUT REDUCE VOUT
-%token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF KERNEL
+%token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF KERNEL SCATTER
 %token <base>       VOID CHAR SHORT INT LONG DOUBLE SGNED UNSGNED
 /* IMPORTANT: Keep all the FLOATN's next to each other in order! */
 %token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4

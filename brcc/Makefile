@@ -3,7 +3,7 @@ ROOTDIR = ..
 EXECUTABLE = brcc
 FILES = context decl express parseenv project stemnt symbol token \
 	location brtdecl lexer gram main getopt brtexpress codegen \
-	subprocess brtstemnt brook2cpp brtkernel brookreduce
+	subprocess brtstemnt brook2cpp brtkernel brookreduce brtscatter
 
 CPP_PATH = /usr/bin/cpp
 SLOP = lexer.cpp gram.cpp gram.output gram.h fp30_assist.cg.bin

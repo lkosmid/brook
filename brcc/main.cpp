@@ -177,6 +177,14 @@ ConvertToBrtKernels(FunctionDef *fDef)
    return new BRTKernelDef(*fDef);
 }
 
+FunctionDef *
+ConvertToBrtScatters(FunctionDef *fDef)
+{
+   if (!fDef->decl->isScatter()) { return NULL; }
+   return new BRTKernelDef(*fDef);
+}
+
+
 
 /*
  * main --
@@ -205,6 +213,7 @@ main(int argc, char *argv[])
           */
          tu->findStemnt(ConvertToBrtStreams);
          tu->findFunctionDef(ConvertToBrtKernels);
+         tu->findFunctionDef(ConvertToBrtScatters);
       }
 
      out.open(globals.coutputname);
