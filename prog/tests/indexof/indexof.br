@@ -15,17 +15,17 @@ extern void streamRead();
 extern void streamWrite();
 
 kernel void bar (float d_prime<>, float b<>, float4 c,
-		 float d[10][10], out float e<>) {
+		 float d[10][10], out float e<>,float4 indexofe) {
   e = ((d_prime==d[indexof(d_prime)])
        &&(d_prime==d[indexof(d_prime)])
        &&(d_prime==d[(indexof d_prime ).xy])
-       &&!(d_prime==d[(indexof d_prime ).yx]));
+       &&!(d_prime==d[(indexofe ).yx]));
   /* this test should make a matrix of 1 and a diagonal of 0's*/
 }
 kernel void foo (float ay<>, 
                  float mydprime<>, float4 c, float d[10][10],out float e<>) {
    
-   bar(mydprime,ay,c,d,e);
+   bar(mydprime,ay,c,d,e,indexof(e));
 }
 int main () {
 
