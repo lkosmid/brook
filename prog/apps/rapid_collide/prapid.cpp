@@ -1219,22 +1219,6 @@ public:
          x.index.z<y.index.z||
          (x.index.z==y.index.z&&
           x.index.w<y.index.w))));
-    bool ok = myeq(x.index.x,y.index.x);  
-    if (x.index.x<y.index.x&&!ok)
-      return true;
-    bool nok = myeq(x.index.y,y.index.y);
-    if (ok&&x.index.y<y.index.y&&!nok)
-      return true;
-  
-    ok = nok;
-    nok=myeq(x.index.z,y.index.z);  
-    if (ok&&x.index.z<y.index.z&&!nok)
-      return true;
-    ok = nok;
-    nok=myeq(x.index.w,y.index.w);  
-    if (ok&&x.index.w<y.index.w)
-      return true;
-    return false;
   }
 };
 class csPassSorter{
@@ -1248,22 +1232,6 @@ public:
          (x.b2[0].ind[0]==y.b2[0].ind[0]&&
           x.b2[0].ind[1]<y.b2[0].ind[1]))));
    
-    bool ok =  myeq(x.b1[0].ind[0],y.b1[0].ind[0]);    
-    if (x.b1[0].ind[0]<y.b1[0].ind[0]&&!ok)
-      return true;
-    bool nok =  myeq(x.b1[0].ind[1],y.b1[0].ind[1]);    
-    
-    if (ok&&x.b1[0].ind[1]<y.b1[0].ind[1]&&!nok)
-      return true;
-    ok=nok;
-    nok = myeq (x.b2[0].ind[0],y.b2[0].ind[0]&&!nok);
-    if (ok&&x.b2[0].ind[0]<y.b2[0].ind[0])
-      return true;
-    ok = nok;
-    nok = myeq (x.b2[0].ind[1],y.b2[0].ind[1]&&!nok);
-    if (ok&&x.b2[0].ind[1]<y.b2[0].ind[1])
-      return true;
-    return false;
   }
 };
 int checkPassCorrectness(Traverser * traverser,int numTraverser, int numpass) {
