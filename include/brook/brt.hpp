@@ -9,18 +9,57 @@ extern "C" {
 
 #include <brook/kerneldesc.hpp>
 #include <brook/brtvector.hpp>
+typedef struct fixed {
+  fixed(unsigned char _x) { x =_x;}
+  fixed(float _x) {if (_x>1) _x=1; if (_x<0)_x=0; x = (unsigned char)(_x*255);}
+  fixed(void) {}
+  operator __BrtFloat1()const {return __BrtFloat1(((float)x)/255.0f);}
+  template <class T> T castToArg(const T&dummy)const{return T(((float)x)/255.0f);}
+  fixed& operator = (const __BrtFloat1&input){
+    return (*this=fixed(input.unsafeGetAt(0)));
+  }
+  unsigned char x,pad1,pad2,pad3;
+} fixed;
+
+typedef struct fixed2 {
+  fixed2(float _x, float _y) { x = (unsigned char)(_x*255); y = (unsigned char)(_y*255); }
+  fixed2(unsigned char _x, unsigned char _y) { x = _x;y=_y;}
+  fixed2(void) {}
+  unsigned char x,y,pad2,pad3;
+  operator __BrtFloat2() const{return __BrtFloat2(((float)x)/255.0f,((float)y)/255.0f);}
+  template <class T> T castToArg(const T &dummy) const{return T(((float)x)/255.0f,((float)y)/255.0f);}
+} fixed2;
+
+typedef struct fixed3 {
+  fixed3(float _x, float _y, float _z) { x = (unsigned char)(_x*255); y = (unsigned char)(_y*255); z=(unsigned char)(_z*255);}
+  fixed3(unsigned char _x, unsigned char _y, unsigned char _z) { x = _x;y=_y;z=_z;}
+  fixed3(void) {}
+  operator __BrtFloat3() const{return __BrtFloat3(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f);}
+  template <class T> T castToArg(const T&dummy) const {return T(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f);}
+  unsigned char x,y,z,pad3;
+} fixed3;
+
+typedef struct fixed4 {
+  fixed4(float _x, float _y, float _z, float _w) { x = (unsigned char)(_x*255); y = (unsigned char)(_y*255); z=(unsigned char)(_z*255); w=(unsigned char)(_w*255);}
+  fixed4(unsigned char _x, unsigned char _y, unsigned char _z, unsigned char _w) { x = _x;y=_y;z=_z;w=_w;}
+  fixed4(void) {}
+  unsigned char x,y,z,w;
+   operator __BrtFloat4() const{return __BrtFloat4(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f,((float)w)/255.0f);}
+  template <class T> T castToArg(const T&dummy)const{return T(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f,((float)w)/255.0f);}
+
+} fixed4;
 
 typedef struct float2 {
   float2(float _x, float _y) { x = _x; y = _y; }
   float2(void) {}
-
+  operator __BrtFloat2()const {return __BrtFloat2(x,y);}
   float x,y;
 } float2;
 
 typedef struct float3 {
   float3(float _x, float _y, float _z) { x = _x; y = _y; z = _z; }
   float3(void) {}
-
+  operator __BrtFloat3()const {return __BrtFloat3(x,y,z);}
   float x,y,z;
 } float3;
 
@@ -29,7 +68,7 @@ typedef struct float4 {
      x = _x; y = _y; z = _z; w = _w;
   }
   float4(void) {}
-
+  operator __BrtFloat4()const {return __BrtFloat4(x,y,z,w);}
   float x,y,z,w;
 } float4;
 
@@ -94,6 +133,10 @@ namespace brook {
     __BRTFLOAT2=2,
     __BRTFLOAT3=3,
     __BRTFLOAT4=4,
+    __BRTFIXED=5,
+    __BRTFIXED2=6,
+    __BRTFIXED3=7,
+    __BRTFIXED4=8,
   };
 
   template<typename T>
@@ -122,7 +165,29 @@ namespace brook {
     static const ::brook::StreamType result[] = {__BRTFLOAT4, __BRTNONE};
     return result;
   }
+  template<>
+  inline const ::brook::StreamType* getStreamType(fixed*) {
+     static const ::brook::StreamType result[] = {__BRTFIXED,__BRTNONE};
+     return result;
+  }
 
+  template<>
+  inline const ::brook::StreamType* getStreamType(fixed2*) {
+     static const ::brook::StreamType result[] = {__BRTFIXED2,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(fixed3*) {
+     static const ::brook::StreamType result[] = {__BRTFIXED3,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(fixed4*) {
+     static const ::brook::StreamType result[] = {__BRTFIXED4,__BRTNONE};
+     return result;
+  }
  
   /****************************************************/
   /*****           Runtime routines            ********/
@@ -468,9 +533,37 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
                                 ::brook::StreamInterface *src,
                                 void (*func) (void *, void *),
                                 bool GatherNotScatter);
-
-#define indexof(a) (__indexof((void *) &a))
-__BrtFloat4 __indexof (void *);
+template <class T> class Addressable: public T {
+ public:
+  mutable void *address;
+  template <typename U>Addressable(U* Address)
+    : T(Address->castToArg(T())){
+    this->address=Address;
+  }
+  //  Addressable(const T &t, void * Address):T(t){this->address=Address;}
+  Addressable(const T&t):T(t){address=NULL;} 
+  Addressable(const Addressable<T>& b):T(b){ 
+    this->address=b.address;    
+  }
+  Addressable<T>&operator = (const T&b) {
+    *static_cast<T*>(this)=static_cast<const T&>(b);
+    return *this;
+  }
+  Addressable<T>& operator = (const Addressable<T>& b) {
+    *static_cast<T*>(this)=static_cast<const T&>(b);
+    if (address==NULL) this->address=b.address;
+    return *this;
+  }
+};
+template <class T> const void * getStreamAddress(const T* a) {
+   return static_cast<const Addressable<T>* > (a)->address;
+}
+#if 0
+#define indexof(a) __indexof(a.address)
+#else
+#define indexof(a) __indexof(getStreamAddress(&a))
+#endif
+__BrtFloat4 __indexof (const void *);
 
 // TIM: adding conditional magick for raytracer
 void streamEnableWriteMask();

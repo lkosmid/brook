@@ -273,15 +273,23 @@ static bool printGatherStructureFunctionBody( std::ostream& out, const std::stri
          BaseType* base = form->getBase();
          switch(base->typemask) {
          case BT_Float:
+         case BT_Fixed:
+         case BT_Half:
             out << "__fetch_float";
             break;
          case BT_Float2:
+         case BT_Fixed2:
+         case BT_Half2:
             out << "__fetch_float2";
             break;
          case BT_Float3:
+         case BT_Fixed3:
+         case BT_Half3:
             out << "__fetch_float3";
             break;
          case BT_Float4:
+         case BT_Fixed4:
+         case BT_Half4:
             out << "__fetch_float4";
             break;
          default:
@@ -485,13 +493,21 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       shader << "\t\tout float";
       switch (form->getBase()->typemask) {
       case BT_Float:
+      case BT_Fixed:
+      case BT_Half:
         break;
       case BT_Float2:
+      case BT_Fixed2:
+      case BT_Half2:
         shader << "2";
         break;
+      case BT_Fixed3:
+      case BT_Half3:
       case BT_Float3:
         shader << "3";
         break;
+      case BT_Fixed4:
+      case BT_Half4:
       case BT_Float4:
         shader << "4";
         break;
@@ -531,15 +547,23 @@ static void expandSimpleOutputArgumentWrite(
   shader << "\t__output_" << outr << " = ";
   switch(base->typemask) {
   case BT_Float:
+  case BT_Fixed:
+  case BT_Half:
     shader << "float4( " << argumentName << ", 0, 0, 0);\n";
     break;
   case BT_Float2:
+  case BT_Fixed2:
+  case BT_Half2:
     shader << "float4( " << argumentName << ", 0, 0);\n";
     break;
   case BT_Float3:
+  case BT_Fixed3:
+  case BT_Half3:
     shader << "float4( " << argumentName << ", 0);\n";
     break;
   case BT_Float4:
+  case BT_Fixed4:
+  case BT_Half4:
     shader << argumentName << ";\n";
     break;
   default:
@@ -726,15 +750,23 @@ expandStreamStructureFetches(std::ostream& shader,
 
          switch(base->typemask) {
          case BT_Float:
+         case BT_Half:
+         case BT_Fixed:
             shader << "__fetch_float";
             break;
          case BT_Float2:
+         case BT_Half2:
+         case BT_Fixed2:
             shader << "__fetch_float2";
             break;
          case BT_Float3:
+         case BT_Fixed3:
+         case BT_Half3:
             shader << "__fetch_float3";
             break;
          case BT_Float4:
+         case BT_Fixed4:
+         case BT_Half4:
             shader << "__fetch_float4";
             break;
          default:
@@ -785,15 +817,23 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      BaseType* base = inForm->getBase();
      switch(base->typemask) {
      case BT_Float:
+     case BT_Half:
+     case BT_Fixed:
         shader << "__fetch_float";
         break;
      case BT_Float2:
+     case BT_Half2:
+     case BT_Fixed2:
         shader << "__fetch_float2";
         break;
      case BT_Float3:
+     case BT_Half3:
+     case BT_Fixed3:
         shader << "__fetch_float3";
         break;
      case BT_Float4:
+     case BT_Half4:
+     case BT_Fixed4:
         shader << "__fetch_float4";
         break;
      default:
@@ -811,6 +851,17 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
 static void
 generate_shader_support(std::ostream& shader)
 {
+
+  shader << "#if defined(DXPIXELSHADER)\n";
+  shader << "#define fixed float\n";
+  shader << "#define half float\n";
+  shader << "#define fixed2 float2\n";
+  shader << "#define half2 float2\n";
+  shader << "#define fixed3 float3\n";
+  shader << "#define half3 float3\n";
+  shader << "#define fixed4 float4\n";
+  shader << "#define half4 float4\n";
+  shader << "#endif\n";
   shader << "#if defined(DXPIXELSHADER) || !defined(USERECT)\n";
   shader << "#define _stype   sampler2D\n";
   shader << "#define _sfetch  tex2D\n";

@@ -77,12 +77,24 @@ const BaseTypeSpec BT_Struct       = 0x00001000;
 const BaseTypeSpec BT_Union        = 0x00002000;
 const BaseTypeSpec BT_Enum         = 0x00004000;
 const BaseTypeSpec BT_UserType     = 0x00008000;
-const BaseTypeSpec BT_BaseMask     = 0x0000FFFF;
+
+const BaseTypeSpec BT_Fixed        = 0x00010000;
+const BaseTypeSpec BT_Fixed2       = 0x00020000;
+const BaseTypeSpec BT_Fixed3       = 0x00040000;
+const BaseTypeSpec BT_Fixed4       = 0x00080000;
+
+const BaseTypeSpec BT_Half        = 0x00100000;
+const BaseTypeSpec BT_Half2       = 0x00200000;
+const BaseTypeSpec BT_Half3       = 0x00400000;
+const BaseTypeSpec BT_Half4       = 0x00800000;
+
+const BaseTypeSpec BT_BaseMask     = 0x00FFFFFF;
+
 
 // Sign indicator
-const BaseTypeSpec BT_Signed       = 0x00010000;
-const BaseTypeSpec BT_UnSigned     = 0x00020000;
-const BaseTypeSpec BT_SignMask     = 0x00030000;
+const BaseTypeSpec BT_Signed       = 0x01000000;
+const BaseTypeSpec BT_UnSigned     = 0x02000000;
+const BaseTypeSpec BT_SignMask     = 0x03000000;
 
 const BaseTypeSpec BT_TypeError    = 0x10000000;
 
@@ -212,7 +224,7 @@ class StructDef
     StructDef*   dup() const;    // deep-copy
 
     void    print(std::ostream& out, Symbol *name, int level) const;
-    bool printStructureStreamHelper(std::ostream& out) const;
+    bool printStructureStreamHelper(std::ostream& out, bool raw) const;
     bool printStructureStreamShape(std::ostream& out);
 
     void    findExpr( fnExprCallback cb );
@@ -279,12 +291,13 @@ class Type : public DupableType
 
     // This function handles the complexity of printing a type.
     virtual void printType( std::ostream& out, Symbol *name,
-			    bool showBase, int level ) const;
+			    bool showBase, int level, bool rawType=false/*prevents cpu-specific transforms*/ ) const;
 
-    virtual bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const = 0;
+    virtual bool printStructureStreamHelperType( std::ostream& out, const std::string& name, bool raw ) const = 0;
     virtual bool printStructureStreamShape( std::ostream& out ) { return false; }
 
     virtual void printBase( std::ostream& out, int level ) const {}
+    virtual void printRawBase( std::ostream& out, int level ) const {printBase(out,level);}
     virtual void printBefore( std::ostream& out, Symbol *name, int level) const {}
     virtual void printAfter( std::ostream& out ) const {}
 
@@ -335,7 +348,7 @@ class BaseType : public Type
 
     Type* extend(Type *extension) { assert(0); return NULL; }
 
-    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const;
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name, bool raw ) const;
     bool printStructureStreamShape( std::ostream& out );
 
     void printBase( std::ostream& out, int level ) const;
@@ -379,7 +392,7 @@ class PtrType : public Type
 
     Type* extend(Type *extension);
 
-    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name, bool raw ) const {
       return false;
     }
 
@@ -416,7 +429,7 @@ class ArrayType : public Type
 
     Type* extend(Type *extension);
     virtual Type ** getSubType() {return &subType;}
-    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name, bool raw ) const {
       return false;
     }
 
@@ -452,7 +465,7 @@ class BitFieldType : public Type
     virtual Type ** getSubType() {return &subType;}
     Type* extend(Type *extension);
 
-    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name, bool raw ) const {
       return false;
     }
 
@@ -489,7 +502,8 @@ class FunctionType : public Type
     virtual Type ** getSubType() {return &subType;}
 
     bool printStructureStreamHelperType( std::ostream& out, 
-                                         const std::string& name ) const {
+                                         const std::string& name,
+                                         bool raw) const {
       return false;
     }
 
@@ -601,7 +615,7 @@ class Decl
 
     void    print(std::ostream& out, bool showBase, int level=0) const;
     void printStructureStreamHelpers( std::ostream& out ) const;
-    bool printStructureStreamInternals( std::ostream& out ) const;
+    bool printStructureStreamInternals( std::ostream& out, bool raw ) const;
     bool printStructureStreamShape(std::ostream& out);
     bool printStructureStreamShapeInternals(std::ostream& out);
     void    printBase(std::ostream& out, Symbol *name,
@@ -649,10 +663,10 @@ Decl*	ReverseList( Decl* dList );
 static inline int
 FloatDimension(BaseTypeSpec bt)
 {
-   if (bt & BT_Float) return 1;
-   else if (bt & BT_Float2) return 2;
-   else if (bt & BT_Float3) return 3;
-   else if (bt & BT_Float4) return 4;
+   if ((bt & BT_Float)||(bt&BT_Fixed)||(bt&BT_Half)) return 1;
+   else if ((bt & BT_Float2)||(bt&BT_Fixed2)||(bt&BT_Half2)) return 2;
+   else if ((bt & BT_Float3)||(bt&BT_Fixed3)||(bt&BT_Half3)) return 3;
+   else if ((bt & BT_Float4)||(bt&BT_Fixed4)||(bt&BT_Half4)) return 4;
    else return 0;
 }
 

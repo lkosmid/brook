@@ -280,6 +280,25 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->base = new BaseType(BT_Float * (1<<n));
                       return(err_tok = FLOAT + n);
                     }
+<INITIAL>"fixed"    {
+                      lvalp->base = new BaseType(BT_Fixed);
+                      return(err_tok = FIXED);
+                    }
+<INITIAL>"fixed"[2-4] {
+		      int n = yytext[yyleng -1] - '1'; /* There is no float1 */
+                      lvalp->base = new BaseType(BT_Fixed * (1<<n));
+                      return(err_tok = FIXED + n);
+                    }
+<INITIAL>"half"    {
+                      lvalp->base = new BaseType(BT_Half);
+                      return(err_tok = HALF);
+                    }
+<INITIAL>"half"[2-4] {
+		      int n = yytext[yyleng -1] - '1'; /* There is no float1 */
+
+                      lvalp->base = new BaseType(BT_Half * (1<<n));
+                      return(err_tok = HALF + n);
+                    }
 <INITIAL>"double"   {
                       lvalp->base = new BaseType(BT_Double);
                       return(err_tok = DOUBLE);

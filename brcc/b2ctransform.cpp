@@ -273,8 +273,7 @@ class BaseType1:public BaseType {public:
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   // to print out the base type, see if it falls into the set 
   // of classes with BRT replacements
-  virtual void printBase(std::ostream& out, int level) const {
-
+  void hackedPrintBase(std::ostream& out, int level, bool raw) const {
     int special =
       BT_Char     |
       BT_Int      |
@@ -282,6 +281,14 @@ class BaseType1:public BaseType {public:
       BT_Float2   |
       BT_Float3   |
       BT_Float4   |
+      BT_Fixed    |
+      BT_Fixed2   |
+      BT_Fixed3   |
+      BT_Fixed4   |
+      BT_Half     |
+      BT_Half2    |
+      BT_Half3    |
+      BT_Half4    |
       BT_Long     |
       BT_UserType |
       BT_Struct;
@@ -293,23 +300,47 @@ class BaseType1:public BaseType {public:
         out << "volatile ";
       
       if (typemask & BT_Char)
-        out << "__BrtChar1 ";
-      else if (typemask & BT_Float)
-        out << "__BrtFloat1 ";
-      else if (typemask & BT_Float2)
-        out << "__BrtFloat2 ";
-      else if (typemask & BT_Float3)
-        out << "__BrtFloat3 ";
-      else if (typemask & BT_Float4)
+         out << "__BrtChar1 ";
+      else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_Half)))){
+         out << "__BrtFloat1 ";
+      }else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
+         out << "__BrtFloat2 ";
+      else if ((typemask & BT_Float3)||(raw==false&&((typemask &BT_Fixed3)||(typemask&BT_Half3))))
+         out << "__BrtFloat3 ";
+      else if ((typemask & BT_Float4)||(raw==false&&((typemask &BT_Fixed4)||(typemask&BT_Half4))))
         out << "__BrtFloat4 ";
+      else if (typemask &BT_Fixed)
+         out << "fixed ";
+      else if (typemask &BT_Fixed2)
+         out << "fixed2 ";
+      else if (typemask &BT_Fixed3)
+         out << "fixed3 ";
+      else if (typemask &BT_Fixed4)
+         out << "fixed4 ";
+      else if (typemask &BT_Half)
+         out << "half ";
+      else if (typemask &BT_Half2)
+         out << "half2 ";
+      else if (typemask &BT_Half3)
+         out << "half3 ";
+      else if (typemask &BT_Half4)
+         out << "half4 ";      
       else if (typemask & BT_UserType)
         {
-          out << "__cpustruct_" << *typeName;
+           if (raw) {
+              out << "__castablestruct_"<<*typeName;
+           }else {
+              out << "__cpustruct_" << *typeName;
+           }
         }
       else if (typemask & BT_Struct)
         {
+           if (raw) {
           // TIM: hope they didn't define the struct inline...
-          out << "struct __cpustruct_" << *tag;
+              out << "struct "<<*tag;
+           }else {
+              out << "struct __cpustruct_" << *tag;
+           }
         }
       else
         out << "__BrtInt1 ";
@@ -321,6 +352,20 @@ class BaseType1:public BaseType {public:
       //no BRT equivalent fallback
       BaseType::printBase(out,level);
     }
+
+  }
+
+  virtual void printRawBase(std::ostream& out, int level) const {
+     hackedPrintBase(out,level,true);
+     /*
+     BaseType *b = static_cast<BaseType*>(this->dup());     
+     b->qualifier=TQ_None;
+     b->BaseType::printBase(out,level);
+     delete b;
+     */
+  }
+  virtual void printBase(std::ostream& out, int level) const {
+     hackedPrintBase(out,level,false);
   }
 };
 
@@ -357,7 +402,6 @@ void BlacklistType (Type **t) {
   
   if ((*t)->type==TT_Base && (basei = static_cast<BaseType *>(*t))) {
     *t = new BaseType1(*basei);
-    //delete base;
   }
 
   ArrayType *at ;
@@ -381,9 +425,10 @@ void BlacklistType (Type **t) {
   
   BrtStreamType * st;
   
-  if ((*t)->type==TT_BrtStream && (st = static_cast<BrtStreamType *>(*t)))
+  if ((*t)->type==TT_BrtStream && (st = static_cast<BrtStreamType *>(*t))){
     BlacklistBaseType(&st->base);
-  
+    printf ("A");
+  }
   FunctionType * ft;
   if ((*t)->type==TT_Function && (ft = static_cast<FunctionType *>(*t))) {
     for (unsigned int i=0;i<ft->nArgs;++i) {

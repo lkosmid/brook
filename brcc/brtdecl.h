@@ -28,7 +28,7 @@ public:
 
   Type* dup0() const = 0;
 
-  bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+  bool printStructureStreamHelperType( std::ostream& out, const std::string& name, bool raw ) const {
     return false;
   }
 
@@ -39,7 +39,7 @@ public:
   void printAfter(std::ostream& out ) const {assert (0);}
 
   void printType(std::ostream& out, Symbol *name,
-		  bool showBase, int level ) const = 0;
+                 bool showBase, int level, bool raw=false ) const = 0;
   void printForm(std::ostream& out) const = 0;
   virtual void printInitializer(std::ostream& out) const = 0;
 
@@ -71,7 +71,7 @@ public:
   Type* dup0() const { return new BrtStreamParamType(base, dims); }
 
   void printType(std::ostream& out, Symbol *name,
-		  bool showBase, int level ) const;
+                 bool showBase, int level, bool raw=false ) const;
   void printBefore(std::ostream& out, Symbol *name, int level) const {
   }
   void printAfter(std::ostream& out ) const {
@@ -94,7 +94,7 @@ public:
   Type* dup0() const { return new BrtInitializedStreamType(base, dims); }
 
   void printType(std::ostream& out, Symbol *name,
-		  bool showBase, int level ) const;
+                 bool showBase, int level, bool raw=false ) const;
   void printForm(std::ostream& out) const;
   void printInitializer(std::ostream& out) const;
 
@@ -113,7 +113,7 @@ public:
   Type* dup0() const { return new BrtIterType(base, dims, args); }
 
   void printType( std::ostream& out, Symbol *name,
-		  bool showBase, int level ) const;
+		  bool showBase, int level, bool raw=false ) const;
   void printForm(std::ostream& out) const;
   void printInitializer(std::ostream& out) const;
 
@@ -127,6 +127,8 @@ protected:
 };
 
 class CPUGatherType{
+  mutable bool raw;
+   // used instead of changing argument signature of modified printBefore
 public:
   Type * at;
   Type * subtype;
@@ -135,7 +137,7 @@ public:
   CPUGatherType(ArrayType &t,bool copy_on_write);
   Type * dup0()const;
   virtual Type ** getSubType() {return &subtype;}
-  void printType(std::ostream & out, Symbol *name, bool showBase, int level) const;
+   void printType(std::ostream & out, Symbol *name, bool showBase, int level, bool raw=false) const;
   void printBefore(std::ostream & out, Symbol *name, int level) const;
   void printAfter(std::ostream &out)const;
   void printSubtype(std::ostream &out,Symbol *name, bool showBase,int level)const;

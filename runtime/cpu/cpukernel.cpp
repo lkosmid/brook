@@ -12,7 +12,7 @@ static brook::CPUKernel *current_cpu_kernel = NULL;
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //          The indexof function
 
-__BrtFloat4 __indexof(void *ptr) {
+__BrtFloat4 __indexof(const void *ptr) {
   unsigned int i;
   
   assert(current_cpu_kernel);

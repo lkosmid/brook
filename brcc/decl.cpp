@@ -134,13 +134,16 @@ Type::DeleteTypeList(Type* typeList)
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-Type::printType( std::ostream& out, Symbol *name, bool showBase, int level ) const
+Type::printType( std::ostream& out, Symbol *name, bool showBase, int level, bool raw ) const
 {
     if (showBase) {
-       printBase(out,level);
+       if (raw) {
+          printRawBase(out,level);
+       }else {
+          printBase(out,level);
+       }
        if (name != NULL) out << " ";
     }
-
     printBefore(out,name,level);
     printAfter(out);
 }
@@ -211,7 +214,7 @@ BaseType::dup0() const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
-bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::string& name ) const
+bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::string& name , bool raw) const
 {
     printQual(out,qualifier);
 
@@ -228,14 +231,30 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
         out << "short ";
     else if (typemask & BT_LongLong)
         out << "long long ";
-    else if (typemask & BT_Float)
-        out << "__BrtFloat1 ";
-    else if (typemask & BT_Float2)
-        out << "__BrtFloat2 ";
-    else if (typemask & BT_Float3)
-        out << "__BrtFloat3 ";
-    else if (typemask & BT_Float4)
-        out << "__BrtFloat4 ";
+    else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_Half))))
+       out << "__BrtFloat1 ";
+    else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
+       out << "__BrtFloat2 ";
+    else if ((typemask & BT_Float3)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
+       out << "__BrtFloat3 ";
+    else if ((typemask & BT_Float4)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
+       out << "__BrtFloat4 ";
+    else if (typemask & BT_Fixed)
+        out << "fixed ";
+    else if (typemask & BT_Fixed2)
+        out << "fixed2 ";
+    else if (typemask & BT_Fixed3)
+        out << "fixed3 ";
+    else if (typemask & BT_Fixed4)
+        out << "fixed4 ";
+    else if (typemask & BT_Half)
+        out << "half ";
+    else if (typemask & BT_Half2)
+        out << "half2 ";
+    else if (typemask & BT_Half3)
+        out << "half3 ";
+    else if (typemask & BT_Half4)
+        out << "half4 ";
     else if ((typemask & BT_Double) && (typemask & BT_Long))
         out << "long double ";
     else if (typemask & BT_Double)
@@ -247,8 +266,8 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
     else if (typemask & BT_Struct)
     {
         if (stDefn != NULL)
-        {
-            if( !stDefn->printStructureStreamHelper(out) )
+        {          
+           if( !stDefn->printStructureStreamHelper(out,raw) )
               return false;
         }
         else
@@ -256,7 +275,7 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
             out << "struct ";
 
             if (tag)
-                out << "__cpustruct_" << *tag << " ";
+               out << (raw?"__castablestruct_":"__cpustruct_") << *tag << " ";
         }
     }
     else if (typemask & BT_Union)
@@ -270,7 +289,7 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
     else if (typemask & BT_UserType)
     {
         if (typeName)
-            out << "__cpustruct_" << *typeName << " ";
+           out << (raw?"__castablestruct_":"__cpustruct_") << *typeName << " ";
     }
     else
     {
@@ -315,6 +334,22 @@ bool BaseType::printStructureStreamShape( std::ostream& out )
         out << "__BRTFLOAT3, ";
     else if (typemask & BT_Float4)
         out << "__BRTFLOAT4, ";
+    else if (typemask & BT_Fixed)
+        out << "__BRTFIXED, ";
+    else if (typemask & BT_Fixed2)
+        out << "__BRTFIXED2, ";
+    else if (typemask & BT_Fixed3)
+        out << "__BRTFIXED3, ";
+    else if (typemask & BT_Fixed4)
+        out << "__BRTFIXED4, ";
+    else if (typemask & BT_Half)
+        out << "__BRTHALF, ";
+    else if (typemask & BT_Half2)
+        out << "__BRTHALF2, ";
+    else if (typemask & BT_Half3)
+        out << "__BRTHALF3, ";
+    else if (typemask & BT_Half4)
+        out << "__BRTHALF4, ";
     else
     {
       StructDef* s = findStructureDef(this);
@@ -342,14 +377,30 @@ BaseType::printBase(std::ostream& out, int level) const
         out << "short ";
     else if (typemask & BT_LongLong)
         out << "long long ";
-    else if (typemask & BT_Float)
+    else if ((typemask & BT_Float)||(0&typemask & BT_Fixed)||(0&typemask & BT_Half))
         out << "float ";
-    else if (typemask & BT_Float2)
+    else if ((typemask & BT_Float2)||(0&typemask & BT_Fixed2)||(0&typemask & BT_Half2))
         out << "float2 ";
-    else if (typemask & BT_Float3)
+    else if ((typemask & BT_Float3)||(0&typemask & BT_Fixed3)||(0&typemask & BT_Half3))
         out << "float3 ";
-    else if (typemask & BT_Float4)
+    else if ((typemask & BT_Float4)||(0&typemask & BT_Fixed4)||(0&typemask & BT_Half4))
         out << "float4 ";
+    else if (typemask & BT_Fixed)
+        out << "fixed ";
+    else if (typemask & BT_Fixed2)
+        out << "fixed2 ";
+    else if (typemask & BT_Fixed3)
+        out << "fixed3 ";
+    else if (typemask & BT_Fixed4)
+        out << "fixed4 ";
+    else if (typemask & BT_Half)
+        out << "half ";
+    else if (typemask & BT_Half2)
+        out << "half2 ";
+    else if (typemask & BT_Half3)
+        out << "half3 ";
+    else if (typemask & BT_Half4)
+        out << "half4 ";
     else if ((typemask & BT_Double) && (typemask & BT_Long))
         out << "long double ";
     else if (typemask & BT_Double)
@@ -1123,7 +1174,7 @@ StructDef::print(std::ostream& out, Symbol *name, int level) const
         out << " " << *name;
 }
 
-bool StructDef::printStructureStreamHelper(std::ostream& out) const
+bool StructDef::printStructureStreamHelper(std::ostream& out, bool raw) const
 {
     if (isUnion())
         out << "union ";
@@ -1131,20 +1182,20 @@ bool StructDef::printStructureStreamHelper(std::ostream& out) const
         out << "struct ";
 
     if (tag)
-        out << "__cpustruct_" << *tag << " ";
+       out << (raw?"__castablestruct_":"__cpustruct_") << *tag << " ";
 
     out << "{\n"; 
 
     for (int j=0; j < nComponents; j++)
     {
-        if(!components[j]->printStructureStreamInternals(out))
+       if(!components[j]->printStructureStreamInternals(out,raw))
           return false;
 
         Decl *decl = components[j]->next;
         while (decl != NULL)
         {
             out << ", ";
-            if(!decl->printStructureStreamInternals(out))
+            if(!decl->printStructureStreamInternals(out,raw))
               return false;
             decl = decl->next;
         }
@@ -1623,7 +1674,7 @@ Decl::print(std::ostream& out, bool showBase, int level) const
 
     if (form)
     {
-        form->printType(out,name,showBase,level);
+       form->printType(out,name,showBase,level,false);
     }
     else if (name)
     {
@@ -1651,23 +1702,39 @@ Decl::print(std::ostream& out, bool showBase, int level) const
     }
     */
 }
-
+static std::string PrintCastToBody(StructDef *str) {
+   if (!str) {
+      return "    return *this;";
+   }
+   std::string ret="    T ret;\n"; 
+   for (int i=0;i<str->nComponents;++i) {
+      ret+="    ret."+str->components[i]->name->name+" = this->"+str->components[i]->name->name+".castToArg(ret."+str->components[i]->name->name+");\n";
+   }
+   return ret+="    return ret;";
+}
 void Decl::printStructureStreamHelpers( std::ostream& out ) const
 {
     assert(this != NULL);
 
     if(!isTypedef()) return;
 
-    std::ostringstream stringout;
 
-    stringout << "typedef ";
-    if(!form->printStructureStreamHelperType( stringout, std::string("__cpustruct_") + name->name ))
-      return;
-    stringout << ";\n";
-    out << stringout.str();
+    for (int i=0;i<2;++i) {
+       std::ostringstream stringout;
+       stringout << "\ntypedef ";
+       if(!form->printStructureStreamHelperType( stringout, (i==0?std::string("__cpustruct_"):std::string("__castablestruct_")) + name->name,i!=0 ))
+          return;
+       stringout << ";\n";
+       std::string tmp= stringout.str();
+       std::string::value_type where= tmp.find("{");
+       if (where!=std::string::npos) {
+          tmp = tmp.substr(0,where+1)+"\n  template <typename T> T castToArg(const T& dummy)const{\n"+PrintCastToBody(form->getBase()->stDefn)+"\n  }\n"+tmp.substr(where+1);
+       }
+       out << tmp;
+    }
 }
 
-bool Decl::printStructureStreamInternals( std::ostream& out ) const
+bool Decl::printStructureStreamInternals( std::ostream& out, bool raw ) const
 {
     assert(this != NULL);
 
@@ -1684,7 +1751,7 @@ bool Decl::printStructureStreamInternals( std::ostream& out ) const
 
     if (form)
     {
-        if(!form->printStructureStreamHelperType(out,name->name))
+       if(!form->printStructureStreamHelperType(out,name->name,raw))
           return false;
     }
     else if (name)

@@ -88,7 +88,7 @@ void baseTypeFixup(BaseType * bt,Decl * decl) {
 %token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF
 %token <base>       VOID CHAR SHORT INT LONG DOUBLE SGNED UNSGNED
 /* IMPORTANT: Keep all the FLOATN's next to each other in order! */
-%token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4
+%token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4 FIXED FIXED2 FIXED3 FIXED4 HALF HALF2 HALF3 HALF4
 %token <typeSpec>   ENUM STRUCT UNION 
 
 %token <loc>        BREAK CASE CONT DEFLT DO ELSE
@@ -1748,6 +1748,14 @@ type_spec_reentrance: enum_type_define
          |  FLOAT2
          |  FLOAT3
          |  FLOAT4
+         |  FIXED
+         |  FIXED2
+         |  FIXED3
+         |  FIXED4
+         |  HALF
+         |  HALF2
+         |  HALF3
+         |  HALF4
          |  DOUBLE
          |  SGNED
          |  UNSGNED

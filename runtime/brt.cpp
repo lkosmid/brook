@@ -183,6 +183,18 @@ namespace brook {
       StreamType fieldType = getIndexedFieldType(i);
       switch(fieldType)
       {
+      case __BRTFIXED:
+         result+= sizeof(fixed);
+         break;
+      case __BRTFIXED2:
+         result+= sizeof(fixed2);
+         break;
+      case __BRTFIXED3:
+         result+= sizeof(fixed3);
+         break;
+      case __BRTFIXED4:
+         result+= sizeof(fixed4);
+         break;
       case __BRTFLOAT:
         result += sizeof(float);
         break;

@@ -390,10 +390,24 @@ void BRTCPUKernelCode::printInnerCode (std::ostream & out) const {
     if (i!=0) {
       out << "," << std::endl << white;
     }
-    
-    Symbol * nam = ft->args[i]->name;
     Type * t = ft->args[i]->form;
 
+    Symbol * nam = ft->args[i]->name;
+    if (0) {// Uses addressable to get copy-semantics between kernels
+    if (ft->args[i]->form->isArray()||((ft->args[i]->form->getQualifiers())
+                                       & (TQ_Reduce | TQ_Out))!=0) {
+      nam->name = "&" + nam->name;
+      if (ft->args[i]->form->isArray())
+        out << "const ";
+    }
+    
+    // if it is a stream, loose the "<>" 
+    if (ft->args[i]->isStream()) {
+      nam->name="> "+nam->name;
+      t = static_cast<ArrayType *>(t)->subType;
+      out << "Addressable <";
+    }
+    }else {
     nam->name = "&" + nam->name;
     
     // if it is a stream, loose the "<>" 
@@ -406,6 +420,14 @@ void BRTCPUKernelCode::printInnerCode (std::ostream & out) const {
          & (TQ_Reduce | TQ_Out)) == 0) {
       out << "const ";
     }
+
+    }
+    // if it is not an out/reduce arg, make it const NO LONGER 
+    /*
+    if ((ft->args[i]->form->getQualifiers() 
+         & (TQ_Reduce | TQ_Out)) == 0) {
+      out << "const ";
+      }*/
      
     // if it is a gather
     if (recursiveIsGather(t)) {
@@ -432,7 +454,15 @@ void BRTCPUKernelCode::printInnerCode (std::ostream & out) const {
 void BRTCPUKernelCode::onlyPrintInner(std::ostream& out) const {
   printInnerCode (out);
 }
-
+static void printFetchElement(std::ostream &out, Decl * decl) {
+   Type * t = decl->form;
+   t = static_cast<ArrayType *>(t)->subType;
+   out << "(";
+   t->printType(out, NULL, true, 0,true);
+   out << "*) __k->FetchElem("
+       << decl->name->name
+       << ")";
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const
 {
@@ -494,11 +524,23 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
   out << std::endl << indent;
 
   // Print the do while loop
-  out << "do {" << std::endl << indent << indent; 
-  
+  out << "do {" << std::endl;
+  for (i=0;i<ft->nArgs;++i) {
+     if (ft->args[i]->isStream()) {
+       if ((ft->args[i]->form->getQualifiers()&(TQ_Reduce|TQ_Out))!=0){
+           Type * t = static_cast<ArrayType *>(ft->args[i]->form)->subType;
+           out << indent << indent<< "Addressable <";
+           Symbol sym;sym.name="> __out_"+ft->args[i]->name->name;
+           t->printType(out, &sym, true, 0,false);
+           out << "(";
+           printFetchElement(out,ft->args[i]);
+           out <<");"<<std::endl; 
+        }
+     }
+  }
   std::string white = whiteout (enhanced_name.name + "_inner (");
   
-  out << enhanced_name.name 
+  out << indent << indent <<enhanced_name.name 
       << "_inner (";
   
   for (i=0;i<ft->nArgs;++i) {
@@ -508,23 +550,33 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
                   << indent 
                   << white;
 
-    out << "*";
     if (ft->args[i]->isStream()) {
-      Type * t = ft->args[i]->form;
-      t = static_cast<ArrayType *>(t)->subType;
-      out << "(";
-      t->printType(out, NULL, true, 0);
-      out << "*) __k->FetchElem("
-          << ft->args[i]->name->name
-          << ")";
-      
+      if ((ft->args[i]->form->getQualifiers()&(TQ_Reduce|TQ_Out))!=0){
+          out << "__out_"+ft->args[i]->name->name;
+       }else{
+          out << "Addressable <";
+          static_cast<ArrayType*>(ft->args[i]->form)->subType->printType(out, NULL, true, 0,false);
+          out<<">(";
+          printFetchElement(out,ft->args[i]);
+          out << ")";
+       }
     } else
-      out << ft->args[i]->name->name;
+      out << "*"<<ft->args[i]->name->name;
   }
-
   out << ");"
-      << std::endl << indent
-      << "} while (__k->Continue());"
+      << std::endl;
+  for (i=0;i<ft->nArgs;++i) {
+     if (ft->args[i]->isStream()) {
+       if ((ft->args[i]->form->getQualifiers()&(TQ_Reduce|TQ_Out))!=0){
+           out << indent << indent<<"*reinterpret_cast<";
+           static_cast<ArrayType*>(ft->args[i]->form)->subType->printType(out,NULL,true,0,true);
+           out <<"*>(__out_"<<ft->args[i]->name->name<<".address)"<< " = __out_"<<ft->args[i]->name->name<<".castToArg(*reinterpret_cast<";
+           static_cast<ArrayType*>(ft->args[i]->form)->subType->printType(out,NULL,true,0,true);
+           out <<"*>(__out_"<<ft->args[i]->name->name<<".address));"<< std::endl;
+        }
+     }
+  }  
+  out << indent<< "} while (__k->Continue());"
       << std::endl 
       << "}" 
       << std::endl;

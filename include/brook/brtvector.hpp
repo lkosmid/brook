@@ -220,7 +220,14 @@ public:
     const vec<VALUE,tsize>& gather() const{
         return *this;
     }
-    template<class BRT_TYPE> BRT_TYPE castTo() {
+    template<class BRT_TYPE> BRT_TYPE castTo()const {
+        return InitializeClass<BRT_TYPE>()(getAt(0),
+					   getAt(1),
+					   getAt(2),
+					   getAt(3));
+    }
+
+    template<class BRT_TYPE> BRT_TYPE castToArg(const BRT_TYPE&)const{
         return InitializeClass<BRT_TYPE>()(getAt(0),
 					   getAt(1),
 					   getAt(2),

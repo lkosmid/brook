@@ -206,6 +206,22 @@ std::string undecoratedBase(Decl * decl) {
       return "float3";
    else if (typemask&BT_Float4)
       return "float4";
+   if (typemask&BT_Fixed)
+      return "fixed";
+   if (typemask&BT_Fixed2)
+      return "fixed2";
+   if (typemask&BT_Fixed3)
+      return "fixed3";
+   if (typemask&BT_Fixed4)
+      return "fixed4";
+   if (typemask&BT_Half)
+      return "half";
+   if (typemask&BT_Half2)
+      return "half2";
+   if (typemask&BT_Half3)
+      return "half3";
+   if (typemask&BT_Half4)
+      return "half4";
    return "float";
          
 }

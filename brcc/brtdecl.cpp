@@ -89,7 +89,7 @@ BrtStreamType::findExpr( fnExprCallback cb )
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BrtStreamParamType::printType(std::ostream& out, Symbol *name,
-                              bool showBase, int level) const
+                              bool showBase, int level, bool raw) const
 {
   if( isIterator )
     out << "::brook::iter ";
@@ -124,7 +124,7 @@ BrtStreamParamType::printInitializer(std::ostream& out) const
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BrtInitializedStreamType::printType(std::ostream& out, Symbol *name,
-                                    bool showBase, int level) const
+                                    bool showBase, int level, bool raw) const
 {
   out << "::brook::stream ";
 
@@ -134,7 +134,7 @@ BrtInitializedStreamType::printType(std::ostream& out, Symbol *name,
   // TIM: add initializer as constructor
   out << "(::brook::getStreamType(( ";
 
-  base->printType( out, NULL, true, 0 );
+  base->printType( out, NULL, true, 0 ,raw);
 
   out << " *)0), ";
   /*
@@ -238,7 +238,7 @@ BrtIterType::~BrtIterType()
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BrtIterType::printType( std::ostream& out, Symbol *name,
-                        bool showBase, int level ) const
+                        bool showBase, int level, bool raw ) const
 {
   ExprVector::const_iterator i;
 
@@ -331,6 +331,7 @@ BrtIterType::findExpr( fnExprCallback cb )
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 CPUGatherType::CPUGatherType(ArrayType &t,bool copy_on_write) {
   dimension=0;
+  raw=false;
   at = &t;
   this->copy_on_write=copy_on_write;
   subtype = at;
@@ -341,11 +342,12 @@ CPUGatherType::CPUGatherType(ArrayType &t,bool copy_on_write) {
 }
 
 void CPUGatherType::printSubtype(std::ostream&out,Symbol *name,bool showBase,int level) const {
-  subtype->printType(out,name,showBase,level); 
+   subtype->printType(out,name,showBase,level,this->raw); 
 }
 
-void CPUGatherType::printType(std::ostream &out, Symbol * name, bool showBase, int level) const
+void CPUGatherType::printType(std::ostream &out, Symbol * name, bool showBase, int level, bool raw) const
 {
+  this->raw=raw;
   printBefore(out,name,level);
   printAfter(out);	 
 }
