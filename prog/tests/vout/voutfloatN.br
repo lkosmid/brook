@@ -17,7 +17,7 @@ float absolutezero=0.0f;
 unsigned int toui(float f) {
    return (unsigned int)f;
 }
-
+#define sentinelStream brook::sentinelStream
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
 

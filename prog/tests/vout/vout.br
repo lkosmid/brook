@@ -3,7 +3,7 @@
 
 unsigned int debug_vout = 0;
 float absolutezero=0.0f;
-
+#define sentinelStream brook::sentinelStream
 unsigned int toui(float f) {
    return (unsigned int)f;
 }

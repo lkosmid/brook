@@ -403,7 +403,7 @@ namespace brook {
     }
   }
   float getSentinel();
-  ::brook::Stream* sentinelStream(int dim);
+  ::brook::stream* sentinelStream(int dim);
 
 
   void readItem(brook::StreamInterface *s, void * p, ... );

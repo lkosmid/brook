@@ -379,10 +379,9 @@ namespace brook {
     return (float)-1844632.18612444856320;
   } 
   
-#if 0
   class StreamSentinels {
   public:
-    std::vector<::brook::stream *> sentinels;
+    std::vector<stream *> sentinels;
     ~StreamSentinels() {
       while (!sentinels.empty()) {
         if (sentinels.back())
@@ -392,7 +391,7 @@ namespace brook {
     }
   };
 
-  ::brook::stream sentinelStream (int dim) {    
+  stream *sentinelStream (int dim) {    
     static StreamSentinels s;
     float onehalf = 0.5f;
     float inf = 1.0f/(float)floor(onehalf);
@@ -404,7 +403,7 @@ namespace brook {
     while ((int)s.sentinels.size()<=dim)
       s.sentinels.push_back(0);
 
-    std::vector<int> extents;
+    std::vector<unsigned int> extents;
 
     for (int i=0;i<dim;++i){
       extents.push_back(1);
@@ -415,9 +414,8 @@ namespace brook {
                                        brook::getStreamType((float*)0));   
     streamRead(*s.sentinels[dim],&inf);
     
-    return (::brook::stream *) s.sentinels[dim];
+    return s.sentinels[dim];
   }
-#endif
     
 
 }
