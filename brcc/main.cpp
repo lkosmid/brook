@@ -43,7 +43,7 @@ usage (void) {
         "\t-t\t\tdisable kernel call type checking\n"
         "\t-y\t\temit code for ATI 4-output hardware\n"
         "\t-A\t\tenable address virtualization (experimental)\n"
-        "\t-N\t\tsupport kernels calling other kernels\n"
+        "\t-N\t\tdeny support for kernels calling other kernels\n"
         "\t-o prefix\tprefix prepended to all output files\n"
         "\t-w workspace\tworkspace size (16 - 2048, default 1024)\n"
         "\t-p shader\tcpu / ps20 / fp30 (can specify multiple)\n"
@@ -95,7 +95,7 @@ parse_args (int argc, char *argv[]) {
         globals.enableGPUAddressTranslation = true;
         break;
      case 'N':
-        globals.allowKernelToKernel = true;
+        globals.allowKernelToKernel = false;
         break;
      case 'o':
 	if (outputprefix) usage();
@@ -281,6 +281,21 @@ ConvertToBrtFunctions(FunctionDef *fDef)
 
 }
 
+Expression * TypeCheckFunctionCalls (Expression * e) {
+   bool ret=true;
+   if (e->etype==ET_FunctionCall) {
+      FunctionCall * fc = static_cast<FunctionCall*>(e);
+      ret=fc->checkKernelCall()&&ret;//print out type errors
+   }
+   assert(ret);
+   return e;
+}
+void TypecheckFunctionCallStatementFinder(Statement * ste) {
+   ste->findExpr(&TypeCheckFunctionCalls);
+}
+void TypecheckFunctionCalls(TransUnit * tu) {
+   tu->findStemnt (&TypecheckFunctionCallStatementFinder);
+}
 
 /*
  * main --
@@ -304,7 +319,7 @@ main(int argc, char *argv[])
    tu = proj->parse(globals.sourcename, false, NULL, false, NULL, NULL, NULL);
    if (tu) {
       std::ofstream out;
-
+      TypecheckFunctionCalls(tu);
       if (!globals.parseOnly) {
          /*
           * If I didn't mind violating some abstractions, I'd roll my own loop

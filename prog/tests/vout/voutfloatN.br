@@ -217,29 +217,6 @@ kernel void RelativeGatherfloat(out float output<>,
    valueAtfloat(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesfloat(float list_stream <>,
-                          float output_stream <>,
-                          int WIDTH, 
-                          int LENGTH, 
-                          int sign) {
-   float tmp_stream<WIDTH,LENGTH>;
-   unsigned int i;
-   float2 maxvalue;
-   unsigned int logN;
-
-   maxvalue.x=(float)LENGTH;
-   maxvalue.y=(float)WIDTH;
-   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat (list_stream,output_stream,(float)sign,maxvalue);   
-   for (i=1;i<logN;++i) {
-    if (i%2)
-      NanToRightfloat(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-    else
-      NanToRightfloat(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
-   }
-   if (logN%2==0)
-     streamSwap(tmp_stream,output_stream);
-}
 
 float shiftValuesfloat(float list_stream <>,
                        float output_stream<>,
@@ -1031,6 +1008,7 @@ kernel void combinefloat (float input1[][],
       output=input1[indexof(output)];
    }
 }
+
 unsigned int  voutCombinefloat(float outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -1236,29 +1214,6 @@ kernel void RelativeGatherfloat2(out float2 output<>,
    valueAtfloat2(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesfloat2(float2 list_stream <>,
-                          float2 output_stream <>,
-                          int WIDTH, 
-                          int LENGTH, 
-                          int sign) {
-   float2 tmp_stream<WIDTH,LENGTH>;
-   unsigned int i;
-   float2 maxvalue;
-   unsigned int logN;
-
-   maxvalue.x=(float)LENGTH;
-   maxvalue.y=(float)WIDTH;
-   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat2 (list_stream,output_stream,(float)sign,maxvalue);   
-   for (i=1;i<logN;++i) {
-    if (i%2)
-      NanToRightfloat2(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-    else
-      NanToRightfloat2(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
-   }
-   if (logN%2==0)
-     streamSwap(tmp_stream,output_stream);
-}
 
 float shiftValuesfloat2(float2 list_stream <>,
                        float2 output_stream<>,
@@ -1393,7 +1348,7 @@ kernel void float2streamCombine2(float2 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float2 oldoutput<>,
                            out float2 output <>) {
    float2 newindex;
    float whichmod;
@@ -1443,7 +1398,7 @@ kernel void float2streamCombine3(float2 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float2 oldoutput<>,
                            out float2 output <>) {
    float2 newindex;
    float whichmod;
@@ -1499,7 +1454,7 @@ kernel void float2streamCombine4(float2 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float2 oldoutput<>,
                            out float2 output <>) {
    float2 newindex;
    float whichmod;
@@ -1561,7 +1516,7 @@ kernel void float2streamCombine5(float2 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float2 oldoutput<>,
                            out float2 output <>) {
    float2 newindex;
    float whichmod;
@@ -1630,7 +1585,7 @@ kernel void float2streamCombine6(float2 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float2 oldoutput<>,
                            out float2 output <>) {
    float2 newindex;
    float whichmod;
@@ -1704,7 +1659,7 @@ kernel void float2streamCombine7(float2 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float2 oldoutput<>,
                            out float2 output <>) {
    float2 newindex;
    float whichmod;
@@ -2050,6 +2005,7 @@ kernel void combinefloat2 (float2 input1[][],
       output=input1[indexof(output)];
    }
 }
+
 unsigned int  voutCombinefloat2(float2 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -2068,7 +2024,7 @@ unsigned int  voutCombinefloat2(float2 outleft_stream<>,
    if (1) {      
       unsigned int length = LENGTH;
       unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
-      float output_stream<width,length>;
+      float2 output_stream<width,length>;
       float2 startsecond,endsecond;
       cpuGetIndexAt(float2(maxleftvalue.x,maxleftvalue.y-1),
                     -maxshiftleft,
@@ -2255,29 +2211,6 @@ kernel void RelativeGatherfloat3(out float3 output<>,
    valueAtfloat3(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesfloat3(float3 list_stream <>,
-                          float3 output_stream <>,
-                          int WIDTH, 
-                          int LENGTH, 
-                          int sign) {
-   float3 tmp_stream<WIDTH,LENGTH>;
-   unsigned int i;
-   float2 maxvalue;
-   unsigned int logN;
-
-   maxvalue.x=(float)LENGTH;
-   maxvalue.y=(float)WIDTH;
-   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat3 (list_stream,output_stream,(float)sign,maxvalue);   
-   for (i=1;i<logN;++i) {
-    if (i%2)
-      NanToRightfloat3(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-    else
-      NanToRightfloat3(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
-   }
-   if (logN%2==0)
-     streamSwap(tmp_stream,output_stream);
-}
 
 float shiftValuesfloat3(float3 list_stream <>,
                        float3 output_stream<>,
@@ -2412,7 +2345,7 @@ kernel void float3streamCombine2(float3 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float3 oldoutput<>,
                            out float3 output <>) {
    float2 newindex;
    float whichmod;
@@ -2462,7 +2395,7 @@ kernel void float3streamCombine3(float3 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float3 oldoutput<>,
                            out float3 output <>) {
    float2 newindex;
    float whichmod;
@@ -2518,7 +2451,7 @@ kernel void float3streamCombine4(float3 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float3 oldoutput<>,
                            out float3 output <>) {
    float2 newindex;
    float whichmod;
@@ -2580,7 +2513,7 @@ kernel void float3streamCombine5(float3 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float3 oldoutput<>,
                            out float3 output <>) {
    float2 newindex;
    float whichmod;
@@ -2649,7 +2582,7 @@ kernel void float3streamCombine6(float3 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float3 oldoutput<>,
                            out float3 output <>) {
    float2 newindex;
    float whichmod;
@@ -2723,7 +2656,7 @@ kernel void float3streamCombine7(float3 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float3 oldoutput<>,
                            out float3 output <>) {
    float2 newindex;
    float whichmod;
@@ -3069,6 +3002,7 @@ kernel void combinefloat3 (float3 input1[][],
       output=input1[indexof(output)];
    }
 }
+
 unsigned int  voutCombinefloat3(float3 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -3087,7 +3021,7 @@ unsigned int  voutCombinefloat3(float3 outleft_stream<>,
    if (1) {      
       unsigned int length = LENGTH;
       unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
-      float output_stream<width,length>;
+      float3 output_stream<width,length>;
       float2 startsecond,endsecond;
       cpuGetIndexAt(float2(maxleftvalue.x,maxleftvalue.y-1),
                     -maxshiftleft,
@@ -3274,29 +3208,6 @@ kernel void RelativeGatherfloat4(out float4 output<>,
    valueAtfloat4(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesfloat4(float4 list_stream <>,
-                          float4 output_stream <>,
-                          int WIDTH, 
-                          int LENGTH, 
-                          int sign) {
-   float4 tmp_stream<WIDTH,LENGTH>;
-   unsigned int i;
-   float2 maxvalue;
-   unsigned int logN;
-
-   maxvalue.x=(float)LENGTH;
-   maxvalue.y=(float)WIDTH;
-   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat4 (list_stream,output_stream,(float)sign,maxvalue);   
-   for (i=1;i<logN;++i) {
-    if (i%2)
-      NanToRightfloat4(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-    else
-      NanToRightfloat4(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
-   }
-   if (logN%2==0)
-     streamSwap(tmp_stream,output_stream);
-}
 
 float shiftValuesfloat4(float4 list_stream <>,
                        float4 output_stream<>,
@@ -3431,7 +3342,7 @@ kernel void float4streamCombine2(float4 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float4 oldoutput<>,
                            out float4 output <>) {
    float2 newindex;
    float whichmod;
@@ -3481,7 +3392,7 @@ kernel void float4streamCombine3(float4 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float4 oldoutput<>,
                            out float4 output <>) {
    float2 newindex;
    float whichmod;
@@ -3537,7 +3448,7 @@ kernel void float4streamCombine4(float4 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float4 oldoutput<>,
                            out float4 output <>) {
    float2 newindex;
    float whichmod;
@@ -3599,7 +3510,7 @@ kernel void float4streamCombine5(float4 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float4 oldoutput<>,
                            out float4 output <>) {
    float2 newindex;
    float whichmod;
@@ -3668,7 +3579,7 @@ kernel void float4streamCombine6(float4 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float4 oldoutput<>,
                            out float4 output <>) {
    float2 newindex;
    float whichmod;
@@ -3742,7 +3653,7 @@ kernel void float4streamCombine7(float4 input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           float4 oldoutput<>,
                            out float4 output <>) {
    float2 newindex;
    float whichmod;
@@ -4088,6 +3999,7 @@ kernel void combinefloat4 (float4 input1[][],
       output=input1[indexof(output)];
    }
 }
+
 unsigned int  voutCombinefloat4(float4 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -4106,7 +4018,7 @@ unsigned int  voutCombinefloat4(float4 outleft_stream<>,
    if (1) {      
       unsigned int length = LENGTH;
       unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
-      float output_stream<width,length>;
+      float4 output_stream<width,length>;
       float2 startsecond,endsecond;
       cpuGetIndexAt(float2(maxleftvalue.x,maxleftvalue.y-1),
                     -maxshiftleft,

@@ -16,7 +16,7 @@ SYSTEM_LIBS      :=
 CFLAGS           += -DBUILD_NV30GL 
 C_INCLUDE_FLAG   := -I  
 C_DEBUG_FLAG     := -g3 -Wall 
-C_RELEASE_FLAG   := -O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -finline-limit=10000 -frerun-loop-opt 
+C_RELEASE_FLAG   := -O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -frerun-loop-opt 
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := -o 
 C_COMPILE_FLAG   := -c 

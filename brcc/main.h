@@ -7,6 +7,12 @@
 #define TARGET_ARB      (1<<3)  /* XXX Not yet */
 
 struct globals_struct {
+  globals_struct() {
+      multiThread=false,verbose=false,parseOnly=false;
+      keepFiles=false,fponly=0,target=0,workspace=0;
+      allowDX9MultiOut=false,enableGPUAddressTranslation=false;
+      allowKernelToKernel=true,noTypeChecks=false;
+  }             
   bool multiThread;
   bool verbose;
   bool parseOnly;

@@ -807,7 +807,7 @@ FunctionCall::checkKernelCall(Type *argType, unsigned int n)
      */
 
     if (n >= k->nArgs) {
-       if (!globals.allowKernelToKernel || argType->type == TT_Stream) {
+       if (1||argType->type == TT_Stream) {
           std::cerr << location << "Too many arguments (" << n + 1
                     << ") to "
                     << *var->name->entry->u2FunctionDef->decl->name
@@ -880,7 +880,16 @@ FunctionCall::checkKernelCall(Type *argType, unsigned int n)
 
     return true;
 }
-
+bool FunctionCall::checkKernelCall() {
+  bool ret=true;
+  if (function->type&&function->type->isKernel()) {
+    for (unsigned int i=0;i<args.size();++i) {
+      if (!checkKernelCall(args[i]->type,i))
+        ret=false;
+    }
+  }
+  return ret;
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionCall::addArg( Expression *arg )
@@ -889,11 +898,6 @@ FunctionCall::addArg( Expression *arg )
      * Type-check arguments to kernels (the C++ compiler will do type
      * checking for the rest of the function calls).
      */
-
-    if (function->type && function->type->isKernel() &&
-        !checkKernelCall(arg->type, args.size())) {
-       assert(0);
-    }
 
     args.push_back(arg);
 }

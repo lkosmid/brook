@@ -207,29 +207,6 @@ kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
    valueAtBRT_TYPE(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesBRT_TYPE(BRT_TYPE list_stream <>,
-                          BRT_TYPE output_stream <>,
-                          int WIDTH, 
-                          int LENGTH, 
-                          int sign) {
-   BRT_TYPE tmp_stream<WIDTH,LENGTH>;
-   unsigned int i;
-   float2 maxvalue;
-   unsigned int logN;
-
-   maxvalue.x=(float)LENGTH;
-   maxvalue.y=(float)WIDTH;
-   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightBRT_TYPE (list_stream,output_stream,(float)sign,maxvalue);   
-   for (i=1;i<logN;++i) {
-    if (i%2)
-      NanToRightBRT_TYPE(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-    else
-      NanToRightBRT_TYPE(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
-   }
-   if (logN%2==0)
-     streamSwap(tmp_stream,output_stream);
-}
 
 float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
                        BRT_TYPE output_stream<>,
@@ -364,7 +341,7 @@ kernel void BRT_TYPEstreamCombine2(BRT_TYPE input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           BRT_TYPE oldoutput<>,
                            out BRT_TYPE output <>) {
    float2 newindex;
    float whichmod;
@@ -414,7 +391,7 @@ kernel void BRT_TYPEstreamCombine3(BRT_TYPE input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           BRT_TYPE oldoutput<>,
                            out BRT_TYPE output <>) {
    float2 newindex;
    float whichmod;
@@ -470,7 +447,7 @@ kernel void BRT_TYPEstreamCombine4(BRT_TYPE input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           BRT_TYPE oldoutput<>,
                            out BRT_TYPE output <>) {
    float2 newindex;
    float whichmod;
@@ -532,7 +509,7 @@ kernel void BRT_TYPEstreamCombine5(BRT_TYPE input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           BRT_TYPE oldoutput<>,
                            out BRT_TYPE output <>) {
    float2 newindex;
    float whichmod;
@@ -601,7 +578,7 @@ kernel void BRT_TYPEstreamCombine6(BRT_TYPE input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           BRT_TYPE oldoutput<>,
                            out BRT_TYPE output <>) {
    float2 newindex;
    float whichmod;
@@ -675,7 +652,7 @@ kernel void BRT_TYPEstreamCombine7(BRT_TYPE input0[][],
                            float offset,
                            float length, 
                            float lengthmodmodulus,
-                           float oldoutput<>,
+                           BRT_TYPE oldoutput<>,
                            out BRT_TYPE output <>) {
    float2 newindex;
    float whichmod;
@@ -1021,6 +998,7 @@ kernel void combineBRT_TYPE (BRT_TYPE input1[][],
       output=input1[indexof(output)];
    }
 }
+
 unsigned int  voutCombineBRT_TYPE(BRT_TYPE outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
@@ -1039,7 +1017,7 @@ unsigned int  voutCombineBRT_TYPE(BRT_TYPE outleft_stream<>,
    if (1) {      
       unsigned int length = LENGTH;
       unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
-      float output_stream<width,length>;
+      BRT_TYPE output_stream<width,length>;
       float2 startsecond,endsecond;
       cpuGetIndexAt(float2(maxleftvalue.x,maxleftvalue.y-1),
                     -maxshiftleft,

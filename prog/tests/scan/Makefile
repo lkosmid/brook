@@ -2,7 +2,7 @@ ROOTDIR = ../../..
 EXECUTABLE = scan
 FILES = scan
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = -N
+BRCCFLAGS = 
 
 include $(ROOTDIR)/common.mk
 

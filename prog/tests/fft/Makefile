@@ -2,6 +2,6 @@ ROOTDIR = ../../..
 EXECUTABLE = fft
 FILES = qfft wfft
 LIBRARIES =  $(RUNTIME_LIBS)
-BRCCFLAGS = -N
+BRCCFLAGS = 
 
 include $(ROOTDIR)/common.mk

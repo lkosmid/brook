@@ -2,7 +2,7 @@ ROOTDIR = ../../..
 EXECUTABLE = tessellate
 FILES = tessellate voutfloatN writepng
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = -t
+BRCCFLAGS = 
 
 include $(ROOTDIR)/common.mk
 
