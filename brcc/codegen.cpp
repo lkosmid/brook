@@ -335,8 +335,14 @@ compile_hlsl_code (char *hlslcode) {
   fpcode[pos] = '\0';
 
   free(argv[3]);
+#if 0
+  //daniel: ==20000==    at 0x4002CD17: free (vg_replace_malloc.c:231)
+  // by 0x807BBD9: compile_hlsl_code(char*) (codegen.cpp:338)
+  //by 0x807C742: CodeGen_HLSLGenerateCode(Type*, char const*, Decl**, int, char const*) (codegen.cpp:577)
+  //by 0x807DBEF: BRTGPUKernelDef::printCode(std::ostream&) const (brtstemnt.cpp:186)
+  //Address 0x404CAC98 is not stack'd, malloc'd or free'd
   free(argv[4]);
-  
+#endif
   return fpcode;
 }
 
