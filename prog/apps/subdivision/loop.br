@@ -38,7 +38,8 @@ kernel float triCombine (float myin<>,
 }
 */
 unsigned int streamWidth=2048;
-int counterMax = 16;
+int counterMax = 3;
+int low_texture_ram=0;
 kernel float triCombine(float b1<>, float b2<>) {
    return (b1&&b2)?8:(b1?2:(b2?4:0));
 }
@@ -468,6 +469,8 @@ void expandVertexArray(struct VertexArray * v,
                        unsigned int more) {
   v->size+=more;
   while(v->size>v->alloc) {
+    if (v->alloc==0)
+      v->alloc=16;
     v->alloc*=2;
     v->v = (float3*)realloc(v->v,v->alloc*sizeof(float3));
   }
@@ -475,6 +478,8 @@ void expandVertexArray(struct VertexArray * v,
 void pushBackVertexArray(struct VertexArray * v,
                          float3 f) {
   if (++v->size>v->alloc) {
+    if (v->alloc==0)
+      v->alloc=16;
     v->alloc*=2;
     v->v = (float3*)realloc(v->v,v->alloc*sizeof(float3));
   }
@@ -497,7 +502,7 @@ void subdivide (Neighbor (*neighbors)<>,
         Neighbor newNeighbors<streamWidth,(sizeDivide*4)>;
         SplitTri sharedTriangles <streamWidth,sizeDivide>;
         Tri newTriangles<streamWidth,(sizeDivide*4)>;
-        computeNeighbors(*neighbors,*triangles,shouldProduce,sharedNeighbors);
+        computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
         splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
         linearReorgSplitTriangles(sharedTriangles,
                                   sharedNeighbors,
@@ -512,7 +517,9 @@ void subdivide (Neighbor (*neighbors)<>,
         float3 outputTri<streamWidth,sizey>;
 
         writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
-        if (streamSize(shouldProduce).x&&counter<counterMax) {
+        if ((!low_texture_ram)&&
+            streamSize(shouldProduce).x&&
+            counter<counterMax) {
           subdivide(neighbors,triangles,output,epsilon,counter+1);
         } 
         
@@ -532,10 +539,9 @@ void subdivide (Neighbor (*neighbors)<>,
         
     }
   }
-  /*
-    if (streamSize(triangles).y)
-      subdivide(neighbors,triangles,output,epsilon); // subdivide here if your card runs out of ram
-  */
+  if (low_texture_ram&&streamSize(*triangles).x&&counter<counterMax) {
+     subdivide(neighbors,triangles,output,epsilon,counter+1);
+  } 
   // prevents all writing at the end
 }
                
