@@ -156,7 +156,7 @@ GLRunTime::createPBufferWGL(int ncomponents)
 
    if (!runOnce) {
       BOOL status;
-      int iAttributes[30];
+      int iAttributes[40];
       int nAttrib = 0;
       static const float fAttributes[] = {0,0};
 
@@ -172,22 +172,19 @@ GLRunTime::createPBufferWGL(int ncomponents)
       }
 
       /* Figure out which pbuffer to create */
-      if (strstr (wglGetExtensionsString(), 
-                  "WGL_ATI_pixel_format_float")) {                  
+      switch (getGLArch()) {
+      case ARCH_ATI:
         ati_not_nv = true;
-      } else {
-        if (strstr (wglGetExtensionsString(),
-                    "WGL_NV_float_buffer")) {
-          ati_not_nv = false;
-        } else {
-          fprintf (stderr, "WARNING: Graphics adaptor %s does not support\n"
-                   "known floating point render targets. Assuming ATI.\n",
-                   glGetString(GL_RENDERER));
-          ati_not_nv = true;
-          
-        }
-      }   
-
+        break;
+      case ARCH_NV30:
+        ati_not_nv = false;
+        break;
+      default:
+        fprintf (stderr, "WARNING: Unknown graphics adaptor %s."
+                 "  Assuming ATI.\n", glGetString(GL_RENDERER));
+        fflush (stderr);
+        ati_not_nv = true;
+      }
 
       for (int i=0; i<4; i++) {
 
@@ -195,10 +192,11 @@ GLRunTime::createPBufferWGL(int ncomponents)
 iAttributes[nAttrib++] = a; iAttributes[nAttrib++] = b; 
 	 
 	 nAttrib = 0;
+         PUSH_ATTRIB (WGL_COLOR_BITS_ARB,      (i+1)*32);
 	 PUSH_ATTRIB (WGL_RED_BITS_ARB,        32);
 	 PUSH_ATTRIB (WGL_GREEN_BITS_ARB,      i>0?32:0);
 	 PUSH_ATTRIB (WGL_BLUE_BITS_ARB,       i>1?32:0);
-	 PUSH_ATTRIB (WGL_ALPHA_BITS_ARB,      i>3?32:0);
+	 PUSH_ATTRIB (WGL_ALPHA_BITS_ARB,      i>2?32:0);
 	 PUSH_ATTRIB (WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE);
 	 PUSH_ATTRIB (WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB);
 	 PUSH_ATTRIB (WGL_DEPTH_BITS_ARB,      0);
@@ -217,16 +215,16 @@ iAttributes[nAttrib++] = a; iAttributes[nAttrib++] = b;
 	   };			  
 	   PUSH_ATTRIB (WGL_FLOAT_COMPONENTS_NV, GL_TRUE);
 	   PUSH_ATTRIB (mode[i], GL_TRUE);
-        
-	   PUSH_ATTRIB (0, 0);
 	 }
+         PUSH_ATTRIB (0, 0);
 
          status = wglChoosePixelFormatARB(hdc_window, iAttributes,
                                           fAttributes, 1,
                                           pixelformat+i, &numFormats);
 
          if ( numFormats == 0  || !status) {
-            fprintf(stderr, "GL: ChoosePixelFormat failed to find format\n");
+            fprintf(stderr, "GL: ChoosePixelFormat failed to find "
+                    "a %d-component fp format\n", i+1);
             exit(1);
          }
       }
@@ -241,8 +239,7 @@ iAttributes[nAttrib++] = a; iAttributes[nAttrib++] = b;
    hpbuffer = wglCreatePbufferARB(hdc_window,
                                   pixelformat[ncomponents-1],
                                   workspace, workspace,
-                                  ati_not_nv?
-				    piAttribList:
+                                  ati_not_nv?piAttribList:
 				  (piAttribList+(ncomponents-1)*6+1)
 				  );
 

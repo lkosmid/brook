@@ -14,19 +14,17 @@ static const char passthrough[] =
 "TEX oColor, tex0, texture[0], RECT;\n"
 "END\n";
 namespace brook {
-  GLArch getGLArch() {
-   if (strstr((const char *) glGetString(GL_VENDOR), "ATI"))
-     return ARCH_ATI;
-   else if (strstr((const char *)glGetString(GL_VENDOR), "NVIDIA"))
-     return  ARCH_NV30;
-   else {
-
-      fprintf (stderr, "GL: Warning unknown card\n\t%s\n\t%s\n",
-               glGetString(GL_VENDOR), glGetString(GL_RENDERER));
-      return ARCH_UNKNOWN;
-   }
-    
-  }
+   GLArch getGLArch() {
+      if (strstr((const char *) glGetString(GL_VENDOR), "ATI"))
+         return ARCH_ATI;
+      else if (strstr((const char *)glGetString(GL_VENDOR), "NVIDIA"))
+         return  ARCH_NV30;
+      else {
+         fprintf (stderr, "GL: Warning unknown card\n\t%s\n\t%s\n",
+                  glGetString(GL_VENDOR), glGetString(GL_RENDERER));
+         return ARCH_UNKNOWN;
+      }
+    }
 }
 GLRunTime::GLRunTime()
 {

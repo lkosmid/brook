@@ -107,7 +107,9 @@ namespace brook {
    } glfloat4;
 
    enum GLArch {ARCH_ATI, ARCH_NV30, ARCH_UNKNOWN};
-      
+   
+   GLArch getGLArch();
+
    void __check_gl(int line, char *file);
 #define CHECK_GL() __check_gl(__LINE__, __FILE__);
 
