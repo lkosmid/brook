@@ -273,7 +273,6 @@ inline float isinf_float (float x) {
   UNINTRINSIC(frc,frc_float)
   UNINTRINSIC(isinf,isinf_float)
   BININTRINSIC(ldexp,ldexp_float)
-  BININTRINSIC(dot,dot)
   BININTRINSIC(distance,distance)
   UNINTRINSIC(log,log)
   UNINTRINSIC(log2,log2_float)
@@ -304,4 +303,27 @@ inline __BrtFloat3 __cross_cpu_inner (const __BrtFloat3 &u, const __BrtFloat3 v)
                          -u.unsafeGetAt(1)*v.unsafeGetAt(0));
 }
 
+template <class T, class BRT_TYPE> 
+vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,GCCTYPENAME T::TYPE>::type, 1>
+       __dot_cpu_inner (const T &f, const BRT_TYPE &g) { \
+  return f.dot(g); \
+}
+/*
+template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, 1>
+       __dot_cpu_inner (const __BrtFloat4 &f, const BRT_TYPE &g) { \
+  return f.dot(g); \
+}
+template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, 1>
+       __dot_cpu_inner (const __BrtFloat3 &f, const BRT_TYPE &g) { \
+  return f.dot(g); \
+}
+template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, 1>
+       __dot_cpu_inner (const __BrtFloat2 &f, const BRT_TYPE &g) { \
+  return f.dot(g); \
+}
+template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, 1>
+       __dot_cpu_inner (const __BrtFloat1 &f, const BRT_TYPE &g) { \
+  return f.dot(g); \
+}
+*/
 #endif
