@@ -305,12 +305,11 @@ namespace brook
 
     _supportsPS2B = _deviceCaps.PS20Caps.NumInstructionSlots >= 512 &&
       _deviceCaps.PS20Caps.NumTemps >= 32 &&
-      _deviceCaps.PS20Caps.Caps & D3DPS20CAPS_NOTEXINSTRUCTIONLIMIT &&
       _deviceCaps.NumSimultaneousRTs >= 4;
 
     _supportsPS2A = _deviceCaps.PS20Caps.NumInstructionSlots >= 512 &&
-      _deviceCaps.PS20Caps.NumTemps >= 32 &&
-      _deviceCaps.PS20Caps.Caps & D3DPS20CAPS_NOTEXINSTRUCTIONLIMIT &&
+      _deviceCaps.PS20Caps.NumTemps >= 22 &&
+      _deviceCaps.PS20Caps.Caps & D3DPS20CAPS_NODEPENDENTREADLIMIT &&
       _deviceCaps.NumSimultaneousRTs >= 1;
 
     _supportsPS30 = (_deviceCaps.MaxPixelShader30InstructionSlots >= 512);
