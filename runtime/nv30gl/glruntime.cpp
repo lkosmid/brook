@@ -24,7 +24,7 @@ namespace brook {
                   glGetString(GL_VENDOR), glGetString(GL_RENDERER));
          return ARCH_UNKNOWN;
       }
-    }
+   }
 }
 GLRunTime::GLRunTime()
 {
