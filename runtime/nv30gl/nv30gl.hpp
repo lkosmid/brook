@@ -213,7 +213,7 @@ void __check_gl(int line, char *file);
      GLXContext  glxContext;
 #endif
 
-     int pbuffer_ncomp;
+     unsigned int pbuffer_ncomp;
 
      GLuint passthrough_id;
 
