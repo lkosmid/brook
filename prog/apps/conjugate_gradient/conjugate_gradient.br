@@ -1,4 +1,24 @@
 
+/*
+  Conjugate Gradient (CG) Solver for Ax = b.
+
+  The conjugate method is used to solve large systems of equations
+  where A is sparse and symmetric positive definite.  For a description
+  of the technique, see "Matrix Computations", by Golub and Van Loan.
+
+  Note: see the example app spMatrixVec for a description of how the
+  sparse matrix A is represented for streaming, and how the matrix-vector
+  product is performed.
+
+
+  The program takes two parameters 'it_max' and 'eps'.
+
+  it_max:  maximum number of iterations of solver
+  eps:     solution convergence threshold
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,7 +28,7 @@
 #define MAX_NZ          (NUM_ROWS*MAX_NZ_PER_ROW)
 
 
-/*** Kernels needed for Sparse Matrix-Vector multiplication *****************************************/
+/*** Kernels needed for Sparse Matrix-Vector multiplication ****************/
 
 kernel void mult(float a<>, float b<>, out float c<>) {
   c = a*b;
@@ -20,7 +40,7 @@ kernel void sparse_matmult_product( float index<>, float x[][], float A<>, out f
 }
 
 
-/*** Kernels called in the CG iterations ************************************************************/
+/*** Kernels called in the CG iterations *************************************/
 
 
 kernel void square(float a<>, out float b<>) {
@@ -44,9 +64,13 @@ reduce void sum(float a<>, reduce float result) {
 }
 
 
-/******************************************************************************************************/
+/**********************************************************************/
 
 
+// generates a matrix resulting from the discretation of the poisson operator
+// on a uniform grid of dimension 'dim' and grdi resolution 'size'.  This matrix
+// is very sparse and symmetric positive definite and thus can be solved efficiently
+// using the CG method
 void createCSRFromPoisson(int size, int dim, float nz[MAX_NZ], int cols[MAX_NZ], int rowStart[NUM_ROWS+1]) {
 
   int nnzPerRow = 0, matSize = 0;
@@ -113,7 +137,9 @@ void createCSRFromPoisson(int size, int dim, float nz[MAX_NZ], int cols[MAX_NZ],
 }
 
 
-// take a standard CSR storage representation and turn it into a padded version for streaming
+/// The data is generated in compressed sparse row (CSR) format.
+// This converts the CSR format into the padded ITPACK
+// representation that is easy to stream.
 void reshuffleData(float nz[MAX_NZ], int cols[MAX_NZ], int rowStart[NUM_ROWS+1],
                    float Anz[MAX_NZ], float Acols[MAX_NZ]) {
   int i,j;
@@ -166,25 +192,23 @@ int main(int argc, char** argv) {
   float  cIdx[MAX_NZ];
   float  x[NUM_ROWS];
   float  b[NUM_ROWS];
-  //float  zeros[NUM_ROWS];
-  //float  tmp[NUM_ROWS];
 
   float  AStrm<NUM_ROWS,MAX_NZ_PER_ROW>;
   float  cIdxStrm<NUM_ROWS,MAX_NZ_PER_ROW>;
   float  productsStrm<NUM_ROWS,MAX_NZ_PER_ROW>;
   float  vecGatherStrm<NUM_ROWS,MAX_NZ_PER_ROW>;
 
-  float  xStrm<NUM_ROWS,1>;
-  float  bStrm<NUM_ROWS,1>;
+  float  xStrm<NUM_ROWS,1>; // solution vector
+  float  bStrm<NUM_ROWS,1>; // rhs vector
 
-
+  // required temporaries of the CG method
   float  rStrm<NUM_ROWS,1>;
   float  qStrm<NUM_ROWS,1>;
   float  dStrm<NUM_ROWS,1>;
   float  tmpStrm<NUM_ROWS,1>;
   
-
-
+  // compressed sparse column representation of A, will be converted to ITPACK format
+  // for streaming
   float  csrNz[MAX_NZ];
   int    csrCols[MAX_NZ];
   int    csrRowStart[NUM_ROWS+1];
@@ -192,97 +216,27 @@ int main(int argc, char** argv) {
   if (parseCmdLine(argc, argv, filename, &it_max, &eps))
     return 1;
 
-  // load the CSR matrix structure here //////////////////////////////////////////
-
-  /*
-  FILE* data;
-  data = fopen(filename, "r");
-  
-  if (!data) {
-    printf("Couldn't open CSR data file: %s\n", filename);
-    return 1;
-  }
-
-  for (i=0;i<NUM_ROWS+1;i++)
-    fscanf(data, "%d", &csrRowStart[i]);
-
-  for (i=0;i<csrRowStart[NUM_ROWS];i++)
-    fscanf(data, "%d", &csrCols[i]);
-
-  for (i=0;i<csrRowStart[NUM_ROWS];i++)
-    fscanf(data, "%f", &csrNz[i]);
-  
-  printf("CSR Sparse Matrix Form:  [value(col)]\n");
-  for (i=0;i<NUM_ROWS;i++) {
-    for (j=csrRowStart[i];j<csrRowStart[i+1];j++)
-      printf("%.3f(%d)  ", csrNz[j], csrCols[j]);
-
-    printf("\n");
-  }
-*/
-
-  /////////////////////////////////////////////////////////////////////////////////
-
+  // generate a matrix
   createCSRFromPoisson(NUM_ROWS, 1, csrNz, csrCols, csrRowStart);
 
   // convert from pure CSR to a padded scheme better suited for streaming
   reshuffleData(csrNz, csrCols, csrRowStart, Anz, cIdx);
-
-  //printf("\n");
-  //printf("Padded Non-zero values:\n");
-  //for (i=0;i<NUM_ROWS;i++) {
-  //  for (j=0;j<MAX_NZ_PER_ROW;j++)
-  //    printf("%3.3f ", Anz[i*MAX_NZ_PER_ROW + j]);
-  //  printf("\n");
-  //}
-
-  //printf("\n");
-  //printf("Padded Col Indices:\n");
-  //for (i=0;i<NUM_ROWS;i++) {
-  //  for (j=0;j<MAX_NZ_PER_ROW;j++)
-  //    printf("%3.1f ", cIdx[i*MAX_NZ_PER_ROW + j]);
-  //  printf("\n");
-  //}
   
   // read in the matrix data
   streamRead(AStrm, Anz);
   streamRead(cIdxStrm, cIdx);
   
-  /*
-  streamRead(xStrm, x);
 
-  // these four lines constitute a sparse matrix-vector multiply
-  streamRead(yStrm, zeros);
-  gather(cIdxStrm, xStrm, xStrmGather);
-  mult(AStrm, xStrmGather, productsStrm);
-  sumRows(productsStrm, yStrm); // be sure to set yStream values to 0.0f
-
-  // yStream now holds the result of the matVect multiply
-  
-  streamWrite(yStrm, y);
-
-  printf("\n");
-  printf("result: y = Ax\n");
-  for (i=0;i<NUM_ROWS;i++)
-    printf("%.3f\n",y[i]);
-  */
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-// CG PART
-////////////////////////////////////////////////////////////////////////////////////////////////
+  // Now do the CG solve...
 
   printf("\n\n");
 
-  // initial guess for x is zero.  Hard code some rhs for b
+  // initial guess for x is zero.  Hard coding some right hand side for b
   for (i=0;i<NUM_ROWS;i++) {
     x[i] = 0.0f;
     b[i] = 50.0f;
-//    zeros[i] = 0.0f;
   }
 
-
-  // KAYVON: set 'eps', and 'it_max' here
 
   streamRead(xStrm, x);
   streamRead(bStrm, b);
@@ -308,14 +262,11 @@ int main(int argc, char** argv) {
   printf("max it = %d\n", it_max);
   printf("eps = %f\n", eps);
 
-  //printf("Initial d:\n");
-  //streamWrite(dStrm, tmp);
-  //for(i=0;i<NUM_ROWS;i++)
-  //  printf("%.3f ", tmp[i]);
-  //printf("\n");
-
   it = 0;
-  // CG loop
+  // CG loop.  Note, for simplicty the convergence is checked after after
+  // each loop iteration.  However, in a practical implementation, multiple
+  // iterations should be run on the hardware before reading back the residual
+  // to check performance.
   while (it < it_max && resNew > convergeThresh ) {
 
     if (it > 0)
@@ -326,43 +277,17 @@ int main(int argc, char** argv) {
     sparse_matmult_product( cIdxStrm, dStrm, AStrm, productsStrm );
     sum( productsStrm, qStrm );
 
-    //printf("qStrm:\n");
-    //streamWrite(qStrm, tmp);
-    //for(i=0;i<NUM_ROWS;i++)
-    //  printf("%.3f ", tmp[i]);
-    //printf("\n");
-
     // alpha = d dot q
 	  mult(dStrm, qStrm, tmpStrm);
 
-    //printf("tmpStrm:\n");
-    //streamWrite(tmpStrm, tmp);
-    //for(i=0;i<NUM_ROWS;i++)
-    //  printf("%.3f ", tmp[i]);
-    //printf("\n");
-
     sum(tmpStrm, alpha);
-    //printf("alpha_i = %.3f\n", alpha);
 	  alpha = resNew / alpha;
-    //printf("alpha = %.3f\n", alpha);
 
 	  // x = x + alpha * d 
 	  scaleAdd(xStrm, dStrm, alpha, xStrm);
 
-    //printf("new x:\n");
-    //streamWrite(xStrm, tmp);
-    //for(i=0;i<NUM_ROWS;i++)
-    //  printf("%.3f ", tmp[i]);
-    //printf("\n");
-
 	  // r = r - alpha * q
 	  scaleAdd(rStrm, qStrm, -1.0f * alpha, rStrm);
-
-    //printf("new r:\n");
-    //streamWrite(rStrm, tmp);
-    //for(i=0;i<NUM_ROWS;i++)
-    //  printf("%.3f ", tmp[i]);
-    //printf("\n");
 
     // resNew = r dot r
     resOld = resNew;
