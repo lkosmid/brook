@@ -72,7 +72,8 @@ enum StatementType
 
     ST_FileLineStemnt,       // #line #file
     ST_InclStemnt,           // #include
-    ST_EndInclStemnt
+    ST_EndInclStemnt,
+    ST_PPDirective
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -430,6 +431,19 @@ class FunctionDef : public Block
     Symbol  *FunctionName() const;
 
     Decl          *decl;    // The declaration.
+};
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+class PPDirective : public Statement
+{
+  public:
+    PPDirective(const std::string& line, const Location& location);
+    ~PPDirective();
+
+    Statement *dup0() const;
+    void print(std::ostream& out, int level) const;
+
+    std::string  directive;
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

@@ -1505,6 +1505,39 @@ FunctionDef::FunctionName() const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+PPDirective::PPDirective(const std::string& line, const Location& l)
+   : Statement( ST_PPDirective, l )
+{
+   directive = line;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+PPDirective::~PPDirective()
+{
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+Statement*
+PPDirective::dup0() const
+{
+    PPDirective *ret = new PPDirective(directive, location);
+    return ret;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+PPDirective::print(std::ostream& out, int level) const
+{
+#ifdef PRINT_LOCATION
+  out << "$<PPDirective:" ;
+  location.printLocation(out) ;
+  out << ">$";
+#endif
+
+  out << directive << "\n";
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::ostream&
 operator<< (std::ostream& out, const Statement& stemnt)
 {

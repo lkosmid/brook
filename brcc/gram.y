@@ -69,7 +69,7 @@ extern int err_top_level;
 %token <consValue>  STRING LSTRING
 %token <consValue>  CHAR_CONST LCHAR_CONST
 %token <consValue>  INUM RNUM
-%token <stemnt>     PP_LINE
+%token <stemnt>     PP_DIR PP_LINE
 
 %token <loc>        INVALID
 
@@ -284,10 +284,14 @@ top_level_decl: decl_stemnt
         {
             $$ = $1;
         }
-              | PP_LINE
-		{
+              | PP_DIR
+        {
             $$ = $1;
-		}
+        }
+              | PP_LINE
+        {
+            $$ = $1;
+        }
               | error SEMICOLON
         {
             $$ = (Statement*) NULL;

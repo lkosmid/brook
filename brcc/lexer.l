@@ -477,7 +477,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>{pp_strt}"line"{whitespace}* { BEGIN(PPLN); }
 <INITIAL>{pp_strt}"file"{whitespace}* { file_ppln=true; BEGIN(PPLN); }
 <INITIAL>{pp_strt}{digit} { BEGIN(PPLN); yyless(1); }
-<INITIAL>{pp_strt} { BEGIN_PP(); }
+<INITIAL>{pp_strt} { BEGIN_PP(); tokn_ptr = tokn_buff; *tokn_ptr++ = '#'; }
 
 <PPLN>[^\n]*	{ 
                        BEGIN_PP();
@@ -488,16 +488,35 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <PP>\\(\n)             {  /* Preprocessor continuation line */
                          gProject->Parse_TOS->yylineno++;
                          gProject->Parse_TOS->yynxtcol = 0;
+			 if (tokn_ptr + 2 < tokn_end) {
+			    *tokn_ptr++ = '\\';
+			    *tokn_ptr++ = '\n';
+			 } else {
+                            yywarn("Preprocessor directive too long");
+			 }
                        }
 
 <PP>\n                 {  /* End of this preprocessor logical line */
+                         *tokn_ptr = '\0';
                          file_ppln=false;
                          in_preprocess = 0;
+		         std::cerr << "Preprocessed '" << tokn_buff << "'.\n";
                          yyless(0);        /* Hack! */
-                         BEGIN(INITIAL);
+			 LAST_STATE();
+                         lvalp->stemnt =
+                           new PPDirective(std::string(tokn_buff,tokn_ptr-tokn_buff),HERE);
+                         return(err_tok = PP_DIR);
                        }
 
-<PP>[^\n\\]+           { /* Swallow cpp junk to prevent it being echo'd */ }
+<PP>[^\n\\]+           {
+                         int n = yyleng;
+                         if (tokn_ptr + n < tokn_end) {
+                             memcpy(tokn_ptr,yytext,n);
+                             tokn_ptr += n;
+                         } else {
+                            yywarn("Preprocessor directive too long");
+			 }
+                       }
 
 <INITIAL>{alpha}{alphanum}*  {    /* Identifier */
 
