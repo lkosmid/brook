@@ -52,7 +52,7 @@ kernel void getNeighborForce(
 	velocityInSpring = dot( springAxis, relativeVelocity );
 
 	strength = inSpringConstant*perturbation + inDampingConstant*velocityInSpring;
-	outForce = inRange * ( strength * springAxis );
+	outForce = inRange ? ( strength * springAxis ) : zero;
 }	
 
 kernel void integrateParticles(
@@ -65,9 +65,14 @@ kernel void integrateParticles(
 	out float3 outPosition<>,
 	out float3 outVelocity<> )
 {
-	float3 acceleration = inIsStatic * ( inForce + inGravity );
+	float3 zero;
+	float3 acceleration;
 	
-	float3 impulse = inDeltaTime*acceleration;
+	float3 impulse;
+	
+	zero = 0;
+	acceleration = inIsStatic ? zero : ( inForce + inGravity );
+	impulse = inDeltaTime*acceleration;
 	
 	outPosition = inPosition + inDeltaTime*(inVelocity + 0.5*impulse);
 	outVelocity = inVelocity + impulse;
@@ -173,13 +178,23 @@ void initializeParticles(
 	pos = outPositions;
 	vel = outVelocities;
 	stat = outStaticFlags;
+	
 	for( y = 0; y < inParticlesPerSide; y++ )
 	{
 		for( x = 0; x < inParticlesPerSide; x++ )
 		{
-			*pos++ = float3( scale*(float)x, scale*(float)(-y), 0 );
-			*vel++ = float3( 0, 0, 0 );
-			*stat++ = 1.0f;
+			pos->x = scale*((float)x);
+			pos->y = scale*((float)-y);
+			pos->z = 0.0f;
+			
+			pos++;
+			
+			vel->x = 0.0f;
+			vel->y = 0.0f;
+			vel->z = 0.0f;
+			vel++;
+			
+			*stat++ = 0.0f;
 		}
 	}
 
@@ -188,13 +203,13 @@ void initializeParticles(
 	vel = outVelocities + 0;
 	stat = outStaticFlags + 0;
 	*pos = float3( 0, 0, 0.1 );
-	*stat = 0.0f;
+	*stat = 1.0f;
 
 	pos = outPositions + (inParticlesPerSide-1);
 	vel = outVelocities + (inParticlesPerSide-1);
 	stat = outStaticFlags + (inParticlesPerSide-1);
 	*pos = float3( 1, 0, -0.1 );
-	*stat = 0.0f;
+	*stat = 1.0f;
 }
 
 void testParticleCloth( int inSize, int inIterations, int* outTime )
@@ -230,9 +245,6 @@ void testParticleCloth( int inSize, int inIterations, int* outTime )
 //  FILE* dump;
 int startTime, endTime;
 
-  particlePositions_data = (float3*)malloc( particleCount*sizeof(float3) );
-  particleVelocities_data = (float3*)malloc( particleCount*sizeof(float3) );
-  particleStaticFlags_data = (float*)malloc( particleCount*sizeof(float) );
   
   directRestLength = 1.0f / (float)(inSize-1);
   diagonalRestLength = directRestLength * (float) sqrt(2.0);
@@ -253,6 +265,9 @@ int startTime, endTime;
 //  windVelocity = float3( 0, 0, -1.0f );
 
   // initialize
+  particlePositions_data = (float3*)malloc( inSize*inSize*sizeof(float3) );
+  particleVelocities_data = (float3*)malloc( inSize*inSize*sizeof(float3) );
+  particleStaticFlags_data = (float*)malloc( inSize*inSize*sizeof(float) );
   initializeParticles( inSize, particlePositions_data, particleVelocities_data, particleStaticFlags_data );
 
 //  dump = fopen("./dump.dump","wb");
@@ -272,37 +287,22 @@ startTime = getTime();
 	// do the integration :)
 	advanceParticles( particleIndex, particlePositions, particleVelocities,
 		particleStaticFlags, particlePositions, particleVelocities,
-		0.001f, gravity, oldParticlePositions, oldParticleVelocities );
+		0.1f, gravity, oldParticlePositions, oldParticleVelocities );
 	
 	streamSwap( particlePositions, oldParticlePositions );
 	streamSwap( particleVelocities, oldParticleVelocities );
-
-/*
-	// wind
-	accumulateWindForces(
-		dynamicParticles, dynamicParticles, particleIndex,
-		float2(-1,0), float2(0,-1),
-		maxIndex, windDirection, windVelocity, particleForces, particleForces );
-	accumulateWindForces(
-		dynamicParticles, dynamicParticles, particleIndex,
-		float2(0,-1), float2(1,0),
-		maxIndex, windDirection, windVelocity, particleForces, particleForces );
-	accumulateWindForces(
-		dynamicParticles, dynamicParticles, particleIndex,
-		float2(1,0), float2(0,1),
-		maxIndex, windDirection, windVelocity, particleForces, particleForces );
-	accumulateWindForces(
-		dynamicParticles, dynamicParticles, particleIndex,
-		float2(0,1), float2(-1,0),
-		maxIndex, windDirection, windVelocity, particleForces, particleForces );
-
-    stepParticles( dynamicParticles, staticParticles,
-		0.001f, particleForces, gravity, dynamicParticles );
-*/
   }
   
   streamWrite( particlePositions, particlePositions_data );
-  
+/*  
+  for( i = 0; i < inSize*inSize; i++ )
+  {
+	printf( "<%f %f %f>\n",
+	  particlePositions_data[i].x,
+	  particlePositions_data[i].y,
+	  particlePositions_data[i].z );
+  }
+*/  
   endTime = getTime();
   
   *outTime = endTime - startTime;

@@ -1,0 +1,134 @@
+// fractal_test.br
+// tests kernel splitting of an iterative construct
+
+#include <stdio.h>
+
+kernel void mandelbrot( float4 cx<>, float4 cy<>, out float4 outInside<> );
+
+extern int getTime();
+
+void testFractal( int inSize, int inIterations, int* outTime )
+{
+	int start;
+	int stop;
+	
+	int width;
+	int height;
+	int datasize;
+
+	float4 inputX<inSize,inSize>;
+	float* inputX_data;
+	float4 inputY<inSize,inSize>;
+	float* inputY_data;
+	float4 output<inSize,inSize>;
+	float* output_data;
+	int i, j;
+	float x, y;
+
+/*	FILE* outputFile;
+	unsigned char* image_data;
+*/	
+	width = inSize*2;
+	height = inSize*2;
+	datasize = width*height;
+	
+	inputX_data = (float*)malloc( datasize * sizeof(float) );
+	inputY_data = (float*)malloc( datasize * sizeof(float) );
+	output_data = (float*)malloc( datasize * sizeof(float) );
+	/*
+	image_data = (unsigned char*)malloc( datasize * sizeof(unsigned char) );
+	
+	outputFile = fopen( "output.pgm", "wb" );
+	fprintf( outputFile, "P5\n" );
+	fprintf( outputFile, "%d\n", width ); // w
+	fprintf( outputFile, "%d\n", height ); // h
+	fprintf( outputFile, "255\n" );
+	*/
+	for( j = 0; j < height; j++ )
+	{
+		y = 3.0f * (float)(j) * (1.0f / (height-1)) - 1.5f;
+	
+		for( i = 0; i < width; i++ )
+		{
+			x = 4.0f * (float)(i) * (1.0f / (width-1)) - 2.0f;
+		
+			inputX_data[j*width+i] = x;
+			inputY_data[j*width+i] = y;
+		}
+	}
+	
+	// run once for luck and prefetching...
+	streamRead( inputX, inputX_data );
+	streamRead( inputY, inputY_data );
+	
+	mandelbrot( inputX, inputY, output );
+	
+	streamWrite( output, output_data );
+	
+/*	for( i = 0; i < datasize; i++ )
+		image_data[i] = output_data[i] != 0 ? 0 : 255;
+	
+	fwrite( image_data, datasize, 1, outputFile );
+	
+	fclose( outputFile );
+*/	
+	start = getTime();
+	for( i = 0; i < inIterations; i++ )
+		mandelbrot( inputX, inputY, output );
+	streamWrite( output, output_data );
+	stop = getTime();
+	
+	*outTime = stop - start;
+}
+
+/* code to generate an image...
+void main()
+{
+	float4 inputX<STREAM_HEIGHT,STREAM_WIDTH>;
+	float* inputX_data;
+	float4 inputY<STREAM_HEIGHT,STREAM_WIDTH>;
+	float* inputY_data;
+	float4 output<STREAM_HEIGHT,STREAM_WIDTH>;
+	float* output_data;
+	unsigned char* image_data;
+	int i, j;
+	float x, y;
+	FILE* outputFile;
+	
+	inputX_data = (float*)malloc( DATA_SIZE * sizeof(float) );
+	inputY_data = (float*)malloc( DATA_SIZE * sizeof(float) );
+	output_data = (float*)malloc( DATA_SIZE * sizeof(float) );
+	image_data = (unsigned char*)malloc( DATA_SIZE * sizeof(unsigned char) );
+	
+	
+	outputFile = fopen( "output.pgm", "wb" );
+	fprintf( outputFile, "P5\n" );
+	fprintf( outputFile, "%d\n", WIDTH ); // w
+	fprintf( outputFile, "%d\n", HEIGHT ); // h
+	fprintf( outputFile, "255\n" );
+	
+	for( j = 0; j < HEIGHT; j++ )
+	{
+		y = 3.0f * (float)(j) * (1.0f / (HEIGHT-1)) - 1.5f;
+	
+		for( i = 0; i < WIDTH; i++ )
+		{
+			x = 4.0f * (float)(i) * (1.0f / (WIDTH-1)) - 2.0f;
+		
+			inputX_data[j*WIDTH+i] = x;
+			inputY_data[j*WIDTH+i] = y;
+		}
+	}
+	
+	streamRead( inputX, inputX_data );
+	streamRead( inputY, inputY_data );
+	mandelbrot( inputX, inputY, output );
+	streamWrite( output, output_data );
+	
+	for( i = 0; i < DATA_SIZE; i++ )
+		image_data[i] = output_data[i] != 0 ? 0 : 255;
+	
+	fwrite( image_data, DATA_SIZE, 1, outputFile );
+	
+	fclose( outputFile );
+}*/

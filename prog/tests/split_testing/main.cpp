@@ -20,12 +20,12 @@ void main()
 {
   int time;
 
-  int size = 1024;
-  int count = 100;
+  int size = 512;
+  int count = 1000;
 
-//  testMatmult( size, count, &time );
-  testFractal( size, count, &time );
+  testMatmult( size, count, &time );
+//  testFractal( size, count, &time );
 //  testParticleCloth( size, count, &time );
 
-  printf( "particle_cloth test size=%d, count=%d, time=%d\n", size, count, time );
+  printf( "test size=%d, count=%d, time=%d\n", size, count, time );
 }
