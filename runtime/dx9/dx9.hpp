@@ -48,17 +48,12 @@ namespace brook {
     void PushConstantImpl(const float4 &val);
     void ClearInputs();
 
-    void ReduceToStream();
-    void ReduceToValue();
+    void ReduceToStream( DX9Texture* inOutputBuffer );
 
     void ReduceDimension( int& ioReductionBufferSide,
       int inReductionTex0, int inReductionTex1,
       int inDimensionCount, int inDimensionToReduce,
       int inExtentToReduceTo, int* ioRemainingExtents );
-
-    void ReduceDimensionToOne( int& ioReductionBufferSide,
-      int inReductionTex0, int inReductionTex1,
-      int inDimensionCount, int inDimensionToReduce, int* ioRemainingExtents );
 
     void BindReductionBaseState();
     void CopyStreamIntoReductionBuffer( DX9Stream* inStream );
@@ -66,7 +61,6 @@ namespace brook {
     void BindReductionOperationState();
 
     void DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int dim );
-    void DumpReduceToOneState( int currentSide, int* slop, int core, int other, int dim );
     void DumpReduceDimensionState( int currentSide, int outputExtent,
       int remainingExtent, int remainingOtherExtent, int slopBufferCount, int dim );
 
@@ -132,6 +126,7 @@ namespace brook {
     virtual void Write(void* outData);
     virtual void Release() {}
 
+    DX9Texture* getTexture() { return texture; }
     IDirect3DTexture9* getTextureHandle();
     IDirect3DSurface9* getSurfaceHandle();
     const DX9FatRect& getInputRect() { return inputRect; }
@@ -191,6 +186,7 @@ namespace brook {
       return passthroughPixelShader;
     }
     DX9Texture* getReductionBuffer();
+    DX9Texture* getReductionTargetBuffer();
 
     void execute( const DX9FatRect& outputRect, const DX9FatRect* inputRects );
 
@@ -204,6 +200,7 @@ namespace brook {
     DX9VertexShader* passthroughVertexShader;
     DX9PixelShader* passthroughPixelShader;
     DX9Texture* reductionBuffer;
+    DX9Texture* reductionTargetBuffer;
     IDirect3D9* direct3D;
     IDirect3DDevice9* device;
     IDirect3DVertexBuffer9* vertexBuffer;

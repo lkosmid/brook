@@ -56,6 +56,7 @@ DX9RunTime::DX9RunTime()
   passthroughVertexShader(NULL),
   passthroughPixelShader(NULL),
   reductionBuffer(NULL),
+  reductionTargetBuffer(NULL),
   direct3D(NULL),
   device(NULL),
   vertexBuffer(NULL),
@@ -126,6 +127,8 @@ DX9RunTime::~DX9RunTime()
     vertexBuffer->Release();
   if( reductionBuffer != NULL )
     delete reductionBuffer;
+  if( reductionTargetBuffer != NULL )
+    delete reductionTargetBuffer;
   if( passthroughPixelShader != NULL )
     delete passthroughPixelShader;
   if( passthroughVertexShader != NULL )
@@ -203,6 +206,14 @@ DX9Texture* DX9RunTime::getReductionBuffer() {
   reductionBuffer = DX9Texture::create( this, kDX9ReductionBufferWidth, kDX9ReductionBufferHeight, 4 );
   DX9Assert( reductionBuffer != NULL, "Failed to allocate reduction buffer." );
   return reductionBuffer;
+}
+
+DX9Texture* DX9RunTime::getReductionTargetBuffer() {
+  if( reductionTargetBuffer != NULL ) return reductionTargetBuffer;
+
+  reductionTargetBuffer = DX9Texture::create( this, 1, 1, 4 );
+  DX9Assert( reductionTargetBuffer != NULL, "Failed to allocate reduction target buffer." );
+  return reductionTargetBuffer;
 }
 
 static const D3DVERTEXELEMENT9 kDX9VertexElements[] =
