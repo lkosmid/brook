@@ -1890,9 +1890,6 @@ CodeGen_GenerateCode(Type *retType, const char *name,
 
   if( globals.enableGPUAddressTranslation )
   {
-    generateReductionTechniques( args, nArgs, name, target, true, techniques );
-    generateReductionTechniques( args, nArgs, name, target, false, techniques );
-    
     //TIM: huge hack to get a not address-trans version available
     /*
     //TIM: we'd *like* to do this, but it won't actually work,
@@ -1901,6 +1898,12 @@ CodeGen_GenerateCode(Type *retType, const char *name,
     generateReductionTechniques( args, nArgs, name, target, false, techniques );
     globals.enableGPUAddressTranslation = true;
     */
+
+    // only address-translate input streams
+    generateReductionTechniques( args, nArgs, name, target, false, techniques );
+
+    // address-translate the output stream too... ugly
+    generateReductionTechniques( args, nArgs, name, target, true, techniques );    
   }
   else
   {

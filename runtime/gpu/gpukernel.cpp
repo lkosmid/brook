@@ -277,7 +277,34 @@ namespace brook
     }
 
     bool requiresInputAddressTranslation = requiresBaseAddressTranslation && shapeMismatch;
-    if( requiresBaseAddressTranslation )
+
+    // Find and execute an appropriate technique
+    Technique* foundTechnique = NULL;
+    bool foundTechniqueTrans = false;
+    bool foundTechniqueInputTrans = false;
+    size_t techniqueCount = _techniques.size();
+    for( size_t t = 0; t < techniqueCount && !foundTechnique; t++ )
+    {
+      Technique& technique = _techniques[t];
+
+      bool techniqueTrans = technique.outputAddressTranslation || technique.inputAddressTranslation;
+      bool techniqueInputTrans = technique.inputAddressTranslation;
+
+      if( requiresBaseAddressTranslation && !techniqueTrans )
+        continue;
+
+      if( requiresInputAddressTranslation && !techniqueInputTrans )
+        continue;
+
+      foundTechnique = & technique;
+      foundTechniqueTrans = techniqueTrans;
+      foundTechniqueInputTrans = techniqueInputTrans;
+    }
+    if( !foundTechnique )
+      GPUAssert( false, "No appropriate map technique found" );
+
+
+    if( foundTechniqueTrans )
     {
         // set up additional "global" constants/interpolants
 
@@ -349,36 +376,15 @@ namespace brook
     _streamArguments.push_back( stream );
     pushArgument( sStreamArgumentType, streamArgumentIndex );
 #endif
+
+    _context->setOutputDomainMode( usingOutputDomain );
+    _context->setAddressTranslationMode( foundTechniqueTrans || foundTechniqueInputTrans );
+
+    _context->beginScene();
     
-    // Find and execute an appropriate technique
-    bool done = false;
-    size_t techniqueCount = _techniques.size();
-    for( size_t t = 0; t < techniqueCount && !done; t++ )
-      {
-        Technique& technique = _techniques[t];
-
-        bool techniqueTrans = technique.outputAddressTranslation || technique.inputAddressTranslation;
-        bool techniqueInputTrans = technique.inputAddressTranslation;
-
-        if( requiresBaseAddressTranslation != techniqueTrans )
-            continue;
-
-        if( requiresInputAddressTranslation != techniqueInputTrans )
-            continue;
-
-        _context->setOutputDomainMode( usingOutputDomain );
-        _context->setAddressTranslationMode( techniqueTrans || techniqueInputTrans );
-
-        _context->beginScene();
-        
-        executeTechnique( technique );
-        
-        _context->endScene();
-        
-        done = true;
-      }
-    if( !done )
-      GPUAssert( false, "No appropriate map technique found" );
+    executeTechnique( *foundTechnique );
+    
+    _context->endScene();
     
     //    size_t outputStreamCount = _outputStreams.size();
     //    for( size_t o = 0; o < outputStreamCount; o++ )
