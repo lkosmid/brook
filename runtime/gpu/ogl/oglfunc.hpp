@@ -47,10 +47,10 @@ typedef void (APIENTRYP PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
 #endif
 #ifndef GL_NV_fragment_program
 typedef void (APIENTRY * PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC) (GLuint id, GLsizei len, const GLubyte *name, const GLfloat* x);
-#define RUNTIME_BONUS_GL_FNS_4 \
+#define RUNTIME_BONUS_GL_FNS_NV \
    XXX(PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC,        glProgramNamedParameter4fvNV)               
 #else
-#define RUNTIME_BONUS_GL_FNS_4
+#define RUNTIME_BONUS_GL_FNS_NV
 #endif
 
 #ifndef GL_ARB_vertex_program
@@ -98,7 +98,7 @@ typedef void (APIENTRYP PFNGLDRAWBUFFERSATIPROC) (GLsizei n, const GLenum *bufs)
 #endif
 
 #define RUNTIME_BONUS_GL_FNS \
-   RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3 RUNTIME_BONUS_GL_FNS_4
+   RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3
 
 /***** WGL API *****/
 #ifdef WIN32
@@ -143,6 +143,7 @@ RUNTIME_BONUS_WGL_FNS
 
 RUNTIME_BONUS_GL_FNS
 RUNTIME_BONUS_GL_FNS_ATI
+RUNTIME_BONUS_GL_FNS_NV
 
 #undef XXX
 
