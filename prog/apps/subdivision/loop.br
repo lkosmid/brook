@@ -539,11 +539,27 @@ void subdivide (Neighbor (*neighbors)<>,
   // prevents all writing at the end
 }
                
+Tri *  createTriangles (unsigned int howMany) {
+  Tri * ret;  
+  ret=(Tri*)malloc(sizeof(Tri)*howMany);
+  memset(ret,0,sizeof(Tri)*howMany);
+  return ret;
+}
+Neighbor *  createNeighbors (Tri * tri, unsigned int howMany) {
+  Neighbor * ret;  
+  ret=(Neighbor*)malloc(sizeof(Neighbor)*howMany);
+  memset(ret,0,sizeof(Neighbor)*howMany);
+  return ret;
+}
 int main () {
   float epsilon=.01;
   Neighbor neighbors<streamWidth,1>;
   Tri triangles<streamWidth,1>;
+  Tri *triangledata = createTriangles(streamWidth);
+  Neighbor *neighbordata = createNeighbors(triangledata, streamWidth);
   struct VertexArray v;
+  streamRead(triangles,triangledata);
+  streamRead(neighbors,neighbordata);
   initVertexArray(&v);
   
   // initialize neighbors and triangles
