@@ -52,7 +52,12 @@ int low_texture_ram=0;
 int subdivisiondepth=0;
 void recomputeNeighbors(STri*, Neighbor *, unsigned int);
 void checkNeighbors(STri * tri, Neighbor * in, Neighbor * out, unsigned int);
-
+void __printf_cpu_inner(float f,float g, float h) {
+  fprintf (stderr,"Val %f %f %f\n",f,g,h);
+}
+void __emer_cpu_inner(float f,float g, float h) {
+  fprintf (stderr,"Emer %f %f %f\n",f,g,h);
+}
 
 //returns a 2 if only b1, 4 if only b2 and 8 if both
 //this acts as sort of a bitwise holder class that should work with 24 bitfloat
@@ -149,10 +154,11 @@ kernel void computeNeighbors(STri tgather[][],
                lerp(t.C.xyz,eAAC?u.AAC.xyz:eAAB?u.AAB.xyz:u.AB.xyz,.5),
                .25);
   BC_C=lerp(t.C.xyz,u.BC.xyz,.5);
-  if(1)if(u.BC.w==4||u.AC.w==8)
+  if(1)if(u.BC.w==4||u.BC.w==8)
      BC_C=lerp(BC_C,
                lerp(t.B.xyz,eBCC?u.BCC.xyz:eACC?u.ACC.xyz:u.AC.xyz,.5),
                .25);
+
   v.AB.xyz = lerp(t.A.xyz,u.AB.xyz,.5);
   if(1)if(u.AB.w==2||u.AB.w==8)
      v.AB.xyz = lerp(v.AB.xyz,
@@ -319,7 +325,7 @@ kernel void identifyTJunctions(STri triangles[][],
   float3 BC = lerp (tri.B.xyz,tri.C.xyz,.5);
   */
 
-  if(i.x>=0&&i.x<2048&&(tri.A.w!=0||tri.B.w!=0||tri.C.w!=0)) {
+  if(i.x>=0&&i.x<2048/*&&(tri.A.w!=0||tri.B.w!=0||tri.C.w!=0)*/) {
     if ((generous||oldneighbors.AB.w==0)&&tri.A.w==0) {
       //that triangle is rastered as is, we better push out a repair triangle
       cracks=float3(i.x,i.y,0);
@@ -387,6 +393,23 @@ kernel void splitTriangles (STri triangles[][],
                                 lerp(tri.A.xyz,oldneighbors.BC.xyz,.5),
                                 .25),
                            1);
+  /*
+  if (abs(splittri.BC.x+22.312)<.01&&
+      abs(splittri.BC.y+10.688)<.01&&
+      abs(splittri.BC.z+71.922)<.01) {
+    printf(tri.A.x,tri.A.y,tri.A.z);
+    printf(oldneighbors.BC.x,oldneighbors.BC.y,oldneighbors.BC.z);    
+    printf(tri.A.w,tri.B.w,tri.C.w);    
+  }
+  if (abs(splittri.BC.x+21.625)<.001&&
+      abs(splittri.BC.y+10.5)<.001&&
+      abs(splittri.BC.z+71.766)<.001) {
+    printf(tri.A.x,tri.A.y,tri.A.z);
+    printf(oldneighbors.BC.x,oldneighbors.BC.y,oldneighbors.BC.z);    
+    printf(oldneighbors.BC.x,oldneighbors.BC.y,oldneighbors.BC.z);    
+    printf(tri.A.w,tri.B.w,tri.C.w);    
+  }
+  */
   splittri.A = tri.A;
   if(1)if(tri.A.w&&
       tri.C.w&&
@@ -432,10 +455,10 @@ kernel void splitTriangles (STri triangles[][],
               +tri.A.xyz
               +tri.B.xyz);
 }
-
+/*
 void __printf_cpu_inner(float f) {
   printf("%.2f ",f);
-}
+  }*/
 void __printnew_cpu_inner() {
   printf ("\n");
 }

@@ -147,7 +147,7 @@
 /**
  ** global variables:
  **/
-
+char wire=0;
 int	ActiveButton;		/* current button that is down		*/
 int	AxesList;		/* list to hold the axes		*/
 int	AxesMenu;		/* id of the axes pop-up menu		*/
@@ -160,14 +160,14 @@ int	Projection;		/* ORTHO or PERSP			*/
 int	ProjMenu;		/* id of the projection pop-up menu	*/
 float	Red, Green, Blue;	/* star colors				*/
 float	Scale;			/* scaling factor			*/
-int	ObjList[3];		/* list to hold the 3d object		*/
+int	ObjList[4];		/* list to hold the 3d object		*/
 int whichObj=0;
 int	TransformMode;		/* ROTATE or SCALE			*/
 int	TransformModeMenu;	/* id of the transform mode menu	*/
 float	Xrot, Yrot;		/* rotation angles in degrees		*/
 int	Xmouse, Ymouse;		/* mouse values				*/
 typedef char *str ;
-str model[3]={"data","data.cracks","data.conservative"};
+str model[4]={"data","data.cracks","data.liberal","data.conservative"};
 
 
 /**
@@ -298,7 +298,8 @@ Display( void )
 	int dx, dy, d;		/* viewport dimensions			*/
 	int xl, yb;		/* lower-left corner of viewport	*/
 
-
+        float red[4]={1,0,0,1};
+        float white[4]={1,1,1,1};
 	/* set which window we want to do the graphics into:		*/
 
 	glutSetWindow( GrWindow );
@@ -363,8 +364,27 @@ Display( void )
 
 	/* draw the object:						*/
 
-	glCallList( ObjList[whichObj] );
+        glLightfv(GL_LIGHT0,GL_DIFFUSE,white);
+        glColor4fv(white);
+        if (!wire) {
+          glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);			  
+          glEnable(GL_LIGHTING);
+          glEnable(GL_LIGHT0);
+        }else {			    
+          glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+          glDisable(GL_LIGHTING);
+          glDisable(GL_LIGHT0);
+          
+        }
 
+	glCallList( ObjList[whichObj] );
+        glLightfv(GL_LIGHT0,GL_DIFFUSE,red);        
+        glColor4fv(red);
+          glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);			  
+          glDisable(GL_LIGHTING);
+          glDisable(GL_LIGHT0);
+
+	glCallList( ObjList[0] );
 
 	/* possibly draw the axes:					*/
 
@@ -732,7 +752,6 @@ InitLists( void )
 	fprintf(stderr, "Num Verts = %d\n", num_verts);
 	ObjList[whichObj] = glGenLists( 1 );
 	glNewList( ObjList[whichObj], GL_COMPILE );
-	glColor3f(1.0, 1.0, 1.0);
 	glBegin(GL_TRIANGLES);
 	{
 		int i;
@@ -849,18 +868,7 @@ Keyboard( unsigned char c, int x, int y )
 		      case 'm':
 		      case 'M':
 			{
-			  static char k=1;
-			  if (k) {
-			    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);			  
-			    glEnable(GL_LIGHTING);
-			    glEnable(GL_LIGHT0);
-			  }else {			    
-			    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			    glDisable(GL_LIGHTING);
-			    glDisable(GL_LIGHT0);
-			      
-			  }
-			  k=!k;
+			  wire=!wire;
 			}
 			break;
 		default:
