@@ -6,6 +6,8 @@ Immediate
 Short
 -----
 
+   * Pull fp30_assist.bin out of v01.
+
    * The lexer and parser should just passthrough preprocessor directives
      untouched.
 
