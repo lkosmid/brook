@@ -422,7 +422,7 @@ int main (int argc, char ** argv) {
            }
         }
 	free(data);
-      	printf ("writing... %s\n",argv[2]);
+      	fprintf (stderr,"writing... %s\n",argv[2]);
 	if (!writePPM(argv[2],imgdata,width,height)) {
           if (oldargc<3&&diff (argv[2],"fft.ppm")) {
             printf ("%s differs from fft.ppm\n",argv[2]);

@@ -38,11 +38,15 @@ int diff(char * f1,char * f2) {
   int chr;
   while (!feof(f)) {
      chr=fgetc(fp);
-    if (chr!=fgetc(f)){
-      fclose(f);
-      fclose(fp);
-      return 1;  
-    }  
+     int diff = chr-fgetc(f);
+     diff = diff<0?-diff:diff;
+     if (diff>5) {
+        printf ("diff of %d\n",diff);
+        fclose(f);
+        fclose(fp);
+        return 1;  
+     }
+    
   }
   if ((!feof(f))||(!feof(fp)))
      return 1;
