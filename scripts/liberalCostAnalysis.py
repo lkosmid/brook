@@ -19,6 +19,15 @@ vout={"InitialScan":1,
 	  "BeginGatherSearch4":1,
 	  "GatherSearch4":1,
 	  "RelativeGather4":1}
+voutscan = {"InitialScan":1,
+			"Scan":1,
+			"InitialScan2":1,
+			"Scan2":1,
+			"InitialScan3":1,
+			"Scan3":1,
+			"InitialScan4":1,
+			"Scan4":1
+	}
 voutscatter={"InitialScan":1,
 			 "Scan":1,
 			 "RelativeScatter":1,
@@ -80,17 +89,19 @@ costs= {"InitialScan4":(32,0,4,{"add":1,
 		"RelativeGather":(4,4,4,{"add":1}),
 		"RelativeScatter":(4,4,4,{"add":1}),		
 		"processSlice":(8,0,0,{"cmp":10,
-								"add":7,
+ 								"add":7,
+	 						    "push":1,
 								"mul":1}),
-		"processTriangles":(16,48,36,{"div":1,
-									 "mul":1,
-									 "add":12,
-									 "cmp":1}),
+		"processTriangles":(4,48,36,{"div":1,
+									  "push":3,
+									  "mul":1,
+									  "add":12,
+									  "cmp":1}),
 		"processFirstTriangles":(28,12,12,{"div":1,
 										   "add":3}),
-		"processTrianglesNoCompactOneOut":(28,12,12,{"div":1,
+		"processTrianglesNoCompactOneOut":(6.4,12,12,{"div":1,
 													 "add":3}),
-		"produceTriP":(48,0,16,{"cmp":3,
+		"produceTriP":(48,0,8,{"cmp":3,
 								"bit":2}),
 		"computeNeighbors":(8,192,144,{"mul":12*12+12*6,
 									   "add":12*6+12*3,
@@ -113,16 +124,18 @@ costs= {"InitialScan4":(32,0,4,{"add":1,
 										  "bit":9}),
 		"writeFinalTriangles":(36,0,12,{"cmp":2,
 										"div":1}),
-		"CheckTriangleCollide":(16,72,16,{"add":81,
+		"CheckTriangleCollide":(32,72,16,{"add":81,
 										  "mul":73,
 										  "div":4,
+										  "push":1,
 										  "bit":13,
 										  "cmp":18}),
-		"Collide":(64,128,32,{"add":70,
+		"Collide":(64,128,0,{"add":70,
+							 "push":2,
 							  "mul":81,
 							  "bit":18,
 							  "cmp":16}),
-		"updateCurrentNode":(16,192,64,{"add":66,
+		"updateCurrentNode":(24,192,64,{"add":66,
 										"mul":84,
 										"cmp":3,
 										"bit":1})}
@@ -179,9 +192,11 @@ for arg in sys.argv[1:]:
 	for func in invocations:
 		numpixels = invocations[func];
 		memarith=costs[func];
+		#print func + " blah "+str(memarith[2])
 		reads = numpixels*(memarith[0]+memarith[1]);
 		writes = numpixels*memarith[2];
 		mem = reads+writes;
+		#print func + " blahmem "+str(mem)
 		st= func +": rd: "+str(reads)+" wr: "+str(writes);
 		st += " mem: "+str(mem);
 		arith = 0
