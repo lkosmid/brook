@@ -213,7 +213,7 @@ namespace brook
     unsigned int outRank = outputStream->getRank();
     const unsigned int* outReversed = outputStream->getReversedExtents();
 
-    bool requiresOutputAddressTranslation = true;
+    bool requiresOutputAddressTranslation = false;
     bool requiresInputAddressTranslation = false;
 
     bool requiresAddressTranslation =
