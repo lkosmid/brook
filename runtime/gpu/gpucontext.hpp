@@ -104,7 +104,8 @@ namespace brook {
     virtual void endScene() = 0;
 
     /* Binding commands */
-    virtual void bindConstant( unsigned int inIndex, 
+    virtual void bindConstant( PixelShaderHandle ps, 
+                               unsigned int inIndex, 
                                const float4& inValue ) = 0;
     virtual void bindTexture( unsigned int inIndex, 
                               TextureHandle inTexture ) = 0;

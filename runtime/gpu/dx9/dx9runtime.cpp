@@ -116,7 +116,7 @@ namespace brook
     virtual void beginScene();
     virtual void endScene();
 
-    virtual void bindConstant( size_t inIndex, const float4& inValue );
+    virtual void bindConstant( PixelShaderHandle ps, size_t inIndex, const float4& inValue );
     virtual void bindTexture( size_t inIndex, TextureHandle inTexture );
     virtual void bindOutput( size_t inIndex, TextureHandle inTexture );
     virtual void disableOutput( size_t inIndex );
@@ -458,7 +458,8 @@ namespace brook
   }
 
 
-  void GPUContextDX9::bindConstant( size_t inIndex, const float4& inValue )
+  void GPUContextDX9::bindConstant( PixelShaderHandle /* unused */, 
+                                    size_t inIndex, const float4& inValue )
   {
     HRESULT result = _device->SetPixelShaderConstantF( inIndex, (const float*)&inValue, 1 );
     GPUAssert( !FAILED(result), "SetPixelShaderConstantF failed" );

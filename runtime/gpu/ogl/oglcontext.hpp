@@ -114,7 +114,8 @@ namespace brook {
     void endScene() { }
 
     /* These are the ARB versions */
-    virtual void bindConstant( unsigned int inIndex, const float4& inValue );
+    virtual void bindConstant( PixelShaderHandle ps, 
+                               unsigned int inIndex, const float4& inValue );
     virtual void bindTexture( unsigned int inIndex, TextureHandle inTexture );
     virtual void bindOutput( unsigned int inIndex, TextureHandle inSurface );
     virtual void bindPixelShader( PixelShaderHandle inPixelShader );

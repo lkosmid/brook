@@ -212,7 +212,7 @@ namespace brook {
     void clearInputs();
     void executeTechnique( const Technique& inTechnique );
     void executePass( const Pass& inPass );
-    void bindConstant( size_t inIndex, const Input& inInput );
+    void bindConstant( PixelShaderHandle ps, size_t inIndex, const Input& inInput );
     void bindSampler( size_t inIndex, const Input& inInput );
     void bindInterpolant( size_t inIndex, const Input& inInput );
     void bindOutput( size_t inIndex, const Input& inInput );

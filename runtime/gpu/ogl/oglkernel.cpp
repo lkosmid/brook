@@ -112,9 +112,11 @@ OGLContext::createPixelShader( const char* shader )
 }
 
 void 
-OGLContext::bindConstant( unsigned int inIndex, 
+OGLContext::bindConstant( PixelShaderHandle ps,
+                          unsigned int inIndex, 
                           const float4& inValue ) {
   
+  bindPixelShader(ps);
   glProgramLocalParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, inIndex,
                                 (const float *) &inValue);
   CHECK_GL();

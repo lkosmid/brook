@@ -278,7 +278,7 @@ namespace brook
     
     size_t constantCount = inPass.constants.size();
     for( i = 0; i < constantCount; i++ )
-      bindConstant( i, inPass.constants[i] );
+      bindConstant( pixelShader, i, inPass.constants[i] );
     
     size_t samplerCount = inPass.samplers.size();
     for( i = 0; i < samplerCount; i++ )
@@ -306,13 +306,14 @@ namespace brook
                              _inputInterpolants.size() );
   }
 
-  void GPUKernel::bindConstant( size_t inIndex, const Input& inInput )
+  void GPUKernel::bindConstant( PixelShaderHandle ps, 
+                                size_t inIndex, const Input& inInput )
   {
     if( inInput.argumentIndex > 0 )
     {
       int arg = inInput.argumentIndex-1;
       ArgumentInfo& argument = _arguments[ arg ];
-      _context->bindConstant( inIndex, 
+      _context->bindConstant( ps, inIndex, 
                               argument.getConstant( this, 
                                                     inInput.componentIndex ) );
     }
