@@ -60,7 +60,6 @@ bool file_ppln=false;
 int  in_preprocess = 0;
 int  in_charconst = 0;
 
-static int cpp_comment_warn = 1;
 int  gcc2_paren_cnt = 0;
 
 char  tokn_buff[MAX_TOKN_LEN];

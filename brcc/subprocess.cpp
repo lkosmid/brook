@@ -173,7 +173,7 @@ Subprocess_Run(char *argv[], char *input)
         
         /* fprintf(stderr, "Writing\n[35;1m%s[0m\n", input); */
         if(write (hStdInPipe[WRITE_HANDLE], input, strlen(input))
-           != strlen(input)){
+           != (int)strlen(input)){
            perror("Write problem: ");
         }
         write(hStdInPipe[WRITE_HANDLE], &eof_holder, 1);

@@ -177,7 +177,7 @@ BrtIterType::BrtIterType(const ArrayType *stream, const FunctionCall *f)
    *   - We support float, float2, float3, or float4 1-D streams
    *   - We float2 2-D streams
    */
-  assert(f->args.size() == 2 * FloatDimension(base->typemask));
+  assert((int)f->args.size() == 2 * FloatDimension(base->typemask));
   assert(dims.size() == 1 ||
          (dims.size() == 2 && base->typemask == BT_Float2));
   for (i = f->args.begin(); i != f->args.end(); i++) {

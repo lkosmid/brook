@@ -43,6 +43,9 @@ BinaryOp TranslatePlusGets (AssignOp ae) {
                 case AO_DivEql:
                     bo=BO_Div;
                     break;
+                case AO_MultEql:
+                   bo=BO_Mult;
+                   break;
                 case AO_ModEql:
                     bo=BO_Mod;
                     break;
@@ -580,6 +583,8 @@ class ConstantExprConverter{public:
                 }
                 break;
             }
+            default:
+               break;
             }
         }
         return ret;

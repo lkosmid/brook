@@ -108,7 +108,6 @@ BRTKernelDef::printStub(std::ostream& out) const
 
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
-   unsigned int num_templates=0;
    std::vector <bool> streamOrVal;
    for (i = 0; i < fType->nArgs; i++) {
       if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
@@ -202,7 +201,6 @@ bool
 BRTKernelDef::CheckSemantics() const
 {
    FunctionType *fType;
-   Decl *outArg = NULL;
 
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
