@@ -10,8 +10,10 @@
 
 #ifdef WIN32
 typedef __int64 int64;
+#define printf64(a) printf("%8I64d", a)
 #else
 typedef long long int64;
+#define printf64(a) printf("%8Ld", a)
 #endif
 
 #ifdef WIN32

@@ -340,8 +340,9 @@ RunKernelProcessTiming(char *name, float4 *data,
     *   - curOps instructions
     *   - 4 floats per entry
     */
-   printf("%8I64d   %6.2f   %8.0f   %4d\t(* %s %d R%d %d %d %d *)\n",
-          CyclesToUsecs(stop - start), numFLOPs / elapsed, numFLOPs / 1000000,
+   printf64(CyclesToUsecs(stop - start));
+   printf("%6.2f   %8.0f   %4d\t(* %s %d R%d %d %d %d *)\n",
+          numFLOPs / elapsed, numFLOPs / 1000000,
           nRuns, name, length, nRuns, curOps, cur_R, cur_W);
 
    for (i = 0; CHECK_MISMATCH && curOps > 0.0f && i < numEntries; i++) {
@@ -362,8 +363,8 @@ RunKernelProcessTiming(char *name, float4 *data,
           data[i].y != cur || data[i].z != cur || data[i].w != cur) {
          printf("(* Mismatch %d,%d/%d: *)\n"
                 "(* Expected %.2f, Got: %.2f %.2f %.2f %.2f *)\n",
-                 i / length, i % length, length, name, expected,
-                 data[i].x, data[i].y, data[i].z, data[i].w, name);
+                 i / length, i % length, length, expected,
+                 data[i].x, data[i].y, data[i].z, data[i].w);
          return;
       }
    }
@@ -619,14 +620,15 @@ RunKernelFindIdealGPUvsCPUSlope(void)
    gMFLOPS = (BIG_LENGTH * BIG_LENGTH * 4 * (data[1].x - 1) / t2);
 
    if (t2 > t1) {
-      printf("(* The CPU is _faster_ than the GPU by %10I64d usecs! *)\n",
-             t2 - t1);
+     printf("(* The CPU is _faster_ than the GPU by");
+     printf64(t2-t1);
+     printf(" usecs! *)\n");
       //goto done;
    }
 
    if (((int) data[1].x - 1) != curOps) {
       printf("(* CPU is doing %4.1f ops and GPU is doing %4.1f! *)\n",
-             curOps, data[1].x - 1);
+             (float) curOps, (float) (data[1].x - 1));
       //goto done;
    }
 
@@ -639,17 +641,25 @@ RunKernelFindIdealGPUvsCPUSlope(void)
    start = CyclesToUsecs(GetTimeTSC() - start) / SMOOTHING;
 
    if (t2 > start) {
-      printf("(* Avg(R + k + W) < Avg(k) by %10I64d usecs?! *)\n", t2 - start);
+      printf("(* Avg(R + k + W) < Avg(k) by ");
+      printf64(t2 - start);
+      printf(" usecs?! *)\n");
       goto done;
    }
 
-   printf("(* R+k+W: %6I64d R+W: %6I64d W: %6d k: %6I64d\n",
-          start, start - t2, cur_W, t2);
+   printf("(* R+k+W: ");
+   printf64(start);
+   printf(" R+W: ");
+   printf64(start-t2);
+   printf(" W: %6d k: ", cur_W);
+   printf64(t2);
+   printf("\n");
+
    cur_R = ((int) (start - t2)) - cur_W;
    if (start - t2 < cur_W) {
-      printf("(* Avg(R + k + W) < Avg(W) by %10I64d usecs?! *)\n",
-             cur_W - (t2 - start));
-
+      printf("(* Avg(R + k + W) < Avg(W) by ");
+      printf64(cur_W - (t2 - start));
+      printf("usecs?! *)\n");
    }
    readRate = sizeof(float) * 4 * BIG_LENGTH * BIG_LENGTH / (float) cur_R;
    writeRate = sizeof(float) * 4 * BIG_LENGTH * BIG_LENGTH / (float) cur_W;
