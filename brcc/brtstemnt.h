@@ -14,7 +14,6 @@ class BRTKernelDef : public FunctionDef
 {
   public:
     BRTKernelDef(const FunctionDef& fDef);
-   ~BRTKernelDef();
 
     /* Pass ourselves (as a FunctionDef) to our own constructor */
     Statement *dup0() const { return new BRTKernelDef(*static_cast<const FunctionDef*>(this)); };
@@ -22,8 +21,37 @@ class BRTKernelDef : public FunctionDef
 
     void printStub(std::ostream& out) const;
 
+    virtual bool CheckSemantics(void) const;
+};
+
+class BRTMapKernelDef : public BRTKernelDef
+{
+  public:
+    BRTMapKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {
+       if (!CheckSemantics()) assert(false);
+    }
+
+    /* Pass ourselves (as a FunctionDef) to our own constructor */
+    Statement *dup0() const {
+       return new BRTMapKernelDef(*static_cast<const FunctionDef*>(this));
+    };
+
+    bool CheckSemantics(void) const;
+};
+
+class BRTReduceKernelDef : public BRTKernelDef
+{
+  public:
+    BRTReduceKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {
+       if (!CheckSemantics()) assert(false);
+    }
+
+    /* Pass ourselves (as a FunctionDef) to our own constructor */
+    Statement *dup0() const {
+       return new BRTReduceKernelDef(*static_cast<const FunctionDef*>(this));
+    };
+
     bool CheckSemantics(void) const;
 };
 
 #endif  /* STEMNT_H */
-

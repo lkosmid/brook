@@ -57,12 +57,6 @@ BRTKernelDef::BRTKernelDef(const FunctionDef& fDef)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-BRTKernelDef::~BRTKernelDef()
-{
-   /* Nothing.  We have no addition storage beyond our ancerstor classes */
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTKernelDef::print(std::ostream& out, int) const
 {
@@ -206,6 +200,44 @@ BRTKernelDef::CheckSemantics() const
    for (int i = 0; i < fType->nArgs; i++) {
       BaseTypeSpec baseType;
 
+      baseType = fType->args[i]->form->getBase()->typemask;
+      if (baseType < BT_Float || baseType > BT_Float4) {
+         std::cerr << "Illegal type in ";
+         fType->args[i]->print(std::cerr, true);
+         std::cerr << ". (Must be floatN).\n";
+         return false;
+      }
+   }
+
+   if (!fType->subType->isBaseType() ||
+      ((BaseType *) fType->subType)->typemask != BT_Void) {
+      std::cerr << "Illegal return type for kernel " << *FunctionName()
+                << ": " << fType->subType << ". Must be void.\n";
+      return false;
+   }
+
+   return true;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool
+BRTMapKernelDef::CheckSemantics() const
+{
+   FunctionType *fType;
+   Decl *outArg = NULL;
+
+   assert (decl->form->type == TT_Function);
+   fType = (FunctionType *) decl->form;
+
+   for (int i = 0; i < fType->nArgs; i++) {
+      if (fType->args[i]->isReduce()) {
+         std::cerr << "Reduce arguments are not allowed in "
+                   << *FunctionName() << ": ";
+         fType->args[i]->print(std::cerr, true);
+         std::cerr << ".\n";
+         return false;
+      }
+
       if ((fType->args[i]->form->getQualifiers() & TQ_Out) != 0) {
          if (outArg) {
             std::cerr << "Multiple outputs not supported: ";
@@ -231,26 +263,69 @@ BRTKernelDef::CheckSemantics() const
             return false;
          }
       }
-
-      baseType = fType->args[i]->form->getBase()->typemask;
-      if (baseType < BT_Float || baseType > BT_Float4) {
-         std::cerr << "Illegal type in ";
-         fType->args[i]->print(std::cerr, true);
-         std::cerr << ". (Must be floatN).\n";
-         return false;
-      }
-   }
-
-   /* check kernel return type */
-   if (!fType->subType->isBaseType() ||
-      ((BaseType *) fType->subType)->typemask != BT_Void) {
-      std::cerr << "Illegal kernel return type: " << fType->subType
-                << ". Must be void.\n";
-      return false;
    }
 
    if (outArg == NULL) {
       std::cerr << "Warning, kernel " << *FunctionName() << " has no output.\n";
+   }
+
+   return true;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool
+BRTReduceKernelDef::CheckSemantics() const
+{
+   FunctionType *fType;
+   Decl *streamArg = NULL, *reduceArg = NULL;
+
+   assert (decl->form->type == TT_Function);
+   fType = (FunctionType *) decl->form;
+
+   for (int i = 0; i < fType->nArgs; i++) {
+      if (fType->args[i]->isReduce()) {
+         if (reduceArg != NULL) {
+            std::cerr << "Multiple reduce arguments in "
+                      << *FunctionName() << ": ";
+            reduceArg->print(std::cerr, true);
+            std::cerr << ", ";
+            fType->args[i]->print(std::cerr, true);
+            std::cerr << ".\n";
+            return false;
+         }
+
+         reduceArg = fType->args[i];
+      } else if (fType->args[i]->isStream()) {
+         if (streamArg != NULL) {
+            std::cerr << "Multiple non-reduce streams in "
+                      << *FunctionName() << ": ";
+            streamArg->print(std::cerr, true);
+            std::cerr << ", ";
+            fType->args[i]->print(std::cerr, true);
+            std::cerr << ".\n";
+            return false;
+         }
+
+         streamArg = fType->args[i];
+      }
+
+      if ((fType->args[i]->form->getQualifiers() & TQ_Out) != 0) {
+         std::cerr << "Non-reduce output in reduction kernel "
+                   << *FunctionName() << ".\n";
+         return false;
+      }
+   }
+
+   if (reduceArg == NULL) {
+      std::cerr << "Reduction kernel " << *FunctionName()
+                << " has no reduce argument.\n";
+      return false;
+   }
+
+   if (streamArg == NULL) {
+      std::cerr << "Reduction kernel " << *FunctionName()
+                << " has no stream argument.\n";
+      return false;
    }
 
    return true;

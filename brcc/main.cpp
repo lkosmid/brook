@@ -188,8 +188,16 @@ ConvertToBrtScatters(Statement *s)
 static FunctionDef *
 ConvertToBrtFunctions(FunctionDef *fDef)
 {
-   if (fDef->decl->isKernel()) { return new BRTKernelDef(*fDef); }
-   else return NULL;
+   /*
+    * The 'isReduce()' check _must_ come before the 'isKernel()' check
+    * because, for better or for worse, reduction kernels are also
+    * considered kernels.
+    */
+   if (fDef->decl->isReduce()) {
+      return new BRTReduceKernelDef(*fDef);
+   } else if (fDef->decl->isKernel()) {
+      return new BRTMapKernelDef(*fDef);
+   } else return NULL;
 
 }
 
@@ -197,7 +205,7 @@ ConvertToBrtFunctions(FunctionDef *fDef)
 /*
  * main --
  *
- *      Drive everything.  Parse the arguments, the compile the requested
+ *      Drive everything.  Parse the arguments, then compile the requested
  *      file.
  */
 
