@@ -45,6 +45,13 @@ typedef void (APIENTRYP PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
 #ifndef GL_TEXTURE0
 #define GL_TEXTURE0 GL_TEXTURE0_ARB
 #endif
+#ifndef GL_NV_fragment_program
+typedef void (APIENTRY * PFNGLPROGRAMNAMEDPARAMETER4FNVPROC) (GLuint id, GLsizei len, const GLubyte *name, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
+#define RUNTIME_BONUS_GL_FNS_4 \
+   XXX(PFNGLPROGRAMNAMEDPARAMETER4FNVPROC,        glProgramNamedParameter4fNV)               
+#else
+#define RUNTIME_BONUS_GL_FNS_4
+#endif
 
 #ifndef GL_ARB_vertex_program
 typedef void (APIENTRYP PFNGLGENPROGRAMSARBPROC) (GLsizei n, GLuint *programs);
@@ -91,7 +98,7 @@ typedef void (APIENTRYP PFNGLDRAWBUFFERSATIPROC) (GLsizei n, const GLenum *bufs)
 #endif
 
 #define RUNTIME_BONUS_GL_FNS \
-   RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3
+   RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3 RUNTIME_BONUS_GL_FNS_4
 
 /***** WGL API *****/
 #ifdef WIN32
@@ -112,6 +119,8 @@ typedef BOOL (WINAPI * PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAt
 typedef BOOL (WINAPI * PFNWGLBINDTEXIMAGEARBPROC) (HPBUFFERARB hPbuffer, int iBuffer);
 typedef BOOL (WINAPI * PFNWGLRELEASETEXIMAGEARBPROC) (HPBUFFERARB hPbuffer, int iBuffer);
 #endif
+
+
 
 #define RUNTIME_BONUS_WGL_FNS \
    XXX(PFNWGLCREATEPBUFFERARBPROC,     wglCreatePbufferARB)     \
