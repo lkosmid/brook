@@ -67,6 +67,19 @@ BrtGatherExpr::print (std::ostream& out) const
    ArrayType *a = (ArrayType *) v->name->entry->uVarDecl->form;
    BaseType *b = a->getBase();
 
+   if (b->typemask & BT_UserType) {
+      BaseType *tmp;
+
+      /*
+       * If we have a typedef of a base type, then we need to change the
+       * gather to reflect the base type.  If it's a struct though, we want
+       * the struct-derived special gather codegen will generate.
+       */
+      tmp = b->typeName->entry->uVarDecl->form->getBase();
+      if ((tmp->typemask & BT_Struct) == 0) {
+         b = tmp;
+      }
+   }
    out << "__gather_";
    b->printBase( out, 0 );
    out << "(";
