@@ -1,0 +1,92 @@
+Microsoft Windows XP [Version 5.1.2600]
+(C) Copyright 1985-2001 Microsoft Corp.
+
+w:\brook\prog\apps\timing_vout>..\..\..\timing_vout -mc 256
+..\..\..\timing_vout -mc 256
+'..\..\..\timing_vout' is not recognized as an internal or external command,
+operable program or batch file.
+
+w:\brook\prog\apps\timing_vout>..\..\..\timing_vout.exe -mc 256
+..\..\..\timing_vout.exe -mc 256
+'..\..\..\timing_vout.exe' is not recognized as an internal or external command,
+operable program or batch file.
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 256
+..\..\..\bin\timing_vout.exe -mc 256
+Ready time 10981.000000 10981.000000 Total time with reads 10981.000000
+Ready time 10722.000000 10723.000000 Total time with reads 10723.000000
+Ready time 105.000000 128.000000 Total time 152.000000Total time with reads 152.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 192
+..\..\..\bin\timing_vout.exe -mc 192
+Ready time 5485.000000 5485.000000 Total time with reads 5485.000000
+Ready time 5266.000000 5266.000000 Total time with reads 5266.000000
+Ready time 81.000000 98.000000 Total time 112.000000Total time with reads 112.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 128
+..\..\..\bin\timing_vout.exe -mc 128
+Ready time 2351.000000 2351.000000 Total time with reads 2351.000000
+Ready time 2134.000000 2134.000000 Total time with reads 2134.000000
+Ready time 54.000000 65.000000 Total time 72.000000Total time with reads 72.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 92
+..\..\..\bin\timing_vout.exe -mc 92
+Ready time 1603.000000 1603.000000 Total time with reads 1603.000000
+Ready time 1428.000000 1428.000000 Total time with reads 1428.000000
+Ready time 42.000000 50.000000 Total time 54.000000Total time with reads 54.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 64
+..\..\..\bin\timing_vout.exe -mc 64
+Ready time 1063.000000 1063.000000 Total time with reads 1063.000000
+Ready time 896.000000 896.000000 Total time with reads 896.000000
+Ready time 31.000000 38.000000 Total time 40.000000Total time with reads 40.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 48
+..\..\..\bin\timing_vout.exe -mc 48
+Ready time 813.000000 813.000000 Total time with reads 813.000000
+Ready time 654.000000 654.000000 Total time with reads 654.000000
+Ready time 27.000000 32.000000 Total time 34.000000Total time with reads 34.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 32
+..\..\..\bin\timing_vout.exe -mc 32
+Ready time 535.000000 535.000000 Total time with reads 535.000000
+Ready time 398.000000 398.000000 Total time with reads 398.000000
+Ready time 20.000000 23.000000 Total time 24.000000Total time with reads 24.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 24
+..\..\..\bin\timing_vout.exe -mc 24
+Ready time 422.000000 422.000000 Total time with reads 422.000000
+Ready time 294.000000 294.000000 Total time with reads 294.000000
+Ready time 17.000000 21.000000 Total time 22.000000Total time with reads 22.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 16
+..\..\..\bin\timing_vout.exe -mc 16
+Ready time 304.000000 304.000000 Total time with reads 304.000000
+Ready time 172.000000 172.000000 Total time with reads 172.000000
+Ready time 13.000000 16.000000 Total time 17.000000Total time with reads 17.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 12
+..\..\..\bin\timing_vout.exe -mc 12
+Ready time 257.000000 257.000000 Total time with reads 257.000000
+Ready time 126.000000 126.000000 Total time with reads 126.000000
+Ready time 12.000000 15.000000 Total time 15.000000Total time with reads 15.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 8
+..\..\..\bin\timing_vout.exe -mc 8
+Ready time 200.000000 200.000000 Total time with reads 200.000000
+Ready time 73.000000 73.000000 Total time with reads 73.000000
+Ready time 11.000000 13.000000 Total time 13.000000Total time with reads 13.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 2
+..\..\..\bin\timing_vout.exe -mc 2
+Ready time 127.000000 127.000000 Total time with reads 127.000000
+Ready time 8.000000 8.000000 Total time with reads 8.000000
+Ready time 9.000000 9.000000 Total time 9.000000Total time with reads 9.000000
+
+w:\brook\prog\apps\timing_vout>..\..\..\bin\timing_vout.exe -mc 3
+..\..\..\bin\timing_vout.exe -mc 3
+Ready time 134.000000 134.000000 Total time with reads 134.000000
+Ready time 18.000000 18.000000 Total time with reads 18.000000
+Ready time 10.000000 10.000000 Total time 10.000000Total time with reads 10.000000
+
+w:\brook\prog\apps\timing_vout>
