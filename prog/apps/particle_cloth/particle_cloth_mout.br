@@ -1,0 +1,139 @@
+// particle_cloth_mout.br
+// Tests use of structures for input parameters.
+
+#include <stdio.h>
+
+#include "timing.hpp"
+
+kernel void calculateSpringForces(
+	float4 inPosition0<>,
+	float4 inVelocity0<>,
+	float4 inPosition1<>,
+	float4 inVelocity1<>,
+	float inSpringConstant,
+	float inDampingConstant,
+	float inRestLength,
+	out float3 outForce<> )
+{
+	float3 relativePosition = inPosition0.xyz - inPosition1.xyz;
+	float3 relativeVelocity = inVelocity0.xyz - inVelocity1.xyz;
+	
+	float l2 = dot( relativePosition, relativePosition );
+	float il = rsqrt( l2 );
+	float l = l2 * il;
+	float3 springAxis = relativePosition * il;
+	float perturbation = l - inRestLength;
+	
+	float velocityInSpring = dot( springAxis, relativeVelocity );
+	
+//	float strength = inSpringConstant*perturbation
+//		+ inDampingConstant*velocityInSpring;
+	float strength = inSpringConstant*perturbation;
+	
+	outForce = strength * springAxis;
+}
+
+kernel void stepParticles(
+	float4 inPosition<>,
+	float4 inVelocity<>,
+	float inDeltaT,
+	float3 inForces,
+	float3 inGravity,
+	float inVelocityDamping,
+	out float4 outPosition<>,
+	out float4 outVelocity<> )
+{
+	float3 zero;
+	float3 acceleration;
+	float3 impulse;
+	
+	zero = float3(0,0,0);
+	acceleration = inGravity + inForces + inVelocityDamping*inVelocity.xyz;
+	impulse = inPosition.w * inDeltaT * inForces;
+	
+	outPosition.xyz = inPosition.xyz
+		+ inDeltaT*inVelocity.xyz + 0.5*inDeltaT*impulse;
+	outPosition.w = inPosition.w;
+	outVelocity.xyz = inVelocity.xyz + impulse;
+	outVelocity.w = inVelocity.w;	
+}
+
+
+kernel void updateParticles(
+	iter float2 inIndex<>,
+	float4 inPosition<>,
+	float4 inVelocity<>,
+	float4 inPositions[][],
+	float4 inVelocities[][],
+	float2 inMaxIndex,
+	float4 inSpringInfo,
+	float inDeltaT,
+	float3 inGravity,
+	float2 inLeftOffset,
+	float2 inTopOffset,
+	float2 inRightOffset,
+	float2 inBottomOffset,
+	float inVelocityDamping,
+	out float4 outPosition<>,
+	out float4 outVelocity<> )
+{
+	float3 force;
+	float3 forces;
+	float3 zero;
+	float2 minIndex;
+	float2 aboveMin;
+	float2 belowMax;
+	float leftOffset, topOffset, rightOffset, bottomOffset;
+	float leftInRange, topInRange, rightInRange, bottomInRange;
+	float2 leftIndex, topIndex, rightIndex, bottomIndex;
+	float4 leftPos, topPos, rightPos, bottomPos;
+	float4 leftVel, topVel, rightVel, bottomVel;
+	
+	zero = float3(0,0,0);
+	minIndex = float2(0,0);
+		
+	leftIndex = inIndex + inLeftOffset;
+	topIndex = inIndex + inTopOffset;
+	rightIndex = inIndex + inRightOffset;
+	bottomIndex = inIndex + inBottomOffset;
+	
+	leftPos = inPositions[leftIndex];
+	topPos = inPositions[topIndex];
+	rightPos = inPositions[rightIndex];
+	bottomPos = inPositions[bottomIndex];
+	
+	leftVel = inVelocities[leftIndex];
+	topVel = inVelocities[topIndex];
+	rightVel = inVelocities[rightIndex];
+	bottomVel = inVelocities[bottomIndex];
+	
+	aboveMin = inIndex > minIndex;
+	belowMax = inIndex < inMaxIndex;
+	
+	leftInRange = aboveMin.x;
+	topInRange = aboveMin.y;
+	rightInRange = belowMax.x;
+	bottomInRange = belowMax.y;
+
+	calculateSpringForces( inPosition, inVelocity,
+		leftPos, leftVel,
+		inSpringInfo.x, inSpringInfo.y, inSpringInfo.z, force );
+	forces = leftInRange * force;
+	calculateSpringForces( inPosition, inVelocity,
+		topPos, topVel,
+		inSpringInfo.x, inSpringInfo.y, inSpringInfo.z, force );
+	forces += topInRange * force;
+	calculateSpringForces( inPosition, inVelocity,
+		rightPos, rightVel,
+		inSpringInfo.x, inSpringInfo.y, inSpringInfo.z, force );
+	forces += rightInRange * force;
+	calculateSpringForces( inPosition, inVelocity,
+		bottomPos, bottomVel,
+		inSpringInfo.x, inSpringInfo.y, inSpringInfo.z, force );
+	forces += bottomInRange * force;
+	
+	stepParticles(
+		inPosition, inVelocity, inDeltaT,
+		forces, inGravity, inVelocityDamping,
+		outPosition, outVelocity );
+}
