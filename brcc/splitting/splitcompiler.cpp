@@ -7,7 +7,7 @@
 #include <sstream>
 
 void SplitCompiler::compile(
-  const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics ) const
+  const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics, bool forReal ) const
 {
   std::ostringstream bodyStream;
 
@@ -18,6 +18,9 @@ void SplitCompiler::compile(
   std::ostringstream assemblerStream;
   compileShader( bodyStream.str(), assemblerStream, outHeuristics );
   std::string assemblerCode = assemblerStream.str();
+
+  if( assemblerCode == "" && forReal )
+    assert(false);
 
   // now we spit out the annotated version of things:
   inStream << "\t\t.pass( gpu_pass_desc(" << std::endl;

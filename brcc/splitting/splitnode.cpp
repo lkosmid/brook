@@ -21,6 +21,9 @@ SplitNode::SplitNode()
   _mergeSplitHere = false;
 
   _isOutput = false;
+
+  _consideredForMergeCount = 0;
+  _isMagic = false;
 }
 
 void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream )
@@ -33,13 +36,13 @@ void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompil
 
   if( isMarkedAsSplit() ) {
     std::cerr << "*** ";
-    printExpression( std::cerr );
+    dump( std::cerr );
     std::cerr << std::endl;
 
     std::vector<SplitNode*> dummy;
     dummy.push_back( this );
     SplitShaderHeuristics unused;
-    inCompiler.compile( inTree, dummy, inStream, unused );
+    inCompiler.compile( inTree, dummy, inStream, unused, true );
   }
 }
 

@@ -1032,9 +1032,9 @@ FunctionCall::findExpr( fnExprCallback cb )
 // TIM: adding DAG-building for kernel splitting support
 SplitNode* FunctionCall::buildSplitTree( SplitTreeBuilder& ioBuilder )
 {
-  std::cerr << "building split tree for function call" << std::endl;
-  print( std::cerr );
-  std::cerr << "****";
+//  std::cerr << "building split tree for function call" << std::endl;
+//  print( std::cerr );
+//  std::cerr << "****";
 
   std::vector<SplitNode*> arguments;
   for( ExprVector::iterator i = args.begin(); i != args.end(); ++i )

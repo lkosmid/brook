@@ -31,6 +31,8 @@ SplitTree::~SplitTree()
 
 void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream )
 {
+  preRdsMagic();
+
   rdsSearch();
   rdsSubdivide();
 
@@ -76,6 +78,44 @@ public:
   }
 };
 
+void SplitTree::preRdsMagic()
+{
+  for( NodeList::iterator i = _outputList.begin(); i != _outputList.end(); ++i )
+    preRdsMagic( *i );
+}
+
+void SplitTree::preRdsMagic( SplitNode* inNode )
+{
+  std::cerr << "pre-RDS magic for :";
+  inNode->dump( std::cerr );
+  std::cerr << std::endl;
+
+  // we only collect MR nodes worth considering...
+  if( inNode->_graphParents.size() > 1 )
+    _multiplyReferencedNodes.push_back( inNode );
+
+  if( rdsCompile( inNode ) )
+  {
+    std::cerr << "succesful compile... its magic!" << std::endl;
+
+    // it all can be done in one pass,
+    // so there is no need to ever
+    // look into this subtree
+    inNode->_isMagic = true;
+  }
+  else
+  {
+    std::cerr << "iterating over it's children, of which there are " << inNode->_pdtChildren.size() << std::endl;
+
+    // we might have to split this node
+    // so we had better make sure
+    // that it's MR descendants
+    // get added to our listing...
+    for( NodeList::iterator c = inNode->_pdtChildren.begin(); c != inNode->_pdtChildren.end(); ++c )
+      preRdsMagic( *c );
+  }
+}
+
 void SplitTree::rdsSearch()
 {
 //  std::cerr << "search" << std::endl;
@@ -86,7 +126,8 @@ void SplitTree::rdsSearch()
   {
     SplitNode* m = _multiplyReferencedNodes[i];
 
-    std::cerr << "deciding whether to save ";
+    std::cerr << "#### making save/recompute decision for: " << (void*)m << std::endl;
+    std::cerr << "#### deciding whether to save ";
     m->dump( std::cerr );
     std::cerr << std::endl;
 
@@ -102,7 +143,7 @@ void SplitTree::rdsSearch()
     m->_rdsFixedUnmarked = true;
     rdsSubdivide();
     float costRecompute = getPartitionCost();
-    std::cerr << "save recompute = " << costSave << std::endl;
+    std::cerr << "recompute cost = " << costSave << std::endl;
 
     if( costSave < costRecompute ) {
       m->_rdsFixedUnmarked = false;
@@ -119,7 +160,15 @@ public:
 
   void traverse( SplitNode* inNode )
   {
-    if( inNode->isRDSSplit() && (inNode != _root) )
+    if( inNode->marked ) return;
+    inNode->marked = true;
+
+    // magic nodes are such that the entire subgraph rooted there
+    // is valid, so we can assume a complete merge is possible
+    if( inNode->_isMagic )
+      return;
+
+    if( inNode->isMarkedAsSplit() && (inNode != _root) )
       return;
 
     inNode->traverseChildren( *this );
@@ -160,32 +209,31 @@ void SplitTree::rdsSubdivide( SplitNode* t )
     }
   }
 
+  SplitMarkTraversal unmark( false );
+  unmark( t );
   SplitRDSMergeTraversal merge( *this, t );
   merge( t );
 }
 
 void SplitTree::rdsMerge( SplitNode* n )
 {
+  n->_consideredForMergeCount++;
+
+//  std::cerr << (void*)n << " has been considered for merge " << n->_consideredForMergeCount << " times" << std::endl;
+
 //  std::cerr << "merge" << std::endl;
 
-  size_t childCount = n->_graphChildren.size();
+  std::vector< SplitNode* > children;
 
-  if( childCount > 4 )
+  size_t childCount = n->_graphChildren.size();
+  for( size_t c = 0; c < childCount; c++ )
   {
-    std::cerr << "many children!!!!";
-    
-    std::ofstream dump("dump.txt");
-    dump << "problem node: ";
-    n->dump( dump );
-    dump << "children:\n";
-    for( size_t i = 0; i < childCount; i++ )
-    {
-      n->_graphChildren[i]->dump( dump );
-      dump << std::endl;
-    }
-    dump.close();
-    assert(false);
+    SplitNode* child = n->_graphChildren[c];
+    if( child->isMarkedAsSplit() ) continue;
+    children.push_back( child );
   }
+  childCount = children.size();
+
 
 /*  std::cerr << "children are:" << std::endl;
   for( size_t i = 0; i < childCount; i++ )
@@ -199,20 +247,23 @@ void SplitTree::rdsMerge( SplitNode* n )
     std::vector<size_t> validSubsets;
     std::vector<SplitShaderHeuristics> validHeuristics;
 
-    std::cerr << "childCount = " << d << " out of " << childCount << std::endl;
+//    std::cerr << "childCount = " << d << " out of " << childCount << std::endl;
 
     SplitSubsetGenerator generator( d, childCount );
     while( generator.hasMore() )
     {
       size_t subsetBitfield = generator.getNext();
 
-      std::cerr << "subset = " << subsetBitfield << std::endl;
+//      std::cerr << "subset = " << subsetBitfield << std::endl;
+
+//      if( subsetBitfield == 65537 )
+//        assert(false);
 
       for( size_t i = 0; i < childCount; i++ )
-        n->_graphChildren[i]->_mergeSplitHere = (subsetBitfield & (1 << i)) == 0;
+        children[i]->_mergeSplitHere = (subsetBitfield & (1 << i)) == 0;
 
      if( rdsCompile( n ) ) {
-        std::cerr << "subset " << subsetBitfield << " was valid" << std::endl;
+//        std::cerr << "subset " << subsetBitfield << " was valid" << std::endl;
         validSubsets.push_back( subsetBitfield );
         validHeuristics.push_back( n->getHeuristics() );
       }
@@ -239,18 +290,18 @@ void SplitTree::rdsMerge( SplitNode* n )
 
     // mark children according to that subset
     // and we are done!!!
-    std::cerr << "subset " << bestSubset << " was chosen" << std::endl;
+//    std::cerr << "subset " << bestSubset << " was chosen" << std::endl;
     for( size_t i = 0; i < childCount; i++ )
-      n->_graphChildren[i]->_rdsSplitHere = (bestSubset & (1 << i)) == 0;
+      children[i]->_rdsSplitHere = (bestSubset & (1 << i)) == 0;
 
     n->setHeuristics( bestHeuristics );
 
     return;
   }
 
-  std::cerr << "empty subset was chosen" << std::endl;
+//  std::cerr << "empty subset was chosen" << std::endl;
   {for( size_t i = 0; i < childCount; i++ ){
-    n->_graphChildren[i]->_rdsSplitHere = true;
+    children[i]->_rdsSplitHere = true;
   }}
 
   // TIM: force heuristic update?
@@ -389,7 +440,7 @@ void SplitTree::build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>
 
   SplitTreeBuilder builder( *this );
 
-  std::cerr << "function args: " << functionType->nArgs << " args passed: " << inArguments.size();
+//  std::cerr << "function args: " << functionType->nArgs << " args passed: " << inArguments.size();
 
   assert( functionType->nArgs == inArguments.size() );
 

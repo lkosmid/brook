@@ -1116,10 +1116,6 @@ ReturnStemnt::findExpr( fnExprCallback cb )
 void ReturnStemnt::buildSplitTree( SplitTreeBuilder& ioBuilder )
 {
   SplitNode* resultValue = result->buildSplitTree( ioBuilder );
-  if( resultValue )
-    std::cerr << "return of a non-NULL\n";
-  else
-    std::cerr << "return of a NULL\n";
   ioBuilder.setResultValue( resultValue );
 }
 

@@ -49,6 +49,11 @@ private:
   void build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>& inArguments );
 
   void buildDominatorTree();
+  void dumpDominatorTree();
+  void dumpDominatorTree( std::ostream& inStream, SplitNode* inNode, int inLevel = 0 );
+
+  void preRdsMagic();
+  void preRdsMagic( SplitNode* inNode );
 
   void rdsSearch();
   void rdsSubdivide();
@@ -59,12 +64,15 @@ private:
 
   float getPartitionCost();
 
+  typedef std::vector< SplitNode* > NodeList;
+
   friend class SplitTreeBuilder;
   typedef std::map< std::string, SplitNode* > NodeMap;
   NodeMap outputValues;
 
-  std::vector<SplitNode*> _outputList;
-  std::vector<SplitNode*> _multiplyReferencedNodes;
+  typedef std::vector< SplitNode* > NodeList;
+  NodeList _outputList;
+  NodeList _multiplyReferencedNodes;
 
   SplitNode* _outputPositionInterpolant;
   SplitNode* _resultValue;

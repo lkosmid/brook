@@ -79,6 +79,7 @@ namespace brook {
   inline void DX9AssertImpl( const char* fileName, int lineNumber, const char* comment )
   {
     DX9WARN << fileName << "(" << lineNumber << "): " << comment << std::endl;
+    assert(false);
     exit(1);
   }
 

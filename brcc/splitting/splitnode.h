@@ -19,6 +19,9 @@ class IndexofableSplitNode;
 class SplitNode
 {
 public:
+  size_t _consideredForMergeCount;
+  bool _isMagic;
+
   SplitNode();
   virtual ~SplitNode() {}
 

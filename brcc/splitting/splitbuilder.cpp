@@ -265,7 +265,7 @@ SplitNode* SplitTreeBuilder::assign( const std::string& inName, SplitNode* inVal
 {
   assert( inValue );
 
-  std::cerr << "assign to " << inName << std::endl;
+//  std::cerr << "assign to " << inName << std::endl;
 
   NodeMap::iterator i = nodeMap.find(inName);
   if( i == nodeMap.end() )
@@ -293,7 +293,7 @@ SplitNode* SplitTreeBuilder::addFunctionCall( Expression* inFunction, const std:
 
   if( entry != NULL && entry->IsFctDecl() )
   {
-    std::cerr << functionName << " {" << std::endl;
+//    std::cerr << functionName << " {" << std::endl;
 
     FunctionDef* function = entry->u2FunctionDef;
 
@@ -305,14 +305,10 @@ SplitNode* SplitTreeBuilder::addFunctionCall( Expression* inFunction, const std:
     SplitTree subfunctionTree( function, compiler, inArguments );
 
     // TIM: is that enough?
-    std::cerr << "} " << functionName << std::endl;
+//    std::cerr << "} " << functionName << std::endl;
 
     delete kernelCode;
     SplitNode* resultValue = subfunctionTree.getResultValue();
-    if( resultValue == NULL )
-      std::cerr << "result was NULL\n";
-    else
-      std::cerr << "result was non-NULL\n";
     return resultValue;
   }
   else

@@ -2,6 +2,8 @@
 
 #include "splitting.h"
 
+#include <fstream>
+
 class SplitDominatorDFSTraversal :
   public SplitNodeTraversal
 {
@@ -121,23 +123,59 @@ void SplitTree::buildDominatorTree()
   // we have dominator info... 
   // now we need to prune it to the Partial Dominator Tree,
   // and the list of MR nodes...
+  // we iterate in reverse order, because the
+  // roots are at the beginning of the list...
   {for( size_t i = 0; i < _rdsNodeList.size(); i++ )
   {
-    SplitNode* n = _rdsNodeList[i];
+    SplitNode* n = _rdsNodeList[_rdsNodeList.size() - (i+1)];
 
     // we add it to the partial tree if it is multiply-referenced
     // or has some multiply-referenced descendants (which would
     // have already been added).
     // TIM: we ignore nodes that are taken to be "trivial"
     // (that is, those that should never be saved)
-    if( n->_graphParents.size() > 1 && !n->isTrivial() )
+    if( n->_graphParents.size() > 1 /*&& !n->isTrivial()*/ )
     {
-      _multiplyReferencedNodes.push_back( n );
-      n->_pdtDominator->_pdtChildren.push_back( n );
+      // MR list computation has been move elsewhere...
+//      _multiplyReferencedNodes.push_back( n );
+      if( n->_pdtDominator )
+        n->_pdtDominator->_pdtChildren.push_back( n );
     }
     else if( n->_pdtChildren.size() != 0 )
     {
-      n->_pdtDominator->_pdtChildren.push_back( n );
+      if( n->_pdtDominator )
+        n->_pdtDominator->_pdtChildren.push_back( n );
     }
   }}
+
+  dumpDominatorTree();
+}
+
+void SplitTree::dumpDominatorTree()
+{
+  std::ofstream dumpFile("dominator_dump.txt");
+
+  size_t outputCount = _outputList.size();
+  for( size_t o = 0; o < outputCount; o++ )
+  {
+    SplitNode* output = _outputList[o];
+    dumpDominatorTree( dumpFile, output );
+  }
+}
+
+void SplitTree::dumpDominatorTree( std::ostream& inStream, SplitNode* inNode, int inLevel )
+{
+  for( int l = 0; l < inLevel; l++ )
+    inStream << "   ";
+  
+  inNode->dump( inStream );
+  inStream << std::endl;
+
+  size_t childCount = inNode->_pdtChildren.size();
+  for( size_t c = 0; c < childCount; c++ )
+  {
+    SplitNode* child = inNode->_pdtChildren[c];
+    assert( child->_pdtDominator == inNode );
+    dumpDominatorTree( inStream, child, inLevel+1 );
+  }
 }

@@ -23,7 +23,7 @@ struct SplitShaderHeuristics
 class SplitCompiler
 {
 public:
-  void compile( const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics ) const;
+  void compile( const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics, bool forReal = false ) const;
 
   // TIM: complete hack, even for me
   virtual bool mustScaleAndBiasGatherIndices() const { return false; }

@@ -46,6 +46,7 @@ public:
         _state[i]++;
         for( size_t j = 0; j < i; j++ )
           _state[j] = j;
+        break;
       }
     }
 
