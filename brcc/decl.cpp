@@ -1590,7 +1590,7 @@ void Decl::printStructureStreamHelpers( std::ostream& out ) const
     if(!form->printStructureStreamHelperType( stringout, std::string("__cpustruct_") + name->name ))
       return;
     stringout << ";\n";
-    out << stringout;
+    out << stringout.str();
 }
 
 bool Decl::printStructureStreamInternals( std::ostream& out ) const
