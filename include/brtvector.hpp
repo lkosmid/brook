@@ -45,7 +45,7 @@ template <> class GetValueOf <char> {public:
 template <> class GetValueOf <bool> {public:
     typedef bool type;
 };
-
+#if defined (_MSC_VER) && _MSC_VER <=1200
 template <class T> class Holder {
 public:
     typename GetValueOf<T>::type getAt (const T&t, int i) {
@@ -67,7 +67,20 @@ HOLDER(bool);
 template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
     return Holder<T>().getAt(in,i);
 }
+#else
+template <class T> typename static GetValueOf<T>::type GetAt (const T& in,int i) {
+    return in.getAt(i);
+}
+#define SPECIALGETAT(TYP) template <> typename static TYP GetAt (const TYP& in,int i) {return in;}
 
+SPECIALGETAT(int)
+SPECIALGETAT(unsigned int)
+SPECIALGETAT(char)
+SPECIALGETAT(float)
+SPECIALGETAT(double)
+SPECIALGETAT(bool)
+
+#endif
 template <class T> class BracketType {public:
   typedef T type;
 };
