@@ -1,8 +1,8 @@
 #include <brook.h>
 
 extern int printf(const char *fmt, ...);
-extern void streamRead(stream a, ...);
-extern void streamWrite(stream a, ...);
+extern void streamRead(float a<>, ...);
+extern void streamWrite(float a<>, ...);
 
 kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], out float e<>) {
