@@ -210,11 +210,8 @@ static std::string tostring(unsigned int i) {
 void
 BRTCPUKernelDef::printCode(std::ostream& out) const
 {
-	bool copy_on_write=false;
-	bool dims_specified=false;	
-//   out << "#error \"Don't know how to generate CPU kernel code for "
-//       << FunctionName()->name << "().\"\n";
-
+    bool copy_on_write=false;
+    bool dims_specified=false;	
   /* We've already transformed everything, so just print ourselves */
   Type * form = decl->form;
   assert (form->isFunction());
@@ -231,10 +228,8 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	    out << ", ";
 	Type * form = func->args[j]->form;
 	if (form->type==TT_Stream||form->type==TT_Array) {
-	    if ((copy_on_write||(dims_specified==false))&&form->type==TT_Array) {
+	    if ((copy_on_write==true||dims_specified==false)&&form->type==TT_Array) {
 			form = new CPUGatherType(*static_cast<ArrayType *>(form),copy_on_write);
-	    }else if (form->type==TT_Stream){
-			form = static_cast<ArrayType *>(form)->subType;
 	    }
 	}
 	
@@ -247,8 +242,18 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 			func->args[j]->name->name=std::string("&")+func->args[j]->name->name;
 		}
 	}
-	func->args[j]->form = form;
-	func->args[j]->print(out,true);
+	if (form->type==TT_Stream){
+	    Type * nostream = static_cast<ArrayType *>(form)->subType;
+	    
+	    func->args[j]->form=nostream;
+	    func->args[j]->print(out,true);
+	    func->args[j]->form = form;	    
+	}else {
+	    func->args[j]->form = form;
+	
+	    func->args[j]->print(out,true);
+	}
+	
 	
     }
     
@@ -278,14 +283,19 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 			out<<"*)reinterpret_cast<CPUStream*>(args["<<i<<"])->getData(), "<<std::endl;
 			indent(out,2);
 			out<<"reinterpret_cast<CPUStream*>(args["<<i<<"])->getIndices());"<<std::endl;
-		}else {
-			if (t->type==TT_Stream) {
-				t=static_cast<ArrayType*>(t)->subType;
-			}
-			printType(out,t,true,"arg"+tostring(i));
-			out << " = (";
-			printType(out,t,true);
-			out << ")args["<<i<<"];"<<std::endl;
+		}
+		if (t->type!=TT_Array) {
+		    bool isStream = (t->type==TT_Stream);
+		    if (isStream) {
+			t=static_cast<ArrayType*>(t)->subType;
+		    }
+		    printType(out,t,true,"arg"+tostring(i));
+		    out << " = (";
+		    printType(out,t,true);
+		    out << ")args["<<i<<"];";
+		    if (isStream)
+			out<<" arg"<<i<<+"+=mapbegin;";
+		    out<<std::endl;
 		}
 	}}
 	indent(out,1);
@@ -298,11 +308,17 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 		if (i!=0)
 			out <<","<<std::endl;
 		indent(out,3);
-		if (!isArray)
+		if (isArray==false||dims_specified==false) {
+		    if (!isArray)
 			out << "*";
-		out <<"arg"<<i;
-		if (isStream)
+		    out <<"arg"<<i;
+		    if (isStream)
 			out <<"++";
+		}else {
+		    out << "(";
+		    printType(out,func->args[i]->form,false);
+		    out << ")reinterpret_cast<CPUStream *>(args["<<i<<"])->getData()";
+		}
 		
 	}}
 	out<< ");"<<std::endl;
