@@ -290,7 +290,8 @@ void DX9Kernel::ReduceToValue()
 
   // Constants can be set up once and then used for each
   // reduction pass
-  for( int i = 0; i < constantCount; i++ )
+  int i;
+  for( i = 0; i < constantCount; i++ )
   {
     result = getDevice()->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
     DX9CheckResult( result );
@@ -311,7 +312,7 @@ void DX9Kernel::ReduceToValue()
   result = getDevice()->SetPixelShader( pixelShader->getHandle() );
   DX9CheckResult( result );
   
-  for( int i = 0; i < samplerCount; i++ )
+  for( i = 0; i < samplerCount; i++ )
   {
     if( i == sampler0 || i == sampler1 ) continue;
     result = getDevice()->SetTexture( i, inputTextures[i] );

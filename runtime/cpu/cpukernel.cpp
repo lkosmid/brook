@@ -161,13 +161,13 @@ namespace brook{
                 mag[i] = extent[i];             
           }
           for (i=0;i<total;++i) {
-             unsigned int k;
+             (*nDfunc)(args,extents,dims,e,mag);
              for (j=reductions.begin();j!=reductions.end();++j) {
                 args[(*j).which]=(char*)args[(*j).which]+
                    (*j).stream->getStride();
              }
-             (*nDfunc)(args,extents,dims,e,mag);
              e[0]+=mag[0];
+             unsigned int k;
              for (k=0;k<rdim-1;++k) {
                 if (e[k]>=extent[k]){
                    e[k]=0;
