@@ -4,6 +4,7 @@
 #define ARRAY_EPSILON .25
 template <class W> unsigned int clampArrayBound(W val, unsigned int extent) {
     val=(W)floor(val+ARRAY_EPSILON);
+    assert(val>-80000&&val<extent+80000);
     return val<0?0:((unsigned int)val)>=extent?extent-1:(unsigned int)val;
 }
 template <class VALUE> class __BrtArray1d {
@@ -56,8 +57,8 @@ public:
   }
   template <class T> VALUE& getInBounds (const T &index) {
     static VALUE emergency;
-    if (index.unsafeGetAt(0)+ARRAY_EPSILON<0
-        ||index.unsafeGetAt(0)+ARRAY_EPSILON>=extentsx)
+    if (!(index.unsafeGetAt(0)+ARRAY_EPSILON>=0&&
+          index.unsafeGetAt(0)+ARRAY_EPSILON<extentsx))
       return emergency;
     return (*this)[index];    
   }
@@ -115,11 +116,11 @@ public:
 
   template <class T> VALUE& getInBounds (const T &index) {
     static VALUE emergency;
-    if (T::size!=1&&(index.unsafeGetAt(1)+ARRAY_EPSILON<0
-                     ||index.unsafeGetAt(1)+ARRAY_EPSILON>=extentsy))
+    if (T::size!=1&&(!(index.unsafeGetAt(1)+ARRAY_EPSILON>=0
+                       &&index.unsafeGetAt(1)+ARRAY_EPSILON<extentsy)))
       return emergency;
-    if (index.unsafeGetAt(0)+ARRAY_EPSILON<0
-        ||index.unsafeGetAt(0)+ARRAY_EPSILON>=extentsx)
+    if (!(index.unsafeGetAt(0)+ARRAY_EPSILON>=0&&
+          index.unsafeGetAt(0)+ARRAY_EPSILON<extentsx))
       return emergency;
     return (*this)[index];    
   }
@@ -218,14 +219,14 @@ public:
            if (dims<T::size)
               i=dims-1;
            float temp = (float)floor(ARRAY_EPSILON+index.getAt(i));
-           if (temp<0||temp>=extents[0])
+           if (!(temp>=0&&temp<extents[0]))
              return emergency;
            
            unsigned int total=(unsigned int)temp;
            for (unsigned int j=1;j<=i;++j) {
               total*=extents[j];
               temp = (float)floor(ARRAY_EPSILON+index.getAt(i-j));
-              if (temp<0||temp>=extents[j])
+              if (!(temp>=0&&temp<extents[j]))
                 return emergency;
               total+=(unsigned int)temp;
            }
