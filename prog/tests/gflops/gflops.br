@@ -116,7 +116,7 @@ main() {
     
     streamRead( a, input_a );
     
-    fprintf (stderr, ".");
+    fprintf (stderr, "float1: ");
     fflush(stderr);
     
     for (i=0; i<1000; i++) {
@@ -142,7 +142,7 @@ main() {
     
     streamRead( a, input_a2 );
     
-    fprintf (stderr, ".");
+    fprintf (stderr, "float2: ");
     fflush(stderr);
 
     for (i=0; i<1000; i++) {
@@ -168,7 +168,7 @@ main() {
     
     streamRead( a, input_a3 );
     
-    fprintf (stderr, ".");
+    fprintf (stderr, "float3: ");
     fflush(stderr);
 
     for (i=0; i<1000; i++) {
@@ -194,7 +194,7 @@ main() {
     
     streamRead( a, input_a4 );
     
-    fprintf (stderr, ".");
+    fprintf (stderr, "float4: ");
     fflush(stderr);
 
     for (i=0; i<1000; i++) {
@@ -206,6 +206,38 @@ main() {
     }
     
     streamWrite( c, output_c4 );
+
+    msec = getTimer();
+
+    fprintf (stderr, "  %f\n", msec);
+  }
+
+
+  {
+    float a1< 1000, 1000 >;
+    float c1< 1000, 1000 >;
+    float4 a4< 1000, 1000 >;
+    float4 c4< 1000, 1000 >;
+
+    resetTimer();
+    
+    streamRead( a1, input_a );
+    streamRead( a4, input_a4 );
+    
+    fprintf (stderr, "float1 & float4: ");
+    fflush(stderr);
+
+    for (i=0; i<500; i++) {
+      gflop(a1, c1);
+      gflop4(a4, c4);
+      if (!(i%50)) {
+	fprintf (stderr, ".");
+	fflush(stderr);
+      }
+    }
+    
+    streamWrite( c1, output_c );
+    streamWrite( c4, output_c4 );
 
     msec = getTimer();
 
