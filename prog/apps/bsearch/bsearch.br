@@ -1,8 +1,14 @@
 /***************************************************************************
-  Binary Search
+  Parallel Binary Search
 
   Finds index of first occurance in an array of ARRAYSIZE floats of each of a given
   set of NUM_SEARCHES values.  If value not present found, search produces -1.
+
+  NOTE: This app contains a kernel that WILL NOT run on ATI hardware due to a
+  large number of dependent gather references.
+
+  NOTE: At the moment, this app must be build with I_AM_SLOPPY defined
+  make I_AM_SLOPPY=1 bsearch
 
 ****************************************************************************/
 
@@ -14,14 +20,19 @@
 
 #define ARRAYSIZE     32
 #define LG_ARRAYSIZE  5
-#define NUM_SEARCHES  10
+#define NUM_SEARCHES  10  // number of parallel searches to perform
 
 
-
+// performs binary search to find 'searchValue' in 'array'.  
+// WARNING: due to the number of dependent gather fetches in this kernel,
+// it will currently NOT run on ATI hardware.
 kernel void bsearch(float searchValue<>, float array[ARRAYSIZE], out float index<>, float arraySize) {
  
-  float i;
-  float numIter = 5.0 - 1.0;
+  int i;
+
+  // HACK: preprocessor not run on Brook code, so have to explicitly set numIter
+  // here.  Must keep this consistent with LG_ARRAYSIZE for correctness. :-(
+  int numIter = 5;  
   float stride;
   float compareValue, dir;
 
@@ -29,7 +40,7 @@ kernel void bsearch(float searchValue<>, float array[ARRAYSIZE], out float index
 
   index = 0.0;
 
-  for (i=0; i<numIter; i+=1) {
+  for (i=0; i<numIter-1; i+=1) {
     stride = floor(stride * 0.5);
     compareValue = array[idx];
     dir = (searchValue <= compareValue) ? -1.0 : 1.0;
@@ -37,16 +48,15 @@ kernel void bsearch(float searchValue<>, float array[ARRAYSIZE], out float index
   }
 
     
-  
   // last iteration has stride fixed at 1
   compareValue = array[idx];
   idx = idx + ((searchValue <= compareValue) ? -1.0 : 1.0);
 
-  
-  // last pass check
+  // last pass check (we could be pointing
   compareValue = array[idx];
   idx = idx + ((searchValue <= compareValue) ? 0.0 : 1.0);
 
+  // if we've found the value, write the array index into the output, otherwise, write -1
   compareValue = array[idx];
   idx = (searchValue == compareValue) ? idx : -1.0;
   
@@ -98,7 +108,7 @@ int main() {
 
   streamRead(arrayStrm, array);
   streamRead(searchValuesStrm, searchValues);
-  bsearch(searchValuesStrm, arrayStrm, indicesStrm, arraySize);
+  bsearch(searchValuesStrm, arrayStrm, indicesStrm, arraySize); // execute parallel binary search
   streamWrite(indicesStrm, indices);
 
 
