@@ -1,0 +1,223 @@
+#include <stdio.h>
+#include "main.h"
+extern int debug_fft;
+extern float2 * data;
+kernel void mult_complex1(float2 a <>, float2 b <>, out float2 c <>)
+{
+  c.x = a.x*b.x - a.y*b.y;
+  c.y = a.x*b.y + a.y*b.x;
+
+}
+
+kernel void mult_complex2(float4 a <>, float2 b <>, out float4 c <>)
+{
+  c.xz = a.xz*b.xx - a.yw*b.yy;
+  c.yw = a.xz*b.yy + a.yw*b.xx;
+
+}
+extern int DOTIMES;
+kernel void DoDFTHorizontalInner (float2 r<>, 
+                                  float2 t<>, 
+                                  float2 W <>, 
+                                  out float4 s_prime<>) {
+  float2 temp;
+  s_prime.xy = r+t ;
+  mult_complex1 ((r-t), W, temp);
+  s_prime.zw = temp;
+}
+kernel void
+DFTX (float4 s[][], 
+        float2 W<>,
+        float2 StrideNo4,
+        out float4 s_prime<>, iter float2 indexR<>, iter float2 indexI<>) {
+  float2 index = {floor((indexof s_prime).x/2),(indexof s_prime).y};
+  float4 r,t;
+  float2 temp,twiddle;
+//  twiddle = W[(indexof s_prime).x-fmod((indexof s_prime).x,StrideNo4.x)];
+  temp = float2(StrideNo4.y,0);
+  r = s[indexI]; t = s[indexR];
+  temp.x = round(fmod((indexof s_prime).x,2))==1;
+  DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W,s_prime);
+} 
+
+kernel void DoDFTVerticalInner (float4 r<>,
+                                float4 t<>,
+                                float2 W<>,
+                                out float4 s_prime<>) {
+   if (round(fmod((indexof s_prime).y,2))==1) {
+      mult_complex2(r-t,W,s_prime);
+   }else {
+      s_prime=r+t;
+   }
+}
+kernel void
+DFTY (float4 s[][], 
+        float2 W<>,
+        float2 StrideNo2,
+        out float4 s_prime<>,iter float2 indexR<>, iter float2 indexI<>) {
+  float2 index = {(indexof s_prime).x,floor((indexof s_prime).y/2)};
+  float2 temp,twiddle;
+  temp = float2(0,StrideNo2.y);
+  DoDFTVerticalInner (s[indexR],s[indexI],W,s_prime);
+} 
+
+kernel void bitReverseXo2Y (out float4 s_out<>,
+                          float4 indicesXo2YXp1o2Xm2[], 
+                          float4 s[][]) {
+   float4 indexX = indicesXo2YXp1o2Xm2[(indexof s_out).x];
+   float4 indexY = indicesXo2YXp1o2Xm2[(indexof s_out).y];
+   float2 outindex = {indexX.x,indexY.y};
+   float4 s_temp = s[outindex];
+   s_out.xy = indexX.ww?s_temp.zw:s_temp.xy;
+   outindex.x = indexX.z;//get the index + 1 (adds half the stream)
+   s_temp = s[outindex];
+   s_out.zw = indexX.ww?s_temp.zw:s_temp.xy;
+}
+
+// Utilities and the BitReverse() procedure
+// To compute 2**x
+static int TwoPowerX(int nNumber) {
+  // Achieve the multiplication by left-shifting 
+  return (1<<nNumber);
+}
+
+
+// Procedure to reverse the bits. 
+// Example: 
+// INPUTS:  nNumberToReverse = 110; nNumberOfBits = 3;
+// OUTPUT:  nReversedNumber  = 011
+// CAUTION: Make sure that you pass atleast the minimum number of bits to represent the 
+//          number. For reversing 6 you need atleast 3 bits, if only 2 bits is passed then
+//          we get junk results.
+
+static int BitReverse(int nNumberToReverse, int nNumberOfBits) {
+  int nBitIndex;
+  int nReversedNumber = 0;
+  for (nBitIndex = nNumberOfBits-1; nBitIndex >= 0; --nBitIndex) {
+    if ((1 == nNumberToReverse >> nBitIndex)) {         
+      nReversedNumber  += TwoPowerX(nNumberOfBits-1-nBitIndex);    
+      nNumberToReverse -= TwoPowerX(nBitIndex);                      
+    }
+  }
+  return(nReversedNumber);
+}
+
+float4 * bitReversedIndices (int logN, int logM) {
+  int i,N = (1<< logN),M = (1<<logM);
+  int maxNM = N>(M/2)?N:(M/2);
+  float4 * s_array;
+  s_array = (float4*)calloc(maxNM,sizeof(float4));
+  for (i=0;i<maxNM;++i) {
+    int temp = BitReverse(i*2,logM);
+    s_array[i].x=(float)(temp/2);
+    s_array[i].y=(float)BitReverse(i,logN);
+    s_array[i].z=(float)(BitReverse(i*2+1,logM)/2);
+    s_array[i].w=(float)(temp%2);
+  }
+  return s_array;
+}
+
+extern float2 *getTwiddleFactor(int N);
+#define FFT_HORIZONTAL 0
+#define FFT_VERTICAL 1
+#define FFT_2D 2
+float tof(int i) {return (float)i;}
+void FftwTransform2d(float2 *data, unsigned long N, unsigned long M,
+                     int isign, char cast);
+void computeFFT2d(float2 *input,
+                  float2 *output,
+                  int logN,
+                  int logM,
+                  int N,
+                  int M,
+                  int twod){
+   float4 s<N,(M/2)>;
+   float4 s_out<N,(M/2)>;
+   float2 W_horiz<(M/2)>;
+   float2 W_vert<(N/2)>;
+   float2 * dat;
+   float4 * rawindices=0;
+   float4 indicesXo2YXp1o2Xm2<(M/2>N?M/2:N)>;
+   iter float2 iter1 <N,(M/2)> =iter(float2(0,0),float2(tof(M/2),tof(N)));
+   iter float2 iter2 <N,(M/2)> =iter(float2(tof(M/2),0),float2(tof(M),tof(N)));
+   iter float2 iter3 <N,(M/2)> =iter(float2(0,0),float2(tof(M),tof(N/2)));
+   iter float2 iter4 <N,(M/2)> =iter(float2(0,tof(N/2)),float2(tof(M),tof(N)));
+   float indicesY<N>;
+   int nPass,nBits,nPassCounter,thereAndBack;
+   rawindices=bitReversedIndices(logN,logM);
+   streamRead(indicesXo2YXp1o2Xm2,rawindices);
+
+   streamRead(s,input);
+   dat = getTwiddleFactor(N);
+   streamRead(W_vert,dat);
+   free(dat);
+   dat = getTwiddleFactor(M);
+   streamRead(W_horiz,dat);
+   free(dat);
+   
+   if (debug_fft) {
+      printf("FFT Input:\n");
+      streamPrint(s);
+   }
+   for (thereAndBack=0;thereAndBack<DOTIMES;++thereAndBack) {
+   if (1==N*M) streamSwap(s_out,s);
+   else {
+      nPass=nBits=logM;
+         for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
+            int nStride = (1<<nPassCounter);
+            DFTX(s,W_horiz,float2((float) nStride, (float) (M/4)),s_out,iter1,iter2);
+            if (debug_fft==2) {
+               printf ("\nX STAGE %d\n",nPassCounter);
+               streamPrint(s_out);
+            }
+            streamSwap(s,s_out);
+         }
+         nPass=nBits=logN;
+         for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
+            int nStride = (1<<nPassCounter);
+            DFTY(s,W_vert,float2((float) nStride, (float) (N/2)),s_out,iter3,iter4);
+            if (debug_fft==2) {
+               printf ("\nY STAGE %d\n",nPassCounter);
+               streamPrint(s_out);
+            }
+
+            streamSwap(s,s_out);
+         }
+   }
+   if (1) {
+            bitReverseXo2Y(s_out,indicesXo2YXp1o2Xm2,s);      
+            
+   }
+   }
+   free(rawindices);
+   if (output)
+      streamWrite(s_out,output); 
+   if (debug_fft) {
+        printf("\nStream Output\n");
+        streamPrint(s_out);
+   }
+   
+
+
+}
+
+#define PrintResults(sstart, sstop, name) \
+     printf("%9d    %6d        %6.2f        (* %s *)\\n", \
+          M, (int) (sstop - sstart), \
+          (float)(DOTIMES*10.*(logN+logM)*M*N) / (float) (sstop - sstart), name);
+
+void doOptFFT(int logN) {
+   int logM = logN; 
+   int N = (1<<logN);
+   int M = (1<<logM);
+   float2 * output=0;
+   output = (float2*)malloc(sizeof(float2)*M*N);
+   start = GetTime();
+   computeFFT2d(data,output,logN,logM,N,M,FFT_2D); 
+   stop = GetTime();
+   {
+      PrintResults(start,stop,"FFT");
+   }
+   //FftwTransform2d(data,N,M,1,1);
+}
+
