@@ -1,25 +1,13 @@
-#line 1 "brtvector.hpp"
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -88,7 +76,6 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
-#line 69 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -217,7 +204,8 @@ kernel void UpdateGuessfloat(float scatterindex[][],
 kernel void RelativeGatherfloat(out float output<>,
                                 float gatherindex[][],
                                 float value[][],
-                                float2 sign,
+                                float inf<>,
+                                float sign,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
@@ -228,9 +216,9 @@ kernel void RelativeGatherfloat(out float output<>,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
-   if (isoffedge.y>=0
-       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
-     output=sign.y;
+   if (isoffedge.y>=-.0625
+       || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
+     output=inf;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -239,7 +227,7 @@ kernel void RelativeGatherfloat(out float output<>,
 
 
 float shiftValuesfloat(float list_stream <>,
-                       float output_stream<>,
+                          float (*output_stream)<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -314,13 +302,14 @@ float shiftValuesfloat(float list_stream <>,
           RelativeGatherfloat(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
-                                 float2((float)sign,1.0f/(float)floor(.5)),
+                                 *sentinelStream(2),
+                                 (float)sign,
                                  maxvalue,
                                  maxshift);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -870,15 +859,15 @@ void combineStreamsfloat (float (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          float output<>) {
+                             float (*output)<>) {
    unsigned int  lengthmodmodulus=length%num;
    float tmp<(num*width),length>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       floatstreamCombine2f(*streams[0],
@@ -886,7 +875,7 @@ void combineStreamsfloat (float (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 3:
       floatstreamCombine3f(*streams[0],
@@ -895,7 +884,7 @@ void combineStreamsfloat (float (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 4:
       floatstreamCombine4f(*streams[0],
@@ -905,7 +894,7 @@ void combineStreamsfloat (float (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -917,7 +906,7 @@ void combineStreamsfloat (float (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -926,7 +915,7 @@ void combineStreamsfloat (float (**streams)<>,
       if (num>5) {
          combineStreamsHelperfloat(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5),
                                       (float)length,
@@ -1039,7 +1028,7 @@ unsigned int  voutCombinefloat(float outleft_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               float output<>){
+                                  float (*output)<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
@@ -1067,7 +1056,7 @@ unsigned int  voutCombinefloat(float outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -1077,17 +1066,17 @@ unsigned int totalCombineVoutfloat (float list_stream<>,
                                     float list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    float output<>){
+                                       float (*output)<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesfloat(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesfloat(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
@@ -1101,7 +1090,6 @@ unsigned int totalCombineVoutfloat (float list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 69 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -1230,7 +1218,8 @@ kernel void UpdateGuessfloat2(float scatterindex[][],
 kernel void RelativeGatherfloat2(out float2 output<>,
                                 float gatherindex[][],
                                 float2 value[][],
-                                float2 sign,
+                                float inf<>,
+                                float sign,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
@@ -1241,9 +1230,9 @@ kernel void RelativeGatherfloat2(out float2 output<>,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
-   if (isoffedge.y>=0
-       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
-     output=sign.y;
+   if (isoffedge.y>=-.0625
+       || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
+     output=inf;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -1252,7 +1241,7 @@ kernel void RelativeGatherfloat2(out float2 output<>,
 
 
 float shiftValuesfloat2(float2 list_stream <>,
-                       float2 output_stream<>,
+                          float2 (*output_stream)<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -1327,13 +1316,14 @@ float shiftValuesfloat2(float2 list_stream <>,
           RelativeGatherfloat2(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
-                                 float2((float)sign,1.0f/(float)floor(.5)),
+                                 *sentinelStream(2),
+                                 (float)sign,
                                  maxvalue,
                                  maxshift);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -1883,15 +1873,15 @@ void combineStreamsfloat2 (float2 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          float2 output<>) {
+                             float2 (*output)<>) {
    unsigned int  lengthmodmodulus=length%num;
    float2 tmp<(num*width),length>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       float2streamCombine2f(*streams[0],
@@ -1899,7 +1889,7 @@ void combineStreamsfloat2 (float2 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 3:
       float2streamCombine3f(*streams[0],
@@ -1908,7 +1898,7 @@ void combineStreamsfloat2 (float2 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 4:
       float2streamCombine4f(*streams[0],
@@ -1918,7 +1908,7 @@ void combineStreamsfloat2 (float2 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -1930,7 +1920,7 @@ void combineStreamsfloat2 (float2 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -1939,7 +1929,7 @@ void combineStreamsfloat2 (float2 (**streams)<>,
       if (num>5) {
          combineStreamsHelperfloat2(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5),
                                       (float)length,
@@ -2052,7 +2042,7 @@ unsigned int  voutCombinefloat2(float2 outleft_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               float2 output<>){
+                                  float2 (*output)<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
@@ -2080,7 +2070,7 @@ unsigned int  voutCombinefloat2(float2 outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -2090,17 +2080,17 @@ unsigned int totalCombineVoutfloat2 (float2 list_stream<>,
                                     float2 list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    float2 output<>){
+                                       float2 (*output)<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesfloat2(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesfloat2(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
@@ -2114,7 +2104,6 @@ unsigned int totalCombineVoutfloat2 (float2 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 69 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -2243,7 +2232,8 @@ kernel void UpdateGuessfloat3(float scatterindex[][],
 kernel void RelativeGatherfloat3(out float3 output<>,
                                 float gatherindex[][],
                                 float3 value[][],
-                                float2 sign,
+                                float inf<>,
+                                float sign,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
@@ -2254,9 +2244,9 @@ kernel void RelativeGatherfloat3(out float3 output<>,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
-   if (isoffedge.y>=0
-       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
-     output=sign.y;
+   if (isoffedge.y>=-.0625
+       || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
+     output=inf;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -2265,7 +2255,7 @@ kernel void RelativeGatherfloat3(out float3 output<>,
 
 
 float shiftValuesfloat3(float3 list_stream <>,
-                       float3 output_stream<>,
+                          float3 (*output_stream)<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -2340,13 +2330,14 @@ float shiftValuesfloat3(float3 list_stream <>,
           RelativeGatherfloat3(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
-                                 float2((float)sign,1.0f/(float)floor(.5)),
+                                 *sentinelStream(2),
+                                 (float)sign,
                                  maxvalue,
                                  maxshift);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -2896,15 +2887,15 @@ void combineStreamsfloat3 (float3 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          float3 output<>) {
+                             float3 (*output)<>) {
    unsigned int  lengthmodmodulus=length%num;
    float3 tmp<(num*width),length>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       float3streamCombine2f(*streams[0],
@@ -2912,7 +2903,7 @@ void combineStreamsfloat3 (float3 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 3:
       float3streamCombine3f(*streams[0],
@@ -2921,7 +2912,7 @@ void combineStreamsfloat3 (float3 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 4:
       float3streamCombine4f(*streams[0],
@@ -2931,7 +2922,7 @@ void combineStreamsfloat3 (float3 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -2943,7 +2934,7 @@ void combineStreamsfloat3 (float3 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -2952,7 +2943,7 @@ void combineStreamsfloat3 (float3 (**streams)<>,
       if (num>5) {
          combineStreamsHelperfloat3(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5),
                                       (float)length,
@@ -3065,7 +3056,7 @@ unsigned int  voutCombinefloat3(float3 outleft_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               float3 output<>){
+                                  float3 (*output)<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
@@ -3093,7 +3084,7 @@ unsigned int  voutCombinefloat3(float3 outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -3103,17 +3094,17 @@ unsigned int totalCombineVoutfloat3 (float3 list_stream<>,
                                     float3 list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    float3 output<>){
+                                       float3 (*output)<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesfloat3(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesfloat3(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
@@ -3127,7 +3118,6 @@ unsigned int totalCombineVoutfloat3 (float3 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 69 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -3256,7 +3246,8 @@ kernel void UpdateGuessfloat4(float scatterindex[][],
 kernel void RelativeGatherfloat4(out float4 output<>,
                                 float gatherindex[][],
                                 float4 value[][],
-                                float2 sign,
+                                float inf<>,
+                                float sign,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
@@ -3267,9 +3258,9 @@ kernel void RelativeGatherfloat4(out float4 output<>,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
-   if (isoffedge.y>=0
-       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
-     output=sign.y;
+   if (isoffedge.y>=-.0625
+       || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
+     output=inf;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -3278,7 +3269,7 @@ kernel void RelativeGatherfloat4(out float4 output<>,
 
 
 float shiftValuesfloat4(float4 list_stream <>,
-                       float4 output_stream<>,
+                          float4 (*output_stream)<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -3353,13 +3344,14 @@ float shiftValuesfloat4(float4 list_stream <>,
           RelativeGatherfloat4(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
-                                 float2((float)sign,1.0f/(float)floor(.5)),
+                                 *sentinelStream(2),
+                                 (float)sign,
                                  maxvalue,
                                  maxshift);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -3909,15 +3901,15 @@ void combineStreamsfloat4 (float4 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          float4 output<>) {
+                             float4 (*output)<>) {
    unsigned int  lengthmodmodulus=length%num;
    float4 tmp<(num*width),length>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       float4streamCombine2f(*streams[0],
@@ -3925,7 +3917,7 @@ void combineStreamsfloat4 (float4 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 3:
       float4streamCombine3f(*streams[0],
@@ -3934,7 +3926,7 @@ void combineStreamsfloat4 (float4 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 4:
       float4streamCombine4f(*streams[0],
@@ -3944,7 +3936,7 @@ void combineStreamsfloat4 (float4 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -3956,7 +3948,7 @@ void combineStreamsfloat4 (float4 (**streams)<>,
                       (float)num,
                       (float)length,
                       (float)lengthmodmodulus,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -3965,7 +3957,7 @@ void combineStreamsfloat4 (float4 (**streams)<>,
       if (num>5) {
          combineStreamsHelperfloat4(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5),
                                       (float)length,
@@ -4078,7 +4070,7 @@ unsigned int  voutCombinefloat4(float4 outleft_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               float4 output<>){
+                                  float4 (*output)<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
@@ -4106,7 +4098,7 @@ unsigned int  voutCombinefloat4(float4 outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -4116,17 +4108,17 @@ unsigned int totalCombineVoutfloat4 (float4 list_stream<>,
                                     float4 list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    float4 output<>){
+                                       float4 (*output)<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesfloat4(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesfloat4(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
@@ -4140,16 +4132,10 @@ unsigned int totalCombineVoutfloat4 (float4 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 1080 "brtvector.hpp"
-#line 1080 "brtvector.hpp"
 
-#line 1080 "brtvector.hpp"
 
-#line 1080 "brtvector.hpp"
 
-#line 1080 "brtvector.hpp"
 
-#line 1080 "brtvector.hpp"
 
 
 

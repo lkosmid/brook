@@ -221,18 +221,18 @@ void BRTKernelDef::PrintVoutDimensionalShift(std::ostream &out,
       out<< "    combineStreams"<<dimensionstring;
       out << type <<" (&"<<getDeclStream(decl,"_outputs")<<"[0],";
       out<< std::endl;
-      out<< "                   "<<getDeclStream(decl,"_outputs")<<".size()-1,";
+      out<<"                   "<<getDeclStream(decl,"_outputs")<<".size()-1,";
       out<< std::endl;
       out<< "                   maxextents[0],";
       out<< std::endl;
       out<< "                   maxextents[1],";
       out<< std::endl;
-      out<< "                   "<<getDeclStream(decl,"_temp")<<");";
+      out<< "                   &"<<getDeclStream(decl,"_temp")<<");";
       out<< std::endl;
       out<< "    shiftValues"<<dimensionstring;
       out << type << "("<<getDeclStream(decl,"_temp")<<",";
       out<< std::endl;
-      out<< "                "<< decl->name->name<<",";
+      out<< "                &"<< decl->name->name<<",";
       out<< std::endl;
       for (i=0;i<dim;++i) {
          out<< "                "<<getDeclStream (decl,"_temp");
@@ -310,7 +310,7 @@ static void printPrototypes(std::ostream & out, std::string type) {
       out << type << " (brook::stream input);\n"      ;
       out <<"extern float shiftValues"<<dimensionstring;
       out << type << "(brook::stream list_stream,\n"
-         "                         brook::stream output_stream,\n"
+         "                         brook::stream *output_stream,\n"
          "                         int WIDTH, \n"
          "                         int LENGTH, \n"
          "                         int sign);\n"
@@ -319,7 +319,7 @@ static void printPrototypes(std::ostream & out, std::string type) {
          "                     unsigned int num,\n"
          "                     unsigned int width, \n"
          "                     unsigned int length,\n"
-         "                     brook::stream output) ;\n";
+         "                     brook::stream *output) ;\n";
       
    }
 }
@@ -374,7 +374,13 @@ BRTKernelDef::printStub(std::ostream& out) const
             out << "const __BRTIter& " << *fType->args[i]->name;
          } else if (recursiveIsStream(fType->args[i]->form) ||
                     recursiveIsGather(fType->args[i]->form)) {
-            out << "::brook::stream " << *fType->args[i]->name;
+            
+            out << "::brook::stream ";
+            if ((voutFunctions[FunctionName()->name].find(i)
+                 !=voutFunctions[FunctionName()->name].end())) {
+               out << "&";//Vout changes dimension and must be passed by ref
+            }
+            out << *fType->args[i]->name;
          } else {
             out << "const ";
             Symbol name;name.name = fType->args[i]->name->name;

@@ -166,7 +166,7 @@ kernel void RelativeGatherBRT_TYPE1d(out BRT_TYPE output<>,
 
 
 float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
-                       BRT_TYPE output_stream<>,
+                            BRT_TYPE (*output_stream)<>,
                        int WIDTH, 
                        int unused,
                        int sign) {
@@ -244,9 +244,9 @@ float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
                                    float2((float)sign,1.0f/(float)floor(.5)),
                                    maxvalue);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -736,27 +736,27 @@ void combineStreams1dBRT_TYPE (BRT_TYPE (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int UNUSED,
-                          BRT_TYPE output<>) {
+                               BRT_TYPE (*output)<>) {
    BRT_TYPE tmp<(num*width)>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       BRT_TYPE1dstreamCombine2f(*streams[0],
                       *streams[1],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 3:
       BRT_TYPE1dstreamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 4:
       BRT_TYPE1dstreamCombine4f(*streams[0],
@@ -764,7 +764,7 @@ void combineStreams1dBRT_TYPE (BRT_TYPE (**streams)<>,
                       *streams[2],
                       *streams[3],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -774,7 +774,7 @@ void combineStreams1dBRT_TYPE (BRT_TYPE (**streams)<>,
                       *streams[3],
                       *streams[4],
                       (float)num,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -783,7 +783,7 @@ void combineStreams1dBRT_TYPE (BRT_TYPE (**streams)<>,
       if (num>5) {
          combineStreamsHelper1dBRT_TYPE(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5));
       }
@@ -870,7 +870,7 @@ unsigned int  voutCombineBRT_TYPE1d(BRT_TYPE outleft_stream<>,
                                BRT_TYPE outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
-                               BRT_TYPE output<>){
+                                    BRT_TYPE (*output)<>){
    unsigned int totalsize;
    float maxleftvalue,maxrightvalue;
    maxleftvalue=(float)LEFTWIDTH;
@@ -897,7 +897,7 @@ unsigned int  voutCombineBRT_TYPE1d(BRT_TYPE outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -906,16 +906,16 @@ unsigned int totalCombineVoutBRT_TYPE1d (BRT_TYPE list_stream<>,
                                     unsigned int WIDTH,
                                     BRT_TYPE list2_stream<>,
                                     unsigned int WIDTH2,
-                                    BRT_TYPE output<>){
+                                         BRT_TYPE (*output)<>){
 
    float outleft_stream<WIDTH>;
    float outright_stream<WIDTH2>;
    float maxshiftleft =shiftValues1dBRT_TYPE(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,1,
                                            -1);
    float maxshiftright=shiftValues1dBRT_TYPE(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,1,
                                            -1);
    return voutCombineBRT_TYPE1d (outleft_stream,

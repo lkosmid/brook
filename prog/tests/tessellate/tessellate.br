@@ -68,11 +68,38 @@ float tof (int i) {
 float tofd (double i) {
 	return (float)i;
 }
-
+kernel void filter(float4 a<>,vout [] float4 output<>) {
+  if (round(fmod((indexof a).x,2.0f))==1.0f) {
+    output=2.0f;
+    push(output);
+  }else {
+    output=1.0f;
+    push(output);
+  }
+  push(output);
+}
+#define NUMTESTS 4096
+int haupto (int argc,char ** argv) {
+  int i,length = argc>1?atoi(argv[1]):1024;
+  float4 tests <length>;
+  float4 o <1>;
+  float4 *array;
+  array = (float4*)malloc(4*sizeof(float4)*length);
+  start = GetTimeMillis();
+  for (i=0;i<NUMTESTS;++i) {
+    filter (tests,o);
+  }
+  streamWrite(o,array);
+  stop=GetTimeMillis();
+  printf("Total Time %f\n",(stop-start)/(NUMTESTS*1000.));
+  return 0;
+}
 
 #define STRIDE 1024
 #define SIZE 1024
 int main (int argc, char ** argv) {
+  SetupMillisTimer();
+{
   float toler = argc>1?tofd(atof(argv[1])):tofd(.1);
   int limit = argc>2?atoi(argv[2]):32;
   float4 input[4096]={float4(0,0,SIZE/2,SIZE/2),float4(0,SIZE/2,SIZE/2,SIZE),float4(SIZE/2,0,SIZE,SIZE/2),float4(SIZE/2,SIZE/2,SIZE,SIZE)};
@@ -82,7 +109,6 @@ int main (int argc, char ** argv) {
   if (argc>3) return haupt(argc,argv);
   for (ite=4;ite<4096;++ite) input[ite]=float4((float)1.0/floor(.5),(float)1.0/floor(.5),(float)1.0/floor(.5),(float)1.0/floor(.5));
   streamRead(polys,input);
-  SetupMillisTimer();
   start = GetTimeMillis();
   ite=0;
   do {
@@ -113,4 +139,5 @@ int main (int argc, char ** argv) {
      streamPrint(polys);
   printf ("%f ",(float)(stop-start));
   return 0;
+}
 }

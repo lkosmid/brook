@@ -38,9 +38,11 @@ void printVolume (const ppm &fp) {
    for (;i!=fp.vertices.end();++i) {
       if (finite_float(i->x)&&finite_float(i->y)&&finite_float(i->z)) {
          if (i->x>-.50&&i->y>-.50&&i->z>-.50) {
-            printf ("<Point><Location x=\"%3.2f\" y=\"%3.2f\" z=\"%3.2f\"/><Normal i=\"1\" j=\"0\" k=\"0\"/></Point>\n",i->x,i->y,i->z);
-            printf ("<Point><Location x=\"%3.2f\" y=\"%3.2f\" z=\"%3.2f\"/></Point>\n",i->x+.5,i->y+.5,i->z+.5);
-            ++j;
+           if (i->x!=36893206672442393000.00) {
+             printf ("<Point><Location x=\"%3.2f\" y=\"%3.2f\" z=\"%3.2f\"/><Normal i=\"1\" j=\"0\" k=\"0\"/></Point>\n",i->x,i->y,i->z);
+             printf ("<Point><Location x=\"%3.2f\" y=\"%3.2f\" z=\"%3.2f\"/></Point>\n",i->x+.5,i->y+.5,i->z+.5);
+             ++j;
+           }
          }
       }
    }

@@ -176,7 +176,7 @@ kernel void RelativeGatherfloat1d(out float output<>,
 
 
 float shiftValues1dfloat(float list_stream <>,
-                       float output_stream<>,
+                            float (*output_stream)<>,
                        int WIDTH, 
                        int unused,
                        int sign) {
@@ -254,9 +254,9 @@ float shiftValues1dfloat(float list_stream <>,
                                    float2((float)sign,1.0f/(float)floor(.5)),
                                    maxvalue);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -746,27 +746,27 @@ void combineStreams1dfloat (float (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int UNUSED,
-                          float output<>) {
+                               float (*output)<>) {
    float tmp<(num*width)>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       float1dstreamCombine2f(*streams[0],
                       *streams[1],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 3:
       float1dstreamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 4:
       float1dstreamCombine4f(*streams[0],
@@ -774,7 +774,7 @@ void combineStreams1dfloat (float (**streams)<>,
                       *streams[2],
                       *streams[3],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -784,7 +784,7 @@ void combineStreams1dfloat (float (**streams)<>,
                       *streams[3],
                       *streams[4],
                       (float)num,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -793,7 +793,7 @@ void combineStreams1dfloat (float (**streams)<>,
       if (num>5) {
          combineStreamsHelper1dfloat(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5));
       }
@@ -880,7 +880,7 @@ unsigned int  voutCombinefloat1d(float outleft_stream<>,
                                float outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
-                               float output<>){
+                                    float (*output)<>){
    unsigned int totalsize;
    float maxleftvalue,maxrightvalue;
    maxleftvalue=(float)LEFTWIDTH;
@@ -907,7 +907,7 @@ unsigned int  voutCombinefloat1d(float outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -916,16 +916,16 @@ unsigned int totalCombineVoutfloat1d (float list_stream<>,
                                     unsigned int WIDTH,
                                     float list2_stream<>,
                                     unsigned int WIDTH2,
-                                    float output<>){
+                                         float (*output)<>){
 
    float outleft_stream<WIDTH>;
    float outright_stream<WIDTH2>;
    float maxshiftleft =shiftValues1dfloat(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,1,
                                            -1);
    float maxshiftright=shiftValues1dfloat(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,1,
                                            -1);
    return voutCombinefloat1d (outleft_stream,
@@ -1067,7 +1067,7 @@ kernel void RelativeGatherfloat21d(out float2 output<>,
 
 
 float shiftValues1dfloat2(float2 list_stream <>,
-                       float2 output_stream<>,
+                            float2 (*output_stream)<>,
                        int WIDTH, 
                        int unused,
                        int sign) {
@@ -1145,9 +1145,9 @@ float shiftValues1dfloat2(float2 list_stream <>,
                                    float2((float)sign,1.0f/(float)floor(.5)),
                                    maxvalue);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -1637,27 +1637,27 @@ void combineStreams1dfloat2 (float2 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int UNUSED,
-                          float2 output<>) {
+                               float2 (*output)<>) {
    float2 tmp<(num*width)>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       float21dstreamCombine2f(*streams[0],
                       *streams[1],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 3:
       float21dstreamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 4:
       float21dstreamCombine4f(*streams[0],
@@ -1665,7 +1665,7 @@ void combineStreams1dfloat2 (float2 (**streams)<>,
                       *streams[2],
                       *streams[3],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -1675,7 +1675,7 @@ void combineStreams1dfloat2 (float2 (**streams)<>,
                       *streams[3],
                       *streams[4],
                       (float)num,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -1684,7 +1684,7 @@ void combineStreams1dfloat2 (float2 (**streams)<>,
       if (num>5) {
          combineStreamsHelper1dfloat2(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5));
       }
@@ -1771,7 +1771,7 @@ unsigned int  voutCombinefloat21d(float2 outleft_stream<>,
                                float2 outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
-                               float2 output<>){
+                                    float2 (*output)<>){
    unsigned int totalsize;
    float maxleftvalue,maxrightvalue;
    maxleftvalue=(float)LEFTWIDTH;
@@ -1798,7 +1798,7 @@ unsigned int  voutCombinefloat21d(float2 outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -1807,16 +1807,16 @@ unsigned int totalCombineVoutfloat21d (float2 list_stream<>,
                                     unsigned int WIDTH,
                                     float2 list2_stream<>,
                                     unsigned int WIDTH2,
-                                    float2 output<>){
+                                         float2 (*output)<>){
 
    float outleft_stream<WIDTH>;
    float outright_stream<WIDTH2>;
    float maxshiftleft =shiftValues1dfloat2(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,1,
                                            -1);
    float maxshiftright=shiftValues1dfloat2(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,1,
                                            -1);
    return voutCombinefloat21d (outleft_stream,
@@ -1958,7 +1958,7 @@ kernel void RelativeGatherfloat31d(out float3 output<>,
 
 
 float shiftValues1dfloat3(float3 list_stream <>,
-                       float3 output_stream<>,
+                            float3 (*output_stream)<>,
                        int WIDTH, 
                        int unused,
                        int sign) {
@@ -2036,9 +2036,9 @@ float shiftValues1dfloat3(float3 list_stream <>,
                                    float2((float)sign,1.0f/(float)floor(.5)),
                                    maxvalue);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -2528,27 +2528,27 @@ void combineStreams1dfloat3 (float3 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int UNUSED,
-                          float3 output<>) {
+                               float3 (*output)<>) {
    float3 tmp<(num*width)>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       float31dstreamCombine2f(*streams[0],
                       *streams[1],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 3:
       float31dstreamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 4:
       float31dstreamCombine4f(*streams[0],
@@ -2556,7 +2556,7 @@ void combineStreams1dfloat3 (float3 (**streams)<>,
                       *streams[2],
                       *streams[3],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -2566,7 +2566,7 @@ void combineStreams1dfloat3 (float3 (**streams)<>,
                       *streams[3],
                       *streams[4],
                       (float)num,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -2575,7 +2575,7 @@ void combineStreams1dfloat3 (float3 (**streams)<>,
       if (num>5) {
          combineStreamsHelper1dfloat3(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5));
       }
@@ -2662,7 +2662,7 @@ unsigned int  voutCombinefloat31d(float3 outleft_stream<>,
                                float3 outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
-                               float3 output<>){
+                                    float3 (*output)<>){
    unsigned int totalsize;
    float maxleftvalue,maxrightvalue;
    maxleftvalue=(float)LEFTWIDTH;
@@ -2689,7 +2689,7 @@ unsigned int  voutCombinefloat31d(float3 outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -2698,16 +2698,16 @@ unsigned int totalCombineVoutfloat31d (float3 list_stream<>,
                                     unsigned int WIDTH,
                                     float3 list2_stream<>,
                                     unsigned int WIDTH2,
-                                    float3 output<>){
+                                         float3 (*output)<>){
 
    float outleft_stream<WIDTH>;
    float outright_stream<WIDTH2>;
    float maxshiftleft =shiftValues1dfloat3(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,1,
                                            -1);
    float maxshiftright=shiftValues1dfloat3(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,1,
                                            -1);
    return voutCombinefloat31d (outleft_stream,
@@ -2849,7 +2849,7 @@ kernel void RelativeGatherfloat41d(out float4 output<>,
 
 
 float shiftValues1dfloat4(float4 list_stream <>,
-                       float4 output_stream<>,
+                            float4 (*output_stream)<>,
                        int WIDTH, 
                        int unused,
                        int sign) {
@@ -2927,9 +2927,9 @@ float shiftValues1dfloat4(float4 list_stream <>,
                                    float2((float)sign,1.0f/(float)floor(.5)),
                                    maxvalue);
         }
-        streamSwap(output_stream,proper_output_stream);
+        streamSwap(*output_stream,proper_output_stream);
       }
-      debugStreamPrint(output_stream, "Final Value");
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -3419,27 +3419,27 @@ void combineStreams1dfloat4 (float4 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int UNUSED,
-                          float4 output<>) {
+                               float4 (*output)<>) {
    float4 tmp<(num*width)>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,*streams[0]);
+      streamSwap(*output,*streams[0]);
       break;
    case 2:
       float41dstreamCombine2f(*streams[0],
                       *streams[1],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 3:
       float41dstreamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 4:
       float41dstreamCombine4f(*streams[0],
@@ -3447,7 +3447,7 @@ void combineStreams1dfloat4 (float4 (**streams)<>,
                       *streams[2],
                       *streams[3],
                       (float)num,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -3457,7 +3457,7 @@ void combineStreams1dfloat4 (float4 (**streams)<>,
                       *streams[3],
                       *streams[4],
                       (float)num,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -3466,7 +3466,7 @@ void combineStreams1dfloat4 (float4 (**streams)<>,
       if (num>5) {
          combineStreamsHelper1dfloat4(streams+5,
                                       num-5,
-                                      output,
+                                      *output,
                                       (float)num,
                                       (float)(5-.5));
       }
@@ -3553,7 +3553,7 @@ unsigned int  voutCombinefloat41d(float4 outleft_stream<>,
                                float4 outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
-                               float4 output<>){
+                                    float4 (*output)<>){
    unsigned int totalsize;
    float maxleftvalue,maxrightvalue;
    maxleftvalue=(float)LEFTWIDTH;
@@ -3580,7 +3580,7 @@ unsigned int  voutCombinefloat41d(float4 outleft_stream<>,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -3589,16 +3589,16 @@ unsigned int totalCombineVoutfloat41d (float4 list_stream<>,
                                     unsigned int WIDTH,
                                     float4 list2_stream<>,
                                     unsigned int WIDTH2,
-                                    float4 output<>){
+                                         float4 (*output)<>){
 
    float outleft_stream<WIDTH>;
    float outright_stream<WIDTH2>;
    float maxshiftleft =shiftValues1dfloat4(list_stream,
-                                           outleft_stream,
+                                           &outleft_stream,
                                            WIDTH,1,
                                            -1);
    float maxshiftright=shiftValues1dfloat4(list2_stream,
-                                           outright_stream,
+                                           &outright_stream,
                                            WIDTH2,1,
                                            -1);
    return voutCombinefloat41d (outleft_stream,

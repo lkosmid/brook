@@ -56,6 +56,25 @@ static float tofd (double i) {
 #define STRIDE 1024
 #define SIZE 1024
 int haupt (int argc, char ** argv) {
+/*
+vector <float> a(1024);
+vector <float> b;
+start = GetTimeMillis();
+for (unsigned int j=0;j<1024;++j) {
+for (unsigned int i=0;i<1024;++i) {
+  if (i%2==0)b.push_back(2.0f);
+  else b.push_back(1.0f);
+  b.push_back(a[i]);
+
+}
+b.clear();
+
+}
+stop=GetTimeMillis();
+  printf("Total Time %f\n",(stop-start)/(1024*1000.));
+return 0;
+*/
+{
   float toler = argc>1?tofd(atof(argv[1])):tofd(.1);
   int limit = argc>2?atoi(argv[2]):32;
   float lastsize;
@@ -91,4 +110,5 @@ int haupt (int argc, char ** argv) {
   }
   printf ("%f ",(float)(stop-start));
   return 0;
+}
 }
