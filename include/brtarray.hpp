@@ -96,12 +96,20 @@ public:
 			free(this->data);
 	}
 	unsigned int linearaddresscalc (const unsigned int * indices)const {
-		unsigned int total=0;
+		// TIM: I believe the old code was reversed from what it should be
+		unsigned int result = 0;
+		for( int i = dims-1; i >= 0; i-- )
+		{
+			result *= extents[i];
+			result += indices[i];
+		}
+		return result;
+/*		unsigned int total=0;
 		for (unsigned int i=0;i<dims;++i) {
 			total*=extents[i];
 			total+=indices[i];
 		}
-		return total;
+		return total;*/
 	}
 	const VALUE &get(const unsigned int * indices)const {
 		return data[this->linearaddresscalc(indices)];
