@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = timing
-FILES = main readwrite
+FILES = main readwrite runkernel
 LIBRARIES = $(RUNTIME_LIBS)
 
 include $(ROOTDIR)/common.mk

@@ -16,4 +16,10 @@ typedef long long int64;
 
 extern int64 GetTime(void);
 
+/*
+ * XXX brcc currently has grief with typedefs mixed with Brook code, so we
+ * just prototype all these here.  Since brcc runs before cpp, we sidestep
+ * the issue.  I apologize deeply.  --Jeremy.
+ */
+extern int64 start, mid, stop;
 #endif

@@ -8,7 +8,6 @@
 #ifndef __READWRITE_H_
 #define __READWRITE_H_
 
-extern void TimeReadWrite(int streamLength);
+extern void ReadWrite_Time(int streamLength);
 
-extern int64 start, mid, stop;
 #endif

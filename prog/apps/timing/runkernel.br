@@ -1,0 +1,197 @@
+/*
+ * runkernel.br
+ *
+ *      Simple tests to time how long it takes to invoke various kernels
+ *      (i.e. ratio of execution time to stream length).
+ */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+
+#include "main.h"
+#include "runkernel.h"
+
+/*
+ * RunKernelKickKernel --
+ *
+ *      Just copy.  This kernel is separate from the test kernels just so
+ *      nothing related to it gets cached.  It exists only for priming the
+ *      BRT so we can ignore cold start timing.
+ */
+
+kernel void
+RunKernelKickKernel(float s<>, out float o<>)
+{
+   o = s;
+}
+
+
+/*
+ * RunKernel1DDouble --
+ *
+ *      A dead simple 1D kernel.  Just double every element
+ */
+
+kernel void
+RunKernelDouble(float4 s<>, out float4 o<>)
+{
+   o = s + s;
+}
+
+
+/*
+ * RunKernelKickBRT --
+ *
+ *      Running the first kernel is very slow because a lot of one time
+ *      initialization happens in BRT itself.  So we make sure we run one
+ *      untimed kernel to grease the tracks.  We intentionally don't use the
+ *      same kernel we time to avoid introducing false caching behaviors.
+ */
+
+static void
+RunKernelKickBRT(void)
+{
+   float d[1] = { 12.34f };
+   float s<1>, o<1>;
+
+   streamRead(s, d);
+   RunKernelKickKernel(s, o);
+   streamWrite(o, d);
+
+   if (d[0] != 12.34f) {
+      fprintf(stderr, "RunKernelKickBRT: Mismatch!  Got %.2f expecting %.2f\n",
+              d[0], 12.34f);
+   }
+}
+
+
+/*
+ * RunKernel1D --
+ *
+ *      Runs a simple kernel on a 1D stream and times it.
+ */
+
+static void
+RunKernel1D(int streamLength)
+{
+   float4 *data;
+   float4 s<streamLength>, o<streamLength>;
+   int numBytes, i;
+
+   numBytes = streamLength * sizeof(*data);
+   data = (float4 *) malloc(numBytes);
+   assert(data);
+
+   for (i = 0; i < streamLength; i++) {
+      data[i].x = data[i].y = data[i].z = data[i].w = (float) i;
+   }
+
+   streamRead(s, data);
+   start = GetTime();
+   RunKernelDouble(s, o);
+   stop = GetTime();
+   streamWrite(o, data);
+
+   printf("RunKernel1D: Float4*2 took %d usecs at length %d (%.2f MOps/s)\n",
+          (int) (stop - start), streamLength,
+          (float) (streamLength / (stop - start)));
+
+   for (i = 0; i < streamLength; i++) {
+      if (data[i].x != (float) 2*i || data[i].y != data[i].x ||
+          data[i].z != data[i].x || data[i].w != data[i].x) {
+         fprintf(stderr, "RunKernel1D: Mismatch %d/%d: %.2f %.2f %.2f %.2f\n",
+                 i, streamLength, data[i].x, data[i].y, data[i].z, data[i].w);
+      }
+   }
+
+   free(data);
+}
+
+
+/*
+ * RunKernel2D --
+ *
+ *      Runs a simple kernel on a 2D stream and times it.
+ */
+
+static void
+RunKernel2D(int streamLength)
+{
+   float4 *data;
+   float4 s<streamLength, streamLength>, o<streamLength, streamLength>;
+   int numBytes, i, j;
+
+   numBytes = streamLength * streamLength * sizeof(*data);
+   data = (float4 *) malloc(numBytes);
+   assert(data);
+
+   for (i = 0; i < streamLength; i++) {
+      for (j = 0; j < streamLength; j++) {
+         float4 *cur = (data + i*streamLength + j);
+
+         cur->x = cur->y = cur->z = cur->w = (float) (i*streamLength + j);
+      }
+   }
+
+   streamRead(s, data);
+   start = GetTime();
+   RunKernelDouble(s, o);
+   stop = GetTime();
+   streamWrite(o, data);
+
+   printf("RunKernel2D: Float4*2 took %d usecs at length %d (%.2f MOps/s)\n",
+          (int) (stop - start), streamLength,
+          (float) (streamLength*streamLength / (stop - start)));
+
+   for (i = 0; i < streamLength; i++) {
+      for (j = 0; j < streamLength; j++) {
+         float4 *cur = (data + i*streamLength + j);
+
+         if (cur->x != (float) (2*(i*streamLength + j)) ||
+             cur->y != cur->x || cur->z != cur->x || cur->w != cur->x) {
+            fprintf(stderr, "RunKernel2D: Mismatch %d/%d: %.2f %.2f %.2f %.2f\n",
+                    i, streamLength, cur->x, cur->y, cur->z, cur->w);
+         }
+      }
+   }
+
+   free(data);
+}
+
+
+/*
+ * RunKernelTimeOne --
+ *
+ *      Runs all the kernel overhead timing tests at a given streamLength
+ */
+
+static void
+RunKernelTimeOne(int streamLength)
+{
+   RunKernel1D(streamLength);
+   RunKernel2D(streamLength);
+}
+
+
+/*
+ * RunKernel_Time --
+ *
+ *      Entry point for the kernel overhead tests.  We measure execution
+ *      time as a function of stream length.
+ */
+
+void
+RunKernel_Time(int maxLength)
+{
+   static const int lengths[] = { 1, 4, 16, 64, 256, 512, 1024, 2048 };
+   static const int numLengths = sizeof lengths / sizeof lengths[0];
+   int i;
+
+   RunKernelKickBRT();
+
+   for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
+      RunKernelTimeOne(lengths[i]);
+   }
+   RunKernelTimeOne(maxLength);
+}

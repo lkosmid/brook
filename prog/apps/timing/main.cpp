@@ -9,6 +9,7 @@
 
 #include "main.h"
 #include "readwrite.h"
+#include "runkernel.h"
 
 /*
  * This is lame, but cTool doesn't cope with typedefs or #includes, so we
@@ -53,7 +54,15 @@ GetTime(void)
 #error "Please implement GetTime() for this platform"
 #endif
 
-int main(int argc, char *argv[])
+/*
+ * main --
+ *
+ *      Very simple for now.  Pull the stream length from argv and then run
+ *      all the tests.
+ */
+
+int
+main(int argc, char *argv[])
 {
    int length = 1024;
 
@@ -65,6 +74,7 @@ int main(int argc, char *argv[])
    }
    std::cout << "Running tests with a length of " << length << ".\n";
 
-   TimeReadWrite(length);
+   //ReadWrite_Time(length);
+   RunKernel_Time(length);
    return 0;
 }

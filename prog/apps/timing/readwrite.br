@@ -12,22 +12,33 @@
 #include "main.h"
 #include "readwrite.h"
 
+
+/*
+ * ReadWrite1D --
+ *
+ *      Measure how fast we can streamRead() and streamWrite() a 1D stream
+ *      of float4's of the specified length.
+ */
+
 static void
-TimeReadWrite1D(int length)
+ReadWrite1D(int length)
 {
-   float *in, *output;
-   float s<length>;
+   float4 *in, *output;
+   float4 s<length>;
    int numBytes, i;
 
    numBytes = length * sizeof(*in);
-   in = (float *) malloc(numBytes);
+   in = (float4 *) malloc(numBytes);
    assert(in);
-   output = (float *) malloc(numBytes);
+   output = (float4 *) malloc(numBytes);
    assert(output);
 
    for (i = 0; i < length; i++) {
-      in[i] = (float) i;
-      output[i] = -1.0f;
+      in[i].x = (float) i;
+      in[i].y = (float) i;
+      in[i].z = (float) i;
+      in[i].w = (float) i;
+      output[i] = float4(-1.0f, -1.0f, -1.0f, -1.0f);
    }
 
    start = GetTime();
@@ -36,22 +47,32 @@ TimeReadWrite1D(int length)
    streamWrite(s, output);
    stop = GetTime();
 
-   printf("TimeRead1D: read took %d usecs, write took %d.\n",
+   printf("Read1D: read took %d usecs, write took %d.\n",
            (int) (mid - start), (int) (stop - mid));
-   printf("TimeRead1D: read got %.2f MB/sec, write got %.2f MB/sec.\n",
+   printf("Read1D: read got %.2f MB/sec, write got %.2f MB/sec.\n",
           numBytes / (float) (mid - start), numBytes / (float) (stop - mid));
 
    for (i = 0; i < length; i++) {
-      if (in[i] != output[i]) {
+      if (in[i].x != output[i].x ||
+          in[i].y != output[i].y ||
+          in[i].z != output[i].z ||
+          in[i].w != output[i].w) {
          fprintf(stderr, "ReadWrite1D: Mismatch %d.  In: %f, Out: %f\n",
-                 i, in[i], output[i]);
+                 i, in[i].x, output[i].x);
       }
    }
 }
 
 
+/*
+ * ReadWrite2D --
+ *
+ *      Measure how fast we can streamRead() and streamWrite() a 2D stream
+ *      of float4's of the specified length in each dimension.
+ */
+
 static void
-TimeReadWrite2D(int length)
+ReadWrite2D(int length)
 {
    float4 *in, *output;
    float4 s<length, length>;
@@ -79,9 +100,9 @@ TimeReadWrite2D(int length)
    streamWrite(s, output);
    stop = GetTime();
 
-   printf("TimeRead2D: read took %d usecs, write took %d.\n",
+   printf("Read2D: read took %d usecs, write took %d.\n",
            (int) (mid - start), (int) (stop - mid));
-   printf("TimeRead2D: read got %.2f MB/sec, write got %.2f MB/sec.\n",
+   printf("Read2D: read got %.2f MB/sec, write got %.2f MB/sec.\n",
           numBytes / (float) (mid - start), numBytes / (float) (stop - mid));
 
    for (i = 0; i < length; i++) {
@@ -102,8 +123,8 @@ TimeReadWrite2D(int length)
 }
 
 void
-TimeReadWrite(int length)
+ReadWrite_Time(int length)
 {
-   TimeReadWrite1D(length);
-   TimeReadWrite2D(length);
+   ReadWrite1D(length);
+   ReadWrite2D(length);
 }
