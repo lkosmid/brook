@@ -125,9 +125,15 @@ kernel void splitTriangles (Tri triangles[][],
                             Neighbor neighbors[][],
                             float2 i<>,
                             Neighbor newneighbors<>,
-                            out Tri tri<>,
-                            out Neighbor neighbor<>) {
-  Tri tris=triangles[i];
+                            out Tri triA<>,
+                            out Tri triB<>,
+                            out Tri triC<>,
+                            out Tri triD<>,
+                            out Neighbor neighborA<>,
+                            out Neighbor neighborB<>,
+                            out Neighbor neighborC<>,
+                            out Neighbor neighborD<>) {
+  Tri tri=triangles[i];
   Neighbor oldneighbors=neighbors[i];
   float3 ac = lerp(lerp (tris.A.xyz,tris.C.xyz,.5),
                    lerp (tris.B.xyz,oldneighbors.AC.xyz,.5),
@@ -138,9 +144,39 @@ kernel void splitTriangles (Tri triangles[][],
   float3 bc = lerp(lerp (tris.B.xyz,tris.C.xyz,.5),
                    lerp(tris.A.xyz,oldneighbors.BC.xyz,.5),
                    .25);
-  
-  tri.A=tri.B=tri.C=0;
-  neighbor = newneighbors;
+  float3 a = lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,oldneighbors.AC,.5),
+                            lerp(tri.B.xyz,tri.C.xyz,.5),
+                            .5),
+                       lerp(oldneighbors.AAB,oldneighbors.AAC,.5),
+                       .33),
+                  tri.A.xyz,
+                  .625);
+  float3 b = lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,oldneighbors.BC,.5),
+                            lerp(tri.A.xyz,tri.C.xyz,.5),
+                            .5),
+                       lerp(oldneighbors.ABB,oldneighbors.BBC,.5),
+                       .33),
+                  tri.B.xyz,
+                  .625);
+  float3 c = lerp(lerp(lerp(lerp(oldneighbors.AC.xyz,oldneighbors.BC,.5),
+                            lerp(tri.A.xyz,tri.B.xyz,.5),
+                            .5),
+                       lerp(oldneighbors.ACC,oldneighbors.BCC,.5),
+                       .33),
+                  tri.C.xyz,
+                  .625);
+  triA.A=a;
+  triA.B=ab;
+  triA.C=ac;
+  triB.A= ab;
+  triB.B=b;
+  triB.C=bc;
+  triC.A=ac;
+  triC.B=ab;
+  triC.C=c;
+  neighborA.AB=AB.xyz;
+  neighborA.BBC=AB.xyz;
+
 }
 int main () {
    
