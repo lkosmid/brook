@@ -24,7 +24,7 @@ __StreamScatterAssign STREAM_SCATTER_ASSIGN;
 __StreamScatterAdd STREAM_SCATTER_ADD;
 __StreamScatterMul STREAM_SCATTER_MUL;
 static float lerp (unsigned int i, unsigned int end,float lower,float upper) {
-   float frac=end>1?((float)i)/(float)(end-1):(float)upper;
+   float frac=end>0?((float)i)/(float)end:(float)upper;//used to be end-1 on denom
    return (1-frac)*lower+frac*upper;
 }
 namespace brook {
@@ -42,13 +42,13 @@ namespace brook {
            }
         }
      }else if (dims==2){
-        //now we know dims == data type;
+         //now we know dims == data type;
         int i[2]={0,0};
         for (i[0]=0;i[0]<extents[0];++i[0]) {
            for (i[1]=0;i[1]<extents[1];++i[1]) {
               for (unsigned int k=0;k<2;++k) {
-                 data[(i[0]*extents[1]+i[1])*2+k]=
-                    lerp (i[k],extents[k],ranges[k],ranges[2+k]);
+                 float f= lerp (i[k],extents[k],ranges[k],ranges[2+k]);
+                 data[(i[0]*extents[1]+i[1])*2+k]=f;
               }
            }
         }
@@ -121,9 +121,11 @@ __BRTIter::__BRTIter(__BRTStreamType type, ...)
     extents.push_back(extent);
   }
   for (int i=0;i<type;++i) {
-     float f = va_arg(args,float);
+     float f = va_arg(args,double);
+     //     fprintf(stderr, "float %f\n",f);
      ranges.push_back(f);
-     f = va_arg(args,float);
+     f = va_arg(args,double);
+     //     fprintf(stderr, "float %f\n",f);
      ranges.push_back(f);
   }
   va_end(args);
