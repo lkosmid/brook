@@ -57,11 +57,12 @@ namespace brook {
            numranges=4;//memory out of bounds check change to assert?
         memcpy(this->ranges,ranges,sizeof(float)*numranges);
      }
-     virtual Stream  * makeStream() {
-        if (!madeStream)
-           madeStream=allocateStream(dims,extents,ranges);
-        return madeStream;
-     }
+     virtual void * getData (unsigned int flags){assert(0);return 0;}
+     virtual void releaseData(unsigned int flags){assert(0);0;}
+     virtual const unsigned int * getExtents() const{assert(0);return 0;}
+     virtual unsigned int getDimension() const {assert(0);return 0;}
+     virtual __BRTStreamType getStreamType ()const{assert(0);return type;}
+     virtual unsigned int getTotalSize() const {assert(0);return 0;}
   };
 
   class NV30GLRunTime : public RunTime {

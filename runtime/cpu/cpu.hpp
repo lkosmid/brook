@@ -8,6 +8,8 @@ namespace brook {
     class CPUKernel : public Kernel {
     public:
        CPUKernel(const void * source []);
+       virtual void PushStreamInterface(StreamInterface * s);
+       virtual void PushGatherStreamInterface(StreamInterface * s);
        virtual void PushStream(Stream *s);
        virtual void PushConstant(const float &val);  
        virtual void PushConstant(const float2 &val);  
@@ -42,8 +44,8 @@ namespace brook {
        std::vector<void *> args;
        std::vector<const unsigned int *>extents;
        std::vector<unsigned int> dims;
-       std::vector<brook::Stream*> inputs;
-       std::vector<brook::Stream*>outputs;
+       std::vector<brook::StreamInterface*> inputs;
+       std::vector<brook::StreamInterface*>outputs;
        class ReductionArg {public:
           unsigned int which;
           __BRTStreamType type;
@@ -72,20 +74,33 @@ namespace brook {
 	virtual const unsigned int * getExtents() const{return extents;}
 	virtual unsigned int getDimension() const{return dims;}
         virtual unsigned int getTotalSize()const{return totalsize;}	
+	virtual ~CPUStream();
     protected:
 	void * data;
 	unsigned int * extents;
 	unsigned int dims;		
 	unsigned int stride;
 	unsigned int totalsize;
-	virtual ~CPUStream();
+
     };
   class CPUIter:public Iter {
+  protected:
+    CPUStream stream;
+    virtual ~CPUIter() {}
+    void allocateStream(int dims, 
+                        int extents[],
+                        float ranges[]);
   public:
     CPUIter(__BRTStreamType type, int dims, int extents[], float ranges[])
-    :Iter(type){
-      madeStream=allocateStream(dims,extents,ranges);//now we always have this
+    :Iter(type),stream(type,dims,extents){
+      allocateStream(dims,extents,ranges);//now we always have this
     }
+    virtual void * getData (unsigned int flags){return stream.getData(flags);}
+    virtual void releaseData(unsigned int flags){stream.releaseData(flags);}
+    virtual const unsigned int * getExtents() const{return stream.getExtents();}
+    virtual unsigned int getDimension() const {return stream.getDimension();}
+    virtual __BRTStreamType getStreamType ()const{return stream.getStreamType();}
+    virtual unsigned int getTotalSize() const {return stream.getTotalSize();}
   };
     class CPURunTime: public brook::RunTime {
     public:

@@ -51,18 +51,34 @@ namespace brook {
   protected:
     virtual ~Kernel() {}
   };
-  class Stream {
+
+  class StreamInterface {
+  protected:
+    StreamInterface(){}
+  public:
+    virtual void Release() {delete this;}
+    enum USAGEFLAGS {NONE=0x0,READ=0x1,WRITE=0x2,READWRITE=0x3};
+    virtual void * getData (unsigned int flags)=0;
+    virtual void releaseData(unsigned int flags)=0;
+    virtual const unsigned int * getExtents() const=0;
+    virtual unsigned int getDimension() const {return 0;}
+    virtual __BRTStreamType getStreamType ()const=0;
+    virtual unsigned int getTotalSize() const {
+       unsigned int ret=1;
+       unsigned int dim=getDimension();
+       const unsigned int * extents = getExtents();
+       for (unsigned int i=0;i<dim;++i) {
+          ret*=extents[i];
+       }
+       return ret;
+    }
+  };
+
+  class Stream : public StreamInterface {
   public:
     Stream (__BRTStreamType type) {this->type=type;}
     virtual void Read(const void* inData) = 0;
     virtual void Write(void* outData) = 0;
-    virtual void Release() = 0;
-    enum USAGEFLAGS {NONE=0x0,READ=0x1,WRITE=0x2,READWRITE=0x3};
-    virtual void * getData (unsigned int flags){return (void *)0;}
-    virtual void releaseData(unsigned int flags){}
-    virtual const unsigned int * getExtents() const {return (unsigned int*)0;}
-    virtual unsigned int getDimension() const {return 0;}
-    virtual unsigned int getTotalSize() const {return 0;}
     virtual unsigned int getStride() const {return sizeof(float)*getStreamType();}
     virtual __BRTStreamType getStreamType ()const{return type;}
   protected:
@@ -70,20 +86,12 @@ namespace brook {
     virtual ~Stream() {}
   };
 
-
-  class Iter {
+  class Iter : public StreamInterface {
   public:
-    Iter (__BRTStreamType type) {this->type=type;madeStream=0;}
-    virtual void Release() {delete this;}
-    Stream * allocateStream(int dims, 
-                            int extents[],
-                            float ranges[])const;
-    virtual Stream * makeStream(){return madeStream;}
+    Iter (__BRTStreamType type) {this->type=type;}
     virtual __BRTStreamType getStreamType ()const{return type;}
   protected:
     __BRTStreamType type;
-    Stream * madeStream;
-    virtual ~Iter() {if (madeStream) madeStream->Release();}
   };
 
 }

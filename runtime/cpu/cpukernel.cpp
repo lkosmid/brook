@@ -46,20 +46,22 @@ namespace brook{
         Cleanup();
     }
     void CPUKernel::PushIter(Iter * i) {
-       Stream * s = i->makeStream();
-       PushStream(s);
+       PushStreamInterface(i);
        //assert same size as output
-       assert (iteroutsize==0||iteroutsize==s->getTotalSize());
-       iteroutsize=s->getTotalSize();
+       assert (iteroutsize==0||iteroutsize==i->getTotalSize());
+       iteroutsize=i->getTotalSize();
     }
-    void CPUKernel::PushStream(Stream *s){
+   void CPUKernel::PushStreamInterface(StreamInterface * s) {
 	unsigned int total_size=s->getTotalSize();
 	if (totalsize==0){//this is necessary for reductions
           totalsize=total_size;//don't override output tho
           dim=s->getDimension();
           extent= s->getExtents();
         }
-        PushGatherStream(s);
+        PushGatherStreamInterface(s);
+   }
+    void CPUKernel::PushStream(Stream *s){
+       PushStreamInterface(s);
     }
     void CPUKernel::PushConstant(const float &val){
         args.push_back(const_cast<float*>(&val));
@@ -81,11 +83,15 @@ namespace brook{
         dims.push_back(0);
         extents.push_back(0);
     }
-    void CPUKernel::PushGatherStream(Stream *s){
+   void CPUKernel::PushGatherStreamInterface(StreamInterface * s) {
         args.push_back(s->getData(brook::Stream::READ));
         extents.push_back(s->getExtents());
         dims.push_back(s->getDimension());
         inputs.push_back(s);
+
+   }
+    void CPUKernel::PushGatherStream(Stream *s){
+       PushGatherStreamInterface(s);
     }
     void CPUKernel::PushReduce(void * data, __BRTStreamType type) {
        if (type==__BRTSTREAM) {
