@@ -19,14 +19,6 @@ template <class VALUE> class __BrtArray {
   bool acquired_data;
   brook::Stream * s;
 
-  unsigned int getSize() const{
-    unsigned int size=1;
-    for (unsigned int i=0;i<dims;++i) {
-      size*=extents[i];
-    }
-    return size;
-  }
-
   void init(VALUE * data, unsigned int dims, unsigned int elemsize, 
             const unsigned int *extents, const unsigned int *domain_min,
             const unsigned int *domain_max) {
@@ -113,20 +105,20 @@ public:
 
   template <class T> unsigned int indexOf (const T &index) const {
     unsigned int i=T::size-1;
-
     if (dims<T::size)
       i=dims-1;
 
     float temp = (float)floor(ARRAY_EPSILON+index.getAt(i));
-    unsigned int total=(temp<0)?0:temp>=extents[0]-1?extents[0]-1:
-      (unsigned int)temp;
+    unsigned int total=(!(temp>=0))?domain_min[0]:(!(temp<=domain_max[0]-domain_min[0]-1))?domain_max[0]-1:
+      domain_min[0]+(unsigned int)temp;
 
     for (unsigned int j=1;j<=i;++j) {
       total*=extents[j];
       temp = (float)floor(ARRAY_EPSILON+index.getAt(i-j));
-      total+=(temp<0)?0:temp>=extents[j]-1?extents[j]-1:
-        (unsigned int)temp;
+      total+=(!(temp>=0))?domain_min[j]:(!(temp<=domain_max[j]-domain_min[j]-1))?domain_max[j]-1:
+        domain_min[j]+(unsigned int)temp;
     }
+    //printf ("Total index.x:%.2f .y:%.2f .z:%.2f .w:%.2f ind:%d val:%.2f\n",index.getAt(0),index.getAt(1),index.getAt(2),index.getAt(3),total,data[total]);
     return total;
   }
 
@@ -138,16 +130,16 @@ public:
     if (dims<T::size)
       i=dims-1;
     float temp = (float)floor(ARRAY_EPSILON+index.getAt(i));
-    if (!(temp>=0&&temp<extents[0]))
+    if (!(temp>=0&&temp<domain_max[0]-domain_min[0]))
       return emergency;
     
-    unsigned int total=(unsigned int)temp;
+    unsigned int total=domain_min[0]+(unsigned int)temp;
     for (unsigned int j=1;j<=i;++j) {
       total*=extents[j];
       temp = (float)floor(ARRAY_EPSILON+index.getAt(i-j));
-      if (!(temp>=0&&temp<extents[j]))
+      if (!(temp>=0&&temp<domain_max[j]-domain_min[j]))
         return emergency;
-      total+=(unsigned int)temp;
+      total+=domain_min[j]+(unsigned int)temp;
     }
 
     return data[total];
