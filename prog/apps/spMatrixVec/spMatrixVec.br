@@ -73,8 +73,9 @@ void reshuffleData(float nz[MAX_NZ], int cols[MAX_NZ], int rowStart[NUM_ROWS+1],
 int parseCmdLine(int argc, char** argv, char* filename) {
   
   if (argc < 2) {
-    printf("requires filename argument");
-    return 1;
+	// TIM: added default filename so we can regression-test
+	strncpy(filename, "csrMatrix.txt", 70);
+	return 0;
   }
 
   strncpy(filename, argv[1], 70); 
