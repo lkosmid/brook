@@ -28,11 +28,27 @@ class csCdModel;
 class csCdBBox;
 struct csCdTriangle;
 struct csCollisionPair;
-struct bsp_polygon{
+typedef struct bbox_t{
+  float3 Rotationx;
+  float3 Rotationy;
+  // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
+  /// cross(Rotationx,Rotationy);
+  float3 Translation;
+  float4 Radius;// if it's a leaf Radius.w is 1 else Radius.w = 0
+
+  // if leaf, the Children.xy is an index to the Triangle
+  // if node, the Children.xy is an index to left child
+  // assert right.xy is always left + {1,0} this may require gaps in the tree
+  float2 Children;  
+}BBox;
+
+typedef struct Tri_t{
   float3 A;
   float3 B;
   float3 C;
-};
+}Tri;
+
+#define bsp_polygon Tri
 class PathPolygonMesh;
 
 /// Low level collision detection using the RAPID algorithm.
@@ -90,7 +106,8 @@ private:
   
 public:
   static int numHits;
- 
+  void createBrookGeometryRecurse(const csCdBBox *curr, BBox & curw, vector <BBox> &bbox, vector<Tri> & tri);
+  void createBrookGeometry(vector <BBox> &bbox, vector<Tri> & tri);
   /// Create a collider based on geometry.
   csRapidCollider (const std::vector<bsp_polygon> &mesh);
 

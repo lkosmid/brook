@@ -108,7 +108,63 @@ inline float min3 (float a, float b, float c)
 { return (a < b ? (a < c ? a : (c < b ? c : b)) : (b < c ? b : c)); }
 inline float max3(float a, float b, float c)
 { return (a > b ? (a > c ? a : (c > b ? c : b)) : (b > c ? b : c)); }
+float3 tofloat3(const csVector3 &a) {
+  return float3(a.x,a.y,a.z);
+}
+void csRapidCollider::createBrookGeometryRecurse(const csCdBBox *curr,
+                                                 BBox &curw,
+                                                 std::vector<BBox>&bbox,
+                                                 std::vector<Tri>&tri){
+  curw.Children.x = (float)(bbox.size()%2048);
+  curw.Children.y = (float)(bbox.size()/2048);
+  curw.Rotationx = tofloat3(curr->m_Rotation.Row1());
+  curw.Rotationy = tofloat3(curr->m_Rotation.Row2());
+  //  curw.Rotationz = tofloat3(curr->m_Rotation.Row3());
+  curw.Translation = tofloat3(curr->m_Translation);
 
+
+  curw.Radius.x = curr->m_Radius.x;
+  curw.Radius.y = curr->m_Radius.y;
+  curw.Radius.z = curr->m_Radius.z;
+
+  if (curr->IsLeaf()) {
+    curw.Radius.w = 1.0f;
+    curw.Children.x = (float)(tri.size()%2048);
+    curw.Children.y = (float)(tri.size()/2048);
+    tri.push_back(Tri());
+    tri.back().A = tofloat3(curr->m_pTriangle->p1);
+    tri.back().B = tofloat3(curr->m_pTriangle->p2);
+    tri.back().C = tofloat3(curr->m_pTriangle->p3);
+                            
+    //
+  }else {
+    assert (curr->m_pTriangle==0);
+    curw.Radius.w = 0;
+    bbox.push_back(BBox());
+    bbox.push_back(BBox());
+    createBrookGeometryRecurse(curr->m_pChild0,
+                               *(bbox.end()-2),
+                               bbox,
+                               tri);
+    createBrookGeometryRecurse(curr->m_pChild1,
+                               bbox.back(),
+                               bbox,
+                               tri);
+  }
+}
+void csRapidCollider::createBrookGeometry(std::vector<BBox>&bbox,
+                                          std::vector<Tri>&tri){
+  bbox.push_back(BBox());
+  bbox.push_back(BBox());//keep things two-box aligned
+  createBrookGeometryRecurse(m_pCollisionModel->GetTopLevelBox(),
+                             bbox.front(),
+                             bbox,
+                             tri);
+  while (tri.size()%2048)
+    tri.push_back(Tri());
+  while (bbox.size()%2048)
+    bbox.push_back(BBox());
+}
 void csRapidCollider::GeometryInitialize (const std::vector <bsp_polygon> &polygons)
 {
   m_pCollisionModel = NULL;

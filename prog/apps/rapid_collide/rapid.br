@@ -148,7 +148,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   float dv0dv2;
   float3 vp;
   float3 up;
-  float EPSILON=.000001;
+  float EPSILON=.00001;
   float3 z3ro = {0,0,0};
   float b,c,max;
   float ret,coplanar;
