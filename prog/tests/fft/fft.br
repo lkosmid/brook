@@ -19,102 +19,73 @@
 #include <math.h>
 
 
-///Complex utilities/////////////
-typedef struct complex {
-  double r;
-  double i;
-}complex;
 
 
-void init(complex *a)
+kernel void init(out float2 a<>)
 {
-  a->r = 0.0;
-  a->i = 0.0;
+  a.x = 0.0;
+  a.y = 0.0;
 }
 
 
-void copy(complex *a, complex *b)
+kernel void copy(out float2 a<>, float2 b<>)
 {
-  a->r = b->r;
-  a->i = b->i;
+  a.x = b.x;
+  a.y = b.y;
 }
 
 
-complex add(complex a, complex b)
+kernel void add(float2 a <>, float2 b <>, out float2 c<>)
 {
-  complex c;
-  c.r = a.r + b.r;
-  c.i = a.i + b.i;
-  return c;
+  c.x = a.x + b.x;
+  c.y = a.y + b.y;
 }
 
 
-complex sub(complex a, complex b)
+kernel void sub(float2 a <>, float2 b <>, out float2 c <>)
 {
-  complex c;
-  c.r = a.r - b.r;
-  c.i = a.i - b.i;
-  return c;
+  c.x = a.x - b.x;
+  c.y = a.y - b.y;
 }
 
 
-complex mult(complex a, complex b)
+kernel void mult(float2 a <>, float2 b <>, out float2 c <>)
 {
-  complex c;
-  c.r = a.r*b.r - a.i*b.i;
-  c.i = a.r*b.i + a.i*b.r;
-  return c;
+  c.x = a.x*b.x - a.y*b.y;
+  c.y = a.x*b.y + a.y*b.x;
 }
 
 
 //////////////////////////////////////////////////
-
-
-// typedef for our own convenience
-typedef stream complex streamcmplx;
-typedef stream complex *streamcmplx2;
-
+//FIXME
 
 // streamFileLoad()
 kernel void
 streamFileLoad(FileStream f, out streamcmplx p) {
   float fReal, fImag;
   brfscanf (f, "%f %f", &fReal, &fImag);
-  p.r = fReal;
-  p.i = fImag;
-}
-
-
-// streamFileStore() 
-kernel void
-streamFileStore(out FileStream f, streamcmplx p) {
-  brfprintf(f, "%f  %f\n", p.r, p.i);
-}
-
-
-// streamPrint()
-kernel void
-streamPrint(streamcmplx s){
-  printf(" %f  j%f\n", s.r, s.i);
-}
-
-
-kernel void
-streamPrint2(streamcmplx2 s) {
-  printf("%f  j%f\n", s[0].r, s[0].i);
-  printf("%f  j%f\n", s[1].r, s[1].i);
+  p.x = fReal;
+  p.y = fImag;
 }
 
 
 // DFT()
 // Implements the Perfect Shuffle algorithm
 kernel void
-DoDFT (streamcmplx  r, streamcmplx t, streamcmplx twiddle,
-       out streamcmplx2 s_prime) {
-  s_prime[0] = add(r, t);
-  s_prime[1] = mult(sub(r,t), twiddle);
+DoDFT (float2  r<>, float2  t<>, float2 twiddle<>,
+       out float4 s_prime<>) {
+  s_prime.xy = add(r, t);
+  s_prime.zw = (r-t)* twiddle;
 }
-
+kernel void flattenS (out float2 s<>, 
+                      float4 s_prime<>, 
+                      iter float address<>)
+{
+   if (round (fmod(address,2))==1.0f)
+      s = s_prime.zw;
+   else
+      s = s_prime.xy;
+}
 
 // Utilities and the BitReverse() procedure
 // To compute 2**x
@@ -152,7 +123,7 @@ int BitReverse(int nNumberToReverse, int nNumberOfBits) {
 void
 BitReverseStream(streamcmplx r, streamcmplx s, int nDataLength) {
   int nIndex, B = 1;  
-  complex *s_array = (complex *) calloc(nDataLength, sizeof(complex));
+  float2 *s_array = (float2 *) calloc(nDataLength, sizeof(float2));
 
 
   // This assumes that nDataLength is a power of 2
@@ -169,7 +140,7 @@ BitReverseStream(streamcmplx r, streamcmplx s, int nDataLength) {
   for(nIndex = 1; nIndex < nDataLength-1; ++nIndex) 
     {
       int nReversedIndex = BitReverse(nIndex, B);
-      complex temp;
+      float2 temp;
       // Need to swap only half of the index 
       // and no need to swap the first and last
       if (nReversedIndex < nIndex) 
@@ -258,7 +229,7 @@ int main(int argc, char **argv)
       {
         if(0 == nPassCounter)
           {
-            W = twiddle; //BAD_OLD_REF: streamCopy(W, twiddle);
+            copy (W,twiddle); //BAD_OLD_REF: streamCopy(W, twiddle);
           }
         else
           {
@@ -277,8 +248,11 @@ int main(int argc, char **argv)
         DoDFT(r, t, W, s_prime);
 
 
-        // To support the `in-place' perfect-shuffle algorithm 
-        streamFlatten(s, s_prime);
+        // To support the `in-place' perfect-shuffle algorithm
+        if (1) {
+           
+           flattenS(s, s_prime,iter);
+        }
         // update the PassCounter
         ++nPassCounter;
       } // while()
@@ -288,8 +262,6 @@ int main(int argc, char **argv)
     // the FFT(s) itself.
     // NOTE: streamBitReverse() isn't yet implemented. Just an emulation 
     BitReverseStream(s_out, s, nDataLength);
-    streamFileStore(fpOut, s_out);  
-
 
     printf("The FFT of the given data is\n");
     streamPrint(s_out); 

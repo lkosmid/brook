@@ -80,7 +80,7 @@ namespace brook {
 
     unsigned int getElementSize() const;
     virtual int getFieldCount() const = 0;
-    virtual __BRTStreamType getIndexedFieldType(int) const = 0;
+    virtual __BRTStreamType getIndexedFieldType(int i) const=0;
 
     //virtual __BRTStreamType getStreamType ()const=0;
     virtual unsigned int getTotalSize() const {
@@ -176,7 +176,7 @@ namespace brook {
   {
   public:
     stream(const __BRTStreamType*,...);
-    stream(int * extents,int dims,__BRTStreamType type);
+    stream(int * extents,int dims,const __BRTStreamType *type);
     stream( const ::brook::iter& );
     ~stream() {
       if(_stream) _stream->Release();

@@ -158,10 +158,17 @@ namespace brook {
     _stream = brook::RunTime::GetInstance()->CreateStream(
       (int)elementTypes.size(), &elementTypes[0], (int)extents.size(), &extents[0] );
   }
-  stream::stream(int * extents,int dims,__BRTStreamType type)
+  stream::stream(int * extents,int dims,const __BRTStreamType *type)
     : _stream(0)
   {
-    _stream = brook::RunTime::GetInstance()->CreateStream( 1, &type,dims,extents);
+     std::vector<__BRTStreamType>elementTypes;
+     const __BRTStreamType * e = type;
+     while (*e!=__BRTNONE) {
+        elementTypes.push_back(*e);
+        e++;
+     }
+    _stream = brook::RunTime::GetInstance()->CreateStream
+       (elementTypes.size(),&elementTypes[0], dims,extents);
   }
 
   stream::stream( const ::brook::iter& i )

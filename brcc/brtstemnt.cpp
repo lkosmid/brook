@@ -155,7 +155,18 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
       }
    }
    for (iter = vouts->begin();iter!=vouts->end();++iter) {
-     out << "  std::vector<::brook::stream *> ";
+      out << "  std:: vector <__BRTStreamType> ";
+      std::string typevector = getDeclStream(ft->args[*iter],"_types");
+      out << typevector <<";"<<std::endl;
+      std::string streamiter = getDeclStream(ft->args[*iter],"_iter");
+      out << "  for (int "<<streamiter << " = 0; ";
+      out <<streamiter<<" < "<<ft->args[*iter]->name->name;
+      out <<"->getFieldCount(); ++";
+      out << streamiter << ") \n";
+      out << "    "<<typevector<<".push_back("<<ft->args[*iter]->name->name;
+      out << "->getIndexedFieldType("<<streamiter<<"));\n";
+      out << "  "<<typevector<<".push_back(__BRTNONE);\n";
+     out << "  std::vector<StreamHolder> ";
       out<<getDeclStream(ft->args[*iter],"_outputs")<<";";
       out << std::endl;
       out << "  bool "<<getDeclStream(ft->args[*iter],"_values")<<" = true;";
@@ -169,13 +180,13 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
    }
    out << ") {"<<std::endl;
    for (iter = vouts->begin();iter!=vouts->end();++iter) {
+      std::string typevector = getDeclStream(ft->args[*iter],"_types");
       out << "    if ("<<getDeclStream(ft->args[*iter],"_values")<<")";
       out << std::endl;
       out << "      "<<getDeclStream(ft->args[*iter],"_outputs");
       out << ".push_back (new ::brook::stream (maxextents, ";
-      out << "__dimension, ";
-      out << ft->args[*iter]->name->name<<"->getStreamType()));"<<std::endl;
-      
+      out << "__dimension, &"<<typevector<<"[0]));";
+      out <<std::endl;      
    }
 }
 std::string undecoratedBase(Decl * decl) {
@@ -210,8 +221,9 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    for (iter = beginvout;iter!=endvout;++iter) {
       Decl * decl = ft->args[*iter];
       std::string type = undecoratedBase(decl);
-      out<< "  ::brook::stream "<<getDeclStream(decl,"_temp")<<"(";
-      out<< decl->name->name<< "->getStreamType(),1,1,-1);"<<std::endl;
+      out<< "  ::brook::stream "<<getDeclStream(decl,"_temp")<<"(&";
+      std::string typevector = getDeclStream(ft->args[*iter],"_types");
+      out<< typevector<<"[0],1,1,-1);"<<std::endl;
       out<< "  combineStreams";
       out << type <<" (&"<<getDeclStream(decl,"_outputs")<<"[0],";
       out<< std::endl;
@@ -241,19 +253,19 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static void printPrototypes(std::ostream & out, std::string type) {
    out << "extern int finiteValueProduced" ;
-   out << type << " (::brook::stream * input);\n"
+   out << type << " (StreamHolder input);\n"
       "extern float shiftValues";
-   out << type << "(::brook::stream *list_stream,\n"
-      "                         ::brook::stream *output_stream,\n"
+   out << type << "(StreamHolder list_stream,\n"
+      "                         StreamHolder output_stream,\n"
       "                         int WIDTH, \n"
       "                         int LENGTH, \n"
       "                         int sign);\n"
       "void combineStreams";
-   out << type << "(::brook::stream **streams,\n"
+   out << type << "(StreamHolder *streams,\n"
       "                     unsigned int num,\n"
       "                     unsigned int width, \n"
       "                     unsigned int length,\n"
-      "                     ::brook::stream * output) ;\n";
+      "                     StreamHolder output) ;\n";
    
 }
 void
