@@ -567,10 +567,12 @@ void combineStreamsHelper (struct __BRTStream **streams,
 }
 void combineStreams (struct __BRTStream **streams,
                      unsigned int num,
+                     unsigned int width, 
                      unsigned int length,
                      struct __BRTStream * output) {
    unsigned int  lengthmodmodulus=length%num;
-   
+   float tmp<(num*width),length>;
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
@@ -686,6 +688,12 @@ void cpuGetIndexAt(float2 inputindex,
 reduce void valueProduced (float input <>, reduce float output<>) {
    output=isfinite(input)?input:output;
 }
+int finiteValueProduced (struct __BRTStream * input) {
+   float output;
+   valueProduced(*input,output);
+   return finite_float(output);
+}
+
 kernel void getIndexAt(float4 inputindex,
                        float shiftRight,
                        float2 maxvalue,
@@ -1045,7 +1053,8 @@ int main (int argc,char ** argv) {
    {
       unsigned int mylength=3; unsigned int mywidth=7;
       unsigned int mynum=myglobalnum;
-      float output<(mywidth*mynum),mylength>;
+      //      float output<(mywidth*mynum),mylength>;
+      float output<1,1>;
       float a<mywidth,mylength>;
       float b<mywidth,mylength>;
       float c<mywidth,mylength>;
@@ -1112,7 +1121,8 @@ int main (int argc,char ** argv) {
                                             &a1,&b1,&c1,&d1,&e1,&f1,&g1,&h1,0};
          combineStreams(streams,
                         mynum,
-                        mylength,
+                        mywidth,
+                        mylength,                        
                         &output);
       }else {
          streamCombine4(a,b,c,d,8,0,mylength,mylength%4,output,output);
