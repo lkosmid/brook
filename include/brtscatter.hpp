@@ -89,46 +89,53 @@ void streamScatterOpIndexDet(const T* data,
    }
 }
 
-#define streamScatterOp1 streamScatterOp
-#define streamScatterOp2 streamScatterOp
-#define streamScatterOp3 streamScatterOp
-#define streamScatterOp4 streamScatterOp
 
-                            
-template <class Functor> void streamScatterOp (const __BRTStream &s, 
-                                               const __BRTStream &index,
-                                               const __BRTStream &array, 
-                                               const Functor&op) {
+template <class Functor> void streamScatterOp4 (const __BRTStream &s, 
+                                                const __BRTStream &index,
+                                                const __BRTStream &array, 
+                                                const Functor&op) {
    unsigned int bounds = s->getTotalSize();
-   switch (s->getStreamType()) {
-   case __BRTFLOAT4:{
-      const __BrtFloat4* data = 
-         (const __BrtFloat4 *) s->getData(brook::Stream::READ);
-      streamScatterOpIndexDet(data,index,array,bounds,op);
-      break;
-   }
-   case __BRTFLOAT3:{
-      const __BrtFloat3* data = 
-         (const __BrtFloat3 *) s->getData(brook::Stream::READ);
-      streamScatterOpIndexDet(data,index,array,bounds,op);
-      break;
-   }
-   case __BRTFLOAT2:{
-      const __BrtFloat2* data = 
-         (const __BrtFloat2 *) s->getData(brook::Stream::READ);
-      streamScatterOpIndexDet(data,index,array,bounds,op);
-      break;
-   }
-   case __BRTFLOAT:
-   default:{
-      const __BrtFloat1* data = 
-         (const __BrtFloat1 *) s->getData(brook::Stream::READ);
-      streamScatterOpIndexDet(data,index,array,bounds,op);
-   }
-      break;
-   }
+   const __BrtFloat4* data = 
+      (const __BrtFloat4 *) s->getData(brook::Stream::READ);
+   streamScatterOpIndexDet(data,index,array,bounds,op);
    s->releaseData(brook::Stream::READ); 
    array->releaseData(brook::Stream::READ);      
    index->releaseData(brook::Stream::READ);
-}
+}   
+template <class Functor> void streamScatterOp3 (const __BRTStream &s, 
+                                                const __BRTStream &index,
+                                                const __BRTStream &array, 
+                                                const Functor&op) {
+   unsigned int bounds = s->getTotalSize();
+   const __BrtFloat3* data = 
+      (const __BrtFloat3 *) s->getData(brook::Stream::READ);
+   streamScatterOpIndexDet(data,index,array,bounds,op);
+   s->releaseData(brook::Stream::READ); 
+   array->releaseData(brook::Stream::READ);      
+   index->releaseData(brook::Stream::READ);
+}   
+template <class Functor> void streamScatterOp2 (const __BRTStream &s, 
+                                                const __BRTStream &index,
+                                                const __BRTStream &array, 
+                                                const Functor&op) {
+   unsigned int bounds = s->getTotalSize();
+   const __BrtFloat2* data = 
+      (const __BrtFloat2 *) s->getData(brook::Stream::READ);
+   streamScatterOpIndexDet(data,index,array,bounds,op);
+   s->releaseData(brook::Stream::READ); 
+   array->releaseData(brook::Stream::READ);      
+   index->releaseData(brook::Stream::READ);
+}   
+template <class Functor> void streamScatterOp1 (const __BRTStream &s, 
+                                                const __BRTStream &index,
+                                                const __BRTStream &array, 
+                                                const Functor&op) {
+   unsigned int bounds = s->getTotalSize();
+   const __BrtFloat1* data = 
+      (const __BrtFloat1 *) s->getData(brook::Stream::READ);
+   streamScatterOpIndexDet(data,index,array,bounds,op);
+   s->releaseData(brook::Stream::READ); 
+   array->releaseData(brook::Stream::READ);      
+   index->releaseData(brook::Stream::READ);
+}   
 #endif

@@ -55,7 +55,7 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
                         symbolAppend[0]='4';
                      }else if (typ&BT_Float3) {
                         symbolAppend[0]='3';
-                     }else if (typ%BT_Float2) {
+                     }else if (typ&BT_Float2) {
                         symbolAppend[0]='2';
                      }
                   }
