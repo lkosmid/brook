@@ -30,8 +30,8 @@ void scatterOpArrayHelper (const T* s,
 
 template <class Functor, class T> 
 void streamScatterOpIndexDet(const T* data,
-                             const __BRTStream & index,
-                             const __BRTStream & out,
+                             brook::StreamInterface * index,
+                             brook::StreamInterface * out,
                              unsigned int bounds,
                              const Functor &op) {
    unsigned int dim = out->getDimension();
@@ -90,10 +90,11 @@ void streamScatterOpIndexDet(const T* data,
 }
 
 
-template <class Functor> void streamScatterOp4 (const __BRTStream &s, 
-                                                const __BRTStream &index,
-                                                const __BRTStream &array, 
-                                                const Functor&op) {
+template <class Functor> 
+void streamScatterOp4 (brook::StreamInterface *s, 
+                       brook::StreamInterface *index,
+                       brook::StreamInterface *array, 
+                       const Functor&op) {
    unsigned int bounds = s->getTotalSize();
    const __BrtFloat4* data = 
       (const __BrtFloat4 *) s->getData(brook::Stream::READ);
@@ -102,9 +103,9 @@ template <class Functor> void streamScatterOp4 (const __BRTStream &s,
    array->releaseData(brook::Stream::READ);      
    index->releaseData(brook::Stream::READ);
 }   
-template <class Functor> void streamScatterOp3 (const __BRTStream &s, 
-                                                const __BRTStream &index,
-                                                const __BRTStream &array, 
+template <class Functor> void streamScatterOp3 (brook::StreamInterface *s, 
+                                                brook::StreamInterface *index,
+                                                brook::StreamInterface *array, 
                                                 const Functor&op) {
    unsigned int bounds = s->getTotalSize();
    const __BrtFloat3* data = 
@@ -114,9 +115,9 @@ template <class Functor> void streamScatterOp3 (const __BRTStream &s,
    array->releaseData(brook::Stream::READ);      
    index->releaseData(brook::Stream::READ);
 }   
-template <class Functor> void streamScatterOp2 (const __BRTStream &s, 
-                                                const __BRTStream &index,
-                                                const __BRTStream &array, 
+template <class Functor> void streamScatterOp2 (brook::StreamInterface *s, 
+                                                brook::StreamInterface *index,
+                                                brook::StreamInterface *array, 
                                                 const Functor&op) {
    unsigned int bounds = s->getTotalSize();
    const __BrtFloat2* data = 
@@ -126,9 +127,9 @@ template <class Functor> void streamScatterOp2 (const __BRTStream &s,
    array->releaseData(brook::Stream::READ);      
    index->releaseData(brook::Stream::READ);
 }   
-template <class Functor> void streamScatterOp1 (const __BRTStream &s, 
-                                                const __BRTStream &index,
-                                                const __BRTStream &array, 
+template <class Functor> void streamScatterOp1 (brook::StreamInterface *s, 
+                                                brook::StreamInterface *index,
+                                                brook::StreamInterface *array, 
                                                 const Functor&op) {
    unsigned int bounds = s->getTotalSize();
    const __BrtFloat1* data = 

@@ -110,6 +110,10 @@ public:
     return stream;
   }
 
+  operator brook::StreamInterface*() const {
+    return stream;
+  }
+
   brook::Stream* operator->() const {
     return stream;
   }
@@ -129,6 +133,10 @@ public:
   }
 
   operator brook::Iter*() const {
+    return iter;
+  }
+
+  operator brook::StreamInterface*() const {
     return iter;
   }
 
