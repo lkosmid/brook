@@ -198,7 +198,7 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
         linearReorgSplitTriangles(sharedTriangles,sharedNeighbors,newTriangles,newNeighbors,epsilon,stretchX);
         streamSwap(*triangles,newTriangles);
         streamSwap(*neighbors,newNeighbors);
-        if (debugLoop)
+        if (0)
         {
           STri  *tri;
           Neighbor  *neigh;
@@ -414,13 +414,14 @@ int  subdivision(int  argc, char  **argv)
       expandVertexArray(&v,3 * toi(streamSize(triangles).y) * toi(streamSize(triangles).x));
       streamWrite(outputTri,v.v + sizey);
     }
-
-    printf("%d\n",v.size);
-    for (i = 0; i < v.size; i++)
-    {
-      printf("%3.3f, %3.3f, %3.3f\n",v.v[i].x,v.v[i].y,v.v[i].z);
+    if (debugLoop) {
+       printf("%d\n",v.size);
+       for (i = 0; i < v.size; i++)
+          {
+             printf("%3.3f, %3.3f, %3.3f\n",v.v[i].x,v.v[i].y,v.v[i].z);
+          }
+       
     }
-
     vcount = numTriangles;
     for (i = 0; i < (unsigned int ) (subdivisiondepth); ++i)
     {
