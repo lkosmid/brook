@@ -135,15 +135,24 @@ CPUGatherType::CPUGatherType(const ArrayType &t,bool toplevel):ArrayType(*static
 Type * CPUGatherType::dup0()const {
 	return new CPUGatherType (*this);
 }
+void CPUGatherType::printType(std::ostream &out, Symbol * name, bool showBase, int level) const
+{
+
+	printBefore(out,name,level);
+	printAfter(out);	
+	
+}
 void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) const {
 	Symbol nothing;
 	nothing.name="";
 	out << "Array"<<dimension<<"d<";
-	subType->getBase()->printBefore(out,&nothing,0);
+	printBase(out,level);
+	
 	const Type * t = this;
 	for (unsigned int i=0;i<dimension&&i<3;i++) {
 		if (i!=0)
-			out <<", ";
+			out <<" ";
+		out <<", ";
 		const ArrayType *a =static_cast<const ArrayType *>(t);
 		a->size->print(out);
 		t = a->subType;			

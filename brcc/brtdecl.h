@@ -57,6 +57,7 @@ class CPUGatherType:public ArrayType{public:
 	int dimension;
 	CPUGatherType(const ArrayType &t,bool toplevel=true);
 	Type * dup0()const;
+	void printType(std::ostream & out, Symbol *name, bool showBase, int level) const;
 	void printBefore(std::ostream & out, Symbol *name, int level) const;
 	void printAfter(std::ostream &out)const;
 };
