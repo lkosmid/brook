@@ -351,7 +351,7 @@ void cpuIterate( int inSize, int inIterations, int& outMicroseconds )
 //  springSets[1].dampingConstant = springSets[0].dampingConstant;
   springSets[1].springConstant = 0;
   springSets[1].dampingConstant = 0;
-  springSets[1].restLength = springSets[0].restLength * sqrt(2.0);
+  springSets[1].restLength = springSets[0].restLength * (float) sqrt(2.0);
 
   // bend
   springSets[2].offset0 = 2;
