@@ -29,7 +29,7 @@ namespace brook {
        typedef void nDcallable(const std::vector<void *>&args,
                                const std::vector<const unsigned int *>&extents,
                                const std::vector<unsigned int> &dims,
-                               unsigned int * start,
+                               const unsigned int * start,
                                const unsigned int * extent);
        typedef void combinable(const std::vector<void*>&args,
                                const std::vector<const unsigned int *>&extents,

@@ -83,10 +83,10 @@ namespace brook{
     void CPUKernel::PushReduce(void * data, __BRTStreamType type) {
        if (type==__BRTSTREAM) {
           brook::Stream * stream = *(const __BRTStream *)data;
+          reductions.push_back(ReductionArg(args.size(),type,stream));
           args.push_back(NULL);
           dims.push_back(stream->getDimension());
           extents.push_back(stream->getExtents());
-          reductions.push_back(ReductionArg(args.size(),type,stream));
           if (streamReduction) {
              AssertSameSize(reductions.back().stream,streamReduction);
           }else {
@@ -150,12 +150,10 @@ namespace brook{
              args[(*j).which]=(*j).stream->getData(brook::Stream::WRITE);
           }
           unsigned int * buffer = (unsigned int *)
-             malloc(4*dim*sizeof(unsigned int));
+             malloc(2*dim*sizeof(unsigned int));
           unsigned int * e =buffer;
-          memset (e,0,sizeof(unsigned int)*4*dim);
-          unsigned int *f=e+dim;
-          unsigned int * mag = f+dim;
-          unsigned int * scratch=mag+dim;
+          memset (e,0,sizeof(unsigned int)*2*dim);
+          unsigned int * mag = e+dim;
           for (i=0;i<dim;++i) {
              if (i<rdim)
                 mag[i] = extent[i]/rextent[i];
@@ -168,11 +166,7 @@ namespace brook{
                 args[(*j).which]=(char*)args[(*j).which]+
                    (*j).stream->getStride();
              }
-             for (k=0;k<dim;++k) {
-                scratch[k]=e[k];
-                f[k]=e[k]+mag[k];
-             }
-             (*nDfunc)(args,extents,dims,scratch,f);
+             (*nDfunc)(args,extents,dims,e,mag);
              e[0]+=mag[0];
              for (k=0;k<rdim-1;++k) {
                 if (e[k]>=extent[k]){
