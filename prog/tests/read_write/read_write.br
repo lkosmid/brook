@@ -1,0 +1,44 @@
+// read_write.br
+
+#include <stdio.h>
+
+int main() {
+	int i, j;
+	float a< 256 >;
+	float b< 16, 16 >;
+	float input_a[256];
+	float output_a[256];
+	float input_b[32][8];
+	float output_b[32][8];
+	
+	// 1 dimensional stream
+	for( i = 0; i < 256; i++ )
+		input_a[i] = (float)(i);
+	
+	streamRead( a, input_a );
+	streamWrite( a, output_a );
+	
+	for( i = 0; i < 32; i++ )
+	{
+		for( j = 0; j < 8; j++ )
+			printf("%3.2f ", output_a[8*i+j]);
+		printf("\n");
+	}
+	
+	// 2 dimensional stream
+	for( i = 0; i < 32; i++ )
+		for( j = 0; j < 8; j++ )
+			input_b[i][j] = (float)(8*i+j);
+	
+	streamRead( b, input_b );
+	streamWrite( b, output_b );
+	
+	for( i = 0; i < 32; i++ )
+	{
+		for( j = 0; j < 8; j++ )
+			printf("%3.2f ", output_b[i][j]);
+		printf("\n");
+	}
+	
+	return 0;
+}

@@ -1,0 +1,66 @@
+// sum.br
+
+#include <stdio.h>
+
+kernel void gather1( float index<>, float a[100], out float b<> ) {
+	b = a[ index.x ];
+}
+
+kernel void gather2( float2 index<>, float a[10][10], out float b<> ) {
+	b = a[ index.xy ];
+}
+
+int main() {
+	int i, j;
+	float index1< 100 >;
+	float a1< 100 >;
+	float b1< 100 >;
+	float2 index2< 10, 10 >;
+	float a2< 10, 10 >;
+	float b2< 10, 10 >;
+	float input_index1[100];
+	float input_a1[100];
+	float output_b1[100];
+	float2 input_index2[10][10];
+	float input_a2[10][10];
+	float output_b2[10][10];
+	
+	// initialize data
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+		{
+			input_index1[10*i+j] = (float)(10*i+j);
+			input_a1[10*i+j] = (float)(99 - (10*i+j));
+			input_index2[i][j].x = (float)j;
+			input_index2[i][j].y = (float)i;
+			input_a2[i][j] = (float)(99 - (10*i+j));
+		}
+	}
+	streamRead( index1, input_index1 );
+	streamRead( a1, input_a1 );
+	streamRead( index2, input_index2 );
+	streamRead( a2, input_a1 );
+	
+	gather1( index1, a1, b1 );
+	gather2( index2, a2, b2 );
+	
+	streamWrite( b1, output_b1 );
+	streamWrite( b2, output_b2 );
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+			printf( "%3.2f ", output_b1[10*i+j] );
+		printf("\n");
+	}
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+			printf( "%3.2f ", output_b2[i][j] );
+		printf("\n");
+	}
+	
+	return 0;
+}
