@@ -708,10 +708,12 @@ void Blas_Time(int argc, char** argv) {
 
   printf("\n");  
 
-  for (i=0; i<num_iter;i++) {
-    iterations = skip*(i+1);
-    do_spMatVec(length, iterations, ms, flops);
-    printData("spMat", length, iterations, ms, flops);
+  if (length <= 2048) {
+    for (i=0; i<num_iter;i++) {
+      iterations = skip*(i+1);
+      do_spMatVec(length, iterations, ms, flops);
+      printData("spMat", length, iterations, ms, flops);
+    }
   }
   
 
