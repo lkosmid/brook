@@ -1,7 +1,6 @@
 // imageproc.br
 // Let's try to do some image processing
-// We are going to apply a 3x3 mask defined by the user
-// across the image.
+// We are going to apply a 3x3 mask across the image.
 // We use gather, iterators, outstreams
 
 #include <stdio.h>
@@ -46,11 +45,12 @@ int main() {
     float img<INSIZE,INSIZE>;
     float o_img<OUTSIZE,OUTSIZE>;
     
-    input = (unsigned char*)malloc(INSIZE*INSIZE*sizeof(unsigned char));
-    output = (unsigned char*)malloc(OUTSIZE*OUTSIZE*sizeof(unsigned char));
-    inputf = (float*)malloc(INSIZE*INSIZE*sizeof(float));
+    input   = (unsigned char*)malloc(INSIZE*INSIZE*sizeof(unsigned char));
+    output  = (unsigned char*)malloc(OUTSIZE*OUTSIZE*sizeof(unsigned char));
+    inputf  = (float*)malloc(INSIZE*INSIZE*sizeof(float));
     outputf = (float*)malloc(OUTSIZE*OUTSIZE*sizeof(float));
 
+    // Lets try a simple shift to the left
     for(i=0; i<3; i++){
         for(j=0; j<3; j++){
             mask[i][j] = 0.;
@@ -58,13 +58,14 @@ int main() {
     }
     mask[1][0] = 1.;
 
+    // Fill the input with random numbers
     for(i=0; i<INSIZE; i++){
         for(j=0; j<INSIZE; j++){
             input[i*INSIZE+j] = (unsigned char)rand();
         }
     }
 
-    // convert pgm input to float
+    // convert (pgm) input to float
     for(i=0; i<INSIZE; i++){
         for(j=0; j<INSIZE; j++){
             inputf[i*INSIZE+j] = (float)input[i*INSIZE+j];
@@ -76,7 +77,7 @@ int main() {
     process_img(img, mask_stream, it, o_img );
     streamWrite(o_img, outputf);
 
-    // convert output back to bytes for pgm output
+    // convert output back to bytes for (pgm) output
     for(i=0; i<OUTSIZE; i++){
         for(j=0; j<OUTSIZE; j++){
             output[i*OUTSIZE+j] = (unsigned char)outputf[i*OUTSIZE+j];
@@ -84,12 +85,12 @@ int main() {
     }
 
 
-    // Let's look at the values
+    // Let's make sure the values are what we expect
     for(i=0; i<OUTSIZE; i++){
         for(j=0; j<OUTSIZE; j++){
             if(output[i*OUTSIZE+j] != input[(i+1)*INSIZE+(j)]){
                 fprintf(stderr, "Mismatch - output[%d][%d]: %u, input[%d][%d]: %u\n",
-                      i, j, output[i*OUTSIZE+j], i+1, j+1, input[(i+1)*INSIZE+(j+1)]);
+                      i, j, output[i*OUTSIZE+j], i+1, j+1, input[(i+1)*INSIZE+(j)]);
             }
         }
     }   
