@@ -258,7 +258,6 @@ Expression *ChangeFirstReduceFunction (Expression * e) {
                                  
                                  fc->args.insert(fc->args.begin()+nOrigArgs,new Variable(partial,fc->location));
                               }
-                              break;
                               // change kernels taking in a reduction
                               // to be the appropriate combine function
                               // other kernels might not even have such a 
