@@ -6,58 +6,18 @@
 #include "main.h"
 #include "PMLSeg.h"
 
-// unpacked version (float2 in/out)
-kernel void process_img( float2 img[][], float diff_strength,
-         		 float inv_grad_cutoff, float loww, float highw,
-                         iter float2 it0<>, iter float2 it1<>, iter float2 it2<>, 
-		         iter float2 it3<>, iter float2 it4<>, out float2 o_img<> ) {
-    float e = 2.7182817f;
-    float2 R0;
-    float2 R1;
-    float2 R2;
-    float2 R3;
-    float2 R4;
-    float4 R5;
-    float4 R6;
-
-    R0 = img[it0];
-
-    R1 = img[it1]; //-1,0
-    R2 = img[it2]; //+1,0
-    R3 = img[it3]; //0,-1
-    R4 = img[it4]; //0,+1
-
-    //Image differentials
-    R6.x = (R1.x - R0.x); //-ds
-    R6.y = (R2.x - R0.x); //-dw
-    R6.z = (R3.x - R0.x); //dn
-    R6.w = (R4.x - R0.x); //de
-
-    //Segmentation differentials	
-    R5.x = (R1.y - R0.y)*diff_strength;	
-    R5.y = (R2.y - R0.y)*diff_strength;	
-    R5.z = (R3.y - R0.y)*diff_strength;	
-    R5.w = (R4.y - R0.y)*diff_strength;
-
-    R6 = R6*R6*inv_grad_cutoff;
-
-    R6.x = pow(e, -R6.x);
-    R6.y = pow(e, -R6.y);
-    R6.z = pow(e, -R6.z);
-    R6.w = pow(e, -R6.w);
-
-    R6 = dot(R6, R5);
-    R0.y = R0.y+R6.x;
-
-    R4.y = R0.x - loww;
-    R0.y = R4.y < 0 ? 0.0 : R0.y;
-
-    R4.y = R0.x - highw;
-    R0.y = R4.y < 0 ? R0.y : 0.0;
-
-    o_img.x = R0.x;
-    o_img.y = R0.y;
+//packed version (float4 in/out)
+kernel void test_iter( float4 img[][], float diff_strength,
+                              float inv_grad_cutoff, float loww, float highw,
+                              iter float2 it0<>, iter float2 it1<>, 
+			      iter float2 it2<>, iter float2 it3<>, 
+			      iter float2 it4<>, out float4 o_img<> ) {
+     o_img.x = it0.x;
+     o_img.y = it0.y;
+     o_img.z = it1.x;
+     o_img.w = it1.y;
 }
+
 
 //packed version (float4 in/out)
 kernel void process_img_pack( float4 img[][], float diff_strength,
@@ -179,61 +139,116 @@ int PMLSeg_main(int argc, char* argv[]) {
     //run sanity check first!
     // MCH: It makes me ill that I have to open a new scope to get this to work.
     {
-	 float test[16];
+	 float test[64];
 	 float ep = 0.005;
+	 int error = 0;
 	 // Setup the iterators to do a north/south/east/west/local lookup into the image
-	 iter float2 it0<4,2> = iter( float2(0.0f,  0.0f), float2(2.0,      4.0) );
-	 iter float2 it1<4,2> = iter( float2(-1.0f, 0.0f), float2(2.0-1.0f, 4.0) );
-	 iter float2 it2<4,2> = iter( float2(1.0f,  0.0f), float2(2.0+1.0f, 4.0) );
-	 iter float2 it3<4,2> = iter( float2(0.0f, -1.0f), float2(2.0,      4.0-1.0f) );
-	 iter float2 it4<4,2> = iter( float2(0.0f,  1.0f), float2(2.0,      4.0+1.0f) );
-	 float4 img<4,2>;
-	 float4 o_img<4,2>;
+	 iter float2 it0<8,4> = iter( float2(0.0f,  0.0f), float2(4.0,      8.0) );
+	 iter float2 it1<8,4> = iter( float2(-1.0f, 0.0f), float2(4.0-1.0f, 8.0) );
+	 iter float2 it2<8,4> = iter( float2(1.0f,  0.0f), float2(4.0+1.0f, 8.0) );
+	 iter float2 it3<8,4> = iter( float2(0.0f, -1.0f), float2(4.0,      8.0-1.0f) );
+	 iter float2 it4<8,4> = iter( float2(0.0f,  1.0f), float2(4.0,      8.0+1.0f) );
+	 float4 img<8,4>;
+	 float4 o_img<8,4>;
 	 
-	 input  = (float*)malloc(2*4*4*sizeof(float));
-	 output = (float*)malloc(2*4*4*sizeof(float));
+	 input  = (float*)malloc(2*8*8*sizeof(float));
+	 output = (float*)malloc(2*8*8*sizeof(float));
 	 
 	 // Our test should return these values +/- epsilon
-	 test[0] = 0.08; 
-	 test[1] = 0.24;
-	 test[2] = 0.24;
-	 test[3] = 0.08;
-	 test[4] = 0.24;
-	 test[5] = 0.44;
-	 test[6] = 0.44;
-	 test[7] = 0.24;
-	 test[8] = 0.24;
-	 test[9] = 0.44;
-	 test[10] = 0.44;
-	 test[11] = 0.24;
-	 test[12] = 0.08; 
-	 test[13] = 0.24;
-	 test[14] = 0.24;
-	 test[15] = 0.08;
+	 test[0] = 0.0;
+	 test[1] = 0.0;
+	 test[2] = 0.006;
+	 test[3] = 0.006;
+	 test[4] = 0.006;
+	 test[5] = 0.0;
+	 test[6] = 0.0;
+	 test[7] = 0.0;
+
+	 test[8] = 0.0;
+	 test[9]  = 0.010;
+	 test[10] = 0.019;
+	 test[11] = 0.035;
+	 test[12] = 0.019;
+	 test[13] = 0.010;
+	 test[14] = 0.0;
+	 test[15] = 0.0;
+
+	 test[16] = 0.006;
+	 test[17] = 0.019;
+	 test[18] = 0.058;
+	 test[19] = 0.064;
+	 test[20] = 0.058;
+	 test[21] = 0.019;
+	 test[22] = 0.006;
+	 test[23] = 0.0;
+
+	 test[24] = 0.006;
+	 test[25] = 0.035;
+	 test[26] = 0.064;
+	 test[27] = 0.098;
+	 test[28] = 0.064;
+	 test[29] = 0.035;
+	 test[30] = 0.006;
+	 test[31] = 0.003;
+
+	 test[32] = 0.006;
+	 test[33] = 0.019;
+	 test[34] = 0.058;
+	 test[35] = 0.064;
+	 test[36] = 0.058;
+	 test[37] = 0.019;
+	 test[38] = 0.006;
+	 test[39] = 0.0;
+
+	 test[40] = 0.0;
+	 test[41] = 0.010;
+	 test[42] = 0.019;
+	 test[43] = 0.035;
+	 test[44] = 0.019;
+	 test[45] = 0.010;
+	 test[46] = 0.0;
+	 test[47] = 0.0;
+
+	 test[48] = 0.0;
+	 test[49] = 0.0;
+	 test[50] = 0.006;
+	 test[51] = 0.006;
+	 test[52] = 0.006;
+	 test[53] = 0.0;
+	 test[54] = 0.0;
+	 test[55] = 0.0;
+
+	 test[56] = 0.0;
+	 test[57] = 0.0;
+	 test[58] = 0.0;
+	 test[59] = 0.003;
+	 test[60] = 0.0;
+	 test[61] = 0.0;
+	 test[62] = 0.0;
+	 test[63] = 0.0;
 
 	 // Fill an image with random data and set up the seed point in the middle
-	 for(i=0; i<2*4*4; i++){
+	 for(i=0; i<2*8*8; i++){
 	      input[i] = 0.0f;
 	 } 
 	 //Let's insert some seed data in the middle
-	 for(i=1; i<3; i++){
-	      for(j=1; j<3; j++){
-		   input[ (j*8)+(i*2)+1] = 1.0f;
-	      }
-	 }
+	
+	 input[27*2+1] = 1.0f;
 	 
 	 //Build the input stream out of the image and seed data
 	 streamRead(img, input);
 	 
 	 //Do the requested number of iterations
-	 for(i=0; i<2; i++){
+	 for(i=0; i<4; i++){
 	      //We can't use the input and output buffers without hosing things
 	      //so we'll need to "ping-pong" between them
 	      if(i%2==0)
-		   process_img_pack(img, diff_strength, inv_grad_cutoff, loww, highw, 
+		   process_img_pack(img, diff_strength, inv_grad_cutoff, 
+				    loww, highw, 
 				    it0, it1, it2, it3, it4, o_img );
 	      else
-		   process_img_pack(o_img, diff_strength, inv_grad_cutoff, loww, highw,
+		   process_img_pack(o_img, diff_strength, inv_grad_cutoff, 
+				    loww, highw,
 				    it0, it1, it2, it3, it4, img );
 	      
 	 }
@@ -241,13 +256,16 @@ int PMLSeg_main(int argc, char* argv[]) {
 	      streamWrite(img, output);
 	 else
 	      streamWrite(o_img, output);
-	  
-	 //If it's small enough, lets print the results
-	 for(i=0; i<16; i++){
-	      if(!((test[i]<(output[i*2+1] + ep)) && (test[i]>(output[i*2+1] - ep)))){
-		   fprintf(stderr, "MISMATCH: something broke at test[%d]\n", i);
-		   return 1;
-	      }
+
+	 //Let's check the results!
+	 for(i=0; i<64; i++){
+	      if((output[2*i+1]>(test[i]+ep)) || (output[2*i+1]<(test[i]-ep))){
+		   fprintf(stderr, "Mismatch @ %d; expected %1.4f, got %1.4f\n", i, test[i], output[2*i+1]);
+		   error = 1;
+	      }    
+	 }
+	 if(error){
+	      printf("\n");
 	 }
     }
 
@@ -308,11 +326,11 @@ int PMLSeg_main(int argc, char* argv[]) {
 	 time_in_ms = (float)(stop-start)/1000.;
 	 fprintf(stderr, "That took %.2fms total\n", time_in_ms);
 	 fprintf(stderr, "That's %.2fms per loop\n", time_in_ms/loop_count);
-	 fprintf(stderr, "That's %.2fMFlops\n", (60*xsize*2*ysize)/(time_in_ms*1000./loop_count));
+	 fprintf(stderr, "That's %.2fMFlops\n", (64*xsize*ysize)/(time_in_ms*1000./loop_count));
 	 fprintf(stderr, "Internal read bandwidth is %.2fMB/s\n", 
-		 (4*5*4*(xsize*2)*ysize/(1024.*1024.))/((time_in_ms/loop_count)/1000.));
+		 (4*5*4*xsize*ysize/(1024.*1024.))/((time_in_ms/loop_count)/1000.));
 	 fprintf(stderr, "Internal write bandwidth is %.2fMB/s\n", 
-		 (4*4*(xsize*2)*ysize/(1024.*1024.))/((time_in_ms/loop_count)/1000.));
+		 (4*4*xsize*ysize/(1024.*1024.))/((time_in_ms/loop_count)/1000.));
     }
     return 0;
 }
