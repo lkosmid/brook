@@ -59,7 +59,8 @@
 
 
 \**************************************************************************/
-
+#include <stdio.h>
+#include <queue>
 #include "cs_compat.h"
 #include "qsqrt.h"
 #include "qint.h"
@@ -966,6 +967,7 @@ int obb_disjoint (const csMatrix3& B, const csVector3& T,
   return 0;  // should equal 0
 }
 
+#if 0
 
 int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
 	const csMatrix3& R, const csVector3& T)
@@ -1046,7 +1048,116 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
 
   return false;
 }
+#else
+struct csTraverser {
+  csCdBBox *b1;
+  csCdBBox *b2;
+  csMatrix3 R;
+  csVector3 T;
+  csTraverser(csCdBBox *b1, csCdBBox *b2,
+                const csMatrix3& R, const csVector3& T){
+    this->b1 = b1;this->b2=b2;
+    this->R=R;this->T=T;
+  }
+};
+int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
+	const csMatrix3& R, const csVector3& T)
+{
+  int rc;      // return codes
+  std::queue <csTraverser> breadth;
+  unsigned int pass_count=0;
+  unsigned int pass_size=1;
+  unsigned int num_passes=0;
+  breadth.push(csTraverser(b1,b2,R,T));
+  while (breadth.size()) {
+  if (pass_count==pass_size) {
+    pass_size=breadth.size();
+    pass_count=0;
+    num_passes++;
+    printf ("Pass %d num nodes %d\n",num_passes,pass_size);
+      
+  }
+  pass_count++;
+  csCdBBox *b1; csCdBBox *b2;
+  csMatrix3 R;csVector3 T;
+  b1 = breadth.front().b1;
+  b2 = breadth.front().b2;
+  R = breadth.front().R;
+  T = breadth.front().T;
+  breadth.pop();
+  // test top level
+  csRapidCollider::boxesTested++;
 
+  int f1 = obb_disjoint (R, T, b1->GetRadius(), b2->GetRadius());
+
+  if (f1 != 0)
+    continue;  // stop processing this test, go to top of loop
+
+  // contact between boxes
+  if (b1->IsLeaf() && b2->IsLeaf())
+  {
+    // it is a leaf pair - compare the polygons therein
+    // TrianglesHaveContact uses the model-to-model transforms stored in
+    // csRapidCollider::mR, csRapidCollider::mT.
+
+    // this will pass along any OUT_OF_MEMORY return codes which
+    // may be generated.
+    csCdBBox::TrianglesHaveContact(b1, b2);
+    continue;
+  }
+
+  csMatrix3 cR;
+  csVector3 cT (0, 0, 0);
+
+  // Currently, the transform from model 2 to model 1 space is
+  // given by [B T], where y = [B T].x = B.x + T.
+
+  if (b2->IsLeaf() || (!b1->IsLeaf() && (b1->GetSize() > b2->GetSize())))
+  {
+    // here we descend to children of b1.  The transform from
+    // a child of b1 to b1 is stored in
+    // [b1->N->m_Rotation,b1->N->m_Translation],
+    // but we will denote it [B1 T1] for short.
+
+    // Here, we compute [B1 T1]'[B T] = [B1'B B1'(T-T1)]
+    // for each child, and store the transform into the collision
+    // test queue.
+
+    csMatrix3 rot_transp = b1->m_pChild0->m_Rotation.GetTranspose ();
+    cR = rot_transp * R;
+    cT = rot_transp * (T - b1->m_pChild0->m_Translation);
+
+    //if ((rc = CollideRecursive (b1->m_pChild0, b2, cR, cT)) != false)
+    //      return rc;
+    breadth.push(csTraverser(b1->m_pChild0, b2, cR, cT));
+
+    rot_transp = b1->m_pChild1->m_Rotation.GetTranspose ();
+    cR = rot_transp * R;
+    cT = rot_transp * (T - b1->m_pChild1->m_Translation);
+
+    breadth.push(csTraverser(b1->m_pChild1, b2, cR, cT));
+	
+  }
+  else
+  {
+    // here we descend to the children of b2.  See comments for
+    // other 'if' clause for explanation.
+    cR = R * b2->m_pChild0->m_Rotation;
+    cT = ( R * b2->m_pChild0->m_Translation) + T;
+
+    breadth.push(csTraverser (b1, b2->m_pChild0, cR, cT));
+ 
+    cR = R * b2->m_pChild1->m_Rotation;
+    cT = ( R * b2->m_pChild1->m_Translation) + T;
+	
+    breadth.push (csTraverser(b1, b2->m_pChild1, cR, cT));
+	
+  }
+  }
+  return false;
+}
+
+#endif
 void csRapidCollider::CollideReset (void)
 {
   hits = 0;

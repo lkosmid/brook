@@ -23,7 +23,7 @@ int main (int argc, char ** argv) {
   std::vector <bsp_polygon> model;
   std::vector<Tri> triangles;
   std::vector<BBox> bboxes;
-  LoadPly (argc>1?argv[1]:"bunny.ply",model);
+  LoadPly (argc>1?argv[1]:"dragon.ply",model);
   csRapidCollider collide(model);
   collide.createBrookGeometry(bboxes,triangles);
   collide.CollideRecursive(const_cast<csCdBBox*>( collide.GetBbox()),
@@ -31,10 +31,10 @@ int main (int argc, char ** argv) {
                            rot,
                            trans);
 
-  printf ("Num Collisions %d Num BBoxes %d Num Triangles %d",
-          csRapidCollider::numHits,
-          bboxes.size(),
-          triangles.size());
+  fprintf (stderr,"Num Collisions %d Num BBoxes %d Num Triangles %d",
+           csRapidCollider::numHits,
+           bboxes.size(),
+           triangles.size());
   unsigned int num = doCollide(triangles.size()/2048,2048,&triangles[0],
                                bboxes.size()/2048,2048,&bboxes[0],
                                triangles.size()/2048,2048,&triangles[0],
@@ -44,7 +44,7 @@ int main (int argc, char ** argv) {
                                convertVec(rot.Row3()),
                                convertVec(trans),
                                &intersections);
-  printf ("\nNum Collisions brook %d\n",num);
+  fprintf (stderr,"\nNum Collisions brook %d\n",num);
   for (unsigned int i=0;i<num;++i) {
      printf ("{%f %f %f %f}\n",intersections[i].x,
              intersections[i].y,
