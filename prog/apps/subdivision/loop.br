@@ -37,6 +37,7 @@ kernel float triCombine (float myin<>,
    return ret;
 }
 */
+unsigned int streamWidth=2048;
 kernel float triCombine(float b1<>, float b2<>) {
    return (b1&&b2)?8:(b1?2:(b2?4:0));
 }
@@ -481,16 +482,16 @@ void subdivide (Neighbor (*neighbors)<>,
                 struct VertexArray *output,
                 float epsilon) {
   {
-    float2 shouldProduce<2048,0>;
-    float2 shouldNotProduce<2048,0>;
+    float2 shouldProduce<streamWidth,0>;
+    float2 shouldNotProduce<streamWidth,0>;
     produceTriP(*triangles,shouldProduce,shouldNotProduce);
     {
       int sizeDivide=toi(streamSize(shouldProduce).x);
       {
-        Neighbor sharedNeighbors<2048,sizeDivide>;
-        Neighbor newNeighbors<2048,(sizeDivide*4)>;
-        SplitTri sharedTriangles <2048,sizeDivide>;
-        Tri newTriangles<2048,(sizeDivide*4)>;
+        Neighbor sharedNeighbors<streamWidth,sizeDivide>;
+        Neighbor newNeighbors<streamWidth,(sizeDivide*4)>;
+        SplitTri sharedTriangles <streamWidth,sizeDivide>;
+        Tri newTriangles<streamWidth,(sizeDivide*4)>;
         computeNeighbors(*neighbors,*triangles,shouldProduce,sharedNeighbors);
         splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
         linearReorgSplitTriangles(sharedTriangles,
@@ -503,7 +504,7 @@ void subdivide (Neighbor (*neighbors)<>,
       }
       {
         int sizey=3*toi(streamSize(shouldNotProduce).x);
-        float3 outputTri<2048,sizey>;
+        float3 outputTri<streamWidth,sizey>;
 
         writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
         if (streamSize(shouldProduce).x) {
@@ -525,10 +526,11 @@ void subdivide (Neighbor (*neighbors)<>,
                
 int main () {
   float epsilon=.01;
-  Neighbor neighbors<2048,1>;
-  Tri triangles<2048,1>;
+  Neighbor neighbors<streamWidth,1>;
+  Tri triangles<streamWidth,1>;
   struct VertexArray v;
   initVertexArray(&v);
+  
   // initialize neighbors and triangles
   smallEnough(triangles,neighbors,triangles,neighbors,epsilon);
   subdivide(&neighbors,&triangles,&v,epsilon);
