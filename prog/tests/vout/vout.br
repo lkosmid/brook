@@ -1,0 +1,313 @@
+extern void sort (struct __BRTStream *list_stream,int WIDTH, int LENGTH);
+void __printf_cpu_inner(float inx, float iny, float outx, float outy) {
+   printf("%g %g -> %g %g\n",inx,iny,outx,outy);
+}
+static unsigned int debug_vout = 0;
+void debugStreamPrint (struct __BRTStream *stream,char * title) {
+   if (debug_vout) {
+      printf ("%s\n",title);
+      
+      streamPrint(*stream,1);
+      printf ("\n\n");
+   }
+}
+void cpuGetIndexAt(float2 inputindex,
+                   float shiftRight,
+                   float2 maxvalue,
+                   float2 *index) {
+   index->x=inputindex.x+shiftRight;
+   index->y=inputindex.y+floor(index->x/maxvalue.x);
+   index->x=fmod(index->x,maxvalue.x);
+   if (index->x<0)
+      index->x+=maxvalue.x;//only necessary if shiftRight<0
+}
+kernel void getIndexAt(float4 inputindex,
+                       float shiftRight,
+                       float2 maxvalue,
+                       out float2 outputindex<>) {
+   float2 index;
+   index.x=inputindex.x+shiftRight;
+   index.y=inputindex.y+floor(index.x/maxvalue.x);
+   index.x=fmod(index.x,maxvalue.x);
+   if (index.x<0)
+      index.x+=maxvalue.x;//only necessary if shiftRight<0
+   outputindex=index;
+   //   printf(maxvalue.x,maxvalue.y,outputindex.x,outputindex.y);
+}
+kernel void valueAt(float value[][],
+                    float2 index,
+                    out float output<>,
+                    float2 maxvalue,
+                    float nothing) {
+   if (index.y>=maxvalue.y||index.y<0)
+      output = nothing;
+   else 
+      output = value[index];
+}
+kernel void NanToBoolRight (float value[][], 
+                            out float output<>, 
+                            float sign,
+                            float2 maxvalue) {
+   float2 nextPlaceToLook;
+   float neighbor;
+   getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
+   valueAt(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = (isfinite(value[indexof(output)])?0:1) + (isfinite(neighbor)?0:1);
+}
+kernel void NanToRight (float value [][],
+                        out float output<>,
+                        float twotoi,
+                        float2 maxvalue) {
+   float2 nextPlaceToLook;
+   float neighbor;
+   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
+   valueAt(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = value[indexof(output)]+neighbor;
+}
+kernel void GatherGuess(float scatterindex[][],
+                        out float output<>,
+                        float value[][],
+                        float twotologkminusi,
+                        float2 maxvalue,
+                        float halfk,
+                        float sign) {
+     float neighbor;
+      float2 nextPlaceToLook;
+      getIndexAt(indexof(output),-sign*halfk,maxvalue,nextPlaceToLook);
+      valueAt(scatterindex,nextPlaceToLook,neighbor,maxvalue,0);
+      if (neighbor>halfk) {
+         output=halfk+twotologkminusi;
+      }else {
+         float actualValue;
+         valueAt(value,nextPlaceToLook,actualValue,maxvalue,0);
+         if (neighbor==halfk&&isfinite(actualValue)) {
+            output=halfk;
+         }else {
+            output = halfk-twotologkminusi;
+         }         
+      }
+}
+kernel void EstablishGuess(float scatterindex[][],
+                           out float output<>,
+                           float value[][],
+                           float twotologkminusi,
+                           float2 maxvalue,
+                           float halfk,
+                           float sign) {
+   if (scatterindex[indexof(output)]==0) {
+      output=0;
+   } else {
+      GatherGuess(scatterindex,
+                  output,
+                  value,
+                  twotologkminusi,
+                  maxvalue,
+                  halfk,
+                  sign);
+    }
+}
+kernel void UpdateGuess(float scatterindex[][],
+                        out float output<>,
+                        float value[][],
+                        float twotologkminusi,
+                        float2 maxvalue,
+                        float lastguess<>,
+                        float sign) {
+   GatherGuess(scatterindex,
+               output,
+               value,
+               twotologkminusi,
+               maxvalue,
+               lastguess,
+               sign);
+}
+kernel void RelativeGather(out float output<>,
+                           float gatherindex<>,
+                           float value[][],
+                           float sign,
+                           float2 maxvalue) {
+   float2 nextPlaceToLook;
+   getIndexAt(indexof(output),-sign*gatherindex,maxvalue,nextPlaceToLook);
+   valueAt(value,nextPlaceToLook,output,maxvalue,0);   
+}
+float myrand (unsigned int *seed) {
+   unsigned int rand_max =1509281;
+   *seed = (*seed +26129327)%rand_max;
+   if (*seed<(rand_max/5)*2)
+      return .5;
+   else if (*seed<rand_max/2)
+      return 1;
+   else if (*seed<(rand_max/4)*3)
+      return 1.0/floor((float)*seed/(float)rand_max);
+   else if (*seed<(rand_max/11)*10)
+      return .25;
+   else
+      return 4;
+}
+
+float shiftValues(struct __BRTStream *list_stream,
+                  struct __BRTStream *output_stream,
+                  int WIDTH, 
+                  int LENGTH, 
+                  int sign) {
+   float tmp_stream<WIDTH,LENGTH>;
+   float guess_stream<WIDTH,LENGTH>;
+   float ret_stream<WIDTH,LENGTH>;
+   int i;
+   float2 maxvalue;
+   unsigned int seed=215891;
+   unsigned int logN;
+   unsigned int LogNMinusK;
+   float maxshift=999;
+
+   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   NanToBoolRight (*list_stream,ret_stream,sign,maxvalue);   
+   for (i=1;i<logN;++i) {
+      if (i%2)
+         NanToRight (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
+      else
+         NanToRight (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
+   }
+   debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
+   if (sign==-1) {
+      readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,WIDTH-1,LENGTH-1);
+   }else {      
+      readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,0,0);
+   }
+   LogNMinusK=logN-2;
+   i= logN-1;//could make this k! rather than N
+   // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
+   EstablishGuess(logN%2==0?tmp_stream:ret_stream,
+                  guess_stream,
+                  *list_stream,
+                  (1 << LogNMinusK),
+                  maxvalue,
+                  1<<i,
+                  sign);
+   for (i=1;i<logN;++i) {
+      LogNMinusK=logN-1-i;
+      if (i%2)
+         UpdateGuess (logN%2==0?tmp_stream:ret_stream,//scatter values                      
+                      logN%2==0?ret_stream:tmp_stream,//new guess
+                      *list_stream,//actual values
+                      1<<LogNMinusK,
+                      maxvalue,
+                      guess_stream,//old guess
+                      sign);
+      else
+         UpdateGuess (logN%2==0?tmp_stream:ret_stream,//scatter values
+                      guess_stream,//new guess
+                      *list_stream,//actual values
+                      1<<LogNMinusK,
+                      maxvalue,
+                      logN%2==0?ret_stream:tmp_stream, //old guess
+                      sign);
+   }
+   debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
+
+   RelativeGather(*output_stream,
+                  logN%2==0?ret_stream:guess_stream,
+                  *list_stream,
+                  sign,
+                  maxvalue);
+   debugStreamPrint(output_stream, "Final Value");
+   return maxshift;
+}
+
+kernel void combine (float input1[][], 
+                     float input2[][], 
+                     out float output<>,
+                     float2 startsecond,
+                     float2 endsecond,
+                     float2 maxinput2value){
+   //   getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
+   //              -shift1,
+   //              maxinput1value,
+   //              startsecond);//moved outside kernel
+   if ((indexof(output)).y>startsecond.y
+       ||((indexof(output)).y==startsecond.y
+          &&(indexof(output)).x>=startsecond.x)) {
+      float2 secondindex;
+      getIndexAt(float4((indexof(output)).x,
+                        (indexof(output)).y-startsecond.y,
+                        0,
+                        0),
+                 -startsecond.x,
+                 maxinput2value,
+                 secondindex);
+      //getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
+      //           -shift2,
+      //           maxinput1value,
+      //           endsecond); // moved outside kernel
+      if (secondindex.y>endsecond.y
+          ||(secondindex.y==endsecond.y
+             &&secondindex.x>=endsecond.x)) {
+         output=1.0f/floor(.5);
+      }else {
+         output = input2[secondindex];
+      }
+   }else {
+      output=input1[indexof(output)];
+   }
+}
+unsigned int  voutCombine(struct __BRTStream *outleft_stream,
+                          float maxshiftleft,
+                          unsigned int LEFTWIDTH,
+                          struct __BRTStream *outright_stream,
+                          float maxshiftright,
+                          unsigned int RIGHTWIDTH,
+                          unsigned int LENGTH,
+                          struct __BRTStream * output){
+   unsigned int seed=1043210498210;
+   unsigned int totalsize;
+   float2 maxleftvalue,maxrightvalue;
+   maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
+   maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
+   totalsize = (LEFTWIDTH*LENGTH
+                +RIGHTWIDTH*LENGTH
+                -maxshiftleft-maxshiftright);
+   if (1) {      
+      unsigned int length = LENGTH;
+      unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
+      float output_stream<width,length>;
+      float2 startsecond,endsecond;
+      cpuGetIndexAt(float2(maxleftvalue.x,maxleftvalue.y-1),
+                    -maxshiftleft,
+                    maxleftvalue,
+                    &startsecond);
+      cpuGetIndexAt(float2(maxrightvalue.x,maxrightvalue.y-1),
+                    -maxshiftright,
+                    maxrightvalue,
+                    &endsecond);
+      combine(*outleft_stream,
+              *outright_stream,
+              output_stream,
+              startsecond,
+              endsecond,
+              maxrightvalue);
+      streamSwap (*output,output_stream);
+   }
+   return totalsize;
+}
+
+unsigned int totalCombineVout (struct __BRTStream *list_stream, 
+                               unsigned int WIDTH,
+                               struct __BRTStream *list2_stream,
+                               unsigned int WIDTH2,
+                               unsigned int LENGTH,
+                               struct __BRTStream * output){
+
+   float outleft_stream<WIDTH,LENGTH>;
+   float outright_stream<WIDTH2,LENGTH>;
+   float maxshiftleft =shiftValues(list_stream,&outleft_stream,WIDTH,LENGTH,-1);
+   float maxshiftright=shiftValues(list2_stream,&outright_stream,WIDTH2,LENGTH,-1);
+   return voutCombine (&outleft_stream,
+                       maxshiftleft,
+                       WIDTH,
+                       &outright_stream,
+                       maxshiftright,
+                       WIDTH2,
+                       LENGTH,
+                       output);
+}
