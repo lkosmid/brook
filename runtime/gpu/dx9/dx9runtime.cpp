@@ -474,7 +474,7 @@ namespace brook
         minX = domainMin[0];
         minY = 0;
         maxX = domainMax[0];
-        maxY = 0;
+        maxY = 1;
     }
     else
     {
@@ -734,6 +734,8 @@ namespace brook
     unsigned int minY = inOutputRegion.viewport.minY;
     unsigned int maxX = inOutputRegion.viewport.maxX;
     unsigned int maxY = inOutputRegion.viewport.maxY;
+
+    GPULOG(4) << "[ <" << minX << ", " << minY << ">, <" << maxX << ", " << maxY << "> )";
 
     D3DVIEWPORT9 viewport;
     viewport.X = minX;
