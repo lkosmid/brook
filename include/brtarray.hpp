@@ -13,7 +13,7 @@ public:
                 if (dims-cur_dimension<T::size)
                         i=dims-cur_dimension-1;
 		for (;i>=0;--i,++cur_dimension){
-			indices[cur_dimension]=(unsigned int)a.getAt(i);
+			indices[cur_dimension]=(unsigned int)a.unsafeGetAt(i);
 		}
                 indices[dims]=cur_dimension;
 		return *this;

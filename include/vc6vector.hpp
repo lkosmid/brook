@@ -83,10 +83,10 @@ template <> class BracketType <char> {public:
 };
 template <class T> class BracketOp {public:
   template <class U> T& operator ()(const U&u, unsigned int i) {
-    return u.getAt(i);
+    return u.unsafeGetAt(i);
   }
   template <class U> T& operator () (U&u, unsigned int i) {
-    return u.getAt(i);
+    return u.unsafeGetAt(i);
   }
 };
 template <> class BracketOp <float> {public:
@@ -149,8 +149,14 @@ public:
 protected:
     VALUE f[size];
 public:
-    const VALUE &getAt (unsigned int i) const{return f[i%size];}
-    VALUE &getAt (unsigned int i) {return f[i%size];}
+    const VALUE &getAt (unsigned int i) const{
+       return i<size?f[i]:f[size-1];
+    }
+    VALUE &getAt (unsigned int i) {
+       return i<size?f[i]:f[size-1];
+    }
+    const VALUE &unsafeGetAt (unsigned int i) const{return f[i];}
+    VALUE &unsafeGetAt (unsigned int i) {return f[i];}
     typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
     vec<VALUE,tsize>& cast() {
         return *this;
@@ -190,7 +196,7 @@ public:
         return vec<VALUE,1>(getAt(x));
     }
     vec() {}
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const int &inx, 
@@ -235,7 +241,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const char &inx, 
@@ -280,7 +286,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const float &inx, 
@@ -325,7 +331,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const double &inx, 
@@ -370,7 +376,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const unsigned int &inx, 
@@ -415,7 +421,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,1>  &inx, 
@@ -460,7 +466,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,1>  &inx, 
@@ -505,7 +511,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,1>  &inx, 
@@ -550,7 +556,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,2>  &inx, 
@@ -595,7 +601,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,2>  &inx, 
@@ -640,7 +646,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,2>  &inx, 
@@ -685,7 +691,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,3>  &inx, 
@@ -730,7 +736,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,3>  &inx, 
@@ -775,7 +781,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,3>  &inx, 
@@ -820,7 +826,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,4>  &inx, 
@@ -865,7 +871,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,4>  &inx, 
@@ -910,7 +916,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 192 "brtvector.hpp"
+#line 198 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,4>  &inx, 
@@ -955,9 +961,9 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 235 "brtvector.hpp"
+#line 241 "brtvector.hpp"
 
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,1> &in,int X, int Y,int Z,int W) {
@@ -965,28 +971,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<float,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<float,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<float,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<float,tsize> questioncolon(const vec<float,1>  &b, 
@@ -1029,7 +1035,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,1> &in,int X, int Y,int Z,int W) {
@@ -1037,28 +1043,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<int,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<int,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<int,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<int,tsize> questioncolon(const vec<int,1>  &b, 
@@ -1101,7 +1107,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,1> &in,int X, int Y,int Z,int W) {
@@ -1109,28 +1115,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<char,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<char,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<char,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<char,tsize> questioncolon(const vec<char,1>  &b, 
@@ -1173,7 +1179,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,2> &in,int X, int Y,int Z,int W) {
@@ -1181,28 +1187,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<float,2> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<float,2> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<float,2> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<float,tsize> questioncolon(const vec<float,2>  &b, 
@@ -1245,7 +1251,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,2> &in,int X, int Y,int Z,int W) {
@@ -1253,28 +1259,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<int,2> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<int,2> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<int,2> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<int,tsize> questioncolon(const vec<int,2>  &b, 
@@ -1317,7 +1323,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,2> &in,int X, int Y,int Z,int W) {
@@ -1325,28 +1331,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<char,2> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<char,2> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<char,2> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<char,tsize> questioncolon(const vec<char,2>  &b, 
@@ -1389,7 +1395,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,3> &in,int X, int Y,int Z,int W) {
@@ -1397,28 +1403,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<float,3> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<float,3> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<float,3> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<float,tsize> questioncolon(const vec<float,3>  &b, 
@@ -1461,7 +1467,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,3> &in,int X, int Y,int Z,int W) {
@@ -1469,28 +1475,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<int,3> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<int,3> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<int,3> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<int,tsize> questioncolon(const vec<int,3>  &b, 
@@ -1533,7 +1539,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,3> &in,int X, int Y,int Z,int W) {
@@ -1541,28 +1547,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<char,3> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<char,3> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<char,3> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<char,tsize> questioncolon(const vec<char,3>  &b, 
@@ -1605,7 +1611,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,4> &in,int X, int Y,int Z,int W) {
@@ -1613,28 +1619,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<float,4> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<float,4> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<float,4> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<float,tsize> questioncolon(const vec<float,4>  &b, 
@@ -1677,7 +1683,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,4> &in,int X, int Y,int Z,int W) {
@@ -1685,28 +1691,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<int,4> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<int,4> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<int,4> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<int,tsize> questioncolon(const vec<int,4>  &b, 
@@ -1749,7 +1755,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 236 "brtvector.hpp"
+#line 242 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,4> &in,int X, int Y,int Z,int W) {
@@ -1757,28 +1763,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     
       vec<VALUE,3> mask3 (const vec<char,4> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
      
       vec<VALUE,2> mask2 (const vec<char,4> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
      
       vec<VALUE,1> mask1 (const vec<char,4> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
      
       vec<char,tsize> questioncolon(const vec<char,4>  &b, 
@@ -1821,16 +1827,16 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 306 "brtvector.hpp"
-#line 306 "brtvector.hpp"
+#line 312 "brtvector.hpp"
+#line 312 "brtvector.hpp"
 
-#line 306 "brtvector.hpp"
+#line 312 "brtvector.hpp"
 
-#line 306 "brtvector.hpp"
+#line 312 "brtvector.hpp"
 
-#line 306 "brtvector.hpp"
+#line 312 "brtvector.hpp"
 
-#line 306 "brtvector.hpp"
+#line 312 "brtvector.hpp"
 
 };
 

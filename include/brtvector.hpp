@@ -82,10 +82,10 @@ template <> class BracketType <char> {public:
 };
 template <class T> class BracketOp {public:
   template <class U> T& operator ()(const U&u, unsigned int i) {
-    return u.getAt(i);
+    return u.unsafeGetAt(i);
   }
   template <class U> T& operator () (U&u, unsigned int i) {
-    return u.getAt(i);
+    return u.unsafeGetAt(i);
   }
 };
 template <> class BracketOp <float> {public:
@@ -148,8 +148,14 @@ public:
 protected:
     VALUE f[size];
 public:
-    const VALUE &getAt (unsigned int i) const{return f[i%size];}
-    VALUE &getAt (unsigned int i) {return f[i%size];}
+    const VALUE &getAt (unsigned int i) const{
+       return i<size?f[i]:f[size-1];
+    }
+    VALUE &getAt (unsigned int i) {
+       return i<size?f[i]:f[size-1];
+    }
+    const VALUE &unsafeGetAt (unsigned int i) const{return f[i];}
+    VALUE &unsafeGetAt (unsigned int i) {return f[i];}
     typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
     vec<VALUE,tsize>& cast() {
         return *this;
@@ -240,28 +246,28 @@ public:
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
+        return vec<VALUE,4>(unsafeGetAt(X),
+                    unsafeGetAt(Y),
+                    unsafeGetAt(Z),
+                    unsafeGetAt(W));
     }
     template <class BRT_TYPE>
       vec<VALUE,3> mask3 (const BRT_TYPE&in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+        return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
     template <class BRT_TYPE> 
       vec<VALUE,2> mask2 (const BRT_TYPE&in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
+        return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
     template <class BRT_TYPE> 
       vec<VALUE,1> mask1 (const BRT_TYPE&in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
+        return vec<VALUE,1>(unsafeGetAt(X));
     }    
     template <class BRT_TYPE> 
       vec<typename BRT_TYPE::TYPE,tsize> questioncolon(const BRT_TYPE &b, 
