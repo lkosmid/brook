@@ -19,6 +19,7 @@ struct globals_struct {
   int fponly;
   int target;
   int workspace;
+  bool allowDX9MultiOut;
 };
 
 extern struct globals_struct globals;

@@ -66,7 +66,7 @@ parse_args (int argc, char *argv[]) {
    */
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-  while ((opt = getopt(argc, argv, "d:hkmno:p:vw")) != EOF) {
+  while ((opt = getopt(argc, argv, "d:hkmnyo:p:vw")) != EOF) {
      switch(opt) {
      case 'h':
         usage();
@@ -79,6 +79,10 @@ parse_args (int argc, char *argv[]) {
         break;
      case 'n':
         globals.parseOnly = true;
+        break;
+    // TIM: totally hacked
+     case 'y':
+        globals.allowDX9MultiOut = true;
         break;
      case 'o':
 	if (outputprefix) usage();

@@ -185,7 +185,7 @@ static void printGatherStructureFunction( std::ostream& out, const std::string& 
   out << body;
   out << "\treturn result;\n}\n\n";
 
-  out << name << " __gather" << name << "( _stype samplers[" << getGatherStructureSamplerCount(form);
+  out << name << " __gather_" << name << "( _stype samplers[" << getGatherStructureSamplerCount(form);
   out << "], float2 index ) {\n";
   out << name << " result;\n";
   out << body;
@@ -1160,8 +1160,8 @@ CodeGen_GenerateCode(Type *retType, const char *name,
   bool isReduction = false;
   int outputCount = getShaderOutputCount( nArgs, args, isReduction );
   int maxOutputsPerPass = 1;
-//  if( ps20_not_fp30 && !isReduction )
-//    maxOutputsPerPass = 4;
+  if( ps20_not_fp30 && !isReduction && globals.allowDX9MultiOut )
+    maxOutputsPerPass = 4;
 
   std::vector<std::string> shaderStrings;
 
