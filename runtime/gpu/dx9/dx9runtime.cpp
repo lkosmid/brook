@@ -95,6 +95,24 @@ namespace brook
       getStreamOutputRegion( const TextureHandle texture,
       GPURegion &region) const; 
 
+    virtual void 
+      getStreamReduceInterpolant( const TextureHandle texture,
+      const unsigned int outputWidth,
+      const unsigned int outputHeight, 
+      const unsigned int minX,
+      const unsigned int maxX, 
+      const unsigned int minY,
+      const unsigned int maxY,
+      GPUInterpolant &interpolant) const;
+
+    virtual void
+      getStreamReduceOutputRegion( const TextureHandle texture,
+      const unsigned int minX,
+      const unsigned int maxX, 
+      const unsigned int minY,
+      const unsigned int maxY,
+      GPURegion &region) const;
+
     virtual TextureHandle createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat );
     virtual void releaseTexture( TextureHandle inTexture );
 
@@ -330,6 +348,62 @@ namespace brook
     region.vertices[2] = float4(-1,-3,0.5,1);
   }
 
+  void GPUContextDX9::getStreamReduceInterpolant( const TextureHandle inTexture,
+    const unsigned int outputWidth,
+    const unsigned int outputHeight, 
+    const unsigned int minX,
+    const unsigned int maxX, 
+    const unsigned int minY,
+    const unsigned int maxY,
+    GPUInterpolant &interpolant) const
+  {
+    DX9Texture* texture = (DX9Texture*)inTexture;
+    unsigned int textureWidth = texture->getWidth();
+    unsigned int textureHeight = texture->getHeight();
+
+    float xmin = (float)minX / (float)textureWidth;
+    float ymin = (float)minY / (float)textureHeight;
+    float width = (float)(maxX - minX) / (float)textureWidth;
+    float height = (float)(maxY - minY) / (float)textureHeight;
+    
+    float xmax = xmin + 2*width;
+    float ymax = ymin + 2*height;
+
+    interpolant.vertices[0] = float4(xmin,ymin,0.5,1);
+    interpolant.vertices[1] = float4(xmax,ymin,0.5,1);
+    interpolant.vertices[2] = float4(xmin,ymax,0.5,1);
+  }
+
+  void GPUContextDX9::getStreamReduceOutputRegion( const TextureHandle inTexture,
+    const unsigned int minX,
+    const unsigned int maxX, 
+    const unsigned int minY,
+    const unsigned int maxY,
+    GPURegion &region) const
+  {
+    DX9Texture* texture = (DX9Texture*)inTexture;
+    unsigned int textureWidth = texture->getWidth();
+    unsigned int textureHeight = texture->getHeight();
+
+    float xmin = (float)minX / (float)textureWidth;
+    float ymin = (float)minY / (float)textureHeight;
+    float width = (float)(maxX - minX) / (float)textureWidth;
+    float height = (float)(maxY - minY) / (float)textureHeight;
+
+    float xmax = xmin + 2*width;
+    float ymax = ymin + 2*height;
+
+    // transform from texture space to surface space:
+    xmin = 2*xmin - 1;
+    xmax = 2*xmax - 1;
+    ymin = -2*ymin + 1;
+    ymax = -2*ymax + 1;
+
+    region.vertices[0] = float4(xmin,ymin,0.5,1);
+    region.vertices[1] = float4(xmax,ymin,0.5,1);
+    region.vertices[2] = float4(xmin,ymax,0.5,1);
+  }
+
   GPUContextDX9::TextureHandle GPUContextDX9::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat )
   {
     int components;
@@ -527,8 +601,15 @@ namespace brook
       vertex.position.z = 0.5f;
       vertex.position.w = 1.0f;
 
+      GPULOGPRINT(4) << "v[" << i << "] pos=<" << position.x << ", " << position.y << ">";
+
       for( size_t t = 0; t < inInterpolantCount; t++ )
+      {
         vertex.texcoords[t] = inInterpolants[t].vertices[i];
+        GPULOGPRINT(4) << " t" << t << "=<" << vertex.texcoords[t].x << ", " << vertex.texcoords[t].y << ">";
+      }
+
+      GPULOGPRINT(4) << std::endl;
 
       *vertices++ = vertex;
     }

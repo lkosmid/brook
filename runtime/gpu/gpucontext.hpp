@@ -66,6 +66,54 @@ namespace brook {
     getStreamOutputRegion( const TextureHandle texture,
                            GPURegion &region) const = 0; 
 
+    // for reductions
+    virtual void 
+      getStreamReduceInterpolant( const TextureHandle texture,
+      const unsigned int outputWidth,
+      const unsigned int outputHeight, 
+      const unsigned int minX,
+      const unsigned int maxX, 
+      const unsigned int minY,
+      const unsigned int maxY,
+      GPUInterpolant &interpolant) const {} //TIM = 0; 
+
+    void getStreamReduceInterpolant( const TextureHandle texture,
+      const unsigned int outputWidth,
+      const unsigned int outputHeight, 
+      const unsigned int minPrimary,
+      const unsigned int maxPrimary, 
+      const unsigned int minSecondary,
+      const unsigned int maxSecondary,
+      const unsigned int primaryAxis,
+      GPUInterpolant &interpolant) const
+    {
+      if( primaryAxis == 0 )
+        getStreamReduceInterpolant( texture, outputWidth, outputHeight, minPrimary, maxPrimary, minSecondary, maxSecondary, interpolant );
+      else
+        getStreamReduceInterpolant( texture, outputWidth, outputHeight, minSecondary, maxSecondary, minPrimary, maxPrimary, interpolant );
+    }
+
+    virtual void
+      getStreamReduceOutputRegion( const TextureHandle texture,
+      const unsigned int minX,
+      const unsigned int maxX, 
+      const unsigned int minY,
+      const unsigned int maxY,
+      GPURegion &region) const {} //TIM = 0; 
+
+   void getStreamReduceOutputRegion( const TextureHandle texture,
+     const unsigned int minPrimary,
+     const unsigned int maxPrimary, 
+     const unsigned int minSecondary,
+     const unsigned int maxSecondary,
+     const unsigned int primaryAxis,
+      GPURegion &region) const
+   {
+     if( primaryAxis == 0 )
+       getStreamReduceOutputRegion( texture, minPrimary, maxPrimary, minSecondary, maxSecondary, region );
+     else
+       getStreamReduceOutputRegion( texture, minSecondary, maxSecondary, minPrimary, maxPrimary, region );
+   }
 
     /* Create a texture */
     virtual TextureHandle 

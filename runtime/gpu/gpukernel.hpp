@@ -121,6 +121,12 @@ namespace brook {
     };
     friend class OutputArgumentType; //internal classes are not friends
 
+    class ReduceArgumentType : public ArgumentType
+    {
+    public:
+    };
+    friend class ReduceArgumentType; //internal classes are not friends
+
     class ArgumentInfo
     {
     public:
@@ -206,16 +212,71 @@ namespace brook {
       PassList passes;
     };
 
+    class ReduceArgumentInfo
+    {
+    public:
+      ReduceArgumentInfo( void* inData, __BRTStreamType inType )
+        : data(inData), type(inType)
+      {}
+
+      void* data;
+      __BRTStreamType type;
+    };
+
+    // The full generality of BrookGPU reductions
+    // is overwhelming. The ReductionState structure
+    // keeps track of all the buffers and dimensions
+    // needed during a multipass 2D reduction.
+    class ReductionState
+    {
+    public:
+      TextureHandle inputTexture; // the texture we are reducing from
+      TextureHandle outputTexture; // the texture we are reducing to
+
+      int whichBuffer; // -1 for inputTexture, 0,1 for reductionBuffers
+      TextureHandle reductionBuffers[2];
+      size_t reductionBufferWidths[2];
+      size_t reductionBufferHeights[2];
+      TextureHandle slopBuffer;
+      size_t slopBufferWidth;
+      size_t slopBufferHeight;
+
+      size_t currentDimension; // 0 for X, 1 for Y
+
+      // the sizes of the various buffers
+      size_t targetExtents[2];
+      size_t inputExtents[2];
+      size_t currentExtents[2];
+      size_t slopCount;
+    };
+
     // internal methods
     void pushArgument( ArgumentType* inType, size_t inIndex );
     void clearArguments();
     void clearInputs();
     void executeTechnique( const Technique& inTechnique );
     void executePass( const Pass& inPass );
-    void bindConstant( PixelShaderHandle ps, size_t inIndex, const Input& inInput );
+    void reduceToStream( TextureHandle inOutputBuffer, size_t inExtentX, size_t inExtentY );
+    void bindConstant( PixelShaderHandle inPixelShader, size_t inIndex, const Input& inInput );
     void bindSampler( size_t inIndex, const Input& inInput );
     void bindInterpolant( size_t inIndex, const Input& inInput );
     void bindOutput( size_t inIndex, const Input& inInput );
+
+    float4 getGlobalConstant( size_t inComponentIndex );
+    TextureHandle getGlobalSampler( size_t inComponentIndex );
+    void getGlobalInterpolant( size_t inComponentIndex, GPUInterpolant& outInterpolant );
+    TextureHandle getGlobalOutput( size_t inComponentIndex );
+
+
+    // multipass reduction helpers
+    void executeReductionTechnique( size_t inFactor );
+    void beginReduction( ReductionState& ioState );
+    void executeReductionStep( ReductionState& ioState );
+    void executeSlopStep( ReductionState& ioState );
+    void endReduction( ReductionState& ioState );
+    void dumpReductionState( ReductionState& ioState );
+    void dumpReductionBuffer( TextureHandle inBuffer, size_t inBufferWidth, size_t inBufferHeight, size_t inWidth, size_t inHeight );
+
 
     // shared data
     static ArgumentType* sStreamArgumentType;
@@ -223,6 +284,7 @@ namespace brook {
     static ArgumentType* sConstantArgumentType;
     static ArgumentType* sGatherArgumentType;
     static ArgumentType* sOutputArgumentType;
+    static ArgumentType* sReduceArgumentType;
 
     // instance data
     std::vector<Technique> _techniques;
@@ -231,6 +293,9 @@ namespace brook {
     typedef std::vector<GPUIterator*> IteratorList;
     typedef std::vector<float4> ConstantList;
     typedef std::vector<ArgumentInfo> ArgumentList;
+    typedef std::vector<ReduceArgumentInfo> ReduceArgumentList;
+    typedef std::vector<GPUInterpolant> InterpolantList;
+    typedef std::vector<TextureHandle> TextureList;
 
     StreamList _streamArguments;
     IteratorList _iteratorArguments;
@@ -238,12 +303,19 @@ namespace brook {
     StreamList _gatherArguments;
     StreamList _outputArguments;
     ArgumentList _arguments;
+    ReduceArgumentList _reduceArguments;
+
+    // 'global' arguments
+    ConstantList _globalConstants;
+    TextureList _globalSamplers;
+    TextureList _globalOutputs;
+    InterpolantList _globalInterpolants;
 
     unsigned int _outWidth;
     unsigned int _outHeight;
 
     GPURegion _outputRegion;
-    std::vector<GPUInterpolant> _inputInterpolants;
+    InterpolantList _inputInterpolants;
   
   };
 }

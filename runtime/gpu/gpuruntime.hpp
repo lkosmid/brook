@@ -6,6 +6,14 @@
 
 namespace brook
 {
+  enum
+  {
+    kGPUReductionTempBuffer_Swap0 = 0,
+    kGPUReductionTempBuffer_Swap1,
+    kGPUReductionTempBuffer_Slop,
+    kGPUReductionTempBufferCount
+  };
+  typedef int GPUReductionTempBufferID;
 
   class GPURuntime : public RunTime
   {
@@ -21,7 +29,13 @@ namespace brook
       float range[]);
     virtual ~GPURuntime();
 
+    // internal GPURuntime methods (not in RunTime interface)
     GPUContext* getContext() { return _context; }
+    GPUContext::TextureHandle getReductionTempBuffer(
+      GPUReductionTempBufferID inBufferID,
+      size_t inMinWidth, size_t inMinHeight,
+      size_t* outWidth, size_t* outHeight );
+    GPUContext::TextureHandle getReductionTargetBuffer();
 
   protected:
     GPURuntime();
@@ -29,6 +43,10 @@ namespace brook
 
   private:
     GPUContext* _context;
+    GPUContext::TextureHandle _reductionTempBuffers[kGPUReductionTempBufferCount];
+    size_t _reductionTempBufferWidths[kGPUReductionTempBufferCount];
+    size_t _reductionTempBufferHeights[kGPUReductionTempBufferCount];
+    GPUContext::TextureHandle _reductionTargetBuffer;
   };
 }
 

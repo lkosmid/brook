@@ -13,7 +13,8 @@ namespace brook
   GPUKernel::ArgumentType* GPUKernel::sConstantArgumentType = new GPUKernel::ConstantArgumentType();
   GPUKernel::ArgumentType* GPUKernel::sGatherArgumentType = new GPUKernel::GatherArgumentType();
   GPUKernel::ArgumentType* GPUKernel::sOutputArgumentType = new GPUKernel::OutputArgumentType();
-  
+  GPUKernel::ArgumentType* GPUKernel::sReduceArgumentType = new GPUKernel::ReduceArgumentType();
+ 
   GPUKernel* GPUKernel::create( GPURuntime* inRuntime, 
                                 const void* inSource[] )
   {
@@ -171,9 +172,11 @@ namespace brook
 
   void GPUKernel::PushReduce( void* outValue, __BRTStreamType inType )
   {
-    // TODO: handle reductions
-    GPUWARN << "Reductions are not implemented\n";
-    GPUError( "no reductions, bad person" );
+    ReduceArgumentInfo argument( outValue, inType );
+
+    size_t reduceArgumentIndex = _reduceArguments.size();
+    _reduceArguments.push_back( argument );
+    pushArgument( sReduceArgumentType, reduceArgumentIndex );
   }
 
   void GPUKernel::PushOutput( Stream* inStream )
@@ -233,8 +236,44 @@ namespace brook
   
   void GPUKernel::Reduce()
   {
-    // TODO: handle reductions
-    GPUWARN << "Reductions are not implemented\n";
+    GPUAssert( _reduceArguments.size() == 1,
+      "Must have one and only one reduction output." );
+
+    ReduceArgumentInfo reduceArgument = _reduceArguments[0];
+    __BRTStreamType outputReductionType = reduceArgument.type;
+    void* outputReductionData = reduceArgument.data;
+
+    if( outputReductionType == __BRTSTREAM )
+    {
+      Stream* outputStreamBase = *((const ::brook::stream*)outputReductionData);
+      GPUStream* outputStream = (GPUStream*)outputStreamBase;
+      GPUAssert( outputStream->getFieldCount() == 1,
+        "Reductions to streams of structure type is currently unsupported.");
+
+      TextureHandle outputTexture = outputStream->getIndexedFieldTexture(0);
+      reduceToStream( outputTexture, outputStream->getWidth(), outputStream->getHeight() );
+    }
+    else
+    {
+      TextureHandle outputTexture = _runtime->getReductionTargetBuffer();
+      reduceToStream( outputTexture, 1, 1 );
+
+      float4 reductionResult;
+      _context->getTextureData( outputTexture, (float*)&reductionResult, sizeof(reductionResult), 1 );
+      if( outputReductionType == __BRTFLOAT )
+        *((float*)outputReductionData) = *((float*)&reductionResult);
+      else if( outputReductionType == __BRTFLOAT2 )
+        *((float2*)outputReductionData) = *((float2*)&reductionResult);
+      else if( outputReductionType == __BRTFLOAT3 )
+        *((float3*)outputReductionData) = *((float3*)&reductionResult);
+      else if( outputReductionType == __BRTFLOAT4 )
+        *((float4*)outputReductionData) = *((float4*)&reductionResult);
+      else
+      {
+        GPUError("Invalid reduction target type.\n"
+          "Only float, float2, float3, and float4 outputs allowed.");
+      }
+    }
   }
   
   /// Internal methods
@@ -250,6 +289,7 @@ namespace brook
     _constantArguments.clear();
     _gatherArguments.clear();
     _outputArguments.clear();
+    _reduceArguments.clear();
     _arguments.clear();
   }
   
@@ -304,18 +344,542 @@ namespace brook
     _context->drawRectangle( _outputRegion, 
                              &(_inputInterpolants[0]), 
                              _inputInterpolants.size() );
+    clearInputs();
   }
 
-  void GPUKernel::bindConstant( PixelShaderHandle ps, 
+  void GPUKernel::reduceToStream( TextureHandle inOutputBuffer, size_t inExtentX, size_t inExtentY )
+  {
+    TextureHandle outputBuffer = inOutputBuffer;
+    size_t outputWidth = inExtentX;
+    size_t outputHeight = inExtentY;
+
+
+    GPUAssert( _streamArguments.size() == 1,
+      "Reductions must have one and only one input stream." );
+
+    GPUStream* inputStream = _streamArguments[0];
+    size_t inputWidth = inputStream->getWidth();
+    size_t inputHeight = inputStream->getHeight();
+
+    GPUAssert( inputStream->getFieldCount() == 1,
+      "Reductions from structures are not currently supported." );
+
+    size_t xFactor = inputWidth / outputWidth;
+    size_t yFactor = inputHeight / outputHeight;
+
+    GPUAssert( inputWidth % outputWidth == 0,
+      "Reduction output width is not an integer divisor of input width" );
+    GPUAssert( inputHeight % outputHeight == 0,
+      "Reduction output height is not an integer divisor of input height" );
+
+    // we try to reduce in whatever direction
+    // has the greater factor first
+    // so that we can hopefully reduce
+    // the size of the buffers allocated
+    size_t firstDimension = 0;
+    size_t secondDimension = 1;
+    if( yFactor > xFactor )
+    {
+      firstDimension = 1;
+      secondDimension = 0;
+    }
+
+    ReductionState state;
+    state.inputTexture = inputStream->getIndexedFieldTexture(0);
+    state.outputTexture = outputBuffer;
+    state.whichBuffer = -1; // data starts in the input
+    state.reductionBuffers[0] = NULL;
+    state.reductionBuffers[1] = NULL;
+    state.reductionBufferWidths[0] = 0;
+    state.reductionBufferWidths[1] = 0;
+    state.reductionBufferHeights[0] = 0;
+    state.reductionBufferHeights[1] = 0;
+    state.slopBuffer = NULL;
+    state.slopBufferWidth = 0;
+    state.slopBufferHeight = 0;
+    state.currentDimension = firstDimension;
+    state.targetExtents[0] = outputWidth;
+    state.targetExtents[1] = outputHeight;
+    state.inputExtents[0] = inputWidth;
+    state.inputExtents[1] = inputHeight;
+    state.currentExtents[0] = inputWidth;
+    state.currentExtents[1] = inputHeight;
+    state.slopCount = 0;
+
+    beginReduction( state );
+
+    // execute reduction passes in the first dimension
+    // until the stream is the proper size
+    while( state.currentExtents[firstDimension] != state.targetExtents[firstDimension] )
+      executeReductionStep( state );
+    executeSlopStep( state );
+
+    // now repeat in the second dimension
+    state.currentDimension = secondDimension;
+    while( state.currentExtents[secondDimension] != state.targetExtents[secondDimension] )
+      executeReductionStep( state );
+    executeSlopStep( state );
+
+    endReduction( state );
+  }
+
+  void GPUKernel::executeReductionTechnique( size_t inFactor )
+  {
+    // TIM: We currently make the very strong
+    // assumption that reduction techniques
+    // will be stored sequentially in our
+    // technique array starting with the 2-way
+    // reduction technique...
+
+    GPUAssert( inFactor >= 2, "Attempt to reduce by a factor of less than 2" );
+    size_t techniqueIndex = inFactor - 2;
+    GPUAssert( techniqueIndex < _techniques.size(), "Attempt to reduce by too large of a factor" );
+
+    // we use the standard technique-mapping code to make things easier...
+    executeTechnique( _techniques[techniqueIndex] );
+  }
+
+  void GPUKernel::beginReduction( ReductionState& ioState )
+  {
+    // TIM: this routine used to do a lot more work
+    // (like copying data into reduction buffers
+    // or validating input texture data)
+    _context->beginScene();
+
+    //#ifdef BROOK_DX9_TRACE_REDUCE
+    dumpReductionState( ioState );
+    //#endif
+  }
+
+  void GPUKernel::executeReductionStep( ReductionState& ioState )
+  {
+    // TIM: this is the meat of the reduction implementation
+    // and it is really ugly, gone-off meat...
+
+    // read state values into temporaries
+    // so that our code can be less ridiculously verbose
+    size_t dim = ioState.currentDimension; // the dimension we are reducing
+    size_t remainingExtent = ioState.currentExtents[dim]; // how big the to-be-reduced buffer is
+    size_t outputExtent = ioState.targetExtents[dim]; // how big we want it to be
+    size_t remainingFactor = remainingExtent / outputExtent; // how much is left to reduce by
+    size_t otherExtent = ioState.currentExtents[1-dim]; // how big the other dimension is...
+
+    // First we must find an appropriate technqiue
+    // execute. We assume for now that the
+    // techniques are ordered from worst to best.
+    std::vector<Technique>::reverse_iterator t;
+    for( t = _techniques.rbegin(); t != _techniques.rend(); ++t )
+    {
+      Technique& technique = *t;
+      size_t passFactor = technique.reductionFactor;
+
+      size_t quotient = remainingFactor / passFactor;
+      size_t remainder = remainingFactor % passFactor;
+
+      // The logic used here bears explaining. Effectively
+      // we have an input buffer consisting of groups
+      // of stream elements of size <remainingFactor>
+      // each of which will become a single element
+      // of the reduced stream
+
+      // as an example, imagine the sum reduction of:
+      // 0 1 2 3 4 5 6 7 8
+      // to
+      // 3 12 21
+      // In this case <remainingFactor> is 3 and we
+      // can imagine the input grouped as:
+      // [0 1 2] [3 4 5] [6 7 8]
+
+      // Now suppose we have techniques that can
+      // reduce any span of <passFactor> consecutive values
+      // into a single value for 2 <= passFactor <= N
+      // How do we know if we can apply the
+      // technique with factor passFactor when we have
+      // a remaining factor of remainingFactor?
+
+      // There is one very obvious failure case:
+      // if the passFactor is greater than the remainingFactor
+      // then there isn't going to be enough data
+      // to run that technique
+      if( quotient == 0 ) continue; // the factor is larger than the data
+
+      // There are four obvious success cases:
+      // 1 - passFactor is a perfect divisor of remainingFactor.
+      //    clearly in this case we just set up interlaced
+      //    texture coordinates and go.
+      // 2 - passFactor only divides into the remainingFactor once.
+      //    in this case we are only reducing the 'left' side of
+      //    the buffer and just need reduce the 'slop' on the
+      //    right by some factor P < passFactor
+      // 3 - remainingFactor == remainingExtent
+      //    in this case we are reducing the whole buffer to
+      //    a single value, so we can just reduce the leftmost
+      //    stuff and then deal with the slop on the right.
+      // 4 - the 'slop' per group of elements is 1
+      //    building a texcoord interpolant to skip one texel
+      //    every N pixels is fairly doable. For example if
+      //    remainingFactor is 5 and passFactor is 2 we need
+      //    texcoords "A" and "B" to sample as follows:
+      //       A0  B0  A1  B1      A2  B2  A3  B3
+      //       0   1   2   3   4   5   6   7   8   9
+      //    we can achieve this by setting:
+      //       A[n] = floor( n*( 5 / 2 ) )
+      //       B[n] = floor( 1 + n*( 5/ 2 ) )
+      //    where the 'floor' operation is provided by nearest-
+      //    neighbor texturefiltering and the constant spacing
+      //    between texcoords is provided by the linear interpolation
+
+      // we currently only deal with cases 1, 2 and 4
+      // so our N-to-1 reductions may not be as aggresive
+      // as possible.
+
+      // a valid optimization to this code might be to
+      // always favor a reduction by a perfect divisor
+      // (case 1) first, since this avoids the allocation
+      // and extra passes for the slop buffer...
+      // this is left as an exercise for the reader :)
+
+      if( quotient == 1 || remainder <= 1 ) break;
+    }
+
+    // There should always be a valid reduction
+    // technique since a passFactor of 2 will always 
+    // satisfy either case 1 or 4 above
+    if( t == _techniques.rend() )
+      GPUError( "There was no available reduction pass... this should never happen");
+
+    // pull information out of the chosen technique
+    Technique& technique = *t;
+    size_t reductionFactor = technique.reductionFactor;
+    size_t slopFactor = (remainingFactor % reductionFactor);
+
+    // calculate the new size of the result buffer
+    size_t resultExtents[2];
+    resultExtents[0] = ioState.currentExtents[0];
+    resultExtents[1] = ioState.currentExtents[1];
+    resultExtents[dim] = outputExtent * (remainingFactor / reductionFactor);
+
+    TextureHandle slopBuffer = ioState.slopBuffer;
+    TextureHandle inputBuffer = NULL;
+    if( ioState.whichBuffer == -1 )
+      inputBuffer = ioState.inputTexture; // this the first pass, the data is still in the input
+    else
+      inputBuffer = ioState.reductionBuffers[ioState.whichBuffer];
+
+    // nextBuffer is where we will be placing the data
+    size_t nextBuffer = (ioState.whichBuffer + 1) % 2;
+    TextureHandle outputBuffer = ioState.reductionBuffers[nextBuffer];
+    size_t outputWidth = ioState.reductionBufferWidths[nextBuffer];
+    size_t outputHeight = ioState.reductionBufferHeights[nextBuffer];
+    if( outputBuffer == NULL )
+    {
+      outputBuffer = _runtime->getReductionTempBuffer(
+        kGPUReductionTempBuffer_Swap0 + nextBuffer, resultExtents[0], resultExtents[1], &outputWidth, &outputHeight );
+      ioState.reductionBuffers[nextBuffer] = outputBuffer;
+      ioState.reductionBufferWidths[nextBuffer] = outputWidth;
+      ioState.reductionBufferHeights[nextBuffer] = outputHeight;
+    }
+
+    // The crazy argument-annotation magic in the pass descriptors
+    // will look for reduction-related data in the "global"
+    // part of things. We therefore set up the global arguments
+    // as needed...
+
+    _globalSamplers.resize(2);
+    _globalSamplers[0] = inputBuffer;
+    _globalSamplers[1] = inputBuffer;
+
+    _globalOutputs.resize(1);
+    _globalOutputs[0] = outputBuffer;
+
+    _globalInterpolants.resize( reductionFactor );
+    for( size_t i = 0; i < reductionFactor; i++ )
+    {
+      _context->getStreamReduceInterpolant( inputBuffer, resultExtents[0], resultExtents[1],
+        i, remainingExtent+i, 0, otherExtent, dim, _globalInterpolants[i] );
+    }
+    size_t newExtent = resultExtents[dim];
+    ioState.currentExtents[dim] = newExtent;
+
+    _context->getStreamReduceOutputRegion( outputBuffer, 0, newExtent, 0, otherExtent, dim, _outputRegion );
+
+    // use the existing map functionality to execute the pass/passes...
+    executeTechnique( technique );
+
+    // move any slop out to the slop buffer
+    if( slopFactor )
+    {
+      size_t slopWidth = ioState.slopBufferWidth;
+      size_t slopHeight = ioState.slopBufferHeight;
+      if( slopBuffer == NULL )
+      {
+        size_t slopExtents[2];
+        slopExtents[dim] = outputExtent;
+        slopExtents[1-dim] = otherExtent;
+        size_t slopWidth, slopHeight;
+
+        slopBuffer = _runtime->getReductionTempBuffer( kGPUReductionTempBuffer_Slop,
+          slopExtents[0], slopExtents[1], &slopWidth, &slopHeight );
+        ioState.slopBuffer = slopBuffer;
+        ioState.slopBufferWidth = slopWidth;
+        ioState.slopBufferHeight = slopHeight;
+      }
+
+      if( ioState.slopCount == 0 && slopFactor == 1 )
+      {
+        // there is no existing slop data, and the
+        // "reduction" factor for the new slop data
+        // is one, so we can just copy it...
+
+        _context->bindPixelShader( _context->getPassthroughPixelShader() );
+        _context->bindTexture( 0, inputBuffer );
+
+        size_t offset = remainingFactor-1;
+        GPUInterpolant interpolant;
+        _context->getStreamReduceInterpolant( inputBuffer, slopWidth, slopHeight,
+          offset, remainingFactor+offset, 0, otherExtent, dim, interpolant );
+        _inputInterpolants.push_back( interpolant );
+
+        _context->bindOutput( 0, slopBuffer );
+        
+        _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
+
+        _context->drawRectangle( _outputRegion, &_inputInterpolants[0], _inputInterpolants.size() );
+
+        clearInputs();
+        ioState.slopCount++;
+      }
+      else if( ioState.slopCount == 0 )
+      {
+        // there is no existing slop data,
+        // but we have to reduce the new data
+        // by the slopFactor to make it fit
+
+        _globalSamplers[0] = inputBuffer;
+        _globalSamplers[1] = inputBuffer;
+        _globalOutputs[0] = slopBuffer;
+
+        for( size_t i = 0; i < slopFactor; i++ )
+        {
+          size_t offset = slopFactor - i;
+          offset = remainingFactor - offset;
+
+          _context->getStreamReduceInterpolant( inputBuffer, slopWidth, slopHeight,
+            offset, remainingExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
+        }
+        _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
+
+        executeReductionTechnique( slopFactor );
+        ioState.slopCount++;
+      }
+      else
+      {
+        // there is already data in the
+        // slop buffer, so we'll need
+        // to combine one value from
+        // the old slop buffer with
+        // one or more from the new data
+
+        _globalSamplers[0] = inputBuffer;
+        _globalSamplers[1] = slopBuffer;
+        _globalOutputs[0] = slopBuffer;
+
+        for( size_t i = 0; i < slopFactor; i++ )
+        {
+          size_t offset = slopFactor - i;
+          offset = remainingFactor - offset;
+          _context->getStreamReduceInterpolant( inputBuffer, slopWidth, slopHeight,
+            offset, remainingExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
+        }
+        _context->getStreamReduceInterpolant( inputBuffer, slopWidth, slopHeight,
+          0, outputExtent, 0, otherExtent, dim, _globalInterpolants[slopFactor] );
+        _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
+
+        executeReductionTechnique( slopFactor+1 );
+        ioState.slopCount++;
+      }
+    }
+
+    ioState.whichBuffer = nextBuffer;
+
+//#ifdef BROOK_DX9_TRACE_REDUCE
+    dumpReductionState( ioState );
+//#endif
+  }
+
+
+  void GPUKernel::executeSlopStep( ReductionState& ioState )
+  {
+    // we have finished reducing the "bulk"
+    // of the data in a given dimension
+    // and now we just need to composite
+    // the remaining output-sized
+    // slop buffer over our results...
+
+    if( ioState.slopCount == 0 ) return;
+
+    size_t dim = ioState.currentDimension;
+    size_t outputWidth = ioState.currentExtents[0];
+    size_t outputHeight = ioState.currentExtents[1];
+    size_t outputExtent = ioState.currentExtents[dim];
+    size_t otherExtent = ioState.currentExtents[1-dim];
+
+    TextureHandle slopBuffer = ioState.slopBuffer;
+    size_t slopWidth = ioState.slopBufferWidth;
+    size_t slopHeight = ioState.slopBufferHeight;
+    TextureHandle inputBuffer = ioState.reductionBuffers[ioState.whichBuffer];
+
+    // TIM: we are using the destination buffer both as an input and an output
+    // for simplicity. This is not necesarily future proof, and is probably
+    // avoidable. It's the only place in the reduction code where we
+    // perpetrate such a hack...
+    TextureHandle outputBuffer = inputBuffer;
+
+    _globalSamplers[0] = inputBuffer;
+    _globalSamplers[1] = slopBuffer;
+    _globalOutputs[0] = outputBuffer;
+
+    _context->getStreamReduceInterpolant( inputBuffer, outputWidth, outputHeight,
+      0, outputExtent, 0, otherExtent, dim, _globalInterpolants[0] );
+    _context->getStreamReduceInterpolant( slopBuffer, outputWidth, outputHeight,
+      0, outputExtent, 0, otherExtent, dim, _globalInterpolants[1] );
+    _context->getStreamReduceOutputRegion( outputBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
+
+    // execute the 2-argument reduction technique
+    executeReductionTechnique( 2 );
+
+    ioState.slopCount = 0;
+
+//#ifdef BROOK_DX9_TRACE_REDUCE
+    dumpReductionState( ioState );
+//#endif
+  }
+
+  void GPUKernel::endReduction( ReductionState& ioState )
+  {
+    size_t outputWidth = ioState.targetExtents[0];
+    size_t outputHeight = ioState.targetExtents[1];
+
+    TextureHandle inputBuffer;
+    if( ioState.whichBuffer == -1 )
+      inputBuffer = ioState.inputTexture; // this should only happen if they didn't actually reduce things
+    else
+      inputBuffer = ioState.reductionBuffers[ioState.whichBuffer];
+
+    TextureHandle outputBuffer = ioState.outputTexture;
+
+    _context->bindPixelShader( _context->getPassthroughPixelShader() );
+    _context->bindTexture( 0, inputBuffer );
+    _context->bindOutput( 0, outputBuffer );
+
+    GPUInterpolant interpolant;
+    _context->getStreamReduceInterpolant( inputBuffer,
+      outputWidth, outputHeight, 0, outputWidth, 0, outputHeight, interpolant );
+    _inputInterpolants.push_back( interpolant );
+
+    _context->getStreamReduceOutputRegion( outputBuffer, 0, outputWidth, 0, outputHeight, _outputRegion );
+
+    _context->drawRectangle( _outputRegion, &_inputInterpolants[0], _inputInterpolants.size() );
+    clearInputs();
+
+    // final cleanup
+    _context->endScene();
+
+    // TIM: used to have to deal with flushing caches here
+    // but I think the DX9 context no longer needs it
+
+    GPULOG(3) << "************ Result *************";
+    dumpReductionBuffer( outputBuffer, 1, 1, 1, 1 );
+
+    clearArguments();
+  }
+
+  void GPUKernel::dumpReductionState( ReductionState& ioState )
+  {
+    GPULOG(3) << "********************* Reduction Dump *************";
+    size_t dim = ioState.currentDimension;
+    int buffer = ioState.whichBuffer;
+
+    if( buffer == -1 )
+    {
+      GPULOG(3) << "Input";
+      dumpReductionBuffer( ioState.inputTexture,
+        ioState.inputExtents[0], ioState.inputExtents[1],
+        ioState.currentExtents[0], ioState.currentExtents[1] );
+    }
+    else
+    {
+      GPULOG(3) << "Buffer";
+//      ioState.reductionBuffers[buffer]->markCachedDataChanged();
+      dumpReductionBuffer( ioState.reductionBuffers[buffer],
+        ioState.reductionBufferWidths[buffer], ioState.reductionBufferHeights[buffer],
+        ioState.currentExtents[0], ioState.currentExtents[1] );
+    }
+
+    if( ioState.slopCount )
+    {
+      int slopExtents[2];
+      slopExtents[0] = ioState.currentExtents[0];
+      slopExtents[1] = ioState.currentExtents[1];
+      slopExtents[dim] = ioState.targetExtents[dim];
+
+      GPULOG(3) << "Slop";
+//      ioState.slopBuffer->markCachedDataChanged();
+      dumpReductionBuffer( ioState.slopBuffer, ioState.slopBufferWidth, ioState.slopBufferHeight, slopExtents[0], slopExtents[1] );
+    }
+  }
+
+  void GPUKernel::dumpReductionBuffer( TextureHandle inBuffer, size_t inBufferWidth, size_t inBufferHeight, size_t inWidth, size_t inHeight )
+  {
+    static float4* data = new float4[2048*2048];
+
+    int bufferWidth = inBufferWidth;
+    int bufferHeight = inBufferHeight;
+
+    int w = inWidth;
+    int h = inHeight;
+    if( w == 0 )
+      w = bufferWidth;
+    if( h == 0 )
+      h = bufferHeight;
+
+    _context->getTextureData( inBuffer, (float*)data, sizeof(float4), bufferWidth*bufferHeight );
+
+    float4* line = data;
+    for( int y = 0; y < h; y++ )
+    {
+      float4* pixel = line;
+      for( int x = 0; x < w; x++ )
+      {
+        if( x > 0 && x % 5 == 0 )
+          GPULOGPRINT(3) << "\n\t";
+
+        float4 value = *pixel++;
+        GPULOGPRINT(3) << "{" << value.x
+          << " " << value.y
+          << " " << value.z
+          << " " << value.w << "}";
+      }
+      line += bufferWidth;
+      GPULOGPRINT(3) << std::endl;
+    }
+  }
+
+  void GPUKernel::bindConstant( PixelShaderHandle inPixelShader, 
                                 size_t inIndex, const Input& inInput )
   {
     if( inInput.argumentIndex > 0 )
     {
       int arg = inInput.argumentIndex-1;
       ArgumentInfo& argument = _arguments[ arg ];
-      _context->bindConstant( ps, inIndex, 
+      _context->bindConstant( inPixelShader, inIndex, 
                               argument.getConstant( this, 
                                                     inInput.componentIndex ) );
+    }
+    else
+    {
+      // global constant
+      _context->bindConstant( inPixelShader, inIndex, getGlobalConstant( inInput.componentIndex ) );
     }
   }
 
@@ -328,6 +892,11 @@ namespace brook
       _context->bindTexture( inIndex, 
                              argument.getTexture( this, 
                                                   inInput.componentIndex ) );
+    }
+    else
+    {
+      // global sampler
+      _context->bindTexture( inIndex, getGlobalSampler( inInput.componentIndex ) );
     }
   }
 
@@ -342,6 +911,11 @@ namespace brook
                                inInput.componentIndex,
                                _inputInterpolants[inIndex] );
     }
+    else
+    {
+      // global interpolant
+      getGlobalInterpolant( inInput.componentIndex, _inputInterpolants[inIndex] );
+    }
   }
 
   void GPUKernel::bindOutput( size_t inIndex, const Input& inInput )
@@ -354,6 +928,35 @@ namespace brook
                             argument.getTexture( this, 
                                                  inInput.componentIndex ) );
     }
+    else
+    {
+      // global output
+      _context->bindOutput( inIndex, getGlobalOutput( inInput.componentIndex ) );
+    }
+  }
+
+  float4 GPUKernel::getGlobalConstant( size_t inComponentIndex )
+  {
+    GPUAssert( inComponentIndex < _globalConstants.size(), "Invalid global constant index" );
+    return _globalConstants[inComponentIndex];
+  }
+
+  GPUKernel::TextureHandle GPUKernel::getGlobalSampler( size_t inComponentIndex )
+  {
+    GPUAssert( inComponentIndex < _globalSamplers.size(), "Invalid global sampler index" );
+    return _globalSamplers[inComponentIndex];
+  }
+
+  void GPUKernel::getGlobalInterpolant( size_t inComponentIndex, GPUInterpolant& outInterpolant )
+  {
+    GPUAssert( inComponentIndex < _globalInterpolants.size(), "Invalid global interpolant index" );
+    outInterpolant = _globalInterpolants[inComponentIndex];
+  }
+
+  GPUKernel::TextureHandle GPUKernel::getGlobalOutput( size_t inComponentIndex )
+  {
+    GPUAssert( inComponentIndex < _globalOutputs.size(), "Invalid global output index" );
+    return _globalOutputs[inComponentIndex];
   }
 
   /// Argument Types
