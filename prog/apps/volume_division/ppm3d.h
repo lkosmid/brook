@@ -57,6 +57,16 @@ void printVolume (const ppm &fp) {
 float * mallocSlice (const ppm &fp) {
    return (float*)malloc(sizeof(float)*fp.width*fp.height);
 }
+float myrand () {
+   static unsigned int seed1=21051095;
+   unsigned int * seed=&seed1;
+   unsigned int rand_max =1509281;
+   *seed = (*seed +26129357)%rand_max;
+   if (*seed<(rand_max/2))
+      return 1;
+   else return -1;
+}
+
 void readPPM3dSlice(const ppm &fp, 
                    unsigned int whichslice,
                    float *data) {
@@ -70,7 +80,7 @@ void readPPM3dSlice(const ppm &fp,
       for (unsigned int i=0;i<size;++i) {
          data[i]=readindata[i]/255.0f-.5f;//because we only support float format!
       }
-   }else for (unsigned int i=0;i<size;++i) data[i] = ((float)rand())/RAND_MAX-.5f;
+   }else for (unsigned int i=0;i<size;++i) data[i] = myrand();
 }
 void closePPM (const ppm &fp) {
    fclose (fp.fp);
