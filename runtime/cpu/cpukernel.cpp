@@ -49,4 +49,10 @@ namespace brook{
         args.clear();
 	extent=0;
     }
+    void CPUKernel::Release() {
+	delete this;
+    }
+    CPUKernel::~CPUKernel() {
+
+    }
 }

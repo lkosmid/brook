@@ -15,9 +15,9 @@ namespace brook {
 	virtual void PushGatherStream(const Stream *s);
 	virtual void PushOutput(const Stream *s);
 	virtual void Map();
-	virtual void Release(){}
+	virtual void Release();
     protected:
-	virtual ~CPUKernel(){}
+	virtual ~CPUKernel();
 	typedef void callable(const std::vector<void *>&args,unsigned int start, unsigned int end);
 	callable * func;
 	std::vector<void *> args;
