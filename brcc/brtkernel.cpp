@@ -151,7 +151,14 @@ static Symbol getSymbol(std::string in) {
 }
 
 extern bool recursiveIsGather(Type*);
-extern bool recursiveIsArrayStream(Type*);
+bool recursiveIsArrayType(Type * form) {
+   if ((form->getQualifiers()&TQ_Reduce)!=0) {
+      return form->type==TT_Array;
+   }
+   return form->type==TT_Stream
+      &&(static_cast<ArrayType*>(form)->subType->type==TT_Array);
+}
+
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class PrintCPUArg {
@@ -161,8 +168,8 @@ public:
      bool isGather() {
        return recursiveIsGather(a->form);
     }
-    bool isArrayStream() {
-      return recursiveIsArrayStream(a->form);
+    bool isArrayType() {
+      return recursiveIsArrayType(a->form);
     }
     PrintCPUArg(Decl * arg,unsigned int index):a(arg),index(index){}
     enum STAGE {HEADER,DEF,USE,CLEANUP};
@@ -242,12 +249,16 @@ public:
     void printArrayStream(std::ostream &out, STAGE s) {
         Type * t=a->form;
 	//temporarily dissect type.
-		assert (t->type==TT_Stream||t->type==TT_Array);
-		t=static_cast<ArrayType*>(t)->subType;
+        assert (t->type==TT_Stream||t->type==TT_Array);
+        bool isStream=false;
+        if (t->type==TT_Stream) {
+           t=static_cast<ArrayType*>(t)->subType;
+           isStream=true;
+        }
         switch (s) {
         case HEADER:{
             TypeQual tq= t->getQualifiers();            
-            if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
+            if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0&&(tq&TQ_Reduce)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
 			Type * tmp = a->form;
@@ -271,7 +282,9 @@ public:
             break;
         }
         case USE:{
-            out <<"*arg"<<index<<"++";
+            out <<"*arg"<<index;
+            if (isStream)
+               out <<"++";
             break;
         }
 	case CLEANUP:
@@ -285,7 +298,7 @@ public:
         bool isStream = (t->type==TT_Stream);        
         switch(s) {
         case HEADER:{
-            if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
+            if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0&&(tq&TQ_Reduce)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
             Symbol name=getSymbol(a->name->name);
@@ -320,7 +333,7 @@ public:
     void printCPU(std::ostream & out,STAGE s){
         if(isGather())
 	  printDimensionlessGatherStream(out,s);
-	else if (isArrayStream())
+	else if (isArrayType())
 	  printArrayStream(out,s);
         else
 	  printNormalArg(out,s);

@@ -16,7 +16,7 @@
 #include "codegen.h"
 //FIXME eventually we'll want to code-transform to do the following 2 functions
 bool recursiveIsGather(Type * form) {
-  bool ret=(form->type==TT_Array);
+  bool ret=(form->type==TT_Array)&&(form->getQualifiers()&TQ_Reduce)==0;
   bool isarray=ret;
   Type * t=form;
   while (isarray) {
@@ -25,13 +25,6 @@ bool recursiveIsGather(Type * form) {
   }
   return ret&&t->type!=TT_Stream;
 }
-bool recursiveIsArrayStream(Type * form) {
-	if (form->type==TT_Stream
-		&&recursiveIsGather(static_cast<ArrayType*>(form)->subType)) {
-		return true;
-	}
-	return false;
-} 
 bool recursiveIsStream(Type* form) {
 	return (form->type==TT_Stream);
 }
@@ -117,7 +110,8 @@ BRTKernelDef::printStub(std::ostream& out) const
       if (fType->args[i]->isStream() || fType->args[i]->isArray()) {
          out << "const __BRTStream& " << *fType->args[i]->name;
       } else {
-         out << "const ";
+         if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)==0)
+            out << "const ";
          fType->args[i]->form->printBase(out, 0);
          fType->args[i]->form->printBefore(out, NULL, 0);
          out << "& " << *fType->args[i]->name;
@@ -136,12 +130,18 @@ BRTKernelDef::printStub(std::ostream& out) const
 
    for (i=0; i < fType->nArgs; i++) {
       if (recursiveIsStream(fType->args[i]->form) &&
-          (fType->args[i]->form->getQualifiers() & TQ_Out)) {
+          (fType->args[i]->form->getQualifiers()&TQ_Out)) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
       } else if (recursiveIsStream(fType->args[i]->form)) {
          out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
       } else if (recursiveIsGather(fType->args[i]->form)) {
          out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
+      } else if (fType->args[i]->form->getQualifiers()&TQ_Reduce) {
+         out << "  k->PushReduce(&" << *fType->args[i]->name;
+         out << ", sizeof(";
+         Symbol name;name.name="";
+         fType->args[i]->form->printType(out,&name,true,0);
+         out <<"));\n";
       } else {
          out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
       }
