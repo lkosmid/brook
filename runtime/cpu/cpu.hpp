@@ -13,14 +13,14 @@ namespace brook {
 	virtual void PushGatherStream(const Stream *s);
 	virtual void PushOutput(const Stream *s);
 	virtual void Map();
-	virtual void Release() {}
+	virtual void Release();
     protected:
 	virtual ~CPUKernel();
 	CPURunTime * runtime;
     };
     class CPUStream: public Stream {
     public:
-	CPUStream (CPURunTime *runtime, const char type[],int dims, int extents[]);
+	CPUStream (const char type[],int dims, int extents[]);
 	virtual void Read(const void* inData);
 	virtual void Write(void* outData);
 	virtual void Release();

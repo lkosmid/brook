@@ -25,7 +25,7 @@ static map<string,int> getKnownTypes() {
 }
 static map<string,int> knownTypes = getKnownTypes();
 namespace brook{
-    CPUStream::CPUStream(CPURunTime *, const char type[], int dims, int extents[]){
+    CPUStream::CPUStream(const char type[], int dims, int extents[]){
 	this->extents = (unsigned int *)malloc(dims*sizeof(unsigned int));
 	totalsize=1;
 	for(int i=0;i<dims;++i) {
