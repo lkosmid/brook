@@ -7,8 +7,12 @@ reduce void SUM( float4 a<>, reduce float4 b<> ) {
 int main () {
 
   float4 a< 10, 10 >;
+  float4 b< 9, 9 >;
+  float4 c< 11, 10 >;
   
   float4 data_a[10][10];
+  float4 data_b[9][9];
+  float4 data_c[11][10];
   float4 result;
 
   int i,j;
@@ -21,9 +25,30 @@ int main () {
       data_a[i][j].w = (float)2;
     }
   streamRead(a, data_a);
-  
   SUM(a,result);
-
   printf ("{%3.2f %3.2f %3.2f %3.2f}\n", result.x,result.y,result.z,result.w);
+
+  for (i=0; i<9; i++)
+    for (j=0; j<9; j++) {
+      data_b[i][j].x = (float)i;
+      data_b[i][j].y = (float)j;
+      data_b[i][j].z = (float)1;
+      data_b[i][j].w = (float)2;
+    }
+  streamRead(b, data_b);
+  SUM(b,result);
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", result.x,result.y,result.z,result.w);
+
+  for (i=0; i<11; i++)
+    for (j=0; j<10; j++) {
+      data_c[i][j].x = (float)i;
+      data_c[i][j].y = (float)j;
+      data_c[i][j].z = (float)1;
+      data_c[i][j].w = (float)2;
+    }
+  streamRead(c, data_c);
+  SUM(c,result);
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", result.x,result.y,result.z,result.w);
+    
   return 0;
 }
