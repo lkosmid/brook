@@ -1,13 +1,22 @@
+#define USE_THREASD
 #include <iostream>
 #include<assert.h>
 #include "cpu.hpp"
 #include <stdio.h>
-#define USE_THREADS
+#ifdef USE_THREADS
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#endif
 struct BrtThread {
+#ifdef USE_THREADS
 #ifdef _WIN32
   DWORD Id;
 #else
   pthread_t Id;
+#endif
+#else
+   long Id;
 #endif
   bool active;
 };
@@ -210,7 +219,7 @@ namespace brook{
        unsigned int cur=0;
        unsigned int step = totalsize/numThreads;
        unsigned int remainder = totalsize%numThreads;
-       vector<BrtThread>threads;
+       std::vector<BrtThread>threads;
        for (i=0;i<numThreads-1;++i)
          threads.push_back(BrtThread());
        BrtCreateThread(staticSubMap,new subMapInput(this,args,cur,step),threads[0]);
@@ -237,7 +246,7 @@ namespace brook{
           }          
        }
        subMap(cur,totalsize-cur);
-       for (unsigned int i=0;i<threads.size();++i) {
+       for (i=0;i<threads.size();++i) {
          BrtJoinThread(threads[i]);
        }
        cur=0;
@@ -269,7 +278,7 @@ namespace brook{
           }
        }
     }
-  void CPUKernel::ReduceToStream (vector<void *>&myargs,
+  void CPUKernel::ReduceToStream (std::vector<void *>&myargs,
                                   unsigned int cur, 
                                   unsigned int curfinal,
                                   const unsigned int *extent,
@@ -372,7 +381,7 @@ namespace brook{
             }
           }
           cur=0;
-          vector<BrtThread> pthreads;
+          std::vector<BrtThread> pthreads;
           for (i=0;i<numThreads-1;++i) {
               pthreads.push_back(BrtThread());
           }
@@ -410,7 +419,7 @@ namespace brook{
             //forkborkborkbork
             
           }
-          for (unsigned int i=0;i<pthreads.size();++i) {
+          for (i=0;i<pthreads.size();++i) {
             BrtJoinThread (pthreads[i]);
           }
           free (buffer);

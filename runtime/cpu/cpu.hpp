@@ -64,7 +64,7 @@ namespace brook {
        bool multiThread;
        void Cleanup();
        void ThreadMap(unsigned int numThreads);
-       void ReduceToStream(vector<void *>&args,
+       void ReduceToStream(std::vector<void *>&args,
                            unsigned int cur,
                            unsigned int curfinal,
                            const unsigned int * extent,
@@ -79,7 +79,7 @@ namespace brook {
           unsigned int * mapbegin;
           const unsigned int * mag;             
           reduceToStreamInput (const CPUKernel * thus,
-                               const std::vector<void*>&args,
+                               const std::vector<void*> &args,
                                unsigned int cur,
                                unsigned int curfinal,
                                const unsigned int *extent,
@@ -87,7 +87,7 @@ namespace brook {
                                unsigned int *begin,
                                const unsigned int * mag) 
 
-             :vector<void*>(args),thus(thus),
+             :std::vector<void*>(args),thus(thus),
               cur(cur),curfinal(curfinal),
               extent(extent),rdim(rdim),mapbegin(begin),mag(mag)
           {}
@@ -100,7 +100,7 @@ namespace brook {
                       const std::vector<void *> &args,
                       unsigned int begin,
                       unsigned int end):
-             vector<void*>(args),thus(thus),mapbegin(begin),mapend(end)
+             std::vector<void*>(args),thus(thus),mapbegin(begin),mapend(end)
           {}
           const CPUKernel * thus;
           unsigned int mapbegin;
