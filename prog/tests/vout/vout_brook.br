@@ -8,22 +8,22 @@ void CountValuesfloat(struct StreamHolder list_stream,
 
 kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], vout []float e<>) {
-  e = a+b+d[c.xy];
+  e = a+b;
   push(e);
   if (round(fmod( (indexof a).x,2))!=1) {
     e = 2;
     push (e);
   }
   if (round(fmod((indexof a).y,3))!=1) {
-     e=1;
+     e=3;
      push (e);
-     e=-1;
+     e=-3;
      push (e);
   }
 }
 int main (int argc, char * argv[]) {
-  int WID=(argc>1?atoi(argv[1]):3);
-  int LEN=(argc>2?atoi(argv[2]):(argc>1?atoi(argv[1]):5));
+  int WID=(argc>1?atoi(argv[1]):10);
+  int LEN=(argc>2?atoi(argv[2]):(argc>1?atoi(argv[1]):10));
   float a<WID, LEN>;
   float b<WID, LEN>;
   float d<WID, LEN>;
@@ -45,9 +45,9 @@ int main (int argc, char * argv[]) {
   memset(data_nil,0,10*40*sizeof(float));
   for (i=0; i<WID; i++)
     for (j=0; j<LEN; j++) {
-      data_a[i*LEN+j] = ((float) i) + ((float) j) / 16;
-      data_b[i*LEN+j] = ((float) j) + ((float) i) / 16;
-      data_d[i*LEN+j] = ((float) i) / 100;
+      data_a[i*LEN+j] = ((float) i);
+      data_b[i*LEN+j] = ((float)j)/10;
+      data_d[i*LEN+j] = 0;
     }
   
   streamRead(a, data_a);
