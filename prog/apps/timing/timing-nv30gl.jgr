@@ -4,96 +4,44 @@
  *	tests.
  *)
 
-newgraph 	(* Read/Write bandwidth for 2D streams *)
-
-yaxis label : MB/sec
-xaxis label : Stream Length
-
-border
-title : 2D streamRead() + MemcpyKernel + streamWrite() Bandwidth
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RW2D/ { print $1*$1, $3 }' graphs/graph-nv30gl.pts
-
-newpage
 newgraph 	(* RunKernel MFLOPS for 2D streams *)
 
 yaxis label : MFLOPS
-xaxis label : Stream Length
+xaxis label : Number of Floats
 
 border
-title : 2D Stream MFLOPS (streamRead + 150 runs + streamWrite)
+title : 2D Stream MFLOPS (streamRead + 1000 runs + streamWrite)
 
 newcurve
   marktype circle
   linetype solid
   pts 0 0
-  pts shell : awk '/RunK2D [0-9]+ R150/ { print $7, $2 }' graphs/graph-nv30gl.pts
+  pts shell : awk '/RunK2D [0-9]+ R1000/ { print $7*$7*4, $2 }' graphs/graph-nv30gl.pts
 
 newpage
 newgraph 	(* RunKernel Knee 2D Total *)
 
-yaxis label : Time (msecs)
-xaxis label : Stream Length
+yaxis min 0 label : Time (msecs)
+xaxis label : Number of Ops
 
 border
 title : 2D Kernel overhead (stream length vs. elapsed time)
 
 newcurve
-  label : streamRead() + 50 Iterations + streamWrite()
-  marktype circle
-  linetype solid
-  pts shell : awk '/RunK2D [0-9] R50/ { print $7*$7, $1/1000 }' graphs/graph-nv30gl.pts 
-  pts shell : awk '/RunK2D [0-4][0-9] R50/ { print $7*$7, $1/1000 }' graphs/graph-nv30gl.pts
-
-newcurve
-  label : streamRead() + 75 Iterations + streamWrite()
-  marktype box
-  linetype solid
-  pts shell : awk '/RunK2D [0-9] R75/ { print $7*$7, $1/1000 }' graphs/graph-nv30gl.pts 
-  pts shell : awk '/RunK2D [0-4][0-9] R75/ { print $7*$7, $1/1000 }' graphs/graph-nv30gl.pts
-
-newcurve
-  label : streamRead() + 150 Iterations + streamWrite()
+  label : streamRead() + 1000 Iterations + streamWrite()
   marktype triangle
   linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D [0-9] R150/ { print $7*$7, $1/1000 }' graphs/graph-nv30gl.pts 
-  pts shell : awk '/RunK2D [0-4][0-9] R150/ { print $7*$7, $1/1000 }' graphs/graph-nv30gl.pts
+  pts shell : awk '/RunK2D [4-9] R1000/ { print 4*$7*$7*$9, ($1-$10-$11)/1000 }' graphs/graph-nv30gl.pts 
+  pts shell : awk '/RunK2D [0-3][0-9] R1000/ { print 4*$7*$7*$9, ($1-$10-$11)/1000 }' graphs/graph-nv30gl.pts
 
-legend bottom
-
-newpage
-newgraph 	(* RunKernel Throughput based on length *)
-
-yaxis label : MFLOPS
-xaxis label : Stream Length (In Each Dimension)
-
-border
-title : 2D Kernel Throughput (stream length vs. MFLOPS)
-
+  (* 
 newcurve
-  label : streamRead() + 150 Iterations + streamWrite()
+  label : streamRead() + 1000 Iterations (BonusKernel) + streamWrite()
   marktype circle
   linetype solid
-  (* pts 0 0 *)
-  pts shell : awk '/RunK2D [0-9]+ R150/ { print $7, $2 }' graphs/graph-nv30gl.pts 
-
-newcurve
-  label : streamRead() + 75 Iterations + streamWrite()
-  marktype box
-  linetype solid
-  (* pts 0 0 *)
-  pts shell : awk '/RunK2D [0-9]+ R75/ { print $7, $2 }' graphs/graph-nv30gl.pts 
-
-newcurve
-  label : streamRead() + 50 Iterations + streamWrite()
-  marktype triangle
-  linetype solid
-  pts shell : awk '/RunK2D [0-9]+ R50/ { print $7, $2 }' graphs/graph-nv30gl.pts 
+  pts shell : awk '/RunK2DBonus [4-9] R1000/ { print 4*$7*$7*$9, ($1-$10-$11)/1000 }' graphs/graph-nv30gl.pts 
+  pts shell : awk '/RunK2DBonus [0-4][0-9] R1000/ { print 4*$7*$7*$9, ($1-$10-$11)/1000 }' graphs/graph-nv30gl.pts
+  *)
 
 legend bottom
 
@@ -101,7 +49,7 @@ newpage
 newgraph 	(* RunKernel R/k/W breakdown *)
 
 yaxis label : Time (usecs)
-xaxis label : Stream Length
+xaxis label : Number of Floats
 
 border
 title : 2D Kernel streamRead() / k() / streamWrite() breakdown
@@ -110,20 +58,23 @@ newcurve
   label : streamRead()
   marktype circle
   linetype solid
-  pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, $9 }' graphs/graph-nv30gl.pts 
+  pts 0 0
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print 4*$7*$7, $10 }' graphs/graph-nv30gl.pts 
 
 newcurve
   label : streamRead() + 1 iteration
   marktype box
   linetype solid
   (* pts 0 0 *)
-  pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, $1 - $10 }' graphs/graph-nv30gl.pts 
+  pts 0 0
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print 4*$7*$7, $1 - $11 }' graphs/graph-nv30gl.pts 
 
 newcurve
   label : streamRead() + 1 iteration + streamWrite()
   marktype triangle
   linetype solid
-  pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, $1 }' graphs/graph-nv30gl.pts 
+  pts 0 0
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print 4*$7*$7, $1 }' graphs/graph-nv30gl.pts 
 
 legend bottom
 
@@ -131,7 +82,7 @@ newpage
 newgraph 	(* RunKernel R/W Bandwidth *)
 
 yaxis label : MB/s
-xaxis label : Stream Length
+xaxis label : Number of Floats Transferred
 
 border
 title : 2D Kernel streamRead() and streamWrite() Bandwidth
@@ -140,26 +91,25 @@ newcurve
   label : MAX(streamRead(), 1000)
   marktype circle
   linetype solid
-  pts 0 0
   pts shell : awk '/RunK2D [0-9]+ R1 / {                                \
-     if (16*$7*$7/$9 > 1000) {                                          \
-        print $7*$7, 1000 }                                             \
-     else { print $7*$7, 16*$7*$7/$9 }                                  \
+     if (16*$7*$7/$10 > 1000) {                                         \
+        print 4*$7*$7, 1000 }                                           \
+     else { print 4*$7*$7, 16*$7*$7/$10 }                               \
   }' graphs/graph-nv30gl.pts 
 
 newcurve
   label : streamWrite()
   marktype triangle
   linetype solid
-  pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, 16*$7*$7/$10 }' graphs/graph-nv30gl.pts 
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print 4*$7*$7, 16*$7*$7/$11 }' graphs/graph-nv30gl.pts 
 
 legend bottom
 
 newpage
-newgraph 	(* RunKernel Compute k vs. average k *)
+newgraph 	(* RunKernel Computed k vs. average k *)
 
 yaxis label : Time (usecs)
-xaxis label : Stream Length
+xaxis label : Number of Floats
 
 border
 title : 2D Kernel Computed k vs. Averaged k
@@ -169,15 +119,15 @@ newcurve
   marktype circle
   linetype solid
   pts shell : awk '/RunK2D [0-9]+ R1 / {                                   \
-     if ($9 > $1) { print $7*$7, 0 } else { print $7*$7, ($1 - $9 - $10) } \
+     if ($10 > $1) { print 4*$7*$7, 0 } else { print 4*$7*$7, ($1-$10-$11) } \
   }' graphs/graph-nv30gl.pts 
 
 newcurve
-  label : (R + 150*k + W) / 150
+  label : (R + 1000*k + W) / 1000
   marktype box
   linetype solid
-  pts shell : awk '/RunK2D [0-9]+ R150 / {                              \
-     print $7*$7, $1/150                                                \
+  pts shell : awk '/RunK2D [0-9]+ R1000 / {                              \
+     print 4*$7*$7, $1/1000                                                \
   }' graphs/graph-nv30gl.pts 
 
 legend bottom

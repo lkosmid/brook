@@ -8,8 +8,8 @@ GRAPHDIR = graphs
 SLOP = graphs
 
 RUNTIME=nv30gl
-RUNSIZE=512
-RUNTESTS=rw2d runk2d
+RUNSIZE=350
+RUNTESTS=runk2d
 
 include $(ROOTDIR)/common.mk
 
