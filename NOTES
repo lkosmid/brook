@@ -1,0 +1,39 @@
+			    Brook GPU Release Notes
+
+Known Issues In BRCC
+
+   * There is very little type checking on stream arguments-- especially in
+     terms of length or dimensionality.  Passing a stream that's too small
+     to streamRead() or streamWrite() can cause all sorts of misbehaviors.
+
+   * Handling of floatN (float2, float3, float4) constructors is very
+     fragile.  They're only legal in three places: variable declaration
+     initializers, iterator stream constructors, and as bare statements.
+
+   * Casts are not correctly parsed in variable declaration initializers (as
+     fallout of the above floatN constructors).
+
+   * The preprocessor is not run on .br files, though it is run on the
+     resulting C++ output.  This can make it hard to use #defines and macros
+     in conjunction with kernels or stream constructs.
+   
+   * GatherOps and ScatterOps require the CPU runtime and so programs using
+     them must compile for at least the CPU target.
+
+   * The 'indexof' operator has very low precedence and is generally only
+     useful with parentheses.
+     
+Known Issues in the Runtimes
+
+   * In general, error conditions result in undefined behaviors and
+     incorrect results, not necessarily crashes or reported errors.
+   
+   * The dx9 runtime cannot allocate streams that are longer than 2048 in
+     any dimension or perform reductions on streams longer than 1024 in any
+     dimension.
+
+   * The cpu runtime only supports a subset of the builtin Cg / HLSL
+     functions.
+
+   * The dx9 runtime leaves logfiles behind in the current directory when
+     brook programs run using it.
