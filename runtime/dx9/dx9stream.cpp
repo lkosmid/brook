@@ -235,13 +235,35 @@ DX9Rect DX9Stream::getSurfaceSubRect( int l, int t, int r, int b ) {
   return fields[0].texture->getSurfaceSubRect( l, t, r, b );
 }
 
-float4 DX9Stream::getATShapeConstant()
+float4 DX9Stream::getATOutputConstant()
 {
   float4 result(0,0,0,0);
+  result.x = (float)getTextureWidth();
+  result.y = 1.0f / (float)reversedExtents[0];
+  result.z = (float)(reversedExtents[0]);
+  result.w = 0.99f;
+  return result;
+}
+
+float4 DX9Stream::getATOutputShape()
+{
+  float4 result(1,1,1,1);
   result.x = (float)extents[0];
-  result.y = (float)extents[1];
-  result.z = 0;
-  result.w = 0;
+  if( dimensionCount > 1 )
+    result.y = (float)extents[1];
+  return result;
+}
+
+float4 DX9Stream::getATShapeConstant( const float4& outputShape )
+{
+  float4 result(0,0,0,0);
+  result.x = (float)extents[0] / outputShape.x;
+  if( dimensionCount > 1 )
+    result.y = (float)extents[1] / outputShape.y;
+  if( dimensionCount > 2 )
+    result.z = 0;
+  if( dimensionCount > 3 )
+    result.w = 0;
   return result;
 }
 
@@ -249,9 +271,12 @@ float4 DX9Stream::getATLinearizeConstant()
 {
   float4 result(0,0,0,0);
   result.x = 1.0f / (float)getTextureWidth();
-  result.y = (float)reversedExtents[0] / (float)getTextureWidth();
-  result.z = 0;
-  result.w = 0;
+  if( dimensionCount > 1 )
+    result.y = (float)reversedExtents[0] / (float)getTextureWidth();
+  if( dimensionCount > 2 )
+    result.z = (float)(reversedExtents[0] * reversedExtents[1]) / (float)getTextureWidth();
+  if( dimensionCount > 3 )
+    result.w = (float)(reversedExtents[0] * reversedExtents[1]) / (float)getTextureWidth();
   return result;
 }
 
@@ -280,12 +305,12 @@ float4 DX9Stream::getATInverseShapeConstant()
 
 DX9Rect DX9Stream::getATAddressInterpolantRect()
 {
-  // 0 to (texture.width / stream.width) in X
-  // 0 to (texture.width*texture.height / stream.width) in Y
-  float xMax = (float)getTextureWidth() / (float)reversedExtents[0];
-  float yMax = (float)(getTextureWidth() * getTextureHeight()) / (float)reversedExtents[0];
+  float xMin = 0.5f;
+  float xMax = (float)getTextureWidth() + 0.5f;
+  float yMin = 0.5f;
+  float yMax = (float)getTextureHeight() + 0.5f;
 
-  return DX9Rect( 0.0f, yMax, xMax, 0.0f );
+  return DX9Rect( xMin, yMax, xMax, yMin );
 }
 
 void* DX9Stream::getData (unsigned int flags)

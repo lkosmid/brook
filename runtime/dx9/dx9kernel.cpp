@@ -132,7 +132,8 @@ void DX9Kernel::PushStream(Stream *s) {
   if( runtime->isAddressTranslationOn() )
   {
     PushSamplers( stream );
-    PushConstantImpl( stream->getATShapeConstant() );
+    int shapeConstantIndex = PushConstantImpl( float4(0,0,0,0) );
+    inputStreamShapeConstantIndices.push_back( shapeConstantIndex );
     PushConstantImpl( stream->getATLinearizeConstant() );
     PushConstantImpl( stream->getATReshapeConstant() );
   }
@@ -207,6 +208,7 @@ void DX9Kernel::PushGatherStream(Stream *s) {
   if( runtime->isAddressTranslationOn() )
   {
     PushSamplers( stream );
+    inputStreamShapeConstantIndices.push_back( -1 );
     PushConstantImpl( stream->getATLinearizeConstant() );
     PushConstantImpl( stream->getATReshapeConstant() );
   }
@@ -313,18 +315,15 @@ void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
   {
     DX9Stream* outputStream = outputStreams[0];
 
-    float4 outputShape = outputStream->getATShapeConstant();
-    float4 outputInvShape = outputStream->getATInverseShapeConstant();
+    float4 outputConstant = outputStream->getATOutputConstant();
     float4 hackConstant(1,1,1,1);
 
-    result = device->SetPixelShaderConstantF( 0, (float*)&(outputShape), 1 );
+    result = device->SetPixelShaderConstantF( 0, (float*)&(outputConstant), 1 );
     DX9AssertResult( result, "SetPixelShaderConstantF failed" );
-    result = device->SetPixelShaderConstantF( 1, (float*)&(outputInvShape), 1 );
-    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
-    result = device->SetPixelShaderConstantF( 2, (float*)&(hackConstant), 1 );
+    result = device->SetPixelShaderConstantF( 1, (float*)&(hackConstant), 1 );
     DX9AssertResult( result, "SetPixelShaderConstantF failed" );
 
-    baseConstantIndex = 3;
+    baseConstantIndex = 2;
   }
 
   for( i = 0; i < constantCount; i++ )
@@ -349,6 +348,17 @@ void DX9Kernel::Map() {
 
     inputTextureRects.push_back( outputStream->getInputRect() ); // standard texcoord
     inputTextureRects.push_back( outputStream->getATAddressInterpolantRect() ); // special magic
+
+    float4 outputShape = outputStream->getATOutputShape();
+    int streamCount = (int)inputStreams.size();
+    for( int s = 0; s < streamCount; s++ )
+    {
+      DX9Stream* stream = inputStreams[s];
+      int index = inputStreamShapeConstantIndices[s];
+      if( index == -1 ) continue; // gather stream
+      float4 shapeConstant = stream->getATShapeConstant( outputShape );
+      inputConstants[(size_t)index] = shapeConstant;
+    }
   }
 
   int passCount = (int)passes.size();
@@ -419,8 +429,10 @@ void DX9Kernel::PushTexCoord( const DX9FatRect& r )
   inputTextureRects.push_back(r);
 }
 
-void DX9Kernel::PushConstantImpl(const float4 &val) {
+int DX9Kernel::PushConstantImpl(const float4 &val) {
+  int result = (int)inputConstants.size();
   inputConstants.push_back(val);
+  return result;
 }
 
 void DX9Kernel::ClearInputs()
@@ -433,6 +445,7 @@ void DX9Kernel::ClearInputs()
   inputTextureRects.clear();
   inputConstants.clear();
   inputStreams.clear();
+  inputStreamShapeConstantIndices.clear();
   inputTextures.clear();
   outputReductionDatas.clear();
   outputReductionTypes.clear();

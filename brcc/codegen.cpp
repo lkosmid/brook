@@ -642,8 +642,8 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
   {
     shader << "\n\n";
 
-    shader << "float4 __calculateindexof( float4 outputpos_01, float4 shape ) {\n";
-    shader << "\treturn floor( outputpos_01*shape + 0.001 ); }\n";
+    shader << "float4 __calculateindexof( float4 indexofoutput, float4 shape ) {\n";
+    shader << "\treturn floor( indexofoutput*shape ); }\n";
 
     shader << "float2 __calculatetexpos( float4 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
     shader << "\tfloat linearIndex = dot( index, linearizeConst );\n";
@@ -657,15 +657,14 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
     shader << "\tresult *= reshapeConst;\n";
     shader << "return result;\n}\n\n";
 
-    shader << "void __calculateoutputpos( float2 interpolant, float4 shape, float4 invshape,\n";
-    shader << "\tout float4 index, out float4 index01 ) {\n";
-    shader << "\tfloat linearIndex = interpolant.y + interpolant.x;\n";
-    shader << "\tindex01.x = frac( linearIndex );\n";
-    shader << "\tindex.y = linearIndex - index01.x;\n";
-    shader << "\tindex.x = floor( index01.x * shape.x + 0.001 );\n";
-    shader << "\tindex01.y = index.y * invshape.y;\n";
-    shader << "\tindex01.z = 0;\n";
-    shader << "\tindex01.w = 0;\n";
+    shader << "void __calculateoutputpos( float2 interpolant, float4 outputConst, out float4 index ) {\n";
+    shader << "\tfloat2 cleanInterpolant = floor(interpolant);\n";
+    shader << "\tfloat linearIndex = cleanInterpolant.y*outputConst.x + cleanInterpolant.x;\n";
+    shader << "\tfloat scaledIndex = linearIndex * outputConst.y;\n";
+    shader << "\tfloat fraction = frac( scaledIndex );\n";
+    shader << "\tindex.y = scaledIndex - fraction;\n";
+    shader << "\tindex.x = floor( index.y * outputConst.z + linearIndex + outputConst.w );\n";
+//    shader << "\tindex.x = floor( fraction * outputConst.z + outputConst.w );\n";
     shader << "\tindex.z = 0;\n";
     shader << "\tindex.w = 0;\n";
     shader << "}\n\n";
@@ -717,10 +716,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
     shader << "float2 __outputaddrinterpolant : TEXCOORD"
       << texcoord++;
     shader << ",\n\t\t";
-    shader << "uniform float4 __outputshape : register(c"
-      << constreg++ << ")";
-    shader << ",\n\t\t";
-    shader << "uniform float4 __outputinvshape : register(c"
+    shader << "uniform float4 __outputconst : register(c"
       << constreg++ << ")";
     shader << ",\n\t\t";
     shader << "uniform float __hackconst : register(c"
@@ -874,11 +870,8 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
   if( globals.enableGPUAddressTranslation )
   {
     // set up output position values
-    shader << "\tfloat4 __indexofoutput_01;\n";
     shader << "\tfloat4 __indexofoutput;\n";
-    shader << "\t__calculateoutputpos( __outputaddrinterpolant,\n";
-    shader << "\t\t__outputshape, __outputinvshape,\n";
-    shader << "\t\t__indexofoutput, __indexofoutput_01 );\n";
+    shader << "\t__calculateoutputpos( __outputaddrinterpolant, __outputconst, __indexofoutput );\n";
   }
 
   /* Perform stream fetches */
@@ -912,7 +905,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
           if( globals.enableGPUAddressTranslation )
           {
             shader << "\tfloat4 __indexof_" << argName << " = ";
-            shader << "__calculateindexof( __indexofoutput_01, __streamshape_" << argName;
+            shader << "__calculateindexof( __indexofoutput, __streamshape_" << argName;
             shader << " );\n";
             shader << "\tfloat2 _tex_" << argName << "_pos = ";
             shader << "__calculatetexpos( __indexof_" << argName << ", ";

@@ -46,7 +46,7 @@ namespace brook {
 
     void PushSamplers( DX9Stream* s );
     void PushTexCoord( const DX9FatRect& r );
-    void PushConstantImpl(const float4 &val);
+    int PushConstantImpl(const float4 &val);
     void ClearInputs();
 
     void ReduceToStream( DX9Texture* inOutputBuffer );
@@ -79,6 +79,7 @@ namespace brook {
     std::vector<float4> inputConstants;
 
     std::vector<DX9Stream*> inputStreams;
+    std::vector<int> inputStreamShapeConstantIndices;
     std::vector<IDirect3DTexture9*> inputTextures;
 
     std::vector<void*> outputReductionDatas;
@@ -155,7 +156,9 @@ namespace brook {
     DX9Rect getTextureSubRect( int l, int t, int r, int b );
     DX9Rect getSurfaceSubRect( int l, int t, int r, int b );
 
-    float4 getATShapeConstant();
+    float4 getATOutputConstant();
+    float4 getATOutputShape();
+    float4 getATShapeConstant( const float4& outputShape );
     float4 getATLinearizeConstant();
     float4 getATReshapeConstant();
     float4 getATInverseShapeConstant();
