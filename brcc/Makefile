@@ -4,16 +4,26 @@ EXECUTABLE = brcc
 FILES = context decl express parseenv project stemnt symbol token \
 	location brtdecl lexer gram main getopt brtexpress codegen \
 	subprocess brtstemnt b2ctransform brtkernel b2creduce brtscatter \
-	b2cindex brtreduce brtgather brtvout
+	b2cindex brtreduce brtgather brtvout \
+        ps2arb_lexer ps2arb_gram ps2arb_intermediate print_arb
+
 SUBDIRS = splitting
 LIBRARIES = brccsplitting
 
 CPP_PATH = /usr/bin/cpp
-SLOP = lexer.cpp gram.cpp gram.output gram.h
+SLOP = lexer.cpp gram.cpp gram.output gram.h \
+       ps2arb_lexer.cpp ps2arb_gram.cpp ps2arb_gram.h
 
-ADDITIONAL_DEPENDANCIES = gram.h
+ADDITIONAL_DEPENDANCIES = gram.h ps2arb_gram.h
 
 include ../common.mk
+
+ps2arb_gram.cpp ps2arb_gram.h: ps2arb_gram.y
+	bison -pps2arb_ -d -ops2arb_gram.cpp ps2arb_gram.y
+	mv -f ps2arb_gram.hpp ps2arb_gram.h
+
+ps2arb_lexer.cpp: ps2arb_lexer.l ps2arb_gram.h
+	flex -Pps2arb_ -ops2arb_lexer.cpp ps2arb_lexer.l
 
 lexer.cpp: lexer.l gram.h
 	flex $<
