@@ -166,6 +166,54 @@ float2 cmult (float2 a, float2 b) {
 //FIXME
 
 
+kernel void
+DoDFTX (float2 s[][], 
+        float2 W[],
+        float2 StrideN,
+        out float4 s_prime<>) {
+  float2 index = (indexof s_prime).xy;
+  float2 temp,r,t,twiddle;
+  twiddle = W[index.x-fmod(index.x,StrideN.x)];
+  r = s[index];
+  t = s[index+float2(round(StrideN.y/2),0)];
+  s_prime.xy = r+t ;
+  mult ((r-t), twiddle, temp);
+  s_prime.zw = temp;
+} 
+kernel void
+DoDFTY (float2 s[][], 
+        float2 W[],
+        float2 StrideN,
+        out float4 s_prime<>) {
+  float2 index = (indexof s_prime).xy;
+  float2 temp,r,t,twiddle;
+  twiddle = W[index.x-fmod(index.x,StrideN.x)];
+  r = s[index];
+  t = s[index+float2(0,round(StrideN.y/2))];
+  s_prime.xy = r+t ;
+  mult ((r-t), twiddle, temp);
+  s_prime.zw = temp;
+} 
+kernel void flattenSX (out float2 s<>, 
+                       float4 s_prime<>,
+                       iter float2 indexstream<>)
+{
+   if (round (fmod(indexstream.x,2))==1.0f)
+      s = s_prime.zw;
+   else
+      s = s_prime.xy;
+}
+kernel void flattenSY (out float2 s<>, 
+                      float4 s_prime<>,
+                      iter float2 indexstream<>)
+{
+   if (round (fmod(indexstream.y,2))==1.0f)
+      s = s_prime.zw;
+   else
+      s = s_prime.xy;
+}
+
+
 // DFT()
 // Implements the Perfect Shuffle algorithm
 kernel void
@@ -384,7 +432,7 @@ int main(int argc, char **argv)
     // NOTE: streamBitReverse() isn't yet implemented. Just an emulation
     if (1) {
       float *rawindices=bitReversedIndices(logN);
-      float indices<N>;
+      static float indices<N>;
       streamRead(indices,rawindices);
       streamGatherOp(s_out,indices,s,STREAM_GATHER_FETCH);
     }
