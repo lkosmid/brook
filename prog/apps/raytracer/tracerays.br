@@ -1,0 +1,532 @@
+#define W 512
+#define H 512
+
+typedef struct ray_t{
+  float3 o;
+  float3 d;
+  float tmax;
+} Ray;
+
+typedef struct raystate_t{
+  float4 state; //x=trav, y=isect, z=shade, w=trinum
+} RayState;
+
+typedef struct triangle_t{
+  float3 v0;
+  float3 v1;
+  float3 v2;
+} Triangle;
+
+typedef struct shadinginfo_t{
+  float3 n0;
+  float3 n1;
+  float3 n2;
+  float3 c0;
+  float3 c1;
+  float3 c2;
+} ShadingInfo;
+
+typedef struct hit_t{
+  float4 data;  //packed tt, uu, vv, id
+} Hit;
+
+typedef struct pixel_t{
+  float4 data;  //rgba
+} Pixel;
+
+typedef struct gridtrilistoffset_t{
+  float listoffset;  //actually ints
+} GridTrilistOffset;
+
+typedef struct gridtrilist_t{
+  float trinum;  //actually ints
+} GridTrilist;
+
+typedef struct traversaldatadyn_t{
+  float3 tMax;
+  float3 voxno;  //actually ints
+  float3 voxtouse; //ints
+} TraversalDataDyn;
+
+typedef struct traversaldatastatic_t{
+  float3 tDelta;
+  float3 step; //actually -1 or 1 only
+  float3 outno;  //actually ints
+} TraversalDataStatic;
+
+Triangle tridat[2048];
+ShadingInfo shadinfdat[2048];
+float4 emptyhits[W*H];
+GridTrilistOffset listoffsetdat[2048];
+GridTrilist trilistdat[2048];
+
+
+kernel void krnGenEyeRays( float3 lookfrom, float3 u, float3 v, float3 w,
+			   float2 txty, float2 txty2,
+			   float3 grid_min, float3 grid_max,
+			   float2 wpos_norm<>,
+			   out Ray ray<> ){
+
+  float3 t1, t2, tmaxV, tminV;
+  float tnear, tfar;
+  float2 scale;
+  
+  ray.o = lookfrom;
+  scale = txty - wpos_norm*txty2;
+  ray.d = w + u*scale.x + v*scale.y;
+  ray.d = ray.d/sqrt(dot(ray.d, ray.d));//normalize is busted
+
+  ray.tmax = -1;
+
+  t1 = (grid_min - ray.o) / ray.d;
+  t2 = (grid_max - ray.o) / ray.d;
+  tmaxV = max(t1,t2);
+  tminV = min(t1, t2);
+
+  tnear = max( max(tminV.x, tminV.y), max(tminV.x, tminV.z) );
+  tfar = min( min(tmaxV.x, tmaxV.y), min(tmaxV.x, tmaxV.z) );
+  
+  ray.tmax = (tnear > tfar) ? ray.tmax  :
+             (tfar  < 0.0f) ? ray.tmax  :
+             (tnear < 0.0f) ? 0.0f : tnear;
+}
+
+
+kernel void krnSetupTraversal(Ray ray<>, float3 grid_min, float3 grid_vsize, float3 grid_dim,
+			      out TraversalDataDyn travdatdyn<>,
+			      out TraversalDataStatic travdatstatic<>,
+			      out RayState raystate<>){
+  float3 temp, curpos;
+
+  float3 minusone, one, zero;
+
+  minusone = float3(-1, -1, -1);
+  one = float3(1,1,1);
+  zero = float3(0,0,0);
+
+  curpos = ray.o + ray.d*ray.tmax;
+
+  travdatdyn.voxno = floor((curpos - grid_min) / grid_vsize);
+
+
+  //these ? : should be made much smarter...
+  
+  travdatdyn.voxno.x = (travdatdyn.voxno.x) >= grid_dim.x ? travdatdyn.voxno.x-1 : travdatdyn.voxno.x;
+  travdatdyn.voxno.y = (travdatdyn.voxno.y) >= grid_dim.y ? travdatdyn.voxno.y-1 : travdatdyn.voxno.y;
+  travdatdyn.voxno.z = (travdatdyn.voxno.z) >= grid_dim.z ? travdatdyn.voxno.z-1 : travdatdyn.voxno.z;
+
+  travdatdyn.voxno = travdatdyn.voxno;
+  
+  temp.x = (ray.d.x > 0.0f ? (travdatdyn.voxno.x+1)*grid_vsize.x + grid_min.x :
+	    travdatdyn.voxno.x*grid_vsize.x + grid_min.x);
+  temp.y = (ray.d.y > 0.0f ? (travdatdyn.voxno.y+1)*grid_vsize.y + grid_min.y :
+	    travdatdyn.voxno.y*grid_vsize.y + grid_min.y);
+  temp.z = (ray.d.z > 0.0f ? (travdatdyn.voxno.z+1)*grid_vsize.z + grid_min.z :
+	    travdatdyn.voxno.z*grid_vsize.z + grid_min.z);
+  
+  travdatdyn.tMax = (temp - curpos) / ray.d + ray.tmax;
+  
+  travdatstatic.tDelta = grid_vsize/ray.d;
+  travdatstatic.tDelta.x = ray.d.x < 0.0f ? -travdatstatic.tDelta.x : travdatstatic.tDelta.x;
+  travdatstatic.tDelta.y = ray.d.y < 0.0f ? -travdatstatic.tDelta.y : travdatstatic.tDelta.y;
+  travdatstatic.tDelta.z = ray.d.z < 0.0f ? -travdatstatic.tDelta.z : travdatstatic.tDelta.z;
+
+
+  travdatstatic.step = ray.d > zero ? one : minusone;
+  //travdatstatic.step.x = ray.d.x > 0.0f ? 1 : -1;
+  //travdatstatic.step.y = ray.d.y > 0.0f ? 1 : -1;
+  //travdatstatic.step.z = ray.d.z > 0.0f ? 1 : -1;
+  
+  travdatstatic.outno.x = ray.d.x > 0.0f ? grid_dim.x : -1;
+  travdatstatic.outno.y = ray.d.y > 0.0f ? grid_dim.y : -1;
+  travdatstatic.outno.z = ray.d.z > 0.0f ? grid_dim.z : -1;
+
+  travdatdyn.voxtouse = float3(0,0,0); //needed??
+  raystate.state = float4(1,0,0,0);
+}
+
+
+kernel void krnTraverseVoxel(Ray ray<>, TraversalDataStatic travdatstatic<>, TraversalDataDyn travdatdynold<>,
+			     RayState oldraystate<>, GridTrilistOffset listoffset[], float3 grid_dim,
+			     out TraversalDataDyn travdatdyn<>, out RayState raystate<>){
+  
+  float3 compmask;
+  float minval;
+  float offsetaddr;
+  float trilistpos;
+
+  if(oldraystate.state.x > 0){
+    minval = min( min(travdatdynold.tMax.x, travdatdynold.tMax.y),
+		  min(travdatdynold.tMax.x, travdatdynold.tMax.z) );
+    
+    if(minval == travdatdynold.tMax.x)
+      compmask = float3(1,0,0);
+    else if(minval == travdatdynold.tMax.y)
+      compmask = float3(0,1,0);
+    else if(minval == travdatdynold.tMax.z)
+      compmask = float3(0,0,1);
+    
+    if( travdatdynold.voxno.x == travdatstatic.outno.x ||
+	travdatdynold.voxno.y == travdatstatic.outno.y ||
+	travdatdynold.voxno.z == travdatstatic.outno.z ||
+	dot(travdatdynold.tMax, compmask) > 999999){ //should be tmax, but busted now...
+      travdatdyn.voxno = travdatdynold.voxno;
+      travdatdyn.tMax = travdatdynold.tMax;
+      travdatdyn.voxtouse = travdatdynold.voxtouse;
+      raystate.state = float4(0,0,0,0);
+    }
+    else{
+      offsetaddr = grid_dim.z*(travdatdynold.voxno.x*grid_dim.y + travdatdynold.voxno.y) +
+	travdatdynold.voxno.z;
+      travdatdyn.voxtouse = travdatdynold.voxno;
+      trilistpos = listoffset[offsetaddr].listoffset;
+      travdatdyn.voxno = travdatdynold.voxno + compmask*travdatstatic.step;
+      travdatdyn.tMax = travdatdynold.tMax + compmask*travdatstatic.tDelta;
+      if(trilistpos >= 0)
+	raystate.state = float4(0,1,0,trilistpos);
+      else
+	raystate.state = float4(1,0,0,0);
+    }
+  }
+  else{
+    travdatdyn.voxno = travdatdynold.voxno;
+    travdatdyn.tMax = travdatdynold.tMax;
+    travdatdyn.voxtouse = travdatdynold.voxtouse;
+    raystate.state = oldraystate.state;
+  }
+}
+
+
+kernel void krnIntersectTriangle(Ray ray<>, Triangle tris[],
+				 RayState oldraystate<>, GridTrilist trilist[],
+				 out Hit candidatehit<>){
+
+  float idx, det, inv_det;
+  float3 edge1, edge2, pvec, tvec, qvec;
+
+  if(oldraystate.state.y > 0){
+    idx = trilist[oldraystate.state.w].trinum;
+    edge1 = tris[idx].v1 - tris[idx].v0;
+    edge2 = tris[idx].v2 - tris[idx].v0;
+    pvec = cross(ray.d, edge2);
+    det = dot(edge1, pvec);
+    inv_det = 1.0f/det;
+    tvec = ray.o - tris[idx].v0;
+    candidatehit.data.y = dot( tvec, pvec ) * inv_det;
+    qvec = cross( tvec, edge1 );
+    candidatehit.data.z = dot( ray.d, qvec ) * inv_det;
+    candidatehit.data.x = dot( edge2, qvec ) * inv_det;
+    candidatehit.data.w = idx;
+  }
+  else{
+    candidatehit.data = float4(0,0,0,-1);
+  }
+  
+}
+
+
+
+kernel void krnValidateIntersection(Ray ray<>, Hit candidatehit<>,
+				    float3 grid_min, float3 grid_vsize, float3 grid_dim,
+				    Hit oldhit<>, TraversalDataDyn travdatdyn<>, RayState oldraystate<>,
+				    GridTrilist trilist[],
+				    out Hit hit<>, out RayState raystate<>){
+  
+  float trinum;
+  float validhit;
+  float3 hitp, myvox;
+  float3 fudgeup, fudgedown;
+
+  if(oldraystate.state.y > 0){
+    
+    validhit = (candidatehit.data.y >= 0.0f && candidatehit.data.z >= 0.0f &&
+		(candidatehit.data.y+candidatehit.data.z) <= 1.0f &&
+		candidatehit.data.x <= oldhit.data.x && candidatehit.data.x >= 0.0f) ? 1 : 0;
+
+    
+    if(validhit){
+      hitp = ray.o + ray.d*(candidatehit.data.x - 0.01f);//fudge to eliminate speckles
+      myvox = floor( (hitp - grid_min)/grid_vsize );
+      myvox.x = myvox.x >= grid_dim.x ? myvox.x-1 : myvox.x;
+      myvox.y = myvox.y >= grid_dim.y ? myvox.y-1 : myvox.y;
+      myvox.z = myvox.z >= grid_dim.z ? myvox.z-1 : myvox.z;
+      fudgeup = travdatdyn.voxtouse + 0.1f; //more fudge since equality is busted...
+      fudgedown = travdatdyn.voxtouse - 0.1f;
+      validhit = ( myvox.x >= fudgedown.x && myvox.x <= fudgeup.x &&
+		   myvox.y >= fudgedown.y && myvox.y <= fudgeup.y &&
+		   myvox.z >= fudgedown.z && myvox.z <= fudgeup.z ) ? validhit : 0;
+    }
+    
+
+    if(validhit > 0)
+      hit.data = candidatehit.data;
+    else
+      hit.data = oldhit.data;
+    
+    trinum = trilist[oldraystate.state.w+1].trinum;
+    
+    if(trinum < 0){
+      if(validhit > 0 || oldhit.data.w >= 0){
+	raystate.state = float4(0,0,1,0);
+      }
+      else{
+	raystate.state = float4(1,0,0,0);
+      }
+    }
+    else
+      raystate.state = float4(0,1,0,oldraystate.state.w+1);
+  }
+  
+  else{
+    hit.data = oldhit.data;
+    raystate.state = oldraystate.state;
+  }
+    
+}
+
+/*
+kernel void krnBruteIntersectTriangle(Ray ray<>, Triangle tris[], float idx, 
+				      Hit oldhit<>,TraversalDataDyn travdatdyn<>, RayState oldraystate<>,
+				      out Hit hit<>, out RayState raystate<>){
+  
+  float det, inv_det;
+  float3 edge1, edge2, pvec, tvec, qvec;
+  float validhit;
+  float4 newhit;  //tt,uu,vv,id
+
+  if(oldraystate.state.y > 0){
+    edge1 = tris[idx].v1 - tris[idx].v0;
+    edge2 = tris[idx].v2 - tris[idx].v0;
+    pvec = cross(ray.d, edge2);
+    det = dot(edge1, pvec);
+    inv_det = 1.0f/det;
+    tvec = ray.o - tris[idx].v0;
+    newhit.y = dot( tvec, pvec ) * inv_det;
+    qvec = cross( tvec, edge1 );
+    newhit.z = dot( ray.d, qvec ) * inv_det;
+    newhit.x = dot( edge2, qvec ) * inv_det;
+    newhit.w = idx;
+    
+    validhit = (newhit.y >= 0.0f && newhit.z >= 0.0f && (newhit.y+newhit.z) <= 1.0f &&
+		newhit.x <= oldhit.data.x && newhit.x >= 0.0f) ? 1 : 0;
+    
+    //valid only if in voxel too...
+    
+    if (validhit){
+      hit.data = newhit;
+    }
+    else{
+      hit.data = oldhit.data;
+    }
+
+    
+    raystate.state = float4(0, 0, 1, oldraystate.state.w+1); //only done at end of voxel
+  }
+}
+*/
+
+kernel void krnShadeHits(Ray ray<>, Hit hit<>, Triangle tris[],
+			 ShadingInfo shadinf[], float3 pointlight,
+			 RayState oldraystate<>, out Pixel pixel<>){
+
+  float3 hitpoint, lightdir, barycoord, N, C;
+  float NdotL;
+  float3 newcolor;
+  
+  if(oldraystate.state.z > 0){
+    //might need to change ordering
+    barycoord = float3(hit.data.y, hit.data.z, 1.0f - hit.data.y - hit.data.z);
+    
+    
+    N = shadinf[hit.data.w].n0*barycoord.x +
+      shadinf[hit.data.w].n1*barycoord.y +
+      shadinf[hit.data.w].n2*barycoord.z;
+    
+    C = shadinf[hit.data.w].c0*barycoord.x +
+      shadinf[hit.data.w].c1*barycoord.y +
+      shadinf[hit.data.w].c2*barycoord.z;
+    
+    hitpoint = ray.o + ray.d*hit.data.x;
+    
+    lightdir = pointlight - hitpoint;
+    lightdir = lightdir/sqrt(dot(lightdir, lightdir)); //normalize
+    
+    NdotL = max(0,dot(N, lightdir)); //one sided lighting
+    
+    newcolor = C*NdotL;
+    
+    if(hit.data.w >= 0)
+      pixel.data = float4(newcolor.x, newcolor.y, newcolor.z, 1);
+    else
+      pixel.data = float4(0,1,0,0);
+    
+   }
+   else
+     pixel.data = float4(0,0,0,0);
+}
+
+/*
+reduce void reduceDoneTest(float4 raystate<>,
+			   reduce float4 activerays<>) {
+  activerays.x = activerays.x + raystate.x;
+  activerays.y = activerays.y + raystate.y;
+  activerays.z = activerays.z + raystate.z;
+  activerays.w = activerays.w + raystate.w;
+}
+*/
+
+kernel void krnDebug( TraversalDataDyn travdatdyn<>,
+		      TraversalDataStatic travdatstatic<>,
+		      float3 grid_dim,
+		      RayState raystate<>,
+		      out Pixel pixel<>){
+  float3 val;
+  
+  //val = raystate.state;
+  val = travdatdyn.voxno / grid_dim;
+  pixel.data = float4(val.x, val.y, val.z, 1);
+}
+
+void TraceRays( float lookfromX, float lookfromY, float lookfromZ,
+		float uX, float uY, float uZ,
+		float vX, float vY, float vZ,
+		float wX, float wY, float wZ,
+		float tx, float ty,
+		float gridminX, float gridminY, float gridminZ,
+		float gridmaxX, float gridmaxY, float gridmaxZ,
+		float griddimX, float griddimY, float griddimZ,
+		float gridvsizeX, float gridvsizeY, float gridvsizeZ,
+		int* grid_trilist_offset, int* grid_trilist,
+		int numtris, int numvox, int trilistsize,
+		float* triv0, float* triv1, float* triv2,
+		float* trin0, float* trin1, float* trin2,
+		float* tric0, float* tric1, float* tric2,
+		float pointlightX, float pointlightY, float pointlightZ,
+		float* imgbuf){
+  
+  int ii;
+  //RayState activerays;
+  
+  float3 lookfrom = float3(lookfromX, lookfromY, lookfromZ);
+  float3 u = float3(uX, uY, uZ);
+  float3 v = float3(vX, vY, vZ);
+  float3 w = float3(wX, wY, wZ);
+  float2 txty = float2(tx, ty);
+  float2 txty2 = float2(2.0*tx, 2.0*ty);
+  float3 grid_min = float3(gridminX, gridminY, gridminZ);
+  float3 grid_max = float3(gridmaxX, gridmaxY, gridmaxZ);
+  float3 grid_dim = float3(griddimX, griddimY, griddimZ);
+  float3 grid_vsize = float3(gridvsizeX, gridvsizeY, gridvsizeZ);
+  float3 pointlight = float3(pointlightX, pointlightY, pointlightZ);
+  
+  iter float2 wpos_norm<W,H> = iter(float2(0,0), float2(1,1));
+  
+  Triangle tris <numtris>;
+  ShadingInfo shadinf <numtris>;
+  GridTrilistOffset listoffset<numvox>;
+  GridTrilist trilist<trilistsize>;
+  
+  Ray rays<W,H>;
+  RayState raystates<W,H>;
+  Hit hits<W,H>;
+  Hit candidatehits<W,H>;
+  TraversalDataDyn travdatdyn<W,H>;
+  TraversalDataStatic travdatstatic<W,H>;  
+  Pixel pixels <W,H>;
+
+  //doublebuffer crap
+  RayState Braystates<W,H>;
+  Hit Bhits<W,H>;
+  TraversalDataDyn Btravdatdyn<W,H>;
+
+
+
+  for(ii=0; ii<numtris; ii++){
+    tridat[ii].v0 = float3(triv0[3*ii+0], triv0[3*ii+1], triv0[3*ii+2]);
+    tridat[ii].v1 = float3(triv1[3*ii+0], triv1[3*ii+1], triv1[3*ii+2]);
+    tridat[ii].v2 = float3(triv2[3*ii+0], triv2[3*ii+1], triv2[3*ii+2]);
+    shadinfdat[ii].n0 = float3(trin0[3*ii+0], trin0[3*ii+1], trin0[3*ii+2]);
+    shadinfdat[ii].n1 = float3(trin1[3*ii+0], trin1[3*ii+1], trin1[3*ii+2]);
+    shadinfdat[ii].n2 = float3(trin2[3*ii+0], trin2[3*ii+1], trin2[3*ii+2]);
+    shadinfdat[ii].c0 = float3(tric0[3*ii+0], tric0[3*ii+1], tric0[3*ii+2]);
+    shadinfdat[ii].c1 = float3(tric1[3*ii+0], tric1[3*ii+1], tric1[3*ii+2]);
+    shadinfdat[ii].c2 = float3(tric2[3*ii+0], tric2[3*ii+1], tric2[3*ii+2]);
+  }
+
+  streamRead(tris, tridat);
+  streamRead(shadinf, shadinfdat);
+
+  for(ii=0; ii<W*H; ii++){
+    emptyhits[ii].x = 999999;
+    emptyhits[ii].y = 0;
+    emptyhits[ii].z = 0;
+    emptyhits[ii].w = -1;
+  }
+  streamRead(hits, emptyhits);
+
+
+  for(ii=0; ii<numvox; ii++){
+    listoffsetdat[ii].listoffset = (float)grid_trilist_offset[ii];
+  }
+  streamRead(listoffset, listoffsetdat);
+
+  for(ii=0; ii<trilistsize; ii++){
+    trilistdat[ii].trinum = (float)grid_trilist[ii];
+  }
+  streamRead(trilist, trilistdat);
+
+
+  
+
+  //----------------------------------------
+  //--- the actual ray tracing loop --------
+
+  
+  fprintf(stderr, "gen eye rays\n");
+  krnGenEyeRays( lookfrom, u, v, w, txty, txty2, grid_min, grid_max, wpos_norm,
+		 rays );
+
+  fprintf(stderr, "setup traversal\n");
+  krnSetupTraversal(rays, grid_min, grid_vsize, grid_dim,
+		    travdatdyn, travdatstatic, raystates);
+
+  fprintf(stderr, "traversing and intersecting\n");
+  for(ii=0; ii<900; ii++){ //adjust depending on scene...
+    //fprintf(stderr, "traverse voxel %i\n", ii);
+    krnTraverseVoxel(rays, travdatstatic, travdatdyn, raystates, listoffset, grid_dim,
+		     Btravdatdyn, Braystates);
+    krnTraverseVoxel(rays, travdatstatic, Btravdatdyn, Braystates, listoffset, grid_dim,
+		     travdatdyn, raystates);
+
+    //fprintf(stderr, "intersect triangle %i\n", ii);
+    krnIntersectTriangle(rays, tris, raystates, trilist,
+			 candidatehits );
+    krnValidateIntersection(rays, candidatehits, grid_min, grid_vsize, grid_dim, hits,
+			    travdatdyn, raystates, trilist,
+			    Bhits, Braystates);
+    krnIntersectTriangle(rays, tris, Braystates, trilist,
+			 candidatehits );
+    krnValidateIntersection(rays, candidatehits, grid_min, grid_vsize, grid_dim, Bhits,
+			    travdatdyn, Braystates, trilist,
+			    hits, raystates);
+
+  }
+
+  //reduceDoneTest(raystates, activerays);
+  
+  //for(ii = 0; ii < numtris; ii++){
+  //  fprintf(stderr, "intersect triangle %i\n", ii);
+  //  krnBruteIntersectTriangle(rays, tris, (float)ii, hits, travdatdyn, raystates,
+  //			      hits, raystates);
+  //}
+
+  fprintf(stderr, "shade hits\n");
+  krnShadeHits(rays, hits, tris, shadinf, pointlight, raystates,
+	       pixels);
+  
+  //krnDebug(travdatdyn, travdatstatic, grid_dim, raystates, pixels);
+  
+  streamWrite(pixels, imgbuf);
+  
+  fprintf(stderr, "done\n");
+}
