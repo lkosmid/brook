@@ -57,9 +57,9 @@ bool DX9Stream::initialize(
     totalSize *= extents[d];
   }
   
-  for( int d = dimensionCount-1; d >= 0; d-- )
+  {for( int d = dimensionCount-1; d >= 0; d-- )
     reversedExtents.push_back(extents[d]);
-  
+  }
   if( runtime->isAddressTranslationOn() )
   {
     int trialWidth = 16;

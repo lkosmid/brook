@@ -121,11 +121,11 @@ bool DX9Kernel::initialize( const char** inProgramStrings )
 
 DX9Kernel::~DX9Kernel()
 {
-  int passCount = (int)standardPasses.size();
-  for( int p = 0; p < passCount; p++ )
+  int p,passCount = (int)standardPasses.size();
+  for( p = 0; p < passCount; p++ )
     delete standardPasses[p].pixelShader;
   passCount = (int)fullTranslationPasses.size();
-  for( int p = 0; p < passCount; p++ )
+  for( p = 0; p < passCount; p++ )
     delete fullTranslationPasses[p].pixelShader;
 
   if( device != NULL )
