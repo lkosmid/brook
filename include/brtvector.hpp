@@ -299,22 +299,30 @@ public:
 #else
 #define TEMPL_TYPESIZE BRT_TYPE::size
 #endif
+#define BROOK_BINARY_OP(op,opgets,TYPESPECIFIER) template <class BRT_TYPE>          \
+    vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const BRT_TYPE &b)const{ \
+      return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
+                                                VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size>() opgets b; \
+    }
+    BROOK_BINARY_OP(*,*=,LCM);
+    BROOK_BINARY_OP(/,/=,LCM);
+    BROOK_BINARY_OP(+,+=,LCM);
+    BROOK_BINARY_OP(-,-=,LCM);
+    BROOK_BINARY_OP(%,%=,LCM);
+#undef BROOK_BINARY_OP
 #define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class BRT_TYPE>          \
     vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,VALUE>::type, \
        LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const BRT_TYPE &b)const{ \
       return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (getAt(0) op b.getAt(0), \
-                 getAt(1) op b.getAt(1), \
-                 getAt(2) op b.getAt(2), \
-                 getAt(3) op b.getAt(3)); \
+                (getAt(0) op GetAt<BRT_TYPE>(b,0), \
+                 getAt(1) op GetAt<BRT_TYPE>(b,1), \
+                 getAt(2) op GetAt<BRT_TYPE>(b,2), \
+                 getAt(3) op GetAt<BRT_TYPE>(b,3)); \
     }
-    BROOK_BINARY_OP(*,LCM);
-    BROOK_BINARY_OP(/,LCM);
-    BROOK_BINARY_OP(+,LCM);
-    BROOK_BINARY_OP(-,LCM);
-    BROOK_BINARY_OP(%,LCM);
     BROOK_BINARY_OP(||,LCM);
     BROOK_BINARY_OP(&&,LCM);
     BROOK_BINARY_OP(<,COMMON_CHAR)
