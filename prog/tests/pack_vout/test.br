@@ -10,7 +10,7 @@ static unsigned int myglobalnum=16;
 const unsigned int MAX_VOUT_STREAMS=31;//if you change this, change one 5 lines
 int finiteValueProduced (float input<>);
 float shiftValues(float list_stream<>,
-                  float output_stream<>,
+                  float (*output_stream)<>,
                   int WIDTH, 
                   int LENGTH, 
                   int sign);
@@ -21,18 +21,18 @@ unsigned int  voutCombine(float outleft_stream<>,
                           float maxshiftright,
                           unsigned int RIGHTWIDTH,
                           unsigned int LENGTH,
-                          float output<> );
+                          float (*output)<> );
 unsigned int totalCombineVout (float list_stream<>, 
                                unsigned int WIDTH,
                                float list2_stream<>,
                                unsigned int WIDTH2,
                                unsigned int LENGTH,
-                               float output<>);
+                               float (*output)<>);
 void combineStreams (float (*streams)<>,
                      unsigned int num,
                      unsigned int width, 
                      unsigned int length,
-                     float  output<>);
+                     float  (*output)<>);
 float myrand (unsigned int *seed) {
    unsigned int rand_max =1509281;
    *seed = (*seed +26129327)%rand_max;
@@ -138,7 +138,7 @@ void combineStreamsTest(float (*streams)<>) {
                         mynum,
                         mywidth,
                         mylength,                        
-                        output);
+                        &output);
          free(streams);
       }
       streamPrint(output,1);
@@ -186,15 +186,15 @@ int main (int argc,char ** argv) {
    streamPrint(list2_stream,1);
    printf ("\n\n");
    totalCombineVout(list_stream,WIDTH,
-                    list2_stream,WIDTH2,LENGTH,output_stream);
+                    list2_stream,WIDTH2,LENGTH,&output_stream);
    printf("Cool\n");
    streamPrint(output_stream,1);
    printf("\n\n");
-   maxshiftleft = shiftValues(list_stream,outleft_stream,WIDTH,LENGTH,-1);
-   maxshiftright=shiftValues(list2_stream,outright_stream,WIDTH2,LENGTH,-1);
+   maxshiftleft = shiftValues(list_stream,&outleft_stream,WIDTH,LENGTH,-1);
+   maxshiftright=shiftValues(list2_stream,&outright_stream,WIDTH2,LENGTH,-1);
    voutCombine(outleft_stream,maxshiftleft,WIDTH,
                outright_stream,maxshiftright,WIDTH2,
-               LENGTH,output_stream);
+               LENGTH,&output_stream);
    printf ("\nOutput\n");
    streamPrint(output_stream,1);
    printf ("\n\n");

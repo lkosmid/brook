@@ -551,15 +551,15 @@ void combineStreams (float (*streams)<>,
                      unsigned int num,
                      unsigned int width, 
                      unsigned int length,
-                     float output<>) {
+                     float (*output)<>) {
    unsigned int  lengthmodmodulus=length%num;
    float tmp<(num*width),length>;
-   streamSwap(tmp,output);
+   streamSwap(tmp,*output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(output,streams[0]);
+      streamSwap(*output,streams[0]);
       break;
    case 2:
       streamCombine2f(streams[0],
@@ -567,7 +567,7 @@ void combineStreams (float (*streams)<>,
                       num, num,
                       length,
                       lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 3:
       streamCombine3f(streams[0],
@@ -576,7 +576,7 @@ void combineStreams (float (*streams)<>,
                       num, num,
                       length,
                       lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 4:
       streamCombine4f(streams[0],
@@ -586,7 +586,7 @@ void combineStreams (float (*streams)<>,
                       num, num,
                       length,
                       lengthmodmodulus,
-                      output);
+                      *output);
       break;
    case 5:
    default:
@@ -598,7 +598,7 @@ void combineStreams (float (*streams)<>,
                       num, num,
                       length,
                       lengthmodmodulus,
-                      output);
+                      *output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -607,7 +607,7 @@ void combineStreams (float (*streams)<>,
       if (num>5) {
          combineStreamsHelper(streams+5,
                               num-5,
-                              output,
+                              *output,
                               num,
                               5-.5,
                               length,
@@ -764,7 +764,7 @@ static unsigned int toui(float f) {
   return (unsigned int )f;
 }
 float shiftValues(float list_stream<>,
-                  float output_stream<>,
+                  float (*output_stream)<>,
                   int WIDTH, 
                   int LENGTH, 
                   int sign) {
@@ -843,8 +843,8 @@ float shiftValues(float list_stream<>,
                      list_stream,
                      float2(sign,1/floor(.5)),
                      maxvalue);
-      streamSwap(output_stream,proper_output_stream);
-      debugStreamPrint(output_stream, "Final Value");
+      streamSwap(*output_stream,proper_output_stream);
+      debugStreamPrint(*output_stream, "Final Value");
    }
    return maxshift;
 }
@@ -893,7 +893,7 @@ unsigned int  voutCombine(float outleft_stream<>,
                           float maxshiftright,
                           unsigned int RIGHTWIDTH,
                           unsigned int LENGTH,
-                          float output<>){
+                          float (*output)<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
@@ -921,7 +921,7 @@ unsigned int  voutCombine(float outleft_stream<>,
               endsecond,
               maxrightvalue,
               1.0f/(float)floor(.5));
-      streamSwap (output,output_stream);
+      streamSwap (*output,output_stream);
    }
    return totalsize;
 }
@@ -931,12 +931,12 @@ unsigned int totalCombineVout (float list_stream<>,
                                float list2_stream<>,
                                unsigned int WIDTH2,
                                unsigned int LENGTH,
-                               float  output<>){
+                               float  (*output)<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
-   float maxshiftleft =shiftValues(list_stream,outleft_stream,WIDTH,LENGTH,-1);
-   float maxshiftright=shiftValues(list2_stream,outright_stream,WIDTH2,LENGTH,-1);
+   float maxshiftleft =shiftValues(list_stream,&outleft_stream,WIDTH,LENGTH,-1);
+   float maxshiftright=shiftValues(list2_stream,&outright_stream,WIDTH2,LENGTH,-1);
    return voutCombine (outleft_stream,
                        maxshiftleft,
                        WIDTH,

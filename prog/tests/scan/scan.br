@@ -39,7 +39,7 @@ kernel void CountToRight (float value [][],
 }
 
 void CountValues(float list_stream<4,3>,
-                 float output_stream<4,3>,
+                 float (*output_stream)<4,3>,
                  int WIDTH, 
                  int LENGTH, 
                  int sign) {
@@ -50,17 +50,17 @@ void CountValues(float list_stream<4,3>,
 
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   CountToRight(list_stream,output_stream,(float)sign,maxvalue);   
+   CountToRight(list_stream,*output_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       printf ("\nStage %d\n",i);
-      streamPrint(i%2?output_stream:tmp_stream);
+      streamPrint(i%2?*output_stream:tmp_stream);
       if (i%2)
-         CountToRight (output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);      
+         CountToRight (*output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);      
       else
-         CountToRight (tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
+         CountToRight (tmp_stream,*output_stream,(float)sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
-     streamSwap(tmp_stream,output_stream);
+     streamSwap(tmp_stream,*output_stream);
 }
 
 int main () {
@@ -91,7 +91,7 @@ int main () {
 	} else {
            printf ("input\n");
            streamPrint(inputval);
-           CountValues(inputval,outputval,4,3,-1);
+           CountValues(inputval,&outputval,4,3,-1);
            printf ("\noutput\n");
            streamPrint(outputval);
 	}
