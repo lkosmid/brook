@@ -239,15 +239,9 @@ kernel float obb_disjoint (float3 Bx,
   const float reps = 1e-6;
 
   // Bf = abs (B)
-  Bfx.x = abs (Bx.x);  Bfx.x += reps;
-  Bfx.y = abs (Bx.y);  Bfx.y += reps;
-  Bfx.z = abs (Bx.z);  Bfx.z += reps;
-  Bfy.x = abs (By.x);  Bfy.x += reps;
-  Bfy.y = abs (By.y);  Bfy.y += reps;
-  Bfy.z = abs (By.z);  Bfy.z += reps;
-  Bfz.x = abs (Bz.x);  Bfz.x += reps;
-  Bfz.y = abs (Bz.y);  Bfz.y += reps;
-  Bfz.z = abs (Bz.z);  Bfz.z += reps;
+  Bfx = abs(Bx)+reps;
+  Bfy = abs(By)+reps;
+  Bfz = abs(Bz)+reps;
 
   // if any of these tests are one-sided, then the polyhedra are disjoint
   r = 1;
@@ -255,26 +249,26 @@ kernel float obb_disjoint (float3 Bx,
   // A1 x A2 = A0
   t = abs (T.x);
 
-  r = r&& (t <= (a.x + b.x * Bfx.x + b.y * Bfx.y + b.z * Bfx.z));
+  r = r&& (t <= (a.x + dot(b,Bfx)));
   //if (!r) return 1;
 
   // B1 x B2 = B0
   s = T.x * Bx.x + T.y * By.x + T.z * Bz.x;
   t = abs (s);
 
-  r =r&& (t <= (b.x + a.y * Bfx.x + a.y * Bfy.x + a.z * Bfz.x));
+  r =r&& (t <= (b.x + a.x * Bfx.x + a.y * Bfy.x + a.z * Bfz.x));
   //if (!r) return 2;
 
   // A2 x A0 = A1
   t = abs (T.y);
 
-  r = r&&(t <= (a.y + b.x * Bfy.x + b.y * Bfy.y + b.z * Bfy.z));
+  r = r&&(t <= (a.y + dot(b,Bfy)));
   //if (!r) return 3;
 
   // A0 x A1 = A2
   t = abs (T.z);
 
-  r =r&& (t <= (a.z + b.x * Bfz.x + b.y * Bfz.y + b.z * Bfz.z));
+  r =r&& (t <= (a.z + dot(b,Bfz)));
   //if (!r) return 4;
 
   // B2 x B0 = B1
@@ -356,8 +350,6 @@ kernel float obb_disjoint (float3 Bx,
 
   return r?0:1;  // should equal 0
 }
-
-
 kernel void CheckTriangleCollide(float3 mRx,
                                  float3 mRy,
                                  float3 mRz,
