@@ -207,11 +207,9 @@ kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>,
                                             float nextgather[][]) {
   float isovalue=.39;
   float2 threefive={3.0f,5.0f};
-  float3 onehalf=.5;
   float2 onehalf2=.5;
   float2 zero2=0;
   float4 four256=256;
-  float4 curiso,nextiso;
   float4 vertices1=(verticesinf<four256&&verticesinf>=zero2.xxxx)
     ? verticesinf
     : zero2.xxxx;
@@ -225,7 +223,7 @@ kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>,
     float3 config = configinf<four256.xxx?configinf:zero2.xxx;
     float low,high;
     float3 ishalf,tmp;
-    ishalf=(float3)config==onehalf;
+    ishalf=(float3)config==onehalf2.x;
     if (ishalf.z) {
        float2 lhGather = vertices.xy+config.xy;
        low = curgather[lhGather];
@@ -275,27 +273,23 @@ kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>,
  *  3 vertices are produced for the given volumeTriangle lookup.
  */
 
-kernel void processTriangles(vout[3] float3 triangles<>, 
+
+kernel void processTriangles(vout[1] float4 triangles<>, 
                              float4 vertices<>,
                              float3 volumeTriangles[][],
                              iter float2 streamsize<>) {
 
-  float4 whichVolumeTriangle={fmod(streamsize.x,4.0f)*3.0f+3.0f,vertices.w,0,0};
-  float3 firstTrianglePos;
-  if (whichVolumeTriangle.x+.5>15.0f) whichVolumeTriangle.x=3.0f;
-  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
-    whichVolumeTriangle.y=0;
-  firstTrianglePos=volumeTriangles[whichVolumeTriangle];
-  if (abs(firstTrianglePos.x-.5)<.75) {
-     triangles=vertices.xyz+firstTrianglePos;
-     push(triangles);
-     whichVolumeTriangle.x+=1;
-     triangles=vertices.xyz+volumeTriangles[whichVolumeTriangle];
-     push(triangles);
-     whichVolumeTriangle.x+=1;
-     triangles=vertices.xyz+volumeTriangles[whichVolumeTriangle];
-     push(triangles);
-   }  
+ float4 whichVolumeTriangle={fmod(streamsize.y,5.0f)*3.0f,vertices.w,0,0};
+ float3 firstTrianglePos;
+ if (whichVolumeTriangle.x+.5>15.0f) whichVolumeTriangle.x=3.0f;
+ if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
+   whichVolumeTriangle.y=0;
+ firstTrianglePos=volumeTriangles[whichVolumeTriangle];
+ if (abs(firstTrianglePos.x-.5)<.75) {
+   triangles.xy=(indexof vertices).xy;
+   triangles.zw = whichVolumeTriangle.xy;
+   push(triangles);
+ }  
 }
 /**
  * Since every one of the outputted volumeTriangle lookup indices has at least 
@@ -393,6 +387,60 @@ char volumeTriangles(Triangle tri[256]) {
    }
   return 0;
 }
+kernel void smoothTriangles (out float3 trianglesA<>,
+                             float4 indices1<>,
+                             float4 verticesgather[][],
+                             float3 volumeTriangles[][],
+                             float curgather[][],
+                             float nextgather[][]) {
+  float isovalue=.39;
+  float onehalf=.5;
+  float zero=0;
+  float five=5;
+  float2 mod3 = {round(fmod((indexof trianglesA).x,3.0f)),0};
+  float2 whichVolumeTriangle;
+  float4 indices = (indices1<4096&&indices1>=0)?indices1:zero.xxxx;
+  if (mod3.x+.5>3) 
+    mod3.x=0.0f;
+  whichVolumeTriangle = indices.zw+mod3;
+  {
+    float3 configinf = volumeTriangles[whichVolumeTriangle];
+    float3 config = configinf<five.xxx?configinf:zero.xxx;
+    float4 vertices = verticesgather[indices.xy];    
+    float low,high;
+    float3 ishalf,tmp;
+    ishalf=(float3)config==onehalf;
+
+    if (ishalf.z) {
+      float2 lhGather = vertices.xy+config.xy;
+      low = curgather[lhGather];
+      high = nextgather[lhGather];
+    }else {
+      float2 lowGather,highGather;
+      if (ishalf.x) {
+        lowGather=float2(vertices.x,vertices.y+config.y);
+        highGather=float2(vertices.x+1.0f,vertices.y+config.y);
+      } else {
+        lowGather=float2(vertices.x+config.x,vertices.y);
+        highGather=float2(vertices.x+config.x,vertices.y+1.0f);
+      }
+      if (configinf.z==0) {
+        low = curgather[lowGather];
+        high = curgather[highGather];
+      }else {
+        low = nextgather[lowGather];
+        high= nextgather[highGather];
+      }
+      
+    }
+    tmp = (isovalue-low)/(high-low);
+    
+    config=ishalf?tmp:configinf;
+    
+    trianglesA=vertices.xyz+config;
+  }
+}
+
 
 /**compute the volume triangles only once and cache it.
  */
@@ -583,30 +631,41 @@ int main (int argc, char ** argv) {
               if (use_vout_amplify) {
                 // multiply our width by 4x since we could output up to 4x
                 // of our original values
-                iter float2 newsize <(toi(streamSize(v).y)),
-                                    (toi(streamSize(v).x)*4)> =
-                  iter(float2(0,0),float2(streamSize(v).x*4.0f,
-                                          streamSize(v).y));
+                iter float2 newsize <((toi(streamSize(v).y)*5)),
+                                    (toi(streamSize(v).x))> =
+                  iter(float2(0,0),float2(streamSize(v).x,
+                                          streamSize(v).y*5.0f));
                 // our first triangle lookups are going to be exactly 3x as big
-                float3 trianglesFirst<(toi(streamSize(v).y)),
-                                      (toi(streamSize(v).x)*3)>;
+                  //                float3 trianglesFirst<(toi(streamSize(v).y)),
+                  //                                      (toi(streamSize(v).x)*3)>;
                 // we know the width of the triangles (i.e. for the address
                 // calc) will be 4x as big...we have no idea how many 3x
                 // vout[3] outputs there will be (0 or 3 for each tri)
-                float3 triangles <1,(toi(streamSize(v).x)*4)>;
+                float4 triangles <1,(toi(streamSize(v).x))>;
                 // process all the first triangles
-                processFirstTriangles(trianglesFirst,v,volumeTriangles);
+                //processFirstTriangles(trianglesFirst,v,volumeTriangles);
                 // process the rest
                 processTriangles(triangles, 
                                  v,
                                  volumeTriangles,
                                  newsize);
+               
                 //write it to the same place in memory
-                 streamWrite(trianglesFirst,
-                             consolidateVertices(dat,streamSize(trianglesFirst)));
-                 streamWrite(triangles,
-                             consolidateVertices(dat,streamSize(triangles)));
-                                
+                   if (streamSize(triangles).y&&streamSize(triangles).x) {
+                     float3 outputTriangles<toi(streamSize(triangles).y),(toi(streamSize(triangles).x)*3)>;
+                     smoothTriangles(outputTriangles,
+                                     triangles,
+                                     v,
+                                     volumeTriangles,
+                                     cur,
+                                     i!=dat.depth-1?next:cur);
+                     fprintf (stderr,"Size %f %f\n",streamSize(outputTriangles).x,
+                             streamSize(outputTriangles).y);
+                     streamWrite(outputTriangles,
+                                 consolidateVertices(dat,streamSize(outputTriangles)));
+                   }
+                   //streamWrite(trianglesFirst,
+                   //consolidateVertices(dat,streamSize(trianglesFirst)));
               }else {
                 // each triangle stream will be 3x bigger than the volume
                  float3 trianglesA<(toi(streamSize(v).y)*5),
