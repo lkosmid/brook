@@ -129,7 +129,9 @@ endif
 ##  Compile .br files ##
 .br.cpp:
 	@$(ECHO) $<
-	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $<
+	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) $<
+
+.PRECIOUS: %.cpp
 
 
 ##  Link  ##

@@ -1,19 +1,17 @@
-Immediate
----------
+Off the cuff
+------------
 
-   * Augment codegen so that it's fully able to run with the dx9 backend.
+   * Iterator streams:
+   	- parse 'em, emit BRT calls, and the requisite stubs.
+	- augment codegen to generate proper Cg/HLSL.
 
-Short
------
+   * Emit #line directives in the emitted cpp file.
 
-   * The lexer and parser should just passthrough preprocessor directives
-     untouched.
+   * Allow stream sizes to be pulled from variables as well as constants.
 
-   * Recognize gathers and emit stream gather calls.
+   * Kernel to kernel calls?
 
-   * Be able to fully compile a few useful sample programs (sort?).
-
-   * Be able to compile code for multiple backends.
+   * Fix (boost) priority of 'indexof'
 
 Medium
 ------
@@ -28,7 +26,7 @@ Medium
 
    * Type verification for kernel calls (not passing float streams as float2
      streams, etc.)
-
+   
 Long
 ----
 

@@ -53,7 +53,7 @@ parse_args (int argc, char *argv[]) {
    * zero initialization from the bss will take care of the rest of the
    * defaults.
    */
-  globals.target       = TARGET_FP30;
+  globals.target       = TARGET_PS20 | TARGET_CPU;
   globals.workspace    = 1024;
   globals.compilername = argv[0];
 
@@ -66,9 +66,13 @@ parse_args (int argc, char *argv[]) {
 	outputprefix = strdup(optarg);
 	break;
      case 'p':
-	if (strcmp (optarg, "fp30") == 0)
+	if (strcasecmp (optarg, "cpu") == 0)
+	  globals.target = TARGET_CPU;
+	else if (strcasecmp (optarg, "ps20") == 0)
+	  globals.target = TARGET_PS20;
+	else if (strcasecmp (optarg, "fp30") == 0)
 	  globals.target = TARGET_FP30;
-	else if (strcmp (optarg, "arb") == 0)
+	else if (strcasecmp (optarg, "arb") == 0)
 	  globals.target = TARGET_ARB;
 	else
 	  usage();
@@ -107,17 +111,6 @@ parse_args (int argc, char *argv[]) {
   globals.cgoutputname = (char *) malloc (strlen(outputprefix) +
 					  strlen(".cg") + 1);
   sprintf (globals.cgoutputname, "%s.cg",outputprefix);
-
-  if (globals.target == TARGET_FP30) {
-    globals.fpoutputname = (char *) malloc (strlen(outputprefix) +
-					    strlen(".fp") + 1);
-    sprintf (globals.fpoutputname, "%s.fp",outputprefix);
-  } else {
-    assert (globals.target == TARGET_ARB);
-    globals.fpoutputname = (char *) malloc (strlen(outputprefix) +
-					    strlen(".arb") + 1);
-    sprintf (globals.fpoutputname, "%s.arb",outputprefix);
-  }
 
   globals.coutputname = (char *) malloc (strlen(outputprefix) +
 					 strlen(".cpp") + 1);

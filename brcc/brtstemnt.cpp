@@ -14,6 +14,9 @@
 #include "brtexpress.h"
 #include "project.h"
 #include "codegen.h"
+#include "main.h"
+
+
 //FIXME eventually we'll want to code-transform to do the following 2 functions
 bool recursiveIsGather(Type * form) {
   bool ret=(form->type==TT_Array)&&(form->getQualifiers()&TQ_Reduce)==0;
@@ -62,32 +65,30 @@ BRTKernelDef::~BRTKernelDef()
 void
 BRTKernelDef::print(std::ostream& out, int) const
 {
-   BRTFP30KernelCode * fp30;
-   if (decl->isReduce())
-	   fp30=new BRTFP30ReduceCode(*this);
-   else
-	   fp30=new BRTFP30KernelCode(*this);
-   BRTPS20KernelCode * ps20;
-   if(decl->isReduce()) 
-	   ps20=new BRTPS20ReduceCode(*this);
-   else
-	   ps20=new BRTPS20KernelCode(*this);
-   
+#define PRINT_IF_NEEDED(var, type) \
+   if (globals.target & TARGET_##type) {                                \
+      BRTKernelCode *var;                                               \
+      var = decl->isReduce() ? new BRT##type##ReduceCode(*this) :       \
+                                new BRT##type##KernelCode(*this);       \
+      out << *var << std::endl;                                         \
+      delete var;                                                       \
+   } else {                                                             \
+      out << "static const char *__"                                    \
+          << *FunctionName() << "_" #var " = NULL;\n";                  \
+   }
+
    if (Project::gDebug) {
       out << "/* BRTKernelDef:" ;
       location.printLocation(out) ;
       out << " */" << std::endl;
    }
-   out << *fp30 << std::endl << *ps20 << std::endl;
-   BRTCPUKernelCode *cpu;
-   if (decl->isReduce())
-	   cpu=new BRTCPUReduceCode(*this);
-   else
-	   cpu=new BRTCPUKernelCode(*this);
-   out << *cpu << std::endl;
+
+   PRINT_IF_NEEDED(fp30, FP30);
+   PRINT_IF_NEEDED(ps20, PS20);
+   PRINT_IF_NEEDED(cpu, CPU);
 
    printStub(out);
-   delete cpu;delete fp30; delete ps20;
+#undef PRINT_IF_NEEDED
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -116,7 +117,7 @@ BRTKernelDef::printStub(std::ostream& out) const
    }
    fType->subType->printType(out, NULL, true, 0);
    out << " " << *FunctionName() << " (";
-   num_templates=0;   
+   num_templates=0;
    for (i = 0; i < fType->nArgs; i++) {
       if (i) out << ",\n\t\t";
 

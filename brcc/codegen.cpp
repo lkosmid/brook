@@ -267,9 +267,6 @@ compile_cg_code (char *cgcode) {
   char *argv[16] = { "cgc", "-profile", "fp30", "-quiet", NULL };
   char *fpcode, *endline;
 
-  /* Only support fp30 right now */
-  assert (globals.target == TARGET_FP30);
-
   fpcode = Subprocess_Run(argv, cgcode);
   if (fpcode == NULL) {
      return NULL;

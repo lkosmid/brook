@@ -24,6 +24,10 @@
 
 /**************************************************************************/
 
+#ifdef WIN32
+#define strcasecmp      _stricmp
+#endif
+
 #ifdef __CYGWIN__
 #define WINDOWS
 #endif
