@@ -181,10 +181,7 @@ public:
 					   getAt(3));
     }
 #define BROOK_UNARY_OP(op) Float1 operator op ()const { \
-      return Float1 (op getAt(0),  \
-                                 op getAt(1),  \
-                                 op getAt(2),  \
-                                 op getAt(3)); \
+      return Float1 (op getAt(0)); \
     }
     BROOK_UNARY_OP(+)
     BROOK_UNARY_OP(-)
@@ -210,18 +207,30 @@ public:
     template <class BRT_TYPE> Float1 (const BRT_TYPE& inx, const BRT_TYPE& iny) {
         f=inx;
     }
-    template <class BRT_TYPE> Float1 (const BRT_TYPE& scalar) {
+    Float1 (const float& scalar) {
         (*this)=scalar;
     }
     template <class BRT_TYPE> operator BRT_TYPE () const{
       return InitializeClass<BRT_TYPE>()(getAt(0),getAt(1),getAt(2),getAt(3));
-    }        
+    }
+    Float1& operator = (const float & in) { 
+        f = in;
+        return *this;
+    }
+    Float1& operator = (const unsigned int & in) { 
+        f = in;
+        return *this;
+    }
+    Float1& operator = (const int & in) { 
+        f = in;
+        return *this;
+    }
+        
 #define ASSIGN_OP(op) template <class BRT_TYPE> \
          Float1& operator op (const BRT_TYPE & in) {  \
         f op GetAt<BRT_TYPE>(in,0);  \
         return *this;  \
     }
-    ASSIGN_OP(=);
     ASSIGN_OP(/=);
     ASSIGN_OP(+=);
     ASSIGN_OP(-=);
