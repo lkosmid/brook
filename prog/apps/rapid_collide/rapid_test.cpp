@@ -163,6 +163,14 @@ void testOBB() {
   } 
 }
 extern void LoadPly (const char * file, std::vector<Tri> &ret);
+extern unsigned int doCollide(unsigned int wida, unsigned int heia, Tri * a,
+                              unsigned int bboxwida, unsigned int bboxheia, BBox * bboxesa,
+                              unsigned int widb, unsigned int heib, Tri * b,
+                              unsigned int bboxwidb, unsigned int bboxheib, BBox * bboxesb,
+                              float3 rX, float3 rY, float3 rZ,
+                              float3 trans,
+                              float4 **intersections);
+
 int main (int argc, char ** argv) {
   float3 * a= (float3*)malloc(sizeof(float3)*3*SIZEX*SIZEY);
   float3 * b= (float3*)malloc(sizeof(float3)*3*SIZEX*SIZEY);
