@@ -137,3 +137,244 @@ kernel void updateParticles(
 		forces, inGravity, inVelocityDamping,
 		outPosition, outVelocity );
 }
+
+void moutIterate( int inSize, int inIterations, int* outMicroseconds )
+{
+	int particleCount = inSize*inSize;
+	float floatSize = inSize;
+	float4 positions< inSize, inSize >;
+	float4* positions_data;
+	float4 velocities< inSize, inSize >;
+	float4* velocities_data;
+	iter float2 indices< inSize, inSize> = iter( float2(0,0), float2(floatSize,floatSize) );
+	float4 springInfo;
+	float2 maxIndex;
+	float deltaT;
+	float3 gravity;
+	float2 leftOffset;
+	float2 topOffset;
+	float2 rightOffset;
+	float2 bottomOffset;
+	float velocityDamping;
+	int i, x, y;
+	
+	positions_data = (float4*)malloc( particleCount*sizeof(float4) );
+	velocities_data = (float4*)malloc( particleCount*sizeof(float4) );
+	
+	springInfo.x = 0; // spring constant
+	springInfo.y = 0; // damping constant
+	springInfo.z = 1.0f / (float)(inSize-1);
+	
+	maxIndex = float2( floatSize, floatSize );
+	deltaT = 0.001f;
+	gravity = float3(0,0,0);
+	
+	leftOffset = float2(-1,0);
+	topOffset = float2(0,-1);
+	rightOffset = float2(1,0);
+	bottomOffset = float2(0,1);
+	
+	velocityDamping = 0;
+	
+	for( y = 0; y < inSize; y++ )
+	{
+		for( x = 0; x < inSize; x++ )
+		{
+			positions_data[i] = float4( x / (float)(inSize-1), y / (float)(inSize-1), 0, 0 );
+			velocities_data[i] = float4( 0, 0, 0, 0 );
+		}
+	}
+
+  // initialize
+  initializeParticles( inSize, dynamicParticles_data, staticParticles_data );
+
+//  dump = fopen("./dump.dump","wb");
+  
+//  fwrite( &inSize, sizeof(inSize), 1, dump );
+
+startTime = GetTimeMillis();
+
+  streamRead( dynamicParticles, dynamicParticles_data );
+  streamRead( staticParticles, staticParticles_data );
+
+  for( i = 0; i < inIterations; i++ )
+  {
+  /*
+//	if( i % 100 == 0 )
+	{
+		streamWrite( dynamicParticles, dynamicParticles_data );
+		printf( "positions:\n" );
+		for( j = 0; j < particleCount; j++ )
+		{
+			p = dynamicParticles_data[j].position;
+			printf( "{%5.3f %5.3f}\n", p.x, p.y );
+//			fwrite( &p, sizeof(p), 1, dump );
+		}
+	}*/
+    
+    // direct springs
+    calculateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(1,0),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		directRestLength,
+		particleForces );
+
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(0,1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		directRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(-1,0),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		directRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(0,-1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		directRestLength,
+		particleForces, particleForces );
+	
+	// diagonal springs
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(-1,-1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		diagonalRestLength,
+		particleForces, particleForces );
+
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(-1,1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		diagonalRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(1,1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		diagonalRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(1,-1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		diagonalRestLength,
+		particleForces, particleForces );
+		
+	// bend springs
+    accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(2,0),
+		maxIndex,
+		bendSpringConstant,
+		bendDampingConstant,
+		bendRestLength,
+		particleForces, particleForces );
+
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(0,2),
+		maxIndex,
+		bendSpringConstant,
+		bendDampingConstant,
+		bendRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(-2,0),
+		maxIndex,
+		bendSpringConstant,
+		bendDampingConstant,
+		bendRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(0,-2),
+		maxIndex,
+		bendSpringConstant,
+		bendDampingConstant,
+		bendRestLength,
+		particleForces, particleForces );
+	
+	// wind
+	accumulateWindForces(
+		dynamicParticles, dynamicParticles, particleIndex,
+		float2(-1,0), float2(0,-1),
+		maxIndex, windDirection, windVelocity, particleForces, particleForces );
+	accumulateWindForces(
+		dynamicParticles, dynamicParticles, particleIndex,
+		float2(0,-1), float2(1,0),
+		maxIndex, windDirection, windVelocity, particleForces, particleForces );
+	accumulateWindForces(
+		dynamicParticles, dynamicParticles, particleIndex,
+		float2(1,0), float2(0,1),
+		maxIndex, windDirection, windVelocity, particleForces, particleForces );
+	accumulateWindForces(
+		dynamicParticles, dynamicParticles, particleIndex,
+		float2(0,1), float2(-1,0),
+		maxIndex, windDirection, windVelocity, particleForces, particleForces );
+
+    stepParticles( dynamicParticles, staticParticles,
+		0.001f, particleForces, gravity, dynamicParticles );
+
+  }
+  
+  streamWrite( dynamicParticles, dynamicParticles_data );
+  
+  endTime = GetTimeMillis();
+  
+  *outMicroseconds = (endTime - startTime) * 1000;
+  
+//  fclose( dump );
+}
