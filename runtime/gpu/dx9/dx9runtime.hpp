@@ -5,6 +5,8 @@
 #include "../gpubase.hpp"
 #include "../gpuruntime.hpp"
 
+#define DX9_RUNTIME_STRING "dx9"
+
 namespace brook
 {
 

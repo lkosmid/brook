@@ -69,6 +69,9 @@ static const int nvpiAttribList[4][16] = {
 };
 
 
+NVContext::NVContext() {}
+
+
 NVContext *
 NVContext::create() {
   NVContext *ctx = new NVContext();

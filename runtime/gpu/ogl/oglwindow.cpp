@@ -23,6 +23,38 @@ static const char window_name[] = "Brook GL Render Window";
 
 #ifdef WIN32
 
+#define CRGBA(c,r,g,b,a) \
+  WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE, \
+  WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB, \
+  WGL_DEPTH_BITS_ARB,      0,\
+  WGL_STENCIL_BITS_ARB,    0,\
+  WGL_DOUBLE_BUFFER_ARB,   GL_FALSE, \
+  WGL_SUPPORT_OPENGL_ARB,  GL_TRUE, \
+  WGL_AUX_BUFFERS_ARB,     0, \
+  WGL_COLOR_BITS_ARB,      c, \
+  WGL_RED_BITS_ARB,        r, \
+  WGL_GREEN_BITS_ARB,      g, \
+  WGL_BLUE_BITS_ARB,       b, \
+  WGL_ALPHA_BITS_ARB,      a
+
+static const int 
+baseiAttribList[4][64] = { {CRGBA(32,32,0,0,0), 0, 0},
+                           {CRGBA(64,32,32,0,0), 0, 0},
+                           {CRGBA(96,32,32,32,0), 0, 0},
+                           {CRGBA(128,32,32,32,32), 0, 0} };
+
+static const float
+basefAttribList[4][16] = { {0.0f,0.0f}, 
+                           {0.0f,0.0f}, 
+                           {0.0f,0.0f},
+                           {0.0f,0.0f}};
+
+static int
+basepiAttribList[4][16] = { {0, 0},
+                            {0, 0},
+                            {0, 0},
+                            {0, 0}};
+
 static HWND
 create_window (void) {
   HINSTANCE hinstance;
@@ -144,6 +176,9 @@ OGLWindow::OGLWindow() {
   GPUAssert(status,
             "Unable to make current the window GL context");
 
+
+  initglfunc();
+
   hglrc = NULL;
   hpbuffer = NULL;
   hpbufferdc = NULL;
@@ -239,41 +274,6 @@ appendVendorAttribs( int   iAttribList[4][64],
     }
   }
 }
-
-
-#define CRGBA(c,r,g,b,a) \
-  WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE, \
-  WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB, \
-  WGL_DEPTH_BITS_ARB,      0,\
-  WGL_STENCIL_BITS_ARB,    0,\
-  WGL_DOUBLE_BUFFER_ARB,   GL_FALSE, \
-  WGL_SUPPORT_OPENGL_ARB,  GL_TRUE, \
-  WGL_AUX_BUFFERS_ARB,     0, \
-  WGL_FLOAT_COMPONENTS_NV, GL_TRUE, \
-  WGL_COLOR_BITS_ARB,      c, \
-  WGL_RED_BITS_ARB,        r, \
-  WGL_GREEN_BITS_ARB,      g, \
-  WGL_BLUE_BITS_ARB,       b, \
-  WGL_ALPHA_BITS_ARB,      a
-
-static const int 
-baseiAttribList[4][64] = { {CRGBA(32,32,0,0,0), 0, 0},
-                           {CRGBA(64,32,32,0,0), 0, 0},
-                           {CRGBA(96,32,32,32,0), 0, 0},
-                           {CRGBA(128,32,32,32,32), 0, 0} };
-
-static const float
-basefAttribList[4][16] = { {0.0f,0.0f}, 
-                           {0.0f,0.0f}, 
-                           {0.0f,0.0f},
-                           {0.0f,0.0f}};
-
-static int
-basepiAttribList[4][16] = { {0, 0},
-                            {0, 0},
-                            {0, 0},
-                            {0, 0}};
-
 
 void 
 OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],

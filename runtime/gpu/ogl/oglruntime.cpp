@@ -6,7 +6,7 @@
 
 using namespace brook;
 
-OGLRuntime* OGLRuntime::create()
+OGLRuntime* OGLRuntime::create(void)
 {
 
   // Detect platform
@@ -23,6 +23,7 @@ OGLRuntime* OGLRuntime::create()
   }
   if (!isNV && !isATI)
     return NULL;
+
   delete wnd;
 
   // Create the context

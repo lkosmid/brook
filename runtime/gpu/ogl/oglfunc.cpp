@@ -54,7 +54,7 @@ RUNTIME_BONUS_NV_FNS
 #undef XXX
 #endif
 
-void initglfunc(void) {
+void brook::initglfunc(void) {
 #ifdef WIN32
 #define  XXX(type, fn) fn = (type) wglGetProcAddress(#fn); \
                        GPUAssert(fn, "Failed to load" #fn);

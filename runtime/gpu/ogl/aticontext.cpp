@@ -35,7 +35,7 @@ ATITexture::ATITexture ( size_t inWidth,
                        size_t inHeight, 
                        GPUContext::TextureFormat inFormat) :
   OGLTexture(inWidth, inHeight, inFormat, 
-             atitypes, atiformats, sizefactor),
+             atiformats, atitypes, sizefactor),
   _nativeFormat(atiformats[components()]) 
 {
 }
@@ -47,6 +47,8 @@ static const int atiiAttribList[4][64] = {
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 }
 };
 
+
+ATIContext::ATIContext() {}
 
 ATIContext *
 ATIContext::create() {

@@ -26,6 +26,7 @@ static const char passthrough_pixel[] =
 
 GPUContext::VertexShaderHandle 
 OGLContext::getPassthroughVertexShader(void) {
+#if 0
   if (!_passthroughVertexShader) {
     GLuint id;
     glGenProgramsARB(1, &id);
@@ -37,6 +38,9 @@ OGLContext::getPassthroughVertexShader(void) {
     _passthroughVertexShader = (GPUContext::VertexShaderHandle) id;
   }
   return _passthroughVertexShader;
+#else
+  return (GPUContext::VertexShaderHandle) 1;
+#endif
 }
 
 
@@ -150,9 +154,11 @@ OGLContext::bindPixelShader( GPUContext::PixelShaderHandle inPixelShader ) {
 
 void 
 OGLContext::bindVertexShader( GPUContext::VertexShaderHandle inVertexShader ) {
+#if 0
   glBindProgramARB(GL_VERTEX_PROGRAM_ARB, 
                    (unsigned int) inVertexShader);
   CHECK_GL();
+#endif
 }
 
 void OGLContext::disableOutput( unsigned int inIndex ) {
@@ -267,6 +273,19 @@ OGLContext::get2DInterpolant( const float2 &start,
   interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
   interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
   interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
+}
+
+
+
+float4 
+OGLContext::getStreamIndexofConstant( TextureHandle inTexture ) const {
+  return float4(0.0f, 0.0f, 0.0f, 0.0f);
+}
+
+
+float4
+OGLContext::getStreamGatherConstant( TextureHandle inTexture ) const {
+  return float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 

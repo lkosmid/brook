@@ -130,6 +130,8 @@ namespace brook {
     virtual ~OGLContext();
 
   protected:        
+    OGLContext();
+
     /* Creates a context and pbuffer */
     void init(const int   (*viAttribList)[4][64],
               const float (*vfAttribList)[4][16],
@@ -144,7 +146,6 @@ namespace brook {
 
     OGLWindow *wnd;
 
-    OGLContext();
   };
 
 }

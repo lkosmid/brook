@@ -48,6 +48,7 @@ OGLTexture::OGLTexture (unsigned int width,
    glGenTextures(1, &_id);
    glActiveTextureARB(GL_TEXTURE0_ARB);
    glBindTexture (GL_TEXTURE_RECTANGLE_NV, _id);
+   CHECK_GL();
  
    // Create a texture with NULL data
    glTexImage2D (GL_TEXTURE_RECTANGLE_NV, 0, 
@@ -55,6 +56,7 @@ OGLTexture::OGLTexture (unsigned int width,
                  width, height, 0,
                  glFormat[_components-1],
                  GL_FLOAT, NULL);
+   CHECK_GL();
    
    glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_S, GL_CLAMP);
    glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_T, GL_CLAMP);
