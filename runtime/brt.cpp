@@ -8,7 +8,7 @@
 
 #include "dx9/dx9.hpp"
 #include "nv30gl/nv30gl.hpp"
-
+#include "cpu/cpu.hpp"
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
@@ -29,9 +29,9 @@ namespace brook {
 
     if (!strcmp(env, NV30GL_RUNTIME_STRING))
       return new NV30GLRunTime();
-
-    fprintf (stderr, "Unknown runtime requested: %s", env);
-    abort();
+	if (strcmp(env,CPU_RUNTIME_STRING)) 
+		fprintf (stderr, "Unknown runtime requested: %s falling back to CPU", env);
+    return new CPURunTime();
   }
 }
 

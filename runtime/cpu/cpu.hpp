@@ -4,6 +4,7 @@
 #include "../brt.hpp"
 
 namespace brook {
+	extern const char* CPU_RUNTIME_STRING;	
     class CPUKernel : public Kernel {
     public:
 	CPUKernel(const void * source []);
