@@ -19,6 +19,7 @@ extern "C" {
 #include "main.h"
 #include "ctool.h"
 #include "brtscatter.h"
+#include "brtvout.h"
 struct globals_struct globals;
 
 
@@ -246,6 +247,7 @@ main(int argc, char *argv[])
           * here instead of using the Translation Unit methods.
           */
          Brook2Cpp_IdentifyIndexOf(tu);
+         transform_vout(tu);
          tu->findStemnt(ConvertToBrtStreams);
          tu->findStemnt(ConvertToBrtScatters);
          tu->findFunctionDef(ConvertToBrtFunctions);

@@ -369,9 +369,10 @@ void BRTCPUKernelCode::
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
         case HEADER:{
-            Symbol name=getSymbol("&"+a->name->name);
-            out << "const ";
-            CPUGatherType(*t,false).printType(out,
+           Symbol name;
+           name=getSymbol("&"+a->name->name);
+           out << "const ";
+           CPUGatherType(*t,false).printType(out,
                                               &name,
                                               true,
                                               false);
@@ -654,11 +655,15 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         bool isStream = (t->type==TT_Stream);
         switch(s) {
         case HEADER:{
-            if ((tq&TQ_Const)==0&&isOut==false&&(tq&TQ_Reduce)==0){
+            if ((tq&TQ_Const)==0
+                &&isOut==false
+                &&(tq&TQ_Reduce)==0
+                &&a->name->name!="__vout_counter"){
                 out << "const ";//kernels are only allowed to touch out params
             }
             Symbol name=getSymbol(a->name->name);
-            name=getSymbol("&"+a->name->name);
+            if (a->name->name!="__vout_counter")
+               name=getSymbol("&"+a->name->name);            
             if (isStream)
                 t = static_cast<ArrayType*>(t)->subType;
             t->printType(out,&name,true,0);

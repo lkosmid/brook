@@ -4,9 +4,12 @@
  *      Brook extensions to cTool's stemnt.cpp.  Specifically, contains the
  *      BRTKernelDef class, which represents a kernel definition.
  */
+#include "brtvout.h"
+//above file must be included first so the #pragma warning:disable is included
 #include <cstring>
 #include <cassert>
 #include <sstream>
+
 
 #include "brtstemnt.h"
 #include "brtreduce.h"
@@ -125,12 +128,17 @@ void
 BRTKernelDef::printStub(std::ostream& out) const
 {
    FunctionType *fType;
-   int i;
+   int i,NumArgs;
 
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
    std::vector <bool> streamOrVal;
-   for (i = 0; i < fType->nArgs; i++) {
+   NumArgs=fType->nArgs;
+   bool vout=voutFunctions.find(FunctionName()->name)!=voutFunctions.end();
+   if (vout) {
+      NumArgs--;
+   }
+   for (i = 0; i < NumArgs; i++) {
       if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
          streamOrVal.push_back(false);
       }
@@ -139,7 +147,8 @@ BRTKernelDef::printStub(std::ostream& out) const
       unsigned int reducecount=0;
       fType->subType->printType(out, NULL, true, 0);
       out << " " << *FunctionName() << " (";
-      for (i = 0; i < fType->nArgs; i++) {
+      
+      for (i = 0; i < NumArgs; i++) {
          if (i) out << ",\n\t\t";
          
          if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
@@ -156,7 +165,10 @@ BRTKernelDef::printStub(std::ostream& out) const
             out << "const __BRTIter& " << *fType->args[i]->name;
          } else if (recursiveIsStream(fType->args[i]->form) ||
                     recursiveIsGather(fType->args[i]->form)) {
-            out << "const __BRTStream& " << *fType->args[i]->name;
+            if ((fType->args[i]->form->getQualifiers()&TQ_Out)==0) {
+               out << "const ";
+            }
+            out << "__BRTStream& " << *fType->args[i]->name;
          } else {
             out << "const ";
             Symbol name;name.name = fType->args[i]->name->name;
@@ -168,7 +180,9 @@ BRTKernelDef::printStub(std::ostream& out) const
          }
       }
       out << ") {\n";
-
+      if (vout) {
+         out << "  unsigned int __vout_counter=0;"<<std::endl;
+      }
       out << "  static const void *__" << *FunctionName() << "_fp[] = {";
       out << std::endl;
       out << "     \"fp30\", __" << *FunctionName() << "_fp30," << std::endl;
@@ -192,6 +206,8 @@ BRTKernelDef::printStub(std::ostream& out) const
       out << "  static __BRTKernel k("
           << "__" << *FunctionName() << "_fp);\n\n";
       for (i=0; i < fType->nArgs; i++) {
+         if (vout)
+            out <<"  ";//nice spacing
          if (recursiveIsStream(fType->args[i]->form) &&
              (fType->args[i]->form->getQualifiers()&TQ_Out)!=0) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";

@@ -4,7 +4,7 @@ EXECUTABLE = brcc
 FILES = context decl express parseenv project stemnt symbol token \
 	location brtdecl lexer gram main getopt brtexpress codegen \
 	subprocess brtstemnt b2ctransform brtkernel b2creduce brtscatter \
-	b2cindex brtreduce brtgather
+	b2cindex brtreduce brtgather brtvout
 
 CPP_PATH = /usr/bin/cpp
 SLOP = lexer.cpp gram.cpp gram.output gram.h
