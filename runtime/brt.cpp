@@ -23,6 +23,8 @@
 __StreamScatterAssign STREAM_SCATTER_ASSIGN;
 __StreamScatterAdd STREAM_SCATTER_ADD;
 __StreamScatterMul STREAM_SCATTER_MUL;
+__StreamGatherInc STREAM_GATHER_INC;
+__StreamGatherFetch STREAM_GATHER_FETCH;
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";

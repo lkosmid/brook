@@ -7,6 +7,7 @@
 #include "brtvector.hpp"
 #include "brtarray.hpp"
 #include "brtscatter.hpp"
+#include "brtgather.hpp"
 
 template <class T> inline __BRTStreamType __BRTReductionType(const T*e) {
    const float * f = e;

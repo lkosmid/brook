@@ -13,7 +13,7 @@ template <class T, class Functor> void scatterOpHelper (const T* s,
                                                         unsigned int size,
                                                         const Functor & op) {
    for (unsigned int i=0;i<size;++i) {
-      op(out[(int)index[i]],s[i]);
+      op(out[(unsigned int)index[i]],s[i]);
    }
 }
 
