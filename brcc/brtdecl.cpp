@@ -133,17 +133,25 @@ BrtStreamType::getBase( void )
 }
 
 
-CPUGatherType::CPUGatherType(const ArrayType &t,bool toplevel):ArrayType(*static_cast<ArrayType*>(t.dup())){
-	this->toplevel=toplevel;
+CPUGatherType::CPUGatherType(const ArrayType &t,bool copy_on_write):ArrayType(*static_cast<ArrayType*>(t.dup())){
 	dimension=1;
+	this->copy_on_write=copy_on_write;
 	if (subType->type==TT_Array) {
-		CPUGatherType * at = new CPUGatherType(*static_cast<ArrayType*>(subType),false);
+		CPUGatherType * at = new CPUGatherType(*static_cast<ArrayType*>(subType),copy_on_write);
 		subType = at;
 		dimension = at->dimension+1;
 	}
 }
 Type * CPUGatherType::dup0()const {
 	return new CPUGatherType (*this);
+}
+void CPUGatherType::printSubtype(std::ostream&out,Symbol *name,bool showBase,int level) const {
+	const Type *t = this;
+	while (t->type==TT_Array) {
+		t = static_cast<const ArrayType*> (t)->subType;
+	}
+	t->printType(out,name,showBase,level);
+	
 }
 void CPUGatherType::printType(std::ostream &out, Symbol * name, bool showBase, int level) const
 {
@@ -153,19 +161,26 @@ void CPUGatherType::printType(std::ostream &out, Symbol * name, bool showBase, i
 	
 }
 void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) const {
-	Symbol nothing;
-	nothing.name="";
-	out << "Array"<<dimension<<"d<";
-	printBase(out,level);
-	
-	const Type * t = this;
-	for (unsigned int i=0;i<dimension&&i<3;i++) {
-		if (i!=0)
-			out <<" ";
-		out <<", ";
-		const ArrayType *a =static_cast<const ArrayType *>(t);
-		a->size->print(out);
-		t = a->subType;			
+	if (!copy_on_write) {
+		out << "BrtArray<";
+		Symbol nothing;nothing.name="";
+		printSubtype(out,&nothing,true,level);
+		out << ", "<<dimension <<"  , false";		
+	}else {
+		out << "Array"<<dimension<<"d<";
+		
+		printBase(out,level);
+		
+		
+		const Type * t = this;
+		for (unsigned int i=0;i<dimension&&i<3;i++) {
+			if (i!=0)
+			out <<"	 ";
+			out <<", ";
+			const ArrayType *a =static_cast<const ArrayType *>(t);
+			a->size->print(out);
+			t = a->subType;			
+		}
 	}
 	out << "> "; 
 	out << *name;

@@ -190,19 +190,28 @@ BRTGPUKernelDef::printCode(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void printType (std::ostream & out, Type * t, bool addIndirection) {
+void printType (std::ostream & out, Type * t, bool addIndirection, std::string name ="") {
 		Symbol sym;
-		sym.name="";
-	
-		t->printBase(out,0);
+		sym.name=name;
+		if (addIndirection)
+			sym.name=std::string("*")+sym.name;
+   		t->printBase(out,0);
 		t->printBefore(out,&sym,0);
-		if (addIndirection) out << "*";			
 		t->printAfter(out);
+}
+
+static std::string tostring(unsigned int i) {
+	char c[1024];
+	c[1023]=0;
+	sprintf(c,"%d",i);
+	return std::string(c);
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTCPUKernelDef::printCode(std::ostream& out) const
 {
+	bool copy_on_write=false;
+	bool dims_specified=false;	
 //   out << "#error \"Don't know how to generate CPU kernel code for "
 //       << FunctionName()->name << "().\"\n";
 
@@ -221,12 +230,11 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	if (j!=0)
 	    out << ", ";
 	Type * form = func->args[j]->form;
-	bool copy_on_write=false;
 	if (form->type==TT_Stream||form->type==TT_Array) {
-	    if (copy_on_write&&form->type==TT_Array) {
-		form = new CPUGatherType(*static_cast<ArrayType *>(form));
+	    if ((copy_on_write||(dims_specified==false))&&form->type==TT_Array) {
+			form = new CPUGatherType(*static_cast<ArrayType *>(form),copy_on_write);
 	    }else if (form->type==TT_Stream){
-		form = static_cast<ArrayType *>(form)->subType;
+			form = static_cast<ArrayType *>(form)->subType;
 	    }
 	}
 	
@@ -235,8 +243,9 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 		if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
 			out << "const ";//kernels are only allowed to touch out params
 		}
-		if (/*(tq&TQ_Out)==0&&*/form->type!=TT_Array/*no gather*/)
+		if (form->type!=TT_Array||dims_specified==false) {
 			func->args[j]->name->name=std::string("&")+func->args[j]->name->name;
+		}
 	}
 	func->args[j]->form = form;
 	func->args[j]->print(out,true);
@@ -251,30 +260,50 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
 	enhanced_name.name = "_cpu_loop_"+decl->name->name;
 	func->printBefore(out,&enhanced_name,0);
-	out << "(const std::vector<char *>&args,unsigned int mapbegin,unsigned int mapend) {"<<std::endl;
+	out << "(const std::vector<void *>&args, unsigned int mapbegin, unsigned int mapend) {"<<std::endl;
+	{for (unsigned int i=0;i<func->nArgs;++i) {
+		indent(out,1);//setup args;
+		Type * t = func->args[i]->form;
+		if (t->type==TT_Array) {//gather
+			CPUGatherType * cgt = new CPUGatherType(*static_cast<ArrayType *>(t),copy_on_write);	
+			Symbol arg1;arg1.name="arg"+tostring(i)		;
+			
+			cgt->printType(out,&arg1,false,0);
+			out << "("<<std::endl;
+			indent(out,2);
+			out << "(";
+			Symbol nothing;
+			nothing.name="";
+			cgt->printSubtype(out,&nothing,true,0);
+			out<<"*)reinterpret_cast<CPUStream*>(args["<<i<<"])->getData(), "<<std::endl;
+			indent(out,2);
+			out<<"reinterpret_cast<CPUStream*>(args["<<i<<"])->getIndices());"<<std::endl;
+		}else {
+			if (t->type==TT_Stream) {
+				t=static_cast<ArrayType*>(t)->subType;
+			}
+			printType(out,t,true,"arg"+tostring(i));
+			out << " = (";
+			printType(out,t,true);
+			out << ")args["<<i<<"];"<<std::endl;
+		}
+	}}
 	indent(out,1);
 	out << "for (unsigned int i=mapbegin;i<mapend;++i) {"<<std::endl;
 	indent(out,2);out << "_cpu_" <<decl->name->name<<" ("<<std::endl;
 	{for (unsigned int i=0;i<func->nArgs;++i) {
+		bool isArray = (func->args[i]->form->type==TT_Array);
+		bool isStream = (func->args[i]->form->type==TT_Stream);
+		
 		if (i!=0)
 			out <<","<<std::endl;
 		indent(out,3);
+		if (!isArray)
+			out << "*";
+		out <<"arg"<<i;
+		if (isStream)
+			out <<"++";
 		
-		if (func->args[i]->form->type==TT_Stream) {
-			Type * t=static_cast<ArrayType*>(func->args[i]->form)->subType;
-			out <<"*(";
-			printType(out,t,true);						
-			out << ")(args["<<i<<"]+i*sizeof(";
-			printType(out,t,false);									
-			out <<"))";
-		}else {
-
-			bool isArray = (func->args[i]->form->type==TT_Array);
-			if (!isArray) out << "*";
-			out << "(";
-			printType(out,func->args[i]->form,!isArray);			
-			out <<")(args["<<i<<"])";
-		}
 	}}
 	out<< ");"<<std::endl;
 	indent(out,1);out <<"}"<<std::endl;

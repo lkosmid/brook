@@ -53,13 +53,14 @@ public:
 };
 
 class CPUGatherType:public ArrayType{public:
-	bool toplevel;
+	bool copy_on_write;
 	unsigned int dimension;
-	CPUGatherType(const ArrayType &t,bool toplevel=true);
+	CPUGatherType(const ArrayType &t,bool copy_on_write);
 	Type * dup0()const;
 	void printType(std::ostream & out, Symbol *name, bool showBase, int level) const;
 	void printBefore(std::ostream & out, Symbol *name, int level) const;
 	void printAfter(std::ostream &out)const;
+	void printSubtype(std::ostream &out,Symbol *name, bool showBase,int level)const;
 };
 
 

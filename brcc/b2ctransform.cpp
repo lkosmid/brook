@@ -172,6 +172,17 @@ class BaseType1:public BaseType {public:
 	if (i!=ArrayBlacklist.end())
 	    ArrayBlacklist.erase(i);
     }
+	Type * BaseType1::dup0()const {
+		BaseType * ret =new BaseType1 (*this);
+         ret->storage = storage; 
+         ret->qualifier = qualifier; 
+         ret->typemask = typemask; 
+         ret->tag = tag->dup();
+         ret->typeName = typeName->dup();
+         ret->stDefn = stDefn->dup();
+         ret->enDefn = enDefn->dup();
+         return ret;
+	}
 	virtual void printBase(std::ostream& out, int level) const {
 		//this->printQual(out,qualifier);
 	int special = BT_Char|BT_Int|BT_Float|BT_Float2|BT_Float3|BT_Float4|BT_Long;
