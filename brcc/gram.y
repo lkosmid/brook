@@ -58,7 +58,7 @@ void baseTypeFixup(BaseType * bt,Decl * decl) {
   while ((decl=decl->next)) {
     BaseType *nb = decl->form->getBase();
     if (memcmp(nb,b,sizeof(BaseType))!=0) {
-      decl->form = decl->form->dup();/*warning memory leak*/
+      decl->form = decl->form->dup();
       *decl->form->getBase()=*b;
     }
   }
