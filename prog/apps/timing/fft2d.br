@@ -132,7 +132,7 @@ void compute2dFFT(float2 *input,
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
             DoDFTX(s,W_horiz,float2((float) nStride, (float) M),s_horiz);
-            if (debug_fft) {
+            if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
                streamPrint(s_horiz);
             }
@@ -144,7 +144,7 @@ void compute2dFFT(float2 *input,
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
             DoDFTY(s,W_vert,float2((float) nStride, (float) N),s_vert);
-            if (debug_fft) {
+            if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
             }
             flattenSY(s,s_vert);
@@ -200,7 +200,6 @@ void doFFT(int logN) {
    int logM = logN; 
    int N = (1<<logN);
    int M = (1<<logM);
-   int MPlusN=M+N;
    float2 * output;
    output = (float2*)malloc(sizeof(float2)*M*N);
    start = GetTime();
@@ -218,7 +217,7 @@ int mainX (int argc, char ** argv) {
    int logM = argc>=3?atoi(argv[1]):logN;
    int N = (1<<logN);
    int M = (1<<logM);
-   float2 * output=0;
+   //   float2 * output=0;
    //   compute2dFFT(data,output,logN,logM,N,M,FFT_2D);
    FftwTransform2d(data,N,M,1,1);
 
