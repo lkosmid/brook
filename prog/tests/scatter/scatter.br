@@ -11,14 +11,14 @@ reduce void mygets(float a <>, reduce float b<> , float c) {
 int main () {
 
   float a<10, 10>;
-  float b<10, 10>;
+  float2 b<10, 10>;
   float d<10, 10>;
   float e<10, 10>;
   float4 f<2,2>;
   float4 g<2,2>;
   float2 index<2,2>;
   float data_a[10][10];
-  float data_b[10][10];
+  float2 data_b[10][10];
   float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
   float data_d[10][10];
   float data_e[10][10];
@@ -32,7 +32,8 @@ int main () {
   for (i=0; i<10; i++)
     for (j=0; j<10; j++) {
       data_a[i][j] = (float)(i+10*j);
-      data_b[i][j] = (float)(99-(i+10*j));
+      data_b[i][j].x = (float)(9-(i));
+      data_b[i][j].y = (float)(9-(j));
       data_d[i][j] = (float)(10*i+j);
     }
 
