@@ -1,0 +1,42 @@
+// accumulate.br
+//
+// This test repeatedly computes b += a for two different streams.  The
+// goal is to validate that read-modify-write works with kernels (i.e. the
+// same stream can be passed as an input and an output).
+
+#include <stdio.h>
+
+kernel void
+addone(float a<>, out float c<>)
+{
+   c = a + 1.0f;
+}
+
+int
+main(int argc, char *argv[])
+{
+   float input_a1[100];
+   float a1<100>;
+   int i, j;
+
+   for (i = 0; i < 10; i++ ) {
+      for (j = 0; j < 10; j++ ) {
+         input_a1[10*i+j] = (float)(10*i+j);
+      }
+   }
+   streamRead(a1, input_a1);
+
+   for (i = 0; i < 12; i++ ) {
+      addone(a1, a1);
+   }
+
+   streamWrite(a1, input_a1);
+
+   for (i = 0; i < 10; i++) {
+      for (j = 0; j < 10; j++)
+         printf( "%6.2f ", input_a1[10*i+j] );
+      printf("\n");
+   }
+
+   return 0;
+}
