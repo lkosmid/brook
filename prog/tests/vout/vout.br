@@ -91,10 +91,8 @@ int finiteValueProducedBRT_TYPE (struct StreamHolder  input) {
    debugStreamPrint (input,"Finite Values in...");
    valueProducedBRT_TYPE(*input,output);
    streamWrite(output,&rettype);
-   if (debug_vout) printf ("\n4RRGH %f\n",rettype);
    isFiniteKernelBRT_TYPE(output,finiteout);
    streamWrite(finiteout,&ret);
-   if (debug_vout) printf ("\nARRGH %f\n",ret);
    return (int)ret;
 }
 
@@ -220,7 +218,6 @@ void CountValuesBRT_TYPE(struct StreamHolder list_stream,
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
-   float maxshift=999;
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
@@ -247,8 +244,7 @@ float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-   float maxshift=999;
-
+   float maxshift;
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
@@ -260,13 +256,7 @@ float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
          NanToRightBRT_TYPE (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
    }
    debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
-   if (0) {
-     if (sign==-1) {
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,WIDTH-1,LENGTH-1);
-     }else {      
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,0,0);
-     }
-   }else {
+   {
      float item<1>;
      float2 index;
      if (sign==-1) {
