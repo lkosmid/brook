@@ -12,7 +12,7 @@ bool vanilla=false;
 int count=0;
 int hpcount=0;
 int qtcount=0;
-bool debug_model=false;
+bool debug_model=true;
 static std::vector<brook::stream> savedStreams;
 ::brook::stream & quickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
 
@@ -214,6 +214,8 @@ int volume_division (int argc, char ** argv) {
    int i;
    ::brook::stream volumeTriangles(::brook::getStreamType(( float3  *)0), 256 , 15,-1);
    struct ppm dat;
+   unsigned int numspheres=1;
+   float spheredist=2.0f;
    float * slice=0;
    char generatedData=0;
    for (i=0;i<argc;++i) {
@@ -231,6 +233,12 @@ int volume_division (int argc, char ** argv) {
      }else if (strcmp(argv[i],"-amplify")==0) {
        match=1;
        use_vout_amplify=1;//deprecated
+     }else if (strncmp(argv[i],"-numspheres",11)==0) {
+       match=1;
+       numspheres=atoi(argv[i]+11);
+     }else if (strncmp(argv[i],"-spheredist",11)==0) {
+       match=1;
+       spheredist=atoi(argv[i]+11);
      }
      if (match) {
        for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
@@ -269,6 +277,8 @@ int volume_division (int argc, char ** argv) {
    float toagg[4]={0,0,0,0};
    ::brook::stream agg(::brook::getStreamType(( float  *)0), 2 , 2,-1);
    streamRead(agg,toagg);
+   dat.numspheres=numspheres;
+   dat.spheredist=spheredist;
    for (i=0;i<(int)dat.depth;++i) {
      int numactivetextures=dat.depth;
       readPPM3dSlice(dat,i,slice);

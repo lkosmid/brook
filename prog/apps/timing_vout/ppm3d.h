@@ -5,8 +5,10 @@ struct ppm {
    unsigned int width;
    unsigned int height;
    unsigned int depth;
+   unsigned int numspheres;
+   float spheredist;
    std::vector<float3> vertices;
-   ppm () {fp=NULL;start=width=height=0;}
+   ppm () {numspheres=1;spheredist=2.0f;fp=NULL;start=width=height=0;}
    void init (unsigned int width,unsigned int height,unsigned int depth) {
       this->width=width;
       this->height=height;
@@ -113,22 +115,32 @@ void readPPM3dSlice(const ppm &fp,
       }
    }else if (dorandom)for (unsigned int i=0;i<size;++i) data[i] = myrand();
    else {
-     float rad = (float)(fp.width-1)/2;
+     float trad = (float)(fp.width-1)/2;
      float offset =(float) (fp.width-1)/2;
      for (unsigned int j=0;j<fp.height;++j) {
        for (unsigned int i=0;i<fp.width;++i) {
          if (fp.width<=3)
            data[i+j*fp.width]= (i==1&&j==1&&whichslice==1)?1.0f:0.0f;
          else {
-            int newj = (j-offset);
-            int newi = (i-offset);
-            int newk = (whichslice-offset);
-            float loc = newj*(float)newj+newk*(float)newk+newi*(float)newi;
-            bool mybool=(loc<rad*rad);
-            mybool = mybool&&((loc<(rad-2)*(rad-2)
-                               &&loc>=(rad-4)*(rad-4))
-                              ||loc>=(rad-1)*(rad-1)); 
+            bool mybool=false;
+            bool alt = true;
+            float rad = trad;
+            for (unsigned int l=0;l<fp.numspheres;++l) {
+              
+              float newj = (j-offset);
+              float newi = (i-offset);
+              float newk = (whichslice-offset);
+              float loc = newj*(float)newj+newk*(float)newk+newi*(float)newi;
+              if (loc<rad*rad) {
+                mybool = alt;
+                alt = !alt;
+              }else {
+                break;
+              }
+              rad-=fp.spheredist;
+            }
             data[i+j*fp.width]=mybool?1.0f:0.0f;
+
          }
        }
      }
