@@ -198,8 +198,8 @@ void SplitTree::exhaustiveSubsetSearch( size_t inSubsetSize, const NodeList& inN
   while( generator.hasMore() )
   {
     generator.getNext();
-
-    for( size_t i = 0; i < subsetSize; i++ )
+    size_t i;
+    for( i = 0; i < subsetSize; i++ )
       inNodes[ generator.getIndexedValue(i) ]->_splitHere = true;
 
     int score;
@@ -214,7 +214,7 @@ void SplitTree::exhaustiveSubsetSearch( size_t inSubsetSize, const NodeList& inN
         outBestScore = score;
     }
 
-    for( size_t i = 0; i < subsetSize; i++ )
+    for( i = 0; i < subsetSize; i++ )
       inNodes[ generator.getIndexedValue(i) ]->_splitHere = false;
   }
 }
@@ -813,8 +813,8 @@ bool SplitTree::rdsMergeSome( SplitNode* n, const NodeList& inUnsavedChildren, s
 
   size_t bestSubset = validSubsets[0];
   SplitShaderHeuristics bestHeuristics = validHeuristics[0];
-
-  for( size_t i = 1; i < validSubsetCount; i++ )
+  size_t i; 
+  for( i = 1; i < validSubsetCount; i++ )
   {
     size_t otherSubset = validSubsets[i];
     SplitShaderHeuristics otherHeuristics = validHeuristics[i];
@@ -830,7 +830,7 @@ bool SplitTree::rdsMergeSome( SplitNode* n, const NodeList& inUnsavedChildren, s
 
   // set the state of the child nodes to reflect
   // the chosen subset
-  for( size_t i = 0; i < unsavedChildCount; i++ )
+  for( i = 0; i < unsavedChildCount; i++ )
   {
     if( (bestSubset & (1 << i)) == 0 )
     {

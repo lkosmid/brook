@@ -1,6 +1,10 @@
 // splittraversal.h
 #ifndef __SPLITTRAVERSAL_H__
 #define __SPLITTRAVERSAL_H__
+#ifdef _WIN32
+#pragma warning(disable:4786)
+//the above warning disables visual studio's annoying habit of warning when using the standard set lib
+#endif
 
 #include <iostream>
 #include <vector>
