@@ -165,7 +165,11 @@ inline float lerp_float (float a, float b, float s) {
    return a + s*(b - a);
 }
 inline float rsqrt_float (float x) {
+#ifdef __APPLE__
+	return 1.0f/sqrt(x);
+#else
    return 1.0f/sqrtf(x);
+#endif
 }
 inline float frac_float (float x) {
    float y = x-floor(x);
@@ -190,21 +194,33 @@ inline float finite_float (float x) {
 #ifdef _WIN32
    return _finite(x);
 #else
+#ifdef __APPLE__
+   return __isfinitef(x);
+#else
    return finite(x);
+#endif
 #endif
 }
 inline float isnan_float (float x) {
 #ifdef _WIN32
    return _isnan(x);
 #else
+#ifdef __APPLE__
+   return __isnanf(x);
+#else
    return isnan(x);
+#endif
 #endif
 }
 inline float isinf_float (float x) {
 #ifdef _WIN32
    return (!finite_float(x))&&(!isnan_float(x));
 #else
+#ifdef __APPLE__
+   return __isinff(x);
+#else
    return isinf(x);
+#endif
 #endif
 }
   BININTRINSIC(atan2,atan2)
