@@ -363,10 +363,10 @@ namespace brook{
           memset (buffer,0,sizeof(unsigned int)*(1+numThreads)*dim);
           unsigned int * mag = buffer;
           unsigned int * e =mag+dim;
-
+          unsigned int dimoffset = dim-rdim;
           for (i=0;i<dim;++i) {
-             if (i<rdim)
-                mag[i] = extent[i]/rextent[i];
+             if (i>=dimoffset)
+                mag[i] = extent[i]/rextent[i-dimoffset];
              else
                 mag[i] = extent[i];             
           }
