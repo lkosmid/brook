@@ -41,7 +41,7 @@ static std::map <DualInt,brook::stream *> Ws;
 int myabs (int i) {
    return i>=0?i:-i;
 }
-brook::stream &getW(int k, int logN, bool vertical) {
+brook::stream &getW(int k, int logN, bool vertical,bool bitreverse) {
   int N = (1<<logN);
   int Stride=(N/2)/(1<<k);
   const brook::StreamType* flawt2 = brook::getStreamType((float2*)NULL);
@@ -57,14 +57,22 @@ brook::stream &getW(int k, int logN, bool vertical) {
   }
   float2 *W = new float2 [N/2];
   //printf ("W logn:%d k:%d N:%d Stride:%d:\n",logN,k,N,Stride);
-  for (int i=0;i<N/2;++i) {
-    int aindex=i*2;
-    int bindex=BitReverse(aindex,logN);
-    int index=(bindex-(bindex%Stride));
-    float ang=(float)(index*3.1415926536/(N/2));
-    W[i].x=cos(ang);
-    W[i].y=sin(ang);
-    //printf ("index: %d i:%d b:%d a:(%f) %f %f] ",index,aindex,bindex,ang*180/3.1415926536,W[i].x,W[i].y);
+  if (bitreverse) {
+      for (int i=0;i<N/2;++i) {
+          int aindex=i*2;
+          int bindex=BitReverse(aindex,logN);
+          int index=(bindex-(bindex%Stride));
+          float ang=(float)(index*3.1415926536/(N/2));
+          W[i].x=cos(ang);
+          W[i].y=sin(ang);
+          //printf ("index: %d i:%d b:%d a:(%f) %f %f] ",index,aindex,bindex,ang*180/3.1415926536,W[i].x,W[i].y);
+      }
+  }else {
+      for (int i=0;i<N/2;++i) {
+          float theta=(float)(2*3.1415926536*i/N);
+          W[i].x=cos(theta);
+          W[i].y=sin(theta);
+      }
   }
   //printf ("\n");
   streamRead(*ret,W);

@@ -248,7 +248,7 @@ void computeFFT2d(float4 (*input)<>,
    else {
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTY(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0),*output,s_iter);
+            DFTY(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,true),*output,s_iter);
             if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
                streamPrint(*output);
@@ -262,7 +262,7 @@ void computeFFT2d(float4 (*input)<>,
 	 }
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTX(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1),*output,s_iter);
+            DFTX(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,true),*output,s_iter);
             if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
                streamPrint(*output);
