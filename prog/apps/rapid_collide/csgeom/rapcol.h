@@ -106,8 +106,8 @@ private:
   
 public:
   static int numHits;
-  void createBrookGeometryRecurse(const csCdBBox *curr, BBox & curw, vector <BBox> &bbox, vector<Tri> & tri);
-  void createBrookGeometry(vector <BBox> &bbox, vector<Tri> & tri);
+  void createBrookGeometryRecurse(const csCdBBox *curr, BBox & curw, std::vector <BBox> &bbox, std::vector<Tri> & tri);
+  void createBrookGeometry(std::vector <BBox> &bbox, std::vector<Tri> & tri);
   /// Create a collider based on geometry.
   csRapidCollider (const std::vector<bsp_polygon> &mesh);
 

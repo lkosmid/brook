@@ -35,7 +35,7 @@ void csVector3::Normalize ()
 {
   float sqlen = x*x + y*y + z*z;
   if (sqlen < SMALL_EPSILON) return;
-  float invlen = qisqrt (sqlen);
+  float invlen = (float)qisqrt (sqlen);
   *this *= invlen;
 }
 

@@ -133,6 +133,10 @@
  * CS_DECLARE_GROWING_ARRAY (ia, int);
  * </pre>
  */
+#ifdef CS_DECLARE_GROWING_ARRAY_REF
+#undef CS_DECLARE_GROWING_ARRAY_REF
+#endif
+
 #define CS_DECLARE_GROWING_ARRAY(Name, Type)				\
   CS_TYPEDEF_GROWING_ARRAY(__##Name##_##Type,Type) Name
 

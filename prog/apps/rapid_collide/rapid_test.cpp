@@ -273,7 +273,7 @@ void testOBB() {
   csMatrix3 mat (rand()/rm,rand()/rm,rand()/rm,
                  rand()/rm,rand()/rm,rand()/rm,
                  rand()/rm,rand()/rm,rand()/rm);
-  float3 T (rand()/rm*3-1.5,rand()/rm*3-1.5,rand()/rm*3-1.5);
+  float3 T (rand()/rm*3-1.5f,rand()/rm*3-1.5f,rand()/rm*3-1.5f);
   
   float3 bX = convertVec(mat.Row1());
   float3 bY = convertVec(mat.Row2());

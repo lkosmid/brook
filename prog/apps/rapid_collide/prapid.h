@@ -230,14 +230,14 @@ public:
     w = u % v; 
 
     if (ABS (w.x)+ABS (w.y)+ABS (w.z) > SMALL_EPSILON)
-        A = 0.5 * w.Norm();
+        A = 0.5f * w.Norm();
     else
-        A = 0.0;
+        A = 0.0f;
 
     // centroid
     m = (p + q + r) /3;
 
-    if (A == 0.0)
+    if (A == 0.0f)
     {
       // This triangle has zero area.  The second order components
       // would be eliminated with the usual formula, so, for the 

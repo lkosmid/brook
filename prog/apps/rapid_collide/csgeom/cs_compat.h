@@ -76,7 +76,9 @@ struct iBase {
 };
 #define SCF_VERSION(a,b,c,d)
 
-
+#ifdef CS_DECLARE_GROWING_ARRAY_REF
+#undef CS_DECLARE_GROWING_ARRAY_REF
+#endif
 #define CS_DECLARE_GROWING_ARRAY_REF(a,b) std::vector<b> a
 
 #define SCF_IMPLEMENT_IBASE(csblah)

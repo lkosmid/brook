@@ -104,9 +104,9 @@ csRapidCollider::csRapidCollider (const std::vector <bsp_polygon> &polygons)
   GeometryInitialize (polygons);
 }
 
-inline float min3 (float a, float b, float c)
+static float min3 (float a, float b, float c)
 { return (a < b ? (a < c ? a : (c < b ? c : b)) : (b < c ? b : c)); }
-inline float max3(float a, float b, float c)
+static float max3(float a, float b, float c)
 { return (a > b ? (a > c ? a : (c > b ? c : b)) : (b > c ? b : c)); }
 float3 tofloat3(const csVector3 &a) {
   return float3(a.x,a.y,a.z);
@@ -171,7 +171,7 @@ void csRapidCollider::GeometryInitialize (const std::vector <bsp_polygon> &polyg
 
   CD_contact.IncRef ();
 
-  int i, v;
+  int i;
   int tri_count = 0;
   // first, count the number of triangles polyset contains
   //  csVector3* vertices = mesh->GetVertices ();
@@ -213,7 +213,7 @@ void csRapidCollider::GeometryInitialize (const std::vector <bsp_polygon> &polyg
   float dy = object_bbox.MaxY () - object_bbox.MinY ();
   float dz = object_bbox.MaxZ () - object_bbox.MinZ ();
   smallest_box_dim = min3 (dx, dy, dz);
-  if (smallest_box_dim < .1) smallest_box_dim = .1;
+  if (smallest_box_dim < .1f) smallest_box_dim = .1f;
 }
 
 csRapidCollider::~csRapidCollider ()
@@ -347,7 +347,7 @@ int csRapidCollider::CollidePath (
   csVector3 start = test.GetOrigin ();
   csVector3 end = newpos;
   csVector3 testpos;
-  float step = 1. / (smallest_box_dim/2.);
+  float step = 1.0f / (smallest_box_dim/2.0f);
   float curdist = 0;
   bool rc = false;
   bool firsthit = true;
@@ -840,7 +840,7 @@ int obb_disjoint (const csMatrix3& B, const csVector3& T,
   register float t, s;
   register int r;
   csMatrix3 Bf;
-  const float reps = 1e-6;
+  const float reps = (float)1e-6;
 
   // Bf = ABS (B)
   Bf.m11 = ABS (B.m11);  Bf.m11 += reps;
@@ -1080,14 +1080,14 @@ bool csCdBBox::TrianglesHaveContact(csCdBBox *pBox1, csCdBBox *pBox2)
   bool f = ::tri_contact(i1, i2, i3, 
                          pBox2->m_pTriangle->p1, 
                          pBox2->m_pTriangle->p2, 
-                         pBox2->m_pTriangle->p3);
+                         pBox2->m_pTriangle->p3)?true:false;
 
   if (f)
   {
     // add_collision may be unable to allocate enough memory,
     // so be prepared to pass along an OUT_OF_MEMORY return code.
     if ((rc = add_collision(pBox1->m_pTriangle, pBox2->m_pTriangle)) != false)
-      return rc;
+      return rc?true:false;
   }
 
   return false;
