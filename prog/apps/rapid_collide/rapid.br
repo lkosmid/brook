@@ -519,9 +519,9 @@ kernel void updateCurrentNode(float stretchX,
   float isASentinel = (curNodeIndices.x>=0&&curNodeIndices.x<16384)?0:1;
   float4 sentinelHolder = {1,0,1,0};
   float4 prevIndex = isASentinel?sentinelHolder:curNodeIndices;
-  float2 leftOrRightChild = {modTwo(stretchX
-                                    ?
-                                    (indexof nextNode).x:(indexof nextNode).y),
+  float2 leftOrRightChild = {isASentinel?0:modTwo(stretchX
+                                                  ?
+                                                  (indexof nextNode).x:(indexof nextNode).y),
                              0};
   Traverser lastNode = nodes[prevIndex.xy];
   float2 aTreeIndex = (prevIndex.z>=0)
