@@ -71,10 +71,14 @@ kernel float uoDistance (float3 a<>, float3 b<>){
    return dot(bigger-smaller,bigger-smaller);
 }
 kernel float3 avg (float3 a<>,float3 b<>) {
-   return .5*(a+b);
+   float3 bigger = a>b?a:b;
+   float3 smaller = a>b?b:a;
+   return .5*(smaller+bigger);
 }
 kernel float4 avg4 (float4 a<>,float4 b<>) {
-   return .5*(a+b);
+   float4 bigger = a>b?a:b;
+   float4 smaller = a>b?b:a;
+   return .5*(smaller+bigger);
 }
 //if the model is missing a neighbor then all 3 components will be zero
 //i.e. if a model has 4 or 5 neighbors only
@@ -107,9 +111,9 @@ kernel float3 swap3(float3 ain<>, float3 bin<>, out float3 bout<>) {
 }
 
 kernel float3 add6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, float3 f<>){
-  float3 ad = a+d;
-  float3 be = b+e;
-  float3 cf = c+f;
+   float3 ad = min3(a,d)+max3(a,d);
+   float3 be = min3(b,e)+max3(b,e);
+   float3 cf = min3(c,f)+max3(c,f);
   float3 mint = mymin(ad,be,cf);
   float3 maxt = mymax(ad,be,cf);
   float3 medt = mymed(ad,be,cf,maxt,mint);
