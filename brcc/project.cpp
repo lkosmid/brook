@@ -186,6 +186,72 @@ TransUnit::~TransUnit()
     delete nxt;
 }
 
+static 
+void TransformBlockStemnt (Block *fd, fnStemntTransformer cb) {
+   if (!fd)
+      return;
+   Statement * ste=fd->head;
+   Statement** lastSte=&fd->head;
+   for (;ste;ste=ste->next) {
+      Statement * newstemnt=(*cb)(ste);
+      if (newstemnt) {
+         if (ste==fd->tail) {
+            fd->tail=newstemnt;
+         }
+         *lastSte=newstemnt;
+         newstemnt->next= ste->next;
+         //delete ste;
+      }      
+      lastSte=&ste->next;
+   }
+}
+void FindStemntInBlock (Block * b, fnStemntTransformer cb);
+void TransformStemnt (Statement * ste, fnStemntTransformer cb){
+   if (!ste)
+      return;
+      switch (ste->type) {
+      case ST_IfStemnt:{
+         IfStemnt * myif = static_cast<IfStemnt*>(ste);
+         TransformStemnt(myif->thenBlk,cb);
+         TransformStemnt(myif->elseBlk,cb);
+         break;
+      }
+      case ST_SwitchStemnt:
+         TransformStemnt(static_cast<SwitchStemnt*>(ste)->block,cb);
+         break;
+      case ST_ForStemnt: {
+         TransformStemnt(static_cast<ForStemnt*>(ste)->block,cb);
+         break;
+      }
+      case ST_WhileStemnt:
+         TransformStemnt(static_cast<WhileStemnt*>(ste)->block,cb);
+         break;
+      case ST_DoWhileStemnt:
+         TransformStemnt(static_cast<DoWhileStemnt*>(ste)->block,cb);
+         break;
+      case ST_BRTKernel:
+      case ST_BRTScatter:
+      case ST_Block:
+         FindStemntInBlock (static_cast<Block*>(ste),cb);
+         break;
+      default:
+         break;
+      }
+
+}
+ 
+void FindStemntInBlock (Block * b, fnStemntTransformer cb){
+   if (!b)
+      return;
+   Statement * ste;
+   TransformBlockStemnt(b,cb);
+   for (ste=b->head;ste;ste=ste->next) {
+      TransformStemnt(ste,cb);
+   }   
+}
+
+
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 TransUnit::findStemnt( fnStemntCallback cb )

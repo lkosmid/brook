@@ -115,17 +115,19 @@ Statement * InitialInfSet (std::string fname,
    }
    return expr;
 }
-static 
-void TransformBlockStemnt (Block *fd, FunctionType * ft, Decl * vout_counter) {
-   if (!fd)
-      return;
-   Statement * ste=fd->head;
-   Statement** lastSte=&fd->head;
-   for (;ste;ste=ste->next) {
-      Statement * newstemnt=NULL;
-      if (ste->type==ST_ReturnStemnt) {
-         //newstemnt = ModifyReturnStemnt (ste,ft,vout_counter,ste->location);
-      }
+Decl * findVoutCounter (FunctionType * ft) {
+   for (int i=0;i<ft->nArgs;++i) {
+      if (ft->args[i]->name->name=="__vout_counter")
+         return ft->args[i];
+   }
+   return ft->args[ft->nArgs-1];
+}
+
+static FunctionType * pushFunctionType=NULL;
+static Statement * PushToIfStatement(Statement * ste) {
+   Statement * newstemnt=NULL;   
+   FunctionType * ft = pushFunctionType;
+   Decl * vout_counter = findVoutCounter(ft);
       if (ste->type==ST_ExpressionStemnt) {
          ExpressionStemnt * es = static_cast<ExpressionStemnt*>(ste);
          if (es->expression->etype==ET_FunctionCall) {
@@ -137,7 +139,7 @@ void TransformBlockStemnt (Block *fd, FunctionType * ft, Decl * vout_counter) {
                   std::cerr<<"Error: ";
                   fc->args[0]->location.printLocation(std::cerr);
                   std::cerr<< " Push called without specific vout stream.\n";
-                  return;
+                  return NULL;
                }
                std::string voutname=static_cast<Variable*>
                   (fc->args[0])->name->name;
@@ -153,7 +155,7 @@ void TransformBlockStemnt (Block *fd, FunctionType * ft, Decl * vout_counter) {
                   std::cerr<<"Error: ";
                   fc->args[0]->location.printLocation(std::cerr);
                   std::cerr<<" Push called on var that is not a vout arg.\n";
-                  return;
+                  return NULL;
                }
                Symbol * Eks = new Symbol; Eks->name="x";
                Symbol * counter=vout_counter->name->dup();
@@ -190,69 +192,8 @@ void TransformBlockStemnt (Block *fd, FunctionType * ft, Decl * vout_counter) {
                
             }
          }
-         if (newstemnt) {
-               if (ste==fd->tail) {
-                  fd->tail=newstemnt;
-               }
-               *lastSte=newstemnt;
-               newstemnt->next= ste->next;
-               //delete ste;
-         }
       }
-      lastSte=&ste->next;
-   }
-
-}
-void TransAndFindBlockPush (Block * b, FunctionType * ft, Decl * vout_counter);
-static 
-void ModifyStemnt (Statement * ste, FunctionType *ft,Decl *vout_counter){
-   if (!ste)
-      return;
-      switch (ste->type) {
-      case ST_IfStemnt:{
-         IfStemnt * myif = static_cast<IfStemnt*>(ste);
-         ModifyStemnt(myif->thenBlk,ft,vout_counter);
-         ModifyStemnt(myif->elseBlk,ft,vout_counter);
-         break;
-      }
-      case ST_SwitchStemnt:
-         ModifyStemnt(static_cast<SwitchStemnt*>(ste)->block,
-                      ft,
-                      vout_counter);
-         break;
-      case ST_ForStemnt: {
-         ModifyStemnt(static_cast<ForStemnt*>(ste)->block,
-                      ft,
-                      vout_counter);
-         break;
-      }
-      case ST_WhileStemnt:
-         ModifyStemnt(static_cast<WhileStemnt*>(ste)->block,
-                      ft,
-                      vout_counter);         
-         break;
-      case ST_DoWhileStemnt:
-         ModifyStemnt(static_cast<DoWhileStemnt*>(ste)->block,
-                      ft,
-                      vout_counter);         
-         break;
-      case ST_Block:
-         TransAndFindBlockPush (static_cast<Block*>(ste),ft,vout_counter);
-         break;
-      default:
-         break;
-      }
-
-}
- 
-void TransAndFindBlockPush (Block * b, FunctionType * ft, Decl * vout_counter){
-   if (!b)
-      return;
-   Statement * ste;
-   TransformBlockStemnt(b,ft,vout_counter);
-   for (ste=b->head;ste;ste=ste->next) {
-      ModifyStemnt(ste,ft,vout_counter);
-   }   
+      return newstemnt;
 }
 FunctionDef* TransformVoutPush(FunctionDef*fd) {
    VoutFunctionType::iterator func
@@ -260,8 +201,9 @@ FunctionDef* TransformVoutPush(FunctionDef*fd) {
    if (func==voutFunctions.end())
       return NULL;
    FunctionType * ft = static_cast<FunctionType*>(fd->decl->form);
-   Decl * vout_counter = ft->args[ft->nArgs-1];
-   TransAndFindBlockPush(fd,ft,vout_counter);
+   Decl * vout_counter = findVoutCounter(ft);
+   pushFunctionType = ft;
+   TransformStemnt(fd,&PushToIfStatement);
    Block * MainFunction= new Block(fd->location);
    Statement * tmp=MainFunction->head;
    MainFunction->head=fd->head;

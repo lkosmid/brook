@@ -90,7 +90,8 @@ public:
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
+typedef class Statement * (*fnStemntTransformer) (class Statement * );
+void TransformStemnt (Statement * in, fnStemntTransformer cb);
 class Project
 {
   public:
