@@ -1,0 +1,169 @@
+/***************************************************************************
+  Parallel Bitonic Sort
+
+  Sorts ARRAYSIZE numbers in O(ARRAYSIZE * lg^2(ARRAYSIZE) ) time.
+  ARRAYSIZE should be a power of two
+
+  A good explaination of the parallel sorting algorithm can be found at:
+  http://www.iti.fh-flensburg.de/lang/algorithmen/sortieren/bitonic/bitonicen.htm
+
+****************************************************************************/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+
+kernel void calculateDividedIndex(float4 index, 
+                                  float modulus, 
+                                  float length, 
+                                  out float2 newindex<>){
+   float epsilon=1.0f/32.0f;
+   //this is needed because the division may result in
+   // loss of accuracy.  We know that for a 2048 texture the mantissa holds 
+   // 1/32 precision
+   newindex=float2(index.x,index.y);
+   newindex/=modulus;
+   newindex.x=floor(fmod(newindex.x+frac(newindex.y)*length+epsilon,length));
+   newindex.y=floor(newindex.y+epsilon);
+
+}
+kernel void calculateIndexModulus (float4 index, 
+                                   float modulus,
+                                   float mod, 
+                                   float offset,
+                                   float lengthmodmodulus, 
+                                   out float which <>) {
+   which= floor(fmod(round(index.y*lengthmodmodulus 
+                + fmod(index.x,mod)),
+	               modulus)-offset);
+}
+
+kernel void getIndexAt(float4 inputindex,
+                       float shiftRight,
+                       float2 maxvalue,
+                       out float2 outputindex<>) {
+   float2 index;
+   index.x=inputindex.x+shiftRight;
+   index.y=inputindex.y+floor(index.x/maxvalue.x);
+   index.x=fmod(index.x,maxvalue.x);
+   if (index.x<0)
+      index.x+=maxvalue.x;//only necessary if shiftRight<0
+   outputindex=index;
+   //   printf(maxvalue.x,maxvalue.y,outputindex.x,outputindex.y);
+}
+kernel void valueAt(float value[][],
+                    float2 index,
+                    out float output<>,
+                    float2 maxvalue,
+                    float nothing) {
+   if (index.y>=maxvalue.y||index.y<0)
+      output = nothing;
+   else 
+      output = value[index];
+}
+
+// Note: the bitonic sort kernel is written for clarity as an
+// example, not for optimal GPU performance.
+// Note2: we pass in twoOffset rather than calculating 2*offset
+// in the kernel to avoid an apparent code-generation bug in fxc
+kernel void bitonic(float input[][], out float output<>, float stageWidth, float offset, float twoOffset,float2 maxvalue) {
+
+  float2 idx1=indexof(output),idx2;
+  float idx;      
+  float sign, dir;
+  float min, max;
+  idx=idx1.x+maxvalue.x*idx1.y;
+  // either compared with element above or below 
+  sign = ( fmod(idx, twoOffset) < offset) ? 1.0 : -1.0;
+
+  // "arrow" direction in the bitonic search algorithm  (see above reference)
+  dir =  ( fmod( floor(idx/stageWidth), 2) == 0) ? 1.0 : -1.0;
+
+  // comparing elements idx1 and idx2
+  getIndexAt(indexof(output),sign*offset,maxvalue,idx2);
+
+  min = (input[idx1] < input[idx2]) ? input[idx1] : input[idx2];
+  max = (input[idx1] > input[idx2]) ? input[idx1] : input[idx2];
+
+  output = (sign == dir) ? min : max;  
+}
+
+
+
+int main(int argc, char ** argv) {
+
+  int i;
+  int lg_arraySize;
+  int flip = 0;
+  int stage, step;
+  float segWidth, offset;
+  float* array;
+  int wid = argc>1?atoi(argv[1]):256;
+  int hei = argc>2?atoi(argv[2]):wid;
+  float sorted1Strm<hei,wid>;
+  float sorted2Strm<hei,wid>;
+  int ARRAYSIZE=hei*wid;
+  float2 maxvalue;
+  maxvalue.x=wid;maxvalue.y=hei;
+  array = (float*)malloc(sizeof(float) * ARRAYSIZE);
+  
+  // compute lg(ArraySize)
+  lg_arraySize = 0;
+  for (i=ARRAYSIZE>>1; i; lg_arraySize++)
+    i = i >> 1;
+
+  srand(time(NULL));
+
+  // initialize list of ARRAYSIZE random numbers
+  for (i=0; i<ARRAYSIZE; i++)
+    array[i] = (float)(rand() % 100);
+
+
+  printf("N = %d  (requires lg_N=%d stages)\n", ARRAYSIZE, lg_arraySize);
+
+  printf("Original list:\n");
+  for (i=0;i<ARRAYSIZE;i++)
+    printf("%3.2f ", array[i]);
+  printf("\n\n");
+
+  streamRead(sorted1Strm, array);
+
+  // lg(ARRAYSIZE) stages
+  for (stage=1; stage<=lg_arraySize; stage++) {
+
+    // width of each sorted segment to be sorted in parallel (2, 4, 8, ...)
+    segWidth = (float)pow(2.0f, stage);  
+
+    for (step=1; step<=stage; step++) {
+
+      // offset = (stageWidth/2, stageWidth/4, ... , 2, 1)
+      offset = (float)pow(2.0f, stage-step);  
+
+      // two buffers required since non-sequential gather is performed from src buffer each step.
+      // flip src and target streams each iteration
+      if (!flip)
+        bitonic(sorted1Strm, sorted2Strm, segWidth, offset, 2*offset,maxvalue);
+      else
+        bitonic(sorted2Strm, sorted1Strm, segWidth, offset, 2*offset,maxvalue);
+
+      flip = (flip) ? 0 : 1;
+    }
+  }
+
+  // want to write out the last stream used as on output
+  if (flip)
+    streamWrite(sorted2Strm, array);
+  else
+    streamWrite(sorted1Strm, array);
+  
+  printf("Sorted list:\n");
+  for (i=0;i<ARRAYSIZE;i++)
+    printf("%3.2f ", array[i]);
+  printf("\n");
+
+  free(array);
+
+	return 0;
+}
