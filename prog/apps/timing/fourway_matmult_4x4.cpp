@@ -326,13 +326,13 @@ static void  runTest(int  inSize, int  inIterations, int  *outTime, float  *outF
   ::brook::stream c(::brook::getStreamType(( matrix4  *)0), inSize , inSize,-1);
   matrix4  *data;
   int  i;
-  int64  startTime;
-  int64  stopTime;
+  int  startTime;
+  int  stopTime;
   int  elapsed;
 
   data = (matrix4 *) (malloc(inSize * inSize * sizeof(matrix4 ) ));
   floatFill((float *) (data),inSize * inSize * 4,1.000000f);
-  startTime = GetTime();
+  startTime = GetTimeMillis();
   streamRead(a,data);
   streamRead(b,data);
   for (i = 0; i < inIterations; i++)
@@ -341,12 +341,12 @@ static void  runTest(int  inSize, int  inIterations, int  *outTime, float  *outF
   }
 
   streamWrite(c,data);
-  stopTime = GetTime();
+  stopTime = GetTimeMillis();
   elapsed = (int ) (stopTime - startTime);
   *outTime = elapsed;
-  *outFlops = 23.000000f * inIterations * inSize * inSize / (float ) (elapsed);
-  *outInBW = (float)(8*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
-  *outOutBW = (float)(4*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
+  *outFlops = 0.001f * 23.000000f * inIterations * inSize * inSize / (float ) (elapsed);
+  *outInBW = 0.001f * (float)(8*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
+  *outOutBW = 0.001f * (float)(4*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
 }
 
 static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime, float  *outFlops, float* outInBW, float* outOutBW )
@@ -356,13 +356,13 @@ static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime,
   ::brook::stream c(::brook::getStreamType(( matrix4  *)0), inSize , inSize,-1);
   matrix4  *data;
   int  i;
-  int64  startTime;
-  int64  stopTime;
+  int  startTime;
+  int  stopTime;
   int  elapsed;
 
   data = (matrix4 *) (malloc(inSize * inSize * sizeof(matrix4 ) ));
   floatFill((float *) (data),inSize * inSize * 4,1.000000f);
-  startTime = GetTime();
+  startTime = GetTimeMillis();
   streamRead(a,data);
   streamRead(b,data);
   for (i = 0; i < inIterations; i++)
@@ -371,12 +371,12 @@ static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime,
   }
 
   streamWrite(c,data);
-  stopTime = GetTime();
+  stopTime = GetTimeMillis();
   elapsed = (int ) (stopTime - startTime);
   *outTime = elapsed;
-  *outFlops = 23.000000f * inIterations * inSize * inSize / (float ) (elapsed);
-  *outInBW = (float)(8*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
-  *outOutBW = (float)(4*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
+  *outFlops = 0.001f * 23.000000f * inIterations * inSize * inSize / (float ) (elapsed);
+  *outInBW = 0.001f * (float)(8*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
+  *outOutBW = 0.001f * (float)(4*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
 }
 
 void  Matmult4x4_4way_Time(int  inStreamSize)
@@ -391,7 +391,7 @@ void  Matmult4x4_4way_Time(int  inStreamSize)
   printf("matmult4x4 4-way\n");
   printf("iterations = %d\n", MAX_ITER);
   printf("stream size = %d * %d * 4*float4\n",inStreamSize,inStreamSize);
-  printf("time(microseconds) ops(megaflop/s) bandwidth in/out(megabytes/s)\n");
+  printf("time(milliseconds) ops(megaflop/s) bandwidth in/out(megabytes/s)\n");
   printf("%9d  %5.6f %5.6f %5.6f\n",time,flops,inputBandwidth,outputBandwidth);
   printf("\n\n");
 }
@@ -408,7 +408,7 @@ void  Matmult4x4_4wayPretransposed_Time(int  inStreamSize)
   printf("matmult4x4 4-way pretransposed\n");
   printf("iterations = %d\n", MAX_ITER);
   printf("stream size = %d * %d * 4*float4\n",inStreamSize,inStreamSize);
-  printf("time(microseconds) ops(megaflop/s) bandwidth in/out(megabytes/s)\n");
+  printf("time(milliseconds) ops(megaflop/s) bandwidth in/out(megabytes/s)\n");
   printf("%9d  %5.6f %5.6f %5.6f\n",time,flops,inputBandwidth,outputBandwidth);
   printf("\n\n");
 }

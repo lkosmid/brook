@@ -57,6 +57,8 @@ GetTime(void)
    return ((int64) (((double) counter.QuadPart) * cycles_per_usec));
 }
 
+// Tim is evil...
+#pragma comment(lib,"winmm")
 
 unsigned int GetTimeMillis(void) {
   return (unsigned int)timeGetTime();
@@ -119,7 +121,9 @@ main(int argc, char *argv[])
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);
    //Matmult4x4_1way_Time(length);
+   //Matmult4x4_1wayPretransposed_Time(length);
    //Matmult4x4_4way_Time(length);
+   //Matmult4x4_4wayPretransposed_Time(length);
 
    //char c;
    //std::cerr << "Press <ENTER> to exit\n";
