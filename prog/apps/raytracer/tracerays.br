@@ -1,6 +1,7 @@
 #define W 512
 #define H 512
-
+#include <stdio.h>
+#include <stdlib.h>
 typedef struct ray_t{
   float3 o;
   float3 d;

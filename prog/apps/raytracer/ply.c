@@ -1420,7 +1420,6 @@ void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
   char **words;
   int nwords;
   int which_word;
-  FILE *fp = plyfile->fp;
   char *elem_data,*item;
   char *item_ptr;
   int item_size;
@@ -2919,13 +2918,13 @@ typedef struct RuleName {
 } RuleName;
 
 RuleName rule_name_list[] = {
-  AVERAGE_RULE, "avg",
-  RANDOM_RULE, "rnd",
-  MINIMUM_RULE, "max",
-  MAXIMUM_RULE, "min",
-  MAJORITY_RULE, "major",
-  SAME_RULE, "same",
-  -1, "end_marker",
+  {AVERAGE_RULE, "avg"},
+  {RANDOM_RULE, "rnd"},
+  {MINIMUM_RULE, "max"},
+  {MAXIMUM_RULE, "min"},
+  {MAJORITY_RULE, "major"},
+  {SAME_RULE, "same"},
+  {-1, "end_marker"}
 };
 
 
@@ -3042,7 +3041,6 @@ Entry:
 
 void start_props_ply (PlyFile *ply, PlyPropRules *rules)
 {
-  PlyElement *elem = rules->elem;
 
   /* save pointer to the rules in the PLY object */
   ply->current_rules = rules;
