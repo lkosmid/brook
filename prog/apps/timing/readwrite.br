@@ -171,7 +171,7 @@ ReadWrite1D_Time(int maxLength)
    ReadWriteNOP(s, o);
 
    printf("(* ReadWrite1D: max length %d *)\n"
-          "(* length\t usecs\t\tMB/sec *)\n", maxLength);
+          "(* length\t usecs\t\tMFloats/sec *)\n", maxLength);
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
       ReadWrite1D("RW1D", lengths[i]);
    }
@@ -190,7 +190,7 @@ ReadWrite2D_Time(int maxLength)
    ReadWriteNOP(s, o);
 
    printf("(* ReadWrite2D: max length %d *)\n"
-          "(* length\t usecs\t\tMB/sec *)\n", maxLength);
+          "(* length\t usecs\t\tMFloats/sec *)\n", maxLength);
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
       ReadWrite2D("RW2D", lengths[i]);
    }
