@@ -16,9 +16,7 @@ namespace brook{
     Stream * CPURunTime::CreateStream(
       int fieldCount, const __BRTStreamType fieldTypes[],
       int dims, const int extents[]) {
-      assert(fieldCount == 1);
-      __BRTStreamType type = fieldTypes[0];
-	    return new CPUStream(type,dims,extents);
+	    return new CPUStream(fieldCount, fieldTypes,dims,extents);
     }
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

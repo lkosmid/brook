@@ -9,26 +9,14 @@
 using std::map;
 using std::string;
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-static unsigned int knownTypeSize (__BRTStreamType type) {
-   switch (type) {
-   case __BRTFLOAT2:
-      return sizeof(float2);
-   case __BRTFLOAT3:
-      return sizeof(float3);
-   case __BRTFLOAT4:
-      return sizeof(float4);
-   default:
-      return sizeof(float);
-   }
-}
-
 
 namespace brook{
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    CPUStream::CPUStream(__BRTStreamType type, int dims, const int extents[])
-       : elementType(type){
-       
+    CPUStream::CPUStream(  int inFieldCount, 
+                           const __BRTStreamType* inFieldTypes,
+                           int dims,
+                           const int extents[]){
+       elementType.insert(elementType.begin(),inFieldTypes,inFieldTypes+inFieldCount);
 	this->extents = (unsigned int *)malloc(dims*sizeof(unsigned int));
         this->dims = dims;
 	totalsize=1;
@@ -36,11 +24,12 @@ namespace brook{
 	    this->extents[i]=extents[i];
 	    totalsize*=extents[i];
 	}
-	stride=knownTypeSize(type);
+	stride=getElementSize();
 	if (stride) {
 	    data = malloc(stride*totalsize);
+            //std::cerr << "Mallocing "<<stride<< "*"<< totalsize<<std::endl;;
 	}else {
-	    std::cerr<<"Failure to produce stream of type "<<type<<std::endl;
+	    std::cerr<<"Failure to produce stream: 0 types."<<std::endl;
 	}
     }
 

@@ -238,13 +238,16 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
    unsigned int dims = s->getDimension();
    const unsigned int * extent = s->getExtents();
    unsigned int tot = s->getTotalSize();
-   assert(s->getFieldCount() == 1);
-   __BRTStreamType typ = s->getIndexedFieldType(0);
+   unsigned int numfloats = 0;
+   unsigned int numfields = s->getFieldCount();
+   for (unsigned int fields= 0; fields<numfields;++fields) {
+     numfloats+=s->getIndexedFieldType(fields);
+   }
    float * data = (float *)s->getData(brook::StreamInterface::READ);
    for (unsigned int i=0;i<tot;++i) {
-      if (typ!=1)printf( "{");
-      for (unsigned int j=0;j<(unsigned int)typ;++j) {
-         float x = data[i*typ+j];
+      if (numfields!=1)printf( "{");
+      for (unsigned int j=0;j<numfields;++j) {
+         float x = data[i*numfields+j];
          if (j!=0) {
             printf(",");
             printf(" ");
@@ -257,7 +260,7 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
             printf ("inf");
       }
       
-      if (typ!=1)
+      if (numfields!=1)
          printf("}");
       else
          printf (" ");

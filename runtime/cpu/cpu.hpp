@@ -129,7 +129,11 @@ namespace brook {
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     class CPUStream: public Stream {
     public:
-	CPUStream (__BRTStreamType type ,int dims, const int extents[]);
+
+	CPUStream (int inFieldCount, 
+                   const __BRTStreamType* inFieldTypes ,
+                   int dims, 
+                   const int extents[]);
 	virtual void Read(const void* inData);
 	virtual void Write(void* outData);
 	virtual void Release();
@@ -140,13 +144,12 @@ namespace brook {
         virtual unsigned int getTotalSize()const{return totalsize;}	
 	virtual ~CPUStream();
 
-  virtual int getFieldCount() const {return 1;}
+  virtual int getFieldCount() const {return (int)elementType.size();}
   virtual __BRTStreamType getIndexedFieldType(int i) const {
-    assert(i == 0);
-    return elementType;
+    return elementType[i];
   }
     protected:
-  __BRTStreamType elementType;
+  std::vector<__BRTStreamType> elementType;
 	void * data;
 	unsigned int * extents;
 	unsigned int dims;		
@@ -165,7 +168,7 @@ namespace brook {
                         float ranges[]);
    public:
     CPUIter(__BRTStreamType type, int dims, int extents[], float ranges[])
-    :Iter(type),stream(type,dims,extents){
+    :Iter(type),stream(1,&type,dims,extents){
       allocateStream(dims,extents,ranges);//now we always have this
     }
     virtual void * getData (unsigned int flags){return stream.getData(flags);}
