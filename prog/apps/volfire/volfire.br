@@ -165,12 +165,12 @@ kernel void fireFP(float  p[],         // permutations texture
     diag = float2(1.0f,1.0f);
     right = float2(1.0f,0.0f);
 	
-    frag_pos = float4( it.x, it.y, z_pos, 1);
-    uv = float2( frag_pos.x, z_pos );
-    uv += uv;
-    uv *= uv;
+    frag_pos = float4( it.x, it.y, z_pos, time);
+    uv = float2( frag_pos.x - 0.5, z_pos - 0.5 );
+    uv = uv+uv;
+    uv = uv*uv;
 
-    v = float4( frag_pos.x, frag_pos.y+(10000.0f - time), z_pos, 1);
+    v = float4( frag_pos.x, frag_pos.y+(10000.0f - time), z_pos, time);
 
     uv = float2( sqrt(uv.x + uv.y), frag_pos.y + sqrt(frag_pos.y) * turb_scale * turbulence4(v * 1.5, p, g));   
 
@@ -190,13 +190,7 @@ void create_noise_lookups()
 	  y = 2 * rand()/(float)RAND_MAX - 1.;
 	  z = 2 * rand()/(float)RAND_MAX - 1.;
 	  w = 2 * rand()/(float)RAND_MAX - 1.;
-	  
-	  /*float4 v(2 * frand() - 1, 2 * frand() - 1, 2 * frand() - 1, 2 * frand() - 1);
-	  if (v.normalize() < 1)
-	  {
-	       v.get_value(g[i][0], g[i][1], g[i][2], g[i][3]);
-	       ++i;
-	       }*/
+
 	  length = sqrtf( x*x+y*y+z*z+w*w );
 	  g[i][0] = x/length;
 	  g[i][1] = y/length;
@@ -272,7 +266,7 @@ int main(int argc, char* argv[]) {
 	 
 	 for(m=0; m<iters; m++){
 	      
-	      fireFP(p_stream, g_stream, firetex, turbscale, 4*zpos, m*10., it, fire );
+	      fireFP(p_stream, g_stream, firetex, turbscale, zpos, m*2., it, fire );
 	      
 	      streamWrite(fire, outputf);
 	      
@@ -286,13 +280,13 @@ int main(int argc, char* argv[]) {
 	      }
 	      
 	      if(m<10)
-		   sprintf(zeros, "0000");
-	      else if(m<100)
 		   sprintf(zeros, "000");
-	      else if(m<1000)
+	      else if(m<100)
 		   sprintf(zeros, "00");
-	      else if(m<10000)
+	      else if(m<1000)
 		   sprintf(zeros, "0");
+	      else
+		   sprintf(zeros, "\0");
 	      
 	      sprintf(filename, "%s%s%d.ppm", base_file, zeros, m);
 	      outfile = fopen(filename, "wb");
