@@ -173,10 +173,10 @@ public:
     const VALUE &unsafeGetAt (unsigned int i) const{return f[i];}
     VALUE &unsafeGetAt (unsigned int i) {return f[i];}
     typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
-    vec<VALUE,tsize>& cast() {
+    vec<VALUE,tsize>& gather() {
         return *this;
     }
-    const vec<VALUE,tsize>& cast() const{
+    const vec<VALUE,tsize>& gather() const{
         return *this;
     }
     template<class BRT_TYPE> BRT_TYPE castTo() {

@@ -1,3 +1,80 @@
+#ifndef MULTIPLE_ARRAY_BOUNDS_LOOKUPS
+
+template <class VALUE, unsigned int dims, bool copy_data> class __BrtArray {
+	unsigned int extents[dims];
+	VALUE * data;
+	unsigned int getSize() const{
+			unsigned int size=1;
+			for (unsigned int i=0;i<dims;++i) {
+				size*=extents[i];
+			}
+			return size;
+	}
+public:
+	__BrtArray(VALUE * data, const unsigned int *extents) {
+		for (unsigned int i=0;i<dims;++i) {
+			this->extents[i]=extents[i];
+		}		
+		if (!copy_data)
+			this->data =data;
+		else {
+			unsigned int size = getSize();
+			this->data = (VALUE *)malloc(sizeof(VALUE)*size);
+			memcpy (this->data,data,sizeof(VALUE)*size);
+		}
+
+	}
+	__BrtArray& operator = (const __BrtArray<VALUE,dims,copy_data> &c) {
+		for (unsigned int i=0;i<dims;++i) {
+			extents[i]=c.extents[i];
+		}
+		this->data = c.data;
+		if (copy_data) {
+			unsigned int size = getSize();
+			this->data = (VALUE *)malloc(sizeof(VALUE)*size);
+			memcpy(this->data,c.data,sizeof(VALUE)*size);
+		}
+		return *this;
+	}
+	__BrtArray(const __BrtArray <VALUE,dims,copy_data>&c) {
+		*this=c;
+	}
+	~__BrtArray() {
+		if (copy_data)
+			free(this->data);
+	}
+	unsigned int linearaddresscalc (const unsigned int * indices)const {
+		unsigned int total=0;
+		for (unsigned int i=0;i<dims;++i) {
+			total*=extents[i];
+			total+=indices[i];
+		}
+		return total;
+	}
+	const VALUE &get(const unsigned int * indices)const {
+		return data[this->linearaddresscalc(indices)];
+	}
+	VALUE& get (const unsigned int *indices) {
+		return data[this->linearaddresscalc(indices)];
+	}
+   
+	template <class T> int indexOf (const T &index) const{
+           unsigned int total=index.getAt(T::size-1);
+           for (unsigned int i=1;i<T::size&&i<dims;++i) {
+              total*=extents[i];
+              total+=index.getAt(T::size-i-1);
+           }
+           return total;
+	}
+   template <class T> VALUE & operator [] (const T&index) {
+      return data[indexOf(index)];
+   }
+   template <class T> const VALUE & operator [] (const T&index) const{
+      return data[indexOf(index)];
+   }
+};
+
+#else
 template <class VALUE, unsigned int dims, bool copy_data> class __BrtArray;
 
 template <class VALUE, unsigned int dims, bool copy_data> class __ConstXSpecified {
@@ -148,3 +225,4 @@ OPXD(/=)
 OPXD(-=)
 #undef OPXD	
 
+#endif
