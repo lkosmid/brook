@@ -32,6 +32,10 @@ ARBKernel::PushScaleBias(Stream *s) {
 
 void
 ARBKernel::PushShape(Stream *s) {
-   BindParameter(1.0f, 1.0f, 0.0f, 0.0f);
+   if (runtime->arch == ARCH_NV30) {
+      BindParameter(1.0f, 1.0f, 0.0f, 0.0f);
+   } else {
+      BindParameter(1.0f, 1.0f, -0.5f, -0.5f);
+   }
    creg++;
 }
