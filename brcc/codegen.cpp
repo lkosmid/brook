@@ -344,10 +344,34 @@ static bool expandOutputArgumentStructureDecl(std::ostream& shader,
             {
               used = true;
               // it had better be just a floatN
+              shader << "#ifdef FXC\n\t\t";
               shader << "out float4 __output_" << outr;
               shader << " : COLOR" << (outr - inFirstOutput);
               shader << ",\n\t\t";
-              
+              shader << "#else\n\t\t";
+
+              shader << "out float";
+
+              switch(base->typemask) {
+              case BT_Float:
+                break;
+              case BT_Float2:
+                shader << "2";
+                break;
+              case BT_Float3:
+                shader << "3";
+                break;
+              case BT_Float4:
+                shader << "4";
+                break;
+              default:
+                fprintf (stderr, "Unknown output type\n");
+                exit(1);
+              }
+              shader << " : COLOR" << (outr - inFirstOutput);
+              shader << ",\n\t\t";
+              shader << "#endif";
+
               outPass.addOutput( inArgumentIndex, componentIndex );
             }
           componentIndex++;
