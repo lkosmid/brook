@@ -38,6 +38,7 @@ enum __BRTStreamType {
    __BRTFLOAT3=3,
    __BRTFLOAT4=4,
 };
+float getSentinel();
 
 namespace brook {
   class Kernel;
