@@ -109,8 +109,8 @@ RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; o = c*o + s; o = c*o + s; /*o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
+   o = c*o + s; /*o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
@@ -128,19 +128,23 @@ RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
 
 #define I(o, _c, s)     o = o + s
 #define DO_MADs(o, _c, s) \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); /*I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); I(o, _c, s); */
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); /*I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   */
 
 /* static (Leave extern so it's easy to find in with dumpbin) */ void
 RunKernelHardWorkCPU(int streamLength, float4 c, float4 *input, float4 *output)
@@ -150,19 +154,19 @@ RunKernelHardWorkCPU(int streamLength, float4 c, float4 *input, float4 *output)
 
    for (i = 0; i < streamLength * streamLength; i++) {
       ox = input[i].x;
-      DO_MADs(ox, c->x, input[i].x);
+      DO_MADs(ox, c.x, input[i].x);
       output[i].x = ox;
 
       oy = input[i].y;
-      DO_MADs(oy, c->y, input[i].y);
+      DO_MADs(oy, c.y, input[i].y);
       output[i].y = oy;
 
       oz = input[i].z;
-      DO_MADs(oz, c->z, input[i].z);
+      DO_MADs(oz, c.z, input[i].z);
       output[i].z = oz;
 
       ow = input[i].w;
-      DO_MADs(ow, c->w, input[i].w);
+      DO_MADs(ow, c.w, input[i].w);
       output[i].w = ow;
 
    }
@@ -392,7 +396,7 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
    RunKernelBuildData(&data2, streamLength * streamLength);
 
    if (curNEntries != streamLength * streamLength) {
-      RunKernelBuildSummary(streamLength, 1, 0);
+      RunKernelBuildSummary(streamLength, 0, 0);
       UPDATE_CUR_OPS(streamLength * streamLength, data, RunKernelHardWork, s, o);
    }
 
@@ -677,7 +681,8 @@ RunKernel_GPUvsCPU(int minLength)
        * quadratically expensive to keep going).  --Jeremy.
        */
       if (iters > 0 && iters == lastIters) {
-         if (count++ > 10) { i += (numLengths - i) / 2; count = 0; }
+         //if (count++ > 10) { i += (numLengths - i) / 2; count = 0; }
+         if (count++ > 10) { i += 5; count = 0; }
       } else {
          count = 0;
          lastIters = iters;
