@@ -211,6 +211,7 @@ main(int argc, char *argv[])
           * If I didn't mind violating some abstractions, I'd roll my own loop
           * here instead of using the Translation Unit methods.
           */
+         Brook2Cpp_IdentifyIndexOf(tu);
          tu->findStemnt(ConvertToBrtStreams);
          tu->findFunctionDef(ConvertToBrtKernels);
          tu->findFunctionDef(ConvertToBrtScatters);

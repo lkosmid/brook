@@ -137,10 +137,21 @@ BRTKernelDef::printStub(std::ostream& out) const
          out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
       } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
          out << "  k->PushReduce(&" << *fType->args[i]->name;
-         out << ", sizeof(";
-         Symbol name;name.name="";
-         fType->args[i]->form->printType(out,&name,true,0);
-         out <<"));\n";
+         BaseTypeSpec bs= fType->args[i]->form->getBase()->typemask;
+         switch (FloatDimension(bs)){
+         case 2:
+            out <<", __BRTFLOAT2";
+            break;
+         case 3:
+            out <<", __BRTFLOAT3";
+            break;
+         case 4:
+            out <<", __BRTFLOAT4";
+            break;
+         default:
+            out <<", __BRTFLOAT";
+         }
+         out <<");\n";
       } else {
          out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
       }

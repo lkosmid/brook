@@ -242,17 +242,27 @@ Expression *ChangeFirstReduceFunction (Expression * e) {
                   }
                }else if (sym->name.find(functionmodifier)==std::string::npos){
                   std::string tmp = sym->name;
-                  for (unsigned int i=0;i<fc->nArgs();++i) {
+                  unsigned int nOrigArgs=static_cast<FunctionType*>(s->uVarDecl->form)->nArgs;                                 
+                  for (unsigned int i=0;i<nOrigArgs;++i) {
                      if (fc->args[i]->etype==ET_Variable) {
                         Variable * v = static_cast<Variable*>(fc->args[i]);                        
                         if (v->name->entry&&v->name->entry->uVarDecl) {
                            if (v->name->entry->uVarDecl->isReduce()) {
-                              callname->name->name = tmp+functionmodifier;
+                              unsigned int inner=sym->name.find("_cpu_inner");
+                              if (sym->name.find(functionmodifier)==std::string::npos) {
+                                 sym->name = tmp.substr(0,inner)+functionmodifier+tmp.substr(inner);
+                              }
+                              if (functionmodifier.find("combine")!=std::string::npos) {
+                                 Symbol * partial =v->name->dup();
+                                 partial->name=std::string("__partial_")+partial->name;
+                                 
+                                 fc->args.insert(fc->args.begin()+nOrigArgs,new Variable(partial,fc->location));
+                              }
+                              break;
                               // change kernels taking in a reduction
                               // to be the appropriate combine function
                               // other kernels might not even have such a 
                               // construct as they may not be reduce funcs
-                              break;
                            }
                         }
                      }

@@ -359,29 +359,44 @@ std::string whiteout (std::string s) {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void printInnerFunction (std::ostream & out,
-                         std::string name,
+                         std::string fullname,
                          FunctionDef *fDef, 
                          std::vector<PrintCPUArg>&myArgs,
-                         bool shadowOutput) {
+                         bool shadowOutput,
+                         std::string origname) {
    Type * form = fDef->decl->form;
     assert (form->isFunction());
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     std::string myvoid("void  ");
     out << myvoid;//we don't want to automatically print this for it would say "kernel void" which means Nothing
     Symbol enhanced_name;
-    enhanced_name.name = "__"+fDef->decl->name->name + "_cpu_inner";
+    enhanced_name.name = fullname;
     func->printBefore(out,&enhanced_name,0);
     out << " (";
     {for (int i=0;i<func->nArgs;++i) {
         myArgs.push_back(PrintCPUArg(func->args[i],i,shadowOutput));
     }}
     {
+       unsigned int i;
        std::string long_name(whiteout(myvoid+enhanced_name.name+" ("));
-       for (unsigned int i=0;i<myArgs.size();++i) {
+       for (i=0;i<myArgs.size();++i) {
           if (i!=0)
              out << ","<<std::endl<<long_name;
           myArgs[i].printCPU(out,PrintCPUArg::HEADER);
-    }}
+       }
+       fprintf (stderr, "Check %s %d\n",origname.c_str(),FunctionProp[origname].p);
+       if (FunctionProp[origname].p&FP_INDEXOF) {
+          if (i!=0)
+             out << ","<<std::endl<<long_name;
+          out << "const __BrtFloat4 &indexof";
+       }
+       if (FunctionProp[origname].p&FP_LINEARINDEXOF) {
+          if (i!=0)
+             out << ","<<std::endl<<long_name;
+          out << "const __BrtInt1 &linearindexof";
+          
+       }
+    }
     out << ")";    
     fDef->Block::print(out,0);
 }
@@ -397,7 +412,8 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
                         "__"+fDef->decl->name->name+"_cpu_inner",
                         fDef,
                         myArgs,
-                        true);    
+                        true,
+                        this->fDef->decl->name->name);    
     Symbol enhanced_name;
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
     out << "void  ";
@@ -442,7 +458,8 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
                         "__"+fDef->decl->name->name+"_cpu_inner",
                         fDef,
                         myArgs,
-                        false);    
+                        false,
+                        this->fDef->decl->name->name);    
     bool reduceneeded=reduceNeeded(fDef);
     
     if (reduceneeded){
@@ -454,7 +471,8 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
                            "__"+baseCase->decl->name->name+"_cpu_inner",
                            baseCase,
                            temp,
-                           false);
+                           false,
+                           this->fDef->decl->name->name);
        delete baseCase;
     }
    //we don't want to automatically print this for it would say "kernel void" which means Nothing

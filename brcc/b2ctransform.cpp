@@ -2,6 +2,7 @@
 #pragma warning(disable:4786)
 //the above warning disables visual studio's annoying habit of warning when using the standard set lib
 #endif
+
 #include <set>
 #include <fstream>
 #include <string>
@@ -800,6 +801,7 @@ void FindFunctionCall (Statement * s) {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void Brook2Cpp_ConvertKernel(FunctionDef *fDef) {
+    changeFunctionCallForIndexOf(fDef);
     RestoreTypes(fDef);
     fDef->findStemnt(&FindMask);
     RestoreTypes(fDef);
@@ -812,4 +814,5 @@ void Brook2Cpp_ConvertKernel(FunctionDef *fDef) {
     fDef->findStemnt (&FindConstantExpr);
     RestoreTypes(fDef);
     fDef->findStemnt(&FindFunctionCall);
+    RestoreTypes(fDef);
 }
