@@ -3,6 +3,8 @@
 
 #include <brook.hpp>
 
+#include <windows.h>
+
 #define NV30GL_RUNTIME_STRING "nv30gl"
 
 class NV30GLKernel : public __BrookKernel {
@@ -34,6 +36,8 @@ public:
   virtual __BrookStream *CreateStream(const char type[], int dims, int extents[]);
   virtual ~NV30GLRunTime();
 
+private: 
+  HWND hwnd;
 };
 
 #endif

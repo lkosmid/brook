@@ -29,6 +29,7 @@ LDFLAGS   += $(LD_DEBUG_FLAG)
 OBJS      := $(addprefix $(OBJDIR)/, $(FILES))
 OBJS      := $(addsuffix $(OBJSUFFIX), $(OBJS))
 
+
 ifdef STATIC_LIBRARY
 BINARY_NAME := $(STATIC_LIBRARY)
 BINARY   := $(addprefix $(LIBPREFIX), $(STATIC_LIBRARY))
@@ -77,15 +78,22 @@ makedirs:
 .SUFFIXES : $(OBJSUFFIX) .c .cpp .br
 
 $(OBJDIR)/%$(OBJSUFFIX): %.c
+ifndef COMPILER_ECHOS
+	@$(ECHO) $<
+endif
 	$(CC) $(CFLAGS) $(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
+
 $(OBJDIR)/%$(OBJSUFFIX): %.cpp
+ifndef COMPILER_ECHOS
+	@$(ECHO) $<
+endif
 	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
 .br.c:
 	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $<
 
-$(BINDIR)/$(BINARY): $(OBJS) $(ADDITIONAL_DEPENDANCIES)
+$(BINDIR)/$(BINARY):  $(ADDITIONAL_DEPENDANCIES) $(OBJS)
 	@$(ECHO) Building $@
 ifdef STATIC_LIBRARY
 	$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)

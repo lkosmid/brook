@@ -1,5 +1,7 @@
 ##  MS Vis Studio settings
 
+COMPILER_ECHOS   := 1
+
 CC               := cl
 LD               := link
 AR               := lib
@@ -10,7 +12,7 @@ STATIC_LIBSUFFIX := .lib
 BINSUFFIX        := .exe
 
 #CFLAGS           += /nologo /MDd /W1 /O2 /DWIN32
-CFLAGS           += /nologo /MDd /W3 /DWIN32
+CFLAGS           += /nologo /MDd /W3 /DWIN32 /DWINDOWS /EHsc
 C_INCLUDE_FLAG   := /I
 C_DEBUG_FLAG     := /Z7 /Yd /GZ 
 C_STATIC_FLAG    := 

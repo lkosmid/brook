@@ -1,7 +1,20 @@
 #include <nv30gl.hpp>
+#include <brtcommon.hpp>
 
 NV30GLRunTime::NV30GLRunTime() {
-  // XXX: TO DO
+  BrtLog("NV30GLRunTime()");
+
+  // Create a window
+  hwnd = createwindow();
+
+  // Create a window glcontext
+  hglrc_window = createglcontext();
+
+  // Create our floating point workspace
+  hglrc_workspace = createpbuffer();
+
+  
+
 }
 
 __BrookKernel * NV30GLRunTime::LoadKernel(const char*[]) {
