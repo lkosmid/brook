@@ -23,7 +23,7 @@ static int kKnownTypeComponentCounts[] =
 };
 
 DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int extents[])
-  : runtime(runtime)
+  : Stream(type), runtime(runtime)
 {
   DX9Trace("DX9Stream::DX9Stream");
   // XXX: TO DO
@@ -53,7 +53,6 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int e
   }
 
   int i = 0;
-  this->type=type;
   switch (type) {
   case __BRTFLOAT:
      components=1;

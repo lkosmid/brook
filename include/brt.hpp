@@ -46,7 +46,7 @@ namespace brook {
   };
   class Stream {
   public:
-    Stream () {}
+    Stream (__BRTStreamType type) {this->type=type;}
     virtual void Read(const void* inData) = 0;
     virtual void Write(void* outData) = 0;
     virtual void Release() = 0;
