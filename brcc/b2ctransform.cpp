@@ -161,22 +161,91 @@ std::set<Expression *> ArrayBlacklist;//set of items we do not want to change to
 void ArrayBlackmailer(Expression * e) {
 	ArrayBlacklist.insert(e);
 }
+void BlackmailType(Type * t);
+template <class T> void BlackmailT(Type * t) {
+	T * k;
+	k = dynamic_cast<T *>(t);
+	if (k) {
+		BlackmailType(k->subType);
+	}
+}
+void BlackmailType (Type * t) {
+	if (!t)
+		return;
+	BaseType * base = dynamic_cast<BaseType *>(t);
 
-void FindArrayDecl (Statement * s) {
+	if (base) {
+		if (base->typemask&BT_Char) {
+			base->typeName = new Symbol;
+			base->typeName->name = "bool1";
+			base->typemask=BT_UserType;
+		}else if (base->typemask&BT_Float) {
+			base->typeName = new Symbol;
+			base->typeName->name = "float1";
+			base->typemask=BT_UserType;			
+		}else if (base->typemask&BT_Double) {
+			base->typeName = new Symbol;
+			base->typeName->name = "float1";
+			base->typemask=BT_UserType;			
+		}else if (base->typemask&BT_Long||base->typemask&BT_Int) {
+			base->typeName = new Symbol;
+			base->typeName->name = "int1";
+			base->typemask=BT_UserType;			
+		} else if (base->typemask&BT_UserType) {
+			if (base->typeName->name=="int") {
+				base->typeName = new Symbol;
+				base->typeName->name ="int1";
+			}
+		}
+	}
+	ArrayType *at ;
+	if (t->type==TT_Array&&(at = dynamic_cast<ArrayType *>(t))) {
+		at->size->findExpr(ArrayBlackmailer);
+		ArrayBlackmailer(at->size);
+		
+		BlackmailType(at->subType);
+	}
+	BlackmailT<PtrType>(t);
+	BlackmailT<BitFieldType>(t);
+	StreamType * st;
+	if (st = dynamic_cast<StreamType *>(t)) {
+		st->size->findExpr(ArrayBlackmailer);
+		ArrayBlackmailer(st->size);		
+		BlackmailType(st->subType);
+	}
+	FunctionType * ft;
+	if (ft = dynamic_cast<FunctionType *>(t)) {
+		ft->findExpr(ArrayBlackmailer);
+	}
+	
+	
+}
+
+void FindTypesDecl (Statement * s) {
 	DeclStemnt * ds;
 	if ((s->type==ST_TypedefStemnt||s->type==ST_DeclStemnt)&&(ds=dynamic_cast<DeclStemnt*>(s))) {
 		//ds->findExpr(ArrayBlackmailer);
 		for (unsigned int i=0;i<ds->decls.size();++i) {
 			Type * t = ds->decls[i]->form;
-			ArrayType *at ;
-			if (t->type==TT_Array&&(at = dynamic_cast<ArrayType *>(t))) {
-				at->size->findExpr(ArrayBlackmailer);
-				ArrayBlackmailer(at->size);
-			}
+			BlackmailType(t);
 		}
 	}
+	FunctionDef * fd;
+	if (s->isFuncDef() && (fd = dynamic_cast<FunctionDef *>(s))) {
+		BlackmailType(fd->decl->form);
+	}
+	
+}
+FunctionDef * FindFunctionTypes(FunctionDef * fd) {
+		BlackmailType(fd->decl->form);
+		fd->findStemnt(FindTypesDecl);
+		return NULL;
 }
 
+/*FunctionDef * FindTypesFunc (FunctionDef * fun){
+	
+	return NULL;
+	}*/
 
 
 
@@ -213,6 +282,103 @@ class IndexExprConverter{public:
 			ret = new NewIndexExpr (ie->array->dup(),ie->_subscript->dup(),e->location);
 			ret->array->findExpr(ConvertToT<IndexExprConverter>);
 			ret->_subscript->findExpr(ConvertToT<IndexExprConverter>);			
+		}
+		CastExpr * ce;
+		if (e->etype==ET_CastExpr&&(ce=dynamic_cast<CastExpr*>(e))) {
+			BlackmailType(ce->castTo);
+		}
+		return ret;
+	}
+};
+class NewIntConstant:public IntConstant {public:
+	NewIntConstant(long val, const Location &l):IntConstant(val,l){}
+	virtual void print (std::ostream&out) const{
+		out << "int1(";
+		(this)->IntConstant::print(out);
+		out << ")";
+	}
+};
+class NewUIntConstant:public UIntConstant {public:
+	NewUIntConstant(unsigned int val, const Location &l):UIntConstant(val,l){}
+	virtual void print (std::ostream&out) const{
+		out << "int1(";
+		(this)->UIntConstant::print(out);
+		out << ")";
+	}
+};
+class NewCharConstant:public CharConstant {public:
+	NewCharConstant(char val, const Location &l):CharConstant(val,l){}
+	virtual void print (std::ostream&out) const{
+		out << "bool1(";
+		(this)->CharConstant::print(out);
+		out << ")";
+	}
+};
+class NewFloatConstant:public FloatConstant {public:
+	NewFloatConstant(double val, const Location &l):FloatConstant(val,l){}
+	virtual void print (std::ostream&out) const{
+		out << "float1(";
+		(this)->FloatConstant::print(out);
+		out << ")";
+	}
+};
+class NewArrayConstant:public ArrayConstant {public:
+	NewArrayConstant(const Location &l):ArrayConstant(l){}
+	virtual void print (std::ostream&out) const{
+		out << "float"<<items.size()<<"(";
+		for (unsigned int i=0;i<items.size();++i) {
+			items[i]->print(out);
+			if (i!=items.size()-1) {
+				out <<", ";
+			}
+		}
+		out << ")";
+	}
+};
+
+class ConstantExprConverter{public:
+	Expression * operator()(Expression * e) {
+		Constant *con;
+		Constant * ret=NULL;
+		if (e->etype==ET_Constant&&(con=dynamic_cast<Constant*>(e))) {
+			switch (con->ctype) {
+			case CT_Char:
+			{
+				CharConstant * cc = dynamic_cast<CharConstant *>(con);
+				ret = new NewCharConstant(cc->ch,cc->location);
+				break;
+			}
+			case CT_Int:
+			{
+				IntConstant * cc = dynamic_cast<IntConstant *>(con);
+				ret = new NewIntConstant(cc->lng,cc->location);				
+				break;
+			}
+			case CT_UInt:
+			{
+				UIntConstant * cc = dynamic_cast<UIntConstant *>(con);
+				ret = new NewUIntConstant(cc->ulng,cc->location);								
+				break;
+			}
+			case CT_Float:
+			{
+				FloatConstant * cc = dynamic_cast<FloatConstant *>(con);
+				ret = new NewFloatConstant(cc->doub,cc->location);												
+				break;
+			}
+			case CT_Array:
+			{
+				ArrayConstant * ac = dynamic_cast<ArrayConstant *>(con);
+				ArrayConstant *aret=  new NewArrayConstant (ac->location);
+				ret=aret;
+				for (unsigned int i=0;i<ac->items.size();++i){
+					Expression * expr=ac->items[i]->dup();
+					expr->findExpr(ConvertToT<ConstantExprConverter>);
+					aret->addElement(expr);					
+				}
+				break;
+			}
+			}
 		}
 		return ret;
 	}
@@ -312,18 +478,27 @@ void FindQuestionColon (Statement * s) {
 void FindIndexExpr (Statement * s) {
 	s->findExpr(ConvertToT<IndexExprConverter>);
 }
+void FindConstantExpr (Statement * s) {
+	s->findExpr(ConvertToT<ConstantExprConverter>);
+}
 
 bool compileCpp() {
 	Project proj;
 	TransUnit * tu = proj.parse(globals.sourcename,false,NULL,false,NULL,NULL,NULL);
 	if (tu) {
 		std::ofstream out;
-//		tu->findFunctionDef (ConvertToMask);
-		tu->findStemnt (FindArrayDecl);		
+		
+		tu->findStemnt (FindTypesDecl);		
 		tu->findStemnt(FindMask);
+		tu->findStemnt (FindTypesDecl);				
 		tu->findStemnt (FindSwizzle);
+		tu->findStemnt (FindTypesDecl);				
 		tu->findStemnt (FindQuestionColon);
+		tu->findStemnt (FindTypesDecl);				
 		tu->findStemnt (FindIndexExpr);
+		tu->findStemnt (FindTypesDecl);				
+		tu->findStemnt (FindConstantExpr);
+		tu->findStemnt (FindTypesDecl);				
 
 
 		std::string s (globals.coutputname);
