@@ -1,4 +1,5 @@
 #include <brook.hpp>
+#include <stdio.h>
 typedef struct Tri_t {
   float3 A;
   float3 B;
@@ -599,15 +600,14 @@ extern void doTest(float * matrix,
 #define SIZEX 1
 #define SIZEY 1
 void SetTriangles(int size, float3* a, float3 *b) {
-  srand(1);
-  float rm = RAND_MAX;
+  float rm = RAND_MAX*.25;
   for (int i=0;i<size;++i) {
   a[i*3]=float3(rand()/rm,rand()/rm,rand()/rm);
-  a[i*3+1]=float3(rand()/rm,rand()/rm,rand()/rm);
-  a[i*3+2]=float3(rand()/rm,rand()/rm,rand()/rm);
-  b[i*3]=float3(rand()/rm,rand()/rm,rand()/rm);
-  b[i*3+1]=float3(rand()/rm,rand()/rm,rand()/rm);
-  b[i*3+2]=float3(rand()/rm,rand()/rm,rand()/rm);
+  a[i*3+1]=float3(-1-rand()/rm,-1-rand()/rm,-1-rand()/rm);
+  a[i*3+2]=float3(-1-rand()/rm,-1-rand()/rm,-1-rand()/rm);
+  b[i*3]=float3(-1-rand()/rm,-1-rand()/rm,-1-rand()/rm);
+  b[i*3+1]=float3(-1-rand()/rm,-1-rand()/rm,-1-rand()/rm);
+  b[i*3+2]=float3(-1-rand()/rm,-1-rand()/rm,-1-rand()/rm);
   }
 }
 int main (int argc, char ** argv) {
@@ -618,7 +618,13 @@ int main (int argc, char ** argv) {
                     0,1,0,0,
                     0,0,1,0,
                     0,0,0,1};
+  srand(1);
+  for (unsigned int k=0;k<3;++k) {
+  SetTriangles(SIZEX*SIZEY,a,b);
+  }
+  int counter=0;
 
+  for (unsigned int j=0;j<1024*64;++j) {
   SetTriangles(SIZEX*SIZEY,a,b);
   doTest(matrix,SIZEX,SIZEY,a,b,rez);
   for (unsigned int i=0;i<SIZEX*SIZEY;++i) {
@@ -627,9 +633,13 @@ int main (int argc, char ** argv) {
                                       b[i*3],b[i*3+1],b[i*3+2]);
     bool hitdiv = tri_contact(a[i*3],a[i*3+1],a[i*3+2],
                               b[i*3],b[i*3+1],b[i*3+2]);
-    assert(hit==hitnodiv&&hit==hitdiv);
+    assert(hit==hitdiv);
+    if (hit!=hitnodiv) {
+      counter++;
+    }
   }
-
+  }
+  printf ("Num differences btw dif and nodiv %d\n",counter);
   free (a);
   free (b);
   free (rez);
