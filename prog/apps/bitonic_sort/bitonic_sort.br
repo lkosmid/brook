@@ -88,12 +88,12 @@ int main() {
   for (stage=1; stage<=lg_arraySize; stage++) {
 
     // width of each sorted segment to be sorted in parallel (2, 4, 8, ...)
-    segWidth = (float)pow(2, stage);  
+    segWidth = (float)pow(2.0f, stage);  
 
     for (step=1; step<=stage; step++) {
 
       // offset = (stageWidth/2, stageWidth/4, ... , 2, 1)
-      offset = (float)pow(2, stage-step);  
+      offset = (float)pow(2.0f, stage-step);  
 
       // two buffers required since non-sequential gather is performed from src buffer each step.
       // flip src and target streams each iteration
