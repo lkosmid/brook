@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "rapcol.h"
 #include <vector>
-#include <brook.hpp>
+#include <brook/brook.hpp>
 using std::vector;
 void LoadPly (const char * file,vector<Tri> &ret) {
   float ver;char mchar;

@@ -3,7 +3,7 @@
 
 #include "gpu.hpp"
 
-#include <kerneldesc.hpp>
+#include <brook/kerneldesc.hpp>
 #include <string>
 
 namespace brook

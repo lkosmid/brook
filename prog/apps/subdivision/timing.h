@@ -1,4 +1,4 @@
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #ifdef _WIN32
 #include <windows.h>
 #endif

@@ -7,8 +7,8 @@ extern "C" {
 #include <assert.h>
 };
 
-#include "kerneldesc.hpp"
-#include <brtvector.hpp>
+#include <brook/kerneldesc.hpp>
+#include <brook/brtvector.hpp>
 
 typedef struct float2 {
   float2(float _x, float _y) { x = _x; y = _y; }

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "subdiv.h"
 #include <vector>
-#include <brook.hpp>
+#include <brook/brook.hpp>
 using std::vector;
 void LoadPly (const char * file,vector<STri> &ret) {
   int i;

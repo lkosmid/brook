@@ -34,7 +34,7 @@ inline float ABS(float x) {
   return x>0?x:-x;
 }
 */
-#include <brook.hpp>
+#include <brook/brook.hpp>
 class csVector3
 {
 public:

@@ -2,7 +2,7 @@
 #define _BROOK_CPU_HPP
 #include <vector>
 #include "../runtime.hpp"
-#include "brtarray.hpp"
+#include <brook/brtarray.hpp>
 
 #ifdef _WIN32
 #define THREADRETURNTYPE unsigned long 

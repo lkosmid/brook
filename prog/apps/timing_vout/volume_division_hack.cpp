@@ -4,7 +4,7 @@
 // BRCC Compiled on: Mar 29 2004 17:20:37
 ////////////////////////////////////////////
 
-#include <brook.hpp>
+#include <brook/brook.hpp>
 
 ::brook::stream & quickAllocStream (const __BRTStreamType *t, int wid, int len, int gar);
 

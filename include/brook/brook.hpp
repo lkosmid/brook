@@ -7,11 +7,11 @@
 // some predefined operator< bugs in stl_relops.h (included by vector) -- they should be inside a namespace, but namespaces don't work well in gcc 2.95.
 #endif
 #include <vector>
-#include "brt.hpp"
-#include "brtvector.hpp"
-#include "brtintrinsic.hpp"
-#include "brtarray.hpp"
-#include "kerneldesc.hpp"
+#include <brook/brt.hpp>
+#include <brook/brtvector.hpp>
+#include <brook/brtintrinsic.hpp>
+#include <brook/brtarray.hpp>
+#include <brook/kerneldesc.hpp>
 
 //  We are going to skip these for the simpler cpu 
 //  versions

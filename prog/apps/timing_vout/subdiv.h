@@ -1,4 +1,4 @@
-#include <brook.hpp>
+#include <brook/brook.hpp>
 
 typedef struct STri_t{
    float4 A; // the last value of A indicates whether the edge AB is small

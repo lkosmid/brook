@@ -3,7 +3,7 @@
 #include "cpu.hpp"
 #include <stdio.h>
 
-#include "brtarray.hpp"
+#include <brook/brtarray.hpp>
 
 
 

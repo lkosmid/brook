@@ -4,7 +4,7 @@
 // BRCC Compiled on: Apr 22 2004 11:27:18
 ////////////////////////////////////////////
 
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #include "main.h"
 
 

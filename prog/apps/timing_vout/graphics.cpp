@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <brook.hpp>
+#include <brook/brook.hpp>
 int isdebug=1;
 int linecount=0;
 void DrawLine (char * data, float x1, float y1, float x2, float y2, int width) {

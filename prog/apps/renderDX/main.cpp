@@ -6,7 +6,7 @@
 #include "core.hpp"
 #include "renderDX.hpp"
 
-#include <brook.hpp>
+#include <brook/brook.hpp>
 
 int main( int argc, char** argv )
 {

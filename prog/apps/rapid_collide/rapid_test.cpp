@@ -1,4 +1,4 @@
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #include <stdio.h>
 float ABS (float x) {
   return x>=0?x:-x;

@@ -18,7 +18,7 @@
 
 #include "cpu/cpu.hpp"
 
-#include "brtscatterintrinsic.hpp"
+#include <brook/brtscatterintrinsic.hpp>
 __StreamScatterAssign STREAM_SCATTER_ASSIGN;
 __StreamScatterAdd    STREAM_SCATTER_ADD;
 __StreamScatterMul    STREAM_SCATTER_MUL;

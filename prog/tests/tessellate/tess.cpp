@@ -3,7 +3,7 @@
 #include <float.h>
 #define TIMING_DEF
 #include "timing.h"
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #include "graphics.h"
 #include <stdio.h>
 using std::vector;

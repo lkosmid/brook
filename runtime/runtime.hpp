@@ -2,7 +2,7 @@
 #ifndef __RUNTIME_HPP__
 #define __RUNTIME_HPP__
 
-#include <brt.hpp>
+#include <brook/brt.hpp>
 
 namespace brook {
 

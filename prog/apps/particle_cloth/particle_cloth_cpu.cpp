@@ -7,7 +7,7 @@
 // Tests use of structures for input parameters.
 
 #include <stdio.h>
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #include <timing.hpp>
 
 typedef struct CPUDynamicParticle_t {

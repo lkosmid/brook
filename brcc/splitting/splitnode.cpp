@@ -1,7 +1,7 @@
 // splitting.cpp
 #include "splitting.h"
 
-#include <kerneldesc.hpp>
+#include <brook/kerneldesc.hpp>
 
 #include <sstream>
 #include <set>

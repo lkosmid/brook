@@ -1,5 +1,5 @@
 #include "rapcol.h"
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #include <stdio.h>
 #ifdef _WIN32
 #include <windows.h>

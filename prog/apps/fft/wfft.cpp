@@ -1,7 +1,7 @@
 #ifdef _WIN32
 #pragma warning(disable:4786)
 #endif
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #include <map>
 #include <stdio.h>
 class DualInt {

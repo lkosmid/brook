@@ -4,7 +4,7 @@
 // BRCC Compiled on: Mar 29 2004 17:20:37
 ////////////////////////////////////////////
 
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #include "timing.h"
 #include <stdio.h>
 

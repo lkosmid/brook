@@ -365,7 +365,7 @@ operator<<(std::ostream& out, const TransUnit& tu)
    {
      out << "#define BROOK_ENABLE_ADDRESS_TRANSLATION 1" << std::endl;
    }
-   out << "#include <brook.hpp>" << std::endl;
+   out << "#include <brook/brook.hpp>" << std::endl;
     for (stemnt=tu.head; stemnt; stemnt=stemnt->next)
 	{
 		if (inInclude > 0)

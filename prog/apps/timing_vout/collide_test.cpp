@@ -1,4 +1,4 @@
-#include <brook.hpp>
+#include <brook/brook.hpp>
 #include <stdio.h>
 #include "rapcol.h"
 #include "prapid.h"

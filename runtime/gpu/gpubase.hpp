@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include <brt.hpp>
-#include <kerneldesc.hpp>
+#include <brook/brt.hpp>
+#include <brook/kerneldesc.hpp>
 #include "../runtime.hpp"
 
 #include "../profiler.hpp"
