@@ -226,7 +226,8 @@ NV30GLStream::GLWriteData (const void *data) {
             float *src = p+stride[i];
             float *dst = t;
             for (unsigned int j=0; j<width*height; j++) {
-               for (unsigned int k=0; k<ncomp[i]; k++)
+               unsigned int k=0;
+               for (k=0; k<ncomp[i]; k++)
                   *dst++ = *src++;
                src += elemsize-k;
             }
