@@ -99,7 +99,7 @@ namespace brook
     {
     public:
       gpu_technique_desc()
-        : _reductionFactor(-1), _outputAddressTranslation(false), _inputAddressTranslation(false)
+        : _reductionFactor(-1), _outputAddressTranslation(false), _inputAddressTranslation(false), _temporaryCount(0)
       {}
 
       gpu_technique_desc& pass( const gpu_pass_desc& p ) {
