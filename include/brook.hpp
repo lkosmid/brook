@@ -5,6 +5,7 @@
 #include <vector>
 #include "brt.hpp"
 #include "brtvector.hpp"
+#include "brtintrinsic.hpp"
 #include "brtarray.hpp"
 #include "brtscatter.hpp"
 #include "brtgather.hpp"

@@ -40,8 +40,18 @@ template <> inline vec<float,4> singlequestioncolon (const vec<float,4> &a,
                                                      const vec<float,4> &b,
                                                      const vec<float,4> &c);
 
-
-
+inline float step_float (float a, float x){
+   return (float)((x>=a)?1.0f:0.0f);
+}
+inline float max_float(float x, float y) {
+   return (float)(x>y?x:y);
+}
+inline float min_float(float x, float y) {
+   return (float)(x<y?x:y);
+}
+inline float ldexp_float(float x, float y) {
+   return (float)ldexp(x,(int)y);
+}
 template <class T> class GetValueOf {public:
     typedef typename T::TYPE type;
 };
@@ -200,6 +210,21 @@ public:
 					   getAt(2),
 					   getAt(3));
     }
+   vec<VALUE,1> any() const{
+      return vec<VALUE,1>(getAt(0)!=0.0f||getAt(1)!=0.0f||getAt(2)!=0.0f||getAt(3)!=0.0f);
+   }
+   vec<VALUE,1> all() const {
+      return vec<VALUE,1>(getAt(0)!=0.0f&&getAt(1)!=0.0f&&getAt(2)!=0.0f&&getAt(3)!=0.0f);
+   }
+   vec<VALUE,1> length() const {
+      unsigned int i;
+      VALUE tot = unsafeGetAt(0);
+      tot*=tot;
+      for (i=1;i<tsize;++i) {
+         tot+=unsafeGetAt(i)*unsafeGetAt(i);
+      }
+      return vec<VALUE,1>((VALUE)sqrt(tot));
+   }
 #define BROOK_UNARY_OP(op) vec<VALUE,tsize> operator op ()const { \
       return vec<VALUE, tsize > (op getAt(0),  \
                                  op getAt(1),  \
@@ -346,6 +371,53 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+template <class BRT_TYPE>
+    vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,VALUE>::type,1> 
+    dot (const BRT_TYPE &b) const{
+      return vec<INTERNALTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<BRT_TYPE>(b,0) + 
+                                     getAt(1) * GetAt<BRT_TYPE>(b,1) + 
+                                     getAt(2) * GetAt<BRT_TYPE>(b,2) + 
+                                     getAt(3) * GetAt<BRT_TYPE>(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<BRT_TYPE>(b,0) + 
+                                      getAt(1) * GetAt<BRT_TYPE>(b,1) +
+                                      getAt(2) * GetAt<BRT_TYPE>(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<BRT_TYPE>(b,0) + 
+                                      getAt(1) * GetAt<BRT_TYPE>(b,1)):
+                 getAt(0) * GetAt<BRT_TYPE>(b,0));
+                 
+    }
+
+template <class BRT_TYPE>
+    vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,VALUE>::type,1> 
+    distance (const BRT_TYPE &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER) template <class BRT_TYPE>          \
+    vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const BRT_TYPE &b)const{ \
+      return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<BRT_TYPE>(b,0)), \
+                 subop(getAt(1) , GetAt<BRT_TYPE>(b,1)), \
+                 subop(getAt(2) , GetAt<BRT_TYPE>(b,2)), \
+                 subop(getAt(3) , GetAt<BRT_TYPE>(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
