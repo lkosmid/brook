@@ -1,0 +1,24 @@
+// read_write.br
+// A minimal regression test to confirm that
+// data written to a stream with streamRead
+// can be retrieved with streamWrite.
+
+#include <stdio.h>
+typedef struct traverser_t {
+  float4 index;//.xy is index into the aTree  .zw is index into bTree
+  float3 Translation; 
+  float3 Rotationx;
+  float3 Rotationy;
+  float3 Rotationz;
+}Traverser;
+
+int main() {
+	float4 a< 1024,512 >;
+        float4 b< 1024,512 >;
+        float2 c <1024,1>;
+        float2 d <1024,1>;
+        float2 e <1,512>;
+        float2 f <1,512>;
+	
+	return 0;
+}
