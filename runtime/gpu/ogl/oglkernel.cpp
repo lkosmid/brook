@@ -165,9 +165,9 @@ OGLContext::get1DInterpolant( const float4 &start,
                               GPUInterpolant &interpolant) const {
 
   if (w == 1) {
-    interpolant.v1 = start;
-    interpolant.v2 = start;
-    interpolant.v3 = start;
+    interpolant.vertices[0] = start;
+    interpolant.vertices[1] = start;
+    interpolant.vertices[2] = start;
     return;
   }
 
@@ -206,9 +206,9 @@ OGLContext::get1DInterpolant( const float4 &start,
   f2.z = (2*z2-z1) + shiftz;
   f2.w = (2*w2-w1) + shiftw;
 
-  interpolant.v1 = f1;
-  interpolant.v2 = f2; 
-  interpolant.v3 = f1;
+  interpolant.vertices[0] = f1;
+  interpolant.vertices[1] = f2; 
+  interpolant.vertices[2] = f1;
 }
 
 
@@ -227,9 +227,9 @@ OGLContext::get2DInterpolant( const float2 &start,
   
   if (w==1 && h==1) {
     float4 v (start.x, start.y, 0.0f, 1.0f);
-    interpolant.v1 = v;
-    interpolant.v2 = v;
-    interpolant.v3 = v;
+    interpolant.vertices[0] = v;
+    interpolant.vertices[1] = v;
+    interpolant.vertices[2] = v;
     return;
   }
 
@@ -247,22 +247,22 @@ OGLContext::get2DInterpolant( const float2 &start,
   f2.y = (2*y2-y1) + shifty;
 
   if (w==1) {
-    interpolant.v1 = float4(f1.x, f1.y, 0.0f, 1.0f);
-    interpolant.v2 = float4(f2.x, f1.y, 0.0f, 1.0f);
-    interpolant.v3 = interpolant.v1;
+    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
+    interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
+    interpolant.vertices[2] = interpolant.vertices[0];
     return;
   }
 
   if (h==1) {
-    interpolant.v1 = float4(f1.x, f1.y, 0.0f, 1.0f);
-    interpolant.v2 = interpolant.v1;
-    interpolant.v3 = float4(f1.x, f2.y, 0.0f, 1.0f);
+    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
+    interpolant.vertices[1] = interpolant.vertices[0];
+    interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
     return;
   }
 
-  interpolant.v1 = float4(f1.x, f1.y, 0.0f, 1.0f);
-  interpolant.v2 = float4(f2.x, f1.y, 0.0f, 1.0f);
-  interpolant.v3 = float4(f1.x, f2.y, 0.0f, 1.0f);
+  interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
+  interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
+  interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
 }
 
 
@@ -286,14 +286,14 @@ OGLContext::getStreamOutputRegion( const TextureHandle texture,
   
   const OGLTexture *oglTexture = (OGLTexture *) texture;
 
-  region.v1.x = 0.0f;
-  region.v1.y = 0.0f;
+  region.vertices[0].x = 0.0f;
+  region.vertices[0].y = 0.0f;
 
-  region.v2.x = oglTexture->width()*2.0f;
-  region.v2.y = 0.0f;
+  region.vertices[1].x = oglTexture->width()*2.0f;
+  region.vertices[1].y = 0.0f;
 
-  region.v3.x = 0.0f;
-  region.v3.y = oglTexture->height()*2.0f;
+  region.vertices[2].x = 0.0f;
+  region.vertices[2].y = oglTexture->height()*2.0f;
 }
 
 void 
@@ -318,15 +318,15 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   glBegin(GL_TRIANGLES);
   for (i=0; i<numInterpolants; i++) 
     glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
-                          (GLfloat *) &(interpolants[i].v1));
+                          (GLfloat *) &(interpolants[i].vertices[0]));
   glVertex2f(-1.0f, -1.0f);
   for (i=0; i<numInterpolants; i++) 
     glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
-                          (GLfloat *) &(interpolants[i].v2));
+                          (GLfloat *) &(interpolants[i].vertices[1]));
   glVertex2f(3.0f, 1.0f);
   for (i=0; i<numInterpolants; i++) 
     glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
-                          (GLfloat *) &(interpolants[i].v3));
+                          (GLfloat *) &(interpolants[i].vertices[2]));
   glVertex2f(-1.0f, 3.0f);
   glEnd();
 

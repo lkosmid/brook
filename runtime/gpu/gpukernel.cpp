@@ -485,7 +485,7 @@ namespace brook
                                              size_t inIndex, 
                                              size_t inComponent )
   {
-    return inKernel->_streamArguments[ inIndex ]->
+    return inKernel->_outputArguments[ inIndex ]->
       getIndexedFieldTexture( inComponent );
   }
 
