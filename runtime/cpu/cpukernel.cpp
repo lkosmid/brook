@@ -6,7 +6,7 @@ namespace brook{
     CPUKernel::CPUKernel(const void * source []){
         const char ** src= (const char**)(source);
 	for (unsigned int i=0;;i+=2) {
-	    if (src[i]==NULL||src[i+1]==NULL){
+	    if (src[i]==NULL){
 		func=&nothing;
 		std::cerr<<"CPUKernel failure - no CPU program strnig found."<<std::endl;		
 		break;

@@ -42,7 +42,7 @@ namespace brook {
 	unsigned int totalsize;
 	virtual ~CPUStream();
     };
-    class CPURunTime: public RunTime {
+    class CPURunTime: public brook::RunTime {
     public:
 	CPURunTime();
 	virtual Kernel * CreateKernel(const void*[]);

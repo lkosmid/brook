@@ -24,6 +24,21 @@ static map<string,int> getKnownTypes() {
     return ret;
 }
 static map<string,int> knownTypes = getKnownTypes();
+
+std::string noWhiteSpace (std::string in) {
+	unsigned int j=0;
+	for (unsigned int i=0;i<in.length();++i) {
+		in[j]=in[i];
+		if (in[i]==' '||in[i]=='\t'||in[i]=='\n'||in[i]=='\r')
+			;
+		else
+			j++;
+	}
+	return in.substr(0,j);												
+}
+int knownType (std::string typ) {
+	return knownTypes[noWhiteSpace(typ)];
+}
 namespace brook{
     CPUStream::CPUStream(const char type[], int dims, int extents[]){
 	this->extents = (unsigned int *)malloc(dims*sizeof(unsigned int));
@@ -32,7 +47,7 @@ namespace brook{
 	    this->extents[i]=extents[i];
 	    totalsize*=extents[i];
 	}
-	stride=knownTypes[type];
+	stride=knownType(type);
 	if (stride) {
 	    data = malloc(stride*totalsize);
 	}else {
