@@ -1,5 +1,13 @@
 #include <stdio.h>
 
+scatter void mymult(float a <>, out float b <> ) {
+   b*=a;
+}
+scatter void mygets(float a <>, out float b<> , float c) {
+   b=a*c;
+}
+
+
 int main () {
 
   float a<10, 10>;
@@ -32,9 +40,9 @@ int main () {
   streamRead(b, data_b);
   streamRead(d, data_d);
   streamRead(f, data_f);
-  streamRead(index, data_i);
-  streamScatterOp(a,b,e,STREAM_SCATTER_ASSIGN);
-  streamScatterOp(a,b,e,STREAM_SCATTER_FLOAT_MUL);
+  streamRead(index, data_i); 
+  streamScatterOp(a,b,e,mygets(1));
+  streamScatterOp(a,b,e,mymult);
   //foo(a,b,c,d_broken,e);
   streamScatterOp(f,index,g,STREAM_SCATTER_ASSIGN);
   //  streamScatterOp(f,i,g,STREAM_SCATTER_FLOAT_MUL);
