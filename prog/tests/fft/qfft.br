@@ -54,6 +54,7 @@ DFTX (float4 s[][],
   float4 r,t;
   r = s[indexR]; t = s[indexI];
   s_prime=DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W);
+  s_prime=s[indexof(s_prime)];
 } 
 
 
@@ -353,7 +354,38 @@ float clamp (float x) {
 unsigned char float2char(float x) {
 	return (char)(clamp(x)*255);
 }
-int main (int argc, char ** argv) {
+int main (int argc, char **argv) {
+  int numdat=(argc-1)/2;
+  float4 *data = (float4*)malloc(sizeof(float)*numdat*4);
+  int i,logm,logn,N=numdat,M=2;
+  float4 s<N,(M/2)>;
+  float4 s_out<N,(M/2)>;
+  float4 bitreversal<(M/2>N?M/2:N)>;
+  for (i=1;i<argc;i+=2) {
+    data[(i-1)/2].x=(float)atof(argv[i]);
+    data[(i-1)/2].y=(float)atof(argv[i+1]);
+    data[(i-1)/2].z=(float)atof(argv[i]);
+    data[(i-1)/2].w=(float)atof(argv[i+1]);
+  }
+  /*
+  printf("input: ");
+  for (i=0;i<numdat;++i) {
+    printf ("(%.2f, %.2f)",data[i].x,data[i].y);
+    }*/
+  for (i=1,logn=0;i<1;i*=2,++logn);
+  for (i=1,logm=0;i<numdat;i*=2,++logn);
+  streamRead(s,data);   
+  generatePlan(bitreversal,logn,logm);
+  computeFFT2d(s,s_out,logn,logm,N,M,bitreversal);
+  streamWrite(s_out,data);
+  printf ("\n outpt: ");
+  for (i=0;i<numdat;++i) {
+    printf ("%.2f %.2f] ",data[i].x,data[i].y);
+  }
+  free(data);
+  return 0;
+}
+int maino (int argc, char ** argv) {
 	unsigned char *imgdata;
 	unsigned int width, height, len;
 	int channels=3;
