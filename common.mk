@@ -58,28 +58,20 @@ endif
 endif
 endif
 
+all: $(SUBDIRS)
 ifdef BINARY
-all: subdirs arch
-else
-all: subdirs
+all: arch
 endif
 
-##  Build subdirectories  ##
-SUBDIRS_ALL = $(foreach dir, $(SUBDIRS), $(dir).subdir)
-
-subdirs: $(SUBDIRS_ALL)
-
-$(SUBDIRS_ALL):
-	@$(MAKE) -C $(basename $@) --no-print-directory
+$(SUBDIRS):
+	$(MAKE) -C $@ --no-print-directory
 
 ##  Build Binary ##
 arch: $(PRECOMP) makedirs dep
 
 recurse: $(BINDIR)/$(BINARY)
 
-builddeps: $(DEPS)
-
-dep: builddeps
+dep: $(DEPS)
 	@$(MAKE) --no-print-directory recurse INCLUDEDEPS=1
 
 ##  Make directories for build files ##
@@ -101,6 +93,10 @@ $(DEPDIR)/%.depend: %.cpp
 	@$(ECHO) "Rebuilding dependencies for $<"
 	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
 
+$(DEPDIR)/%.depend: %.br
+	@$(ECHO) "Rebuilding dependencies for $<"
+	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
+
 ## Include dependencies
 ifdef INCLUDEDEPS
 include $(DEPS)
@@ -113,7 +109,6 @@ ifndef COMPILER_ECHOS
 endif
 	$(CC) $(CFLAGS) $(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
-
 ##  Compile .cpp files ##
 $(OBJDIR)/%$(OBJSUFFIX): %.cpp
 ifndef COMPILER_ECHOS
@@ -121,14 +116,21 @@ ifndef COMPILER_ECHOS
 endif
 	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
+$(OBJDIR)/%$(OBJSUFFIX): $(OBJDIR)/%.cpp
+ifndef COMPILER_ECHOS
+	@$(ECHO) $<
+endif
+	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
 ##  Compile .br files ##
-.br.cpp:
+$(OBJDIR)/%.cpp: %.br
+ifdef COMPILER_ECHOES
 	@$(ECHO) $<
-	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) $<
+endif
+	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $<
 
-.PRECIOUS: %.cpp
-
+##  Keep the generated .cpp files.
+.PRECIOUS: $(OBJDIR)/%.cpp
 
 ##  Link  ##
 $(BINDIR)/$(BINARY):  $(ADDITIONAL_DEPENDANCIES) $(OBJS)
@@ -159,16 +161,14 @@ endif
 
 ifdef REGRESSIONDIRS
 
-REGRESS_ALL = $(foreach dir, $(REGRESSIONDIRS), $(dir).regress)
-
-regression: $(REGRESS_ALL)
-
-$(REGRESS_ALL):
-	@$(MAKE) -C $(basename $@) --no-print-directory regression
+regression:
+	@for i in $(REGRESSIONDIRS); do \
+		$(MAKE) --no-print-directory -C $$i regression; \
+	done
 
 else
 
-regression: arch
+regression: arch $(BINARY_NAME).gold
 	@echo  "Running $(BINARY_NAME)"
 	@$(BINDIR)/$(BINARY) > $(BINARY_NAME).output
 	@diff -q -w $(BINARY_NAME).output $(BINARY_NAME).gold
@@ -184,3 +184,5 @@ endif
 ifndef VERBOSE
 .SILENT:
 endif
+
+.PHONY: regression clean arch makedirs dep $(SUBDIRS)
