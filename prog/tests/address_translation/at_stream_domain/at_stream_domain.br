@@ -1,0 +1,115 @@
+// at_stream_fetch.br
+
+// test address-translation code for
+// fetching from a stream domain
+
+#include <stdio.h>
+
+// arbitrary weird stream sizes:
+
+#define RESULT_X 50
+#define RESULT_Y 24
+#define RESULT_Z 13
+
+#define INPUT_X 51
+#define INPUT_Y 40
+#define INPUT_Z 19
+
+#define INPUT_X_START 1
+#define INPUT_X_END 51
+#define INPUT_Y_START 5
+#define INPUT_Y_END 29
+#define INPUT_Z_START 0
+#define INPUT_Z_END 13
+
+// TIM: not guaranteed, but for now:
+#define INPUT_TEXTURE_WIDTH 256
+#define INPUT_TEXTURE_HEIGHT 152
+
+kernel void clear3( out float3 result<> ) { result = -1; }
+
+kernel void getIndexStream3( out float3 result<> ) {
+	result = (indexof result).xyz;
+}
+
+kernel void copy3( float3 input<>, out float3 result<> ) {
+	result = input;
+}
+
+void checkItem( const char* dimName, int expected, float actual, int x, int y, int z, int xd, int yd, int zd, const char* streamName )
+{
+	if( (int)actual != expected )
+	{
+		printf("FAIL: %s[%d][%d][%d].%s ~ <%d,%d,%d> : expected %d got %f\n", streamName, z, y, x, dimName, zd, yd, xd, expected, actual );
+		exit(0);
+	}
+//	else
+//		printf("%s[%d][%d][%d].%s ~ <%d,%d,%d> : %f\n", streamName, z, y, x, dimName, zd, yd, xd, actual );
+}
+
+void checkInput( float* inData )
+{
+	float* data = inData;
+	int x, y, z;
+	int linear;
+	int tx, ty;
+	
+	for( z = 0; z < INPUT_Z; z++ )
+	for( y = 0; y < INPUT_Y; y++ )
+	for( x = 0; x < INPUT_X; x++ )
+	{	
+		linear = x + y*INPUT_X + z*INPUT_X*INPUT_Y;
+		tx = linear / INPUT_TEXTURE_WIDTH;
+		ty = linear % INPUT_TEXTURE_WIDTH;
+	
+		checkItem( "x", x, *data++, x, y, z, tx, ty, 0, "input" );
+		checkItem( "y", y, *data++, x, y, z, tx, ty, 0, "input" );
+		checkItem( "z", z, *data++, x, y, z, tx, ty, 0, "input" );		
+	}
+}
+
+void check( float* inData )
+{
+	float* data = inData;
+	int x, y, z;
+	int xd, yd, zd;
+	
+	for( z = 0; z < RESULT_Z; z++ )
+	for( y = 0; y < RESULT_Y; y++ )
+	for( x = 0; x < RESULT_X; x++ )
+	{
+		xd = x + INPUT_X_START;
+		yd = y + INPUT_Y_START;
+		zd = z + INPUT_Z_START;
+		
+		checkItem( "x", xd, *data++, x, y, z, xd, yd, zd, "result" );
+		checkItem( "y", yd, *data++, x, y, z, xd, yd, zd, "result" );
+		checkItem( "z", zd, *data++, x, y, z, xd, yd, zd, "result" );
+		
+//		if( y > 5 ) exit(0);
+	}
+}
+
+int main( int argc, char** argv )
+{
+	float3 result< RESULT_Z, RESULT_Y, RESULT_X >;
+	float3 input< INPUT_Z, INPUT_Y, INPUT_X >;
+	
+	float* data_input = (float*)malloc( INPUT_Z*INPUT_Y*INPUT_X*sizeof(float3) );
+	float* data_result = (float*)malloc( RESULT_Z*RESULT_Y*RESULT_X*sizeof(float3) );
+	
+	getIndexStream3( input );
+	streamWrite( input, data_input );
+	checkInput( data_input );
+	
+	clear3( result );
+	copy3( input.domain(
+		int3( INPUT_Z_START, INPUT_Y_START, INPUT_X_START ),
+		int3( INPUT_Z_END, INPUT_Y_END, INPUT_X_END ) ), result );
+	streamWrite( result, data_result );
+	check( data_result );
+
+	printf( "pass\n" );
+
+	return 0;
+}

@@ -1263,14 +1263,7 @@ namespace brook
         {
             float4 result(0,0,0,0);
             unsigned int rank = stream->getRank();
-            const unsigned int* domainMin = stream->getDomainMin();
-            const unsigned int* domainMax = stream->getDomainMax();
-            unsigned int reversedExtents[4];
-            for( unsigned int r = 0; r < rank; r++ )
-            {
-                unsigned int d = rank - (r+1);
-                reversedExtents[r] = domainMax[d] - domainMin[d];
-            }
+            const unsigned int* reversedExtents = stream->getReversedExtents();
             unsigned int stride = 1;
             for( unsigned int r = 0; r < rank; r++ )
             {
@@ -1289,6 +1282,19 @@ namespace brook
             result.y = 1.0f / (float)textureHeight;
             result.z = (float)textureWidth;
             result.w = (float)textureHeight;
+            return result;
+        }
+        break;
+    case kStreamConstant_ATDomainMin:
+        {
+            float4 result(0,0,0,0);
+            unsigned int rank = stream->getRank();
+            const unsigned int* domainMin = stream->getDomainMin();
+            for( unsigned int r = 0; r < rank; r++ )
+            {
+                unsigned int d = rank - (r+1);
+                ((float*)&result)[r] = (float)domainMin[d];
+            }
             return result;
         }
         break;

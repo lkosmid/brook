@@ -775,7 +775,10 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
                                   structure, index, positionName);
   } else {
      shader << positionName << " = ";
-
+#define TIMISnotCRAZY
+#ifdef TIMISCRAZY
+     shader << "float3(_tex_" << positionName << "_pos,0);\n";
+#else
      BaseType* base = inForm->getBase();
      switch(base->typemask) {
      case BT_Float:
@@ -797,6 +800,7 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
 
      shader << "(_tex_" << argumentName << ", _tex_"
             << positionName << "_pos );\n";
+#endif
   }
 }
 
@@ -862,9 +866,9 @@ generate_shader_support(std::ostream& shader)
     shader << "float4 __calculateindexof( float4 indexofoutput, float4 streamIndexofNumer, float4 streamIndexofInvDenom ) {\n";
     shader << "\treturn floor( (indexofoutput*streamIndexofNumer + 0.5)*streamIndexofInvDenom ); }\n";
 
-    shader << "float2 __calculatetexpos( float4 streamIndex,\n";
+    shader << "float2 __calculatetexpos( float4 streamIndex, float4 streamDomainMin,\n";
     shader << "float4 linearizeConst, float4 textureShapeConst, float hackConst ) {\n";
-    shader << "float linearIndex = dot( streamIndex, linearizeConst ) + 0.5;\n";
+    shader << "float linearIndex = dot( streamIndex + streamDomainMin, linearizeConst ) + 0.5;\n";
 //    shader << "#ifndef USERECT\n";
 //    shader << "//HLSL codegen bug workaround\n";
 //    shader << "\tlinearIndex *= hackConst;\n";
@@ -877,7 +881,11 @@ generate_shader_support(std::ostream& shader)
     shader << "// convert to 0-to-1 texture space\n";
     shader << "texCoord *= textureShapeConst.xy;\n";
     shader << "#endif\n";
+#ifndef TIMISCRAZY
     shader << "return texCoord;\n}\n\n";
+#else
+    shader << "return texCoord;\n}\n\n";
+#endif
 
     shader << "void __calculateoutputpos( float2 interpolant, float2 linearize,\n";
     shader << "\tfloat4 stride, float4 invStride, float4 invExtent, float4 domainMin, float4 domainExtent, out float4 index ) {\n";
@@ -904,14 +912,14 @@ generate_shader_support(std::ostream& shader)
     shader << "}\n\n";
 #endif
 
-    shader << "float2 __gatherindex1( float1 index, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0,0,0), linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex2( float2 index, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0,0), linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex3( float3 index, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0), linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex4( float4 index, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
-    shader << "\treturn __calculatetexpos( index, linearizeConst, reshapeConst, hackConst ); }\n";
+    shader << "float2 __gatherindex1( float1 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0,0,0), domainConst, linearizeConst, reshapeConst, hackConst ); }\n";
+    shader << "float2 __gatherindex2( float2 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0,0), domainConst, linearizeConst, reshapeConst, hackConst ); }\n";
+    shader << "float2 __gatherindex3( float3 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0), domainConst, linearizeConst, reshapeConst, hackConst ); }\n";
+    shader << "float2 __gatherindex4( float4 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
+    shader << "\treturn __calculatetexpos( index, domainConst, linearizeConst, reshapeConst, hackConst ); }\n";
   }
 
   shader << "\n\n";
@@ -1031,11 +1039,15 @@ generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg, in
       shader << "uniform float4 __streamtextureshape_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader << ",\n\t\t";
+      shader << "uniform float4 __streamdomainmin_" << argName;
+      shader << " : register(c" << constreg++ << ")";
+      shader << ",\n\t\t";
 
       outPass.addConstant( (i+1), "kStreamConstant_ATIndexofNumer" );
       outPass.addConstant( (i+1), "kStreamConstant_ATIndexofDenom" );
       outPass.addConstant( (i+1), "kStreamConstant_ATLinearize" );
       outPass.addConstant( (i+1), "kStreamConstant_ATTextureShape" );
+      outPass.addConstant( (i+1), "kStreamConstant_ATDomainMin" );
    } else {
       // Output a texcoord, and optional scale/bias
       if (needIndexOfArg) {
@@ -1289,6 +1301,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
                shader << " );\n";
                shader << "\tfloat2 _tex_" << argName << "_pos = ";
                shader << "__calculatetexpos( __indexof_" << argName << ", ";
+               shader << "__streamdomainmin_" << argName << ", ";
                shader << "__streamlinearize_" << argName << ", ";
                shader << "__streamtextureshape_" << argName << ", __hackconst );\n";
             }
