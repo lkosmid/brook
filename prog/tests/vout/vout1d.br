@@ -183,12 +183,10 @@ float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
    debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightBRT_TYPE1d (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightBRT_TYPE1d(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-      else
-         NanToRightBRT_TYPE1d(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+      streamSwap(ret_stream,tmp_stream);
+      NanToRightBRT_TYPE1d(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   debugStreamPrint(ret_stream,"scattering...");
    {
      float item<1>;
      float index;
@@ -197,39 +195,31 @@ float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
      }else {
        index=0;
      }
-     kernelReadItem1d(logN%2==0?tmp_stream:ret_stream,index,item);
+     kernelReadItem1d(ret_stream,index,item);
      streamWrite(item,&maxshift);
    }
    LogNMinusK=logN-2;
    i= logN-1;//could make this k! rather than N
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-   EstablishGuessBRT_TYPE1d(logN%2==0?tmp_stream:ret_stream,
-                          guess_stream,
-                          list_stream,
-                          (float)(1 << LogNMinusK),
-                          maxvalue,
-                          (float)(1<<i),
-                          (float)sign);
+   EstablishGuessBRT_TYPE1d(ret_stream,
+                            guess_stream,
+                            list_stream,
+                            (float)(1 << LogNMinusK),
+                            maxvalue,
+                            (float)(1<<i),
+                            (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
-      if (i%2)
-         UpdateGuessBRT_TYPE1d (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              logN%2==0?ret_stream:tmp_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
-      else
-         UpdateGuessBRT_TYPE1d (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              logN%2==0?ret_stream:tmp_stream, //old guess
-                              (float)sign);
+      streamSwap(tmp_stream,guess_stream);
+      UpdateGuessBRT_TYPE1d (ret_stream,//scatter values
+                             guess_stream,//new guess
+                             list_stream,//actual values
+                             (float)(1<<LogNMinusK),
+                             maxvalue,
+                             tmp_stream, //old guess
+                             (float)sign);
    }
-   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
+   debugStreamPrint(guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)WIDTH
@@ -239,7 +229,7 @@ float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
         BRT_TYPE proper_output_stream<width>;
         if (width) {
           RelativeGatherBRT_TYPE1d(proper_output_stream,
-                                   logN%2==0?ret_stream:guess_stream,
+                                   guess_stream,
                                    list_stream,
                                    float2((float)sign,1.0f/(float)floor(.5)),
                                    maxvalue);

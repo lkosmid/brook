@@ -244,12 +244,10 @@ float shiftValuesfloat(float list_stream <>,
    debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightfloat (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightfloat(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-      else
-         NanToRightfloat(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     streamSwap(ret_stream,tmp_stream);      
+     NanToRightfloat(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   debugStreamPrint(ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
@@ -258,13 +256,13 @@ float shiftValuesfloat(float list_stream <>,
      }else {
        index.y=index.x=0;
      }
-     kernelReadItem(logN%2==0?tmp_stream:ret_stream,index,item);
+     kernelReadItem(ret_stream,index,item);
      streamWrite(item,&maxshift);
    }
    LogNMinusK=logN-2;
    i= logN-1;//could make this k! rather than N
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-   EstablishGuessfloat(logN%2==0?tmp_stream:ret_stream,
+   EstablishGuessfloat(ret_stream,
                           guess_stream,
                           list_stream,
                           (float)(1 << LogNMinusK),
@@ -273,24 +271,16 @@ float shiftValuesfloat(float list_stream <>,
                           (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
-      if (i%2)
-         UpdateGuessfloat (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              logN%2==0?ret_stream:tmp_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
-      else
-         UpdateGuessfloat (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              logN%2==0?ret_stream:tmp_stream, //old guess
-                              (float)sign);
+      streamSwap(tmp_stream,guess_stream);
+      UpdateGuessfloat (ret_stream,//scatter values
+                           guess_stream,//new guess
+                           list_stream,//actual values
+                           (float)(1<<LogNMinusK),
+                           maxvalue,
+                           tmp_stream,//old guess
+                           (float)sign);
    }
-   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
+   debugStreamPrint(guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -300,7 +290,7 @@ float shiftValuesfloat(float list_stream <>,
         float proper_output_stream<width,LENGTH>;
         if (width) {
           RelativeGatherfloat(proper_output_stream,
-                                 logN%2==0?ret_stream:guess_stream,
+                                 guess_stream,
                                  list_stream,
                                  *sentinelStream(2),
                                  (float)sign,
@@ -1258,12 +1248,10 @@ float shiftValuesfloat2(float2 list_stream <>,
    debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightfloat2 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightfloat2(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-      else
-         NanToRightfloat2(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     streamSwap(ret_stream,tmp_stream);      
+     NanToRightfloat2(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   debugStreamPrint(ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
@@ -1272,13 +1260,13 @@ float shiftValuesfloat2(float2 list_stream <>,
      }else {
        index.y=index.x=0;
      }
-     kernelReadItem(logN%2==0?tmp_stream:ret_stream,index,item);
+     kernelReadItem(ret_stream,index,item);
      streamWrite(item,&maxshift);
    }
    LogNMinusK=logN-2;
    i= logN-1;//could make this k! rather than N
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-   EstablishGuessfloat2(logN%2==0?tmp_stream:ret_stream,
+   EstablishGuessfloat2(ret_stream,
                           guess_stream,
                           list_stream,
                           (float)(1 << LogNMinusK),
@@ -1287,24 +1275,16 @@ float shiftValuesfloat2(float2 list_stream <>,
                           (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
-      if (i%2)
-         UpdateGuessfloat2 (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              logN%2==0?ret_stream:tmp_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
-      else
-         UpdateGuessfloat2 (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              logN%2==0?ret_stream:tmp_stream, //old guess
-                              (float)sign);
+      streamSwap(tmp_stream,guess_stream);
+      UpdateGuessfloat2 (ret_stream,//scatter values
+                           guess_stream,//new guess
+                           list_stream,//actual values
+                           (float)(1<<LogNMinusK),
+                           maxvalue,
+                           tmp_stream,//old guess
+                           (float)sign);
    }
-   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
+   debugStreamPrint(guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -1314,7 +1294,7 @@ float shiftValuesfloat2(float2 list_stream <>,
         float2 proper_output_stream<width,LENGTH>;
         if (width) {
           RelativeGatherfloat2(proper_output_stream,
-                                 logN%2==0?ret_stream:guess_stream,
+                                 guess_stream,
                                  list_stream,
                                  *sentinelStream(2),
                                  (float)sign,
@@ -2272,12 +2252,10 @@ float shiftValuesfloat3(float3 list_stream <>,
    debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightfloat3 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightfloat3(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-      else
-         NanToRightfloat3(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     streamSwap(ret_stream,tmp_stream);      
+     NanToRightfloat3(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   debugStreamPrint(ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
@@ -2286,13 +2264,13 @@ float shiftValuesfloat3(float3 list_stream <>,
      }else {
        index.y=index.x=0;
      }
-     kernelReadItem(logN%2==0?tmp_stream:ret_stream,index,item);
+     kernelReadItem(ret_stream,index,item);
      streamWrite(item,&maxshift);
    }
    LogNMinusK=logN-2;
    i= logN-1;//could make this k! rather than N
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-   EstablishGuessfloat3(logN%2==0?tmp_stream:ret_stream,
+   EstablishGuessfloat3(ret_stream,
                           guess_stream,
                           list_stream,
                           (float)(1 << LogNMinusK),
@@ -2301,24 +2279,16 @@ float shiftValuesfloat3(float3 list_stream <>,
                           (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
-      if (i%2)
-         UpdateGuessfloat3 (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              logN%2==0?ret_stream:tmp_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
-      else
-         UpdateGuessfloat3 (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              logN%2==0?ret_stream:tmp_stream, //old guess
-                              (float)sign);
+      streamSwap(tmp_stream,guess_stream);
+      UpdateGuessfloat3 (ret_stream,//scatter values
+                           guess_stream,//new guess
+                           list_stream,//actual values
+                           (float)(1<<LogNMinusK),
+                           maxvalue,
+                           tmp_stream,//old guess
+                           (float)sign);
    }
-   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
+   debugStreamPrint(guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -2328,7 +2298,7 @@ float shiftValuesfloat3(float3 list_stream <>,
         float3 proper_output_stream<width,LENGTH>;
         if (width) {
           RelativeGatherfloat3(proper_output_stream,
-                                 logN%2==0?ret_stream:guess_stream,
+                                 guess_stream,
                                  list_stream,
                                  *sentinelStream(2),
                                  (float)sign,
@@ -3286,12 +3256,10 @@ float shiftValuesfloat4(float4 list_stream <>,
    debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightfloat4 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightfloat4(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
-      else
-         NanToRightfloat4(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     streamSwap(ret_stream,tmp_stream);      
+     NanToRightfloat4(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   debugStreamPrint(ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
@@ -3300,13 +3268,13 @@ float shiftValuesfloat4(float4 list_stream <>,
      }else {
        index.y=index.x=0;
      }
-     kernelReadItem(logN%2==0?tmp_stream:ret_stream,index,item);
+     kernelReadItem(ret_stream,index,item);
      streamWrite(item,&maxshift);
    }
    LogNMinusK=logN-2;
    i= logN-1;//could make this k! rather than N
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-   EstablishGuessfloat4(logN%2==0?tmp_stream:ret_stream,
+   EstablishGuessfloat4(ret_stream,
                           guess_stream,
                           list_stream,
                           (float)(1 << LogNMinusK),
@@ -3315,24 +3283,16 @@ float shiftValuesfloat4(float4 list_stream <>,
                           (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
-      if (i%2)
-         UpdateGuessfloat4 (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              logN%2==0?ret_stream:tmp_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
-      else
-         UpdateGuessfloat4 (logN%2==0?tmp_stream:ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              logN%2==0?ret_stream:tmp_stream, //old guess
-                              (float)sign);
+      streamSwap(tmp_stream,guess_stream);
+      UpdateGuessfloat4 (ret_stream,//scatter values
+                           guess_stream,//new guess
+                           list_stream,//actual values
+                           (float)(1<<LogNMinusK),
+                           maxvalue,
+                           tmp_stream,//old guess
+                           (float)sign);
    }
-   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
+   debugStreamPrint(guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -3342,7 +3302,7 @@ float shiftValuesfloat4(float4 list_stream <>,
         float4 proper_output_stream<width,LENGTH>;
         if (width) {
           RelativeGatherfloat4(proper_output_stream,
-                                 logN%2==0?ret_stream:guess_stream,
+                                 guess_stream,
                                  list_stream,
                                  *sentinelStream(2),
                                  (float)sign,
