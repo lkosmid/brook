@@ -56,11 +56,15 @@ parse_args (int argc, char *argv[]) {
   globals.target       = TARGET_PS20 | TARGET_CPU;
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-
-  while ((opt = getopt(argc, argv, "no:p:vwd:")) != EOF) {
+  globals.multiThread = false;
+  while ((opt = getopt(argc, argv, "mno:p:vwd:")) != EOF) {
      switch(opt) {
+     case 'm':
+        globals.multiThread = true;
+        break;
      case 'n':
         globals.parseOnly = true;
+        break;
      case 'o':
 	if (outputprefix) usage();
 	outputprefix = strdup(optarg);

@@ -61,7 +61,9 @@ namespace brook {
        unsigned int iteroutsize;
        unsigned int dim;
        const unsigned int *extent;
+       bool multiThread;
        void Cleanup();
+       void ThreadMap(unsigned int numThreads);
     };
     class CPUStream: public Stream {
     public:
@@ -115,3 +117,8 @@ namespace brook {
     };
 }
 #endif
+
+
+
+
+

@@ -572,6 +572,7 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) const{
+   if (!globals.multiThread) return;//only print if multithreading.
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
     Brook2Cpp_ConvertKernel(fDef);
     BrookCombine_ConvertKernel(fDef);
@@ -685,7 +686,11 @@ void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
           myArgs[i].Increment(out,nDcube,reference_stream);
        }}
        indent(out,2);
-       out << "if (i%newline==0) {"<<std::endl;
+       if (nDcube) {
+          out << "if (i%newline==0) {"<<std::endl;
+       }else {
+          out << "if ((mapbegin+i)%newline==0) {"<<std::endl;
+       }
        {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].ResetNewLine(out,nDcube,reference_stream);
        }}          

@@ -23,6 +23,7 @@ namespace brook{
     CPUKernel::CPUKernel(const void * source []){
         const char ** src= (const char**)(source);
         combine=0;func=0;
+        bool multiThread=true;
 	for (unsigned int i=0;;i+=2) {
 	    if (src[i]==NULL){
                if (!func){
@@ -38,6 +39,9 @@ namespace brook{
 	    } else
             if (strcmp(src[i],"combine")==0) {
                combine=(combinable*)source[i+1];
+               if (!combine) {
+                  multiThread=false;
+               }
             }
             if (strcmp(src[i],"ndcpu")==0) {
                nDfunc=(nDcallable*)source[i+1];
@@ -149,11 +153,70 @@ namespace brook{
                extents,
                dims,
                begin,
-               end);//can do some fancy forking algorithm here
+               end);
+    }
+    void CPUKernel::ThreadMap(unsigned int numThreads) {
+       unsigned int i;
+       std::vector<ReductionArg>::iterator j;
+       unsigned int cur=0;
+       unsigned int step = totalsize/numThreads;
+       unsigned int remainder = totalsize%numThreads;
+       std::vector<void *>reductionbackup;
+       for (j=reductions.begin();
+            j!=reductions.end();
+            ++j) {
+          reductionbackup.push_back(args[j->which]);          
+          args[j->which]=malloc(numThreads*j->type*sizeof(float));
+       }
+       for (i=0;i<numThreads-1;++i) {
+          unsigned int thisstep=step;
+          if (i<remainder)
+             thisstep++;//leap year
+          //fork!
+          subMap(cur,thisstep);
+          cur+=thisstep;
+          for (j=reductions.begin();j!=reductions.end();++j) {
+             args[j->which]=((char *)args[j->which])+(j->type*sizeof(float));
+          }          
+       }
+       subMap(cur,totalsize-cur);
+       cur=0;
+       for (i=0;i<reductions.size();++i){
+          args.push_back(((char *)args[reductions[i].which])
+                         - j->type*sizeof(float)*(numThreads-2));
+          args[reductions[i].which]=reductionbackup[i];
+       }
+
+       if (combine!=0) {
+          const unsigned int delta= args.size()-reductions.size();
+          for (i=0;i<numThreads-1;++i) {
+             unsigned int thisstep=step;
+             if (i<remainder)
+                thisstep++;//leap year
+             (*combine)(args,extents,dims,cur);
+             cur+=thisstep;
+             for (unsigned int k=delta;
+                  k<args.size();
+                  ++k) {
+                args[k]=((char *)args[k]) 
+                   + (reductions[k-delta].type*sizeof(float));
+             }     
+          }
+          for (i=delta;i<args.size();++i) {
+             free((char *)args[i]-reductions[i-delta].type*sizeof(float)*(numThreads-1));
+          }
+       }
     }
     void CPUKernel::Map() {
        if (!streamReduction){
-          subMap(0,totalsize);
+          if (multiThread&&totalsize/2) {             
+             unsigned int numThreads=16;
+             while (totalsize/numThreads==0)
+                numThreads/=2;
+             ThreadMap(numThreads);             
+          }else {
+             subMap(0,totalsize);
+          }
        }else {
           unsigned int i;
           unsigned int rdim = streamReduction->getDimension();
@@ -204,3 +267,5 @@ namespace brook{
 
     }
 }
+
+

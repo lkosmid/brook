@@ -7,6 +7,7 @@
 #define TARGET_ARB      (1<<3)  /* XXX Not yet */
 
 struct globals_struct {
+  bool multiThread;
   bool verbose;
   bool parseOnly;
   char *sourcename;

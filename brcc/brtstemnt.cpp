@@ -153,8 +153,15 @@ BRTKernelDef::printStub(std::ostream& out) const
    out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;
    if (this->decl->isReduce()||reduceNeeded(this)) {
       out << "     \"ndcpu\", (void *) __" << *FunctionName() << "_ndcpu,"<<std::endl;
-      out << "     \"combine\", (void *) __";
-      out << *FunctionName() << "__combine_cpu,";
+      if (globals.multiThread) {//only make combiner if needed
+         out << "     \"combine\", (void *) __";
+         out << *FunctionName() << "__combine_cpu,";
+         out << std::endl;
+      }
+   }
+   if (!globals.multiThread) {
+      out << "     \"combine\", 0,";//this signals to runtime
+      //not to use multithreading
       out << std::endl;
    }
    out << "     NULL, NULL };"<<std::endl;

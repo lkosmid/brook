@@ -1,4 +1,4 @@
-
+#BRCCFLAGS := -m
 ifndef ROOTDIR
 ROOTDIR := .
 endif
