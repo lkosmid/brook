@@ -185,12 +185,16 @@ void FftwTransform2d(float2 *data, unsigned long N, unsigned long M,
 
 kernel void setZero(float4 indata<>, 
                     out float4 outdata<>, 
+                    iter float2 normalized<>,
+                    iter float2 negtopos<>,
                     float2 clampsize,
                     float scale) {
 	float4 i=indexof(indata);
 	float4 zero = {0.0,0.0,0.0,0.0};
-	float zeroit=(i.x>clampsize.x&&i.y>clampsize.y);//(i.x*i.x/(clampsize.x*clampsize.x)+(i.y*i.y)/(clampsize.y*clampsize.y));
-	outdata = zeroit.xxxx?zero:indata/scale;
+	//	float zeroit= (abs(negtopos.x)>.95||abs(negtopos.y)>.95)&&(i.x>0&&i.y>0);
+	//outdata = zeroit.xxxx?zero:indata/scale;
+	outdata=indata*(exp (-7.2*(2-dot(negtopos,negtopos))))/scale;
+	
 }
 
 
@@ -263,11 +267,14 @@ void computeFFT2d(float2 *input,
      bitReverseXo2Y(s_out,indicesXo2YXp1o2Xm2,s);      
             
    }
-	if (thereAndBack==0) {
+	if (thereAndBack==0) { 
+           iter float2 negtopos <N,(M/2)> = iter (float2(-1,-1),float2(1,1));
+           iter float2 normalized <N,(M/2)> = iter (float2(0,0),float2(1,1));
+
            float2 clampsize;
            clampsize.x = (float)(M/4);
            clampsize.y = (float)(N/2);
-           setZero(s_out,s_out,clampsize,(float)(M*N));
+           setZero(s_out,s_out,normalized,negtopos,clampsize,(float)(M*N));
            streamSwap(s,s_out);
         }
    }
