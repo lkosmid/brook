@@ -231,8 +231,8 @@ void BlackmailType (Type **t) {
     }
     ArrayType *at ;
     if ((*t)->type==TT_Array&&(at = static_cast<ArrayType *>(*t))) {
+        ArrayBlackmailer(at->size);	
         at->size->findExpr(ArrayBlackmailer);
-        ArrayBlackmailer(at->size);
     }
 	if ((*t)->type==TT_Array||(*t)->type==TT_Stream)
 	    BlackmailT<ArrayType>(t);//this takes care of Streams as well as constant arrays    
