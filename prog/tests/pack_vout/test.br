@@ -2,7 +2,7 @@
 #include <stdlib.h>
 /* vc7 floating point paranoia.  This program is in serious violation. */
 #pragma warning(disable:4244)
-static unsigned int debug_vout = 0;
+extern unsigned int debug_vout;
 static unsigned int myglobalnum=16;
 const unsigned int MAX_VOUT_STREAMS=31;//if you change this, change one 5 lines
 int finiteValueProduced (struct __BRTStream * input);

@@ -7,7 +7,7 @@ extern void sort (struct __BRTStream *list_stream,int WIDTH, int LENGTH);
 void __printf_cpu_inner(float inx, float iny, float outx, float outy) {
    printf("%g %g -> %g %g\n",inx,iny,outx,outy);
 }
-static unsigned int debug_vout = 0;
+unsigned int debug_vout = 0;
 static unsigned int myglobalnum=16;
 void debugStreamPrint (struct __BRTStream *stream,char * title) {
    if (debug_vout) {
@@ -429,7 +429,7 @@ kernel void streamCombine7(float input0[][],
       output=oldoutput;
    }
 }
-
+/*
 kernel void streamCombine8f(float input0[][],
                             float input1[][],
                             float input2[][],
@@ -468,6 +468,7 @@ kernel void streamCombine8f(float input0[][],
       output=input7[newindex];
    }
 }
+*/
 void combineStreamsHelper (struct __BRTStream **streams,
                            unsigned int num,
                            struct __BRTStream * output,
@@ -635,6 +636,7 @@ void combineStreams (struct __BRTStream **streams,
                       *output);
       break;
    case 7:
+   default:
       streamCombine7f(*streams[0],
                       *streams[1],
                       *streams[2],
@@ -646,31 +648,17 @@ void combineStreams (struct __BRTStream **streams,
                       length,
                       lengthmodmodulus,
                       *output);
-      break;
-   default:
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
                   "Too little precision for more than ",MAX_VOUT_STREAMS);
       }
-      streamCombine8f(*streams[0],
-                      *streams[1],
-                      *streams[2],
-                      *streams[3],
-                      *streams[4],
-                      *streams[5],
-                      *streams[6],
-                      *streams[7],
-                      num,
-                      length,
-                      lengthmodmodulus,
-                      *output);
       if (num>8) {
-         combineStreamsHelper(streams+8,
-                              num-8,
+         combineStreamsHelper(streams+7,
+                              num-7,
                               output,
                               num,
-                              8,
+                              7,
                               length,
                               lengthmodmodulus);
       }
