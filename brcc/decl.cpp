@@ -32,6 +32,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <sstream>
 
 #include "decl.h"
 #include "express.h"
@@ -1581,11 +1582,15 @@ void Decl::printStructureStreamHelpers( std::ostream& out ) const
 {
     assert(this != NULL);
 
-    if((storage & ST_Typedef) == 0) return;
+    if(!isTypedef()) return;
 
-    out << "typedef ";
-    form->printStructureStreamHelperType( out, std::string("__cpustruct_") + name->name );
-    out << ";\n";
+    std::ostringstream stringout;
+
+    stringout << "typedef ";
+    if(!form->printStructureStreamHelperType( stringout, std::string("__cpustruct_") + name->name ))
+      return;
+    stringout << ";\n";
+    out << stringout;
 }
 
 bool Decl::printStructureStreamInternals( std::ostream& out ) const
