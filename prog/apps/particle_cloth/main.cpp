@@ -5,7 +5,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <iostream>
-
+#include <string>
 void cpuIterate( int, int, int& );
 void gpuIterate( int, int, int* );
 void moutIterate( int, int, int* );
