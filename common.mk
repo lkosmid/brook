@@ -106,6 +106,11 @@ makedirs:
 
 .SUFFIXES : $(OBJSUFFIX) .c .cpp .br
 
+
+## Include dependencies
+ifdef INCLUDEDEPS
+include $(DEPS)
+else
 ## Make dependencies
 $(DEPDIR)/%.depend: %.c
 	@$(MAKE_DEPDIR)
@@ -120,10 +125,6 @@ $(DEPDIR)/%.depend: %.cpp
 $(DEPDIR)/%.depend: %.br
 	@$(ECHO) "Rebuilding dependencies for $<"
 	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
-
-## Include dependencies
-ifdef INCLUDEDEPS
-include $(DEPS)
 endif
 
 ##  Compile .brh files  ##
