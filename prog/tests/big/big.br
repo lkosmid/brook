@@ -4,7 +4,8 @@
 #include <stdio.h>
 
 kernel void copy( float a[][][][], out float b<> ) {
-	b = a[0][0][0][(indexof b).x];
+        float4 index = {(indexof b).x,0,0,0};
+	b = a[index];
 }
 
 int main( int argc, char** argv ) {
