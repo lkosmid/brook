@@ -109,7 +109,8 @@ class BRTCPUKernelCode : public BRTKernelCode
                             std::vector<PrintCPUArg>)const;
     void initializeIndexOf(std::ostream &out)const;
     void printIndexOfCallingArgs(std::ostream & out)const;
-    void printCombineCode(std::ostream& out,bool constructInnerFunction)const;
+    void printCombineCode(std::ostream& out)const;
+    void printCombineInnerLoop(std::ostream & out) const;
     void printTightLoop(std::ostream&out, 
                         FunctionDef * fDef, 
                         std::vector<PrintCPUArg> args,

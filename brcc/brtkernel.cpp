@@ -569,24 +569,27 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
     out << ")";    
     fDef->Block::print(out,0);
 }
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) const{
+void BRTCPUKernelCode::printCombineInnerLoop(std::ostream &out)const {
    if (!globals.multiThread) return;//only print if multithreading.
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
     Brook2Cpp_ConvertKernel(fDef);
     BrookCombine_ConvertKernel(fDef);
-
     std::vector <PrintCPUArg> myArgs = getPrintableArgs (fDef,true);
-    if (print_inner) {
-      printInnerFunction (out,
-                          "__"+fDef->decl->name->name+"_cpu_inner",
-                          fDef,
-                          true,
-                          this->fDef->decl->name->name);    
-    }
-    
-    
+    printInnerFunction (out,
+                        "__"+fDef->decl->name->name+"_cpu_inner",
+                        fDef,
+                        true,
+                        this->fDef->decl->name->name);    
+    delete fDef;
+
+}
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
+   if (!globals.multiThread) return;//only print if multithreading.
+    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
+    Brook2Cpp_ConvertKernel(fDef);
+    BrookCombine_ConvertKernel(fDef);
+    std::vector <PrintCPUArg> myArgs = getPrintableArgs (fDef,true);        
     std::string enhanced_name= "__"+fDef->decl->name->name + "_cpu";
     std::string myvoid ("void  ");
     out << myvoid;
@@ -626,7 +629,7 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
     }}    
     out << "}"<<std::endl;   
-
+    delete fDef;
 }
 void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
    std::string name = this->fDef->decl->name->name;
@@ -878,13 +881,13 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
                            false,
                            this->fDef->decl->name->name);
        delete baseCase;
+       printCombineInnerLoop(out);
     }
    //we don't want to automatically print this for it would say "kernel void" which means Nothing
-
     printTightLoop(out,fDef,myArgs,reduceneeded);
     delete fDef;
     if (reduceneeded) {
        printNdTightLoop(out,fDef,myArgs,reduceneeded);
-       printCombineCode(out,true);
+       printCombineCode(out);
     }
 }

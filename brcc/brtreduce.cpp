@@ -144,5 +144,5 @@ void BRTCPUReduceCode::printCode(std::ostream& out) const
     }
     printTightLoop(out,fDef,myArgs,true);
     printNdTightLoop(out,fDef,myArgs,true);
-    printCombineCode(out,false);
+    printCombineCode(out);
 }
