@@ -208,12 +208,20 @@ namespace brook
     GPUStream* outputStream = _outputArguments[0];
     outputStream->getOutputRegion(_outputRegion);
     
-    _outWidth = outputStream->getTextureWidth();
-    _outHeight = outputStream->getTextureHeight();
+    _outTextureWidth = outputStream->getTextureWidth();
+    _outTextureHeight = outputStream->getTextureHeight();
     unsigned int outRank = outputStream->getRank();
     const unsigned int* outReversed = outputStream->getReversedExtents();
     const unsigned int* outDomainMin = outputStream->getDomainMin();
     const unsigned int* outDomainMax = outputStream->getDomainMax();
+    unsigned int r;
+    for( r = 0; r < outRank; r++ )
+    {
+        unsigned int d = outRank - (r+1);
+        _outReversedExtents[r] = outDomainMax[d] - outDomainMin[d];
+    }
+    for( r = outRank; r < 4; r++ )
+        _outReversedExtents[r] = 1;
 
     bool requiresBaseAddressTranslation = false;
     bool shapeMismatch;
@@ -269,9 +277,10 @@ namespace brook
         float4 outputInvExtent = float4(0,0,0,0);
         float4 outputDomainMin = float4(0,0,0,0);
         float4 outputDomainSize = float4(0.5,0.5,0.5,0.5);
+        float4 outputInvShape = float4(0,0,0,0);
 
         outputLinearize.x = 1.0f;
-        outputLinearize.y = (float)_outWidth;
+        outputLinearize.y = (float)_outTextureWidth;
 
         unsigned int strides[4] = {0,0,0,0};
         unsigned int extents[4] = {0,0,0,0};
@@ -294,6 +303,8 @@ namespace brook
 
             ((float*)&outputDomainMin)[r] = (float)domainMin;
             ((float*)&outputDomainSize)[r] = (float)(domainMax - domainMin) - 0.5f;
+
+            ((float*)&outputInvShape)[r] = 1.0f / (float) outReversed[r];
         }
 
         _globalConstants.push_back( outputLinearize );
@@ -302,18 +313,19 @@ namespace brook
         _globalConstants.push_back( outputInvExtent );
         _globalConstants.push_back( outputDomainMin );
         _globalConstants.push_back( outputDomainSize );
+        _globalConstants.push_back( outputInvShape );
 
         float4 hackConstant = float4(1,1,1,1);
         _globalConstants.push_back( hackConstant );
 
         GPUInterpolant outputInterpolant;
-        outputStream->getStreamInterpolant( _outWidth, _outHeight, outputInterpolant );
+        outputStream->getStreamInterpolant( _outTextureWidth, _outTextureHeight, outputInterpolant );
         _globalInterpolants.push_back( outputInterpolant );
 
         float2 addressStart = float2(0.5f,0.5f);
-        float2 addressEnd = float2((float)_outWidth+0.5f,(float)_outHeight+0.5f);
+        float2 addressEnd = float2((float)_outTextureWidth+0.5f,(float)_outTextureHeight+0.5f);
         GPUInterpolant addressInterpolant;
-        _context->get2DInterpolant( addressStart, addressEnd, _outWidth, _outHeight, addressInterpolant );
+        _context->get2DInterpolant( addressStart, addressEnd, _outTextureWidth, _outTextureHeight, addressInterpolant );
         _globalInterpolants.push_back( addressInterpolant );
     }
     
@@ -1186,8 +1198,8 @@ namespace brook
     switch( inComponent )
     {
     case kStreamInterpolant_Position:
-      stream->getStreamInterpolant(inKernel->_outWidth, 
-                                   inKernel->_outHeight, 
+      stream->getStreamInterpolant(inKernel->_outTextureWidth, 
+                                   inKernel->_outTextureHeight, 
                                    outInterpolant);
       return;
     }
@@ -1205,15 +1217,79 @@ namespace brook
     case kStreamConstant_Indexof:
       return stream->getIndexofConstant();
       break;
-    //case kStreamConstant_ATShape:
-    //  return stream->getATShapeConstant();
-    //  break;
-    //case kStreamConstant_ATLinearize:
-    //  return stream->getATLinearizeConstant();
-    //  break;
-    //case kStreamConstant_ATReshape:
-    //  return stream->getATReshapeConstant();
-    //  break;
+    case kStreamConstant_ATIndexofNumer:
+        {
+            float4 result(0,0,0,0);
+            unsigned int rank = stream->getRank();
+            const unsigned int* domainMin = stream->getDomainMin();
+            const unsigned int* domainMax = stream->getDomainMax();
+            for( unsigned int r = 0; r < rank; r++ )
+            {
+                unsigned int d = rank - (r+1);
+                unsigned int streamExtent = domainMax[d] - domainMin[d];
+                unsigned int outputExtent = inKernel->_outReversedExtents[r];
+
+                unsigned int numer = 1;
+                if( streamExtent > outputExtent )
+                    numer = streamExtent / outputExtent;
+
+                ((float*)&result)[r] = (float)numer;
+            }
+            return result;
+        }
+        break;
+    case kStreamConstant_ATIndexofDenom:
+        {
+            float4 result(0,0,0,0);
+            unsigned int rank = stream->getRank();
+            const unsigned int* domainMin = stream->getDomainMin();
+            const unsigned int* domainMax = stream->getDomainMax();
+            for( unsigned int r = 0; r < rank; r++ )
+            {
+                unsigned int d = rank - (r+1);
+                unsigned int streamExtent = domainMax[d] - domainMin[d];
+                unsigned int outputExtent = inKernel->_outReversedExtents[r];
+
+                unsigned int denom = 1;
+                if( streamExtent < outputExtent )
+                    denom = outputExtent / streamExtent;
+
+                ((float*)&result)[r] = 1.0f / (float)denom;
+            }
+            return result;
+        }
+        break;
+    case kStreamConstant_ATLinearize:
+        {
+            float4 result(0,0,0,0);
+            unsigned int rank = stream->getRank();
+            const unsigned int* domainMin = stream->getDomainMin();
+            const unsigned int* domainMax = stream->getDomainMax();
+            unsigned int reversedExtents[4];
+            for( unsigned int r = 0; r < rank; r++ )
+            {
+                unsigned int d = rank - (r+1);
+                reversedExtents[r] = domainMax[d] - domainMin[d];
+            }
+            unsigned int stride = 1;
+            for( unsigned int r = 0; r < rank; r++ )
+            {
+                ((float*)&result)[r] = (float)(stride);
+                stride *= reversedExtents[r];
+            }
+            return result;
+        }
+        break;
+    case kStreamConstant_ATInvTextureShape:
+        {
+            float4 result(0,0,0,0);
+            unsigned int textureWidth = stream->getTextureWidth();
+            unsigned int textureHeight = stream->getTextureHeight();
+            result.x = 1.0f / (float)textureWidth;
+            result.y = 1.0f / (float)textureHeight;
+            return result;
+        }
+        break;
     }
     GPUError("not implemented");
     return float4(0,0,0,0);
@@ -1227,7 +1303,7 @@ namespace brook
                                                    GPUInterpolant &outInterpolant )
   {
     GPUIterator* iterator = inKernel->_iteratorArguments[ inIndex ];
-    iterator->getInterpolant( inKernel->_outWidth, inKernel->_outHeight, outInterpolant );
+    iterator->getInterpolant( inKernel->_outTextureWidth, inKernel->_outTextureHeight, outInterpolant );
   }
 
   float4 GPUKernel::IteratorArgumentType::getConstant( GPUKernel* inKernel, 
@@ -1267,7 +1343,7 @@ namespace brook
     case kGatherConstant_Shape:
       return stream->getGatherConstant();
       break;
-    case kGatherConstant_ATLinearize:
+/*    case kGatherConstant_ATLinearize:
       return inKernel->_context->getATLinearizeConstant(
             stream->getTextureWidth(),
             stream->getTextureHeight(),
@@ -1281,7 +1357,7 @@ namespace brook
             stream->getTextureHeight(),
             stream->getRank(),
             stream->getReversedExtents()
-          );
+          );*/
       break;
     }
     GPUError("not implemented");
@@ -1309,8 +1385,8 @@ namespace brook
     {
     case kOutputInterpolant_Position:
       stream->getStreamInterpolant(
-        inKernel->_outWidth, 
-        inKernel->_outHeight, 
+        inKernel->_outTextureWidth, 
+        inKernel->_outTextureHeight, 
         outInterpolant);
       return;
     }

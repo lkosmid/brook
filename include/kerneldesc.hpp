@@ -21,6 +21,7 @@ namespace brook
       kGlobalConstant_ATOutputInvExtent,
       kGlobalConstant_ATOutputDomainMin,
       kGlobalConstant_ATOutputDomainSize,
+      kGlobalConstant_ATOutputInvShape,
       kGlobalConstant_ATHackConstant
     };
     enum
@@ -33,9 +34,10 @@ namespace brook
     enum
     {
       kStreamConstant_Indexof = 0,
-      kStreamConstant_ATShape,
+      kStreamConstant_ATIndexofNumer,
+      kStreamConstant_ATIndexofDenom,
       kStreamConstant_ATLinearize,
-      kStreamConstant_ATReshape
+      kStreamConstant_ATInvTextureShape
     };
     enum
     {
@@ -47,7 +49,7 @@ namespace brook
     {
       kGatherConstant_Shape = 0,
       kGatherConstant_ATLinearize,
-      kGatherConstant_ATReshape
+      kGatherConstant_ATInvTextureShape
     };
 
     // Iterator Arguments

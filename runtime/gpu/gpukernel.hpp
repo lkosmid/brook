@@ -321,8 +321,9 @@ namespace brook {
     TextureList _globalOutputs;
     InterpolantList _globalInterpolants;
 
-    unsigned int _outWidth;
-    unsigned int _outHeight;
+    unsigned int _outTextureWidth;
+    unsigned int _outTextureHeight;
+    unsigned int _outReversedExtents[4];
 
     GPURegion _outputRegion;
     InterpolantList _inputInterpolants;

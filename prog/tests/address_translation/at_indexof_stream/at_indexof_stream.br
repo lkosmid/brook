@@ -1,0 +1,86 @@
+// at_output_domain.br
+
+// test address-translation code for
+// getting indexof on an input stream
+
+#include <stdio.h>
+
+// arbitrary weird stream sizes:
+
+#define RESULT_X 5000
+#define RESULT_Y 24
+
+#define A_X 10
+#define A_Y 6
+
+#define B_X 500
+#define B_Y 48
+
+#define C_X 5000
+#define C_Y 24
+
+kernel void clear1( out float result<> ) { result = -1; }
+kernel void clear2( out float2 result<> ) { result = -1; }
+
+kernel void getIndexStream2( float input<>, out float2 result<> ) {
+	result = (indexof input).xy;
+}
+
+void checkItem( const char* streamName, const char* dimName, int expected, float actual, int x, int y, int xi, int yi )
+{
+	if( (int)actual != expected )
+	{
+		printf("FAIL: %s[%d][%d].%s ~ <%d,%d> : expected %d got %f\n", streamName, y, x,dimName,  yi, xi, expected, actual );
+		exit(0);
+	}
+}
+
+void check( float* inData, int inOutputX, int inOutputY, int inInputX, int inInputY, const char* streamName )
+{
+	float* data = inData;
+	int x, y;
+	int xi, yi;
+	
+	for( y = 0; y < inOutputY; y++ )
+	for( x = 0; x < inOutputX; x++ )
+	{
+		xi = (x * inInputX) / inOutputX;
+		yi = (y * inInputY) / inOutputY;
+		
+		checkItem( streamName, "x", xi, *data++, x, y, xi, yi );
+		checkItem( streamName, "y", yi, *data++, x, y, xi, yi );
+	}
+}
+
+int main( int argc, char** argv )
+{
+	float2 result< RESULT_Y, RESULT_X >;
+	float a< A_Y, A_X >;
+	float b< B_Y, B_X >;
+	float c< C_Y, C_X >;
+	
+	float* data_result = (float*)malloc( RESULT_Y*RESULT_X*sizeof(float2) );
+	
+	clear1( a );
+	clear1( b );
+	clear1( c );
+	
+	clear2( result );
+	getIndexStream2( a, result );
+	streamWrite( result, data_result );
+	check( data_result, RESULT_X, RESULT_Y, A_X, A_Y, "a" );
+	
+	clear2( result );
+	getIndexStream2( b, result );
+	streamWrite( result, data_result );
+	check( data_result, RESULT_X, RESULT_Y, B_X, B_Y, "b" );
+
+	clear2( result );
+	getIndexStream2( c, result );
+	streamWrite( result, data_result );
+	check( data_result, RESULT_X, RESULT_Y, C_X, C_Y, "c" );
+
+	printf( "pass\n" );
+
+	return 0;
+}

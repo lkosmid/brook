@@ -859,19 +859,25 @@ generate_shader_support(std::ostream& shader)
   if (globals.enableGPUAddressTranslation) {
     shader << "\n\n";
 
-    shader << "float4 __calculateindexof( float4 indexofoutput, float4 shape ) {\n";
-    shader << "\treturn floor( indexofoutput*shape ); }\n";
+    shader << "float4 __calculateindexof( float4 indexofoutput, float4 streamIndexofNumer, float4 streamIndexofInvDenom ) {\n";
+    shader << "\treturn floor( (indexofoutput*streamIndexofNumer + 0.5)*streamIndexofInvDenom ); }\n";
 
     shader << "float2 __calculatetexpos( float4 streamIndex,\n";
-    shader << "float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
-    shader << "float linearIndex = dot( streamIndex, linearizeConst );\n";
+    shader << "float4 linearizeConst, float2 invTextureShapeConst, float hackConst ) {\n";
+    shader << "float linearIndex = dot( streamIndex, linearizeConst ) + 0.5;\n";
+//    shader << "#ifndef USERECT\n";
+//    shader << "//HLSL codegen bug workaround\n";
+//    shader << "\tlinearIndex *= hackConst;\n";
+//    shader << "#endif\n";
+    shader << "float2 texIndex;\n";
+    shader << "texIndex.y = floor( linearIndex * invTextureShapeConst.x );\n";
+    shader << "texIndex.x = floor( linearIndex - texIndex.y );\n";
+    shader << "float2 texCoord = texIndex + 0.5;\n";
     shader << "#ifndef USERECT\n";
-    shader << "//HLSL codegen bug workaround\n";
-    shader << "\tlinearIndex *= hackConst;\n";
+    shader << "// convert to 0-to-1 texture space\n";
+    shader << "texCoord *= invTextureShapeConst;\n";
     shader << "#endif\n";
-    shader << "float texX = frac( linearIndex );\n";
-    shader << "float texY = linearIndex - texX;\n";
-    shader << "return float2( texX, texY ) * reshapeConst;\n}\n\n";
+    shader << "return texCoord;\n}\n\n";
 
     shader << "void __calculateoutputpos( float2 interpolant, float2 linearize,\n";
     shader << "\tfloat4 stride, float4 invStride, float4 invExtent, float4 domainMin, float4 domainExtent, out float4 index ) {\n";
@@ -1013,19 +1019,23 @@ generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg, in
    expandStreamSamplerDecls(shader, argName, (i+1), 0, arg->form, samplerreg, outPass );
 
    if (globals.enableGPUAddressTranslation) {
-      shader << "uniform float4 __streamshape_" << argName;
+      shader << "uniform float4 __streamindexofnumer_" << argName;
+      shader << " : register(c" << constreg++ << ")";
+      shader << ",\n\t\t";
+      shader << "uniform float4 __streamindexofdenom_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader << ",\n\t\t";
       shader << "uniform float4 __streamlinearize_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader << ",\n\t\t";
-      shader << "uniform float2 __streamreshape_" << argName;
+      shader << "uniform float2 __streaminvtextureshape_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader << ",\n\t\t";
 
-      outPass.addConstant( (i+1), "kStreamConstant_ATShape" );
+      outPass.addConstant( (i+1), "kStreamConstant_ATIndexofNumer" );
+      outPass.addConstant( (i+1), "kStreamConstant_ATIndexofDenom" );
       outPass.addConstant( (i+1), "kStreamConstant_ATLinearize" );
-      outPass.addConstant( (i+1), "kStreamConstant_ATReshape" );
+      outPass.addConstant( (i+1), "kStreamConstant_ATInvTextureShape" );
    } else {
       // Output a texcoord, and optional scale/bias
       if (needIndexOfArg) {
@@ -1194,6 +1204,8 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
     shader << ",\n\t\t";
     shader << "uniform float4 __outputdomainsize : register(c" << constreg++ << ")";
     shader << ",\n\t\t";
+    shader << "uniform float4 __outputinvshape : register(c" << constreg++ << ")";
+    shader << ",\n\t\t";
     shader << "uniform float __hackconst : register(c" << constreg++ << ")";
 
     outPass.addInterpolant( 0, "kGlobalInterpolant_ATOutputTex" );
@@ -1204,6 +1216,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
     outPass.addConstant( 0, "kGlobalConstant_ATOutputInvExtent" );
     outPass.addConstant( 0, "kGlobalConstant_ATOutputDomainMin" );
     outPass.addConstant( 0, "kGlobalConstant_ATOutputDomainSize" );
+    outPass.addConstant( 0, "kGlobalConstant_ATOutputInvShape" );
     outPass.addConstant( 0, "kGlobalConstant_ATHackConstant" );
   }
 
@@ -1272,12 +1285,12 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
                shader << "\tfloat2 _tex_" << argName << "_pos = __outputtexcoord;\n";
             } else {
                shader << "\tfloat4 __indexof_" << argName << " = ";
-               shader << "__calculateindexof( __indexofoutput, __streamshape_" << argName;
+               shader << "__calculateindexof( __indexofoutput, __streamindexofnumer_" << argName << ", __streamindexofdenom_" << argName;
                shader << " );\n";
                shader << "\tfloat2 _tex_" << argName << "_pos = ";
                shader << "__calculatetexpos( __indexof_" << argName << ", ";
                shader << "__streamlinearize_" << argName << ", ";
-               shader << "__streamreshape_" << argName << ", __hackconst );\n";
+               shader << "__streaminvtextureshape_" << argName << ", __hackconst );\n";
             }
           }
 
