@@ -45,19 +45,22 @@ inline unsigned int getIndexOf(unsigned int i,
 
 inline unsigned int getIndexOf(unsigned int i, 
                                const unsigned int *mapbegin,
-                               const unsigned int *mapend,
+                               const unsigned int *mapextent,
                                const unsigned int *extent,
                                unsigned int dim,
                                const unsigned int *refextent) {
-   unsigned int ret = (i%refextent[dim-1])*extent[dim-1]/refextent[dim-1];
-   unsigned int accum=extent[dim-1];
-   unsigned int refaccum=refextent[dim-1];
-   for (int d=dim-2;d>=0;--d) {
-      ret+= (((i/refaccum)%refextent[d])*extent[d]/refextent[d])*accum;
-      refaccum*=refextent[d];
-      accum*=extent[d];
+   unsigned int ret=mapbegin[0]/*+i%mapextent[dim-1]*/;
+   //commented out region above is zero whenever this function is invoked
+   
+   for (unsigned int j=1;j<dim;++j) {
+      ret*=refextent[j];
+      unsigned ij = i;
+      for (int k=dim-1;k>j;--k) {
+         ij/=mapextent[k];
+      }
+      ret+=mapbegin[j]+ij%refextent[j];
    }
-   return ret;
+   return getIndexOf(ret,extent,dim,refextent);
 }
 
 #endif

@@ -277,7 +277,7 @@ void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
 		out << std::endl;           
         }else {
            indent(out,3);
-		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapend,";
+		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapextent,";
                 out << "extents["<<index<<"], ";
                 out << "dim, extents["<<ref<<"]);";
 		out << std::endl;           
@@ -333,9 +333,9 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
            }
                 /*
 		indent(out,!isOut?2:3);
-		out << "if (i%(mapend[dim-1]-mapbegin[dim-1])) {"<<std::endl;
+		out << "if (i%mapextent[dim-1]) {"<<std::endl;
 		indent(out,!isOut?3:4);
-		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapend,";
+		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapextent,";
                 out << "extents["<<index<<"], ";
                 out << "dim, extents["<<ref<<"]);";
 		out << std::endl;
@@ -368,7 +368,7 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
            if (!nDcube) 
               out << "mapbegin,";
            else
-              out << "0, mapbegin, mapend, ";
+              out << "0, mapbegin, mapextent, ";
            out << "extents["<<index<<"], ";
            out << "dim, extents["<<ref<<"]);"<<std::endl;
 	}
