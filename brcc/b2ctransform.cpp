@@ -284,7 +284,7 @@ void FindTypesDecl (Statement * s) {
 }
 
 class NewIndexExpr :public IndexExpr {public:
-    NewIndexExpr (Expression * a, Expression * s,const Location &l):IndexExpr(a,s,l) {} //Not *the* tr1nity with a/s/l check onjoin.
+    NewIndexExpr (Expression * a, Expression * s,const Location &l):IndexExpr(a,s,l) {}
     Expression * dup0() const {return new NewIndexExpr(array->dup(),_subscript->dup(),location);}
     void print(std::ostream &out) const {
     if (array->precedence() < precedence())
@@ -565,8 +565,9 @@ void Brook2Cpp_ConvertKernel(BRTKernelDef *kDef) {
     RestoreTypes(kDef);
     kDef->findStemnt (&FindQuestionColon);
     RestoreTypes(kDef);
-    kDef->findStemnt (&FindIndexExpr);
-    RestoreTypes(kDef);
+//    kDef->findStemnt (&FindIndexExpr);
+	//no longer necessary with our floatX empowered Array class
+//    RestoreTypes(kDef);
     kDef->findStemnt (&FindConstantExpr);
     RestoreTypes(kDef);
 	kDef->findStemnt(&FindFunctionCall);
