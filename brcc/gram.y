@@ -53,7 +53,17 @@ int yylex(YYSTYPE *lvalp);
 extern int err_top_level;
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
+void baseTypeFixup(BaseType * bt,Decl * decl) {
+  BaseType * b = decl->form->getBase();
+  while ((decl=decl->next)) {
+    BaseType *nb = decl->form->getBase();
+    if (memcmp(nb,b,sizeof(BaseType))!=0) {
+      decl->form = decl->form->dup();/*warning memory leak*/
+      memcpy(decl->form->getBase(),b,sizeof(BaseType));
+    }
+  }
 
+}
 /*  int  yydebug = 1;  */
 
 /* ###################################################### */
@@ -1354,6 +1364,13 @@ declaration:  decl_specs opt_init_decl_list
         {
             assert (1||err_top_level ||
                     $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
+      if ($1!=gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs) {
+          if (err_top_level) {
+             fprintf (stderr,"would have been error but not\n");
+          }else {
+             baseTypeFixup($1,$2);
+          }
+      }
             gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();            
             
             possibleType = true;
