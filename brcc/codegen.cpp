@@ -39,11 +39,6 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
   Decl *outArg = NULL;
   int texcoord, i;
 
-  if (globals.target != TARGET_FP30) {
-    fprintf (stderr, "Only FP30 target supported\n");
-    exit(1);
-  }
-
   cg << "#define _WORKSPACE " << globals.workspace << std::endl;
   cg << "#define _WORKSPACE_INV " << std::setprecision(9.9) <<
         1.0 / globals.workspace << std::endl;
@@ -259,6 +254,9 @@ compile_cg_code (char *cgcode) {
   assert (globals.target == TARGET_FP30);
 
   fpcode = Subprocess_Run(argv, cgcode);
+  if (fpcode == NULL) {
+     return NULL;
+  }
 
   /* Tolerate CRLF or LF line endings. */
   endline = strstr (fpcode, "\nEND\n");
@@ -268,7 +266,7 @@ compile_cg_code (char *cgcode) {
   if (!endline) {
      fprintf(stderr, "Unable to parse returned CG Code: [35;1m%s[0m\n",
              fpcode);
-     exit(1);
+     return NULL;
   }
 
   endline += strlen("\nEND");
@@ -295,12 +293,12 @@ compile_hlsl_code (char *hlslcode) {
   char *fname = tmpnam(NULL);
   if (fname == NULL) {
     fprintf (stderr, "Unable to get tmp file name\n");
-    exit(1);
+    return NULL;
   }
   FILE *fp = fopen (fname, "wb+");
   if (fp == NULL) {
     fprintf (stderr, "Unable to open tmp file %s\n", fname);
-    exit(1);
+    return NULL;
   }
   fwrite(hlslcode, sizeof(char), strlen(hlslcode), fp);
   fclose(fp);
@@ -310,6 +308,9 @@ compile_hlsl_code (char *hlslcode) {
   argv[4] = fname;
   errcode = Subprocess_Run(argv, NULL);
   remove(fname);
+  if (errcode == NULL) {
+     return NULL;
+  }
 
   fp = fopen(argv[3]+3, "rt");
   if (fp == NULL) {
@@ -317,7 +318,7 @@ compile_hlsl_code (char *hlslcode) {
              argv[3]+3);
      fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
              errcode);
-    exit(1);
+    return NULL;
   }
 
   fseek(fp, 0, SEEK_END);
@@ -410,31 +411,35 @@ append_argument_information (const char *commentstring, char *fpcode,
 
 
 /*
- * generate_c_fp_code --
+ * generate_c_fp30_code --
  *
  *      Spits out the compiled fp code as a string available to the emitted
  *      C code.
  */
 
 static char *
-generate_c_fp_code(char *fpcode, const char *name)
+generate_c_fp30_code(char *fpcode, const char *name)
 {
   std::ostringstream fp;
   int i;
 
   assert (name);
 
-  fp << "\nstatic const void *__" << name << "_fp[] = {" << std::endl;
+  if (fpcode == NULL) {
+     fp << "\nstatic const char __" << name << "_fp30[] = NULL;\n";
+     return strdup(fp.str().c_str());
+  }
 
-  fp << "\"fp30\", \"";
+  fp << "\nstatic const char __" << name << "_fp30[] = {" << std::endl;
+
+  fp << "\"";
   while ((i = *fpcode++) != '\0') {
     if (i == '\n')
       fp << "\\n\"\n\"";
     else
       fp << (char) i;
   }
-  fp << "\",\n";
-  fp << "NULL, NULL};\n\n";
+  fp << "\"};\n";
 
   return strdup(fp.str().c_str());
 }
@@ -442,7 +447,7 @@ generate_c_fp_code(char *fpcode, const char *name)
 /*
  * generate_c_ps20_code --
  *
- *      Spits out the compiled pixel shader 
+ *      Spits out the compiled pixel shader
  *      code as a string available to the emitted
  *      C code.
  */
@@ -455,17 +460,21 @@ generate_c_ps20_code(char *fpcode, const char *name)
 
   assert (name);
 
-  fp << "\nstatic const void *__" << name << "_fp[] = {" << std::endl;
+  if (fpcode == NULL) {
+     fp << "\nstatic const char __" << name << "_ps20[] = NULL;\n";
+     return strdup(fp.str().c_str());
+  }
 
-  fp << "\"ps20\", \"";
+  fp << "\nstatic const char __" << name << "_ps20[] = {" << std::endl;
+
+  fp << "\"";
   while ((i = *fpcode++) != '\0') {
     if (i == '\n')
       fp << "\\n\"\n\"";
     else
       fp << (char) i;
   }
-  fp << "\",\n";
-  fp << "NULL, NULL};\n\n";
+  fp << "\"};\n";
 
   return strdup(fp.str().c_str());
 }
@@ -541,19 +550,19 @@ CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs)
 
 
 /*
- * CodeGen_CGGenerateCode --
+ * CodeGen_FP30GenerateCode --
  *
  *      Takes a parsed kernel and crunches it down to C code:
  *              . Creates and annotates equivalent CG
- *              . Compiles the CG
+ *              . Compiles the CG to fp30 assembly
  *              . Spits out the fragment program as a C string
  *
  *      Note: The caller is responsible for free()ing the returned string.
  */
 
 char *
-CodeGen_CGGenerateCode(Type *retType, const char *name,
-                       Decl **args, int nArgs, const char *body)
+CodeGen_FP30GenerateCode(Type *retType, const char *name,
+                         Decl **args, int nArgs, const char *body)
 {
   char *cgcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
@@ -564,13 +573,17 @@ CodeGen_CGGenerateCode(Type *retType, const char *name,
   free(cgcode);
   //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
-  fpcode_with_brccinfo = 
-    append_argument_information("##", fpcode, args, nArgs, body);
-  free(fpcode);
-  //std::cerr << "***Produced this instrumented fpcode:\n"
-  //          << fpcode_with_brccinfo << "\n";
+  if (fpcode) {
+     fpcode_with_brccinfo =
+       append_argument_information("##", fpcode, args, nArgs, body);
+     free(fpcode);
+     //std::cerr << "***Produced this instrumented fpcode:\n"
+     //          << fpcode_with_brccinfo << "\n";
+  } else {
+     fpcode_with_brccinfo = NULL;
+  }
 
-  c_code = generate_c_fp_code(fpcode_with_brccinfo, name);
+  c_code = generate_c_fp30_code(fpcode_with_brccinfo, name);
   free(fpcode_with_brccinfo);
   //std::cerr << "***Produced this C code:\n" << c_code;
 
@@ -579,18 +592,18 @@ CodeGen_CGGenerateCode(Type *retType, const char *name,
 
 
 /*
- * CodeGen_HLSLGenerateCode --
+ * CodeGen_PS20GenerateCode --
  *
  *      Takes a parsed kernel and crunches it down to C code:
  *              . Creates and annotates equivalent HLSL
- *              . Compiles the HLSL
+ *              . Compiles the HLSL to ps20 assembly
  *              . Spits out the fragment program as a C string
  *
  *      Note: The caller is responsible for free()ing the returned string.
  */
 
 char *
-CodeGen_HLSLGenerateCode(Type *retType, const char *name,
+CodeGen_PS20GenerateCode(Type *retType, const char *name,
                          Decl **args, int nArgs, const char *body)
 {
   char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
@@ -602,12 +615,16 @@ CodeGen_HLSLGenerateCode(Type *retType, const char *name,
   free(hlslcode);
   //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
-  fpcode_with_brccinfo =
-    append_argument_information("//", fpcode, args, nArgs, body);
-  free(fpcode);
+  if (fpcode) {
+     fpcode_with_brccinfo =
+       append_argument_information("//", fpcode, args, nArgs, body);
+     free(fpcode);
 
-  //std::cerr << "***Produced this instrumented fpcode:\n"
-  //          << fpcode_with_brccinfo << "\n";
+     //std::cerr << "***Produced this instrumented fpcode:\n"
+     //          << fpcode_with_brccinfo << "\n";
+  } else {
+     fpcode_with_brccinfo = NULL;
+  }
 
   c_code = generate_c_ps20_code(fpcode_with_brccinfo, name);
   free(fpcode_with_brccinfo);

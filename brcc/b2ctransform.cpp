@@ -540,9 +540,9 @@ void FindConstantExpr (Statement * s) {
    Expression * (*tmp)(class Expression *) = &ConvertToTConstantExprConverter;
    s->findExpr(tmp);
 }
-void RestoreTypes(BRTKernelDef *kDef){
+void RestoreTypes(FunctionDef *fDef){
 	ArrayBlacklist.clear();
-	kDef->findStemnt (FindTypesDecl);
+	fDef->findStemnt (FindTypesDecl);
 }
 Expression *ChangeFunctionTarget (Expression * e) {
 	if (e->etype==ET_FunctionCall) {
@@ -557,18 +557,18 @@ Expression *ChangeFunctionTarget (Expression * e) {
 void FindFunctionCall (Statement * s) {
 	s->findExpr(ChangeFunctionTarget);
 }
-void Brook2Cpp_ConvertKernel(BRTKernelDef *kDef) {
-    RestoreTypes(kDef);
-    kDef->findStemnt(&FindMask);
-    RestoreTypes(kDef);
-    kDef->findStemnt (&FindSwizzle);
-    RestoreTypes(kDef);
-    kDef->findStemnt (&FindQuestionColon);
-    RestoreTypes(kDef);
-//    kDef->findStemnt (&FindIndexExpr);
+void Brook2Cpp_ConvertKernel(FunctionDef *fDef) {
+    RestoreTypes(fDef);
+    fDef->findStemnt(&FindMask);
+    RestoreTypes(fDef);
+    fDef->findStemnt (&FindSwizzle);
+    RestoreTypes(fDef);
+    fDef->findStemnt (&FindQuestionColon);
+    RestoreTypes(fDef);
+//    fDef->findStemnt (&FindIndexExpr);
 	//no longer necessary with our floatX empowered Array class
-//    RestoreTypes(kDef);
-    kDef->findStemnt (&FindConstantExpr);
-    RestoreTypes(kDef);
-	kDef->findStemnt(&FindFunctionCall);
+//    RestoreTypes(fDef);
+    fDef->findStemnt (&FindConstantExpr);
+    RestoreTypes(fDef);
+    fDef->findStemnt(&FindFunctionCall);
 }

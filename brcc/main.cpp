@@ -32,7 +32,7 @@ static void
 usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
-  fprintf (stderr, "brcc [-v] [-c] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
+  fprintf (stderr, "brcc [-v] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
 
   exit(1);
 }
@@ -57,11 +57,8 @@ parse_args (int argc, char *argv[]) {
   globals.workspace    = 1024;
   globals.compilername = argv[0];
 
-  while ((opt = getopt(argc, argv, "co:p:vw:")) != EOF) {
+  while ((opt = getopt(argc, argv, "o:p:vw:")) != EOF) {
      switch(opt) {
-     case 'c':
-	globals.cpuKernel = true;
-	break;
      case 'o':
 	if (outputprefix) usage();
 	outputprefix = strdup(optarg);
@@ -173,9 +170,7 @@ ConvertToBrtKernels(FunctionDef *fDef)
 {
    if (!fDef->decl->isKernel()) { return NULL; }
 
-   if (globals.cpuKernel)
-          return new BRTCPUKernelDef(*fDef);
-   else return new BRTGPUKernelDef(*fDef);
+   return new BRTKernelDef(*fDef);
 }
 
 

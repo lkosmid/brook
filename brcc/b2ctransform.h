@@ -7,9 +7,9 @@
 #ifndef __BROOK2CPP_H__
 #define __BROOK2CPP_H__
 
-class BRTKernelDef;
+class FunctionDef;
 
 extern void
-Brook2Cpp_ConvertKernel(BRTKernelDef *kDef);
+Brook2Cpp_ConvertKernel(FunctionDef *kDef);
 
 #endif

@@ -16,40 +16,13 @@ class BRTKernelDef : public FunctionDef
     BRTKernelDef(const FunctionDef& fDef);
    ~BRTKernelDef();
 
-    Statement *dup0() const;
+    /* Pass ourselves (as a FunctionDef) to our own constructor */
+    Statement *dup0() const { return new BRTKernelDef(*this); };
     void print(std::ostream& out, int level) const;
 
-    virtual void printCode(std::ostream& out) const = 0;
     void printStub(std::ostream& out) const;
 
     bool CheckSemantics(void) const;
-};
-
-
-class BRTGPUKernelDef : public BRTKernelDef
-{
-  public:
-    BRTGPUKernelDef(const FunctionDef& fDef);
-   ~BRTGPUKernelDef() { /* Nothing, ~FunctionDef() does all the work */ }
-
-    /* Just pass ourselves (as a FunctionDef descendant) to our constructor */
-    Statement *dup0() const { return new BRTGPUKernelDef(*this); }
-
-    void printCode(std::ostream& out) const;
-};
-
-class BRTCPUKernelDef : public BRTKernelDef
-{
-  public:
-    BRTCPUKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {
-       Brook2Cpp_ConvertKernel(this);
-    }
-   ~BRTCPUKernelDef() { /* Nothing, ~FunctionDef() does all the work */ }
-
-    /* Just pass ourselves (as a FunctionDef descendant) to our constructor */
-    Statement *dup0() const { return new BRTCPUKernelDef(*this); }
-
-    void printCode(std::ostream& out) const;
 };
 
 #endif  /* STEMNT_H */

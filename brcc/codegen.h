@@ -8,11 +8,11 @@
 #define __CODEGEN_H__
 
 extern char *
-CodeGen_CGGenerateCode(Type *retType, const char *name,
-                       Decl **args, int nArgs, const char *body);
+CodeGen_FP30GenerateCode(Type *retType, const char *name,
+                         Decl **args, int nArgs, const char *body);
 
 extern char *
-CodeGen_HLSLGenerateCode(Type *retType, const char *name,
+CodeGen_PS20GenerateCode(Type *retType, const char *name,
                          Decl **args, int nArgs, const char *body);
 
 extern char *

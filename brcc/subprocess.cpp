@@ -52,11 +52,11 @@ Subprocess_Run(char *argv[], char *input)
 #ifdef WIN32
   if(_pipe(hStdOutPipe, 512, O_TEXT | O_NOINHERIT) == -1) {
     fprintf (stderr, "Unable to create pipe\n");
-    exit (1);
+    return NULL;
   }
   if(_pipe(hStdInPipe, 512, O_TEXT | O_NOINHERIT) == -1) {
     fprintf (stderr, "Unable to create pipe\n");
-    exit (1);
+    return NULL;
   }
 
   // Save the current stdout/stdin handles
@@ -66,37 +66,37 @@ Subprocess_Run(char *argv[], char *input)
   // Duplicate the pipes
   if(_dup2(hStdOutPipe[WRITE_HANDLE], _fileno(stdout)) != 0) {
     fprintf (stderr, "Unable to redirect stdout\n");
-    exit (1);
+    return NULL;
   }
   if(_dup2(hStdInPipe[READ_HANDLE], _fileno(stdin)) != 0) {
     fprintf (stderr, "Unable to redirect stdin\n");
-    exit (1);
+    return NULL;
   }
 
 #else
   if(pipe(hStdOutPipe) == -1) {
        fprintf (stderr, "Unable to create pipe\n");
-       exit (1);
+       return NULL;
   }
   if(pipe(hStdInPipe) == -1) {
     fprintf (stderr, "Unable to create pipe\n");
-    exit (1);
+    return NULL;
   }
   if((hStdOut = dup(fileno(stdout)))  == -1 ){
        fprintf (stderr, "dup stdout\n");
-       exit (1);
+       return NULL;
   }
   if((hStdIn  = dup(fileno(stdin))) == -1 ){
        fprintf (stderr, "dup stdin\n");
-       exit (1);
+       return NULL;
   };
   if( dup2(hStdOutPipe[WRITE_HANDLE], fileno(stdout)) == -1 ){
        fprintf (stderr, "Unable to redirect stdout\n");
-       exit (1);
+       return NULL;
   }
   if( dup2(hStdInPipe[READ_HANDLE], fileno(stdin)) == -1) {
        fprintf (stderr, "Unable to redirect stdout\n");
-       exit (1);
+       return NULL;
   }
 #endif
 
@@ -112,7 +112,7 @@ Subprocess_Run(char *argv[], char *input)
 #if WIN32
   if ((pid = _spawnvp(P_NOWAIT, argv[0], argv)) == -1) {
     fprintf( stderr, "Unable to start %s\n", argv[0]);
-    exit(1);
+    return NULL;
   }
 
 #else
@@ -122,7 +122,7 @@ Subprocess_Run(char *argv[], char *input)
 
        if (execvp(argv[0], argv) == -1) {
 	    fprintf( stderr, "Unable to start cgc\n" );
-	    exit(1);
+	    return NULL;
        }
        /* Unreached... */
   } else {
@@ -135,20 +135,20 @@ Subprocess_Run(char *argv[], char *input)
   // Restore the pipes for us.
   if(_dup2(hStdOut, _fileno(stdout)) != 0) {
     fprintf (stderr, "Unable to restore stdout\n");
-    exit (1);
+    return NULL;
   }
   if(_dup2(hStdIn, _fileno(stdin)) != 0) {
     fprintf (stderr, "Unable to restore stdin\n");
-    exit (1);
+    return NULL;
   }
 #else
   if(dup2(hStdOut, fileno(stdout)) == -1) {
        fprintf (stderr, "Unable to restore stdout\n");
-       exit (1);
+       return NULL;
   }
   if( dup2(hStdIn, fileno(stdin)) == -1) {
        fprintf (stderr, "Unable to restore stdin\n");
-       exit (1);
+       return NULL;
   }
 #endif
 
@@ -205,7 +205,7 @@ Subprocess_Run(char *argv[], char *input)
       break;
     } else if (ret == -1) {
       fprintf (stderr, "Error reading output compiler pipe.\n");
-      exit(1);
+      return NULL;
     }
     buf[ret] = '\0';
 
@@ -230,7 +230,7 @@ Subprocess_Run(char *argv[], char *input)
   if (ret != 0) {
     fprintf (stderr, "%s exited with an error (%#x):\n", argv[0], ret);
     fwrite (output, strlen(output), 1, stderr);
-    exit(1);
+    return NULL;
   }
 
   close (hStdOutPipe[READ_HANDLE]);
