@@ -22,12 +22,26 @@ int64 GetTimeTSC() {
    __asm _emit 0x0f __asm _emit 0x31
 }
 #else
+#if defined(__ppc__)
+static inline
+long long GetTimeTSC() {
+   int64 t;
+   int32 tl, th;
+   __asm__ __volatile__("mftbu %0" : "=b" (th));
+   __asm__ __volatile__("mftb %0" : "=b" (tl));
+   t = th;
+   t <<= 32;
+   t += tl;
+   return t;
+}
+#else
 static inline
 int64 GetTimeTSC() {
    int64 t;
    __asm__ __volatile__("rdtsc" : "=A" (t));
    return t;
 }
+#endif
 #endif
 
 extern int64 GetTime(void);
