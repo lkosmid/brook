@@ -892,7 +892,8 @@ kernel void combine (float input1[][],
                      out float output<>,
                      float2 startsecond,
                      float2 endsecond,
-                     float2 maxinput2value){
+                     float2 maxinput2value,
+                     float inf){
    //   getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
    //              -shift1,
    //              maxinput1value,
@@ -915,7 +916,7 @@ kernel void combine (float input1[][],
       if (secondindex.y>endsecond.y
           ||(secondindex.y==endsecond.y
              &&secondindex.x>=endsecond.x)) {
-         output=1.0f/floor(.5);
+         output=inf;
       }else {
          output = input2[secondindex];
       }
@@ -957,7 +958,8 @@ unsigned int  voutCombine(struct __BRTStream *outleft_stream,
               output_stream,
               startsecond,
               endsecond,
-              maxrightvalue);
+              maxrightvalue,
+              1.0f/(float)floor(.5));
       streamSwap (*output,output_stream);
    }
    return totalsize;
