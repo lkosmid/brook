@@ -187,7 +187,8 @@ int main (int argc, char ** argv) {
   char rapid=0;
   char raw_v=0;
   int i;
-  SetupMillisTimer();
+  SetupMillisTimer(argc,argv);
+  
    for (i=0;i<argc;++i) {
      char match=0;
      int j;
@@ -209,9 +210,20 @@ int main (int argc, char ** argv) {
        i--;
      }
    }
-   if (raw_v) return raw_vout (argc, argv);
-   if (vol_div) return volume_division(argc,argv);
-   if (rapid) return rapidCollideMain (argc,argv);
+   if (raw_v) {
+     raw_vout (argc, argv);
+     CleanupMillisTimer();
+     return 0;
+   }
+   if (vol_div) {
+     volume_division(argc,argv);
+     CleanupMillisTimer();
+     return 0;
+   }
+   if (rapid) {
+     rapidCollideMain (argc,argv);
+     CleanupMillisTimer();
+   }
    for (i=0;i<argc;++i) {
      char match=0;
      int j;

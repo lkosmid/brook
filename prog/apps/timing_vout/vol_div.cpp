@@ -360,7 +360,11 @@ int volume_division (int argc, char ** argv) {
          // setup the current and next slice Z coordinates
          sliceZ.x=0.0f;sliceZ.y=1.0f;
          for (i=0;i<dat.depth-1;++i) {//loop through z values
-           
+               if (firstRound) {
+                   TallyKernel("processSlice",
+                               volumeData[i],
+                               i!=dat.depth-1?volumeData[i+1]:volumeData[i]);
+               }
               // read a new slice for the 'next' category
                use_vout_filter?
                  /// only output triangle lookup indices and centers 
@@ -422,12 +426,18 @@ int volume_division (int argc, char ** argv) {
                 // process all the first triangles
                 processFirstTriangles(trianglesFirst,v,volumeTriangles);
                 Aggregate3(trianglesFirst,agg,agg);
-
+                if (firstRound) {
+                  TallyKernel("processFirstTriangles",trianglesFirst);
+                }
                 // process the rest
                 processTriangles(triangles, 
                                  v,
                                  volumeTriangles,
                                  newsize);
+                if (firstRound) {
+                  TallyKernel("processTriangles",newsize);
+                }
+
                 //write it to the same place in memory
                 if (debug_model) {
                   vertexData.push_back(trianglesFirst);
@@ -444,7 +454,11 @@ int volume_division (int argc, char ** argv) {
               }else {
                   // each triangle stream will be 3x bigger than the volume
                   
-                 // output exactly 5 vertices for each input 
+                 // output exactly 5 vertices for each input
+                if (rr==1) {
+                  TallyKernel("processTrianglesNoCompactOneOut",trianglesB);
+                }
+ 
                  processTrianglesNoCompactOneOut(trianglesB,
                                            vbak, 
                                            volumeTriangles);

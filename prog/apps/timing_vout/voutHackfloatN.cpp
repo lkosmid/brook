@@ -6,9 +6,9 @@
 
 #include <brook.hpp>
 #include <stdio.h>
-
+#include "timing.h"
 #include <stdlib.h>
-
+extern bool firstRound;
 unsigned int  debug_vout = 0;
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
 
@@ -5811,10 +5811,16 @@ float  shiftValuesfloat(::brook::stream list_stream, ::brook::stream (*output_st
   maxvalue.y = (float ) (WIDTH);
   logN = (unsigned int ) (ceil(log((float ) (LENGTH) * WIDTH) / log(2.000000f)));
   debugStreamPrint(list_stream,"Combined...");
+  if (firstRound) {
+    TallyKernel("NanToBoolRight",ret_stream);
+  }
   NanToBoolRightfloat(list_stream,ret_stream,(float ) (sign),maxvalue);
   for (i = 1; i < logN; ++i)
   {
     streamSwap(ret_stream,tmp_stream);
+    if (firstRound) {
+      TallyKernel("NanToRight",ret_stream);
+    }
     NanToRightfloat(tmp_stream,ret_stream,(float ) (sign) * (1 << i),maxvalue);
   }
 
@@ -5840,11 +5846,19 @@ float  shiftValuesfloat(::brook::stream list_stream, ::brook::stream (*output_st
 
   LogNMinusK = logN - 2;
   i = logN - 1;
+    if (firstRound) {
+      TallyKernel("EstablishGuess",guess_stream);
+    }
+
   EstablishGuessfloat(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
   for (i = 1; i < logN; ++i)
   {
     LogNMinusK = logN - 1 - i;
     streamSwap(tmp_stream,guess_stream);
+    if (firstRound) {
+      TallyKernel("UpdateGuess",guess_stream);
+    }
+
     UpdateGuessfloat(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
   }
 
@@ -5862,6 +5876,9 @@ float  shiftValuesfloat(::brook::stream list_stream, ::brook::stream (*output_st
 
       if (width)
       {
+        if (firstRound) {
+          TallyKernel("RelativeGather",proper_output_stream);
+        }
         RelativeGatherfloat(proper_output_stream,guess_stream,list_stream,*sentinelStream(2),(float ) (sign),maxvalue,maxshift);
       }
 
@@ -15019,10 +15036,17 @@ float  shiftValuesfloat2(::brook::stream list_stream, ::brook::stream (*output_s
   maxvalue.y = (float ) (WIDTH);
   logN = (unsigned int ) (ceil(log((float ) (LENGTH) * WIDTH) / log(2.000000f)));
   debugStreamPrint(list_stream,"Combined...");
+  if (firstRound) {
+    TallyKernel("NanToBoolRight",ret_stream);
+  }
+
   NanToBoolRightfloat2(list_stream,ret_stream,(float ) (sign),maxvalue);
   for (i = 1; i < logN; ++i)
   {
     streamSwap(ret_stream,tmp_stream);
+    if (firstRound) {
+      TallyKernel("NanToRight",ret_stream);
+    }
     NanToRightfloat2(tmp_stream,ret_stream,(float ) (sign) * (1 << i),maxvalue);
   }
 
@@ -15048,11 +15072,18 @@ float  shiftValuesfloat2(::brook::stream list_stream, ::brook::stream (*output_s
 
   LogNMinusK = logN - 2;
   i = logN - 1;
+  
+  if (firstRound) {
+    TallyKernel("EstablishGuess",guess_stream);
+  }
   EstablishGuessfloat2(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
   for (i = 1; i < logN; ++i)
   {
     LogNMinusK = logN - 1 - i;
     streamSwap(tmp_stream,guess_stream);
+    if (firstRound) {
+      TallyKernel("UpdateGuess",guess_stream);
+    }    
     UpdateGuessfloat2(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
   }
 
@@ -15070,6 +15101,10 @@ float  shiftValuesfloat2(::brook::stream list_stream, ::brook::stream (*output_s
 
       if (width)
       {
+        if (firstRound) {
+          TallyKernel("RelativeGather",proper_output_stream);
+        }
+
         RelativeGatherfloat2(proper_output_stream,guess_stream,list_stream,*sentinelStream(2),(float ) (sign),maxvalue,maxshift);
       }
 
@@ -24223,10 +24258,16 @@ float  shiftValuesfloat3(::brook::stream list_stream, ::brook::stream (*output_s
   maxvalue.y = (float ) (WIDTH);
   logN = (unsigned int ) (ceil(log((float ) (LENGTH) * WIDTH) / log(2.000000f)));
   debugStreamPrint(list_stream,"Combined...");
+  if (firstRound) {
+    TallyKernel("NanToBoolRight",ret_stream);
+  }
   NanToBoolRightfloat3(list_stream,ret_stream,(float ) (sign),maxvalue);
   for (i = 1; i < logN; ++i)
   {
     streamSwap(ret_stream,tmp_stream);
+    if (firstRound) {
+      TallyKernel("NanToRight",ret_stream);
+    }
     NanToRightfloat3(tmp_stream,ret_stream,(float ) (sign) * (1 << i),maxvalue);
   }
 
@@ -24252,11 +24293,19 @@ float  shiftValuesfloat3(::brook::stream list_stream, ::brook::stream (*output_s
 
   LogNMinusK = logN - 2;
   i = logN - 1;
+  if (firstRound) {
+    TallyKernel("EstablishGuess",guess_stream);
+  }
+
   EstablishGuessfloat3(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
   for (i = 1; i < logN; ++i)
   {
     LogNMinusK = logN - 1 - i;
     streamSwap(tmp_stream,guess_stream);
+    if (firstRound) {
+      TallyKernel("UpdateGuess",guess_stream);
+    }    
+
     UpdateGuessfloat3(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
   }
 
@@ -24274,6 +24323,9 @@ float  shiftValuesfloat3(::brook::stream list_stream, ::brook::stream (*output_s
 
       if (width)
       {
+        if (firstRound) {
+          TallyKernel("RelativeGather",proper_output_stream);
+        }
         RelativeGatherfloat3(proper_output_stream,guess_stream,list_stream,*sentinelStream(2),(float ) (sign),maxvalue,maxshift);
       }
 
@@ -33334,10 +33386,17 @@ float  shiftValuesfloat4(::brook::stream list_stream, ::brook::stream (*output_s
   maxvalue.y = (float ) (WIDTH);
   logN = (unsigned int ) (ceil(log((float ) (LENGTH) * WIDTH) / log(2.000000f)));
   debugStreamPrint(list_stream,"Combined...");
+  if (firstRound) {
+    TallyKernel("NanToBoolRight",ret_stream);
+  }
+
   NanToBoolRightfloat4(list_stream,ret_stream,(float ) (sign),maxvalue);
   for (i = 1; i < logN; ++i)
   {
     streamSwap(ret_stream,tmp_stream);
+    if (firstRound) {
+      TallyKernel("NanToRight",ret_stream);
+    }
     NanToRightfloat4(tmp_stream,ret_stream,(float ) (sign) * (1 << i),maxvalue);
   }
 
@@ -33363,11 +33422,17 @@ float  shiftValuesfloat4(::brook::stream list_stream, ::brook::stream (*output_s
 
   LogNMinusK = logN - 2;
   i = logN - 1;
+  if (firstRound) {
+    TallyKernel("EstablishGuess",guess_stream);
+  }
   EstablishGuessfloat4(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
   for (i = 1; i < logN; ++i)
   {
     LogNMinusK = logN - 1 - i;
     streamSwap(tmp_stream,guess_stream);
+    if (firstRound) {
+      TallyKernel("UpdateGuess",guess_stream);
+    }    
     UpdateGuessfloat4(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
   }
 
@@ -33385,6 +33450,10 @@ float  shiftValuesfloat4(::brook::stream list_stream, ::brook::stream (*output_s
 
       if (width)
       {
+
+        if (firstRound) {
+          TallyKernel("RelativeGather",proper_output_stream);
+        }
         RelativeGatherfloat4(proper_output_stream,guess_stream,list_stream,*sentinelStream(2),(float ) (sign),maxvalue,maxshift);
       }
 

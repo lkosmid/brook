@@ -95,7 +95,7 @@ return 0;
   polys.push_back(float4(SIZE/2,0,SIZE,SIZE/2));
   polys.push_back(float4(SIZE/2,SIZE/2,SIZE,SIZE));
   int ite;
-  SetupMillisTimer();
+  SetupMillisTimer(0,0);
   if (cheatdenom) printf ("Warning: Cheating to get lower even results\n");
   start = GetTimeMillis();
   ite=0;

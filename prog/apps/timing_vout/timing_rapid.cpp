@@ -224,6 +224,9 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
     num_intersections=0;
     do   {
       if (rr<2) {
+        if (firstRound) {
+          TallyKernel("Collide",trav);
+        }
         Collide(trav,m1,m2,nextNode,hits);
       }else {
 
@@ -254,6 +257,9 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
           temptrav = temptravL[iter];          
           streamSwap(temptrav,trav);
           if (rr<2) {
+            if (firstRound) {
+              TallyKernel("updateCurrentNode",trav);
+            }
             updateCurrentNode(stretchX,nextNode,m1,m2,temptrav,trav);
           }else {
             updateCurrentNode(stretchX,nextNode,m1,m2,temptrav,trav);
@@ -288,6 +294,10 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
         }
         brook::stream triout= trioutL[iter];
         if (rr<2) {
+            if (firstRound) {
+              TallyKernel("CheckTriangleCollide",hits);
+            }
+
           CheckTriangleCollide(csRapidColliderrX,csRapidColliderrY,csRapidColliderrZ,csRapidColliderT,hits,t1List,t2List,triout);
         }else {
           CheckTriangleCollideNoCompact(csRapidColliderrX,csRapidColliderrY,csRapidColliderrZ,csRapidColliderT,
