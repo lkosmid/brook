@@ -1207,9 +1207,9 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
              shader << "\t" << "float4 __indexofoutput = "
                     << "_computeindexof( "
                     << "_tex_" << *args[i]->name << "_pos, "
-                    << "float4( _tex_" << *args[i]->name << "_pos*"
+                    << "floor(float4( _tex_" << *args[i]->name << "_pos*"
                     << "_const_" << *args[i]->name << "_invscalebias.xy + "
-                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0));\n";
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n";
           }
         } else {
           if (globals.enableGPUAddressTranslation) {
@@ -1233,9 +1233,9 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
              shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "
                     << "_computeindexof( "
                     << "_tex_" << *args[i]->name << "_pos, "
-                    << "float4( _tex_" << *args[i]->name << "_pos*"
+                    << "floor(float4( _tex_" << *args[i]->name << "_pos*"
                     << "_const_" << *args[i]->name << "_invscalebias.xy + "
-                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0));\n";
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n";
           }
         }
      }
