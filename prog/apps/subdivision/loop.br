@@ -176,7 +176,7 @@ kernel void computeNeighbors(Tri tgather[][],
   v.AAB.xyz = eAAB?lerp(t.A.xyz,u.AAB.xyz,.5):zero3;
   if(1)if(eAAB&&u.AAB.w)
      v.AAB.xyz = lerp(v.AAB.xyz,
-                      lerp(eACC?u.AAC.xyz:u.AC.xyz,u.AB.xyz,.5),
+                      lerp(eAAC?u.AAC.xyz:u.AC.xyz,u.AB.xyz,.5),
                       .25);
   v.AAB.w = AC_A.y;
   v.AAC.xyz = eAAC?lerp(t.A.xyz,u.AAC.xyz,.5):zero3;
