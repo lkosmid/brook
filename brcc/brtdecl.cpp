@@ -343,10 +343,19 @@ void CPUGatherType::printType(std::ostream &out, Symbol * name, bool showBase, i
 }
 void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) const {
 	if (!copy_on_write) {
+           Symbol nothing;nothing.name="";
+           if (dimension==1) {
+              out << "__BrtArray1d<";
+		printSubtype(out,&nothing,true,level);              
+           }else if (dimension==2) {
+              out << "__BrtArray2d<";
+		printSubtype(out,&nothing,true,level);
+           }else {
 		out << "__BrtArray<";
-		Symbol nothing;nothing.name="";
+
 		printSubtype(out,&nothing,true,level);
 		out << ", "<<dimension <<"  , false";		
+           }
 	}else {
 		out << "Array"<<dimension<<"d<";
 		

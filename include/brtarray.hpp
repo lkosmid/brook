@@ -1,6 +1,116 @@
 #ifndef BRTARRAY_H_
 #define BRTARRAY_H_
 #ifndef MULTIPLE_ARRAY_BOUNDS_LOOKUPS
+template <class W> unsigned int clampArrayBound(W val, unsigned int extent) {
+    val=(W)floor(val+.25);
+    return val<0?0:((unsigned int)val)>=extent?extent-1:(unsigned int)val;
+}
+template <class VALUE> class __BrtArray1d {
+  unsigned int extentsx;
+  VALUE * data;
+  brook::Stream * s;
+  unsigned int getSize() const{
+    return extentsx;
+  }
+  void init(VALUE * data, const unsigned int *extents) {
+    extentsx=extents[0];
+    this->data =data;
+  }
+public:
+  __BrtArray1d(VALUE * data, const unsigned int *extents):s(0) {
+    init(data,extents);
+  }
+  __BrtArray1d(brook::Stream * stm):s(0) {
+    init(stm->getData(brook::Stream::READ),stm->getExtents());
+    this->s=stm;
+  }
+  __BrtArray1d& operator = (const __BrtArray1d<VALUE> &c) {
+    extentsx=c.extentsx;
+    this->data = c.data;
+    brook::Stream * tmpstr=this->s;
+    if (c.s) {
+      this->s=c.s;
+      this->data=this->s->getData(brook::Stream::READ);
+    }
+    if (tmpstr) {
+      tmpstr->releaseData(brook::Stream::READ);
+    }    
+    return *this;
+  }
+  __BrtArray1d(const __BrtArray1d <VALUE>&c):s(0){
+    *this=c;
+  }
+  ~__BrtArray1d() {
+    if (s)
+      s->releaseData(brook::Stream::READ);
+  }
+  template <class T> unsigned int indexOf (const T &index) const{
+    return clampArrayBound(index.unsafeGetAt(0),extentsx);
+  }
+  template <class T> VALUE & operator [] (const T&index) {
+    return data[indexOf(index)];
+  }
+  template <class T> const VALUE & operator [] (const T&index) const{
+    return data[indexOf(index)];
+  }
+};
+
+template <class VALUE> class __BrtArray2d {
+  unsigned int extentsx,extentsy;
+  VALUE * data;
+  brook::Stream * s;
+  unsigned int getSize() const{
+    return extentsx*extentsy;
+  }
+  void init(VALUE * data, const unsigned int *extents) {
+    extentsx=extents[1];
+    extentsy=extents[0];
+    this->data =data;
+  }
+public:
+  __BrtArray2d(VALUE * data, const unsigned int *extents):s(0) {
+    init(data,extents);
+  }
+  __BrtArray2d(brook::Stream * stm):s(0) {
+    init(stm->getData(brook::Stream::READ),stm->getExtents());
+    this->s=stm;
+  }
+  __BrtArray2d& operator = (const __BrtArray2d<VALUE> &c) {
+    extentsx=c.extentsx;
+    extentsy=c.extentsy;    
+    this->data = c.data;
+    brook::Stream * tmpstr=this->s;
+    if (c.s) {
+      this->s=c.s;
+      this->data=this->s->getData(brook::Stream::READ);
+    }
+    if (tmpstr) {
+      tmpstr->releaseData(brook::Stream::READ);
+    }    
+    return *this;
+  }
+  __BrtArray2d(const __BrtArray2d <VALUE>&c):s(0){
+    *this=c;
+  }
+  ~__BrtArray2d() {
+    if (s)
+      s->releaseData(brook::Stream::READ);
+  }
+  template <class T> unsigned int indexOf (const T &index) const{
+    return (T::size!=1?
+               clampArrayBound(index.unsafeGetAt(1),extentsy):
+               0)
+             *extentsx
+        + clampArrayBound(index.unsafeGetAt(0),extentsx);
+  }
+  template <class T> VALUE & operator [] (const T&index) {
+    return data[indexOf(index)];
+  }
+  template <class T> const VALUE & operator [] (const T&index) const{
+    return data[indexOf(index)];
+  }
+};
+
 
 template <class VALUE, unsigned int dims, bool copy_data> class __BrtArray {
 	unsigned int extents[dims];
