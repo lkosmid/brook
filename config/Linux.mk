@@ -13,7 +13,7 @@ BINSUFFIX        :=
 
 SYSTEM_LIBS      := 
 
-CFLAGS           += -DBUILD_ARB
+CFLAGS           += -DBUILD_OGL
 C_INCLUDE_FLAG   := -I  
 C_DEBUG_FLAG     := -g3 -Wall 
 C_RELEASE_FLAG   := -O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -frerun-loop-opt 
