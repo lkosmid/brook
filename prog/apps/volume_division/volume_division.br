@@ -155,7 +155,7 @@ float tof (int a) {
          float2 sliceZ;
          float cur<(dat.height),(dat.width)>;
          float next<(dat.height),(dat.width)>;
-         float4 v<1,(dat.width)>;
+         float4 v<(dat.height),(dat.width)>;
          iter float2 center <(dat.height),(dat.width)> 
            = iter (float2(0.0f,0.0f),
                    float2(tof(dat.width),
@@ -174,7 +174,7 @@ float tof (int a) {
                           tof(dat.height)));
                                                          
          readPPM3dSlice(dat,0,slice);
-         streamRead(cur,slice);
+         streamRead(next,slice);
 
          sliceZ.x=sliceZ.y=0.0f;
          for (i=0;i<dat.depth-1;++i) {

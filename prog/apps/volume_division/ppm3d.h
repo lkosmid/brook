@@ -37,9 +37,9 @@ void printVolume (const ppm &fp) {
    printf("<Points>\n");
    for (;i!=fp.vertices.end();++i) {
       if (finite_float(i->x)&&finite_float(i->y)&&finite_float(i->z)) {
-         if (i->x>0&&i->y>0&&i->z>0) {
-            printf ("<Point><Location x=\"%f\" y=\"%f\" z=\"%f\"/><Normal i=\"1\" j=\"0\" k=\"0\"/></Point>\n",i->x,i->y,i->z);
-            printf ("<Point><Location x=\"%f\" y=\"%f\" z=\"%f\"/></Point>\n",i->x+.5,i->y+.5,i->z+.5);
+         if (i->x>-.50&&i->y>-.50&&i->z>-.50) {
+            printf ("<Point><Location x=\"%3.2f\" y=\"%3.2f\" z=\"%3.2f\"/><Normal i=\"1\" j=\"0\" k=\"0\"/></Point>\n",i->x,i->y,i->z);
+            printf ("<Point><Location x=\"%3.2f\" y=\"%3.2f\" z=\"%3.2f\"/></Point>\n",i->x+.5,i->y+.5,i->z+.5);
             ++j;
          }
       }
@@ -92,6 +92,9 @@ unsigned int findNaN(std::vector<float4> v) {
    return pos;
 }
 float4* consolidateVertices(ppm &fp,float4 ss/*stream size*/) {
+   unsigned int siz = fp.vertices.size();
+   fp.vertices.insert(fp.vertices.end(),ss.x*ss.y,float4(0,0,0,0));
+   return &fp.vertices[siz];
    unsigned int size = (unsigned int)ss.x*(unsigned int)ss.y;
    unsigned int nanloc= findNaN(fp.vertices);
    if (size>fp.vertices.size()-nanloc) {

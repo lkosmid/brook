@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-unsigned int debug_vout = 1;
+unsigned int debug_vout = 0;
 
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
@@ -183,6 +183,8 @@ kernel void EstablishGuessfloat(float scatterindex[][],
                           sign);
     }
 }
+
+
 kernel void UpdateGuessfloat(float scatterindex[][],
                                 out float output<>,
                                 float value[][],
@@ -203,13 +205,22 @@ kernel void RelativeGatherfloat(out float output<>,
                                 float gatherindex[][],
                                 float value[][],
                                 float2 sign,
-                                float2 maxvalue) {
+                                float2 maxvalue,
+                                float maxshift) {
    float2 nextPlaceToLook;
+   float2 isoffedge;
    getIndexAt(indexof(output),
               -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   valueAtfloat(value,nextPlaceToLook,output,maxvalue,sign.y);   
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
+   if (isoffedge.y>=maxvalue.y
+       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+     output=sign.y;
+   }else {
+     output=value[nextPlaceToLook];
+   }
+
 }
 
 
@@ -290,7 +301,8 @@ float shiftValuesfloat(float list_stream <>,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
                                  float2((float)sign,1.0f/(float)floor(.5)),
-                                 maxvalue);
+                                 maxvalue,
+                                 maxshift);
         }
         streamSwap(output_stream,proper_output_stream);
       }
@@ -1182,6 +1194,8 @@ kernel void EstablishGuessfloat2(float scatterindex[][],
                           sign);
     }
 }
+
+
 kernel void UpdateGuessfloat2(float scatterindex[][],
                                 out float output<>,
                                 float2 value[][],
@@ -1202,13 +1216,22 @@ kernel void RelativeGatherfloat2(out float2 output<>,
                                 float gatherindex[][],
                                 float2 value[][],
                                 float2 sign,
-                                float2 maxvalue) {
+                                float2 maxvalue,
+                                float maxshift) {
    float2 nextPlaceToLook;
+   float2 isoffedge;
    getIndexAt(indexof(output),
               -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   valueAtfloat2(value,nextPlaceToLook,output,maxvalue,sign.y);   
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
+   if (isoffedge.y>=maxvalue.y
+       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+     output=sign.y;
+   }else {
+     output=value[nextPlaceToLook];
+   }
+
 }
 
 
@@ -1289,7 +1312,8 @@ float shiftValuesfloat2(float2 list_stream <>,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
                                  float2((float)sign,1.0f/(float)floor(.5)),
-                                 maxvalue);
+                                 maxvalue,
+                                 maxshift);
         }
         streamSwap(output_stream,proper_output_stream);
       }
@@ -2181,6 +2205,8 @@ kernel void EstablishGuessfloat3(float scatterindex[][],
                           sign);
     }
 }
+
+
 kernel void UpdateGuessfloat3(float scatterindex[][],
                                 out float output<>,
                                 float3 value[][],
@@ -2201,13 +2227,22 @@ kernel void RelativeGatherfloat3(out float3 output<>,
                                 float gatherindex[][],
                                 float3 value[][],
                                 float2 sign,
-                                float2 maxvalue) {
+                                float2 maxvalue,
+                                float maxshift) {
    float2 nextPlaceToLook;
+   float2 isoffedge;
    getIndexAt(indexof(output),
               -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   valueAtfloat3(value,nextPlaceToLook,output,maxvalue,sign.y);   
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
+   if (isoffedge.y>=maxvalue.y
+       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+     output=sign.y;
+   }else {
+     output=value[nextPlaceToLook];
+   }
+
 }
 
 
@@ -2288,7 +2323,8 @@ float shiftValuesfloat3(float3 list_stream <>,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
                                  float2((float)sign,1.0f/(float)floor(.5)),
-                                 maxvalue);
+                                 maxvalue,
+                                 maxshift);
         }
         streamSwap(output_stream,proper_output_stream);
       }
@@ -3180,6 +3216,8 @@ kernel void EstablishGuessfloat4(float scatterindex[][],
                           sign);
     }
 }
+
+
 kernel void UpdateGuessfloat4(float scatterindex[][],
                                 out float output<>,
                                 float4 value[][],
@@ -3200,13 +3238,22 @@ kernel void RelativeGatherfloat4(out float4 output<>,
                                 float gatherindex[][],
                                 float4 value[][],
                                 float2 sign,
-                                float2 maxvalue) {
+                                float2 maxvalue,
+                                float maxshift) {
    float2 nextPlaceToLook;
+   float2 isoffedge;
    getIndexAt(indexof(output),
               -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   valueAtfloat4(value,nextPlaceToLook,output,maxvalue,sign.y);   
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
+   if (isoffedge.y>=maxvalue.y
+       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+     output=sign.y;
+   }else {
+     output=value[nextPlaceToLook];
+   }
+
 }
 
 
@@ -3287,7 +3334,8 @@ float shiftValuesfloat4(float4 list_stream <>,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
                                  float2((float)sign,1.0f/(float)floor(.5)),
-                                 maxvalue);
+                                 maxvalue,
+                                 maxshift);
         }
         streamSwap(output_stream,proper_output_stream);
       }
