@@ -37,13 +37,25 @@ namespace brook {
   private:
     DX9Kernel( DX9RunTime* inRuntime );
     bool initialize( const void* inSource[] );
-    bool initialize( const char** inProgramStrings );
+    bool initialize( const ::brook::desc::gpu_kernel_desc* inDescriptor );
     virtual ~DX9Kernel();
 
-    void PushSamplers( DX9Stream* s );
-    void PushTexCoord( const DX9FatRect& r );
-    int PushConstantImpl(const float4 &val);
-    void ClearInputs();
+    void pushArgument();
+    void pushStreamArgument( DX9Stream* inStream );
+    void pushConstantImpl( const float4& inValue );
+    void pushATShapeConstant( DX9Stream* inStream ); // special-case hack?
+    void pushSamplers( DX9Stream* inStream );
+    void pushSampler( IDirect3DBaseTexture9* inSampler );
+    void pushInterpolant( const DX9FatRect& inRect );
+    void pushOutputs( DX9Stream* inStream );
+    void pushOutput( IDirect3DSurface9* inOutput );
+
+    void clearArguments();
+    void clearInputs();
+//    void PushSamplers( DX9Stream* s );
+//    void PushTexCoord( const DX9FatRect& r );
+//    int PushConstantImpl(const float4 &val);
+//    void ClearInputs();
 
     void ReduceToStream( DX9Texture* inOutputBuffer );
 
@@ -57,12 +69,6 @@ namespace brook {
       DX9Texture* reductionBuffers[2];
       DX9Texture* slopBuffer;
 
-      int leftTextureUnit;
-      int rightTextureUnit;
-
-      int leftSampler;
-      int rightSampler;
-
       int currentDimension; // 0 for X, 1 for Y
 
       // the sizes of the various buffers
@@ -72,7 +78,7 @@ namespace brook {
       int slopCount;
     };
 
-    void bindReductionPassShader( int inFactor );
+    void executeReductionTechnique( int inFactor );
     void beginReduction( ReductionState& ioState );
     void executeReductionStep( ReductionState& ioState );
     void executeSlopStep( ReductionState& ioState );
@@ -80,20 +86,35 @@ namespace brook {
     void dumpReductionState( ReductionState& ioState );
     void dumpReductionBuffer( DX9Texture* inBuffer, int inWidth, int inHeight );
 
-//    void ReduceDimension( int& ioReductionBufferSide,
-//      int inReductionTex0, int inReductionTex1,
-//      int inDimensionCount, int inDimensionToReduce,
-//      int inExtentToReduceTo, int* ioRemainingExtents );
+    std::vector<DX9Stream*> argumentStreams;
+    std::vector<DX9Stream*> outputStreams;
+    std::vector<float4> argumentConstants;
+    std::vector<IDirect3DBaseTexture9*> argumentSamplers;
+    std::vector<DX9FatRect> argumentInterpolants;
+    std::vector<IDirect3DSurface9*> argumentOutputs;
 
-//    void BindReductionBaseState();
-//    void CopyStreamIntoReductionBuffer( DX9Stream* inStream );
-//    void BindReductionPassthroughState();
-//    void BindReductionOperationState();
+    struct ReductionArgumentInfo
+    {
+      ReductionArgumentInfo( void* inData, __BRTStreamType inType )
+        : data(inData), type(inType) {}
 
-//    void DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int dim );
-//    void DumpReduceDimensionState( int currentSide, int outputExtent,
-//      int remainingExtent, int remainingOtherExtent, int slopBufferCount, int dim );
+      void* data;
+      __BRTStreamType type;
+    };
 
+    std::vector<ReductionArgumentInfo> argumentReductions;
+    size_t inputReductionArgumentIndex;
+    size_t outputRedctionArgumentIndex;
+
+    std::vector<float4> globalConstants;
+    std::vector<IDirect3DBaseTexture9*> globalSamplers;
+    std::vector<IDirect3DSurface9*> globalOutputs;
+    std::vector<DX9FatRect> globalInterpolants;
+
+    // special magic
+    std::vector<size_t> atShapeConstants;
+
+/* TIM: complete rewrite...
     int argumentIndex;
 
     std::vector<bool> argumentUsesIndexof;
@@ -101,10 +122,8 @@ namespace brook {
 
     std::vector<DX9Stream*> outputStreams;
     std::vector<IDirect3DSurface9*> outputSurfaces;
-    DX9FatRect outputRect;
     int outputWidth, outputHeight;
 
-    std::vector<DX9FatRect> inputTextureRects;
     std::vector<float4> inputConstants;
 
     std::vector<DX9Stream*> inputStreams;
@@ -113,22 +132,25 @@ namespace brook {
 
     std::vector<void*> outputReductionDatas;
     std::vector<__BRTStreamType> outputReductionTypes;
+*/
+    std::vector<DX9FatRect> inputTextureRects;
+    DX9FatRect outputRect;
 
     DX9RunTime* runtime;
     IDirect3DDevice9* device;
 //    DX9PixelShader* pixelShader;
-    class Pass
+/*    class Pass
     {
     public:
       DX9PixelShader* pixelShader;
       int firstOutput, outputCount;
     };
     std::vector<Pass> standardPasses;
-    std::vector<Pass> fullTranslationPasses;
+    std::vector<Pass> fullTranslationPasses;*/
     DX9Stream* mustMatchShapeStream;
     void matchStreamShape( DX9Stream* inStream );
     bool streamShapeMismatch;
-
+/*
     class ReductionPass
     {
     public:
@@ -139,8 +161,80 @@ namespace brook {
 
     std::vector<ReductionPass> reductionPasses;
     void addReductionPass( int inReductionFactor, bool inFullTranslation, const Pass& inPass );
+*/
 
+    // TIM: new technique/pass holders
+    struct Input
+    {
+      Input( const ::brook::desc::gpu_input_desc& input )
+        : argumentIndex(input._argumentIndex), componentIndex(input._componentIndex)
+      {}
+
+      int argumentIndex;
+      int componentIndex;
+    };
+
+    struct Pass
+    {
+      DX9PixelShader* pixelShader;
+
+      void addConstant( const ::brook::desc::gpu_input_desc& input ) {
+        constants.push_back( Input(input) );
+      }
+
+      void addSampler( const ::brook::desc::gpu_input_desc& input ) {
+        samplers.push_back( Input(input) );
+      }
+
+      void addInterpolant( const ::brook::desc::gpu_input_desc& input ) {
+        interpolants.push_back( Input(input) );
+      }
+
+      void addOutput( const ::brook::desc::gpu_input_desc& input ) {
+        outputs.push_back( Input(input) );
+      }
+
+      std::vector<Input> constants;
+      std::vector<Input> samplers;
+      std::vector<Input> interpolants;
+      std::vector<Input> outputs;
+    };
+
+    struct Technique
+    {
+      int reductionFactor;
+      bool outputAddressTranslation;
+      bool inputAddressTranslation;
+      std::vector<Pass> passes;  
+    };
+
+    struct ArgumentInfo
+    {
+      int firstConstantIndex; int constantCount;
+      int firstSamplerIndex; int samplerCount;
+      int firstInterpolantIndex; int interpolantCount;
+      int firstOutputIndex; int outputCount;
+    };
+
+    std::vector<Technique> techniques;
+
+    void mapTechnique( const Technique& inTechnique );
     void mapPass( const Pass& inPass );
+
+    void bindConstant( size_t inConstantIndex, const Input& inInput );
+    void bindSampler( size_t inSamplerIndex, const Input& inInput );
+    void bindInterpolant( size_t inInterpolantIndex, const Input& inInput );
+    void bindOutput( size_t inOutputIndex, const Input& inInput );
+    void disableOutput( size_t inOutputIndex );
+
+    float4 getConstant( int inArgument, int inComponent );
+    IDirect3DBaseTexture9* getSampler( int inArgument, int inComponent );
+    DX9FatRect getInterpolant( int inArgument, int inComponent );
+    IDirect3DSurface9* getOutput( int inArgument, int inComponent );
+    ArgumentInfo& getCurrentArgument();
+    size_t getCurrentArgumentIndex();
+
+    std::vector<ArgumentInfo> arguments;
 
     DX9Stream* inputReductionStream;
     int inputReductionStreamSamplerIndex;

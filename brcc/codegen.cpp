@@ -29,9 +29,74 @@ extern "C" {
 #include "brtkernel.h"
 #include "b2ctransform.h"
 #include "splitting/splitting.h"
-
-// TIM: needed?
 #include "brtdecl.h"
+
+// structures to store information about the resources
+// used in each pass/technique
+struct shader_input_info
+{
+  shader_input_info( int arg, int comp )
+    : argumentIndex(arg)
+  {
+    std::ostringstream out;
+    out << comp;
+    componentName = out.str();
+  }
+
+  shader_input_info( int arg, const std::string& comp )
+    : argumentIndex(arg), componentName(comp)
+  {}
+
+  int argumentIndex;
+  std::string componentName;
+};
+
+struct pass_info
+{
+  void addConstant( int arg, int comp ) {
+    constants.push_back( shader_input_info( arg, comp ) );
+  }
+
+  void addConstant( int arg, const std::string& comp ) {
+    constants.push_back( shader_input_info( arg, comp ) );
+  }
+
+  void addSampler( int arg, int comp ) {
+    samplers.push_back( shader_input_info( arg, comp ) );
+  }
+
+  void addInterpolant( int arg, int comp ) {
+    interpolants.push_back( shader_input_info( arg, comp ) );
+  }
+
+  void addInterpolant( int arg, const std::string& comp ) {
+    interpolants.push_back( shader_input_info( arg, comp ) );
+  }
+
+  void addOutput( int arg, int comp ) {
+    outputs.push_back( shader_input_info( arg, comp ) );
+  }
+
+  std::string shader;
+  std::vector<shader_input_info> constants;
+  std::vector<shader_input_info> samplers;
+  std::vector<shader_input_info> interpolants;
+  std::vector<shader_input_info> outputs;
+};
+
+struct technique_info
+{
+  technique_info()
+    : reductionFactor(-1),
+    outputAddressTranslation(false),
+    inputAddressTranslation(false)
+  {}
+
+  std::vector<pass_info> passes;
+  int reductionFactor;
+  bool outputAddressTranslation;
+  bool inputAddressTranslation;
+};
 
 /*
  * generate_hlsl_code --
@@ -236,13 +301,14 @@ static void generate_shader_structure_definitions( std::ostream& out ) {
 }
 
 static bool expandOutputArgumentStructureDecl(
-  std::ostream& shader, const std::string& argumentName, StructDef* structure, int& ioOutputReg, int inFirstOutput, int inOutputCount )
+  std::ostream& shader, const std::string& argumentName, int inArgumentIndex, int inComponentIndex, StructDef* structure, int& ioOutputReg, int inFirstOutput, int inOutputCount, pass_info& outPass)
 {
 	assert( !structure->isUnion() );
 
   bool used = false;
 
 	int elementCount = structure->nComponents;
+  int componentIndex = inComponentIndex;
 	for( int i = 0; i < elementCount; i++ )
 	{
 		Decl* elementDecl = structure->components[i];
@@ -254,7 +320,7 @@ static bool expandOutputArgumentStructureDecl(
 		BaseType* base = form->getBase();
 		StructDef* structure = findStructureDef( base );
     if( structure )
-			used = used || expandOutputArgumentStructureDecl( shader, argumentName, structure, ioOutputReg, inFirstOutput, inOutputCount );
+			used = expandOutputArgumentStructureDecl( shader, argumentName, inArgumentIndex, componentIndex, structure, ioOutputReg, inFirstOutput, inOutputCount, outPass ) || used;
 		else
 		{
       int outr = ioOutputReg++;
@@ -266,7 +332,10 @@ static bool expandOutputArgumentStructureDecl(
         shader << "out float4 __output_" << outr;
         shader << " : COLOR" << (outr - inFirstOutput);
         shader << ",\n\t\t";
+
+        outPass.addOutput( inArgumentIndex, componentIndex );
       }
+      componentIndex++;
 		}
 	}
   return used;
@@ -274,7 +343,7 @@ static bool expandOutputArgumentStructureDecl(
 
 
 static bool expandOutputArgumentDecl(
-  std::ostream& shader, const std::string& argumentName, Type* form, int& ioOutputReg, int inFirstOutput, int inOutputCount )
+  std::ostream& shader, const std::string& argumentName, int inArgumentIndex, int inComponentIndex, Type* form, int& ioOutputReg, int inFirstOutput, int inOutputCount, pass_info& outPass)
 {
   StructDef* structure = NULL;
 
@@ -294,7 +363,7 @@ static bool expandOutputArgumentDecl(
 
 	if( structure )
 	{
-		return expandOutputArgumentStructureDecl( shader, argumentName, structure, ioOutputReg, inFirstOutput, inOutputCount );
+		return expandOutputArgumentStructureDecl( shader, argumentName, inArgumentIndex, inComponentIndex, structure, ioOutputReg, inFirstOutput, inOutputCount, outPass );
 	}
 	else
 	{
@@ -306,6 +375,8 @@ static bool expandOutputArgumentDecl(
     shader << "out float4 __output_" << outr;
     shader << " : COLOR" << (outr - inFirstOutput);
     shader << ",\n\t\t";
+
+    outPass.addOutput( inArgumentIndex, inComponentIndex );
 
     return true;
 	}
@@ -406,8 +477,9 @@ static void expandOutputArgumentWrite(
 static void
 expandStreamStructureSamplerDecls(std::ostream& shader,
                                   const std::string& argumentName,
+                                  int inArgumentIndex, int inComponentIndex,
                                   StructDef* structure,
-                                  int& ioIndex, int& ioSamplerReg)
+                                  int& ioIndex, int& ioSamplerReg, pass_info& outPass)
 {
    assert(!structure->isUnion());
 
@@ -422,13 +494,15 @@ expandStreamStructureSamplerDecls(std::ostream& shader,
       BaseType* base = form->getBase();
       StructDef* structure = findStructureDef( base );
       if (structure)
-         expandStreamStructureSamplerDecls(shader, argumentName,
-                                           structure, ioIndex, ioSamplerReg);
+         expandStreamStructureSamplerDecls(shader, argumentName, inArgumentIndex, inComponentIndex,
+                                           structure, ioIndex, ioSamplerReg, outPass );
       else {
          shader << "uniform _stype __structsampler" << ioIndex++
                 << "_" << argumentName;
          shader << " : register (s" << ioSamplerReg++ << ")";
          shader <<  ",\n\t\t";
+
+         outPass.addSampler( inArgumentIndex, inComponentIndex+i );
       }
    }
 }
@@ -437,7 +511,8 @@ expandStreamStructureSamplerDecls(std::ostream& shader,
 static void
 expandStreamSamplerDecls(std::ostream& shader,
                          const std::string& inArgumentName,
-                         Type* inForm, int& samplerreg)
+                         int inArgumentIndex, int inComponentIndex,
+                         Type* inForm, int& samplerreg, pass_info& outPass)
 {
   StructDef* structure = NULL;
 
@@ -456,7 +531,8 @@ expandStreamSamplerDecls(std::ostream& shader,
      int index = 0;
 
      expandStreamStructureSamplerDecls(shader, inArgumentName,
-                                       structure, index, samplerreg);
+                                       inArgumentIndex, inComponentIndex,
+                                       structure, index, samplerreg, outPass );
   } else {
      // it had better be just a floatN
      // Output a sampler, texcoord, and scale_bias for
@@ -464,6 +540,8 @@ expandStreamSamplerDecls(std::ostream& shader,
      shader << "uniform _stype _tex_" << inArgumentName;
      shader << " : register (s" << samplerreg++ << ")";
      shader <<  ",\n\t\t";
+
+     outPass.addSampler( inArgumentIndex, inComponentIndex );
   }
 }
 
@@ -668,7 +746,7 @@ generate_shader_support(std::ostream& shader)
 }
 
 static void
-generate_shader_iter_arg(std::ostream& shader, Decl *arg, int& texcoord)
+generate_shader_iter_arg(std::ostream& shader, Decl *arg, int i, int& texcoord, pass_info& outPass)
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
@@ -680,6 +758,8 @@ generate_shader_iter_arg(std::ostream& shader, Decl *arg, int& texcoord)
       shader << ",\n\t\t";
       shader << "float4 __iterstep_" << argName;
       shader << ",\n\t\t";
+
+      // no real support under address translation yet
    } else {
       // Just output a texcoord for an iterator
       arg->form->getBase()->qualifier &= ~TQ_Iter;
@@ -687,6 +767,8 @@ generate_shader_iter_arg(std::ostream& shader, Decl *arg, int& texcoord)
       arg->form->getBase()->qualifier = qual;
       shader << argName << " : TEXCOORD" << texcoord++;
       shader <<  ",\n\t\t";
+
+      outPass.addInterpolant( (i+1), "kIteratorInterpolant_Value" );
    }
 }
 
@@ -694,7 +776,7 @@ generate_shader_iter_arg(std::ostream& shader, Decl *arg, int& texcoord)
 static void
 generate_shader_out_arg(std::ostream& shader, Decl *arg,
                         bool& hasDoneIndexofOutput, bool needIndexOfArg,
-                        int i, int& texcoord, int &constreg)
+                        int i, int& texcoord, int &constreg, pass_info& outPass)
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
@@ -709,6 +791,9 @@ generate_shader_out_arg(std::ostream& shader, Decl *arg,
       shader << "float2 _tex_" << argName << "_pos : TEXCOORD"
              << texcoord++;
       shader <<  ",\n\t\t";
+
+      outPass.addConstant( (i+1), "kOutputConstant_Indexof" );
+      outPass.addInterpolant( (i+1), "kOutputInterpolant_Position" );
    }
 }
 
@@ -718,7 +803,7 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
                               bool& reductionArgumentComesBeforeStreamArgument,
                               std::vector<int>& reductionStreamArguments,
                               int reductionFactor, int i,
-                              int& texcoord, int& samplerreg)
+                              int& texcoord, int& samplerreg, pass_info& outPass)
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
@@ -727,33 +812,41 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
       reductionArgumentComesBeforeStreamArgument = true;
 
    reductionStreamArguments.push_back(i);
-   expandStreamSamplerDecls(shader, argName, arg->form, samplerreg);
 
    if (reductionStreamArguments.size() == 2) {
+      expandStreamSamplerDecls(shader, argName, 0, 1, arg->form, samplerreg, outPass );
       for (int r = 2; r < reductionFactor; r++) {
-         std::stringstream s;
-         s << "__reduce" << r;
-         std::string adjustedArgName = s.str();
+          std::stringstream s;
+          s << "__reduce" << r;
+          std::string adjustedArgName = s.str();
 
-         shader << "float2 _tex_" << adjustedArgName << "_pos : TEXCOORD"
+          shader << "float2 _tex_" << adjustedArgName << "_pos : TEXCOORD"
                 << texcoord++;
-         shader <<  ",\n\t\t";
+          shader <<  ",\n\t\t";
+
+          outPass.addInterpolant( 0, r-1 );
       }
+   }
+   else
+   {
+     expandStreamSamplerDecls(shader, argName, 0, 0, arg->form, samplerreg, outPass );
    }
 
    shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << texcoord++;
    shader <<  ",\n\t\t";
+
+   outPass.addInterpolant( 0, (reductionStreamArguments.size() == 2) ? reductionFactor-1 : 0 );
 }
 
 
 static void
-generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg,
-                        int& texcoord, int& constreg, int& samplerreg)
+generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg, int i,
+                        int& texcoord, int& constreg, int& samplerreg, pass_info& outPass )
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
 
-   expandStreamSamplerDecls(shader, argName, arg->form, samplerreg);
+   expandStreamSamplerDecls(shader, argName, (i+1), 0, arg->form, samplerreg, outPass );
 
    if (globals.enableGPUAddressTranslation) {
       shader << "uniform float4 __streamshape_" << argName;
@@ -765,22 +858,29 @@ generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg,
       shader << "uniform float2 __streamreshape_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader << ",\n\t\t";
+
+      outPass.addConstant( (i+1), "kStreamConstant_ATShape" );
+      outPass.addConstant( (i+1), "kStreamConstant_ATLinearize" );
+      outPass.addConstant( (i+1), "kStreamConstant_ATReshape" );
    } else {
       // Output a texcoord, and optional scale/bias
       if (needIndexOfArg) {
          shader << "uniform float4 _const_" << argName << "_invscalebias"
                 << " : register (c" << constreg++ << ")";
          shader <<  ",\n\t\t";
+         outPass.addConstant( (i+1), "kStreamConstant_Indexof" );
       }
       shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << texcoord++;
       shader <<  ",\n\t\t";
+
+      outPass.addInterpolant( (i+1), "kStreamInterpolant_Position" );
    }
 }
 
 
 static void
-generate_shader_gather_arg(std::ostream& shader, Decl *arg,
-                           int& constreg, int& samplerreg)
+generate_shader_gather_arg(std::ostream& shader, Decl *arg, int i,
+                           int& constreg, int& samplerreg, pass_info& outPass)
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
@@ -791,6 +891,9 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg,
       shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
       samplerreg += samplerCount;
 
+      for(int s = 0; s < samplerCount; s++)
+        outPass.addSampler( (i+1), s );
+
       shader << ",\n\t\t";
       shader << "uniform float4 __gatherlinearize_" << argName;
       shader << " : register(c" << constreg++ << ")";
@@ -798,15 +901,24 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg,
       shader << "uniform float2 __gatherreshape_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader <<  ",\n\t\t";
+
+      outPass.addConstant( (i+1), "kGatherConstant_ATLinearize" );
+      outPass.addConstant( (i+1), "kGatherConstant_ATReshape" );
    } else {
       // TIM: TODO: handle multi-sampler array for gathers...
       shader << "uniform _stype " << argName;
       shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
       samplerreg += samplerCount;
+
+      for(int s = 0; s < samplerCount; s++)
+        outPass.addSampler( (i+1), s );
+
       shader <<  ",\n\t\t";
       shader << "uniform float4 __gatherconst_" << argName
              << " : register (c" << constreg++ << ")";
       shader <<  ",\n\t\t";
+
+      outPass.addConstant( (i+1), "kGatherConstant_Shape" );
    }
 }
 
@@ -814,7 +926,8 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg,
 static char *
 generate_shader_code (Decl **args, int nArgs, const char* functionName,
                       int inFirstOutput, int inOutputCount,
-                      bool fullAddressTrans, int reductionFactor)
+                      bool fullAddressTrans, int reductionFactor,
+                      pass_info& outPass)
 {
   std::ostringstream shader;
   std::vector<int> reductionStreamArguments;
@@ -853,16 +966,17 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
 
      /* put the output in the argument list */
      if ((qual & TQ_Out) != 0 || (qual & TQ_Reduce) != 0) {
-        expandOutputArgumentDecl(shader, argName, args[i]->form,
-                                 outputReg, inFirstOutput, inOutputCount);
+       expandOutputArgumentDecl(shader, argName, isReduction ? 0 : (i+1),
+                                 0, args[i]->form,
+                                 outputReg, inFirstOutput, inOutputCount, outPass );
      }
 
      if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
         if ((qual & TQ_Iter) != 0) {
-           generate_shader_iter_arg(shader, args[i], texcoord);
+           generate_shader_iter_arg(shader, args[i], i, texcoord, outPass);
         } else if ((qual & TQ_Out) != 0) {
            generate_shader_out_arg(shader, args[i], hasDoneIndexofOutput,
-                                   needIndexOfArg, i, texcoord, constreg);
+                                   needIndexOfArg, i, texcoord, constreg, outPass);
         } else {
            if (isReduction) {
               assert(!needIndexOfArg && "can't use indexof in a reduction" );
@@ -870,19 +984,21 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
                                             reductionArgumentComesBeforeStreamArgument,
                                             reductionStreamArguments,
                                             reductionFactor, i, texcoord,
-                                            samplerreg);
+                                            samplerreg, outPass);
            } else {
-              generate_map_stream_arg(shader, args[i], needIndexOfArg,
-                                      texcoord, constreg, samplerreg);
+              generate_map_stream_arg(shader, args[i], needIndexOfArg, i,
+                                      texcoord, constreg, samplerreg, outPass);
            }
         }
      } else if (args[i]->isArray()) {
-        generate_shader_gather_arg(shader, args[i], constreg, samplerreg);
+        generate_shader_gather_arg(shader, args[i], i, constreg, samplerreg, outPass);
      } else {
         shader << "uniform ";
         args[i]->print(shader, true);
         shader << " : register (c" << constreg++ << ")";
         shader <<  ",\n\t\t";
+
+        outPass.addConstant( (i+1), 0 );
      }
   }
 
@@ -1335,38 +1451,83 @@ append_argument_information (const char *commentstring, char *fpcode,
  */
 
 static char *
-generate_c_code( const std::vector<std::string>& strings, const char *name, const char *id)
+generate_c_code( const std::vector<technique_info>& techniques, const char *name, const char *id)
 {
-  std::ostringstream fp;
-  int i;
+  assert( name );
+  assert( id );
 
-  assert (name);
+  std::string mangledName = std::string("__") + name + "_" + id;
 
-  if (strings.size() == 0) {
-    fp << "\nstatic const char *__" << name 
-       << "_" << id << " = NULL;\n";
-     return strdup(fp.str().c_str());
-  }
-
-  fp << "\nstatic const char* __" << name 
-     << "_" << id << "[] = {" << std::endl;
-
-  int count = strings.size();
-  for( int s = 0; s < count; s++ )
+  std::ostringstream out;
+  out << std::endl;
+  if( techniques.size() == 0 )
   {
-    const char* fpcode = strings[s].c_str();
-    fp << "\"";
-    while ((i = *fpcode++) != '\0') {
-      if (i == '\n')
-        fp << "\\n\"\n\"";
-      else
-        fp << (char) i;
-    }
-    fp << "\",\n";
+    out << "static const void* " << mangledName << " = 0;" << std::endl;
   }
-  fp << "NULL};\n";
+  else
+  {
+    out << "namespace {" << std::endl;
+    out << "\tusing namespace ::brook::desc;" << std::endl;
+    out << "\tstatic const gpu_kernel_desc " << mangledName << "_desc = gpu_kernel_desc()";
 
-  return strdup(fp.str().c_str());
+    for( std::vector<technique_info>::const_iterator i = techniques.begin(); i != techniques.end(); ++i )
+    {
+      out << std::endl;
+      out << "\t\t.technique( gpu_technique_desc()" << std::endl;
+
+      const technique_info& t = (*i);
+
+      if( t.reductionFactor >= 2 )
+        out << "\t\t\t.reduction_factor(" << t.reductionFactor << ")" << std::endl;
+
+      if( t.outputAddressTranslation )
+        out << "\t\t\t.output_address_translation()" << std::endl;
+      if( t.inputAddressTranslation )
+        out << "\t\t\t.input_address_translation()" << std::endl;
+
+      for( std::vector<pass_info>::const_iterator j = t.passes.begin(); j != t.passes.end(); ++j )
+      {
+        out << "\t\t\t.pass( gpu_pass_desc(" << std::endl;
+
+        const pass_info& p = (*j);
+
+        const char* code = p.shader.c_str();
+        out << "\t\t\t\t\"";
+
+        char c;
+        while( (c = *code++) != '\0' )
+        {
+          if( c == '\n' )
+            out << "\\n\"" << std::endl << "\t\t\t\t\"";
+          else
+            out << c;
+        }
+
+        out << "\")" << std::endl;
+
+        std::vector<shader_input_info>::const_iterator k;
+        for( k = p.constants.begin(); k != p.constants.end(); ++k )
+          out << "\t\t\t\t.constant(" << (*k).argumentIndex << ", " << (*k).componentName << ")" << std::endl;
+        for( k = p.samplers.begin(); k != p.samplers.end(); ++k )
+          out << "\t\t\t\t.sampler(" << (*k).argumentIndex << ", " << (*k).componentName << ")" << std::endl;
+        for( k = p.interpolants.begin(); k != p.interpolants.end(); ++k )
+          out << "\t\t\t\t.interpolant(" << (*k).argumentIndex << ", " << (*k).componentName << ")" << std::endl;
+        for( k = p.outputs.begin(); k != p.outputs.end(); ++k )
+          out << "\t\t\t\t.output(" << (*k).argumentIndex << ", " << (*k).componentName << ")" << std::endl;
+
+        out << "\t\t\t)" << std::endl;
+      }
+
+      out << "\t\t)";
+    }
+
+    out << ";" << std::endl;
+    out << "\tstatic const void* " << mangledName << " = &" << mangledName << "_desc;" << std::endl;
+
+    out << "}" << std::endl;
+  }
+
+  return strdup( out.str().c_str() );
 }
 
 int getShaderOutputCount( int argumentCount, Decl** arguments, bool& outIsReduction )
@@ -1400,68 +1561,78 @@ int getShaderOutputCount( int argumentCount, Decl** arguments, bool& outIsReduct
  *      Note: The caller is responsible for free()ing the returned string.
  */
 
-static char* generateShaderPass( Decl** args, int nArgs, const char* name, int firstOutput, int outputCount, bool ps20_not_fp30, bool fullAddressTrans, int reductionFactor )
+static char* generateShaderPass( Decl** args, int nArgs, const char* name, int firstOutput, int outputCount, bool ps20_not_fp30, bool fullAddressTrans, int reductionFactor, pass_info& outPass )
 {
-  
-    char* fpcode;
-    char* fpcode_with_brccinfo;
-    char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
-    if (shadercode) {
-      if (globals.verbose)
-        std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
 
-      if (globals.keepFiles) {
-          std::ofstream out;
-
-          out.open(globals.shaderoutputname);
-          if (out.fail()) {
-            std::cerr << "***Unable to open " <<globals.shaderoutputname<< "\n";
-          } else {
-            out << shadercode;
-            out.close();
-          }
-      }
-      if (globals.verbose) {
-        fprintf(stderr, "Generating %s code for %s outputs [%d, %d).\n",
-                ps20_not_fp30 ? "ps20" : "fp30", name, firstOutput, firstOutput+outputCount);
-      }
-      fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
-      if (fpcode==NULL) {
-	fprintf (stderr,"for kernel %s.\n",
-		 name);
-      }
-      free(shadercode);
-    } else {
-      fpcode = NULL;
-    }
-
-    if (fpcode) {
+  char* fpcode;
+  char* fpcode_with_brccinfo;
+  char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor, outPass );
+  if (shadercode) {
     if (globals.verbose)
-        std::cerr << "***Produced this assembly:\n" << fpcode << "\n";
+      std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
 
-      fpcode_with_brccinfo =
-        append_argument_information(ps20_not_fp30?"//":"##",
-                                    fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
-      free(fpcode);
+    if (globals.keepFiles) {
+      std::ofstream out;
 
-      if (globals.verbose)
-        std::cerr << "***Produced this instrumented assembly:\n"
-                  << fpcode_with_brccinfo << "\n";
-    } else {
-      fpcode_with_brccinfo = NULL;
+      out.open(globals.shaderoutputname);
+      if (out.fail()) {
+        std::cerr << "***Unable to open " <<globals.shaderoutputname<< "\n";
+      } else {
+        out << shadercode;
+        out.close();
+      }
     }
-    
-    return fpcode_with_brccinfo;
+    if (globals.verbose) {
+      fprintf(stderr, "Generating %s code for %s outputs [%d, %d).\n",
+        ps20_not_fp30 ? "ps20" : "fp30", name, firstOutput, firstOutput+outputCount);
+    }
+    fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
+    if (fpcode==NULL) {
+      fprintf (stderr,"for kernel %s.\n",
+        name);
+    }
+    free(shadercode);
+  } else {
+    fpcode = NULL;
+  }
+
+  if (fpcode) {
+    if (globals.verbose)
+      std::cerr << "***Produced this assembly:\n" << fpcode << "\n";
+
+    // TIM: the argument-info string is obsolete, and should go
+    // away once all runtimes parse the new info...
+    fpcode_with_brccinfo = append_argument_information(ps20_not_fp30?"//":"##",
+                                fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
+    free(fpcode);
+
+    if (globals.verbose)
+      std::cerr << "***Produced this instrumented assembly:\n"
+      << fpcode_with_brccinfo << "\n";
+  } else {
+    fpcode_with_brccinfo = NULL;
+  }
+
+  return fpcode_with_brccinfo;
 }
 
-bool generateShaderPasses( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans, int reductionFactor,
-                          std::vector<std::string>& ioShaderStrings )
+bool generateShaderTechnique( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans, int reductionFactor,
+                             technique_info& outTechnique )
 {
   bool isReduction = false;
   int outputCount = getShaderOutputCount( nArgs, args, isReduction );
   int maxOutputsPerPass = 1;
   if( ps20_not_fp30 && !isReduction && globals.allowDX9MultiOut )
     maxOutputsPerPass = 4;
+
+  outTechnique.reductionFactor = reductionFactor;
+
+  if( globals.enableGPUAddressTranslation )
+  {
+    outTechnique.outputAddressTranslation = true;
+    if( fullAddressTrans )
+      outTechnique.inputAddressTranslation = true;
+  }
 
   int outputsLeft = outputCount;
   int firstOutput = 0;
@@ -1472,20 +1643,25 @@ bool generateShaderPasses( Decl** args, int nArgs, const char* name, bool ps20_n
       outputsToWrite = outputsLeft;
 
     char* shaderString = NULL;
+    pass_info pass;
     while( outputsToWrite > 0 )
     {
-      shaderString = generateShaderPass( args, nArgs, name, firstOutput, outputsToWrite, ps20_not_fp30, fullAddressTrans, reductionFactor );
-      if( shaderString ) break;
+      pass_info pass;
+      shaderString = generateShaderPass( args, nArgs, name, firstOutput, outputsToWrite, ps20_not_fp30, fullAddressTrans, reductionFactor, pass );
+      if( shaderString )
+      {
+        pass.shader = shaderString;
+        outTechnique.passes.push_back( pass );
+        free( shaderString );
+        break;
+      }
 
       // try again with fewer outputs
       outputsToWrite--;
-      
+
       // we have failed if we can't even do one output
       if( outputsToWrite == 0 ) return false;
     }
-
-    ioShaderStrings.push_back( shaderString );
-    free( shaderString );
 
     firstOutput += outputsToWrite;
     outputsLeft -= outputsToWrite;
@@ -1493,32 +1669,32 @@ bool generateShaderPasses( Decl** args, int nArgs, const char* name, bool ps20_n
   return true;
 }
 
-static bool generateReductionPasses( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans,
-                          std::vector<std::string>& ioShaderStrings )
+static bool generateReductionTechniques( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans,
+                                        std::vector<technique_info>& ioTechniques )
 {
   bool isReduction = false;
   int outputCount = getShaderOutputCount( nArgs, args, isReduction );
 
   if( !isReduction )
   {
-    return generateShaderPasses( args, nArgs, name, ps20_not_fp30, fullAddressTrans, 0, ioShaderStrings );
+    technique_info technique;
+    if( !generateShaderTechnique( args, nArgs, name, ps20_not_fp30, fullAddressTrans, 0, technique ) )
+      return false;
+    ioTechniques.push_back( technique );
+    return true;
   }
 
   int reductionFactor = 2;
   while( reductionFactor <= 8 ) // TIM: evil unnamed constant... :)
   {
-    std::vector<std::string> passStrings;
-    if(!generateShaderPasses( args, nArgs, name, ps20_not_fp30, fullAddressTrans, reductionFactor, ioShaderStrings ))
+    technique_info technique;
+    if(!generateShaderTechnique( args, nArgs, name, ps20_not_fp30, fullAddressTrans, reductionFactor, technique ))
     {
       if( reductionFactor == 2 ) return false;
     }
     else
     {
-      for( std::vector<std::string>::iterator i = passStrings.begin();
-        i != passStrings.end(); ++i )
-      {
-        ioShaderStrings.push_back( *i );
-      }
+      ioTechniques.push_back( technique );
     }
 
     reductionFactor++;
@@ -1532,30 +1708,21 @@ CodeGen_GenerateCode(Type *retType, const char *name,
                      Decl **args, int nArgs, const char *body, 
                      bool ps20_not_fp30)
 {
-  std::vector<std::string> shaderStrings;
+  std::vector<technique_info> techniques;
 
   if( globals.enableGPUAddressTranslation )
   {
-    std::vector<std::string> fullTranslationStrings;
-    if( !generateReductionPasses( args, nArgs, name, ps20_not_fp30, true, fullTranslationStrings ) )
-      fullTranslationStrings.clear();
-    if( !generateReductionPasses( args, nArgs, name, ps20_not_fp30, false, shaderStrings ) )
-      shaderStrings.clear();
+    generateReductionTechniques( args, nArgs, name, ps20_not_fp30, true, techniques );
+    generateReductionTechniques( args, nArgs, name, ps20_not_fp30, false, techniques );
 
-    for( std::vector<std::string>::iterator i = fullTranslationStrings.begin();
-      i != fullTranslationStrings.end(); ++i )
-    {
-      shaderStrings.push_back( *i );
-    }
   }
   else
   {
-    if( !generateReductionPasses( args, nArgs, name, ps20_not_fp30, false, shaderStrings ) )
-      shaderStrings.clear();
+    generateReductionTechniques( args, nArgs, name, ps20_not_fp30, false, techniques );
   }
 
-  char* c_code = generate_c_code( shaderStrings, name,
-                              ps20_not_fp30?"ps20":"fp30");
+  char* c_code = generate_c_code( techniques, name,
+    ps20_not_fp30?"ps20":"fp30");
 
   if (globals.verbose)
     std::cerr << "***Produced this C code:\n" << c_code;
@@ -1617,8 +1784,8 @@ void CodeGen_SplitAndEmitCode( FunctionDef* inFunctionDef, bool inIsDirectX, std
   std::vector<std::string> passStrings;
   passStrings.push_back( assemblerString );
 
-  char* c_code = generate_c_code( passStrings, functionName.c_str(), inIsDirectX?"ps20":"fp30" );
-  inStream << c_code << std::endl;
+  //char* c_code = generate_c_code( passStrings, functionName.c_str(), inIsDirectX?"ps20":"fp30" );
+  //inStream << c_code << std::endl;
 }
 
                                 

@@ -260,6 +260,7 @@ public:
     return kernel;
   }
 
+
   brook::Kernel* operator->() const {
     return kernel;
   }

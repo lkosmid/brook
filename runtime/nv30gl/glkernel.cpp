@@ -13,7 +13,7 @@ GLKernel::GLKernel(GLRunTime * runtime, const void *sourcelist[])
    : runtime((GLRunTime *) runtime)
 {
    unsigned int i,j;
-   const char**sources = NULL;
+   const ::brook::desc::gpu_kernel_desc* kernelDesc = NULL;
    const char *src;
    char *progcopy;
    char *c;
@@ -25,21 +25,22 @@ GLKernel::GLKernel(GLRunTime * runtime, const void *sourcelist[])
       const char* nameString = (const char*) sourcelist[i];
       assert (nameString);
 
-      sources = (const char**)sourcelist[i+1];
+      kernelDesc = (const ::brook::desc::gpu_kernel_desc*)(sourcelist[i+1]);
 
       if (strncmp(nameString, "fp30", strlen("fp30")) == 0) break;
       if (strncmp(nameString, "arb", strlen("arb")) == 0) break;
    }
 
    if (sourcelist[i] == NULL ||
-       sources == NULL || sources[0]==NULL) {
+       kernelDesc == NULL || kernelDesc->_techniques.size()==0) {
       fprintf (stderr, "GL: No kernel source found\n");
       exit(1);
    }
 
-   // count the number of passes.
-   for (npasses=0; sources[npasses]; npasses++)
-      ;
+   // TIM: the GL runtime does not currently support multiple techniques
+   // we thus consider only the first:
+   const ::brook::desc::gpu_technique_desc& techniqueDesc = kernelDesc->_techniques[0];
+   npasses = (int)techniqueDesc._passes.size();
 
    pass_id = (GLuint *) malloc (npasses * sizeof(GLuint));
    pass_out = (unsigned int *) malloc (npasses * sizeof(int));
@@ -52,8 +53,8 @@ GLKernel::GLKernel(GLRunTime * runtime, const void *sourcelist[])
    // look for our annotations...
    int sourceIndex = 0; // TIM: evil hack
    for (j=0; j<npasses; j++) {
-      src = sources[sourceIndex++];
-      std::string s = src;
+     src = techniqueDesc._passes[j]._shaderString;
+     std::string s = src;
 
       if (!j) {
          s = s.substr( s.find("!!BRCC") );

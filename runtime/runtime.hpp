@@ -3,6 +3,7 @@
 #define __RUNTIME_HPP__
 
 #include <brt.hpp>
+#include <kerneldesc.hpp>
 
 namespace brook {
 

@@ -128,7 +128,7 @@ void DX9Texture::flushCachedToShadow()
 
   HRESULT result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
 	DX9AssertResult( result, "Failed to copy floating-point render target to plain surface." );
-  dirtyFlags &= ~kCachedDataDirty;
+  dirtyFlags &= ~kShadowDataDirty;
 }
 
 void DX9Texture::flushShadowToCached()

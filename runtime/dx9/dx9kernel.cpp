@@ -3,6 +3,7 @@
 #include "dx9pixelshader.hpp"
 #include "dx9vertexshader.hpp"
 #include "dx9texture.hpp"
+#include <kerneldesc.hpp>
 #include <string>
 
 using namespace brook;
@@ -20,7 +21,7 @@ DX9Kernel* DX9Kernel::create( DX9RunTime* inRuntime, const void* inSource[] )
 }
 
 DX9Kernel::DX9Kernel( DX9RunTime* inRuntime )
-  : runtime(inRuntime), hasPushedOutputIndexof(false),
+  : runtime(inRuntime),
   device(NULL), streamShapeMismatch(false), mustMatchShapeStream(NULL)
 {
   device = inRuntime->getDevice();
@@ -29,18 +30,19 @@ DX9Kernel::DX9Kernel( DX9RunTime* inRuntime )
 
 bool DX9Kernel::initialize( const void* inSource[] )
 {
-  ClearInputs();
+  clearInputs();
+  clearArguments();
   
   int i = 0;
   while( inSource[i] != NULL )
   {
     const char* nameString = (const char*)inSource[i];
-    const char** programStrings = (const char**)inSource[i+1];
+    const ::brook::desc::gpu_kernel_desc* descriptor = (::brook::desc::gpu_kernel_desc*)inSource[i+1];
 
     if( strncmp( nameString, PIXEL_SHADER_NAME_STRING, strlen(PIXEL_SHADER_NAME_STRING) ) == 0 )
     {
-      if( programStrings != NULL )
-        return initialize( programStrings );
+      if( descriptor != NULL )
+        return initialize( descriptor );
     }
 
     i += 2;
@@ -50,8 +52,53 @@ bool DX9Kernel::initialize( const void* inSource[] )
   return false;
 }
 
-bool DX9Kernel::initialize( const char** inProgramStrings )
+bool DX9Kernel::initialize( const ::brook::desc::gpu_kernel_desc* inDescriptor )
 {
+  using namespace ::brook::desc;
+
+  techniques.resize( inDescriptor->_techniques.size() );
+
+  std::vector<gpu_technique_desc>::const_iterator ti = inDescriptor->_techniques.begin();
+  std::vector<Technique>::iterator tj = techniques.begin();
+  for(; ti != inDescriptor->_techniques.end(); ++ti, ++tj )
+  {
+    const gpu_technique_desc& inputTechnique = *ti;
+    Technique& outputTechnique = *tj;
+
+    outputTechnique.reductionFactor = inputTechnique._reductionFactor;
+    outputTechnique.outputAddressTranslation = inputTechnique._outputAddressTranslation;
+    outputTechnique.inputAddressTranslation = inputTechnique._inputAddressTranslation;
+
+    outputTechnique.passes.resize( inputTechnique._passes.size() );
+    std::vector<gpu_pass_desc>::const_iterator pi = inputTechnique._passes.begin();
+    std::vector<Pass>::iterator pj = outputTechnique.passes.begin();
+    for(; pi != inputTechnique._passes.end(); ++pi, ++pj )
+    {
+      const gpu_pass_desc& inputPass = *pi;
+      Pass& outputPass = *pj;
+
+      outputPass.pixelShader = DX9PixelShader::create( runtime, inputPass._shaderString );
+      if( outputPass.pixelShader == NULL )
+      {
+        DX9WARN << "Failed to create a kernel pass pixel shader";
+        return false;
+      }
+
+      std::vector<gpu_input_desc>::const_iterator k;
+      for( k = inputPass.constants.begin(); k != inputPass.constants.end(); k++ )
+        outputPass.addConstant( *k );
+      for( k = inputPass.samplers.begin(); k != inputPass.samplers.end(); k++ )
+        outputPass.addSampler( *k );
+      for( k = inputPass.interpolants.begin(); k != inputPass.interpolants.end(); k++ )
+        outputPass.addInterpolant( *k );
+      for( k = inputPass.outputs.begin(); k != inputPass.outputs.end(); k++ )
+        outputPass.addOutput( *k );
+    }
+  }
+
+  /* TIM: complete rewrite 
+
+
   // must have least one shader
   if( *inProgramStrings == NULL )
   {
@@ -122,12 +169,12 @@ bool DX9Kernel::initialize( const char** inProgramStrings )
       fullTranslationPasses.push_back(pass);
     }
   }
-
+*/
   // initialize the output rects, just in case
   outputRect = DX9Rect(0,0,0,0);
   return true;
 }
-
+/*
 void DX9Kernel::addReductionPass( int inReductionFactor, bool inFullTranslation, const Pass& inPass )
 {
   int reductionPassCount = reductionPasses.size();
@@ -150,26 +197,47 @@ void DX9Kernel::addReductionPass( int inReductionFactor, bool inFullTranslation,
   else
     reductionPass.standardPasses.push_back( inPass );
   reductionPasses.push_back( reductionPass );
-}
+}*/
 
 DX9Kernel::~DX9Kernel()
 {
-  int p,passCount = (int)standardPasses.size();
+  // TIM: TODO: release it all...
+/*  int p,passCount = (int)standardPasses.size();
   for( p = 0; p < passCount; p++ )
     delete standardPasses[p].pixelShader;
   passCount = (int)fullTranslationPasses.size();
   for( p = 0; p < passCount; p++ )
     delete fullTranslationPasses[p].pixelShader;
-
+*/
   if( device != NULL )
     device->Release();
 }
 
-void DX9Kernel::PushStream(Stream *s) {
+void DX9Kernel::PushStream(Stream *s)
+{
   DX9PROFILE("DX9Kernel::PushStream")
-  int arg = argumentIndex++;
   DX9Stream* stream = (DX9Stream*)s;
 
+  // argument
+  pushStreamArgument( stream );
+
+  // reduction data
+  inputReductionArgumentIndex = getCurrentArgumentIndex();
+
+  // constants
+  pushConstantImpl( stream->getIndexofConstant() ); // kStreamConstant_Indexof
+  pushATShapeConstant( stream ); // kStreamConstant_ATShape
+  pushConstantImpl( stream->getATLinearizeConstant() ); // kStreamConstant_ATLinearize
+  pushConstantImpl( stream->getATReshapeConstant() ); // kStreamConstant_ATReshape
+  
+  // samplers
+  pushSamplers( stream );
+
+  // interpolants
+  pushInterpolant( stream->getInputRect() );
+
+  // no outputs
+/*
   inputStreams.push_back(stream);
 
   // reduction stream is always the first/last/only stream pushed
@@ -194,29 +262,50 @@ void DX9Kernel::PushStream(Stream *s) {
     if( argumentUsesIndexof[arg] )
       PushConstantImpl( stream->getIndexofConstant() );
   }
+*/
 }
 
 void DX9Kernel::PushIter(class Iter * v)
 {
   DX9PROFILE("DX9Kernel::PushIter")
-  int arg = argumentIndex++;
   DX9Iter* iterator = (DX9Iter*)v;
+
+  // argument
+  pushArgument();
+
+  // no constants
+  // no samplers
+  // interpolants
+  pushInterpolant( iterator->getRect() );
+  // no outputs
+/*
   PushTexCoord( iterator->getRect() );
+  */
 }
 
 void DX9Kernel::PushReduce(void * val, __BRTStreamType type) {
   DX9PROFILE("DX9Kernel::PushReduce")
-  int arg = argumentIndex++;
   DX9LOG(1) << "PushReduce";
-  
+
+  // argument
+  pushArgument();
+
+  // reduction data
+  argumentReductions.push_back( ReductionArgumentInfo( val, type ) );
+
+  outputRedctionArgumentIndex = getCurrentArgumentIndex();
+
+  /* TIM: TODO: reimplement
   outputReductionDatas.push_back(val);
   outputReductionTypes.push_back(type);
 
-  outputReductionVarSamplerIndex = (int)inputTextures.size();
-  outputReductionVarTexCoordIndex = (int)inputTextureRects.size();
+  outputReductionArgumentIndex = argumentIndex;
+  */
 
-  inputTextures.push_back(NULL);
-  inputTextureRects.push_back(DX9Rect(0,0,0,0));
+  // no constants
+  // no samplers
+  // no interpolants
+  // no outputs
 }
 
 void DX9Kernel::PushConstant(const float &val) {
@@ -248,17 +337,35 @@ void DX9Kernel::PushConstant(const float3 &val) {
 
 void DX9Kernel::PushConstant(const float4 &val) {
   DX9PROFILE("DX9Kernel::PushConstant")
-  argumentIndex++;
-  PushConstantImpl(val);
+
+  // argument
+  pushArgument();
+
+  // constants
+  pushConstantImpl(val);
+  // no samplers
+  // no interpolants
+  // no outputs
 }
 
 void DX9Kernel::PushGatherStream(Stream *s) {
   DX9PROFILE("DX9Kernel::PushGatherStream")
-  argumentIndex++;
   DX9Stream* stream = (DX9Stream*)s;
 
-  inputStreams.push_back(stream);
+  // argument
+  pushStreamArgument( stream );
 
+  // constants
+  pushConstantImpl( stream->getGatherConstant() ); // kGatherConstant_Gather
+  pushConstantImpl( stream->getATLinearizeConstant() ); // kGatherConstant_ATLinearize
+  pushConstantImpl( stream->getATReshapeConstant() ); // kGatherCosntant_ATReshape
+  // samplers
+  pushSamplers( stream );
+  // no interpolants
+  // no outputs
+
+/* TIM: rewrite 
+  inputStreams.push_back(stream);
   if( runtime->isAddressTranslationOn() )
   {
     PushSamplers( stream );
@@ -271,16 +378,18 @@ void DX9Kernel::PushGatherStream(Stream *s) {
     PushConstantImpl( stream->getGatherConstant() );
     PushSamplers( stream );
   }
+*/
 }
 
 void DX9Kernel::PushOutput(Stream *s) {
   DX9PROFILE("DX9Kernel::PushOutput")
   DX9LOG(1) << "PushOutput";
-  int arg = argumentIndex++;
 
   DX9Stream* stream = (DX9Stream*)s;
 
-  if( outputStreams.size() == 0 )
+  pushStreamArgument( stream );
+/* pushOutput should handle this
+  if( argumentOutputs.size() == 0 )
   {
     // first one
     outputRect = stream->getOutputRect();
@@ -297,7 +406,21 @@ void DX9Kernel::PushOutput(Stream *s) {
         "Output streams do not have matching extents" );
     }
   }
+*/
+  // constants
+  pushConstantImpl( stream->getIndexofConstant() ); // kOutputConstant_Indexof
+  // no samplers
+  // no interpolants
+  pushInterpolant( stream->getInputRect() ); // kOutputInterpolant_Position
+  // outputs
+  pushOutputs( stream );
 
+  // TIM: TODO: this constant and interpolant are actually "global"
+  // since they are shared between all outputs...
+//  PushConstantImpl( stream->getIndexofConstant() );
+//  PushTexCoord( stream->getInputRect() );
+
+/*
   outputStreams.push_back(stream);
 
   int surfaceCount = stream->getSubstreamCount();
@@ -319,12 +442,61 @@ void DX9Kernel::PushOutput(Stream *s) {
     PushConstantImpl( stream->getIndexofConstant() );
     PushTexCoord( stream->getInputRect() );
   }
+  */
+}
+
+void DX9Kernel::mapTechnique( const DX9Kernel::Technique& inTechnique )
+{
+  DX9PROFILE("DX9Kernel::mapTechnique");
+
+  std::vector<Pass>::const_iterator i;
+  for( i = inTechnique.passes.begin(); i != inTechnique.passes.end(); i++ )
+  {
+    mapPass( *i );
+    clearInputs();
+  }
 }
 
 void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
 {
   DX9PROFILE("DX9Kernel::mapPass")
   HRESULT result;
+  size_t i;
+
+  DX9PixelShader* pixelShader = inPass.pixelShader;
+  DX9VertexShader* vertexShader = runtime->getPassthroughVertexShader();
+
+  // Bind all the arguments for this pass
+  size_t constantCount = inPass.constants.size();
+  for( i = 0; i < constantCount; i++ )
+    bindConstant( i, inPass.constants[i] );
+
+  size_t samplerCount = inPass.samplers.size();
+  for( i = 0; i < samplerCount; i++ )
+    bindSampler( i, inPass.samplers[i] );
+
+  size_t interpolantCount = inPass.interpolants.size();
+  for( i = 0; i < interpolantCount; i++ )
+    bindInterpolant( i, inPass.interpolants[i] );
+
+  size_t outputCount = inPass.outputs.size();
+  for( i = 0; i < outputCount; i++ )
+    bindOutput( i, inPass.outputs[i] );
+  static const size_t kMaximumOutputCount = 4;
+  for( i = outputCount; i < kMaximumOutputCount; i++ )
+    disableOutput( i );
+
+  // Execute
+
+  result = device->SetPixelShader( pixelShader->getHandle() );
+  DX9AssertResult( result, "SetPixelShader failed" );
+  result = device->SetVertexShader( vertexShader->getHandle() );
+  DX9AssertResult( result, "SetVertexShader failed" );
+
+  runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
+
+  /* TIM: complete rewrite...
+
   int i;
 
   int inputStreamCount = (int)inputStreams.size();
@@ -397,12 +569,180 @@ void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
 
   result = device->EndScene();
   DX9AssertResult( result, "EndScene failed" );
+*/
+}
 
+void DX9Kernel::bindConstant( size_t inConstantIndex, const Input& inInput )
+{
+  float4 value = getConstant( inInput.argumentIndex, inInput.componentIndex );
+
+  DX9LOG(0) << "Binding constant " << inConstantIndex << " to value {"
+    << value.x << ", " << value.y << ", " << value.z << ", " << value.w << "}";
+
+  HRESULT result = device->SetPixelShaderConstantF( inConstantIndex, (float*)&(value), 1 );
+  DX9AssertResult( result, "SetPixelShaderConstantF failed" );
+}
+
+void DX9Kernel::bindSampler( size_t inSamplerIndex, const Input& inInput )
+{
+  IDirect3DBaseTexture9* texture = getSampler( inInput.argumentIndex, inInput.componentIndex );
+  HRESULT result = device->SetTexture( inSamplerIndex, texture );
+  DX9AssertResult( result, "SetTexture failed" );
+}
+
+void DX9Kernel::bindInterpolant( size_t inInterpolantIndex, const Input& inInput )
+{
+  DX9FatRect rectangle = getInterpolant( inInput.argumentIndex, inInput.componentIndex );
+
+  DX9LOG(0) << "Binding interpolant " << inInterpolantIndex << " to rectangle: " << std::endl
+    << "v0 = {" << rectangle.vertices[0].x << ", " << rectangle.vertices[0].y << "}" << std::endl
+    << "v1 = {" << rectangle.vertices[1].x << ", " << rectangle.vertices[1].y << "}" << std::endl
+    << "v1 = {" << rectangle.vertices[2].x << ", " << rectangle.vertices[2].y << "}" << std::endl
+    << "v2 = {" << rectangle.vertices[3].x << ", " << rectangle.vertices[3].y << "}" << std::endl;
+
+  inputTextureRects.push_back( rectangle );
+}
+
+void DX9Kernel::bindOutput( size_t inOutputIndex, const Input& inInput )
+{
+  IDirect3DSurface9* surface = getOutput( inInput.argumentIndex, inInput.componentIndex );
+  HRESULT result = device->SetRenderTarget( inOutputIndex, surface );
+  DX9AssertResult( result, "SetRenderTarget failed" );
+}
+
+void DX9Kernel::disableOutput( size_t inOutputIndex )
+{
+  HRESULT result = device->SetRenderTarget( inOutputIndex, NULL );
+  DX9AssertResult( result, "SetRenderTarget(NULL) failed" );
+}
+
+float4 DX9Kernel::getConstant( int inArgument, int inComponent )
+{
+  if( inArgument > 0 )
+  {
+    int arg = inArgument-1;
+    DX9Assert( inComponent < arguments[arg].constantCount, "not enough constants in argument" );
+    return argumentConstants[ arguments[arg].firstConstantIndex + inComponent ];
+  }
+/*  else if( inArgument == 0 )
+  {
+    return getGlobalConstant( inComponent );
+  }
+  else
+  {
+  }*/
+  return float4(0,0,0,0);
+}
+
+IDirect3DBaseTexture9* DX9Kernel::getSampler( int inArgument, int inComponent )
+{
+  if( inArgument > 0 )
+  {
+    int arg = inArgument-1;
+    DX9Assert( inComponent < arguments[arg].samplerCount, "not enough samplers in argument" );
+    DX9Stream* stream = argumentStreams[arg];
+    if( stream ) stream->validateGPUData();
+    return argumentSamplers[ arguments[arg].firstSamplerIndex + inComponent ];
+  }
+  else if( inArgument == 0 )
+  {
+    DX9Assert( inComponent < (int)globalSamplers.size(), "not enough global samplers" );
+    return globalSamplers[inComponent];
+  }
+  return 0;
+}
+
+DX9FatRect DX9Kernel::getInterpolant( int inArgument, int inComponent )
+{
+  if( inArgument > 0 )
+  {
+    int arg = inArgument-1;
+    DX9Assert( inComponent < arguments[arg].interpolantCount, "not enough interpolants in argument" );
+    return argumentInterpolants[ arguments[arg].firstInterpolantIndex + inComponent ];
+  }
+  else if( inArgument == 0 )
+  {
+    DX9Assert( inComponent < (int)globalInterpolants.size(), "not enough global interpolants" );
+    return globalInterpolants[inComponent];
+  }
+
+  return DX9Rect(0,0,0,0);
+}
+
+IDirect3DSurface9* DX9Kernel::getOutput( int inArgument, int inComponent )
+{
+  if( inArgument > 0 )
+  {
+    int arg = inArgument-1;
+    DX9Assert( inComponent < arguments[arg].outputCount, "not enough outputs in argument" );
+    return argumentOutputs[ arguments[arg].firstOutputIndex + inComponent ];
+  }
+  else if( inArgument == 0 )
+  {
+    DX9Assert( inComponent < (int)globalOutputs.size(), "not enoguh global outputs" );
+    return globalOutputs[inComponent];
+  }
+  return 0;
 }
 
 void DX9Kernel::Map() {
   DX9PROFILE("DX9Kernel::Map")
   DX9LOG(1) << "Map";
+
+  assert(outputStreams.size() > 0);
+  DX9Stream* outputStream = outputStreams[0];
+  outputRect = outputStream->getOutputRect();
+
+  // push global data...
+  
+  // constants
+  globalConstants.push_back( float4(0,0,0,0) ); // kGlobalConstants_Workspace
+  globalConstants.push_back( outputStream->getIndexofConstant() ); // kGlobalConstant_OutputIndexof;
+  // no samplers
+  // interpolants
+  globalInterpolants.push_back( outputStream->getInputRect() ); // kGlobalInterpolant_OutputTextureCoordinate
+  globalInterpolants.push_back( outputStream->getATAddressInterpolantRect() ); // kGlobalInterpolant_ATOutputAddress;
+  // no outputs
+
+  // There are certain constants that cannot be specified until we know the shape of the output
+  // we now go back through and fill them in...
+  size_t atShapeConstantCount = atShapeConstants.size();
+  for( size_t i = 0; i < atShapeConstantCount; i++ )
+  {
+    DX9Stream* stream = argumentStreams[ atShapeConstants[i] ];
+    size_t constantIndex = arguments[ atShapeConstants[i] ].firstConstantIndex + ::brook::desc::kStreamConstant_ATShape;
+    argumentConstants[constantIndex] = stream->getATShapeConstant( outputStream->getATOutputShape() );
+  }
+
+  // Find and execute an appropriate technique
+  bool done = false;
+  size_t techniqueCount = techniques.size();
+  for( size_t t = 0; t < techniqueCount && !done; t++ )
+  {
+    Technique& technique = techniques[t];
+    if( technique.inputAddressTranslation == streamShapeMismatch )
+    {
+      HRESULT result = device->BeginScene();
+      DX9AssertResult( result, "BeginScene failed" );
+
+      mapTechnique( technique );
+
+      result = device->EndScene();
+      DX9AssertResult( result, "EndScene failed" );
+
+      done = true;
+    }
+  }
+  if( !done )
+    DX9Assert( false, "No appropriate map technique found" );
+
+  size_t outputStreamCount = outputStreams.size();
+  for( size_t o = 0; o < outputStreamCount; o++ )
+    outputStreams[o]->markGPUDataChanged();
+
+  clearArguments();
+
+  /* TIM: rewrite
 
   if( runtime->isAddressTranslationOn() )
   {
@@ -453,17 +793,19 @@ void DX9Kernel::Map() {
   }
 
   ClearInputs();
+  */
 }
 
 void DX9Kernel::Reduce() {
   DX9PROFILE("DX9Kernel::Reduce")
   DX9LOG(1) << "Reduce";
 
-  DX9Assert( outputReductionTypes.size() == 1,
-    "Must have one and only one reduction output for now" );
+  DX9Assert( argumentReductions.size() == 1,
+    "Must have one and only one reduction output." );
 
-  __BRTStreamType outputReductionType = outputReductionTypes[0];
-  void* outputReductionData = outputReductionDatas[0];
+  ReductionArgumentInfo reductionArgument = argumentReductions[0];
+  __BRTStreamType outputReductionType = reductionArgument.type;
+  void* outputReductionData = reductionArgument.data;
 
   if( outputReductionType == __BRTSTREAM )
   {
@@ -497,31 +839,100 @@ void DX9Kernel::Reduce() {
   }
 }
 
-void DX9Kernel::PushSamplers( DX9Stream* s )
-{
-  DX9PROFILE("DX9Kernel::PushSamplers")
-  int textureCount = s->getSubstreamCount();
-  for( int i = 0; i < textureCount; i++ )
-  {
-    inputTextures.push_back( s->getIndexedTextureHandle(i) );
-  }
+DX9Kernel::ArgumentInfo& DX9Kernel::getCurrentArgument() {
+  return *(arguments.rbegin());
 }
 
-void DX9Kernel::PushTexCoord( const DX9FatRect& r )
+size_t DX9Kernel::getCurrentArgumentIndex() {
+  return arguments.size()-1;
+}
+
+void DX9Kernel::pushArgument()
+{
+  pushStreamArgument( 0 );
+}
+
+void DX9Kernel::pushStreamArgument( DX9Stream* inStream )
+{
+  ArgumentInfo argumentInfo;
+  argumentInfo.firstConstantIndex = argumentConstants.size();
+  argumentInfo.firstSamplerIndex = argumentSamplers.size();
+  argumentInfo.firstInterpolantIndex = argumentInterpolants.size();
+  argumentInfo.firstOutputIndex = argumentOutputs.size();
+
+  argumentInfo.constantCount = 0;
+  argumentInfo.samplerCount = 0;
+  argumentInfo.interpolantCount = 0;
+  argumentInfo.outputCount = 0;
+
+  argumentStreams.push_back( inStream );
+  arguments.push_back( argumentInfo );
+}
+
+void DX9Kernel::pushSamplers( DX9Stream* s )
+{
+  DX9PROFILE("DX9Kernel::pushSamplers")
+
+  int samplerCount = s->getSubstreamCount();
+  getCurrentArgument().samplerCount += samplerCount;
+  for( int i = 0; i < samplerCount; i++ )
+    argumentSamplers.push_back( s->getIndexedTextureHandle(i) );
+}
+
+void DX9Kernel::pushInterpolant( const DX9FatRect& r )
 {
   DX9PROFILE("DX9Kernel::PushTexCoord")
-  inputTextureRects.push_back(r);
+  
+  getCurrentArgument().interpolantCount++;
+  argumentInterpolants.push_back( r );
 }
 
-int DX9Kernel::PushConstantImpl(const float4 &val) {
-  int result = (int)inputConstants.size();
-  inputConstants.push_back(val);
-  return result;
+void DX9Kernel::pushConstantImpl(const float4 &val)
+{
+  getCurrentArgument().constantCount++;
+  argumentConstants.push_back( val );
 }
 
-void DX9Kernel::ClearInputs()
+void DX9Kernel::pushATShapeConstant( DX9Stream* s )
+{
+  // push the index of the current argument...
+  atShapeConstants.push_back( arguments.size() - 1 );
+  pushConstantImpl( float4(0,0,0,0) );
+}
+
+void DX9Kernel::pushOutputs( DX9Stream* s )
+{
+  DX9PROFILE("DX9Kernel::pushSamplers")
+
+  int surfaceCount = s->getSubstreamCount();
+  getCurrentArgument().outputCount += surfaceCount;
+  for( int i = 0; i < surfaceCount; i++ )
+    argumentOutputs.push_back( s->getIndexedSurfaceHandle(i) );
+  outputStreams.push_back( s );
+}
+
+void DX9Kernel::clearInputs()
+{
+  DX9PROFILE("DX9Kernel::clearInputs");
+
+  inputTextureRects.clear();
+}
+
+void DX9Kernel::clearArguments()
 {
   DX9PROFILE("DX9Kernel::ClearInputs")
+
+  arguments.clear();
+  argumentConstants.clear();
+  argumentSamplers.clear();
+  argumentInterpolants.clear();
+  argumentOutputs.clear();
+  argumentStreams.clear();
+  atShapeConstants.clear();
+  outputStreams.clear();
+  argumentReductions.clear();
+
+/*
   argumentIndex = 0;
   hasPushedOutputIndexof = false;
   mustMatchShapeStream = NULL;
@@ -537,7 +948,7 @@ void DX9Kernel::ClearInputs()
   outputReductionDatas.clear();
   outputReductionTypes.clear();
 
-  
+  */
 }
 
 void DX9Kernel::matchStreamShape( DX9Stream* inStream )
@@ -572,8 +983,10 @@ void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
   int outputWidth = outputBuffer->getWidth();
   int outputHeight = outputBuffer->getHeight();
 
-  DX9Stream* inputStream = inputReductionStream;
-  int tex0 = inputReductionStreamTexCoordIndex;
+  DX9Stream* inputStream = argumentStreams[inputReductionArgumentIndex];
+  // TIM: we can't assume knowledge of what resources these bind to
+  // (at least not officially) :)
+/*  int tex0 = inputReductionStreamTexCoordIndex;
   int tex1 = outputReductionVarTexCoordIndex;
   if( tex0 > tex1 )
   {
@@ -588,7 +1001,7 @@ void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
     int temp = sampler0;
     sampler0 = sampler1;
     sampler1 = temp;
-  }
+  }*/
   int inputWidth = inputStream->getTextureWidth();
   int inputHeight = inputStream->getTextureHeight();
 
@@ -610,10 +1023,10 @@ void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
   state.reductionBuffers[0] = NULL;
   state.reductionBuffers[1] = NULL;
   state.slopBuffer = NULL;
-  state.leftTextureUnit = tex0;
-  state.rightTextureUnit = tex1;
-  state.leftSampler = sampler0;
-  state.rightSampler = sampler1;
+//  state.leftTextureUnit = tex0;
+//  state.rightTextureUnit = tex1;
+//  state.leftSampler = sampler0;
+//  state.rightSampler = sampler1;
   state.currentDimension = firstDimension;
   state.targetExtents[0] = outputWidth;
   state.targetExtents[1] = outputHeight;
@@ -636,25 +1049,29 @@ void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
   endReduction( state );
 }
 
-void DX9Kernel::bindReductionPassShader( int inFactor )
+void DX9Kernel::executeReductionTechnique( int inFactor )
 {
-  DX9PROFILE("DX9Kernel::bindReductionPassShader")
-  ReductionPass& reductionPass = reductionPasses[ inFactor - 2 ];
-  DX9Assert( reductionPass.standardPasses.size() == 1, "Must have single-pass completion for reductions" );
-  HRESULT result = device->SetPixelShader( reductionPass.standardPasses[0].pixelShader->getHandle() );
-  DX9AssertResult( result, "SetPixelShader failed" );
+  DX9PROFILE("DX9Kernel::executeReductionTechnique");
+
+  // we assume for now that the techniques are stored
+  // starting sequentiall with the 2-way reduction
+  Technique& technique = techniques[ inFactor - 2 ];
+  mapTechnique( technique );
 }
 
 void DX9Kernel::beginReduction( ReductionState& ioState )
 {
   DX9PROFILE("DX9Kernel::beginReduction")
-  HRESULT result;
+
+  HRESULT result = device->BeginScene();
+  DX9AssertResult( result, "BeginScene failed" );
 
   ioState.inputTexture->validateCachedData();
 
   // set up
-  result = device->BeginScene();
-  DX9AssertResult( result, "BeginScene failed" );
+  // TIM: most of this work gets pushed into the per-pass stuff now...
+  // for better or worse... :(
+/*  
 
   int i,constantCount = (int)inputConstants.size();
   int outputCount = (int)outputStreams.size();
@@ -686,6 +1103,7 @@ void DX9Kernel::beginReduction( ReductionState& ioState )
 #ifdef BROOK_DX9_TRACE_REDUCE
   dumpReductionState( ioState );
 #endif
+*/
 }
 
 void DX9Kernel::executeReductionStep( ReductionState& ioState )
@@ -693,20 +1111,22 @@ void DX9Kernel::executeReductionStep( ReductionState& ioState )
   DX9PROFILE("DX9Kernel::executeReductionStep")
   DX9LOG(3) << "Reduction Step";
 
-  HRESULT result;
-
   int dim = ioState.currentDimension;
   int remainingFactor = ioState.currentExtents[dim] / ioState.targetExtents[dim];
   int remainingExtent = ioState.currentExtents[dim];
   int outputExtent = ioState.targetExtents[dim];
   int otherExtent = ioState.currentExtents[1-dim];
-  int tex0 = ioState.leftTextureUnit;
-  int tex1 = ioState.rightTextureUnit;
+//  int tex0 = ioState.leftTextureUnit;
+//  int tex1 = ioState.rightTextureUnit;
 
-  int reductionPassCount = reductionPasses.size();
-  for( int r = reductionPassCount-1; r >= 0; r-- )
+  // Find the appropriate technique to execute:
+  // we assume here that the techniques are ordered
+  // from worst to best...
+  std::vector<Technique>::reverse_iterator t;
+  for( t = techniques.rbegin(); t != techniques.rend(); ++t )
   {
-    int passFactor = reductionPasses[r].reductionFactor;
+    Technique& technique = *t;
+    int passFactor = technique.reductionFactor;
 
     int quotient = remainingFactor / passFactor;
     int remainder = remainingFactor % passFactor;
@@ -714,7 +1134,12 @@ void DX9Kernel::executeReductionStep( ReductionState& ioState )
     if( quotient == 0 ) continue;
     if( quotient == 1 || remainder <= 1 ) break;
   }
-  int reductionFactor = reductionPasses[r].reductionFactor;
+
+  if( t == techniques.rend() )
+    DX9Assert( false, "There was no available reduction pass... this should never happen");
+
+  Technique& technique = *t;
+  int reductionFactor = technique.reductionFactor;
   int slopFactor = (remainingFactor % reductionFactor);
 
   int resultExtents[2];
@@ -722,10 +1147,11 @@ void DX9Kernel::executeReductionStep( ReductionState& ioState )
   resultExtents[1] = ioState.currentExtents[1];
   resultExtents[dim] = outputExtent * (remainingFactor / reductionFactor);
 
-  // Set up the proper pixel shader
-  bindReductionPassShader( reductionFactor );
+  // we need to set up the resources so that this technique can execute...
+  // we will put them all in "global" storage so that we can access
+  // them easily from the technique
 
-  // bind the proper textures as the shader inputs
+  // find the proper textures for the shader inputs
   DX9Texture* slopBuffer = ioState.slopBuffer;
   DX9Texture* inputBuffer = NULL;
   if( ioState.whichBuffer == -1 )
@@ -744,27 +1170,27 @@ void DX9Kernel::executeReductionStep( ReductionState& ioState )
     ioState.reductionBuffers[nextBuffer] = outputBuffer;
   }
 
-  result = device->SetTexture( ioState.leftSampler, inputBuffer->getTextureHandle() );
-  DX9AssertResult( result, "SetTexture failed" );
-  result = device->SetTexture( ioState.rightSampler, inputBuffer->getTextureHandle() );
-  DX9AssertResult( result, "SetTexture failed" );
-  result = device->SetRenderTarget( 0, outputBuffer->getSurfaceHandle() );
-  DX9AssertResult( result, "SetRenderTarget failed" );
+  globalSamplers.resize(3);
+  globalSamplers[0] = inputBuffer->getTextureHandle();
+  globalSamplers[1] = inputBuffer->getTextureHandle();
+  
+  globalOutputs.resize(1);
+  globalOutputs[0] = outputBuffer->getSurfaceHandle();
 
-  if( (int)inputTextureRects.size() < reductionFactor )
-    inputTextureRects.resize( reductionFactor );
-
+  globalInterpolants.resize( reductionFactor );
   for( int i = 0; i < reductionFactor; i++ )
   {
-    inputTextureRects[i] = inputBuffer->getReductionTextureRect(
+    globalInterpolants[i] = inputBuffer->getReductionTextureRect(
       i, remainingExtent+i, 0, otherExtent, dim );
   }
   int newExtent = resultExtents[dim];
   ioState.currentExtents[dim] = newExtent;
+
   outputRect = outputBuffer->getReductionSurfaceRect(
     0, newExtent, 0, otherExtent, dim );
 
-  runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
+  // use the existing map functionality to execute the passes... :)
+  mapTechnique( technique );
 
   // move any slop out to the slop buffer
   if( slopFactor )
@@ -779,50 +1205,61 @@ void DX9Kernel::executeReductionStep( ReductionState& ioState )
       ioState.slopBuffer = slopBuffer;
     }
 
-    if( ioState.slopCount == 0 )
+    if( ioState.slopCount == 0 && slopFactor ==1 )
     {
-      if( slopFactor > 1 )
-      {
-        bindReductionPassShader( slopFactor );
-        device->SetTexture( ioState.leftSampler, inputBuffer->getTextureHandle() );
-        device->SetTexture( ioState.rightSampler, inputBuffer->getTextureHandle() );
+      // first time, easy case
+      device->SetPixelShader( runtime->getPassthroughPixelShader()->getHandle() );
+      device->SetTexture( 0, inputBuffer->getTextureHandle() );
 
-        for( int i = 0; i < slopFactor; i++ )
-        {
-          int offset = slopFactor - i;
-          offset = remainingFactor - offset;
-          inputTextureRects[i] = inputBuffer->getReductionTextureRect(
-            offset, remainingExtent + offset, 0, otherExtent, dim );
-        }
-      }
-      else
-      {
-        device->SetPixelShader( runtime->getPassthroughPixelShader()->getHandle() );
-        device->SetTexture( 0, inputBuffer->getTextureHandle() );
+      int offset = remainingFactor-1;
+      inputTextureRects.push_back( inputBuffer->getReductionTextureRect( offset, remainingExtent+offset, 0, otherExtent, dim ) );
 
-        int offset = remainingFactor-1;
-        inputTextureRects[0] = inputBuffer->getReductionTextureRect( offset, remainingExtent+offset, 0, otherExtent, dim );
-      }
+      device->SetRenderTarget( 0, slopBuffer->getSurfaceHandle() );
+      outputRect = slopBuffer->getReductionSurfaceRect( 0, outputExtent, 0, otherExtent, dim );
+
+      runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
+      clearInputs();
+      ioState.slopCount++;
     }
-    else
+    else if( ioState.slopCount == 0 )
     {
-      bindReductionPassShader( slopFactor+1 ); // must exist for weird reasons... :)
-      device->SetTexture( ioState.leftSampler, inputBuffer->getTextureHandle() );
-      device->SetTexture( ioState.rightSampler, slopBuffer->getTextureHandle() );
+      // first time, normal case...
+
+      globalSamplers[0] = inputBuffer->getTextureHandle();
+      globalSamplers[1] = inputBuffer->getTextureHandle();
+      globalOutputs[0] = slopBuffer->getSurfaceHandle();
 
       for( int i = 0; i < slopFactor; i++ )
       {
         int offset = slopFactor - i;
         offset = remainingFactor - offset;
-        inputTextureRects[i] = inputBuffer->getReductionTextureRect(
+        globalInterpolants[i] = inputBuffer->getReductionTextureRect(
           offset, remainingExtent + offset, 0, otherExtent, dim );
       }
-      inputTextureRects[slopFactor] = slopBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim );
+      outputRect = slopBuffer->getReductionSurfaceRect( 0, outputExtent, 0, otherExtent, dim );
+
+      executeReductionTechnique( slopFactor );
+      ioState.slopCount++;
     }
-    device->SetRenderTarget( 0, slopBuffer->getSurfaceHandle() );
-    outputRect = slopBuffer->getReductionSurfaceRect( 0, outputExtent, 0, otherExtent, dim );
-    runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
-    ioState.slopCount++;
+    else
+    {
+      globalSamplers[0] = inputBuffer->getTextureHandle();
+      globalSamplers[1] = slopBuffer->getTextureHandle();
+      globalOutputs[0] = slopBuffer->getSurfaceHandle();
+
+      for( int i = 0; i < slopFactor; i++ )
+      {
+        int offset = slopFactor - i;
+        offset = remainingFactor - offset;
+        globalInterpolants[i] = inputBuffer->getReductionTextureRect(
+          offset, remainingExtent + offset, 0, otherExtent, dim );
+      }
+      globalInterpolants[slopFactor] = slopBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim );
+      outputRect = slopBuffer->getReductionSurfaceRect( 0, outputExtent, 0, otherExtent, dim );
+  
+      executeReductionTechnique( slopFactor+1 );
+      ioState.slopCount++;
+    }
   }
 
   ioState.whichBuffer = nextBuffer;
@@ -837,36 +1274,28 @@ void DX9Kernel::executeSlopStep( ReductionState& ioState )
   DX9PROFILE("DX9Kernel::executeSlopStep")
   DX9LOG(3) << "Slop Step";
 
-  HRESULT result;
-
   if( ioState.slopCount == 0 ) return;
 
   int dim = ioState.currentDimension;
   int outputExtent = ioState.currentExtents[dim];
   int otherExtent = ioState.currentExtents[1-dim];
-  int tex0 = ioState.leftTextureUnit;
-  int tex1 = ioState.rightTextureUnit;
-
-  // bind the 2-argument reduction function
-  bindReductionPassShader( 2 );
 
   // bind the buffers and rectangles needed
   DX9Texture* slopBuffer = ioState.slopBuffer;
   DX9Texture* inputBuffer = ioState.reductionBuffers[ioState.whichBuffer];
   DX9Texture* outputBuffer = inputBuffer; // TIM: not future-proof
 
-  result = device->SetTexture( ioState.leftSampler, inputBuffer->getTextureHandle() );
-  DX9AssertResult( result, "SetTexture failed" );
-  result = device->SetTexture( ioState.rightSampler, slopBuffer->getTextureHandle() );
-  DX9AssertResult( result, "SetTexture failed" );
-  result = device->SetRenderTarget( 0, outputBuffer->getSurfaceHandle() );
-  DX9AssertResult( result, "SetRenderTarget failed" );
+  globalSamplers[0] = inputBuffer->getTextureHandle();
+  globalSamplers[1] = slopBuffer->getTextureHandle();
+  globalOutputs[0] = outputBuffer->getSurfaceHandle();
 
-  inputTextureRects[tex0] = inputBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim);
-  inputTextureRects[tex1] = slopBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim );
+
+  globalInterpolants[0] = inputBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim);
+  globalInterpolants[1] = slopBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim );
   outputRect = outputBuffer->getReductionSurfaceRect( 0, outputExtent, 0, otherExtent, dim );
 
-  runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
+  // bind the 2-argument reduction function
+  executeReductionTechnique( 2 );
 
   ioState.slopCount = 0;
 
@@ -888,9 +1317,10 @@ void DX9Kernel::endReduction( ReductionState& ioState )
   device->SetTexture( 0, inputBuffer->getTextureHandle() );
   device->SetRenderTarget( 0, outputBuffer->getSurfaceHandle() );
 
-  inputTextureRects[0] = inputBuffer->getReductionTextureRect( 0, outputWidth, 0, outputHeight, 0 );
+  inputTextureRects.push_back( inputBuffer->getReductionTextureRect( 0, outputWidth, 0, outputHeight, 0 ) );
   outputRect = outputBuffer->getReductionSurfaceRect( 0, outputWidth, 0, outputHeight, 0 );
   runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
+  clearInputs();
 
   // clean up
   HRESULT result = device->EndScene();
@@ -901,7 +1331,7 @@ void DX9Kernel::endReduction( ReductionState& ioState )
   DX9LOG(3) << "************ Result *************";
   dumpReductionBuffer( outputBuffer, 1, 1 );
 
-  ClearInputs();
+  clearArguments();
 }
 
 void DX9Kernel::dumpReductionState( ReductionState& ioState )
