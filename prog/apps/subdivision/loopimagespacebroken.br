@@ -74,9 +74,9 @@ kernel void smallEnough(Tri t<>, Neighbor u<>,
   v.A.xyz = t.A.xyz;
   v.A.w = (dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)/max(t.A.z,t.B.z)>epsilon)?1.0:0.0;
   v.B.xyz = t.B.xyz;
-  v.B.w = (dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)/max(t.A.z,t.B.z)>epsilon)?1.0:0.0;
+  v.B.w = (dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)/max(t.B.z,t.C.z)>epsilon)?1.0:0.0;
   v.C.xyz = t.C.xyz;
-  v.C.w = (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)/max(t.A.z,t.B.z)>epsilon)?1.0:0.0;
+  v.C.w = (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)/max(t.A.z,t.C.z)>epsilon)?1.0:0.0;
   n.AB.xyz = u.AB.xyz;
   //for the neighbors that two vertices share, there are two relevant lenghts,
   // both of which must be saved in the neighbor .w
@@ -96,7 +96,7 @@ kernel void smallEnough(Tri t<>, Neighbor u<>,
              dot(t.A.xyz-u.AAB.xyz,t.A.xyz-u.AAB.xyz)/max(t.A.z,u.AAB.z)>epsilon)?1.0:0;
   n.ABB.xyz=u.ABB.xyz;
   n.ABB.w = (isNotNeighbor(u.ABB)|| //if missing neighbor, should not stop split
-             dot(t.B.xyz-u.ABB.xyz,t.B.xyz-u.ABB.xyz)/max(t.A.z,u.ABB.z)>epsilon)?1.0:0;
+             dot(t.B.xyz-u.ABB.xyz,t.B.xyz-u.ABB.xyz)/max(t.B.z,u.ABB.z)>epsilon)?1.0:0;
   n.BBC.xyz=u.BBC.xyz;
   n.BBC.w = (isNotNeighbor(u.BBC)|| //if missing neighbor, should not stop split
              dot(t.B.xyz-u.BBC.xyz,t.B.xyz-u.BBC.xyz)/max(t.B.z,u.BBC.z)>epsilon)?1.0:0;
