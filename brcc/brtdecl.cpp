@@ -16,22 +16,46 @@
 
 #include "brtdecl.h"
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BrtStreamType::BrtStreamType(const ArrayType *t)
   : Type(TT_BrtStream)
 {
   const ArrayType *p;
 
   // First find the base type of the array;
-  for (p = t; 
-       p->subType && p->subType->isArray(); 
-       p = (ArrayType *)p->subType)
-    dims.push_back(p->size->dup0());
-  dims.push_back(p->size->dup0());
+  for (p = t;
+       p->subType && p->subType->isArray(); p = (ArrayType *)p->subType) {
+     assert(p->size);
+     dims.push_back(p->size->dup0());
+  }
+
+  /*
+   * p->size is NULL when parsing s<> (i.e. a stream function argument or
+   * some other case where no length information is given).  This is fine in
+   * some cases, but not in others, so the super class tolerates it and lets
+   * the children individually decide if that's okay for them.
+   */
+
+  if (p->size) {
+     dims.push_back(p->size->dup0());
+  }
 
   assert (p->subType);
   assert (p->subType->isBaseType());
 
   base = (BaseType *) p->subType->dup0();
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BrtStreamType::BrtStreamType(const BaseType *_base, const ExprVector _dims)
+  : Type(TT_BrtStream)
+{
+   ExprVector::const_iterator i;
+
+   base = (BaseType *) _base->dup();
+   for (i = _dims.begin(); i != _dims.end(); i++) {
+      dims.push_back((*i)->dup());
+   }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -44,25 +68,51 @@ BrtStreamType::~BrtStreamType()
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Type*
-BrtStreamType::dup0() const
+void
+BrtStreamType::findExpr( fnExprCallback cb )
 {
-  BrtStreamType *r = new BrtStreamType();
-  r->base = (BaseType *) base->dup0();
+    if (base)
+        base->findExpr(cb);
 
-  for (unsigned int i=0; i<dims.size(); i++)
-    r->dims.push_back(dims[i]->dup0());
-  
-  return r;
+    for (unsigned int i=0; i<dims.size(); i++) {
+       dims[i] = (cb)(dims[i]);
+       dims[i]->findExpr(cb);
+    }
 }
 
-void 
-BrtStreamType::printType( std::ostream& out, Symbol *name,
-			  bool showBase, int level ) const
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BrtStreamParamType::printType(std::ostream& out, Symbol *name,
+                              bool showBase, int level) const
+{
+  out << "::brook::stream &";
+
+  if (name)
+    out << *name;
+}
+
+void
+BrtStreamParamType::printForm(std::ostream& out) const
+{
+    out << "-BrtStreamParam Type ";
+    if (base)
+        base->printBase(out, 0);
+}
+
+void
+BrtStreamParamType::printInitializer(std::ostream& out) const
+{
+   /* Nothing.  There are no initializers for parameters to functions */
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BrtInitializedStreamType::printType(std::ostream& out, Symbol *name,
+                                    bool showBase, int level) const
 {
   out << "::brook::stream ";
 
-  if (name) 
+  if (name)
     out << *name;
 
   // TIM: add initializer as constructor
@@ -94,16 +144,20 @@ BrtStreamType::printType( std::ostream& out, Symbol *name,
 }
 
 void
-BrtStreamType::printForm(std::ostream& out) const
+BrtInitializedStreamType::printForm(std::ostream& out) const
 {
-    out << "-BrtStream Type ";
+    out << "-BrtInitializedStream Type ";
     if (base)
         base->printBase(out, 0);
 }
 
 void
-BrtStreamType::printInitializer(std::ostream& out) const
+BrtInitializedStreamType::printInitializer(std::ostream& out) const
 {
+  /*
+   * I think this is bogus.  I'm pretty sure BrtInitializedStreams don't
+   * have initializers per se, instead they use constructor syntax. --Jeremy.
+   */
   out << "__BRTCreateStream(\"";
   base->printBase(out, 0);
   out << "\",";
@@ -112,66 +166,16 @@ BrtStreamType::printInitializer(std::ostream& out) const
     out << ",";
   }
   out << "-1)";
-} 
-  
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void
-BrtStreamType::findExpr( fnExprCallback cb )
-{
-    if (base)
-        base->findExpr(cb);
-
-    for (unsigned int i=0; i<dims.size(); i++) {
-       dims[i] = (cb)(dims[i]);
-       dims[i]->findExpr(cb);
-    }
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-bool
-BrtStreamType::lookup( Symbol* sym ) const
-{
-  if (base)
-    return base->lookup(sym);
-  else
-    return false;
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-TypeQual
-BrtStreamType::getQualifiers( void ) const
-{
-   return base->getQualifiers();
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-BaseType *
-BrtStreamType::getBase( void )
-{
-   return base->getBase();
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BrtIterType::BrtIterType(const ArrayType *stream, const FunctionCall *f)
-  : Type(TT_BrtIter)
+  : BrtStreamType(stream)
 {
-  const ArrayType *p;
   ExprVector::const_iterator i;
 
   assert(f->function->etype == ET_Variable);
   assert(strcmp(((Variable *) f->function)->name->name.c_str(),"iter") == 0);
-
-  // Drill down to the find the baseType and inflate our dimensions
-  for (p = stream;
-       p->subType && p->subType->isArray();
-       p = (ArrayType *)p->subType) {
-    dims.push_back(p->size->dup0());
-  }
-  dims.push_back(p->size->dup0());
-
-  assert(p->subType && p->subType->isBaseType());
-  base = (BaseType *) p->subType->dup0();
 
   /*
    * Now fish the min / max out of 'f'.
@@ -194,36 +198,25 @@ BrtIterType::BrtIterType(const ArrayType *stream, const FunctionCall *f)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-BrtIterType::~BrtIterType()
+BrtIterType::BrtIterType(const BaseType *_base, const ExprVector _dims,
+                         const ExprVector _args)
+  : BrtStreamType(_base, _dims)
 {
-   ExprVector::iterator i;
+   ExprVector::const_iterator i;
 
-   /* base is taken care of when the global type list is destroyed */
-
-   for (i = dims.begin(); i != dims.end(); i++) {
-      delete *i;
-   }
-   for (i = args.begin(); i != args.end(); i++) {
-      delete *i;
+   for (i = _args.begin(); i != _args.end(); i++) {
+      args.push_back((*i)->dup());
    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Type*
-BrtIterType::dup0() const
+BrtIterType::~BrtIterType()
 {
-   ExprVector::const_iterator i;
+   ExprVector::iterator i;
 
-   BrtIterType *r = new BrtIterType();
-   r->base = (BaseType *) base->dup0();
-
-   for (i = dims.begin(); i != dims.end(); i++) {
-      r->dims.push_back((*i)->dup0());
-   }
    for (i = args.begin(); i != args.end(); i++) {
-      r->args.push_back((*i)->dup0());
+      delete *i;
    }
-   return r;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -309,14 +302,21 @@ BrtIterType::printInitializer(std::ostream& out) const
 void
 BrtIterType::findExpr( fnExprCallback cb )
 {
-    if (base) base->findExpr(cb);
+   ExprVector::iterator i;
 
-    for (unsigned int i=0; i<dims.size(); i++) {
-       dims[i] = (cb)(dims[i]);
-       dims[i]->findExpr(cb);
-    }
+   BrtStreamType::findExpr(cb);
+
+   for (i = args.begin(); i != args.end(); i++) {
+       *i = (cb)(*i);
+       (*i)->findExpr(cb);
+   }
 }
 
+
+
+
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 CPUGatherType::CPUGatherType(const ArrayType &t,bool copy_on_write) {
 	dimension=0;
 	at = &t;

@@ -24,92 +24,114 @@
 class BrtStreamType : public Type
 {
 public:
-  BrtStreamType(const ArrayType *t);
-  
   ~BrtStreamType();
-  
-  Type* dup0() const;    // deep-copy
-  
-  Type* extend(Type *extension) {assert (0); return NULL;}
-  
+
+  Type* dup0() const = 0;
+
   bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
     return false;
   }
 
-  void printBase( std::ostream& out, int level ) const {assert (0);}
-  void printBefore( std::ostream& out, Symbol *name, int level) const {assert (0);}
-  void printAfter( std::ostream& out ) const {assert (0);}
-  
-  void printType( std::ostream& out, Symbol *name,
-		  bool showBase, int level ) const;
+  void printBase(std::ostream& out, int level ) const {assert (0);}
+  void printBefore(std::ostream& out, Symbol *name, int level) const {
+     assert (0);
+  }
+  void printAfter(std::ostream& out ) const {assert (0);}
 
-  void printForm(std::ostream& out) const;
+  void printType(std::ostream& out, Symbol *name,
+		  bool showBase, int level ) const = 0;
+  void printForm(std::ostream& out) const = 0;
+  virtual void printInitializer(std::ostream& out) const = 0;
 
-  void printInitializer(std::ostream& out) const;
+  void findExpr(fnExprCallback cb);
+  bool lookup(Symbol* sym) const { return base ? base->lookup(sym) : false; }
 
-  void registerComponents() { }
-  
-  void findExpr( fnExprCallback cb );
-  
-  bool lookup( Symbol* sym ) const;
+  TypeQual getQualifiers(void) const { return base->getQualifiers(); }
+  BaseType *getBase(void) { return base; }
 
-  TypeQual getQualifiers( void ) const;
-  BaseType *getBase( void );
- 
   BaseType       *base;
   ExprVector     dims;
 
 protected:
-  BrtStreamType(void) : Type(TT_BrtStream) {}; /* Only for dup0() */
+  /*
+   * All constructors are protected because no one should be instantiating
+   * these directly.  Use the children.
+   */
+  BrtStreamType(const ArrayType *t);
+  BrtStreamType(const BaseType *_base, const ExprVector _dims); /* For dup0 */
+};
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+class BrtStreamParamType : public BrtStreamType
+{
+public:
+  BrtStreamParamType(const ArrayType *t) : BrtStreamType(t) {};
+
+  Type* dup0() const { return new BrtStreamParamType(base, dims); }
+
+  void printType(std::ostream& out, Symbol *name,
+		  bool showBase, int level ) const;
+  void printForm(std::ostream& out) const;
+  void printInitializer(std::ostream& out) const;
+
+protected:
+  BrtStreamParamType(const BaseType *_base, const ExprVector _dims)
+     : BrtStreamType(_base, _dims) {} /* Only for dup0() */
+};
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+class BrtInitializedStreamType : public BrtStreamType
+{
+public:
+  BrtInitializedStreamType(const ArrayType *t) : BrtStreamType(t) {};
+
+  Type* dup0() const { return new BrtInitializedStreamType(base, dims); }
+
+  void printType(std::ostream& out, Symbol *name,
+		  bool showBase, int level ) const;
+  void printForm(std::ostream& out) const;
+  void printInitializer(std::ostream& out) const;
+
+protected:
+  BrtInitializedStreamType(const BaseType *_base, const ExprVector _dims)
+     : BrtStreamType(_base, _dims) {} /* Only for dup0() */
 };
 
 
-class BrtIterType : public Type
+class BrtIterType : public BrtStreamType
 {
 public:
   BrtIterType(const ArrayType *stream, const FunctionCall *f);
-
   ~BrtIterType();
 
-  Type* dup0() const;    // deep-copy
+  Type* dup0() const { return new BrtIterType(base, dims, args); }
 
   void printType( std::ostream& out, Symbol *name,
 		  bool showBase, int level ) const;
-
-  bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
-    return false;
-  }
-
   void printForm(std::ostream& out) const;
-
   void printInitializer(std::ostream& out) const;
 
-  void findExpr( fnExprCallback cb );
+  void findExpr(fnExprCallback cb);
 
-  bool lookup( Symbol* sym ) const { return base ? base->lookup(sym) : false; }
-
-  TypeQual getQualifiers( void ) const { return base->getQualifiers(); }
-  BaseType *getBase( void ) { return base; }
-
-  BaseType       *base;
-  ExprVector     dims;
   ExprVector     args;
 
 protected:
-  BrtIterType(void) : Type(TT_BrtIter) {}; /* Only for dup0() */
+  BrtIterType(const BaseType *_base, const ExprVector _dims,
+              const ExprVector _args); /* Only for dup0() */
 };
 
-class CPUGatherType{public:
-    const Type * at;
-    const Type * subtype;
-    bool copy_on_write;
-    unsigned int dimension;
-	CPUGatherType(const ArrayType &t,bool copy_on_write);
-	Type * dup0()const;
-	void printType(std::ostream & out, Symbol *name, bool showBase, int level) const;
-	void printBefore(std::ostream & out, Symbol *name, int level) const;
-	void printAfter(std::ostream &out)const;
-	void printSubtype(std::ostream &out,Symbol *name, bool showBase,int level)const;
+class CPUGatherType{
+public:
+  const Type * at;
+  const Type * subtype;
+  bool copy_on_write;
+  unsigned int dimension;
+  CPUGatherType(const ArrayType &t,bool copy_on_write);
+  Type * dup0()const;
+  void printType(std::ostream & out, Symbol *name, bool showBase, int level) const;
+  void printBefore(std::ostream & out, Symbol *name, int level) const;
+  void printAfter(std::ostream &out)const;
+  void printSubtype(std::ostream &out,Symbol *name, bool showBase,int level)const;
 };
 
 

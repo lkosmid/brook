@@ -1,66 +1,62 @@
 // accumulate.br
-// Tests repeated read-modify writes into an output stream.
-// This makes sure that any cache of input streams (such
-// as the texture cache on a GPU) is invalidted when a
-// stream is written to.
+//
+// This test repeatedly computes b += a for two different streams.  The
+// goal is to validate that read-modify-write works with kernels (i.e. the
+// same stream can be passed as an input and an output).
 
 #include <stdio.h>
 
-kernel void sum( float a<>, float b<>, out float c<> ) {
-	c = a + b;
+static void callKernel(float a<>, float b<>);
+
+kernel void
+sum(float a<>, float b<>, out float c<>)
+{
+   c = a + b;
 }
 
-int main() {
-	int i, j;
-	float a1< 100 >;
-	float b1< 100 >;
-	float a2< 10, 10 >;
-	float b2< 10, 10 >;
-	float input_a1[100];
-	float input_b1[100];
-	float output_b1[100];
-	float input_a2[10][10];
-	float input_b2[10][10];
-	float output_b2[10][10];
-	
-	// initialize data
-	for( i = 0; i < 10; i++ )
-	{
-		for( j = 0; j < 10; j++ )
-		{
-			input_a1[10*i+j] = 0.125f*(float)(10*i+j);
-			input_b1[10*i+j] = (float)0;
-			input_a2[i][j] = 0.125f*(float)(10*i+j);
-			input_b2[i][j] = (float)0;
-		}
-	}
-	streamRead( a1, input_a1 );
-	streamRead( b1, input_b1 );
-	streamRead( a2, input_a1 );
-	streamRead( b2, input_b2 );
-	
-	for( i = 0; i < 12; i++ )
-	{
-		sum( a1, b1, b1 );
-		sum( a2, b2, b2 );
-	}
-	
-	streamWrite( b1, output_b1 );
-	streamWrite( b2, output_b2 );
-	
-	for( i = 0; i < 10; i++ )
-	{
-		for( j = 0; j < 10; j++ )
-			printf( "%3.2f ", output_b1[10*i+j] );
-		printf("\n");
-	}
-	
-	for( i = 0; i < 10; i++ )
-	{
-		for( j = 0; j < 10; j++ )
-			printf( "%3.2f ", output_b2[i][j] );
-		printf("\n");
-	}
-	
-	return 0;
+static void
+callKernel(float a<>, float b<>)
+{
+   sum(a, b, b);
+}
+
+int
+main(int argc, char *argv[])
+{
+   float input_a1[100], input_b1[100], output_b1[100];
+   float output_b2[10][10];
+   float a1<100>, b1<100>;
+   float a2<10,10>, b2<10,10>;
+   int i, j;
+
+   for (i = 0; i < 10; i++ ) {
+      for (j = 0; j < 10; j++ ) {
+         input_a1[10*i+j] = 0.125f*(float)(10*i+j);
+         input_b1[10*i+j] = (float)0;
+      }
+   }
+   streamRead(a1, input_a1); streamRead(a2, input_a1);
+   streamRead(b1, input_b1); streamRead(b2, input_b1);
+
+   for (i = 0; i < 12; i++ ) {
+      callKernel(a1, b1);
+      callKernel(a2, b2);
+   }
+
+   streamWrite(b1, output_b1);
+   streamWrite(b2, output_b2);
+
+   for (i = 0; i < 10; i++) {
+      for (j = 0; j < 10; j++)
+         printf( "%6.2f ", output_b1[10*i+j] );
+      printf("\n");
+   }
+
+   for( i = 0; i < 10; i++ ) {
+      for( j = 0; j < 10; j++ )
+         printf( "%6.2f ", output_b2[i][j] );
+      printf("\n");
+   }
+
+   return 0;
 }

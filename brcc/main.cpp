@@ -164,6 +164,35 @@ parse_args (int argc, char *argv[]) {
 
 
 /*
+ * ConvertToBrtStreamParams --
+ *
+ *      Converts stream arguments to non-kernel functions into their actual
+ *      BRT types (i.e. makes it possible to pass streams as arguments to
+ *      functions).
+ */
+
+static void
+ConvertToBrtStreamParams(FunctionType *fType)
+{
+   unsigned int i;
+
+   for (i = 0; i < fType->nArgs; i++) {
+      if (fType->args[i]->isStream()) {
+         Type *newForm;
+
+         newForm = new BrtStreamParamType((ArrayType *) fType->args[i]->form);
+         /*
+          * Types are all on the global type list, so we can't just nuke it.
+         delete fType->args[i]->form;
+          */
+         fType->args[i]->form = newForm;
+      }
+   }
+   return;
+}
+
+
+/*
  * ConvertToBrtStreams --
  *
  *      Converts stream declaration statement objects into BrtStreams.
@@ -182,12 +211,19 @@ ConvertToBrtStreams(Statement *s)
       ArrayType *stream;
       Type *brtType;
 
-      if (!decl->form || !decl->isStream()) continue;
+      if (!decl->form) continue;
+
+      if (decl->form->isFunction()) {
+         assert(decl->form->type == TT_Function);
+         ConvertToBrtStreamParams((FunctionType *)decl->form);
+      }
+
+      if (!decl->isStream()) continue;
       stream = (ArrayType *) decl->form;
 
       if (decl->initializer == NULL) {
          assert((stream->getQualifiers() & TQ_Iter) == 0);
-         brtType = new BrtStreamType (stream);
+         brtType = new BrtInitializedStreamType (stream);
          // TIM: we don't want any initializer for stream types...
          // they are initialized by their constructor...
          //
@@ -233,7 +269,11 @@ ConvertToBrtFunctions(FunctionDef *fDef)
       return new BRTReduceKernelDef(*fDef);
    } else if (fDef->decl->isKernel()) {
       return new BRTMapKernelDef(*fDef);
-   } else return NULL;
+   } else {
+      assert(fDef->decl->form->type == TT_Function);
+      ConvertToBrtStreamParams((FunctionType *) fDef->decl->form);
+      return NULL;
+   }
 
 }
 
