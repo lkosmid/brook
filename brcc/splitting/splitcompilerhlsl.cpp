@@ -113,7 +113,7 @@ void SplitCompilerHLSL::compileShader(
 
 // nonlinear cost model
   
-  int totalOutputCost = outputCount == 1 ? 5 : 3 * 5 * outputCount;
+  int totalOutputCost = outputCount == 1 ? 6 : 3 * 6 * outputCount;
 
   // count all issues, (not just arith)
   int totalInstructionIssueCost = arithmeticInstructionCount + textureInstructionCount;
@@ -125,10 +125,10 @@ void SplitCompilerHLSL::compileShader(
 
   // TIM: one extra instruction inserted by ATI?
   // seems to be confirmed by data...
-  int averagedInstructionCost = 1 + (bestCaseInstructionCost + worstCastInstructionCost) / 2;
+  int averagedInstructionCost = (bestCaseInstructionCost + worstCastInstructionCost) / 2;
 
   // shader time = max( instruction exec, output write ) + pass overhead
-  int shaderCost = max( averagedInstructionCost, totalOutputCost) + 6;
+  int shaderCost = max( averagedInstructionCost, totalOutputCost) + 9 + 1*outputCount;
 
 
 // linear cost model
