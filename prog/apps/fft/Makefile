@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = fft
-FILES = qfft wfft
+FILES = gpufft wfft testfft
 LIBRARIES =  $(RUNTIME_LIBS)
 BRCCFLAGS = 
 
