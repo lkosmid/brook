@@ -39,7 +39,7 @@ kernel void calculateIndexModulus (float4 index,
                                    float offset,
                                    float lengthmodmodulus, 
                                    out float which <>) {
-   which= round(fmod(round(index.y*lengthmodmodulus 
+   which= floor(fmod(round(index.y*lengthmodmodulus 
                 + fmod(index.x,mod)),
 	               modulus)-offset);
 }
@@ -80,7 +80,7 @@ kernel void streamCombine2f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus, mod, 
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
    if (whichmod==0||whichmod==modulus) {
@@ -130,7 +130,7 @@ kernel void streamCombine3f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus, mod, 
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
    if (whichmod==0||whichmod==modulus) {
@@ -185,7 +185,7 @@ kernel void streamCombine4f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus, mod, 
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
    if (whichmod==0||whichmod==modulus) {
@@ -246,7 +246,7 @@ kernel void streamCombine5f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus, mod,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
    if (whichmod==0||whichmod==modulus) {
@@ -314,7 +314,7 @@ kernel void streamCombine6f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus, mod,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
    if (whichmod==0||whichmod==modulus) {
@@ -387,7 +387,7 @@ kernel void streamCombine7f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus, mod,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
    if (whichmod==0||whichmod==modulus) {
@@ -466,7 +466,7 @@ kernel void streamCombine8f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus, mod,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
    if (whichmod==0||whichmod==modulus) {
@@ -611,7 +611,7 @@ void combineStreams (struct __BRTStream **streams,
                               num-5,
                               output,
                               num,
-                              5,
+                              5-.5,
                               length,
                               lengthmodmodulus);
       }
