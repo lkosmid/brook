@@ -1381,10 +1381,16 @@ Block::print(std::ostream& out, int level) const
     // the Cg compiler apparently hates empty functions
     // so we make this change here... this is a terrible
     // place to do it, but I can't think of a better solution
+
+    // Ian:  I took this out.  We should not be allowing empty
+    // kernels anyway.
+
+#if 0
     if( head == NULL )
     {
       out << "int __bogus=0; // to make empty function non-empty" << std::endl;
     }
+#endif
 
     isDecl = (head != NULL) ? head->isDeclaration() : false;
     for (stemnt=head; stemnt; stemnt=stemnt->next)
