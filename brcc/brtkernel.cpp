@@ -135,7 +135,7 @@ class PrintCPUArg {
 public:
 
     PrintCPUArg(Decl * arg,unsigned int index):a(arg),index(index){}
-    enum STAGE {HEADER,DEF,USE};
+    enum STAGE {HEADER,DEF,USE,CLEANUP};
    
    //this function determines if the size actually is specified for this dim
     bool isDimensionlessHelper(Type * t) {
@@ -187,17 +187,23 @@ public:
             nothing.name="";
             cgt.printSubtype(out,&nothing,true,0);
             out<<"*)";
-            out <<"reinterpret_cast<brook::CPUStream*>";
-            out << "(args["<<index<<"])->getData(), "<<std::endl;
+            out <<"reinterpret_cast<brook::Stream*>";
+            out << "(args["<<index<<"])->getData(brook::Stream::READ), ";
+	    out <<std::endl;
             indent(out,2);
-            out<<"reinterpret_cast<brook::CPUStream*>";
+            out<<"reinterpret_cast<brook::Stream*>";
             out<< "(args["<<index<<"])->getExtents());";
             break;
         }
         case USE:
             out << "arg"<<index;
             break;
-        
+        case CLEANUP:
+	  indent(out,1);
+	  out << "reinterpret_cast<brook::Stream*>";
+	  out << "(args["<<index<<"])->releaseData(brook::Stream::READ);";
+	  out << std::endl;
+	  break;
         }
     }
 
@@ -230,13 +236,21 @@ public:
             t->printType(out,&s,true,0);
             out << ")"<<std::endl;
             indent(out,2);
-            out <<"reinterpret_cast<brook::CPUStream *>(args["<<index<<"])->getData();";
+            out <<"reinterpret_cast<brook::Stream *>(args["<<index<<"])";
+	    indent(out,3);
+	    out << "->getData(brook::Stream::READ);";
             break;
         }
         case USE:{//obsolete! not allowed to index with float4
             out <<"arg"<<index;
             break;
         }
+	case CLEANUP:
+	  indent(out,1);
+	  out << "reinterpret_cast<brook::Stream*>";
+	  out << "(args["<<index<<"])->releaseData(brook::Stream::READ);";
+	  out << std::endl;
+	  break;
         }
     }
 
@@ -273,6 +287,8 @@ public:
                 if (isStream)
                     out <<"++";
             break;
+	case CLEANUP:
+	  break;
         }
     }
     
@@ -307,6 +323,15 @@ public:
                 printDimensionalGatherStream(out,USE);
         else
             printNormalArg(out,USE);
+    }
+    void printInternalCleanup(std::ostream &out){
+        if(isArray())
+            if (isDimensionless())
+                printDimensionlessGatherStream(out,CLEANUP);
+            else
+                printDimensionalGatherStream(out,CLEANUP);
+        else
+            printNormalArg(out,CLEANUP);
     }
 };
 
@@ -362,6 +387,9 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
         myArgs[i].printInternalUse(out);
     }}
     out<< ");"<<std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+        myArgs[i].printInternalCleanup(out);
+    }}    
     indent(out,1);out <<"}"<<std::endl;
     out << "}"<<std::endl;   
 }

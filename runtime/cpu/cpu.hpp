@@ -22,7 +22,11 @@ namespace brook {
 	typedef void callable(const std::vector<void *>&args,unsigned int start, unsigned int end);
 	callable * func;
 	std::vector<void *> args;
+        Stream * writeOnly;
+        std::vector<Stream *> readOnly;
+        std::vector<Stream *> writeOnlies;
 	unsigned int extent;
+        void Cleanup();
     };
     class CPUStream: public Stream {
     public:
@@ -30,11 +34,11 @@ namespace brook {
 	virtual void Read(const void* inData);
 	virtual void Write(void* outData);
 	virtual void Release();
-	virtual void *getData(){return data;}
-	virtual void *getData()const{return data;}	
+	virtual void *getData(unsigned int flags) {return data;}
+        virtual void releaseData(unsigned int flags){}
 	virtual const unsigned int * getExtents() const{return extents;}
 	virtual unsigned int getDimension() const{return dims;}
-	virtual unsigned int getTotalSize()const{return totalsize;}
+        virtual unsigned int getTotalSize()const{return totalsize;}	
     protected:
 	void * data;
 	unsigned int * extents;

@@ -5,6 +5,7 @@ static void nothing (const std::vector<void*>&args,unsigned int start,unsigned i
 namespace brook{
     CPUKernel::CPUKernel(const void * source []){
         const char ** src= (const char**)(source);
+	writeOnly=NULL;
 	for (unsigned int i=0;;i+=2) {
 	    if (src[i]==NULL){
 		func=&nothing;
@@ -18,13 +19,16 @@ namespace brook{
 	}
         extent=0;
     }
-    void CPUKernel::PushStream(const Stream *s){
-        args.push_back(static_cast<const CPUStream*>(s)->getData());
-	unsigned int total_size=static_cast<const CPUStream*>(s)->getTotalSize();
+    void CPUKernel::PushStream(const Stream *constStream){
+        Stream * s = const_cast<Stream*>(constStream);
+        args.push_back(s->getData(Stream::READ));
+	unsigned int total_size=s->getTotalSize();
 	if (extent==0)
 	    extent=total_size;
 	else
 	    assert(extent==total_size);
+        
+	readOnly.push_back(s);
     }
     void CPUKernel::PushConstant(const float &val){
         args.push_back(const_cast<float*>(&val));
@@ -41,13 +45,37 @@ namespace brook{
     void CPUKernel::PushGatherStream(const Stream *s){
         args.push_back(const_cast<Stream*>(s));
     }
-    void CPUKernel::PushOutput(const Stream *s){
-        this->PushStream(s);
+    void CPUKernel::PushOutput(const Stream *constStream){
+        Stream * s = const_cast<Stream*>(constStream);
+        args.push_back(s->getData(Stream::WRITE));
+	unsigned int total_size=s->getTotalSize();
+	if (extent==0)
+	    extent=total_size;
+	else
+	    assert(extent==total_size);       
+	if (writeOnly==NULL)
+	  writeOnly=s;
+	else
+	  writeOnlies.push_back(s);
+    }
+    void CPUKernel::Cleanup() {
+        args.clear();
+	while (!writeOnlies.empty()){
+	  writeOnlies.back()->releaseData(Stream::WRITE);
+	  writeOnlies.pop_back();
+	}
+	if (writeOnly)
+	  writeOnly->releaseData(Stream::WRITE);
+	writeOnly=NULL;
+	while (!readOnly.empty()) {
+	  readOnly.back()->releaseData(Stream::READ);
+	  readOnly.pop_back();
+	}
+	extent=0;
     }
     void CPUKernel::Map(){
 	(*func)(args,0,extent);//can do some fancy forking algorithm here
-        args.clear();
-	extent=0;
+	Cleanup();
     }
     void CPUKernel::Release() {
 	delete this;

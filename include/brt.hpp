@@ -44,7 +44,12 @@ namespace brook {
     virtual void Read(const void* inData) = 0;
     virtual void Write(void* outData) = 0;
     virtual void Release() = 0;
-
+    enum USAGEFLAGS {NONE=0x0,READ=0x1,WRITE=0x2,READWRITE=0x3};
+    virtual void * getData (unsigned int flags){return (void *)0;}
+    virtual void releaseData(unsigned int flags){}
+    virtual const unsigned int * getExtents() const {return (unsigned int*)0;}
+    virtual unsigned int getDimension() const {return 0;}
+    virtual unsigned int getTotalSize() const {return 0;}
   protected:
     virtual ~Stream() {}
   };

@@ -15,14 +15,14 @@ BINSUFFIX        := .exe
 SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32
 
 #CFLAGS           += /nologo /MDd /W1 /O2 /DWIN32
-CFLAGS           += /nologo /MDd /W3 /DWIN32 /DWINDOWS /EHsc /Zm500
+CFLAGS           += /nologo /MDd /W3 /DWIN32 /DWINDOWS /EHsc /Zm500 /I /DX90SDK/INCLUDE
 C_INCLUDE_FLAG   := /I
 C_DEBUG_FLAG     := /Z7 /Yd /GZ 
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := /Fo
 C_COMPILE_FLAG   := /c
 
-LDFLAGS           += /nologo /map /fixed:no
+LDFLAGS           += /nologo /map /fixed:no /libpath:/DX90SDK/LIB
 LD_LIBDIR_FLAG    := /libpath:
 LD_SHARED_FLAG    := /DLL
 LD_OUTPUT_FLAG    := /out:
