@@ -14,8 +14,8 @@ namespace brook {
     int getWidth() { return width; }
     int getHeight() { return height; }
 
-	  void setData( const float* inData, unsigned int inStride );
-	  void getData( float* outData, unsigned int inStride );
+	  void setData( const float* inData, unsigned int inStride, unsigned int inCount );
+	  void getData( float* outData, unsigned int inStride, unsigned int inCount );
 
     void markCachedDataChanged();
     void markShadowDataChanged();
@@ -43,8 +43,8 @@ namespace brook {
 
     void flushCachedToShadow();
     void flushShadowToCached();
-    void getShadowData( void* outData, unsigned int inStride );
-    void setShadowData( const void* inData, unsigned int inStride );
+    void getShadowData( void* outData, unsigned int inStride, unsigned int inCount  );
+    void setShadowData( const void* inData, unsigned int inStride, unsigned int inCount  );
 
 	  LPDIRECT3DDEVICE9 device;
 

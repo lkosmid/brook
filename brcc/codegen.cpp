@@ -597,20 +597,24 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
   shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) texRECT((s),(i))\n";
   shader << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
-  shader << "float __gatherindex( float index, float4 scalebias ) { ";
-  shader << "return index; }\n";
-  shader << "float2 __gatherindex( float2 index, float4 scalebias ) { ";
-  shader << "return index; }\n";
+  if( !globals.enableGPUAddressTranslation ) {
+    shader << "float __gatherindex1( float index, float4 scalebias ) { ";
+    shader << "return index; }\n";
+    shader << "float2 __gatherindex2( float2 index, float4 scalebias ) { ";
+    shader << "return index; }\n";
+  }
   shader << "#else\n";
   shader << "#define _stype   sampler\n";
   shader << "#define _sfetch  tex2D\n";
   shader << "#define __sample1(s,i) tex1D((s),(i))\n";
   shader << "#define __sample2(s,i) tex2D((s),(i))\n";
   shader << "#define _computeindexof(a,b) (b)\n";
-  shader << "float __gatherindex( float index, float4 scalebias ) { ";
-  shader << "return index*scalebias.x+scalebias.z; }\n";
-  shader << "float2 __gatherindex( float2 index, float4 scalebias ) { ";
-  shader << "return index*scalebias.xy+scalebias.zw; }\n";
+  if( !globals.enableGPUAddressTranslation ) {
+    shader << "float __gatherindex1( float index, float4 scalebias ) { ";
+    shader << "return index*scalebias.x+scalebias.z; }\n";
+    shader << "float2 __gatherindex2( float2 index, float4 scalebias ) { ";
+    shader << "return index*scalebias.xy+scalebias.zw; }\n";
+  }
   shader << "#endif\n\n";
 
   // TIM: simple subroutines
@@ -639,7 +643,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
     shader << "\n\n";
 
     shader << "float4 __calculateindexof( float4 outputpos_01, float4 shape ) {\n";
-    shader << "\treturn floor( outputpos_01*shape ); }\n";
+    shader << "\treturn floor( outputpos_01*shape + 0.001 ); }\n";
 
     shader << "float2 __calculatetexpos( float4 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
     shader << "\tfloat linearIndex = dot( index, linearizeConst );\n";
@@ -658,13 +662,22 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
     shader << "\tfloat linearIndex = interpolant.y + interpolant.x;\n";
     shader << "\tindex01.x = frac( linearIndex );\n";
     shader << "\tindex.y = linearIndex - index01.x;\n";
-    shader << "\tindex.x = index01.x * shape.x;\n";
+    shader << "\tindex.x = floor( index01.x * shape.x + 0.001 );\n";
     shader << "\tindex01.y = index.y * invshape.y;\n";
     shader << "\tindex01.z = 0;\n";
     shader << "\tindex01.w = 0;\n";
     shader << "\tindex.z = 0;\n";
     shader << "\tindex.w = 0;\n";
     shader << "}\n\n";
+
+    shader << "float2 __gatherindex1( float1 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0,0,0), linearizeConst, reshapeConst, hackConst ); }\n";
+    shader << "float2 __gatherindex2( float2 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0,0), linearizeConst, reshapeConst, hackConst ); }\n";
+    shader << "float2 __gatherindex3( float3 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0), linearizeConst, reshapeConst, hackConst ); }\n";
+    shader << "float2 __gatherindex4( float4 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "\treturn __calculatetexpos( index, linearizeConst, reshapeConst, hackConst ); }\n";
   }
 
   shader << "\n\n";
@@ -806,11 +819,12 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
         shader << "uniform _stype " << *args[i]->name;
         shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
         samplerreg += samplerCount;
+
         shader << ",\n\t\t";
-        shader << "uniform float2 __gathershape_" << argName;
+        shader << "uniform float4 __gatherlinearize_" << argName;
         shader << " : register(c" << constreg++ << ")";
         shader << ",\n\t\t";
-        shader << "uniform float2 __gatherstrides_" << argName;
+        shader << "uniform float2 __gatherreshape_" << argName;
         shader << " : register(c" << constreg++ << ")";
       }
       else
@@ -932,7 +946,17 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
       shader << ",\n\t\t";
     std::string name = args[i]->name->name;
     if( args[i]->isArray() ) {
-      shader << name << ", __gatherconst_" << name;
+      if( globals.enableGPUAddressTranslation )
+      {
+        shader << name;
+        shader << ", __gatherlinearize_" << name;
+        shader << ", __gatherreshape_" << name;
+        shader << ", __hackconst";
+      }
+      else
+      {
+        shader << name << ", __gatherconst_" << name;
+      }
     } else {
       shader << name;
     }

@@ -104,7 +104,19 @@ void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
          // TIM: HACK:
          out << getGatherStructureSamplerCount(t);
          out << "],"<<std::endl;
-         out << blank << "float4 _const_"<<nam->name<<"_scalebias";
+
+         if( globals.enableGPUAddressTranslation )
+         {
+          out << "float4 __gatherlinearize_" << nam->name;
+          out << ", float2 __gatherreshape_" << nam->name;
+          out << ", float4 __gatherhack_" << nam->name;
+         }
+         else
+         {
+           out << blank << "float4 _const_"<<nam->name<<"_scalebias";
+         }
+
+
       }else {
         if ((ft->args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
           out << "inout ";

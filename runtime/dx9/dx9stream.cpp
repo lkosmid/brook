@@ -36,7 +36,7 @@ bool DX9Stream::initialize(
   for( unsigned int d = 0; d < dimensionCount; d++ )
   {
     int extent = inExtents[d];
-    if( (extent <= 0) || (extent > kDX9MaximumTextureSize) )
+    if( (extent <= 0) || (!runtime->isAddressTranslationOn() && extent > kDX9MaximumTextureSize) )
     {
       DX9Warn("Unable to create stream with extent %d in dimension %d.\n"
         "Extent must be greater than 0 and less than or equal to %d.",
@@ -46,20 +46,47 @@ bool DX9Stream::initialize(
     extents.push_back(extent);
     totalSize *= extents[d];
   }
-
-  switch( dimensionCount )
+  
+  for( int d = dimensionCount-1; d >= 0; d-- )
+    reversedExtents.push_back(extents[d]);
+  
+  if( runtime->isAddressTranslationOn() )
   {
-  case 1:
-    width = extents[0];
-    height = 1;
-    break;
-  case 2:
-    width = extents[1];
-    height = extents[0];
-    break;
-  default:
-    DX9Assert( false, "Should be unreachable" );
-    return false;
+    int trialWidth = 16;
+    int trialHeight = 1;
+    while( trialWidth <= kDX9MaximumTextureSize )
+    {
+      trialHeight = (totalSize + (trialWidth-1)) / trialWidth;
+      if( trialHeight <= kDX9MaximumTextureSize )
+        break;
+      trialWidth *= 2;
+    }
+    if( trialWidth > kDX9MaximumTextureSize )
+    {
+      DX9Warn("Unable to create stream since total size of %d exceeds limit of %d.\n",
+        totalSize, kDX9MaximumTextureSize*kDX9MaximumTextureSize );
+      return false;
+    }
+
+    textureWidth = trialWidth;
+    textureHeight = trialHeight;
+  }
+  else
+  {
+    switch( dimensionCount )
+    {
+    case 1:
+      textureWidth = extents[0];
+      textureHeight = 1;
+      break;
+    case 2:
+      textureWidth = extents[1];
+      textureHeight = extents[0];
+      break;
+    default:
+      DX9Assert( false, "Should be unreachable" );
+      return false;
+    }
   }
 
   for( int i = 0; i < inFieldCount; i++ )
@@ -86,7 +113,7 @@ bool DX9Stream::initialize(
       return false;
     }
 
-    DX9Texture* fieldTexture = DX9Texture::create( runtime, width, height, fieldComponentCount );
+    DX9Texture* fieldTexture = DX9Texture::create( runtime, textureWidth, textureHeight, fieldComponentCount );
     if( fieldTexture == NULL )
     {
       DX9Warn( "Texture allocation failed during sream initialization." );
@@ -99,8 +126,8 @@ bool DX9Stream::initialize(
   inputRect = DX9Rect( 0, 1, 1, 0 );
   outputRect = DX9Rect( -1, -1, 1, 1 );
 
-  float scaleX = 1.0f / (width);
-  float scaleY = 1.0f / (height);
+  float scaleX = 1.0f / (textureWidth);
+  float scaleY = 1.0f / (textureHeight);
   float offsetX = 1.0f / (1 << 15);//0.5f / width;
   float offsetY = 1.0f / (1 << 15);//0.5f / height;
   gatherConstant.x = scaleX;
@@ -108,8 +135,8 @@ bool DX9Stream::initialize(
   gatherConstant.z = offsetX;
   gatherConstant.w = offsetY;
 
-  indexofConstant.x = (float)width;
-  indexofConstant.y = (float)height;
+  indexofConstant.x = (float)textureWidth;
+  indexofConstant.y = (float)textureHeight;
   indexofConstant.z = 0;
   indexofConstant.w = 0;
 
@@ -157,7 +184,7 @@ void DX9Stream::ReadImpl(const void* inData)
   int fieldCount = (int)fields.size();
   for( int f = 0; f < fieldCount; f++ )
   {
-    fields[f].texture->setData( (const float*)data, stride );
+    fields[f].texture->setData( (const float*)data, stride, totalSize );
     data += fields[f].componentCount * sizeof(float);
   }
 }
@@ -169,17 +196,17 @@ void DX9Stream::WriteImpl(void* outData)
   int fieldCount = (int)fields.size();
   for( int f = 0; f < fieldCount; f++ )
   {
-    fields[f].texture->getData( (float*)data, stride );
+    fields[f].texture->getData( (float*)data, stride, totalSize );
     data += fields[f].componentCount * sizeof(float);
   }
 }
 
-int DX9Stream::getWidth() {
-  return width;
+int DX9Stream::getTextureWidth() {
+  return textureWidth;
 }
 
-int DX9Stream::getHeight() {
-  return height;
+int DX9Stream::getTextureHeight() {
+  return textureHeight;
 }
 
 int DX9Stream::getSubstreamCount() {
@@ -206,6 +233,59 @@ DX9Rect DX9Stream::getTextureSubRect( int l, int t, int r, int b ) {
 DX9Rect DX9Stream::getSurfaceSubRect( int l, int t, int r, int b ) {
   DX9Assert( fields.size() > 0, "internal failure" );
   return fields[0].texture->getSurfaceSubRect( l, t, r, b );
+}
+
+float4 DX9Stream::getATShapeConstant()
+{
+  float4 result(0,0,0,0);
+  result.x = (float)extents[0];
+  result.y = (float)extents[1];
+  result.z = 0;
+  result.w = 0;
+  return result;
+}
+
+float4 DX9Stream::getATLinearizeConstant()
+{
+  float4 result(0,0,0,0);
+  result.x = 1.0f / (float)getTextureWidth();
+  result.y = (float)reversedExtents[0] / (float)getTextureWidth();
+  result.z = 0;
+  result.w = 0;
+  return result;
+}
+
+float4 DX9Stream::getATReshapeConstant()
+{
+  float4 result(0,0,0,0);
+  result.x = 1.0f;
+  int height = getTextureHeight();
+  if( height > 1 )
+    result.y = 1.0f / ((float)(height) - 0.5f);
+  result.z = 0;
+  result.w = 0;
+  return result;
+}
+
+float4 DX9Stream::getATInverseShapeConstant()
+{
+  float4 result(0,0,0,0);
+  result.x = 1.0f / (float)reversedExtents[0];
+  if( dimensionCount > 1 )
+    result.y = 1.0f / (float)reversedExtents[1];
+  result.z = 0;
+  result.w = 0;
+  return result;
+}
+
+DX9Rect DX9Stream::getATAddressInterpolantRect()
+{
+  // 0 to (texture.width / stream.width) in X
+  // 0 to (texture.width*texture.height / stream.width) in Y
+  float xMax = (float)getTextureWidth() / (float)reversedExtents[0];
+  float yMax = (float)(getTextureWidth() * getTextureHeight()) / (float)reversedExtents[0];
+
+  return DX9Rect( 0.0f, yMax, xMax, 0.0f );
 }
 
 void* DX9Stream::getData (unsigned int flags)

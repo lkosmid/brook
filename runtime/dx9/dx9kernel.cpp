@@ -129,10 +129,20 @@ void DX9Kernel::PushStream(Stream *s) {
   inputReductionStreamSamplerIndex = (int)inputTextures.size();
   inputReductionStreamTexCoordIndex = (int)inputTextureRects.size();
 
-  PushSamplers( stream );
-  PushTexCoord( stream->getInputRect() );
-  if( argumentUsesIndexof[arg] )
-    PushConstantImpl( stream->getIndexofConstant() );
+  if( runtime->isAddressTranslationOn() )
+  {
+    PushSamplers( stream );
+    PushConstantImpl( stream->getATShapeConstant() );
+    PushConstantImpl( stream->getATLinearizeConstant() );
+    PushConstantImpl( stream->getATReshapeConstant() );
+  }
+  else
+  {
+    PushSamplers( stream );
+    PushTexCoord( stream->getInputRect() );
+    if( argumentUsesIndexof[arg] )
+      PushConstantImpl( stream->getIndexofConstant() );
+  }
 }
 
 void DX9Kernel::PushIter(class Iter * v)
@@ -194,8 +204,17 @@ void DX9Kernel::PushGatherStream(Stream *s) {
 
   inputStreams.push_back(stream);
 
-  PushConstantImpl( stream->getGatherConstant() );
-  PushSamplers( stream );
+  if( runtime->isAddressTranslationOn() )
+  {
+    PushSamplers( stream );
+    PushConstantImpl( stream->getATLinearizeConstant() );
+    PushConstantImpl( stream->getATReshapeConstant() );
+  }
+  else
+  {
+    PushConstantImpl( stream->getGatherConstant() );
+    PushSamplers( stream );
+  }
 }
 
 void DX9Kernel::PushOutput(Stream *s) {
@@ -204,19 +223,22 @@ void DX9Kernel::PushOutput(Stream *s) {
 
   DX9Stream* stream = (DX9Stream*)s;
 
-  int width = stream->getWidth();
-  int height = stream->getHeight();
   if( outputStreams.size() == 0 )
   {
     // first one
-    outputWidth = width;
-    outputHeight = height;
     outputRect = stream->getOutputRect();
   }
   else
   {
-    DX9Assert( width == outputWidth && height == outputHeight,
-      "Output streams do not have matching dimensions");
+    DX9Stream* first = outputStreams[0];
+    DX9Assert( first->getDimension() == stream->getDimension(),
+      "Output streams do not have matching dimensionality" );
+    int d = first->getDimension();
+    for( int i = 0; i < d; i++ )
+    {
+      DX9Assert( first->getExtents()[i] == stream->getExtents()[i],
+        "Output streams do not have matching extents" );
+    }
   }
 
   outputStreams.push_back(stream);
@@ -229,7 +251,7 @@ void DX9Kernel::PushOutput(Stream *s) {
     outputSurfaces.push_back(surface);
   }
 
-  if( argumentUsesIndexof[arg] && !hasPushedOutputIndexof )
+  if( !runtime->isAddressTranslationOn() && argumentUsesIndexof[arg] && !hasPushedOutputIndexof )
   {
     hasPushedOutputIndexof = true;
     PushConstantImpl( stream->getIndexofConstant() );
@@ -286,9 +308,28 @@ void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
 
   // TIM: TODO: set up workspace constant
 
+  int baseConstantIndex = kBaseConstantIndex;
+  if( runtime->isAddressTranslationOn() )
+  {
+    DX9Stream* outputStream = outputStreams[0];
+
+    float4 outputShape = outputStream->getATShapeConstant();
+    float4 outputInvShape = outputStream->getATInverseShapeConstant();
+    float4 hackConstant(1,1,1,1);
+
+    result = device->SetPixelShaderConstantF( 0, (float*)&(outputShape), 1 );
+    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
+    result = device->SetPixelShaderConstantF( 1, (float*)&(outputInvShape), 1 );
+    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
+    result = device->SetPixelShaderConstantF( 2, (float*)&(hackConstant), 1 );
+    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
+
+    baseConstantIndex = 3;
+  }
+
   for( i = 0; i < constantCount; i++ )
   {
-    result = device->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
+    result = device->SetPixelShaderConstantF( i+baseConstantIndex, (float*)&(inputConstants[i]), 1 );
     DX9AssertResult( result, "SetPixelShaderConstantF failed" );
   }
 
@@ -301,6 +342,14 @@ void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
 
 void DX9Kernel::Map() {
   DX9Trace("Map");
+
+  if( runtime->isAddressTranslationOn() )
+  {
+    DX9Stream* outputStream = outputStreams[0];
+
+    inputTextureRects.push_back( outputStream->getInputRect() ); // standard texcoord
+    inputTextureRects.push_back( outputStream->getATAddressInterpolantRect() ); // special magic
+  }
 
   int passCount = (int)passes.size();
   for( int p = 0; p < passCount; p++ )
@@ -339,7 +388,7 @@ void DX9Kernel::Reduce() {
     ReduceToStream( outputTexture );
 
     float4 reductionResult;
-    outputTexture->getData( (float*)&reductionResult, sizeof(float4) );
+    outputTexture->getData( (float*)&reductionResult, sizeof(float4), 1 );
     if( outputReductionType == __BRTFLOAT )
       *((float*)outputReductionData) = *((float*)&reductionResult);
     else if( outputReductionType == __BRTFLOAT2 )
@@ -406,8 +455,8 @@ void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
     tex0 = tex1;
     tex1 = temp;
   }
-  int inputWidth = inputStream->getWidth();
-  int inputHeight = inputStream->getHeight();
+  int inputWidth = inputStream->getTextureWidth();
+  int inputHeight = inputStream->getTextureHeight();
 
   DX9Assert( (inputWidth <= kDX9ReductionBufferWidth/2) && (inputHeight <= kDX9ReductionBufferHeight/2),
     "A stream to be reduced was too large for the reduction buffer." );
@@ -596,8 +645,8 @@ void DX9Kernel::CopyStreamIntoReductionBuffer( DX9Stream* inStream )
   DX9Assert( inStream->getSubstreamCount() == 1,
     "Only one-field streams can be reduced for now" );
 
-  int inputWidth = inStream->getWidth();
-  int inputHeight = inStream->getHeight();
+  int inputWidth = inStream->getTextureWidth();
+  int inputHeight = inStream->getTextureHeight();
 
   inStream->validateGPUData();
   result = device->SetTexture( 0, inStream->getIndexedTextureHandle(0) );
@@ -654,7 +703,7 @@ void DX9Kernel::DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int 
 {
   static float4* data = new float4[kDX9ReductionBufferWidth*kDX9ReductionBufferHeight];
   runtime->getReductionBuffer()->markCachedDataChanged();
-  runtime->getReductionBuffer()->getData( (float*)data, sizeof(float4) );
+  runtime->getReductionBuffer()->getData( (float*)data, sizeof(float4), kDX9ReductionBufferWidth*kDX9ReductionBufferHeight );
   int xMin, yMin, xMax, yMax;
   if( dim == 0 )
   {

@@ -150,10 +150,16 @@ namespace brook {
     const DX9FatRect& getOutputRect() { return outputRect; }
     const float4& getGatherConstant() { return gatherConstant; }
     const float4& getIndexofConstant() { return indexofConstant; }
-    int getWidth();
-    int getHeight();
+    int getTextureWidth();
+    int getTextureHeight();
     DX9Rect getTextureSubRect( int l, int t, int r, int b );
     DX9Rect getSurfaceSubRect( int l, int t, int r, int b );
+
+    float4 getATShapeConstant();
+    float4 getATLinearizeConstant();
+    float4 getATReshapeConstant();
+    float4 getATInverseShapeConstant();
+    DX9Rect getATAddressInterpolantRect();
 
      virtual void* getData (unsigned int flags);
      virtual void releaseData(unsigned int flags);
@@ -195,9 +201,10 @@ namespace brook {
     unsigned int dimensionCount;
     unsigned int totalSize;
     std::vector<unsigned int> extents;
+    std::vector<unsigned int> reversedExtents;
     std::vector<Field> fields;
 
-    int width, height;
+    int textureWidth, textureHeight;
 
     void validateSystemData();
     void markSystemDataChanged();

@@ -3,6 +3,7 @@
  *  the actual code to convert gathers streams and indexof exprs
  */ 
 #include "brtexpress.h"
+#include "main.h"
 #include <stdio.h>
 
 BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr) 
@@ -65,7 +66,8 @@ BrtGatherExpr::print (std::ostream& out) const
    out << "(";
    base->print(out);
 
-   out << ",__gatherindex((";
+   out << ",__gatherindex";
+   out << ndims << "((";
    
    if (dims.size() == 1) 
      dims[0]->print(out);
@@ -97,9 +99,22 @@ BrtGatherExpr::print (std::ostream& out) const
                << "GPU runtimes can't handle gathers greater than 2D.\n";
    }
 
-   out << ", _const_";
-   base->print(out);
-   out << "_scalebias))";
+   if( globals.enableGPUAddressTranslation )
+   {
+     out << ", __gatherlinearize_";
+     base->print(out);
+     out << ", __gatherreshape_";
+     base->print(out);
+     out << ", __gatherhack_";
+     base->print(out);
+     out << "))";
+   }
+   else
+   {
+    out << ", _const_";
+    base->print(out);
+    out << "_scalebias))";
+   }
 
    /* TIM: new gather functionality:
    out << ",(";

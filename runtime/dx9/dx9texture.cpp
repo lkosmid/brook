@@ -86,17 +86,17 @@ DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight
   return NULL;
 }
 
-void DX9Texture::setData( const float* inData, unsigned int inStride )
+void DX9Texture::setData( const float* inData, unsigned int inStride, unsigned int inCount  )
 {
-	setShadowData( inData, inStride );
+	setShadowData( inData, inStride, inCount  );
   markShadowDataChanged();
 }
 
-void DX9Texture::getData( float* outData, unsigned int inStride )
+void DX9Texture::getData( float* outData, unsigned int inStride, unsigned int inCount  )
 {
   if( dirtyFlags & kShadowDataDirty )
     flushCachedToShadow();
-  getShadowData( outData, inStride );
+  getShadowData( outData, inStride, inCount  );
 }
 
 void DX9Texture::markCachedDataChanged()
@@ -129,7 +129,7 @@ void DX9Texture::flushShadowToCached()
   dirtyFlags &= ~kCachedDataDirty;
 }
 
-void DX9Texture::getShadowData( void* outData, unsigned int inStride )
+void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned int inCount  )
 {
   HRESULT result;
 
@@ -144,12 +144,15 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride )
 	const float* inputLine = (const float*)info.pBits;
 
 	char* outputPixel = (char*)outData;
+  unsigned int count = 0;
 
 	for( int y = 0; y < height; y++ )
 	{
 		const float* inputPixel = inputLine;
 		for( int x = 0; x < width; x++ )
 		{
+      count++;
+      if( count > inCount ) break;
       const float* input = inputPixel;
       float* output = (float*)outputPixel;
 			for( int c = 0; c < components; c++ )
@@ -166,7 +169,7 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride )
 	DX9AssertResult( result, "UnlockRect failed" );
 }
 
-void DX9Texture::setShadowData( const void* inData, unsigned int inStride )
+void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsigned int inCount  )
 {
   HRESULT result;
 	D3DLOCKED_RECT info;
@@ -181,12 +184,15 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride )
 	float* outputLine = (float*)info.pBits;
 
 	const char* inputPixel = (const char*)inData;
+  unsigned int count = 0;
 
 	for( int y = 0; y < height; y++ )
 	{
 		float* outputPixel = outputLine;
 		for( int x = 0; x < width; x++ )
 		{
+      count++;
+      if( count > inCount ) break;
       const float* input = (const float*)inputPixel;
       float* output = outputPixel;
 			for( int c = 0; c < components; c++ )
