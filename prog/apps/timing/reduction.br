@@ -1,5 +1,14 @@
 #include <stdio.h>
+#ifdef WIN32
 #include <windows.h>
+#else
+#include <unistd.h>
+void Sleep(int n) {
+  usleep(1000*n);
+}
+#endif
+
+
 
 #include "main.h"
 #include "reduction.h"
@@ -19,9 +28,6 @@ kernel void reductionRegKernel(float4 x<>, float4 constant, out float4 result<>)
 kernel void forceGPUFlush(float4 input<>, out float4 result<>) {
   result = input;
 }
-
-
-
 void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
 
   int i;

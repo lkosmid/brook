@@ -2,7 +2,8 @@ ROOTDIR = ../../..
 EXECUTABLE = timing
 FILES = main readwrite runkernel blas oneway_matmult_4x4 fourway_matmult_4x4 \
         fft fft2d qfft reduction
-LIBRARIES = $(RUNTIME_LIBS)
+LIBRARIES = fftw3f $(RUNTIME_LIBS)
+CFLAGS += -DUSE_FFTW
 GRAPHDIR = graphs
 SLOP = graphs
 
