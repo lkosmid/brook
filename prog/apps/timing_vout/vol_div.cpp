@@ -90,8 +90,10 @@ void  processTrianglesNoCompact (::brook::stream trianglesA,
                                  ::brook::stream vertices1,
                                  ::brook::stream volumeTriangles);
 void  processTrianglesNoCompactOneOut (::brook::stream trianglesA,
-                                       ::brook::stream vertices1,
-                                       ::brook::stream volumeTriangles);
+                                       ::brook::stream verticesinf,
+                                       ::brook::stream volumeTriangles,
+                                       ::brook::stream curgather,
+                                       ::brook::stream nextgather);
 void  processTriangles (::brook::stream &__triangles_stream,
                         ::brook::stream vertices,
                         ::brook::stream volumeTriangles,
@@ -492,7 +494,9 @@ int volume_division (int argc, char ** argv) {
  
                  processTrianglesNoCompactOneOut(trianglesB,
                                            vbak, 
-                                           volumeTriangles);
+                                                 volumeTriangles,
+                                                 volumeData[i],
+                                                 i!=dat.depth-1?volumeData[i+1]:volumeData[i]);
                  // write them all into mem
                  Aggregate34(trianglesB,v,agg,agg);
                  
