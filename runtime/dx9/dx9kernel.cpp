@@ -640,7 +640,7 @@ void DX9Kernel::beginReduction( ReductionState& ioState )
   result = device->BeginScene();
   DX9AssertResult( result, "BeginScene failed" );
 
-  int constantCount = (int)inputConstants.size();
+  int i,constantCount = (int)inputConstants.size();
   int outputCount = (int)outputStreams.size();
   int reductionCount = (int)outputReductionTypes.size();
   int samplerCount = (int)inputTextures.size();
@@ -653,13 +653,13 @@ void DX9Kernel::beginReduction( ReductionState& ioState )
   result = device->SetVertexShader( passthroughVertexShader->getHandle() );
   DX9AssertResult( result, "SetVertexShader failed" );
 
-  for( int i = 0; i < constantCount; i++ )
+  for( i = 0; i < constantCount; i++ )
   {
     result = device->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
     DX9AssertResult( result, "SetPixelShaderConstantF failed" );
   }
 
-  for( int i = 0; i < samplerCount; i++ )
+  for( i = 0; i < samplerCount; i++ )
   {
     if( i == ioState.leftSampler || i == ioState.rightSampler ) continue;
     inputStreams[i]->validateGPUData();

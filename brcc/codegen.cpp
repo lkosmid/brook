@@ -1052,7 +1052,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
     shader << " __saved = " << rightArgumentName << ";\n";
 
     // do additional reduction ops
-    for( int r = 2; r < reductionFactor; r++ )
+    {for( int r = 2; r < reductionFactor; r++ )
     {
       std::stringstream s;
       s << "__reduce" << r;
@@ -1063,7 +1063,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
       shader << kernelBody;
       if( !reductionArgumentComesBeforeStreamArgument )
         shader << "\t" << leftArgumentName << " = " << rightArgumentName << ";\n";
-    }
+    }}
 
     shader << "\t" << rightArgumentName << " = __saved;\n";
     shader << kernelBody;
