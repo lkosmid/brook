@@ -15,7 +15,9 @@ BINSUFFIX        := .exe
 SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32
 
 # /w34505: Enabled warning 4505 (unreferenced static function) at level 3
-CFLAGS           += /nologo /MDd /W3 /w34505 /DBUILD_NV30GL /DBUILD_DX9 /DWIN32 /DWINDOWS /EHsc /Zm500 /I /DX90SDK/INCLUDE
+# I turned it off for now since gcc should pick this up.
+
+CFLAGS           += /nologo /MDd /W3 /DBUILD_NV30GL /DBUILD_DX9 /DWIN32 /DWINDOWS /EHsc /Zm500 /I /DX90SDK/INCLUDE
 
 ifndef I_AM_SLOPPY
 # /WX: Make warnings fatal
