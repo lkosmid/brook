@@ -328,7 +328,7 @@ int main (int argc, char ** argv) {
 		return 1; // 1 is argument error
 	}
 
-	if (!readPPM(argv[1],&imgdata,&width,&height)) {
+	if (readPPM(argv[1],&imgdata,&width,&height)) {
 		return 2; // 2 is read error
 	}
 
@@ -349,6 +349,7 @@ int main (int argc, char ** argv) {
            }
         }
 	free(data);
+      	printf ("writing... %s\n",argv[2]);
 	if (!writePPM(argv[2],imgdata,width,height)) {
 		free(imgdata);
 		return 3; // 3 is write error
