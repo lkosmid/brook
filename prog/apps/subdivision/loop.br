@@ -444,16 +444,17 @@ void subdivide (Neighbor (*neighbors)<>,
                 int counter) {
   unsigned int streamY=toi(streamSize(*triangles).y);
   unsigned int streamX=toi(streamSize(*triangles).x);
+  unsigned char snpSize=0;
   {
-    float2 shouldProduce<0,streamX>;
-    float2 shouldNotProduce<0,streamX>;
+    float2 shouldProduce<streamY,0>;
+    float2 shouldNotProduce<streamY,0>;
     //see whether triangles should be split
     produceTriP(*triangles,shouldProduce,shouldNotProduce);
     assert((int)streamX==toi(streamSize(shouldProduce).x));
     streamY=toi(streamSize(shouldProduce).y);
     //if some should be split and produced then go here
     if (streamY&&streamX) {
-      float stretchX = streamY*4>2048?1.0f:0.0f;      
+      float stretchX = streamY*4>2048?0.0f:1.0f;      
       //allocate shared neighbor structs that hold the extra generated floats
       Neighbor sharedNeighbors<streamY,streamX>;
       SplitTri sharedTriangles <streamY,streamX>;
@@ -485,6 +486,7 @@ void subdivide (Neighbor (*neighbors)<>,
       int sizex=3*toi(streamSize(shouldNotProduce).x);
       int sizey=toi(streamSize(shouldNotProduce).y);
       float3 outputTri<sizey,sizex>;
+      snpSize=1;
       // write them out to a vertex array
       writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
         if ((!low_texture_ram)&&
@@ -501,14 +503,14 @@ void subdivide (Neighbor (*neighbors)<>,
         expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
                                                 streamSize(outputTri).y));
         streamWrite(outputTri,output->v+sizey);   
-    }       
+    }
     if (counter>=counterMax) {
-      float3 outputTri<toi(streamSize(*triangles).x),
-        toi(streamSize(*triangles).x*3)>;
+      float3 outputTri<toi(streamSize(*triangles).y),
+                       toi(streamSize(*triangles).x*3)>;
       int sizey = output->size;
       copyFinalTriangles(*triangles,outputTri);
       expandVertexArray(output,
-                        3*toi(streamSize(*triangles).y*streamSize(*triangles).x));
+                        3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
       streamWrite(outputTri,output->v+sizey);
     }
     
@@ -516,7 +518,7 @@ void subdivide (Neighbor (*neighbors)<>,
   // if we really dont have that kind of ram we will already have written out
   // vertices out to host ram, thus preserving memory. Only recurse if we have 
   // size in shouldSplit arrays :-)
-  if (low_texture_ram&&streamY&&streamX&&counter<counterMax) {
+  if ((low_texture_ram||snpSize==0)&&streamY&&streamX&&counter<counterMax) {
      subdivide(neighbors,triangles,output,epsilon,counter+1);
   } 
   // prevents all writing at the end

@@ -98,6 +98,7 @@ extern void computeFunctionCallPattern(float epsilon,
                                        int numTri,
                                        Tri*triangles,
                                        Neighbor *neigh){
+  printf ("Compute Function Call Pattern with eps = %f\n",epsilon);
   std::string filename = "sum-subdiv";
   int i;
   for (i=1;i<argc;++i) {
