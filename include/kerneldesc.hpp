@@ -13,6 +13,19 @@ namespace brook
     {
       kGlobalConstant_Workspace = 0
     };
+    enum
+    {
+      kGlobalConstant_ATOutputLinearize = 0,
+      kGlobalConstant_ATOutputStride,
+      kGlobalConstant_ATOutputInvStride,
+      kGlobalConstant_ATOutputInvExtent,
+      kGlobalConstant_ATHackConstant
+    };
+    enum
+    {
+      kGlobalInterpolant_ATOutputTex = 0,
+      kGlobalInterpolatn_ATOutputAddress
+    };
 
     // Stream Arguments
     enum
@@ -30,7 +43,9 @@ namespace brook
     // Gather Arguments
     enum
     {
-      kGatherConstant_Shape = 0
+      kGatherConstant_Shape = 0,
+      kGatherConstant_ATLinearize,
+      kGatherConstant_ATReshape
     };
 
     // Iterator Arguments

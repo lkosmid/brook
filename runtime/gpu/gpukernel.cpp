@@ -210,6 +210,60 @@ namespace brook
     
     _outWidth = outputStream->getTextureWidth();
     _outHeight = outputStream->getTextureHeight();
+    unsigned int outRank = outputStream->getRank();
+    const unsigned int* outReversed = outputStream->getReversedExtents();
+
+    bool requiresOutputAddressTranslation = true;
+    bool requiresInputAddressTranslation = false;
+
+    bool requiresAddressTranslation =
+        requiresOutputAddressTranslation || requiresInputAddressTranslation;
+    if( requiresAddressTranslation )
+    {
+        // set up additional "global" constants/interpolants
+
+        float4 outputLinearize = float4(0,0,0,0);
+        float4 outputStride = float4(0,0,0,0);
+        float4 outputInvStride = float4(0,0,0,0);
+        float4 outputInvExtent = float4(0,0,0,0);
+
+        outputLinearize.x = 1.0f;
+        outputLinearize.y = (float)_outWidth;
+
+        unsigned int strides[4] = {0,0,0,0};
+        unsigned int extents[4] = {0,0,0,0};
+        unsigned int s = 1;
+        for( unsigned int r = 0; r < outRank; r++ )
+        {
+            extents[r] = s;
+            s *= outReversed[r];
+            strides[r] = s;
+        }
+        for( unsigned int r = 0; r < outRank; r++ )
+        {
+            ((float*)&outputStride)[r] = (float) strides[r];
+            ((float*)&outputInvStride)[r] = 1.0f / (float) strides[r];
+            ((float*)&outputInvExtent)[r] = 1.0f / (float) extents[r];
+        }
+
+        _globalConstants.push_back( outputLinearize );
+        _globalConstants.push_back( outputStride );
+        _globalConstants.push_back( outputInvStride );
+        _globalConstants.push_back( outputInvExtent );
+
+        float4 hackConstant = float4(1,1,1,1);
+        _globalConstants.push_back( hackConstant );
+
+        GPUInterpolant outputInterpolant;
+        outputStream->getStreamInterpolant( _outWidth, _outHeight, outputInterpolant );
+        _globalInterpolants.push_back( outputInterpolant );
+
+        float2 addressStart = float2(0.5f,0.5f);
+        float2 addressEnd = float2((float)_outWidth+0.5f,(float)_outHeight+0.5f);
+        GPUInterpolant addressInterpolant;
+        _context->get2DInterpolant( addressStart, addressEnd, _outWidth, _outHeight, addressInterpolant );
+        _globalInterpolants.push_back( addressInterpolant );
+    }
     
     // Check to see if the output size matches the input size
 
@@ -323,6 +377,11 @@ namespace brook
     _outputArguments.clear();
     _reduceArguments.clear();
     _arguments.clear();
+
+    _globalConstants.clear();
+    _globalSamplers.clear();
+    _globalOutputs.clear();
+    _globalInterpolants.clear();
   }
   
   void GPUKernel::clearInputs()
@@ -852,8 +911,10 @@ namespace brook
     // TIM: used to have to deal with flushing caches here
     // but I think the DX9 context no longer needs it
 
+#ifdef BROOK_GPU_ENABLE_REDUCTION_LOG
     GPULOG(3) << "************ Result *************";
     dumpReductionBuffer( outputBuffer, 1, 1, 1, 1 );
+#endif
 
     clearArguments();
   }
@@ -1095,6 +1156,7 @@ namespace brook
     //  return stream->getATReshapeConstant();
     //  break;
     }
+    GPUError("not implemented");
     return float4(0,0,0,0);
   }
 
@@ -1113,6 +1175,7 @@ namespace brook
                                                        size_t inIndex, 
                                                        size_t inComponent )
   {
+    GPUError("not implemented");
     return float4(0,0,0,0);
   }
 
@@ -1145,7 +1208,24 @@ namespace brook
     case kGatherConstant_Shape:
       return stream->getGatherConstant();
       break;
+    case kGatherConstant_ATLinearize:
+      return inKernel->_context->getATLinearizeConstant(
+            stream->getTextureWidth(),
+            stream->getTextureHeight(),
+            stream->getRank(),
+            stream->getReversedExtents()
+          );
+      break;
+    case kGatherConstant_ATReshape:
+      return inKernel->_context->getATReshapeConstant(
+            stream->getTextureWidth(),
+            stream->getTextureHeight(),
+            stream->getRank(),
+            stream->getReversedExtents()
+          );
+      break;
     }
+    GPUError("not implemented");
     return float4(0,0,0,0);
   }
 

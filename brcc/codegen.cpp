@@ -871,6 +871,16 @@ generate_shader_support(std::ostream& shader)
     shader << "float texY = linearIndex - texX;\n";
     shader << "return float2( texX, texY ) * reshapeConst;\n}\n\n";
 
+    shader << "void __calculateoutputpos( float2 interpolant, float2 linearize,\n";
+    shader << "\tfloat4 stride, float4 invStride, float4 invExtent, out float4 index ) {\n";
+    shader << "\tfloat2 cleanInterpolant = floor( interpolant );\n";
+    shader << "\tfloat linearIndex = dot( cleanInterpolant, linearize );\n";
+    shader << "\tfloat4 temp0 = floor( (linearIndex + 0.5) * invStride );\n";
+    shader << "\tfloat4 temp1 = linearIndex - temp0*stride;\n";
+    shader << "\tindex = floor( (temp1 + 0.5) * invExtent );\n";
+    shader << "}\n\n";
+
+#if 0
     shader << "void __calculateoutputpos( float2 interpolant, float4 outputConst, out float4 index ) {\n";
     shader << "\tfloat2 cleanInterpolant = floor(interpolant);\n";
     shader << "\tfloat linearIndex = cleanInterpolant.y*outputConst.x + cleanInterpolant.x;\n";
@@ -882,6 +892,7 @@ generate_shader_support(std::ostream& shader)
     shader << "\tindex.z = 0;\n";
     shader << "\tindex.w = 0;\n";
     shader << "}\n\n";
+#endif
 
     shader << "float2 __gatherindex1( float1 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
     shader << "\treturn __calculatetexpos( float4(index,0,0,0), linearizeConst, reshapeConst, hackConst ); }\n";
@@ -1167,9 +1178,23 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
     shader << ",\n\t\t";
     shader << "float2 __outputaddrinterpolant : TEXCOORD" << texcoord++;
     shader << ",\n\t\t";
-    shader << "uniform float4 __outputconst : register(c" << constreg++ << ")";
+    shader << "uniform float2 __outputlinearize : register(c" << constreg++ << ")";
+    shader << ",\n\t\t";
+    shader << "uniform float4 __outputstride : register(c" << constreg++ << ")";
+    shader << ",\n\t\t";
+    shader << "uniform float4 __outputinvstride : register(c" << constreg++ << ")";
+    shader << ",\n\t\t";
+    shader << "uniform float4 __outputinvextent : register(c" << constreg++ << ")";
     shader << ",\n\t\t";
     shader << "uniform float __hackconst : register(c" << constreg++ << ")";
+
+    outPass.addInterpolant( 0, "kGlobalInterpolant_ATOutputTex" );
+    outPass.addInterpolant( 0, "kGlobalInterpolatn_ATOutputAddress" );
+    outPass.addConstant( 0, "kGlobalConstant_ATOutputLinearize" );
+    outPass.addConstant( 0, "kGlobalConstant_ATOutputStride" );
+    outPass.addConstant( 0, "kGlobalConstant_ATOutputInvStride" );
+    outPass.addConstant( 0, "kGlobalConstant_ATOutputInvExtent" );
+    outPass.addConstant( 0, "kGlobalConstant_ATHackConstant" );
   }
 
   shader << ") {\n";
@@ -1201,7 +1226,8 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
      // set up output position values
      shader << "\tfloat4 __indexofoutput;\n";
      shader << "\t__calculateoutputpos( __outputaddrinterpolant, "
-            << "__outputconst, __indexofoutput );\n";
+            << "__outputlinearize, __outputstride, __outputinvstride, "
+            << "__outputinvextent, __indexofoutput );\n";
   }
 
   /*

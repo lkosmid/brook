@@ -32,7 +32,7 @@ namespace brook {
     ** a dimension of this size
     */
     virtual bool 
-    isTextureExtentValid( unsigned int inExtent ) const { return true; }    
+    isTextureExtentValid( unsigned int inExtent ) const = 0;   
     
     /* Returns the number of shader outputs supported by
     ** the hardware.
@@ -42,6 +42,31 @@ namespace brook {
 
     virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const = 0;
     virtual float4 getStreamGatherConstant( TextureHandle inTexture ) const = 0;
+
+    virtual float4 getATLinearizeConstant(
+        unsigned int texWidth, unsigned int texHeight,
+        unsigned int rank, const unsigned int* reversedExtents )
+    {
+        float4 result = float4(0,0,0,0);
+        result.x = (float)reversedExtents[0] / (float)texWidth;
+        if( rank > 1 )
+            result.y = (float)reversedExtents[1] / (float)texWidth;
+        if( rank > 2 )
+            result.z = (float)reversedExtents[2] / (float)texWidth;
+        if( rank > 3 )
+            result.w = (float)reversedExtents[3] / (float)texWidth;
+        return result;
+    }
+
+    virtual float4 getATReshapeConstant(
+        unsigned int texWidth, unsigned int texHeight,
+        unsigned int rank, const unsigned int* reversedExtents )
+    {
+        float4 result = float4(0,0,0,0);
+        result.x = 1.0f;
+        result.y = 1.0f / (float)texHeight;
+        return result;
+    }
     
     virtual void
     get1DInterpolant( const float4 &start, 

@@ -8,7 +8,8 @@ namespace brook
   GPUStreamData::GPUStreamData( GPURuntime* inRuntime )
     : _referenceCount(1),
       _cpuData(0),
-      _cpuDataSize(0)
+      _cpuDataSize(0),
+      _requiresAddressTranslation(false)
   {
     _runtime = inRuntime;
     _context = _runtime->getContext();
@@ -48,24 +49,32 @@ namespace brook
                                  const unsigned int* inExtents )
   {
     _rank = (unsigned int)inDimensionCount;
-    if( _rank == 0 ||
-        _rank > 2)
-      {
-        GPUWARN << "Unable to create stream with " << _rank << " dimensions.\n"
-                << "Dimensions must be either 1 or 2.";
-        return false;
-      }
+
+    if( _rank == 0 || _rank > 4 )
+    {
+      GPUWARN << "Unable to create stream with " << _rank << " dimensions.\n"
+              << "Dimensions must be between 1 and 4." << std::endl;
+      return false;
+    }
+    if( _rank > 2 )
+    {
+      GPULOG(1) << "Performance Warning: stream with rank " << _rank
+                << " requires address translation." << std::endl;
+      _requiresAddressTranslation = true;
+    }
     
     _totalSize = 1;
     unsigned int d;
     for( d = 0; d < _rank; d++ )
       {
         unsigned int extent = (unsigned int)inExtents[d];
-        if( !_context->isTextureExtentValid( extent ) )
+        if( !_context->isTextureExtentValid( extent )
+            && !_requiresAddressTranslation )
           {
-            GPUWARN << "Unable to create stream with extent " << extent
-                    << " in dimension " << d << ".";
-            return false;
+            GPULOG(1) << "Performance Warning: stream with extent " << extent
+                      << " in dimension " << d
+                      << " requires address translation." << std::endl;
+            _requiresAddressTranslation = true;
           }
         _extents.push_back(extent);
         _totalSize *= _extents[d];
@@ -77,20 +86,62 @@ namespace brook
         _reversedExtents.push_back(_extents[d]);
       }
     
-    switch( _rank )
-      {
-      case 1:
-        _textureWidth = _extents[0]>0?_extents[0]:1;
-        _textureHeight = 1;
-        break;
-      case 2:
-        _textureWidth = _extents[1]>0?_extents[1]:1;
-        _textureHeight = _extents[0]>0?_extents[0]:1;
-        break;
-      default:
-        GPUAssert( false, "Should be unreachable" );
-        return false;
-      }
+    if( !_requiresAddressTranslation )
+    {
+        switch( _rank )
+        {
+        case 1:
+            _textureWidth = _extents[0]>0?_extents[0]:1;
+            _textureHeight = 1;
+            break;
+        case 2:
+            _textureWidth = _extents[1]>0?_extents[1]:1;
+            _textureHeight = _extents[0]>0?_extents[0]:1;
+            break;
+        default:
+            GPUAssert( false, "Should be unreachable" );
+            return false;
+        }
+    }
+    else
+    {
+        // address-translation - tasty
+        bool foundValidShape = false;
+        unsigned int bestTextureWidth = 0;
+        unsigned int bestTextureHeight = 0;
+        float bestAspect = 0;
+
+        unsigned int trialTextureWidth = 2;
+        for(; _context->isTextureExtentValid( trialTextureWidth ); trialTextureWidth *= 2 )
+        {
+            unsigned int trialTextureHeight =
+                (_totalSize + (trialTextureWidth-1)) / trialTextureWidth;
+
+            if( !_context->isTextureExtentValid( trialTextureHeight ) )
+                continue;
+
+            float trialAspect = fabsf( logf(
+                (float)(trialTextureWidth) / (float)(trialTextureHeight) ) );
+
+            if( !foundValidShape || trialAspect < bestAspect )
+            {
+                foundValidShape = true;
+                bestTextureWidth = trialTextureWidth;
+                bestTextureHeight = trialTextureHeight;
+                bestAspect = trialAspect;
+            }
+        }
+
+        if( !foundValidShape )
+        {
+            GPUWARN << "Couldn't find valid texture shape to hold"
+                << " stream with " << _totalSize << " elements total.";
+            return false;
+        }
+
+        _textureWidth = bestTextureWidth;
+        _textureHeight = bestTextureHeight;
+    }
     
     _elementSize = 0;
     for( unsigned int i = 0; i < inFieldCount; i++ )
@@ -118,7 +169,7 @@ namespace brook
           break;
         default:
           GPUWARN << "Invalid element type for stream.\n"
-                  << "Only float, float2, float3 and float4 elements are supported.";
+                  << "Only float, float2, float3 and float4 elements are supported." << std::endl;
           return false;
         }
         _elementSize += fieldComponentCount * sizeof(float);
@@ -194,12 +245,25 @@ namespace brook
                                       const unsigned int* inDomainMax,
                                       GPURegion &outRegion )
   {
-    _context->getStreamOutputRegion(
-                                    getIndexedFieldTexture( 0 ),
-                                    _rank,
-                                    inDomainMin,
-                                    inDomainMax,
-                                    outRegion );
+    if( _requiresAddressTranslation )
+    {
+        const unsigned int domainMin[4] = {0,0,0,0};
+        const unsigned int domainMax[4] = {_textureHeight,_textureWidth,0,0};
+        _context->getStreamOutputRegion( getIndexedFieldTexture( 0 ),
+                                        2,
+                                        domainMin,
+                                        domainMax,
+                                        outRegion );
+    }
+    else
+    {
+        _context->getStreamOutputRegion(
+                                        getIndexedFieldTexture( 0 ),
+                                        _rank,
+                                        inDomainMin,
+                                        inDomainMax,
+                                        outRegion );
+    }
   }
   
   void GPUStreamData::getStreamInterpolant(

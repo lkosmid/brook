@@ -1,0 +1,110 @@
+// at_indexof_output.br
+
+// test address-translation code for
+// determining output index
+
+#include <stdio.h>
+
+// arbitrary large stream sizes
+#define X_1D 10000
+
+#define X_2D 5000
+#define Y_2D 4
+
+#define X_3D 40
+#define Y_3D 10
+#define Z_3D 7
+
+#define X_4D 3
+#define Y_4D 6
+#define Z_4D 8
+#define W_4D 5
+
+kernel void getIndexStream1( out float result<> ) {
+	result = (indexof result).x;
+}
+
+kernel void getIndexStream2( out float2 result<> ) {
+	result = (indexof result).xy;
+}
+
+kernel void getIndexStream3( out float3 result<> ) {
+	result = (indexof result).xyz;
+}
+
+kernel void getIndexStream4( out float4 result<> ) {
+	result = indexof result;
+}
+
+void check( int dim, int expected, float actual, const char* dimName )
+{
+	if( (int)actual == expected ) return;
+	
+	printf("FAIL: %dD.%s : expected %d got %f\n", dim, dimName, expected, actual );
+	exit(0);
+}
+
+int main( int argc, char** argv )
+{
+	float stream_1d< X_1D >;
+	float2 stream_2d< Y_2D, X_2D >;
+	float3 stream_3d< Z_3D, Y_3D, X_3D >;
+	float4 stream_4d< W_4D, Z_4D, Y_4D, X_4D >;
+	
+	float* data_1d = (float*)malloc( X_1D*sizeof(float) );
+	float* data_2d = (float*)malloc( Y_2D*X_2D*sizeof(float2) );
+	float* data_3d = (float*)malloc( Z_3D*Y_3D*X_3D*sizeof(float3) );
+	float* data_4d = (float*)malloc( W_4D*Z_4D*Y_4D*X_4D*sizeof(float4) );
+	
+	float* temp;
+	int x, y, z, w;
+	
+	getIndexStream1( stream_1d );
+	getIndexStream2( stream_2d );
+	getIndexStream3( stream_3d );
+	getIndexStream4( stream_4d );
+	
+	streamWrite( stream_1d, data_1d );
+	streamWrite( stream_2d, data_2d );
+	streamWrite( stream_3d, data_3d );
+	streamWrite( stream_4d, data_4d );
+	
+	temp = data_1d;
+	for( x = 0; x < X_1D; x++ )
+	{
+		check( 1, x, *temp++, "x" );
+	}
+	
+	temp = data_2d;
+	for( y = 0; y < Y_2D; y++ )
+	for( x = 0; x < X_2D; x++ )
+	{
+		check( 2, x, *temp++, "x" );
+		check( 2, y, *temp++, "y" );
+	}
+	
+	temp = data_3d;
+	for( z = 0; z < Z_3D; z++ )
+	for( y = 0; y < Y_3D; y++ )
+	for( x = 0; x < X_3D; x++ )
+	{
+		check( 3, x, *temp++, "x" );
+		check( 3, y, *temp++, "y" );
+		check( 3, z, *temp++, "z" );
+	}
+
+	temp = data_4d;
+	for( w = 0; w < W_4D; w++ )
+	for( z = 0; z < Z_4D; z++ )
+	for( y = 0; y < Y_4D; y++ )
+	for( x = 0; x < X_4D; x++ )
+	{
+		check( 4, x, *temp++, "x" );
+		check( 4, y, *temp++, "y" );
+		check( 4, z, *temp++, "z" );
+		check( 4, w, *temp++, "w" );
+	}
+	printf( "pass\n" );
+
+	return 0;
+}

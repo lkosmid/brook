@@ -75,6 +75,9 @@ namespace brook
     }
 
     virtual int getShaderFormatRank( const char* inNameString ) const;
+    virtual bool isTextureExtentValid( unsigned int inExtent ) const {
+        return inExtent <= 2048; // TIM: arbitrary and hardcoded... bad
+    }
 
     virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const;
     virtual float4 getStreamGatherConstant( TextureHandle inTexture ) const;

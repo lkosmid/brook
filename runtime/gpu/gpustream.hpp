@@ -48,6 +48,7 @@ namespace brook {
 
         unsigned int getTextureWidth() const {return _textureWidth; }
         unsigned int getTextureHeight() const {return _textureHeight; }
+        const unsigned int* getReversedExtents() const { return &_reversedExtents[0]; }
 
         void getOutputRegion(
             const unsigned int* inDomainMin,
@@ -100,6 +101,8 @@ namespace brook {
         unsigned int _referenceCount;
         void* _cpuData;
         size_t _cpuDataSize;
+
+        bool _requiresAddressTranslation;
 
     };
 
@@ -183,6 +186,14 @@ namespace brook {
 
         unsigned int getTextureHeight() const {
             return _data->getTextureHeight();
+        }
+
+        unsigned int getRank() const {
+            return _data->getRank();
+        }
+
+        const unsigned int* getReversedExtents() const {
+            return _data->getReversedExtents();
         }
 
         void getOutputRegion( GPURegion& outRegion );
