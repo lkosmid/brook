@@ -1,6 +1,9 @@
 
 #ifdef WIN32
 #include <windows.h>
+#else
+#define GLX_GLXEXT_LEGACY
+#include <GL/glx.h>
 #endif
 
 #include <GL/gl.h>
@@ -26,7 +29,7 @@ void brook::initglfunc(void) {
 #define  XXX(type, fn) fn = (type) wglGetProcAddress(#fn); \
                        GPUAssert(fn, "Failed to load" #fn);
 #else
-#define  XXX(type, fn) fn = (type) glXGetProcAddress(#fn); \
+#define  XXX(type, fn) fn = (type) glXGetProcAddressARB(#fn); \
                        GPUAssert(fn, "Failed to load" #fn);
 #endif
 
@@ -40,7 +43,7 @@ void brook::initglfunc(void) {
 #ifdef WIN32
 #define  XXX(type, fn) fn = (type) wglGetProcAddress(#fn);
 #else
-#define  XXX(type, fn) fn = (type) glXGetProcAddress(#fn);
+#define  XXX(type, fn) fn = (type) glXGetProcAddressARB((const GLubyte *) #fn);
 #endif
 
   RUNTIME_BONUS_GL_FNS_ATI;
