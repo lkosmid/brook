@@ -110,6 +110,7 @@ void FftwTransform2d(float2 *data, unsigned long N, unsigned long M,
 
 #else
 #define fftwTransform FftwTransform
+#define fftwTransform2d FftwTransform2d
 void fftwTransform(float2 *data, unsigned long N, int isign, char cast) {}
 void fftwTransform2d(float2 *data, unsigned long N, unsigned long M, 
 	int isign, char cast) {}

@@ -11,6 +11,7 @@
 #include "readwrite.h"
 #include "runkernel.h"
 #include "blas.h"
+#include "fft.h"
 //#include "sparse.h"
 #include "matmult4x4.h"
 
