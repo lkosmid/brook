@@ -327,7 +327,7 @@ kernel void shortfixed4x1(shortfixed4 s0<>,out shortfixed4 o<>) {
 
 
 
-#define ComputeResults(num,start,end,typesize,i,reps,typenam) stop=GetTimeMillis(); printf ("%s w/ %d gath of %d vals: %f s for a BW of %3.2f bytes/s\n",typenam,num,i*i,(float)(end-start)/1000,i*i*(num+1)*typesize*reps*1000./(end-start));
+#define ComputeResults(num,start,end,typesize,i,reps,typenam) stop=GetTimeMillis(); printf ("%s w/ %d gath of %d vals: %f s BW %3.2f Mbytes/s\n",typenam,num,i*i,(float)(end-start)/1000,i*i*(num+1)*typesize*reps*1000./(1024*1024*(end-start)));
 
 
 #define MAKESTREAM(type,name) ::brook::stream name (::brook::getStreamType((type*)0),i,i,-1)
