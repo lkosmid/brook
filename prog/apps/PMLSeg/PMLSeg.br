@@ -5,12 +5,11 @@
 #include <stdlib.h>
 #include "main.h"
 #include "PMLSeg.h"
-
 // unpacked version (float2 in/out)
 kernel void process_img( float2 img[][], float diff_strength,
          		 float inv_grad_cutoff, float loww, float highw,
-                         iter float2 it0, iter float2 it1, iter float2 it2, 
-		         iter float2 it3, iter float2 it4, out float2 o_img<> ) {
+                         iter float2 it0<>, iter float2 it1<>, iter float2 it2<>, 
+		         iter float2 it3<>, iter float2 it4<>, out float2 o_img<> ) {
     float e = 2.7182817f;
     float2 R0;
     float2 R1;
@@ -21,19 +20,23 @@ kernel void process_img( float2 img[][], float diff_strength,
     float4 R6;
 
     R0 = img[it0];
+
     R1 = img[it1]; //-1,0
     R2 = img[it2]; //+1,0
     R3 = img[it3]; //0,-1
     R4 = img[it4]; //0,+1
-    R6.x = (R1.y - R0.y); //-ds
-    R6.y = (R2.y - R0.y); //-dw
-    R6.z = (R3.y - R0.y); //dn
-    R6.w = (R4.y - R0.y); //de
-	
-    R5.x = (R1.x - R0.x)*diff_strength;	
-    R5.y = (R2.x - R0.x)*diff_strength;	
-    R5.z = (R3.x - R0.x)*diff_strength;	
-    R5.w = (R4.x - R0.x)*diff_strength;
+
+    //Image differentials
+    R6.x = (R1.x - R0.x); //-ds
+    R6.y = (R2.x - R0.x); //-dw
+    R6.z = (R3.x - R0.x); //dn
+    R6.w = (R4.x - R0.x); //de
+
+    //Segmentation differentials	
+    R5.x = (R1.y - R0.y)*diff_strength;	
+    R5.y = (R2.y - R0.y)*diff_strength;	
+    R5.z = (R3.y - R0.y)*diff_strength;	
+    R5.w = (R4.y - R0.y)*diff_strength;
 
     R6 = R6*R6*inv_grad_cutoff;
 
@@ -43,13 +46,13 @@ kernel void process_img( float2 img[][], float diff_strength,
     R6.w = pow(e, -R6.w);
 
     R6 = dot(R6, R5);
-    R0.x = R0.x+R6.x;
+    R0.y = R0.y+R6.x;
 
-    R4.y = R0.y - loww;
-    R0.x = R4.y < 0 ? 0.0 : R0.x;
+    R4.y = R0.x - loww;
+    R0.y = R4.y < 0 ? 0.0 : R0.y;
 
-    R4.y = R0.y - highw;
-    R0.x = R4.y < 0 ? R0.x : 0.0;
+    R4.y = R0.x - highw;
+    R0.y = R4.y < 0 ? R0.y : 0.0;
 
     o_img.x = R0.x;
     o_img.y = R0.y;
@@ -57,9 +60,10 @@ kernel void process_img( float2 img[][], float diff_strength,
 
 //packed version (float4 in/out)
 kernel void process_img_pack( float4 img[][], float diff_strength,
-         		 float inv_grad_cutoff, float loww, float highw,
-                         iter float2 it0, iter float2 it1, iter float2 it2, 
-		         iter float2 it3, iter float2 it4, out float4 o_img<> ) {
+                              float inv_grad_cutoff, float loww, float highw,
+                              iter float2 it0<>, iter float2 it1<>, 
+			      iter float2 it2<>, iter float2 it3<>, 
+			      iter float2 it4<>, out float4 o_img<> ) {
     float e = 2.7182817f;
     float4 R0;
     float4 R1;
@@ -77,25 +81,27 @@ kernel void process_img_pack( float4 img[][], float diff_strength,
     R3 = img[it3]; //0,-1
     R4 = img[it4]; //0,+1
 
-    R6.x = (R1.w - R0.y); //-d1s
-    R6.y = (R0.w - R0.y); //-d1w
-    R6.z = (R3.y - R0.y); //d1n
-    R6.w = (R4.y - R0.y); //d1e
+    //Image differentials
+    R6.x = (R1.z - R0.x); //-d1s
+    R6.y = (R0.z - R0.x); //-d1w
+    R6.z = (R3.x - R0.x); //d1n
+    R6.w = (R4.x - R0.x); //d1e
 
-    R7.x = (R0.y - R0.w); //-d2s
-    R7.y = (R2.y - R0.w); //-d2w
-    R7.z = (R3.w - R0.w); //d2n
-    R7.w = (R4.w - R0.w); //d2e
+    R7.x = (R0.x - R0.z); //-d2s
+    R7.y = (R2.x - R0.z); //-d2w
+    R7.z = (R3.z - R0.z); //d2n
+    R7.w = (R4.z - R0.z); //d2e
 	
-    R5.x = (R1.z - R0.x)*diff_strength;	
-    R5.y = (R0.z - R0.x)*diff_strength;	
-    R5.z = (R3.x - R0.x)*diff_strength;	
-    R5.w = (R4.x - R0.x)*diff_strength;
+    //Segmentation differentials
+    R5.x = (R1.w - R0.y)*diff_strength;	
+    R5.y = (R0.w - R0.y)*diff_strength;	
+    R5.z = (R3.y - R0.y)*diff_strength;	
+    R5.w = (R4.y - R0.y)*diff_strength;
 
-    R8.x = (R0.x - R0.z)*diff_strength;	
-    R8.y = (R2.x - R0.z)*diff_strength;	
-    R8.z = (R3.z - R0.z)*diff_strength;	
-    R8.w = (R4.z - R0.z)*diff_strength;
+    R8.x = (R0.y - R0.w)*diff_strength;	
+    R8.y = (R2.y - R0.w)*diff_strength;	
+    R8.z = (R3.w - R0.w)*diff_strength;	
+    R8.w = (R4.w - R0.w)*diff_strength;
 
     R6 = R6*R6*inv_grad_cutoff;
     R7 = R7*R7*inv_grad_cutoff;
@@ -112,23 +118,23 @@ kernel void process_img_pack( float4 img[][], float diff_strength,
 
     R6 = dot(R6, R5);
     R7 = dot(R7, R8);
-    R0.x = R0.x+R6.x;
-    R0.z = R0.z+R7.x;
+    R0.y = R0.y+R6.x;
+    R0.w = R0.w+R7.x;
 
-    R4.y = R0.y - loww;
-    o_img.x = R4.y < 0 ? 0.0 : R0.x;
+    R4.y = R0.x - loww;
+    o_img.y = R4.y < 0 ? 0.0 : R0.y;
 
-    R4.y = R0.y - highw;
-    o_img.x = R4.y < 0 ? R0.x : 0.0;
+    R4.y = R0.x - highw;
+    o_img.y = R4.y < 0 ? R0.y : 0.0;
 
-    R4.y = R0.w - loww;
-    o_img.z = R4.y < 0 ? 0.0 : R0.z;
+    R4.y = R0.z - loww;
+    o_img.w = R4.y < 0 ? 0.0 : R0.w;
 
-    R4.y = R0.w - highw;
-    o_img.z = R4.y < 0 ? R0.z : 0.0;
+    R4.y = R0.z - highw;
+    o_img.w = R4.y < 0 ? R0.w : 0.0;
 
-    o_img.y = R0.y;
-    o_img.w = R0.w;
+    o_img.x = R0.x;
+    o_img.z = R0.z;
 }
 
 int PMLSeg_main(int argc, char* argv[]) {
@@ -183,16 +189,15 @@ int PMLSeg_main(int argc, char* argv[]) {
         output = (float*)malloc(xsize*ysize*4*sizeof(float));
 
 	// Fill an image with random data and set up the seed point in the middle
-        for(i=0; i<xsize; i++){
-            for(j=0; j<ysize; j++){
-                input[4*(i*ysize+j)] = (float)rand()/INT_MAX;
-                input[4*(i*ysize+j)+2] = (float)rand()/INT_MAX;
-                if(i == xsize/2 && j == ysize/2)
-		    input[4*(i*ysize+j)+1] = 1.0;
-	        else
-		    input[4*(i*ysize+j)+1] = 0.0;
-            }
-        }   
+        for(i=0; i<xsize*ysize*2; i+=2){
+		input[i] = rand()/(float)INT_MAX;
+	}   
+	//Let's insert some seed data at 175x256
+	for(i=xsize/2-2; i<xsize/2+2; i++){
+		for(j=ysize/2-2; j<ysize/2+2; j++){
+			input[2*(j*xsize+i)+1] = 1.0f;
+		}
+	}
 
         //Start timing
         start = GetTime();
@@ -213,9 +218,9 @@ int PMLSeg_main(int argc, char* argv[]) {
 	
         }
         if(i%2==0)
-            streamWrite(o_img, output);
+            streamWrite(img, output);
         else
-	    streamWrite(img, output);
+	    streamWrite(o_img, output);
 
         //Stop time
         stop = GetTime();
@@ -223,7 +228,7 @@ int PMLSeg_main(int argc, char* argv[]) {
         time_in_ms = (float)(stop-start)/1000.;
         fprintf(stderr, "That took %.2fms total\n", time_in_ms);
         fprintf(stderr, "That's %.2fms per loop\n", time_in_ms/loop_count);
-        fprintf(stderr, "That's %.2fMFlops\n", (2*38*xsize*2*ysize)/(time_in_ms*1000./loop_count));
+        fprintf(stderr, "That's %.2fMFlops\n", (2*30*xsize*2*ysize)/(time_in_ms*1000./loop_count));
         fprintf(stderr, "Internal read bandwidth is %.2fMB/s\n", 
                 (4*5*4*(xsize*2)*ysize/(1024.*1024.))/((time_in_ms/loop_count)/1000.));
         fprintf(stderr, "Internal write bandwidth is %.2fMB/s\n", 
