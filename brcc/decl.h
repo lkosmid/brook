@@ -350,6 +350,7 @@ class BaseType : public Type
 
     TypeQual getQualifiers( void ) const;
     BaseType *getBase( void );
+    BaseType& operator = (const BaseType &b);
 
     BaseTypeSpec    typemask;
 
@@ -360,6 +361,8 @@ class BaseType : public Type
 
     StructDef       *stDefn;     // optional definition of struct/union
     EnumDef         *enDefn;     // optional definition of enum 
+
+  
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

@@ -1520,7 +1520,15 @@ Decl::Decl( Type* type )
     storage = type->storage;
     name = NULL;
 }
-
+BaseType& BaseType::operator = (const BaseType& b) {
+  this->typemask=b.typemask;
+  this->qualifier = b.qualifier;
+  this->tag=b.tag?b.tag->dup():NULL;
+  this->typeName=b.typeName?b.typeName->dup():NULL;
+  this->stDefn=b.stDefn?b.stDefn->dup():NULL;
+  this->enDefn=b.enDefn?b.enDefn->dup():NULL;
+  return *this;
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Decl::~Decl()
 {

@@ -51,7 +51,7 @@ static unsigned long getTime()
 #endif
 
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler )
-  : _resultValue(NULL), _compiler(inCompiler), _pseudoRoot(NULL)
+  : _pseudoRoot(NULL), _resultValue(NULL), _compiler(inCompiler)
 {
   _functionName = inFunctionDef->FunctionName()->name;
   std::cout << "$$$$$ creating a split tree for " << _functionName << std::endl;
