@@ -36,14 +36,14 @@ namespace brook {
      Stream * s = new CPUStream (type,dims,extents);
      float * data = (float *)s->getData(brook::Stream::READ);
      if (dims<2) {
-        for (unsigned int i=0;i<extents[0];++i) {
-           for (unsigned int j=0;j<type;++j) {
+        for (int i=0;i<extents[0];++i) {
+           for (int j=0;j<type;++j) {
               data[i*type+j]=lerp(i,extents[0],ranges[j],ranges[j+type]);
            }
         }
      }else if (dims==2){
         //now we know dims == data type;
-        unsigned int i[2]={0,0};
+        int i[2]={0,0};
         for (i[0]=0;i[0]<extents[0];++i[0]) {
            for (i[1]=0;i[1]<extents[1];++i[1]) {
               for (unsigned int k=0;k<2;++k) {
@@ -120,26 +120,11 @@ __BRTIter::__BRTIter(__BRTStreamType type, ...)
     if( extent == -1 ) break;
     extents.push_back(extent);
   }
-  for (unsigned int i=0;i<extents.size();++i) {
-     switch (type) {
-     case __BRTFLOAT4:
-        ranges.push_back(va_arg(args,float));
-        ranges.push_back(va_arg(args,float));
-        ranges.push_back(va_arg(args,float));
-        ranges.push_back(va_arg(args,float));
-        break;
-     case __BRTFLOAT3:
-        ranges.push_back(va_arg(args,float));
-        ranges.push_back(va_arg(args,float));
-        ranges.push_back(va_arg(args,float));
-        break;
-     case __BRTFLOAT2:
-        ranges.push_back(va_arg(args,float));
-        ranges.push_back(va_arg(args,float));
-        break;
-     default:
-        ranges.push_back(va_arg(args,float));
-     }
+  for (int i=0;i<type;++i) {
+     float f = va_arg(args,float);
+     ranges.push_back(f);
+     f = va_arg(args,float);
+     ranges.push_back(f);
   }
   va_end(args);
 
