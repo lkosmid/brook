@@ -53,10 +53,10 @@
 using namespace brook;
 
 static const unsigned int 
-nvtypes[4][3] =   {{GL_FLOAT_R32_NV,GL_FLOAT_R16_NV,GL_LUMINANCE8},
-                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RG16_NV,GL_LUMINANCE_ALPHA},
-                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RGB16_NV,GL_RGB8},
-                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RGBA16_NV,GL_RGBA8}};
+nvtypes[4][3] =   {{GL_FLOAT_R32_NV,GL_LUMINANCE16,GL_LUMINANCE8},
+                   {GL_FLOAT_RGBA32_NV,GL_LUMINANCE16_ALPHA16,GL_LUMINANCE_ALPHA},
+                   {GL_FLOAT_RGBA32_NV,GL_RGB16,GL_RGB8},
+                   {GL_FLOAT_RGBA32_NV,GL_RGBA16,GL_RGBA8}};
 
 static const unsigned int 
 nvformats[4][3] =  { {GL_RED,GL_RED,GL_LUMINANCE},

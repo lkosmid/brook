@@ -30,24 +30,24 @@
 #define GL_INTENSITY_FLOAT32_ATI          0x8817
 #define GL_LUMINANCE_FLOAT32_ATI          0x8818
 #define GL_LUMINANCE_ALPHA_FLOAT32_ATI    0x8819
-#define 	GL_INTENSITY_FLOAT16_ATI   0x881D
-#define 	GL_LUMINANCE_FLOAT16_ATI   0x881E
-#define 	GL_LUMINANCE_ALPHA_FLOAT16_ATI   0x881F
-#define 	GL_RGBA_FLOAT16_ATI   0x881A
-#define 	GL_RGB_FLOAT16_ATI   0x881B
+#define GL_INTENSITY_FLOAT16_ATI          0x881D
+#define GL_LUMINANCE_FLOAT16_ATI          0x881E
+#define GL_LUMINANCE_ALPHA_FLOAT16_ATI    0x881F
+#define GL_RGBA_FLOAT16_ATI               0x881A
+#define GL_RGB_FLOAT16_ATI                0x881B
 #endif
 
 #ifndef GLX_RENDER_TYPE
-#define GLX_RENDER_TYPE                     0x8011
+#define GLX_RENDER_TYPE                   0x8011
 #endif
 
 using namespace brook;
 
 static const unsigned int 
-atitypes[4][3] =   {{GL_LUMINANCE_FLOAT32_ATI,GL_LUMINANCE_FLOAT16_ATI,GL_LUMINANCE},
-                 {GL_RGBA_FLOAT32_ATI,GL_LUMINANCE_ALPHA_FLOAT16_ATI,GL_LUMINANCE_ALPHA},
-                 {GL_RGB_FLOAT32_ATI,GL_RGB_FLOAT16_ATI,GL_RGB},
-                 {GL_RGBA_FLOAT32_ATI,GL_RGBA_FLOAT16_ATI,GL_RGBA}};
+atitypes[4][3] = {{GL_LUMINANCE_FLOAT32_ATI,GL_LUMINANCE16,        GL_LUMINANCE},
+                  {GL_RGBA_FLOAT32_ATI,     GL_LUMINANCE16_ALPHA16,GL_LUMINANCE_ALPHA},
+                  {GL_RGB_FLOAT32_ATI,      GL_RGB16,              GL_RGB},
+                  {GL_RGBA_FLOAT32_ATI,     GL_RGBA16,             GL_RGBA}};
 
 static const unsigned int 
 atiformats[4][3] =  {{GL_RED,GL_RED,GL_RED},
