@@ -1,10 +1,10 @@
 // dx9runtime.cpp
 #include "dx9runtime.hpp"
 
-#include "../../dx9/dx9window.hpp"
-#include "../../dx9/dx9pixelshader.hpp"
-#include "../../dx9/dx9vertexshader.hpp"
-#include "../../dx9/dx9texture.hpp"
+#include "dx9window.hpp"
+//#include "../../dx9/dx9pixelshader.hpp"
+//#include "../../dx9/dx9vertexshader.hpp"
+#include "dx9texture.hpp"
 
 #include <windows.h>
 #include <d3d9.h>
@@ -62,10 +62,15 @@ namespace brook
     float4 texcoords[8]; // TIM: TODO: named constant
   };
 
-  class GPUContextDX9 : public GPUContext
+  class GPUContextDX9Impl : public GPUContextDX9
   {
   public:
-    static GPUContextDX9* create();
+    static GPUContextDX9Impl* create();
+
+    virtual bool isRenderTextureFormatValid( D3DFORMAT inFormat );
+    virtual IDirect3DDevice9* getDevice() {
+        return _device;
+    }
 
     virtual int getShaderFormatRank( const char* inNameString ) const;
 
@@ -148,12 +153,13 @@ namespace brook
       unsigned int numInterpolants );
 
   private:
-    GPUContextDX9();
+    GPUContextDX9Impl();
     bool initialize();
 
     DX9Window* _window;
     IDirect3D9* _direct3D;
     IDirect3DDevice9* _device;
+    D3DFORMAT _adapterFormat;
 
     VertexShaderHandle _passthroughVertexShader;
     PixelShaderHandle _passthroughPixelShader;
@@ -167,11 +173,16 @@ namespace brook
 
     DX9Texture* _boundTextures[16];
     DX9Texture* _boundOutputs[4];
+
+    D3DCAPS9 _deviceCaps;
+    bool _supportsPS30;
+    bool _isNV;
+    bool _isATI;
   };
 
   GPURuntimeDX9* GPURuntimeDX9::create()
   {
-    GPUContextDX9* context = GPUContextDX9::create();
+    GPUContextDX9Impl* context = GPUContextDX9Impl::create();
     if( !context )
       return NULL;
 
@@ -185,20 +196,20 @@ namespace brook
     return result;
   }
 
-  GPUContextDX9* GPUContextDX9::create()
+  GPUContextDX9Impl* GPUContextDX9Impl::create()
   {
-    GPUContextDX9* result = new GPUContextDX9();
+    GPUContextDX9Impl* result = new GPUContextDX9Impl();
     if( result->initialize() )
       return result;
     delete result;
     return NULL;
   }
 
-  GPUContextDX9::GPUContextDX9()
+  GPUContextDX9Impl::GPUContextDX9Impl()
   {
   }
 
-  bool GPUContextDX9::initialize()
+  bool GPUContextDX9Impl::initialize()
   {
     _window = DX9Window::create();
     if( _window == NULL )
@@ -233,6 +244,23 @@ namespace brook
       return false;
     }
 
+    // retrieve adapter format
+    D3DDISPLAYMODE mode;
+    result = _device->GetDisplayMode( 0, &mode );
+    DX9AssertResult( result, "GetDisplayMode failed" );
+    _adapterFormat = mode.Format;
+
+    // get device caps
+    result = _device->GetDeviceCaps( &_deviceCaps );
+    DX9AssertResult( result, "GetDeviceCaps failed" );
+
+    _supportsPS30 = _deviceCaps.MaxPixelShader30InstructionSlots >= 512;
+
+    // TIM: this is *not* future-proof, but I don't know a way to
+    // get something like the GL vendor string from DX
+    _isNV = _supportsPS30;
+    _isATI = !_isNV;
+
     // create vertex buffer
     static const int kMaxVertexCount = 64;
 
@@ -259,14 +287,25 @@ namespace brook
     return true;
   }
 
-  int GPUContextDX9::getShaderFormatRank( const char* inNameString ) const
+  bool GPUContextDX9Impl::isRenderTextureFormatValid( D3DFORMAT inFormat )
+  {
+      HRESULT result = _direct3D->CheckDeviceFormat(
+        D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
+        _adapterFormat,
+        D3DUSAGE_RENDERTARGET,
+        D3DRTYPE_TEXTURE,
+        inFormat );
+      return result == S_OK;
+  }
+
+  int GPUContextDX9Impl::getShaderFormatRank( const char* inNameString ) const
   {
     if( strcmp( "ps20", inNameString ) == 0 )
         return 1;
     return -1;
   }
 
-  float4 GPUContextDX9::getStreamIndexofConstant( TextureHandle inTexture ) const
+  float4 GPUContextDX9Impl::getStreamIndexofConstant( TextureHandle inTexture ) const
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     int textureWidth = texture->getWidth();
@@ -275,7 +314,7 @@ namespace brook
     return float4( (float)textureWidth, (float)textureHeight, 0, 0 );
   }
 
-  float4 GPUContextDX9::getStreamGatherConstant( TextureHandle inTexture ) const
+  float4 GPUContextDX9Impl::getStreamGatherConstant( TextureHandle inTexture ) const
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     int textureWidth = texture->getWidth();
@@ -288,7 +327,7 @@ namespace brook
     return float4( scaleX, scaleY, offsetX, offsetY );
   }
 
-  void GPUContextDX9::get1DInterpolant( const float4 &start, 
+  void GPUContextDX9Impl::get1DInterpolant( const float4 &start, 
     const float4 &end,
     const unsigned int outputWidth,
     GPUInterpolant &interpolant) const
@@ -306,7 +345,7 @@ namespace brook
     interpolant.vertices[2] = f1;
   }
 
-  void GPUContextDX9::get2DInterpolant( const float2 &start, 
+  void GPUContextDX9Impl::get2DInterpolant( const float2 &start, 
     const float2 &end,
     const unsigned int outputWidth,
     const unsigned int outputHeight, 
@@ -332,7 +371,7 @@ namespace brook
     interpolant.vertices[2] = f3;
   }
 
-  void GPUContextDX9::getStreamInterpolant( const TextureHandle texture,
+  void GPUContextDX9Impl::getStreamInterpolant( const TextureHandle texture,
     const unsigned int outputWidth,
     const unsigned int outputHeight, 
     GPUInterpolant &interpolant) const
@@ -340,17 +379,33 @@ namespace brook
     interpolant.vertices[0] = float4(0,0,0.5,1);
     interpolant.vertices[1] = float4(2,0,0.5,1);
     interpolant.vertices[2] = float4(0,2,0.5,1);
+
+    if( _isNV )
+    {
+        float biasX = outputWidth <= 1 ? 0.0f : 0.05f / (float)outputWidth;
+        float biasY = outputHeight <= 1 ? 0.0f : 0.05f / (float)outputHeight;
+
+        for( int i = 0; i < 3; i++ )
+        {
+            interpolant.vertices[i].x += biasX;
+            interpolant.vertices[i].y += biasY;
+        }
+    }
   }
 
-  void GPUContextDX9::getStreamOutputRegion( const TextureHandle texture,
+  void GPUContextDX9Impl::getStreamOutputRegion( const TextureHandle inTexture,
     GPURegion &region) const
   {
+    DX9Texture* texture = (DX9Texture*)inTexture;
+    unsigned int textureWidth = texture->getWidth();
+    unsigned int textureHeight = texture->getHeight();
+
     region.vertices[0] = float4(-1,1,0.5,1);
     region.vertices[1] = float4(3,1,0.5,1);
     region.vertices[2] = float4(-1,-3,0.5,1);
   }
 
-  void GPUContextDX9::getStreamReduceInterpolant( const TextureHandle inTexture,
+  void GPUContextDX9Impl::getStreamReduceInterpolant( const TextureHandle inTexture,
     const unsigned int outputWidth,
     const unsigned int outputHeight, 
     const unsigned int minX,
@@ -374,9 +429,24 @@ namespace brook
     interpolant.vertices[0] = float4(xmin,ymin,0.5,1);
     interpolant.vertices[1] = float4(xmax,ymin,0.5,1);
     interpolant.vertices[2] = float4(xmin,ymax,0.5,1);
+
+    if( _isNV )
+    {
+        int width = maxX - minX;
+        int height = maxY - minY;
+
+        float biasX = width <= 1 ? 0.0f : 0.05f / (float)(width);
+        float biasY = height <= 1 ? 0.0f : 0.05f / (float)(height);
+
+        for( int i = 0; i < 3; i++ )
+        {
+            interpolant.vertices[i].x += biasX;
+            interpolant.vertices[i].y += biasY;
+        }
+    }
   }
 
-  void GPUContextDX9::getStreamReduceOutputRegion( const TextureHandle inTexture,
+  void GPUContextDX9Impl::getStreamReduceOutputRegion( const TextureHandle inTexture,
     const unsigned int minX,
     const unsigned int maxX, 
     const unsigned int minY,
@@ -406,7 +476,7 @@ namespace brook
     region.vertices[2] = float4(xmin,ymax,0.5,1);
   }
 
-  GPUContextDX9::TextureHandle GPUContextDX9::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat )
+  GPUContextDX9Impl::TextureHandle GPUContextDX9Impl::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat )
   {
     int components;
     switch( inFormat )
@@ -428,30 +498,30 @@ namespace brook
       return 0;
       break;
     }
-    DX9Texture* result = DX9Texture::create( _device, inWidth, inHeight, components );
+    DX9Texture* result = DX9Texture::create( this, inWidth, inHeight, components );
     return result;
   }
 
-  void GPUContextDX9::releaseTexture( TextureHandle inTexture )
+  void GPUContextDX9Impl::releaseTexture( TextureHandle inTexture )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     delete texture;
   }
 
-  void GPUContextDX9::setTextureData( TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount )
+  void GPUContextDX9Impl::setTextureData( TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     texture->setData( inData, inStrideBytes, inComponentCount );
     texture->markShadowDataChanged();
   }
 
-  void GPUContextDX9::getTextureData( TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount )
+  void GPUContextDX9Impl::getTextureData( TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     texture->getData( outData, inStrideBytes, inComponentCount );
   }
 
-  GPUContextDX9::PixelShaderHandle GPUContextDX9::createPixelShader( const char* inSource )
+  GPUContextDX9Impl::PixelShaderHandle GPUContextDX9Impl::createPixelShader( const char* inSource )
   {
     IDirect3DPixelShader9* shader;
     HRESULT result;
@@ -483,7 +553,7 @@ namespace brook
     return (PixelShaderHandle)shader;
   }
 
-  GPUContextDX9::VertexShaderHandle GPUContextDX9::createVertexShader( const char* inSource )
+  GPUContextDX9Impl::VertexShaderHandle GPUContextDX9Impl::createVertexShader( const char* inSource )
   {
     IDirect3DVertexShader9* shader;
     HRESULT result;
@@ -515,13 +585,13 @@ namespace brook
     return (VertexShaderHandle)shader;
   }
 
-  void GPUContextDX9::beginScene()
+  void GPUContextDX9Impl::beginScene()
   {
     HRESULT result = _device->BeginScene();
     GPUAssert( !FAILED(result), "BeginScene failed" );
   }
 
-  void GPUContextDX9::endScene()
+  void GPUContextDX9Impl::endScene()
   {
     HRESULT result = _device->EndScene();
     GPUAssert( !FAILED(result), "BeginScene failed" );
@@ -534,14 +604,14 @@ namespace brook
   }
 
 
-  void GPUContextDX9::bindConstant( PixelShaderHandle /* unused */, 
+  void GPUContextDX9Impl::bindConstant( PixelShaderHandle /* unused */, 
                                     size_t inIndex, const float4& inValue )
   {
     HRESULT result = _device->SetPixelShaderConstantF( inIndex, (const float*)&inValue, 1 );
     GPUAssert( !FAILED(result), "SetPixelShaderConstantF failed" );
   }
 
-  void GPUContextDX9::bindTexture( size_t inIndex, TextureHandle inTexture )
+  void GPUContextDX9Impl::bindTexture( size_t inIndex, TextureHandle inTexture )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     _boundTextures[inIndex] = texture;
@@ -549,7 +619,7 @@ namespace brook
     GPUAssert( !FAILED(result), "SetTexture failed" );
   }
 
-  void GPUContextDX9::bindOutput( size_t inIndex, TextureHandle inTexture )
+  void GPUContextDX9Impl::bindOutput( size_t inIndex, TextureHandle inTexture )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     _boundOutputs[inIndex] = texture;
@@ -557,25 +627,25 @@ namespace brook
     GPUAssert( !FAILED(result), "SetRenderTarget failed" );
   }
 
-  void GPUContextDX9::disableOutput( size_t inIndex )
+  void GPUContextDX9Impl::disableOutput( size_t inIndex )
   {
     HRESULT result = _device->SetRenderTarget( inIndex, NULL );
     GPUAssert( !FAILED(result), "SetRenderTarget failed" );
   }
 
-  void GPUContextDX9::bindPixelShader( PixelShaderHandle inPixelShader )
+  void GPUContextDX9Impl::bindPixelShader( PixelShaderHandle inPixelShader )
   {
     HRESULT result = _device->SetPixelShader( (IDirect3DPixelShader9*)inPixelShader );
     GPUAssert( !FAILED(result), "SetPixelShader failed" );
   }
 
-  void GPUContextDX9::bindVertexShader( VertexShaderHandle inVertexShader )
+  void GPUContextDX9Impl::bindVertexShader( VertexShaderHandle inVertexShader )
   {
     HRESULT result = _device->SetVertexShader( (IDirect3DVertexShader9*)inVertexShader );
     GPUAssert( !FAILED(result), "SetVertexShader failed" );
   }
 
-  void GPUContextDX9::drawRectangle(
+  void GPUContextDX9Impl::drawRectangle(
     const GPURegion& inOutputRegion, 
     const GPUInterpolant* inInterpolants, 
     unsigned int inInterpolantCount )
