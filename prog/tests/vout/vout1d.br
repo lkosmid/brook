@@ -165,7 +165,7 @@ kernel void RelativeGatherBRT_TYPE1d(out BRT_TYPE output<>,
 }
 
 
-float shiftValuesBRT_TYPE1d(BRT_TYPE list_stream <>,
+float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
                        BRT_TYPE output_stream<>,
                        int WIDTH, 
                        int unused,
@@ -635,7 +635,7 @@ kernel void BRT_TYPEstreamCombine8f(BRT_TYPE input0[],
    }
 }
 */
-void combineStreamsHelperBRT_TYPE1d (BRT_TYPE (**streams) <>,
+void combineStreamsHelper1dBRT_TYPE (BRT_TYPE (**streams) <>,
                                 unsigned int num,
                                 BRT_TYPE output<>,
                                 float modulus,
@@ -676,7 +676,7 @@ void combineStreamsHelperBRT_TYPE1d (BRT_TYPE (**streams) <>,
                      output,
                      output);
       if (num>4) {
-         combineStreamsHelperBRT_TYPE1d(streams+4,
+         combineStreamsHelper1dBRT_TYPE(streams+4,
                                       num-4,
                                       output,
                                       modulus,
@@ -721,7 +721,7 @@ void combineStreamsHelperBRT_TYPE1d (BRT_TYPE (**streams) <>,
                      output,
                      output);
       if (num>7) {
-         combineStreamsHelperBRT_TYPE(streams+7,
+         combineStreamsHelper1dBRT_TYPE(streams+7,
                                       num-7,
                                       output,
                                       modulus,
@@ -730,7 +730,7 @@ void combineStreamsHelperBRT_TYPE1d (BRT_TYPE (**streams) <>,
       */     
    }
 }
-void combineStreamsBRT_TYPE1d (BRT_TYPE (**streams)<>,
+void combineStreams1dBRT_TYPE (BRT_TYPE (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int UNUSED,
@@ -779,7 +779,7 @@ void combineStreamsBRT_TYPE1d (BRT_TYPE (**streams)<>,
                   "Too little precision for more than ",MAX_VOUT_STREAMS);
       }
       if (num>5) {
-         combineStreamsHelperBRT_TYPE1d(streams+5,
+         combineStreamsHelper1dBRT_TYPE(streams+5,
                                       num-5,
                                       output,
                                       (float)num,
@@ -908,11 +908,11 @@ unsigned int totalCombineVoutBRT_TYPE1d (BRT_TYPE list_stream<>,
 
    float outleft_stream<WIDTH>;
    float outright_stream<WIDTH2>;
-   float maxshiftleft =shiftValuesBRT_TYPE1d(list_stream,
+   float maxshiftleft =shiftValues1dBRT_TYPE(list_stream,
                                            outleft_stream,
                                            WIDTH,1,
                                            -1);
-   float maxshiftright=shiftValuesBRT_TYPE1d(list2_stream,
+   float maxshiftright=shiftValues1dBRT_TYPE(list2_stream,
                                            outright_stream,
                                            WIDTH2,1,
                                            -1);

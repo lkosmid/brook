@@ -20,13 +20,13 @@ typedef __int64 int64;
 #else
 typedef long long int64;
 #endif
-int64 timerRes;
-int64 stop;
-int64 start;
 
 extern int64 GetTime(void);
 extern unsigned int GetTimeMillis(void);
 extern int64 CyclesToUsecs(int64 cycles);
+unsigned int GetTimeMillis(void) ;
+void SetupMillisTimer(void);
+void CleanupMillisTimer(void);
 
 /*
  * XXX brcc currently has grief with typedefs mixed with Brook code, so we
@@ -34,7 +34,14 @@ extern int64 CyclesToUsecs(int64 cycles);
  * the issue.  I apologize deeply.  --Jeremy.
  */
 extern int64 start, mid, mid2, stop;
+
 #endif
+#ifdef TIMING_DEF
+int64 timerRes;
+int64 stop;
+int64 start;
+
+
 #ifdef _WIN32
 int64
 GetTime(void)
@@ -111,3 +118,4 @@ unsigned int GetTimeMillis () {
 #endif
 
 
+#endif

@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = tessellate
-FILES = tessellate voutfloatN writepng
+FILES = tess writepng graphics tessellate voutfloatN
 LIBRARIES = $(RUNTIME_LIBS)
 BRCCFLAGS = 
 
