@@ -46,7 +46,8 @@ class Location
   ~Location() {}
 
   void printLocation(std::ostream& p) const;
-
+  void printLineDirective(std::ostream &p) const;
+   
   friend std::ostream& operator<< (std::ostream& o, const Location& l);
 };
 

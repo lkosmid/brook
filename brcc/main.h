@@ -10,7 +10,8 @@ struct globals_struct {
   globals_struct() {
       verbose=false,parseOnly=false;
       keepFiles=false,fponly=0,target=0,workspace=0;
-      allowDX9MultiOut=false,enableGPUAddressTranslation=false;
+      printLineDirectives=false,allowDX9MultiOut=false;
+      enableGPUAddressTranslation=false;
       allowKernelToKernel=true,noTypeChecks=false;
   }             
   bool verbose;
@@ -23,6 +24,7 @@ struct globals_struct {
   int fponly;
   int target;
   int workspace;
+  bool printLineDirectives;
   bool allowDX9MultiOut;
   bool enableGPUAddressTranslation;
   bool allowKernelToKernel;

@@ -34,6 +34,7 @@
 #include <cassert>
 #include <sstream>
 
+#include "main.h"
 #include "stemnt.h"
 #include "symbol.h"
 #include "decl.h"
@@ -521,6 +522,9 @@ ExpressionStemnt::dup0() const
 void
 ExpressionStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* ExpressionStemnt:" ;

@@ -74,7 +74,7 @@ parse_args (int argc, char *argv[]) {
    */
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-  while ((opt = getopt(argc, argv, "d:hkntyANSo:p:vw")) != EOF) {
+  while ((opt = getopt(argc, argv, "d:hkntyANSlo:p:vw")) != EOF) {
      switch(opt) {
      case 'h':
         usage();
@@ -122,6 +122,9 @@ parse_args (int argc, char *argv[]) {
      case 'v':
 	globals.verbose = 1;
 	break;
+     case 'l':
+        globals.printLineDirectives = true;
+        break;
      case 'd':
         Project::gDebug = true;
         break;
