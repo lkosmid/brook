@@ -8,7 +8,7 @@ kernel void FiniteTest(float a, out float4 e<>, float inf) {
    e.x = isfinite(a);
    e.y = isnan(a);
    e.z = isinf(a);
-   e.w = (a==inf);
+   e.w = 1||a==inf;
 } 
 kernel void foo (float a<>, out float4 e<>, float one, float nil, float inf) {
    if ((indexof a).x==3) {
