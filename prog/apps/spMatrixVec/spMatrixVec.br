@@ -1,0 +1,202 @@
+
+/*
+  CSR Sparse Matrix-Vector Multiply
+  Kayvon Fatahalian (kayvonf@stanford.edu)
+  12/10/03
+
+
+  Simple example of how to perform a sparse matrix vector multiplication where the sparse matrix
+  is represented in compressed sparse row (CSR) format.  For simplicity, an upper bound is given
+  for the number of nonzero matrix elements per row, and rows containing fewer than this maximum
+  number of nonzeros are padded.
+
+  1. Use a gather to "arrange" the elements of vector x into the ordering they will be referenced
+       in the mat-vec multiply (ordering determined by cols of nonzeros of A)
+  2. Component-wise multiply the modified x vector with the nonzeros of A
+  3. Perform reduction on resulting stream, reducing with the sum operator every MAX_NZ_PER_ROW
+       elements (the rows of the matrix) to get y = Ax.
+
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_NZ_PER_ROW  5
+#define NUM_ROWS        10
+#define MAX_NZ          50
+
+
+/*** Kernels needed for Sparse Matrix-Vector multiplication *****************************************/
+
+kernel void gather(float index<>, float x[NUM_ROWS+1], out float result<>) {
+  result = x[index];
+}
+
+kernel void mult(float a<>, float b<>, out float c<>) {
+  c = a*b;
+}
+
+reduce void sumRows(float nzValues<>, reduce float result<>) {
+  result += nzValues;
+}
+
+/*****************************************************************************************************/
+
+
+// take a standard CSR storage representation and turn it into a padded version for streaming
+// sparse matrix is represented as two (NUM_ROWS * MAX_NZ_PER_COL) streams, one containing the non
+// zero elements of A and the other containing their respective columns.
+void reshuffleData(float nz[MAX_NZ], int cols[MAX_NZ], int rowStart[NUM_ROWS+1],
+                   float Anz[MAX_NZ], float Acols[MAX_NZ]) {
+  int i,j;
+
+  for (i=0;i<NUM_ROWS;i++) {
+    int offset = 0;
+
+    for (j=rowStart[i];j<rowStart[i+1];j++) {
+      Anz[MAX_NZ_PER_ROW*i + offset] = nz[j];
+      Acols[MAX_NZ_PER_ROW*i + offset] = (float)cols[j];
+      offset++;
+    }
+  
+    // must pad the rest of the row
+    while (offset < MAX_NZ_PER_ROW) {
+      Anz[MAX_NZ_PER_ROW*i + offset] = 0.0f;
+      Acols[MAX_NZ_PER_ROW*i + offset] = (float)0.0f;   // this should be an invalid index.... but doesn't have to be since x multiplied by a zero here
+      offset++;
+    }
+  }
+
+}
+
+
+int parseCmdLine(int argc, char** argv, char* filename) {
+  
+  if (argc < 2) {
+    printf("requires filename argument");
+    return 1;
+  }
+
+  strncpy(filename, argv[1], 70); 
+  return 0;
+}
+
+
+int main(int argc, char** argv) {
+
+  int i,j;
+
+  char filename[80];
+
+  float  csrNz[MAX_NZ];
+  int    csrCols[MAX_NZ];
+  int    csrRowStart[NUM_ROWS+1];
+
+  float  Anz[MAX_NZ];
+  float  cIdx[MAX_NZ];
+  float  x[NUM_ROWS];
+  float  y[NUM_ROWS];
+
+  float  AStrm<MAX_NZ>;
+  float  cIdxStrm<MAX_NZ>;
+  float  productsStrm<MAX_NZ>;
+  float  xGatherStrm<MAX_NZ>;
+
+  float  xStrm<NUM_ROWS>;
+  float  yStrm<NUM_ROWS>;
+
+
+
+  if (parseCmdLine(argc, argv, filename))
+    return 1;
+
+  // load the CSR matrix structure here //////////////////////////////////////////
+  FILE* data;
+  data = fopen(filename, "r");
+  
+  if (!data) {
+    printf("Couldn't open CSR data file: %s\n", filename);
+    return 1;
+  }
+
+  for (i=0;i<NUM_ROWS;i++) {
+    fscanf(data, "%f", &x[i]);
+    printf("%.2f ", x[i]);
+  }
+  printf("\n");
+
+  for (i=0;i<NUM_ROWS+1;i++) {
+    fscanf(data, "%d", &csrRowStart[i]);
+    printf("%d ", csrRowStart[i]);
+  }
+  printf("\n");
+
+  for (i=0;i<csrRowStart[NUM_ROWS];i++)
+    fscanf(data, "%d", &csrCols[i]);
+
+  for (i=0;i<csrRowStart[NUM_ROWS];i++)
+    fscanf(data, "%f", &csrNz[i]);
+  
+  printf("CSR Sparse Matrix Form:  [value(col)]\n");
+  for (i=0;i<NUM_ROWS;i++) {
+    for (j=csrRowStart[i];j<csrRowStart[i+1];j++)
+      printf("%.3f(%d)  ", csrNz[j], csrCols[j]);
+
+    printf("\n");
+  }
+
+  // convert from pure CSR to a padded scheme better suited for streaming, the following
+  // printf's should ilustrate how the data is laid out
+  reshuffleData(csrNz, csrCols, csrRowStart, Anz, cIdx);
+
+  printf("\n");
+  printf("Padded Non-zero values:\n");
+  for (i=0;i<NUM_ROWS;i++) {
+    for (j=0;j<MAX_NZ_PER_ROW;j++)
+      printf("%3.3f ", Anz[i*MAX_NZ_PER_ROW + j]);
+    printf("\n");
+  }
+
+  printf("\n");
+  printf("Padded Col Indices:\n");
+  for (i=0;i<NUM_ROWS;i++) {
+    for (j=0;j<MAX_NZ_PER_ROW;j++)
+      printf("%3.1f ", cIdx[i*MAX_NZ_PER_ROW + j]);
+    printf("\n");
+  }
+  
+  printf("\n");
+  printf("x:\n");
+  for (i=0;i<NUM_ROWS;i++)
+    printf("%.3f ", x[i]);
+
+  // Now perform the matrix multiplication ///////////////////////////////////////////////
+
+  // read in the matrix data
+  streamRead(AStrm, Anz);
+  streamRead(cIdxStrm, cIdx);
+  
+  for (i=0;i<NUM_ROWS;i++)
+    y[i] = 0.0f;
+
+  streamRead(xStrm, x);
+
+  // these four lines perform sparse matrix-vector multiply
+  streamRead(yStrm, y);
+  gather(cIdxStrm, xStrm, xGatherStrm);
+  mult(AStrm, xGatherStrm, productsStrm);
+  // reduction from (NUM_ROWS * MAX_NX_PER_ROW) to (NUM_ROWS)
+  // Note: in 2D, this can be thought of as a reduction along the horizontal direction
+  sumRows(productsStrm, yStrm);     
+  
+
+  streamWrite(yStrm, y);
+
+  printf("\n");
+  printf("result: y = Ax\n");
+  for (i=0;i<NUM_ROWS;i++)
+    printf("%.3f\n", y[i]);
+
+  return 0;
+}
+
