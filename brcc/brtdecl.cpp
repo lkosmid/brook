@@ -123,3 +123,35 @@ BrtStreamType::getBase( void )
 }
 
 
+CPUGatherType::CPUGatherType(const ArrayType &t,bool toplevel):ArrayType(*static_cast<ArrayType*>(t.dup())){
+	this->toplevel=toplevel;
+	dimension=1;
+	if (subType->type==TT_Array) {
+		CPUGatherType * at = new CPUGatherType(*static_cast<ArrayType*>(subType),false);
+		subType = at;
+		dimension = at->dimension+1;
+	}
+}
+Type * CPUGatherType::dup0()const {
+	return new CPUGatherType (*this);
+}
+void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) const {
+	Symbol nothing;
+	nothing.name="";
+	out << "Array"<<dimension<<"d<";
+	subType->getBase()->printBefore(out,&nothing,0);
+	const Type * t = this;
+	for (unsigned int i=0;i<dimension;i++) {
+		const ArrayType *a =static_cast<const ArrayType *>(t);
+		a->size->print(out);
+		t = a->subType;			
+	}
+	out << *name;
+}
+void CPUGatherType::printAfter(std::ostream &out) {
+		//nothing happens
+		//you fail to obtain anything
+		//...
+}
+
+

@@ -160,7 +160,6 @@ class QuestionColonConverter{public:
         return ret;
     }
 };
-
 class BaseType1:public BaseType {public:
 	BaseType1(const BaseType &t):BaseType(t){}
 	virtual void printBase(std::ostream& out, int level) const {

@@ -52,5 +52,16 @@ public:
   ExprVector     dims;
 };
 
+class CPUGatherType:public ArrayType{public:
+	bool toplevel;
+	int dimension;
+	CPUGatherType(const ArrayType &t,bool toplevel);
+	Type * dup0()const;
+	void printBefore(std::ostream & out, Symbol *name, int level) const;
+	void printAfter(std::ostream &out);
+};
+
+
+
 #endif  /* BRTDECL_H */
 
