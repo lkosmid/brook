@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 
-#define MAX_ITER 10
+#define MAX_ITER 1000
 
 typedef struct matrix4_t {
   float4  row0;
@@ -319,7 +319,7 @@ static void  floatFill(float  *outBuffer, int  inCount, float  inValue)
     *buffer++ = inValue;
 }
 
-static void  runTest(int  inSize, int  inIterations, int  *outTime, float  *outFlops)
+static void  runTest(int  inSize, int  inIterations, int  *outTime, float  *outFlops, float* outInBW, float* outOutBW )
 {
   ::brook::stream a(::brook::getStreamType(( matrix4  *)0), inSize , inSize,-1);
   ::brook::stream b(::brook::getStreamType(( matrix4  *)0), inSize , inSize,-1);
@@ -342,12 +342,14 @@ static void  runTest(int  inSize, int  inIterations, int  *outTime, float  *outF
 
   streamWrite(c,data);
   stopTime = GetTime();
-  elapsed = (int ) (stop - start);
+  elapsed = (int ) (stopTime - startTime);
   *outTime = elapsed;
   *outFlops = 23.000000f * inIterations * inSize * inSize / (float ) (elapsed);
+  *outInBW = (float)(8*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
+  *outOutBW = (float)(4*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
 }
 
-static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime, float  *outFlops)
+static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime, float  *outFlops, float* outInBW, float* outOutBW )
 {
   ::brook::stream a(::brook::getStreamType(( matrix4  *)0), inSize , inSize,-1);
   ::brook::stream b(::brook::getStreamType(( matrix4  *)0), inSize , inSize,-1);
@@ -370,43 +372,46 @@ static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime,
 
   streamWrite(c,data);
   stopTime = GetTime();
-  elapsed = (int ) (stop - start);
+  elapsed = (int ) (stopTime - startTime);
   *outTime = elapsed;
   *outFlops = 23.000000f * inIterations * inSize * inSize / (float ) (elapsed);
+  *outInBW = (float)(8*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
+  *outOutBW = (float)(4*sizeof(float4)) * inIterations * inSize * inSize / (float ) (elapsed);
 }
 
 void  Matmult4x4_4way_Time(int  inStreamSize)
 {
-  int  *times;
-  float  *flops;
-  int  *pretransposedTimes;
-  float  *pretransposedFlops;
-  int  i;
-
-  times = (int *) (malloc(sizeof(int )  * MAX_ITER));
-  flops = (float *) (malloc(sizeof(float )  * MAX_ITER));
-  pretransposedTimes = (int *) (malloc(sizeof(int )  * MAX_ITER));
-  pretransposedFlops = (float *) (malloc(sizeof(float )  * MAX_ITER));
-  for (i = 0; i < MAX_ITER; i++)
-  {
-    runTest(inStreamSize,i + 1,&times[i],&flops[i]);
-    runPretransposedTest(inStreamSize,i + 1,&pretransposedTimes[i],&pretransposedFlops[i]);
-  }
+  int  time;
+  float  flops;
+  float inputBandwidth;
+  float outputBandwidth;
+  
+  runTest(inStreamSize,MAX_ITER,&time,&flops,&inputBandwidth,&outputBandwidth);
 
   printf("matmult4x4 4-way\n");
+  printf("iterations = %d\n", MAX_ITER);
   printf("stream size = %d * %d * 4*float4\n",inStreamSize,inStreamSize);
+  printf("time(microseconds) ops(megaflop/s) bandwidth in/out(megabytes/s)\n");
+  printf("%9d  %5.6f %5.6f %5.6f\n",time,flops,inputBandwidth,outputBandwidth);
   printf("\n\n");
-  printf("default\n");
-  for (i = 0; i < MAX_ITER; i++)
-    printf("%4d  %9d  %5.6f\n",i + 1,times[i],flops[i]);
-  printf("\n\n");
-  printf("pretransposed\n");
-  for (i = 0; i < MAX_ITER; i++)
-    printf("%4d  %9d  %5.6f\n",i + 1,pretransposedTimes[i],pretransposedFlops[i]);
-  free(times);
-  free(flops);
-  free(pretransposedTimes);
-  free(pretransposedFlops);
 }
+
+void  Matmult4x4_4wayPretransposed_Time(int  inStreamSize)
+{
+  int  time;
+  float  flops;
+  float inputBandwidth;
+  float outputBandwidth;
+  
+  runPretransposedTest(inStreamSize,MAX_ITER,&time,&flops,&inputBandwidth,&outputBandwidth);
+
+  printf("matmult4x4 4-way pretransposed\n");
+  printf("iterations = %d\n", MAX_ITER);
+  printf("stream size = %d * %d * 4*float4\n",inStreamSize,inStreamSize);
+  printf("time(microseconds) ops(megaflop/s) bandwidth in/out(megabytes/s)\n");
+  printf("%9d  %5.6f %5.6f %5.6f\n",time,flops,inputBandwidth,outputBandwidth);
+  printf("\n\n");
+}
+
 
 
