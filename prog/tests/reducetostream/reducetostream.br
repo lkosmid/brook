@@ -1,3 +1,10 @@
+// reducetostream.br
+// A broken regression test for stream-to-stream reductions.
+// Unfortunately some of the operations it uses to reduce
+// the inputs are nonassociative and thus do not meet
+// our minimal requirements. They will therefore produce
+// different results on different runtimes.
+
 #include <stdio.h>
 
 extern void printf();

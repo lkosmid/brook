@@ -8,7 +8,7 @@
 void __kprintf_cpu_inner(float f) {
    fprintf(stderr,"%f | ",f);
 }
-/* This kernel should make a matrix of 1 and a diagonal of 0's*/
+
 kernel void
 iterator_test (float2 d<>, iter float2 iterator<>, out float2 e<>)
 {

@@ -1,4 +1,10 @@
+// gatherop.br
+// Tests the gatherop runtime function, as well
+// as fallback onto the CPU runtime when a
+// GPU runtime cannot support native gatherop.
+
 #include <stdio.h>
+
 reduce void mydec(float4 a <>, reduce float4 b <> ) {
    b-=1;
 }

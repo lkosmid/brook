@@ -1,4 +1,8 @@
-// sum.br
+// input_output.br
+// Trivial regression test to confirm that
+// a runtime correctly handles using the
+// same stream as both an input and output
+// argument to a kernel.
 
 #include <stdio.h>
 

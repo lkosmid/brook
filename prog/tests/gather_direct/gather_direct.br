@@ -1,4 +1,8 @@
-// sum.br
+// gather_direct.br
+// Minimal acceptance test for gather functionality.
+// It confirms that when we perform a gather with
+// a constant index, the expected stream element
+// is fetched.
 
 #include <stdio.h>
 

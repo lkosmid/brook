@@ -1,3 +1,11 @@
+// reduce.br
+// A stress-test for reduction functionality.
+// The matrix-multiplication operation is associative
+// but not commutative, so this test confirms
+// that a runtime correctly groups elements
+// when performing reductions (and thus respects
+// noncommutative operations).
+
 #include <stdio.h>
 
 extern void printf();

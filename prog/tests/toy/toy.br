@@ -1,13 +1,10 @@
+// toy.br
+// An ad-hoc regression test to cover all the
+// earliest features of the language, including
+// streams, gathers, and constants.
+
 #include <stdio.h>
 
-extern void printf();
-extern void streamRead();
-extern void streamWrite();
-kernel void StreamGatherOpFetch11(out float a<>, 
-                                  float index<>, 
-                                  float gath[]) {
-   a=gath[index];
-}  
 kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], out float e<>) {
   e = a+b+d[c.xy];

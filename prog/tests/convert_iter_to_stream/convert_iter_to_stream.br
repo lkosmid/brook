@@ -1,5 +1,7 @@
 // convert_iter_to_stream.br
 // Tests automatic conversion of iterators to streams
+// when an interator is passed to a kernel argument
+// that expects a stream.
 
 #include <stdio.h>
 

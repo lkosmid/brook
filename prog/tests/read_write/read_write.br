@@ -1,4 +1,7 @@
 // read_write.br
+// A minimal regression test to confirm that
+// data written to a stream with streamRead
+// can be retrieved with streamWrite.
 
 #include <stdio.h>
 

@@ -1,6 +1,13 @@
-#include <stdio.h>
 // replication_stride.br
 // Tests automatic replication and stride of kernel arguments
+// The output stream always determines the number of operations
+// performed, and elements from the input streams are either
+// skipped or repeated to compensate.
+// This test does not demonstrate it, but it is an error
+// to use stream arguments that are not an integer multiple
+// or divisor of the output stream's extents.
+
+#include <stdio.h>
 
 kernel void copy( float input<>, out float output<> ) {
 	output = input;

@@ -1,3 +1,8 @@
+// scatter.br
+// Regression test for scatter functionality.
+// Also tests CPU fallback for runtimes that
+// don't support native scatter.
+
 #include <stdio.h>
 
 reduce void mymult(float a <>, reduce float b <> ) {

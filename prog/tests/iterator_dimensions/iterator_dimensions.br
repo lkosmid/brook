@@ -1,5 +1,7 @@
 // iterator_dimensions.br
 // Tests the various dimensionalities of iterator streams allowed.
+// We allow 1-dimension iterators to use float, float2, float3 and float4
+// values, while 2-dimensional iterators use only float2.
 
 #include <stdio.h>
 

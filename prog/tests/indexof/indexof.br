@@ -1,3 +1,13 @@
+// indexof.br
+// Tests the built-in operator 'indexof.'
+// It confirms the invariant that when
+// a stream is passed as both a stream
+// argument and a gather argument to
+// a kernel, fetching from the gather
+// argument with the index of the stream
+// argument should produce the same
+// value as the stream argument.
+
 #include <stdio.h>
 
 extern void printf();

@@ -1,4 +1,8 @@
-// sum.br
+// accumulate.br
+// Tests repeated read-modify writes into an output stream.
+// This makes sure that any cache of input streams (such
+// as the texture cache on a GPU) is invalidted when a
+// stream is written to.
 
 #include <stdio.h>
 

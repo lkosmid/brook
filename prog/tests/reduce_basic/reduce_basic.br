@@ -1,3 +1,8 @@
+// reduce_basic.br
+// A minimal test of reduction functionality.
+// It confirms that we can reduce streams of
+// various sizes to single values.
+
 #include <stdio.h>
 
 reduce void SUM( float4 a<>, reduce float4 b <>) {

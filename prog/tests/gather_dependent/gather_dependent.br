@@ -1,4 +1,8 @@
-// sum.br
+// gather_dependent.br
+// Tests that gather operations produce correct
+// results when the index is non-constant.
+// This utilizes the dependent texture read
+// capability of the GPU.
 
 #include <stdio.h>
 

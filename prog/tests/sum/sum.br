@@ -1,4 +1,7 @@
 // sum.br
+// The absolute minimal test. It tests
+// using a kernel to sum both 1-dimensional
+// and two-dimensional input streams.
 
 #include <stdio.h>
 
