@@ -1,6 +1,8 @@
 // gpuiterator.cpp
 #include "gpuiterator.hpp"
 
+#include "gpuruntime.hpp"
+
 using namespace brook;
 
 static float lerp (unsigned int i, unsigned int end,float lower,float upper) {
@@ -19,7 +21,7 @@ GPUIterator* GPUIterator::create( GPURuntime* inRuntime, __BRTStreamType inEleme
 }
 
 GPUIterator::GPUIterator( GPURuntime* inRuntime, __BRTStreamType inElementType )
-  : Iter(inElementType), _cpuBuffer(NULL)
+  : Iter(inElementType), _cpuBuffer(NULL), _context(inRuntime->getContext())
 {
 }
 
@@ -92,10 +94,14 @@ bool GPUIterator::initialize( int inDimensionCount, int* inExtents, float* inRan
       ((float*)&max)[i] = (i==4) ? 1.0f : 0.0f;
     }
 
-    _rect.vertices[0] = max;
-    _rect.vertices[1] = min;
-    _rect.vertices[2] = max;
-    _rect.vertices[3] = min;
+    _min1D = min;
+    _max1D = max;
+
+    _context->get1DInterpolant( _min1D, _max1D, _extents[0], _defaultInterpolant );
+//    _rect.vertices[0] = max;
+//    _rect.vertices[1] = min;
+//    _rect.vertices[2] = max;
+//    _rect.vertices[3] = min;
   }
   else
   {
@@ -111,9 +117,40 @@ bool GPUIterator::initialize( int inDimensionCount, int* inExtents, float* inRan
     float minY = _ranges[1];
     float maxX = _ranges[2];
     float maxY = _ranges[3];
-    _rect = GPURect( minX, maxY, maxX, minY );
+
+    _min2D = float2( minX, minY );
+    _max2D = float2( maxX, maxY );
+
+    _context->get2DInterpolant( _min2D, _max2D, _extents[1], _extents[0], _defaultInterpolant );
   }
   return true;
+}
+
+void GPUIterator::getInterpolant(
+  unsigned int inOutputWidth,
+  unsigned int inOutputHeight,
+  GPUInterpolant& outInterpolant )
+{
+  if( _dimensionCount == 1 )
+  {
+    if( inOutputWidth == _extents[0] )
+    {
+      outInterpolant = _defaultInterpolant;
+      return;
+    }
+
+    _context->get1DInterpolant( _min1D, _max1D, _extents[0], outInterpolant );
+  }
+  else
+  {
+    if( inOutputWidth == _extents[1] && inOutputHeight == _extents[0] )
+    {
+      outInterpolant = _defaultInterpolant;
+      return;
+    }
+
+    _context->get2DInterpolant( _min2D, _max2D, _extents[1], _extents[0], outInterpolant );
+  }
 }
 
 void* GPUIterator::getData (unsigned int flags)

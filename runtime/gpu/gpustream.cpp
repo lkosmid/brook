@@ -22,7 +22,7 @@ namespace brook
 
   
   GPUStream::GPUStream( GPURuntime* inRuntime )
-    : _runtime(inRuntime), _context(NULL)
+    : _runtime(inRuntime), _context(NULL), _cpuData(0), _cpuDataSize(0)
   {
     _context = _runtime->getContext();
   }
@@ -143,6 +143,9 @@ namespace brook
     
     _context->getStreamOutputRegion( getIndexedFieldTexture( 0 ),
                                      _outputRegion);
+
+    _indexofConstant = _context->getStreamIndexofConstant( getIndexedFieldTexture( 0 ) );
+    _gatherConstant = _context->getStreamGatherConstant( getIndexedFieldTexture( 0 ) );
     
     return true;
   }
@@ -157,6 +160,10 @@ namespace brook
       {
         _context->releaseTexture( _fields[f].texture );
       }
+    }
+    if( _cpuData )
+    {
+      delete[] (unsigned char*)_cpuData;
     }
   }
 
@@ -190,13 +197,26 @@ namespace brook
 
 
   void * 
-  GPUStream::getData (unsigned int flags) {
-    return NULL;
+  GPUStream::getData (unsigned int flags)
+  {
+    if( _cpuData == NULL )
+    {
+      _cpuDataSize = _totalSize * getElementSize();
+      _cpuData = new unsigned char[ _cpuDataSize ];
+    }
+
+    if( flags & Stream::READ )
+      Write( _cpuData );
+    return _cpuData;
   }
 
 
-  void 
-  GPUStream::releaseData(unsigned int flags) {
+  void GPUStream::releaseData(unsigned int flags)
+  {
+    if( flags & Stream::WRITE )
+    {
+      Read( _cpuData );
+    }
   }
 
 

@@ -46,7 +46,7 @@ namespace brook {
     TextureHandle getIndexedFieldTexture( size_t inIndex );
 
     float4 getIndexofConstant() const { return _indexofConstant; }
-    float4 getShapeConstant() const { return _shapeConstant; }
+    float4 getGatherConstant() const { return _gatherConstant; }
 
     unsigned int getWidth() const {return _textureWidth; }
     unsigned int getHeight() const {return _textureHeight; }
@@ -85,7 +85,10 @@ namespace brook {
     GPUInterpolant _defaultInterpolant;
     GPURegion      _outputRegion;
     float4 _indexofConstant;
-    float4 _shapeConstant;
+    float4 _gatherConstant;
+
+    size_t _cpuDataSize;
+    void* _cpuData;
   };
 }
 

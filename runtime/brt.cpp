@@ -8,7 +8,13 @@
 #include <math.h>
 #include <float.h>
 #ifdef BUILD_DX9
-//#include "gpu/gpuruntimedx9.hpp"
+
+//#define USE_GPU_FOR_DX9
+
+#ifdef USE_GPU_FOR_DX9
+#include "gpu/dx9/dx9runtime.hpp"
+#endif
+
 #include "dx9/dx9.hpp"
 #endif
 
@@ -118,8 +124,14 @@ namespace brook {
 #ifdef BUILD_DX9
     if (!strcmp(env, DX9_RUNTIME_STRING))
     {
+#ifdef USE_GPU_FOR_DX9
+      RunTime* result = GPURuntimeDX9::create();
+#else
       RunTime* result = DX9RunTime::create( addressTranslation, inContextValue );
-      if( result != NULL ) return result;
+#endif
+      if( result )
+        return result;
+
       fprintf(stderr, 
 	      "Unable to initialize DX9 runtime, falling back to CPU\n");
       return new CPURunTime(false);

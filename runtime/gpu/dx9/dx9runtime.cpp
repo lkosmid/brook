@@ -69,6 +69,9 @@ namespace brook
 
     virtual bool isValidShaderNameString( const char* inNameString ) const;
 
+    virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const;
+    virtual float4 getStreamGatherConstant( TextureHandle inTexture ) const;
+
     virtual void
       get1DInterpolant( const float4 &start, 
       const float4 &end,
@@ -139,7 +142,12 @@ namespace brook
     IDirect3DVertexBuffer9* _vertexBuffer;
     IDirect3DVertexDeclaration9* _vertexDecl;
 
-    DX9Texture* _boundTextures[8];
+    enum {
+      kMaximumSamplerCount = 16,
+      kMaximumOutputCount = 4
+    };
+
+    DX9Texture* _boundTextures[16];
     DX9Texture* _boundOutputs[4];
   };
 
@@ -225,9 +233,9 @@ namespace brook
     _passthroughVertexShader = createVertexShader( kPassthroughVertexShaderSource );
     _passthroughPixelShader = createPixelShader( kPassthroughPixelShaderSource );
 
-    for( size_t i = 0; i < 4; i++ )
+    for( size_t i = 0; i < kMaximumOutputCount; i++ )
       _boundOutputs[i] = NULL;
-    for( size_t t = 0; t < 8; t++ )
+    for( size_t t = 0; t < kMaximumSamplerCount; t++ )
       _boundTextures[t] = NULL;
 
     return true;
@@ -238,52 +246,40 @@ namespace brook
     return strcmp( "ps20", inNameString ) == 0;
   }
 
+  float4 GPUContextDX9::getStreamIndexofConstant( TextureHandle inTexture ) const
+  {
+    DX9Texture* texture = (DX9Texture*)inTexture;
+    int textureWidth = texture->getWidth();
+    int textureHeight = texture->getHeight();
+
+    return float4( (float)textureWidth, (float)textureHeight, 0, 0 );
+  }
+
+  float4 GPUContextDX9::getStreamGatherConstant( TextureHandle inTexture ) const
+  {
+    DX9Texture* texture = (DX9Texture*)inTexture;
+    int textureWidth = texture->getWidth();
+    int textureHeight = texture->getHeight();
+    float scaleX = 1.0f / (textureWidth);
+    float scaleY = 1.0f / (textureHeight);
+    float offsetX = 1.0f / (1 << 15);//0.5f / width;
+    float offsetY = 1.0f / (1 << 15);//0.5f / height;
+
+    return float4( scaleX, scaleY, offsetX, offsetY );
+  }
+
   void GPUContextDX9::get1DInterpolant( const float4 &start, 
     const float4 &end,
     const unsigned int outputWidth,
     GPUInterpolant &interpolant) const
   {
-    if (outputWidth == 1) {
-      interpolant.vertices[0] = start;
-      interpolant.vertices[1] = start;
-      interpolant.vertices[2] = start;
-      return;
-    }
+    float4 f1 = start;
 
-    float4 f1, f2;
-
-    float x1 = start.x;
-    float y1 = start.y;
-    float z1 = start.z;
-    float w1 = start.w;
-
-    float x2 = end.x;
-    float y2 = end.y;
-    float z2 = end.z;
-    float w2 = end.w;
-
-    float sx = x2-x1;
-    float sy = y2-y1;
-    float sz = z2-z1;
-    float sw = w2-w1;
-    float ratiox = sx / outputWidth;
-    float ratioy = sy / outputWidth;
-    float ratioz = sz / outputWidth;
-    float ratiow = sw / outputWidth;
-    float shiftx = ratiox * 0.5f;
-    float shifty = ratioy * 0.5f;
-    float shiftz = ratioz * 0.5f;
-    float shiftw = ratiow * 0.5f;
-
-    f1.x = x1 - shiftx;
-    f1.y = y1 - shifty;
-    f1.z = z1 - shiftz;
-    f1.w = w1 - shiftw;
-
-    f2.x = (2*x2-x1) + shiftx;
-    f2.y = (2*y2-y1) + shifty;
-    f2.z = (2*z2-z1) + shiftz;
-    f2.w = (2*w2-w1) + shiftw;
+    float4 f2;
+    f2.x = end.x + end.x - start.x;
+    f2.y = end.y + end.y - start.y;
+    f2.z = end.z + end.z - start.z;
+    f2.w = end.w + end.w - start.w;
 
     interpolant.vertices[0] = f1;
     interpolant.vertices[1] = f2; 
@@ -296,51 +292,24 @@ namespace brook
     const unsigned int outputHeight, 
     GPUInterpolant &interpolant) const
   {
-    float2 f1, f2;
+    float4 f1 = float4( start.x, start.y, 0, 1 );
 
-    float x1 = start.x;
-    float y1 = start.y;
-    float x2 = end.x;
-    float y2 = end.y;
+    float4 f2;
+    f2.x = end.x + end.x - start.x;
+    f2.y = start.y;
+    f2.z = 0;
+    f2.w = 1;
 
-    if (outputWidth==1 && outputHeight==1) {
-      float4 v (start.x, start.y, 0.0f, 1.0f);
-      interpolant.vertices[0] = v;
-      interpolant.vertices[1] = v;
-      interpolant.vertices[2] = v;
-      return;
-    }
+    float4 f3;
+    f3.x = start.x;
+    f3.y = end.y + end.y - start.y;
+    f3.z = 0;
+    f3.w = 1;
 
-    float sx = x2-x1;
-    float sy = y2-y1;
-    float ratiox = sx / outputWidth;
-    float ratioy = sy / outputWidth;
-    float shiftx = ratiox * 0.5f;
-    float shifty = ratioy * 0.5f;
 
-    f1.x = x1 - shiftx;
-    f1.y = y1 - shifty;
-
-    f2.x = (2*x2-x1) + shiftx;
-    f2.y = (2*y2-y1) + shifty;
-
-    if (outputWidth==1) {
-      interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
-      interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
-      interpolant.vertices[2] = interpolant.vertices[0];
-      return;
-    }
-
-    if (outputHeight==1) {
-      interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
-      interpolant.vertices[1] = interpolant.vertices[0];
-      interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
-      return;
-    }
-
-    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
-    interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
-    interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
+    interpolant.vertices[0] = f1;
+    interpolant.vertices[1] = f2; 
+    interpolant.vertices[2] = f3;
   }
 
   void GPUContextDX9::getStreamInterpolant( const TextureHandle texture,
@@ -348,39 +317,41 @@ namespace brook
     const unsigned int outputHeight, 
     GPUInterpolant &interpolant) const
   {
-    float2 start( 0.0f, 0.0f );
-    float2 end( 1.0f, 1.0f );
-
-    get2DInterpolant(  start, end, outputWidth, outputHeight, interpolant); 
+    interpolant.vertices[0] = float4(0,0,0.5,1);
+    interpolant.vertices[1] = float4(2,0,0.5,1);
+    interpolant.vertices[2] = float4(0,2,0.5,1);
   }
 
   void GPUContextDX9::getStreamOutputRegion( const TextureHandle texture,
     GPURegion &region) const
   {
-    region.vertices[0].x = -1.0f;
-    region.vertices[0].y = -1.0f;
-
-    region.vertices[1].x = 4.0f;
-    region.vertices[1].y = -1.0f;
-
-    region.vertices[2].x = -1.0f;
-    region.vertices[2].y = 4.0f;
+    region.vertices[0] = float4(-1,1,0.5,1);
+    region.vertices[1] = float4(3,1,0.5,1);
+    region.vertices[2] = float4(-1,-3,0.5,1);
   }
-
-/*
-  GPURect GPUContextDX9::getStreamPositionInterpolant( GPUStream* inStream )
-  {
-    return GPURect( 0, 1, 1, 0 );
-  }
-
-  GPURect GPUContextDX9::getStreamOutputRectangle( GPUStream* inStream )
-  {
-    return GPURect( -1, -1, 1, 1 );
-  }*/
 
   GPUContextDX9::TextureHandle GPUContextDX9::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat )
   {
-    int components = 1;
+    int components;
+    switch( inFormat )
+    {
+    case kTextureFormat_Float1:
+      components = 1;
+      break;
+    case kTextureFormat_Float2:
+      components = 2;
+      break;
+    case kTextureFormat_Float3:
+      components = 3;
+      break;
+    case kTextureFormat_Float4:
+      components = 4;
+      break;
+    default:
+      GPUError("Unknown format for DX9 Texture");
+      return 0;
+      break;
+    }
     DX9Texture* result = DX9Texture::create( _device, inWidth, inHeight, components );
     return result;
   }
@@ -478,6 +449,12 @@ namespace brook
   {
     HRESULT result = _device->EndScene();
     GPUAssert( !FAILED(result), "BeginScene failed" );
+
+    for( size_t i = 0; i < kMaximumSamplerCount; i++ )
+      _boundTextures[i] = NULL;
+
+    for( size_t j = 0; j < kMaximumOutputCount; j++ )
+      _boundOutputs[j] = NULL;
   }
 
 
@@ -528,6 +505,9 @@ namespace brook
   {
     HRESULT result;
 
+//    result = _device->Clear( 0, NULL, D3DCLEAR_TARGET, 0, 0.0, 0 );
+//    DX9AssertResult( result, "Clear failed" );
+
     DX9Vertex* vertices;
     result = _vertexBuffer->Lock( 0, 0, (void**)&vertices, D3DLOCK_DISCARD );
     DX9AssertResult( result, "VB::Lock failed" );
@@ -536,7 +516,7 @@ namespace brook
       "Can't have more than 8 texture coordinate interpolators" );
 
     DX9Vertex vertex;
-    for( size_t i = 0; i < 4; i++ )
+    for( size_t i = 0; i < 3; i++ )
     {
       float4 position = inOutputRegion.vertices[i];
 
@@ -560,16 +540,16 @@ namespace brook
     result = _device->SetStreamSource( 0, _vertexBuffer, 0, sizeof(DX9Vertex) );
     DX9AssertResult( result, "SetStreamSource failed" );
 
-    for( size_t t = 0; t < 4; t++ )
+    for( size_t t = 0; t < kMaximumSamplerCount; t++ )
     {
       if( _boundTextures[t] )
         _boundTextures[t]->validateCachedData();
     }
 
-    result = _device->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, 2 );
+    result = _device->DrawPrimitive( D3DPT_TRIANGLELIST, 0, 1 );
     DX9AssertResult( result, "DrawPrimitive failed" );
 
-    for( size_t j = 0; j < 4; j++ )
+    for( size_t j = 0; j < kMaximumOutputCount; j++ )
     {
       if( _boundOutputs[j] )
         _boundOutputs[j]->markCachedDataChanged();

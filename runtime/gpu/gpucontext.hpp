@@ -39,6 +39,9 @@ namespace brook {
     */
     virtual unsigned int 
     getMaximumOutputCount() const { return 1; }
+
+    virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const = 0;
+    virtual float4 getStreamGatherConstant( TextureHandle inTexture ) const = 0;
     
     virtual void
     get1DInterpolant( const float4 &start, 

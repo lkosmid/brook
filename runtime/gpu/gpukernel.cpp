@@ -173,6 +173,7 @@ namespace brook
   {
     // TODO: handle reductions
     GPUWARN << "Reductions are not implemented\n";
+    GPUError( "no reductions, bad person" );
   }
 
   void GPUKernel::PushOutput( Stream* inStream )
@@ -436,7 +437,8 @@ namespace brook
                                                    size_t inComponent,
                                                    GPUInterpolant &outInterpolant )
   {
-    GPUError("not implemented");
+    GPUIterator* iterator = inKernel->_iteratorArguments[ inIndex ];
+    iterator->getInterpolant( inKernel->_outWidth, inKernel->_outHeight, outInterpolant );
   }
 
   float4 GPUKernel::IteratorArgumentType::getConstant( GPUKernel* inKernel, 
@@ -460,7 +462,7 @@ namespace brook
                                              size_t inIndex, 
                                              size_t inComponent )
   {
-    return inKernel->_streamArguments[ inIndex ]->
+    return inKernel->_gatherArguments[ inIndex ]->
       getIndexedFieldTexture( inComponent );
   }
 
@@ -469,11 +471,11 @@ namespace brook
                                                      size_t inComponent )
   {
     using namespace ::brook::desc;
-    GPUStream* stream = inKernel->_streamArguments[ inIndex ];
+    GPUStream* stream = inKernel->_gatherArguments[ inIndex ];
     switch( inComponent )
     {
     case kGatherConstant_Shape:
-      return stream->getShapeConstant();
+      return stream->getGatherConstant();
       break;
     }
     return float4(0,0,0,0);
@@ -492,16 +494,35 @@ namespace brook
   void GPUKernel::OutputArgumentType::getInterpolant( GPUKernel* inKernel, 
                                                       size_t inIndex, 
                                                       size_t inComponent,
-                                                      GPUInterpolant &outRegion)
+                                                      GPUInterpolant &outInterpolant)
   {
-    GPUError("not implemented yet");
+    using namespace ::brook::desc;
+    GPUStream* stream = inKernel->_outputArguments[ inIndex ];
+    switch( inComponent )
+    {
+    case kOutputInterpolant_Position:
+      stream->getStreamInterpolant(
+        inKernel->_outWidth, 
+        inKernel->_outHeight, 
+        outInterpolant);
+      return;
+    }
+    GPUError("not implemented");
   }
 
   float4 GPUKernel::OutputArgumentType::getConstant( GPUKernel* inKernel, 
                                                      size_t inIndex, 
                                                      size_t inComponent )
   {
-    GPUError("not implemented yet");
+    using namespace ::brook::desc;
+    GPUStream* stream = inKernel->_outputArguments[ inIndex ];
+    switch( inComponent )
+    {
+    case kOutputConstant_Indexof:
+      return stream->getIndexofConstant();
+      break;
+    }
+    GPUError("not implemented");
     return float4(0,0,0,0);
   }
 }
