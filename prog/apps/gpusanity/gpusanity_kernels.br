@@ -1,0 +1,339 @@
+
+#include <math.h>
+#include "gpusanity.h"
+
+
+
+kernel void kernelCopyFloat1(float input<>, out float output<>) {
+  output = input;
+}
+
+kernel void kernelCopyFloat2(float2 input<>, out float2 output<>) {
+  output = input;
+}
+
+kernel void kernelCopyFloat3(float3 input<>, out float3 output<>) {
+  output = input;
+}
+
+kernel void kernelCopyFloat4(float4 input<>, out float4 output<>) {
+  output = input;
+}
+
+
+kernel void kernelMultiOut2Float1(float input<>,
+				  out float output1<>,
+				  out float output2<>) {
+  output1 = input;
+  output2 = input - 1.0;
+}
+
+
+
+// <kayvonf> Note: the values stored in each of the output streams are
+// purposely not the same.  I've seen bugs where the driver smeared
+// the values written to the first output across all the outputs.
+
+kernel void kernelMultiOut3Float1(float input<>,
+				  out float output1<>,
+				  out float output2<>,
+				  out float output3<>) {
+  output1 = input;
+  output2 = input - 1.0;
+  output3 = input - 2.0;
+}
+
+kernel void kernelMultiOut4Float1(float input<>, 
+				  out float output1<>,
+				  out float output2<>,
+				  out float output3<>,
+				  out float output4<>) {
+  output1 = input;
+  output2 = input - 1.0;
+  output3 = input - 2.0;
+  output4 = input - 3.0;
+}
+
+kernel void kernelMultiOut2Float4(float4 input<>,
+				  out float4 output1<>,
+				  out float4 output2<>) {
+
+  float4 offset = float4(1, 1, 1, 1);
+  output1 = input;
+  output2 = input - offset;
+}
+
+kernel void kernelMultiOut3Float4(float4 input<>,
+				  out float4 output1<>,
+				  out float4 output2<>,
+				  out float4 output3<>) {
+  
+  float4 offset = float4(1, 1, 1, 1);
+  output1 = input;
+  output2 = input - offset;
+  output3 = input - 2 * offset;
+}
+
+kernel void kernelMultiOut4Float4(float4 input<>, 
+				  out float4 output1<>,
+				  out float4 output2<>,
+				  out float4 output3<>,
+				  out float4 output4<>) {
+
+  float4 offset = float4(1, 1, 1, 1);
+  output1 = input;
+  output2 = input - offset;
+  output3 = input - 2 * offset;
+  output4 = input - 3 * offset;
+}
+
+
+
+
+void zeroFloats(float* values, int numEl) {
+  int i;
+  for (i=0; i<numEl; i++)
+    values[i] = 0.0f;
+}
+
+
+#define TOLERANCE .0001f
+
+int fequals(float a, float b) {
+  return (fabs(a-b) < TOLERANCE);
+
+}
+
+
+
+
+int streamCopyTest(int sizex,
+		   int sizey,
+		   int components,
+		   float* inputValues,
+		   float* outputValues) {
+
+
+  int i;
+  int numEl = sizex * sizey * components;
+  int correct = 1;
+
+
+  zeroFloats(outputValues, numEl);
+
+  switch (components) {
+
+  case 1: {
+    float inputStream<sizex, sizey>;
+    float outputStream<sizex, sizey>;
+
+    streamRead(inputStream, inputValues);
+    kernelCopyFloat1(inputStream, outputStream);
+    streamWrite(outputStream, outputValues);
+    break;
+  }
+    
+  case 2: {
+    float2 inputStream<sizex, sizey>;
+    float2 outputStream<sizex, sizey>;
+
+    streamRead(inputStream, inputValues);
+    kernelCopyFloat2(inputStream, outputStream);
+    streamWrite(outputStream, outputValues);
+    break;
+  }
+
+  case 3: {
+    float3 inputStream<sizex, sizey>;
+    float3 outputStream<sizex, sizey>;
+
+    streamRead(inputStream, inputValues);
+    kernelCopyFloat3(inputStream, outputStream);
+    streamWrite(outputStream, outputValues);
+    break;
+  }
+
+  case 4: {
+    float4 inputStream<sizex, sizey>;
+    float4 outputStream<sizex, sizey>;
+
+    streamRead(inputStream, inputValues);
+    kernelCopyFloat4(inputStream, outputStream);
+    streamWrite(outputStream, outputValues);
+    break;
+  }
+
+  }
+
+
+  // verify correctness of output
+  for (i=0; i<numEl; i++) {
+    if ( !fequals(inputValues[i], outputValues[i]) ) {
+      correct = 0;
+      break;
+    }
+  }
+
+
+  if (!correct) {
+    printf("Stream copy test failed: %dx%d Float%d\n", sizex, sizey, components);
+    fflush(stdout);
+  }
+
+
+  return correct;
+
+}
+
+
+
+int multiOutTest(int sizex,
+		 int sizey,
+		 int components,
+		 int numOutputs,
+		 float* inputValues) {
+
+  int i, j;
+  int numEl = sizex * sizey * components;
+  int correct = 1;
+
+  float* outputValues[4];
+
+
+  for (i=0; i<numOutputs; i++) {
+    outputValues[i] = (float*)malloc(sizeof(float) * numEl);
+    zeroFloats( outputValues[i], numEl);
+  }
+    
+
+
+  switch (components) {
+
+  case 1: {
+
+    // using float1 stream elements
+
+    float inputStream<sizex,sizey>;
+    streamRead(inputStream, inputValues);
+    
+    switch (numOutputs) {
+      
+    case 2: {
+
+      float outputStream1<sizex,sizey>;
+      float outputStream2<sizex,sizey>;
+   
+      kernelMultiOut2Float1(inputStream, outputStream1, outputStream2);
+      streamWrite(outputStream1, outputValues[0]);
+      streamWrite(outputStream2, outputValues[1]);
+      break;
+    }
+    case 3: {
+
+      float outputStream1<sizex,sizey>;
+      float outputStream2<sizex,sizey>;
+      float outputStream3<sizex,sizey>;
+   
+      kernelMultiOut3Float1(inputStream, outputStream1, outputStream2, outputStream3);
+      streamWrite(outputStream1, outputValues[0]);
+      streamWrite(outputStream2, outputValues[1]);
+      streamWrite(outputStream3, outputValues[2]);
+      break;
+    }
+    case 4: {
+      float outputStream1<sizex,sizey>;
+      float outputStream2<sizex,sizey>;
+      float outputStream3<sizex,sizey>;
+      float outputStream4<sizex,sizey>;
+   
+      kernelMultiOut4Float1(inputStream,
+			    outputStream1, outputStream2,
+			    outputStream3, outputStream4);
+      streamWrite(outputStream1, outputValues[0]);
+      streamWrite(outputStream2, outputValues[1]);
+      streamWrite(outputStream3, outputValues[2]);
+      streamWrite(outputStream4, outputValues[3]);
+      break;
+    }
+
+    }
+
+    break;
+  }
+
+
+  case 4: {
+
+    // using float4 stream elements
+
+    float4 inputStream<sizex,sizey>;
+    streamRead(inputStream, inputValues);
+    
+    switch (numOutputs) {
+      
+    case 2: {
+
+      float4 outputStream1<sizex,sizey>;
+      float4 outputStream2<sizex,sizey>;
+   
+      kernelMultiOut2Float4(inputStream, outputStream1, outputStream2);
+      streamWrite(outputStream1, outputValues[0]);
+      streamWrite(outputStream2, outputValues[1]);
+      break;
+    }
+    case 3: {
+
+      float4 outputStream1<sizex,sizey>;
+      float4 outputStream2<sizex,sizey>;
+      float4 outputStream3<sizex,sizey>;
+   
+      kernelMultiOut3Float4(inputStream, outputStream1, outputStream2, outputStream3);
+      streamWrite(outputStream1, outputValues[0]);
+      streamWrite(outputStream2, outputValues[1]);
+      streamWrite(outputStream3, outputValues[2]);
+      break;
+    }
+    case 4: {
+      float4 outputStream1<sizex,sizey>;
+      float4 outputStream2<sizex,sizey>;
+      float4 outputStream3<sizex,sizey>;
+      float4 outputStream4<sizex,sizey>;
+   
+      kernelMultiOut4Float4(inputStream,
+			    outputStream1, outputStream2,
+			    outputStream3, outputStream4);
+      streamWrite(outputStream1, outputValues[0]);
+      streamWrite(outputStream2, outputValues[1]);
+      streamWrite(outputStream3, outputValues[2]);
+      streamWrite(outputStream4, outputValues[3]);
+      break;
+    }
+
+    }
+
+    break;
+  }
+    
+  }
+
+
+  // verify correctness of output
+  for (i=0; i<numOutputs; i++)
+    for (j=0; j<numEl; j++)
+      if ( !fequals(inputValues[j]-(float)i, outputValues[i][j]) ) {
+	correct = 0;
+	break;
+      }
+  
+  
+  if (!correct) {
+    printf("Multi out test failed: %dx%d Float%d %d outputs\n", sizex, sizey, components, numOutputs);
+    fflush(stdout);
+  }
+  
+  for (i=0; i<numOutputs; i++)
+    free(outputValues[i]);
+
+  return correct;
+
+}
