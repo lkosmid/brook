@@ -52,10 +52,6 @@ namespace brook {
 
     void clearArguments();
     void clearInputs();
-//    void PushSamplers( DX9Stream* s );
-//    void PushTexCoord( const DX9FatRect& r );
-//    int PushConstantImpl(const float4 &val);
-//    void ClearInputs();
 
     void ReduceToStream( DX9Texture* inOutputBuffer );
 
@@ -93,6 +89,8 @@ namespace brook {
     std::vector<DX9FatRect> argumentInterpolants;
     std::vector<IDirect3DSurface9*> argumentOutputs;
 
+    std::vector<DX9Texture*> temporaries;
+
     struct ReductionArgumentInfo
     {
       ReductionArgumentInfo( void* inData, __BRTStreamType inType )
@@ -114,54 +112,15 @@ namespace brook {
     // special magic
     std::vector<size_t> atShapeConstants;
 
-/* TIM: complete rewrite...
-    int argumentIndex;
-
-    std::vector<bool> argumentUsesIndexof;
-    bool hasPushedOutputIndexof;
-
-    std::vector<DX9Stream*> outputStreams;
-    std::vector<IDirect3DSurface9*> outputSurfaces;
-    int outputWidth, outputHeight;
-
-    std::vector<float4> inputConstants;
-
-    std::vector<DX9Stream*> inputStreams;
-    std::vector<int> inputStreamShapeConstantIndices;
-    std::vector<IDirect3DTexture9*> inputTextures;
-
-    std::vector<void*> outputReductionDatas;
-    std::vector<__BRTStreamType> outputReductionTypes;
-*/
     std::vector<DX9FatRect> inputTextureRects;
     DX9FatRect outputRect;
 
     DX9RunTime* runtime;
     IDirect3DDevice9* device;
-//    DX9PixelShader* pixelShader;
-/*    class Pass
-    {
-    public:
-      DX9PixelShader* pixelShader;
-      int firstOutput, outputCount;
-    };
-    std::vector<Pass> standardPasses;
-    std::vector<Pass> fullTranslationPasses;*/
+
     DX9Stream* mustMatchShapeStream;
     void matchStreamShape( DX9Stream* inStream );
     bool streamShapeMismatch;
-/*
-    class ReductionPass
-    {
-    public:
-      int reductionFactor;
-      std::vector<Pass> standardPasses;
-      std::vector<Pass> fullTranslationPasses;
-    };
-
-    std::vector<ReductionPass> reductionPasses;
-    void addReductionPass( int inReductionFactor, bool inFullTranslation, const Pass& inPass );
-*/
 
     // TIM: new technique/pass holders
     struct Input
@@ -205,6 +164,7 @@ namespace brook {
       int reductionFactor;
       bool outputAddressTranslation;
       bool inputAddressTranslation;
+      int temporaryCount;
       std::vector<Pass> passes;  
     };
 

@@ -7,30 +7,68 @@
 #include "splittypes.h"
 
 class GatherArgumentSplitNode;
+class StreamArgumentSplitNode;
 class SplitTreeBuilder;
 class SplitArgumentCounter;
+class SplitTree;
+class SplitCompiler;
+class OutputSplitNode;
 
 class SplitNode
 {
 public:
-  SplitNode()
-    : inferredType(kSplitBasicType_Unknown) {}
+  SplitNode();
   virtual ~SplitNode() {}
 
   // print a function that will evaluate this node's value
   void printSubFunction( const std::string& inFunctionName, std::ostream& inStream );
 
-  virtual void traverseChildren( SplitNodeTraversal& ioTraversal ) {}
+  bool isRDSSplit() {
+    return _rdsSplitHere;
+  }
+
+  void rdsUnmark() {
+    _rdsSplitHere = false;
+  }
+
+  void rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream );
+
+  void markAsOutput() {
+    _isOutput = true;
+  }
+  void unmarkAsOutput() {
+    _isOutput = false;
+  }
+  bool isMarkedAsOutput() {
+    return _isOutput;
+  }
+
+  bool isMarkedAsSplit() {
+    return _rdsSplitHere || _mergeSplitHere;
+  }
+
+  int getTemporaryID() {
+    return _temporaryID;
+  }
+  void setTemporaryID( int inID ) {
+    _temporaryID = inID;
+  }
 
   // print an expression to get this node's value
-  void printTemporaryName( std::ostream& inStream );
+  virtual void printTemporaryName( std::ostream& inStream );
   virtual bool needsArgument() { return false; }
   virtual void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter ) {}
   virtual bool needsTemporaryExpression() { return true; }
+  virtual bool needsTemporaryVariable() { return true; }
   virtual void printTemporaryExpression( std::ostream& inStream ) = 0;
   virtual void printExpression( std::ostream& inStream ) = 0;
 
+  virtual bool needsAnnotation() { return false; }
+  virtual void printAnnotationInfo( std::ostream& inStream ) {}
+
   virtual GatherArgumentSplitNode* isGatherArgument() { return 0; }
+  virtual StreamArgumentSplitNode* isStreamArgument() { return 0; }
+  virtual OutputSplitNode* isOutputNode() { return 0; }
 
   // whacky stuff to let arguments pass their value off to another node:
   virtual SplitNode* getValueNode() { return this; }
@@ -38,6 +76,52 @@ public:
   // TIM: total break in protection... :)
   bool marked;
   SplitBasicType inferredType;
+
+  void getChildren( std::vector<SplitNode*>& outResult ) {
+    outResult = _graphChildren;
+  }
+
+  static bool nodeIdLess( SplitNode* a, SplitNode* b ) {
+    return a->_spanningNodeID < b->_spanningNodeID;
+  }
+
+  void traverseChildren( SplitNodeTraversal& ioTraversal );
+
+protected:
+  void addChild( SplitNode* inNode );
+
+private:
+  // data for calculating immediate dominators...
+  friend class SplitDominatorDFSTraversal;
+  friend class SplitTree;
+
+  typedef std::vector<SplitNode*> NodeList;
+
+  SplitNode* eval();
+  void link( SplitNode* w );
+  
+  NodeList _graphParents;
+  NodeList _graphChildren;
+
+
+  SplitNode* _pdtDominator;
+  NodeList _pdtChildren;
+  
+  SplitNode* _spanningParent;
+  NodeList _spanningChildren;
+
+  size_t _spanningNodeID;
+  size_t _spanningSemidominatorID;
+  SplitNode* _spanningForestRoot;
+  NodeList _spanningBucket;
+
+  bool _rdsFixedMarked;
+  bool _rdsFixedUnmarked;
+  bool _rdsSplitHere;
+  bool _mergeSplitHere;
+  bool _isOutput;
+
+  int _temporaryID;
 };
 
 class InputSplitNode : public SplitNode
@@ -52,8 +136,9 @@ public:
   void printExpression( std::ostream& inStream );
 
   bool needsArgument() { return true; }
+  bool needsAnnotation() { return true; }
 
-private:
+protected:
   int argumentIndex;
   int componentIndex;
 };
@@ -67,6 +152,7 @@ public:
   virtual bool needsTemporaryExpression() { return false; }
 
   virtual void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter );
+  virtual void printAnnotationInfo( std::ostream& inStream );
 
   virtual const char* getComponentTypeName() { return "sampler"; }
 };
@@ -78,6 +164,7 @@ public:
     : InputSplitNode( inArgumentIndex, inComponentIndex ) { inferredType = inType; }
 
   virtual void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter );
+  virtual void printAnnotationInfo( std::ostream& inStream );
 
   virtual const char* getComponentTypeName() { return "constant"; }
 };
@@ -89,8 +176,41 @@ public:
     : InputSplitNode( inArgumentIndex, inComponentIndex ) { inferredType = inType; }
 
     virtual void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter );
+    virtual void printAnnotationInfo( std::ostream& inStream );
 
     virtual const char* getComponentTypeName() { return "texcoord"; }
+};
+
+class OutputSplitNode : public SplitNode
+{
+public:
+  OutputSplitNode( SplitNode* inValue, int inArgumentIndex, int inComponentIndex )
+    : value(inValue), argumentIndex(inArgumentIndex), componentIndex(inComponentIndex)
+  {
+    // all outputs are float4 currently
+    inferredType = kSplitBasicType_Float4;
+    addChild( value );
+  }
+
+  void printTemporaryName( std::ostream& inStream );
+  void printTemporaryExpression( std::ostream& inStream );
+  void printExpression( std::ostream& inStream );
+
+  void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter );
+  void printAnnotationInfo( std::ostream& inStream );
+
+  void traverseChildren( SplitNodeTraversal& ioTraversal );
+
+  bool needsArgument() { return true; }
+  bool needsAnnotation() { return true; }
+  bool needsTemporaryVariable() { return false; }
+
+  virtual OutputSplitNode* isOutputNode() { return this; }
+
+private:
+  SplitNode* value;
+  int argumentIndex;
+  int componentIndex;
 };
 
 class ArgumentSplitNode : public SplitNode
@@ -134,11 +254,16 @@ public:
   StreamArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex, SplitTreeBuilder& ioBuilder );
   
   virtual SplitNode* getValueNode() { return value; }
+  virtual SplitNode* getIndexofNode() { return indexofNode; }
+
+  virtual StreamArgumentSplitNode* isStreamArgument() { return this; }
 
 private:
   InputSamplerSplitNode* sampler;
   InputInterpolantSplitNode* interpolant;
+  InputConstantSplitNode* indexofConstant;
   SplitNode* value;
+  SplitNode* indexofNode;
 };
 
 class GatherArgumentSplitNode : public ArgumentSplitNode
@@ -174,11 +299,12 @@ class BrtConstantSplitNode :
 {
 public:
   BrtConstantSplitNode( Constant* inValue );
+  BrtConstantSplitNode( int inValue );
   virtual void printTemporaryExpression( std::ostream& inStream );
   virtual void printExpression( std::ostream& inStream );
 
 private:
-  Constant* value;
+  std::string value;
 };
 
 class BrtMemberSplitNode :
@@ -239,7 +365,27 @@ private:
 //  NodeList indices;
 };
 
+class ConstructorSplitNode :
+  public SplitNode
+{
+public:
+  ConstructorSplitNode( SplitBasicType inType, const std::vector<SplitNode*>& inArguments )
+    : arguments(inArguments)
+  {
+    inferredType = inType;
+    for( size_t i = 0; i < inArguments.size(); i++ )
+      addChild( inArguments[i] );
+  }
+
+  virtual void printTemporaryExpression( std::ostream& inStream );
+  virtual void printExpression( std::ostream& inStream );
+
+  virtual void traverseChildren( SplitNodeTraversal& ioTraversal ) {
+    ioTraversal( arguments );
+  }
+
+private:
+  std::vector<SplitNode*> arguments;
+};
+
 #endif
-
-
-

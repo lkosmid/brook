@@ -6,7 +6,8 @@
 #include "splitnode.h"
 #include "splitbuilder.h"
 #include "splittraversal.h"
+#include "splittechniquedesc.h"
+#include "splitcompiler.h"
+#include "splitcompilerhlsl.h"
 
 #endif
-
-

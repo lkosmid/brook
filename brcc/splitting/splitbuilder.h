@@ -9,6 +9,8 @@
 #include <map>
 #include "../stemnt.h"
 
+#include "splittypes.h"
+
 class SplitTree;
 
 class SplitTreeBuilder
@@ -19,9 +21,13 @@ public:
   SplitNode* addArgument( Decl* inDeclaration, int inArgumentIndex );
 
   SplitNode* addConstant( Constant* inConstant );
+  SplitNode* addConstant( int inValue );
   SplitNode* addMember( SplitNode* inValue, const std::string& inName );
   SplitNode* addBinaryOp( BinaryOp inOperation, SplitNode* inLeft, SplitNode* inRight );
   SplitNode* addGather( SplitNode* inStream, const std::vector<SplitNode*> inIndices );
+  SplitNode* addConstructor( BaseType* inType, const std::vector<SplitNode*>& inArguments );
+  SplitNode* addConstructor( SplitBasicType inType, SplitNode* inX = 0, SplitNode* inY = 0, SplitNode* inZ = 0, SplitNode* inW = 0 );
+  SplitNode* addIndexof( const std::string& inName );
   SplitNode* findVariable( const std::string& inName );
   SplitNode* assign( const std::string& inName, SplitNode* inValue );
 

@@ -57,6 +57,9 @@ class BrtIndexofExpr : public Expression
 
     void findExpr( fnExprCallback cb );
 
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
+
     Variable  *expr;          // want the size of this expression.
 };
 

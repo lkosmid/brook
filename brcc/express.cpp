@@ -1741,6 +1741,16 @@ ConstructorExpr::findExpr( fnExprCallback cb )
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* ConstructorExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  std::vector<SplitNode*> values;
+  for(unsigned int i = 0; i < _nExprs; i++)
+    values.push_back( exprN(i)->buildSplitTree( ioBuilder ) );
+  return ioBuilder.addConstructor( bType(), values );
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::ostream&
 operator<< (std::ostream& out, const Expression& expr)
 {

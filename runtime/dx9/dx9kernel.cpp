@@ -68,6 +68,7 @@ bool DX9Kernel::initialize( const ::brook::desc::gpu_kernel_desc* inDescriptor )
     outputTechnique.reductionFactor = inputTechnique._reductionFactor;
     outputTechnique.outputAddressTranslation = inputTechnique._outputAddressTranslation;
     outputTechnique.inputAddressTranslation = inputTechnique._inputAddressTranslation;
+    outputTechnique.temporaryCount = inputTechnique._temporaryCount;
 
     outputTechnique.passes.resize( inputTechnique._passes.size() );
     std::vector<gpu_pass_desc>::const_iterator pi = inputTechnique._passes.begin();
@@ -449,11 +450,33 @@ void DX9Kernel::mapTechnique( const DX9Kernel::Technique& inTechnique )
 {
   DX9PROFILE("DX9Kernel::mapTechnique");
 
+  // TIM: allocate temporaries...
+  if( inTechnique.temporaryCount > 0 )
+  {
+    DX9Assert( outputStreams.size() != 0, "can't create temporaries without an output for reference" );
+    DX9Stream* outputStream = outputStreams[0];
+    int width = outputStream->getTextureWidth();
+    int height = outputStream->getTextureHeight();
+
+    for( int i = 0; i < inTechnique.temporaryCount; i++ )
+    {
+      DX9Texture* texture = DX9Texture::create( runtime, width, height, 4 );
+      temporaries.push_back( texture );
+    }
+  }
+
   std::vector<Pass>::const_iterator i;
   for( i = inTechnique.passes.begin(); i != inTechnique.passes.end(); i++ )
   {
     mapPass( *i );
     clearInputs();
+  }
+
+  if( inTechnique.temporaryCount > 0 )
+  {
+    for( int i = 0; i < inTechnique.temporaryCount; i++ )
+      delete temporaries[i];
+    temporaries.clear();
   }
 }
 
@@ -649,7 +672,13 @@ IDirect3DBaseTexture9* DX9Kernel::getSampler( int inArgument, int inComponent )
     DX9Assert( inComponent < (int)globalSamplers.size(), "not enough global samplers" );
     return globalSamplers[inComponent];
   }
-  return 0;
+  else
+  {
+    // it's a temporary
+    int temp = (-inArgument)-1;
+    DX9Assert( inComponent == 0, "temporaries don't have multiple samplers" );
+    return temporaries[ temp ]->getTextureHandle();
+  }
 }
 
 DX9FatRect DX9Kernel::getInterpolant( int inArgument, int inComponent )
@@ -682,7 +711,13 @@ IDirect3DSurface9* DX9Kernel::getOutput( int inArgument, int inComponent )
     DX9Assert( inComponent < (int)globalOutputs.size(), "not enoguh global outputs" );
     return globalOutputs[inComponent];
   }
-  return 0;
+  else
+  {
+    // it's a temporary
+    int temp = (-inArgument)-1;
+    DX9Assert( inComponent == 0, "temporaries don't have multiple samplers" );
+    return temporaries[ temp ]->getSurfaceHandle();
+  }
 }
 
 void DX9Kernel::Map() {

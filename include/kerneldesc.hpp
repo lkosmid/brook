@@ -122,9 +122,15 @@ namespace brook
         return *this;
       }
 
+      gpu_technique_desc& temporaries( int temporaryCount ) {
+        _temporaryCount = temporaryCount;
+        return *this;
+      }
+
       int _reductionFactor;
       bool _outputAddressTranslation;
       bool _inputAddressTranslation;
+      int _temporaryCount;
       std::vector< gpu_pass_desc > _passes;
     };
 

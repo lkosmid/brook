@@ -1,11 +1,91 @@
 // splitting.cpp
 #include "splitting.h"
 
+#include <kerneldesc.hpp>
+
+#include <sstream>
+
+SplitNode::SplitNode()
+  : inferredType(kSplitBasicType_Unknown)
+{
+  _spanningParent = 0;
+  _spanningNodeID = 0;
+  _spanningSemidominatorID = 0;
+  _spanningForestRoot = 0;
+
+  _pdtDominator = 0;
+
+  _rdsFixedMarked = false;
+  _rdsFixedUnmarked = false;
+  _rdsSplitHere = false;
+  _mergeSplitHere = false;
+
+  _isOutput = false;
+}
+
+void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream )
+{
+  for( size_t i = 0; i < _graphChildren.size(); i++ )
+    _graphChildren[i]->rdsPrint( inTree, inCompiler, inStream );
+
+  if( isMarkedAsSplit() ) {
+    std::cerr << "*** ";
+    printExpression( std::cerr );
+    std::cerr << std::endl;
+
+    std::vector<SplitNode*> dummy;
+    dummy.push_back( this );
+    inCompiler.compile( inTree, dummy, inStream );
+  }
+}
+
+void SplitNode::addChild( SplitNode* inNode ) {
+  _graphChildren.push_back( inNode );
+}
+
+void SplitNode::traverseChildren( SplitNodeTraversal& ioTraversal )
+{
+  ioTraversal( _graphChildren );
+}
+
+SplitNode* SplitNode::eval()
+{
+  if( _spanningForestRoot )
+  {
+    // v is somewhere in a forest...
+    SplitNode* n = this;
+    SplitNode* minNode = n;
+    while( n->_spanningParent != _spanningForestRoot )
+    {
+      n = n->_spanningParent;
+      if( n->_spanningSemidominatorID < minNode->_spanningSemidominatorID )
+        minNode = n;
+    }
+    return minNode;
+  }
+  else // this is a root
+    return this;
+}
+
+void SplitNode::link( SplitNode* w )
+{
+  // if this is in the forest
+  if( _spanningForestRoot )
+  {
+    w->_spanningForestRoot = _spanningForestRoot;
+  }
+  else
+  {
+    // this is the new root
+    w->_spanningForestRoot = this;
+  }
+}
+
 void SplitNode::printTemporaryName( std::ostream& inStream )
 {
   inStream << "__temp" << (unsigned int)(this);
 }
-
+/*
 void SplitNode::printSubFunction( const std::string& inFunctionName, std::ostream& inStream )
 {
   SplitMarkTraversal markTraversal(false);
@@ -39,7 +119,7 @@ void SplitNode::printSubFunction( const std::string& inFunctionName, std::ostrea
   }
   inStream << ");\n";
   inStream << "}\n";
-}
+}*/
 
 void InputSplitNode::printTemporaryExpression( std::ostream& inStream ) {
   inStream << "arg" << argumentIndex << getComponentTypeName() << componentIndex;
@@ -56,6 +136,10 @@ void InputSamplerSplitNode::printArgumentInfo( std::ostream& inStream, SplitArgu
   inStream << " : register(s" << ioCounter.samplerCount++ << ")";
 }
 
+void InputSamplerSplitNode::printAnnotationInfo( std::ostream& inStream ) {
+  inStream << ".sampler(" << (argumentIndex+1) << "," << componentIndex << ")";
+}
+
 void InputConstantSplitNode::printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter )
 {
   inStream << "uniform " << inferredType << " ";
@@ -63,11 +147,62 @@ void InputConstantSplitNode::printArgumentInfo( std::ostream& inStream, SplitArg
   inStream << " : register(c" << ioCounter.constantCount++ << ")";
 }
 
+void InputConstantSplitNode::printAnnotationInfo( std::ostream& inStream ) {
+  inStream << ".constant(" << (argumentIndex+1) << "," << componentIndex << ")";
+}
+
 void InputInterpolantSplitNode::printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter )
 {
   inStream << inferredType << " ";
   printExpression( inStream );
   inStream << " : TEXCOORD" << ioCounter.texcoordCount++;
+}
+
+void InputInterpolantSplitNode::printAnnotationInfo( std::ostream& inStream ) {
+  inStream << ".interpolant(" << (argumentIndex+1) << "," << componentIndex << ")";
+}
+
+void OutputSplitNode::printTemporaryName( std::ostream& inStream ) {
+  inStream << "arg" << argumentIndex << "output" << componentIndex;
+}
+
+void OutputSplitNode::printTemporaryExpression( std::ostream& inStream ) {
+  inStream << "float4(";
+  value->printTemporaryName( inStream );
+  switch( value->inferredType )
+  {
+  case kSplitBasicType_Float:
+    inStream << ",0,0,0)";
+    break;
+  case kSplitBasicType_Float2:
+    inStream << ",0,0)";
+    break;
+  case kSplitBasicType_Float3:
+    inStream << ",0)";
+    break;
+  case kSplitBasicType_Float4:
+    inStream << ")";
+    break;
+  }
+}
+
+void OutputSplitNode::printExpression( std::ostream& inStream ) {
+  value->printExpression( inStream );
+}
+
+void OutputSplitNode::printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter )
+{
+  inStream << "out float4 ";
+  printTemporaryName( inStream );
+  inStream << " : COLOR" << ioCounter.outputCount++;
+}
+
+void OutputSplitNode::printAnnotationInfo( std::ostream& inStream ) {
+  inStream << ".output(" << (argumentIndex+1) << "," << componentIndex << ")";
+}
+
+void OutputSplitNode::traverseChildren( SplitNodeTraversal& ioTraversal ) {
+  ioTraversal( value );
 }
 
 void ArgumentSplitNode::printTemporaryExpression( std::ostream& inStream )
@@ -85,7 +220,18 @@ StreamArgumentSplitNode::StreamArgumentSplitNode( const std::string& inName, Spl
 {
   sampler = new InputSamplerSplitNode( argumentIndex, 0, inferredType );
   interpolant = new InputInterpolantSplitNode( argumentIndex, 0, kSplitBasicType_Float2 );
+  indexofConstant = new InputConstantSplitNode( argumentIndex, ::brook::desc::kStreamConstant_Indexof, kSplitBasicType_Float4 );
   value = new TextureFetchSplitNode( sampler, interpolant );
+
+  // compute the indexof expression...
+  // TIM: for now we are *really* bad and assume it is always the ps2.0 way :)
+
+  indexofNode = ioBuilder.addConstructor( kSplitBasicType_Float4,
+    ioBuilder.addBinaryOp( BO_Plus,
+      ioBuilder.addBinaryOp( BO_Mult, interpolant, ioBuilder.addMember(indexofConstant,"xy") ),
+      ioBuilder.addMember( indexofConstant, "zw" ) ),
+    ioBuilder.addConstant( 0 ),
+    ioBuilder.addConstant( 0 ) );
 }
 
 GatherArgumentSplitNode::GatherArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex, SplitTreeBuilder& ioBuilder )
@@ -104,9 +250,12 @@ ConstantArgumentSplitNode::ConstantArgumentSplitNode( const std::string& inName,
 }
 
 BrtConstantSplitNode::BrtConstantSplitNode( Constant* inValue )
-  : value(inValue)
 {
-  switch(value->ctype)
+  std::ostringstream s;
+  inValue->print( s );
+  value = s.str();
+
+  switch(inValue->ctype)
   {
   case CT_Int:
   case CT_UInt:
@@ -116,14 +265,22 @@ BrtConstantSplitNode::BrtConstantSplitNode( Constant* inValue )
   }
 }
 
+BrtConstantSplitNode::BrtConstantSplitNode( int inValue )
+{
+  std::ostringstream s;
+  s << inValue;
+  value = s.str();
+  inferredType = kSplitBasicType_Float;
+}
+
 void BrtConstantSplitNode::printTemporaryExpression( std::ostream& inStream )
 {
-  value->print( inStream );
+  inStream << value;
 }
 
 void BrtConstantSplitNode::printExpression( std::ostream& inStream )
 {
-  value->print( inStream );
+  inStream << value;
 }
 
 BrtMemberSplitNode::BrtMemberSplitNode( SplitNode* inValue, const std::string& inName )
@@ -146,6 +303,7 @@ BrtMemberSplitNode::BrtMemberSplitNode( SplitNode* inValue, const std::string& i
     inferredType = kSplitBasicType_Float4;
     break;
   }
+  addChild( inValue );
 }
 
 void BrtMemberSplitNode::printTemporaryExpression( std::ostream& inStream )
@@ -169,6 +327,9 @@ BrtBinaryOpSplitNode::BrtBinaryOpSplitNode( BinaryOp inOperation, SplitNode* inL
   SplitBasicType rightType = right->inferredType;
   int maximumType = (leftType > rightType) ? leftType : rightType;
   inferredType = (SplitBasicType)(maximumType);
+
+  addChild( left );
+  addChild( right );
 }
 
 void BrtBinaryOpSplitNode::printTemporaryExpression( std::ostream& inStream )
@@ -301,6 +462,9 @@ TextureFetchSplitNode::TextureFetchSplitNode( InputSamplerSplitNode* inSampler, 
   textureCoordinate = inTextureCoordinate;
 
   inferredType = inSampler->inferredType;
+
+  addChild( textureCoordinate );
+  addChild( sampler );
 }
 
 
@@ -321,6 +485,9 @@ TextureFetchSplitNode::TextureFetchSplitNode( SplitNode* inStream, const std::ve
   textureCoordinate = biased;
 
   inferredType = stream->inferredType;
+
+  addChild( biased );
+  addChild( sampler );
 }
 
 void TextureFetchSplitNode::printTemporaryExpression( std::ostream& inStream )
@@ -351,4 +518,29 @@ void TextureFetchSplitNode::printExpression( std::ostream& inStream )
   inStream << "[ ";
   textureCoordinate->printExpression( inStream );
   inStream << " ]";
+}
+
+void ConstructorSplitNode::printTemporaryExpression( std::ostream& inStream )
+{
+  inStream << inferredType << "( ";
+  for( std::vector<SplitNode*>::const_iterator i = arguments.begin(); i != arguments.end(); ++i )
+  {
+    if( i != arguments.begin() )
+      inStream << ", ";
+    (*i)->printTemporaryName( inStream );
+  }
+  inStream << " )";
+}
+
+void ConstructorSplitNode::printExpression( std::ostream& inStream )
+{
+  inStream << inferredType << "( ";
+  for( std::vector<SplitNode*>::const_iterator i = arguments.begin(); i != arguments.end(); ++i )
+  {
+    if( i != arguments.begin() )
+      inStream << ", ";
+    (*i)->printExpression( inStream );
+  }
+  inStream << " )";
+
 }

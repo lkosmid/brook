@@ -1604,6 +1604,36 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
                          CodeGenTarget target, std::ostream& inStream ) {
   SplitTree* splitTree = new SplitTree( inFunctionDef );
 
+  std::ostringstream shaderStream;
+  SplitCompilerHLSL compiler;
+
+  std::string targetName = CodeGen_TargetName( target );
+  std::string functionName = inFunctionDef->FunctionName()->name;
+  std::string mangledName = std::string("__") + functionName + "_" + targetName;
+
+  try {
+    shaderStream << "namespace {" << std::endl;
+    shaderStream << "\tusing namespace ::brook::desc;" << std::endl;
+    shaderStream << "\tstatic const gpu_kernel_desc " << mangledName << "_desc = gpu_kernel_desc()" << std::endl;
+
+    splitTree->printTechnique( SplitTechniqueDesc(), compiler, shaderStream );
+
+    shaderStream << ";" << std::endl;
+    shaderStream << "\tstatic const void* " << mangledName << " = &" << mangledName << "_desc;" << std::endl;
+    shaderStream << "}" << std::endl;
+
+    inStream << shaderStream.str();
+  }
+  catch( SplitCompilerError& e )
+  {
+    std::cerr << e.getMessage() << std::endl;
+    std::cerr << "failure while compiling " << functionName << std::endl;
+    inStream << "static const void* " << mangledName << " = 0;" << std::endl;
+    throw 1;
+  }
+
+  /*
+
   std::string functionName = inFunctionDef->FunctionName()->name;
 
   std::stringstream shaderStream;
@@ -1662,5 +1692,5 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
     std::cerr << "***Produced this assembly:\n" << assemblerString << std::endl;
 
   std::vector<std::string> passStrings;
-  passStrings.push_back( assemblerString );
+  passStrings.push_back( assemblerString );*/
 }

@@ -3,6 +3,28 @@
 
 #include "splitnode.h"
 
+static SplitBasicType getInferredType( BaseType* inType )
+{
+  switch(inType->typemask)
+  {
+  case BT_Float:
+    return kSplitBasicType_Float;
+    break;
+  case BT_Float2:
+    return kSplitBasicType_Float2;
+    break;
+  case BT_Float3:
+    return kSplitBasicType_Float3;
+    break;
+  case BT_Float4:
+    return kSplitBasicType_Float4;
+    break;
+  default:
+    return kSplitBasicType_Unknown;
+    break;
+  }
+}
+
 SplitTreeBuilder::SplitTreeBuilder( SplitTree& ioTree )
 : tree(ioTree)
 {
@@ -13,25 +35,8 @@ SplitNode* SplitTreeBuilder::addArgument( Decl* inDeclaration, int inArgumentInd
   std::string name = inDeclaration->name->name;
   Type* type = inDeclaration->form;
   TypeQual quals = type->getQualifiers();
-
-  BaseType* baseType = type->getBase();
   
-  SplitBasicType inferredType = kSplitBasicType_Unknown;
-  switch(baseType->typemask)
-  {
-    case BT_Float:
-      inferredType = kSplitBasicType_Float;
-      break;
-    case BT_Float2:
-      inferredType = kSplitBasicType_Float2;
-      break;
-    case BT_Float3:
-      inferredType = kSplitBasicType_Float3;
-      break;
-    case BT_Float4:
-      inferredType = kSplitBasicType_Float4;
-      break;
-  }
+  SplitBasicType inferredType = getInferredType( type->getBase() );
 
   SplitNode* result = NULL;
   if( (quals & TQ_Reduce) != 0 ) // reduction arg
@@ -70,6 +75,12 @@ SplitNode* SplitTreeBuilder::addConstant( Constant* inConstant )
   return result;
 }
 
+SplitNode* SplitTreeBuilder::addConstant( int inValue )
+{
+  SplitNode* result = new BrtConstantSplitNode( inValue );
+  return result;
+}
+
 SplitNode* SplitTreeBuilder::addMember( SplitNode* inValue, const std::string& inName )
 {
   SplitNode* result = new BrtMemberSplitNode( inValue->getValueNode(), inName );
@@ -86,6 +97,40 @@ SplitNode* SplitTreeBuilder::addGather( SplitNode* inStream, const std::vector<S
 {
   SplitNode* result = new TextureFetchSplitNode( inStream->getValueNode(), inIndices, *this );
   return result;
+}
+
+SplitNode* SplitTreeBuilder::addConstructor( BaseType* inType, const std::vector<SplitNode*>& inArguments )
+{
+  std::vector<SplitNode*> argumentValues;
+  for( std::vector<SplitNode*>::const_iterator i = inArguments.begin(); i != inArguments.end(); ++i )
+    argumentValues.push_back( (*i)->getValueNode() );
+
+  SplitBasicType inferredType = getInferredType( inType );
+  SplitNode* result = new ConstructorSplitNode( inferredType, argumentValues );
+  return result;
+}
+
+SplitNode* SplitTreeBuilder::addConstructor( SplitBasicType inType, SplitNode* inX, SplitNode* inY, SplitNode* inZ, SplitNode* inW )
+{
+  std::vector<SplitNode*> argumentValues;
+  if( inX )
+    argumentValues.push_back( inX->getValueNode() );
+  if( inY )
+    argumentValues.push_back( inY->getValueNode() );
+  if( inZ )
+    argumentValues.push_back( inZ->getValueNode() );
+  if( inW )
+    argumentValues.push_back( inW->getValueNode() );
+
+  SplitNode* result = new ConstructorSplitNode( inType, argumentValues );
+  return result;
+}
+
+SplitNode* SplitTreeBuilder::addIndexof( const std::string& inName )
+{
+  SplitNode* variable = findVariable( inName );
+  StreamArgumentSplitNode* stream = variable->isStreamArgument();
+  return stream->getIndexofNode();
 }
 
 SplitNode* SplitTreeBuilder::findVariable( const std::string& inName )

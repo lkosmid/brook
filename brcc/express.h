@@ -559,6 +559,9 @@ class ConstructorExpr : public Expression
 
     void findExpr( fnExprCallback cb );
 
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
+
     unsigned int _nExprs;
     BaseType   *_bType;
     Expression **_exprs;

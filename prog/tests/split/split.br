@@ -1,0 +1,37 @@
+// split.br
+// trying to force BRCC to multipass a kernel... :)
+
+#include <stdio.h>
+
+kernel void big(
+	float4 arg0<>, float4 arg1<>, float4 arg2<>, float4 arg3<>,
+	float4 arg4<>, float4 arg5<>, float4 arg6<>, float4 arg7<>,
+	float4 arg8<>, float4 arg9<>, out float4 result<> )
+{
+	result = arg0 + arg1 + arg2 + arg3 + arg4 + arg5 + arg6 + arg7 + arg8 + arg9;
+}
+
+int main () {
+	float4 a<10>;
+	float4 b<10>;
+	float4 a_data[10];
+	float4 b_data[10];
+	int i;
+	
+	for( i = 0; i < 10; i++ )
+	{
+		a_data[i].x = 0.0f;
+		a_data[i].y = 1.0f;
+		a_data[i].z = (float)i;
+		a_data[i].w = 0.0f;
+	}
+	
+	streamRead( a, a_data );
+	big( a, a, a, a, a, a, a, a, a, a, b );
+	streamWrite( b, b_data );
+	
+	for( i = 0; i < 10; i++ )
+	{
+		printf("<%f %f %f>\n", b_data[i].x, b_data[i].y, b_data[i].z);
+	}
+}

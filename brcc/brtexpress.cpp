@@ -242,3 +242,11 @@ BrtIndexofExpr::findExpr( fnExprCallback cb )
      expr->findExpr(cb);
    }
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* BrtIndexofExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  std::string variableName = expr->name->name;
+  return ioBuilder.addIndexof( variableName );
+}
