@@ -451,7 +451,7 @@ void do_sgemv(int length, int num_iter, int* timing, float* flops) {
   free(A);
 }
 
-#define MAX_ITER 5
+#define MAX_ITER 10
 
 
 void Blas_Time(int streamLength) {
