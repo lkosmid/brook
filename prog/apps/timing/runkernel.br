@@ -549,18 +549,23 @@ RunKernel2D_Time(int maxLength)
  *      function of the streamLength.  Specifically, we expect the CPU time
  *      to be:
  *
- *      T_cpu = len * (# ops in k) * (# iterations of k) * k_cpu
+ *      T_cpu = len * (# iterations of k) * k_cpu
  *
  *      where k_cpu is time to execute the CPU implementation of the kernel.
  *      The GPU cost should be
  *
- *      T_gpu = (R+W)*len + len * (# ops in k) * (# iterations of k) * k_gpu
+ *      T_gpu = (R+W)*len + len * (# iterations of k) * k_gpu
  *
  *      where R, W are the R and W write bandwidth in streamElements / time.
  *
  *      Solving, we get T_gpu < T_cpu when
  *
- *              total # ops > len * (R + W) / (k_cpu - k_gpu)
+ *              len * (# iterations) * (ops in k) >
+ *                      len * (R + W) * (ops in k) / (k_cpu - k_gpu)
+ *
+ *      which is just
+ *
+ *              # ops > [(R + W) * (ops in k) / (k_cpu - k_gpu)] * len
  *
  *      So we need to find k_gpu, k_cpu, and (R+W).
  *
@@ -617,7 +622,7 @@ RunKernelFindIdealGPUvsCPUSlope(void)
       goto done;
    }
 
-   slope = (float) (start - t2) / (t1 - t2);
+   slope = (float) (start - t2) * outData[1].x / (t1 - t2);
    printf("(* Ideal slope is %6.2f, so ideal # of iterations is %6.2f *)\n",
           slope, slope / outData[1].x);
 
