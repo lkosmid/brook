@@ -165,9 +165,19 @@ INITBASECLASS(float);
 INITBASECLASS(double);
 INITBASECLASS(int);
 INITBASECLASS(unsigned int);
-INITBASECLASS(bool);
 INITBASECLASS(char);
 INITBASECLASS(unsigned char);
+
+
+template <> class InitializeClass<bool> { 
+ public: 
+    template <class V> bool operator () (const V&a, 
+					  const V&b,  
+					  const V&c,  
+					  const V&d) { 
+      return (a||b||c||d)?true:false; 
+    } 
+};
 
 #ifdef _MSC_VER
 #if _MSC_VER <= 1200
@@ -234,7 +244,16 @@ public:
     }
     BROOK_UNARY_OP(+)
     BROOK_UNARY_OP(-)
-    BROOK_UNARY_OP(!)    
+    BROOK_UNARY_OP(!)
+#undef BROOK_UNARY_OP
+#define NONCONST_BROOK_UNARY_OP(op) vec<VALUE,tsize> operator op (){ \
+      return vec<VALUE, tsize > (op getAt(0),  \
+                                 op getAt(1),  \
+                                 op getAt(2),  \
+                                 op getAt(3)); \
+    }
+    NONCONST_BROOK_UNARY_OP(--);
+    NONCONST_BROOK_UNARY_OP(++);
 #undef BROOK_UNARY_OP
     vec<VALUE,4> swizzle4(int x,int y,int z,int w)const {
         return vec<VALUE,4>(unsafeGetAt(x),
@@ -252,7 +271,7 @@ public:
         return vec<VALUE,1>(unsafeGetAt(x));
     }
     vec() {}
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const int &inx, 
@@ -297,7 +316,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const char &inx, 
@@ -342,7 +361,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const float &inx, 
@@ -387,7 +406,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const double &inx, 
@@ -432,7 +451,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const unsigned int &inx, 
@@ -477,7 +496,52 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
+#define GENERAL_TEMPLATIZED_FUNCTIONS
+     
+      vec (const bool &inx, 
+	   const bool &iny, 
+	   const bool &inz, 
+	   const bool& inw) {
+        f[0]=inx;
+        if (size>1) f[1]=iny;
+        if (size>2) f[2]=inz;
+        if (size>3) f[3]=inw;
+    }
+     vec (const bool& inx, 
+				   const bool& iny, 
+				   const bool& inz) {
+        f[0]=inx;
+        if(size>1)f[1]=iny;
+        if(size>2)f[2]=inz;
+    }
+     vec (const bool& inx, const bool& iny) {
+        f[0]=inx;
+        if (size>1) f[1]=iny;
+    }
+     vec (const bool& scalar) {
+        (*this)=scalar;
+    }
+     operator bool () const{
+      return InitializeClass<bool>()(getAt(0),getAt(1),getAt(2),getAt(3));
+    }        
+#define ASSIGN_OP(op)  \
+         vec<VALUE,tsize>& operator op (const bool & in) {  \
+        f[0] op (VALUE)(GetAt<bool>(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<bool>(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<bool>(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<bool>(in,3));  \
+        return *this;  \
+    }
+    ASSIGN_OP(=);
+    ASSIGN_OP(/=);
+    ASSIGN_OP(+=);
+    ASSIGN_OP(-=);
+    ASSIGN_OP(*=);
+    ASSIGN_OP(%=);
+#undef ASSIGN_OP
+#undef GENERAL_TEMPLATIZED_FUNCTIONS
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,1>  &inx, 
@@ -522,7 +586,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,1>  &inx, 
@@ -567,7 +631,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,1>  &inx, 
@@ -612,7 +676,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,2>  &inx, 
@@ -657,7 +721,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,2>  &inx, 
@@ -702,7 +766,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,2>  &inx, 
@@ -747,7 +811,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,3>  &inx, 
@@ -792,7 +856,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,3>  &inx, 
@@ -837,7 +901,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,3>  &inx, 
@@ -882,7 +946,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,4>  &inx, 
@@ -927,7 +991,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,4>  &inx, 
@@ -972,7 +1036,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 254 "brtvector.hpp"
+#line 273 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,4>  &inx, 
@@ -1017,9 +1081,9 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 297 "brtvector.hpp"
+#line 316 "brtvector.hpp"
 
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,1> &in,int X, int Y,int Z,int W) {
@@ -1146,7 +1210,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,1> &in,int X, int Y,int Z,int W) {
@@ -1273,7 +1337,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,1> &in,int X, int Y,int Z,int W) {
@@ -1400,7 +1464,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,2> &in,int X, int Y,int Z,int W) {
@@ -1527,7 +1591,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,2> &in,int X, int Y,int Z,int W) {
@@ -1654,7 +1718,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,2> &in,int X, int Y,int Z,int W) {
@@ -1781,7 +1845,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,3> &in,int X, int Y,int Z,int W) {
@@ -1908,7 +1972,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,3> &in,int X, int Y,int Z,int W) {
@@ -2035,7 +2099,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,3> &in,int X, int Y,int Z,int W) {
@@ -2162,7 +2226,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,4> &in,int X, int Y,int Z,int W) {
@@ -2289,7 +2353,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,4> &in,int X, int Y,int Z,int W) {
@@ -2416,7 +2480,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 298 "brtvector.hpp"
+#line 317 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,4> &in,int X, int Y,int Z,int W) {
@@ -2543,16 +2607,16 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 423 "brtvector.hpp"
-#line 423 "brtvector.hpp"
+#line 442 "brtvector.hpp"
+#line 442 "brtvector.hpp"
 
-#line 423 "brtvector.hpp"
+#line 442 "brtvector.hpp"
 
-#line 423 "brtvector.hpp"
+#line 442 "brtvector.hpp"
 
-#line 423 "brtvector.hpp"
+#line 442 "brtvector.hpp"
 
-#line 423 "brtvector.hpp"
+#line 442 "brtvector.hpp"
 
 };
 

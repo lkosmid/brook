@@ -164,9 +164,19 @@ INITBASECLASS(float);
 INITBASECLASS(double);
 INITBASECLASS(int);
 INITBASECLASS(unsigned int);
-INITBASECLASS(bool);
 INITBASECLASS(char);
 INITBASECLASS(unsigned char);
+
+
+template <> class InitializeClass<bool> { 
+ public: 
+    template <class V> bool operator () (const V&a, 
+					  const V&b,  
+					  const V&c,  
+					  const V&d) { 
+      return (a||b||c||d)?true:false; 
+    } 
+};
 
 #ifdef _MSC_VER
 #if _MSC_VER <= 1200
@@ -233,7 +243,16 @@ public:
     }
     BROOK_UNARY_OP(+)
     BROOK_UNARY_OP(-)
-    BROOK_UNARY_OP(!)    
+    BROOK_UNARY_OP(!)
+#undef BROOK_UNARY_OP
+#define NONCONST_BROOK_UNARY_OP(op) vec<VALUE,tsize> operator op (){ \
+      return vec<VALUE, tsize > (op getAt(0),  \
+                                 op getAt(1),  \
+                                 op getAt(2),  \
+                                 op getAt(3)); \
+    }
+    NONCONST_BROOK_UNARY_OP(--);
+    NONCONST_BROOK_UNARY_OP(++);
 #undef BROOK_UNARY_OP
     vec<VALUE,4> swizzle4(int x,int y,int z,int w)const {
         return vec<VALUE,4>(unsafeGetAt(x),
