@@ -13,15 +13,15 @@ using namespace brook;
 
 static const unsigned int 
 nvtypes[4] =   {GL_FLOAT_R32_NV,
-               GL_FLOAT_RG32_NV,
-               GL_FLOAT_RGB32_NV,
-               GL_FLOAT_RGBA32_NV};
+                GL_FLOAT_RG32_NV,
+                GL_FLOAT_RGB32_NV,
+                GL_FLOAT_RGBA32_NV};
 
 static const unsigned int 
 nvformats[4] =  { GL_RED,
-                 GL_LUMINANCE_ALPHA,
-                 GL_RGB,
-                 GL_RGBA };
+                  GL_LUMINANCE_ALPHA,
+                  GL_RGB,
+                  GL_RGBA };
 
 static const unsigned int 
 sizefactor[4] = { 1, 2, 3, 4 };
@@ -31,28 +31,13 @@ NVTexture::NVTexture ( size_t inWidth,
                        size_t inHeight, 
                        GPUContext::TextureFormat inFormat) :
   OGLTexture(inWidth, inHeight, inFormat, 
-             nvtypes, nvformats, sizefactor),
-  _nativeFormat(nvformats[components()]) 
+             nvtypes, nvformats, sizefactor)
 {
-
-}
-
-bool 
-NVContext::isValidShaderNameString (const char *name) const {
-  return strcmp(name, "arb") == 0;
+  _nativeFormat = nvformats[components()]; 
 }
 
 
-GPUContext::TextureHandle 
-NVContext::createTexture2D( unsigned int inWidth,
-                            unsigned int inHeight, 
-                            GPUContext::TextureFormat inFormat) {
-  return (GPUContext::TextureHandle) 
-    new NVTexture(inWidth, inHeight, inFormat);
-}
-
-
-static const int nviAttribList[4][16] = {
+static const int nviAttribList[4][64] = {
   {  WGL_FLOAT_COMPONENTS_NV,                     GL_TRUE, 
      WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_R_NV,    GL_TRUE,
      0,0},
@@ -83,13 +68,57 @@ static const int nvpiAttribList[4][16] = {
      0,0}
 };
 
-void 
-NVContext::getVendorAttribs(const int   (**iAttrib)[4][16],
-                            const float (**fAttrib)[4][16],
-                            const int   (**piAttrib)[4][16]) {
 
-  *iAttrib = &nviAttribList;
-  *fAttrib = NULL;
-  *piAttrib = &nvpiAttribList;
+NVContext *
+NVContext::create() {
+  NVContext *ctx = new NVContext();
+
+  if (!ctx)
+    return NULL;
+
+  ctx->init(&nviAttribList, NULL, &nvpiAttribList);
+
+  return ctx;
+}
+
+
+bool 
+NVContext::isValidShaderNameString (const char *name) const {
+  return strcmp(name, "arb") == 0;
+}
+
+
+GPUContext::TextureHandle 
+NVContext::createTexture2D( unsigned int inWidth,
+                            unsigned int inHeight, 
+                            GPUContext::TextureFormat inFormat) {
+  return (GPUContext::TextureHandle) 
+    new NVTexture(inWidth, inHeight, inFormat);
+}
+
+
+static const char nvext[][64] = {
+  "GL_ARB_fragment_program",
+  "GL_NV_float_buffer",
+  "GL_NV_fragment_program",
+  "GL_EXT_texture_rectangle",
+  ""};
+
+bool
+NVContext::isCompatibleContext () {
+  const char *ext = (const char *) glGetString(GL_EXTENSIONS);
+  int p;
+
+  for (p = 0; *nvext[p]; p++) {
+    if (!strstr(ext, nvext[p]))
+      return false;
+  }
+  return true;
+}
+
+bool
+NVContext::isVendorContext () {
+  const char *vendor = (const char *) glGetString(GL_VENDOR);
+  return strstr(vendor, "NVIDIA") != NULL;
 }
 

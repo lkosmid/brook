@@ -7,6 +7,7 @@
 #include "glext.h"
 
 #include "oglcontext.hpp"
+#include "ogltexture.hpp"
 
 using namespace brook;
 
@@ -80,5 +81,12 @@ OGLContext::getTextureData( TextureHandle inTexture,
      free(t);
    }
 }
+
+
+void 
+OGLContext::releaseTexture( TextureHandle inTexture ) {
+  delete (OGLTexture *) inTexture;
+}
+
 
 

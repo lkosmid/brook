@@ -1,16 +1,17 @@
-// nvcontext.hpp
+// aticontext.hpp
 
 #pragma once
 
 #include "oglcontext.hpp"
 #include "ogltexture.hpp"
 
+
 namespace brook {
 
-  class NVTexture : public OGLTexture {
+  class ATITexture : public OGLTexture {
   public:
 
-    NVTexture ( unsigned int inWidth, 
+    ATITexture ( unsigned int inWidth, 
                 unsigned int inHeight, 
                 GPUContext::TextureFormat inFormat);
     
@@ -21,11 +22,11 @@ namespace brook {
   };
 
 
-  class NVContext : public OGLContext
+  class ATIContext : public OGLContext
   {
   public:
 
-    static NVContext * create();
+    static ATIContext * create();
     
     TextureHandle 
     createTexture2D( unsigned int inWidth, 
@@ -39,10 +40,10 @@ namespace brook {
 
     static bool
     isVendorContext ();
-
-
+    
+    
   protected:
-    NVContext();
+    ATIContext();
   };
 }
 

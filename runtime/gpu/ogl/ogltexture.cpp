@@ -7,7 +7,11 @@
 #include <GL/gl.h>
 #include "glext.h"
 
-#include "oglcontext.hpp"
+#include "../gpucontext.hpp"
+
+#include "oglfunc.hpp"
+#include "ogltexture.hpp"
+#include "oglcheckgl.hpp"
 
 using namespace brook;
 

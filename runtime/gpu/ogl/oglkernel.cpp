@@ -7,6 +7,10 @@
 #include "glext.h"
 
 #include "oglcontext.hpp"
+#include "oglfunc.hpp"
+#include "oglcheckgl.hpp"
+#include "ogltexture.hpp"
+#include "oglwindow.hpp"
 
 using namespace brook;
 
@@ -305,7 +309,7 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   w = _outputTexture->width();
   h = _outputTexture->height();
 
-  bindPbuffer(_outputTexture->components());
+  wnd->bindPbuffer(_outputTexture->components());
   
   /*
    * We execute our kernel by using it to texture a triangle that
