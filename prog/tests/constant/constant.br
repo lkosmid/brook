@@ -7,6 +7,59 @@
 
 #include <stdio.h>
 
+
+/*
+ * k1 --
+ *
+ *      Copies the first constant argument into the output stream.
+ */
+
+kernel void
+k1(float n, float a, float2 b, float3 c, float4 d, out float4 s<>)
+{
+   s = float4(a, 0, 0, 0);
+}
+
+
+/*
+ * k2 --
+ *
+ *      Copies the second constant argument into the output stream.
+ */
+
+kernel void
+k2(float n, float a, float2 b, float3 c, float4 d, out float4 s<>)
+{
+   s = float4(b.x, b.y, 0, 0);
+}
+
+
+/*
+ * k3 --
+ *
+ *      Copies the third constant argument into the output stream.
+ */
+
+kernel void
+k3(float n, float a, float2 b, float3 c, float4 d, out float4 s<>)
+{
+   s = float4(c.x, c.y, c.z, 0);
+}
+
+
+/*
+ * k4 --
+ *
+ *      Copies the fourth constant argument into the output stream.
+ */
+
+kernel void
+k4(float n, float a, float2 b, float3 c, float4 d, out float4 s<>)
+{
+   s = float4(d.x, d.y, d.z, d.w);
+}
+
+
 /*
  * k --
  *
@@ -17,7 +70,7 @@ kernel void
 k(float n, float a, float2 b, float3 c, float4 d, out float4 s<>)
 {
    if (n == 1.0) {
-      s = float4(a, 0, 0, 0);
+      s = float4(a, n, 0, 0);
    } else if (n == 2.0) {
       s = float4(b.x, b.y, 0, 0);
    } else if (n == 3.0) {
@@ -44,9 +97,37 @@ main(int argc, char *argv[])
    for (i = 1; i <= 4; i++) {
       int j;
 
+      switch(i) {
+      case 1:
+         k1(i * 1.0f, a, b, c, d, s);
+         break;
+      case 2:
+         k2(i * 1.0f, a, b, c, d, s);
+         break;
+      case 3:
+         k3(i * 1.0f, a, b, c, d, s);
+         break;
+      case 4:
+         k4(i * 1.0f, a, b, c, d, s);
+         break;
+      default:
+         break;
+      }
+      streamWrite(s, data);
+
+      printf("Results with n = %d and a static kernel:\n", i);
+      printf("00: ");
+      for (j = 0; j < sizeof data / sizeof data[0]; j++) {
+         printf("(%4.2f, %4.2f, %4.2f, %4.2f) ",
+                data[j].x, data[j].y, data[j].z, data[j].w);
+         if ((j % 2) == 1) printf("\n%02d: ", j+1);
+      }
+      printf("\n\n");
+
       k(i * 1.0f, a, b, c, d, s);
       streamWrite(s, data);
 
+      printf("Results with n = %d and a conditional kernel:\n", i);
       printf("00: ");
       for (j = 0; j < sizeof data / sizeof data[0]; j++) {
          printf("(%4.2f, %4.2f, %4.2f, %4.2f) ",
