@@ -40,7 +40,8 @@ usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
   fprintf (stderr,
-        "brcc [-hvndktyAN] [-o prefix] [-w workspace] [-p shader ] foo.br\n\n"
+        "brcc [-hvndktyAN] [-o prefix] [-w workspace] [-p shader ]\n"
+        "     [-f compiler] [-a arch] foo.br\n\n"
         "   -h            help (print this message)\n"
         "   -v            verbose (print intermediate generated code)\n"
         "   -n            no codegen (just parse and reemit the input)\n"
