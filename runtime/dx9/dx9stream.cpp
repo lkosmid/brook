@@ -48,7 +48,7 @@ bool DX9Stream::initialize(
   for( unsigned int d = 0; d < dimensionCount; d++ )
   {
     int extent = inExtents[d];
-    if( (extent <= 0) || (!runtime->isAddressTranslationOn() && extent > kDX9MaximumTextureSize) )
+    if( (extent < 0) || (!runtime->isAddressTranslationOn() && extent > kDX9MaximumTextureSize) )
     {
       DX9WARN << "Unable to create stream with extent " << extent
         << " in dimension " << d << ".\n"
@@ -90,12 +90,12 @@ bool DX9Stream::initialize(
     switch( dimensionCount )
     {
     case 1:
-      textureWidth = extents[0];
+      textureWidth = extents[0]>0?extents[0]:1;
       textureHeight = 1;
       break;
     case 2:
-      textureWidth = extents[1];
-      textureHeight = extents[0];
+       textureWidth = extents[1]>0?extents[1]:1;
+       textureHeight = extents[0]>0?extents[0]:1;
       break;
     default:
       DX9Assert( false, "Should be unreachable" );

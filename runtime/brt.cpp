@@ -48,6 +48,9 @@ inline float isnan_flt (float x) {
 
 #include "logger.hpp"
 
+float getSentinel() {
+   return (float)-18446321861244485632.0;
+} 
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
