@@ -111,7 +111,7 @@ float4 * bitReversedIndices (int logN, int logM) {
     int temp = BitReverse(i*2,logM);
     s_array[i].x=(float)(temp/2);
     s_array[i].y=(float)BitReverse(i,logN);
-    s_array[i].z=(float)BitReverse(i*2+1,logM);
+    s_array[i].z=(float)(BitReverse(i*2+1,logM)/2);
     s_array[i].w=(float)(temp%2);
   }
   return s_array;
@@ -181,8 +181,8 @@ void computeFFT2d(float2 *input,
          }
    }
    if (1) {
-//            bitReverseXo2Y(s_out,indicesXo2YXp1o2Xm2,s);      
-            streamSwap(s_out,s);
+            bitReverseXo2Y(s_out,indicesXo2YXp1o2Xm2,s);      
+            
    }
    }
    free(rawindices);
