@@ -202,7 +202,7 @@ float shiftValuesfloat(struct __BRTStream *list_stream,
    float tmp_stream<WIDTH,LENGTH>;
    float ret_stream<WIDTH,LENGTH>;
    float guess_stream<WIDTH,LENGTH>;
-   int i;
+   unsigned int i;
    float2 maxvalue;
    unsigned int seed=215891;
    unsigned int logN;
@@ -1179,7 +1179,7 @@ float shiftValuesfloat2(struct __BRTStream *list_stream,
    float tmp_stream<WIDTH,LENGTH>;
    float ret_stream<WIDTH,LENGTH>;
    float guess_stream<WIDTH,LENGTH>;
-   int i;
+   unsigned int i;
    float2 maxvalue;
    unsigned int seed=215891;
    unsigned int logN;
@@ -2156,7 +2156,7 @@ float shiftValuesfloat3(struct __BRTStream *list_stream,
    float tmp_stream<WIDTH,LENGTH>;
    float ret_stream<WIDTH,LENGTH>;
    float guess_stream<WIDTH,LENGTH>;
-   int i;
+   unsigned int i;
    float2 maxvalue;
    unsigned int seed=215891;
    unsigned int logN;
@@ -3133,7 +3133,7 @@ float shiftValuesfloat4(struct __BRTStream *list_stream,
    float tmp_stream<WIDTH,LENGTH>;
    float ret_stream<WIDTH,LENGTH>;
    float guess_stream<WIDTH,LENGTH>;
-   int i;
+   unsigned int i;
    float2 maxvalue;
    unsigned int seed=215891;
    unsigned int logN;
