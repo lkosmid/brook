@@ -14,6 +14,21 @@
 
 
 /*
+ * ReadWriteNOP --
+ *
+ *      We need to touch our streams in order to force the runtime to pull
+ *      them down to the card, so we use the simplest kernel to accomplish
+ *      that.
+ */
+
+kernel void
+ReadWriteNOP(float4 s<>, out float4 o<>)
+{
+   o = s;
+}
+
+
+/*
  * ReadWrite1D --
  *
  *      Measure how fast we can streamRead() and streamWrite() a 1D stream
@@ -24,7 +39,7 @@ static void
 ReadWrite1D(int length)
 {
    float4 *in, *output;
-   float4 s<length>;
+   float4 s<length>, o<length>;
    int numBytes, i;
 
    numBytes = length * sizeof(*in);
@@ -43,14 +58,12 @@ ReadWrite1D(int length)
 
    start = GetTime();
    streamRead(s, in);
-   mid = GetTime();
-   streamWrite(s, output);
+   ReadWriteNOP(s, o);
+   streamWrite(o, output);
    stop = GetTime();
 
-   printf("Read1D: read took %d usecs, write took %d.\n",
-           (int) (mid - start), (int) (stop - mid));
-   printf("Read1D: read got %.2f MB/sec, write got %.2f MB/sec.\n",
-          numBytes / (float) (mid - start), numBytes / (float) (stop - mid));
+   printf("Read1D: Read / NOP / Write took %d usecs (%.2f MB/sec).\n",
+          (int) (stop - start), numBytes / (float) (stop - start));
 
    for (i = 0; i < length; i++) {
       if (in[i].x != output[i].x ||
@@ -75,7 +88,7 @@ static void
 ReadWrite2D(int length)
 {
    float4 *in, *output;
-   float4 s<length, length>;
+   float4 s<length, length>, o<length, length>;
    int numBytes, i, j;
 
    numBytes = length * length * sizeof(*in);
@@ -96,14 +109,12 @@ ReadWrite2D(int length)
 
    start = GetTime();
    streamRead(s, in);
-   mid = GetTime();
-   streamWrite(s, output);
+   ReadWriteNOP(s, o);
+   streamWrite(o, output);
    stop = GetTime();
 
-   printf("Read2D: read took %d usecs, write took %d.\n",
-           (int) (mid - start), (int) (stop - mid));
-   printf("Read2D: read got %.2f MB/sec, write got %.2f MB/sec.\n",
-          numBytes / (float) (mid - start), numBytes / (float) (stop - mid));
+   printf("Read2D: Read / NOP / Write took %d usecs (%.2f MB/sec).\n",
+          (int) (stop - start), numBytes / (float) (stop - start));
 
    for (i = 0; i < length; i++) {
       for (j = 0; j < length; j++) {
@@ -117,6 +128,7 @@ ReadWrite2D(int length)
              cur_in.w != cur_out.w) {
             fprintf(stderr, "ReadWrite2D: Mismatch %d, %d.  In: %f, Out: %f\n",
                     i, j, cur_in.x, cur_out.x);
+            exit (1);
          }
       }
    }
@@ -125,6 +137,11 @@ ReadWrite2D(int length)
 void
 ReadWrite_Time(int length)
 {
+   float4 s<1>, o<1>;
+
+   /* Prevent kernel cold start costs from inflating ReadWrite1D() */
+   ReadWriteNOP(s, o);
+
    ReadWrite1D(length);
    ReadWrite2D(length);
 }

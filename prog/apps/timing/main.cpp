@@ -76,9 +76,9 @@ main(int argc, char *argv[])
       }
    }
    std::cout << "Running tests with a length of " << length << ".\n";
-   
+
    ReadWrite_Time(length);
-   RunKernel_Time(length);
+   //RunKernel_Time(length);
    //Blas_Time(length);
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);

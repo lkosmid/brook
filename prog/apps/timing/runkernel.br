@@ -13,6 +13,11 @@
 #include "runkernel.h"
 
 /*
+ * CPU Backend takes around 170 msecs / iteration at length 1024
+ */
+#define NUM_RUNS 100
+
+/*
  * RunKernelKickKernel --
  *
  *      Just copy.  This kernel is separate from the test kernels just so
@@ -77,6 +82,7 @@ RunKernel1D(int streamLength)
 {
    float4 *data;
    float4 s<streamLength>, o<streamLength>;
+   float elapsed;
    int numBytes, i;
 
    numBytes = streamLength * sizeof(*data);
@@ -87,15 +93,17 @@ RunKernel1D(int streamLength)
       data[i].x = data[i].y = data[i].z = data[i].w = (float) i;
    }
 
-   streamRead(s, data);
    start = GetTime();
-   RunKernelDouble(s, o);
-   stop = GetTime();
+   streamRead(s, data);
+   for (i = 0; i < NUM_RUNS; i++) {
+      RunKernelDouble(s, o);
+   }
    streamWrite(o, data);
+   stop = GetTime();
+   elapsed = ((int) (stop - start)) / (float) NUM_RUNS;
 
    printf("RunKernel1D: Float4*2 took %d usecs at length %d (%.2f MOps/s)\n",
-          (int) (stop - start), streamLength,
-          (float) (streamLength / (stop - start)));
+          (int) elapsed, streamLength, (float) (streamLength / elapsed));
 
    for (i = 0; i < streamLength; i++) {
       if (data[i].x != (float) 2*i || data[i].y != data[i].x ||
@@ -120,6 +128,7 @@ RunKernel2D(int streamLength)
 {
    float4 *data;
    float4 s<streamLength, streamLength>, o<streamLength, streamLength>;
+   float elapsed;
    int numBytes, i, j;
 
    numBytes = streamLength * streamLength * sizeof(*data);
@@ -134,15 +143,18 @@ RunKernel2D(int streamLength)
       }
    }
 
-   streamRead(s, data);
    start = GetTime();
-   RunKernelDouble(s, o);
-   stop = GetTime();
+   streamRead(s, data);
+   for (i = 0; i < NUM_RUNS; i++) {
+      RunKernelDouble(s, o);
+   }
    streamWrite(o, data);
+   stop = GetTime();
+   elapsed = ((int) (stop - start)) / (float) NUM_RUNS;
 
    printf("RunKernel2D: Float4*2 took %d usecs at length %d (%.2f MOps/s)\n",
-          (int) (stop - start), streamLength,
-          (float) (streamLength*streamLength / (stop - start)));
+          (int) elapsed, streamLength,
+          (float) (streamLength*streamLength / elapsed));
 
    for (i = 0; i < streamLength; i++) {
       for (j = 0; j < streamLength; j++) {
@@ -157,20 +169,6 @@ RunKernel2D(int streamLength)
    }
 
    free(data);
-}
-
-
-/*
- * RunKernelTimeOne --
- *
- *      Runs all the kernel overhead timing tests at a given streamLength
- */
-
-static void
-RunKernelTimeOne(int streamLength)
-{
-   RunKernel1D(streamLength);
-   RunKernel2D(streamLength);
 }
 
 
@@ -191,7 +189,12 @@ RunKernel_Time(int maxLength)
    RunKernelKickBRT();
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
-      RunKernelTimeOne(lengths[i]);
+      RunKernel1D(lengths[i]);
    }
-   RunKernelTimeOne(maxLength);
+   RunKernel1D(maxLength);
+
+   for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
+      RunKernel2D(lengths[i]);
+   }
+   RunKernel2D(maxLength);
 }
