@@ -38,8 +38,9 @@ kernel float4 DoDFTHorizontalInner (float2 r<>,
                                   float2 t<>, 
                                   float2 W <>) {
   float4 ret;
-  ret.xy = r+t ;
-  ret.zw = mult_complex1 ((r-t), W);
+  float2 tw=mult_complex1(t,W);
+  ret.xy = r+tw;
+  ret.zw = r-tw;
   return ret;
 }
 
@@ -54,7 +55,6 @@ DFTX (float4 s[][],
   float4 r,t;
   r = s[indexR]; t = s[indexI];
   s_prime=DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W);
-  s_prime=s[indexof(s_prime)];
 } 
 
 
@@ -67,11 +67,8 @@ DFTY (float4 s[][],
       iter float2 s_index<>) {
    float4 r =  s[indexR]; 
    float4 t = s[indexI];
-   s_prime=mult_complex2(r-t,W);
-   if (round(fmod(s_index.y,2))!=1) {
-     //overwrite s_prime
-     s_prime=r+t;
-   }
+   float4 tw= mult_complex2(t,W);
+   s_prime=r+((round(fmod(s_index.y,2))!=1)?tw:-tw);
 } 
 kernel void optBitReverseY (out float4 s_out<>,
 			 float4 indicesXo2YXp1o2Xm2[],
@@ -225,7 +222,6 @@ void generatePlan(float4 bitreversal<>,
    streamRead(bitreversal,rawindices);
    free(rawindices);
 }
-                  
 void computeFFT2d(float4 input<>,
                   float4 output<>,
                   int logN,
@@ -248,7 +244,7 @@ void computeFFT2d(float4 input<>,
    else {
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTY(input,getW(nPassCounter,N,0),output,iter3,iter4,s_iter);
+            DFTY(input,getW(nPassCounter,logN,0),output,iter3,iter4,s_iter);
             if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
                streamPrint(output);
@@ -262,7 +258,7 @@ void computeFFT2d(float4 input<>,
 	 }
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTX(input,getW(nPassCounter,M,1),output,iter1,iter2,s_iter);
+            DFTX(input,getW(nPassCounter,logM,1),output,iter1,iter2,s_iter);
             if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
                streamPrint(output);
