@@ -28,11 +28,11 @@
 // it will currently NOT run on ATI hardware.
 kernel void bsearch(float searchValue<>, float array[ARRAYSIZE], out float index<>, float arraySize) {
  
-  int i;
+  float i;
 
   // HACK: preprocessor not run on Brook code, so have to explicitly set numIter
   // here.  Must keep this consistent with LG_ARRAYSIZE for correctness. :-(
-  int numIter = 5;  
+  float numIter = 5;  
   float stride;
   float compareValue, dir;
 
