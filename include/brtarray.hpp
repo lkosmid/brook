@@ -70,10 +70,10 @@ public:
            unsigned int i=T::size-1;
            if (dims<T::size)
               i=dims-1;
-           unsigned int total=(unsigned int) index.getAt(i);
+           unsigned int total=(unsigned int)round_float(index.getAt(i));
            for (unsigned int j=1;j<=i;++j) {
               total*=extents[j];
-              total+=(unsigned int)index.getAt(i-j);
+              total+=(unsigned int)round_float(index.getAt(i-j));
            }
            return total;
 	}
