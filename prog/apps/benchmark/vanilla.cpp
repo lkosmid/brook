@@ -25,7 +25,7 @@ static void floatMath (float a, float b, float4 c,
 static void  FloatMath (const __BrtFloat1  &a,
                          const __BrtFloat1  &b,
                          const __BrtFloat4  &c,
-                         const __BrtArray<__BrtFloat1  , 2  , false> &d,
+                         const __BrtArray<__BrtFloat1> &d,
                          __BrtFloat1  &e){
   __BrtFloat1  g = a + b;
   __BrtFloat1  h = b * b;
@@ -73,7 +73,7 @@ static void math(float a, float b, float4 c,
 static void  Math(const __BrtFloat1  &a,
                    const __BrtFloat1  &b,
                    const __BrtFloat4  &c,
-                   const __BrtArray<__BrtFloat1  , 2  , false> &d,
+                   const __BrtArray<__BrtFloat1> &d,
                    __BrtFloat1  &e){
   __BrtFloat4  tmp;
   __BrtFloat4  g;
@@ -98,7 +98,7 @@ static void gather (float a, float b, float4 c,
 void  Gather (const __BrtFloat1  &a,
                const __BrtFloat1  &b,
                const __BrtFloat4  &c,
-               const __BrtArray<__BrtFloat1  , 2  , false> &d,
+               const __BrtArray<__BrtFloat1> &d,
                __BrtFloat1  &e){
   e = a + b + d[c.swizzle2(maskX, maskY)] + d[c.swizzle2(maskY, maskZ)] + d[c.swizzle2(maskZ, maskW)] + 
 d[c.swizzle2(maskX, maskZ)] + d[c.swizzle2(maskX, maskW)] + d[c.swizzle2(maskY, maskW)] + d[c.swizzle2(maskZ, maskW)];
@@ -116,14 +116,14 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
       gather (*aa++,*bb++,c,dd,*ee++);
    }
    UpdateTime();
-   fprintf (stderr,"Native Gather took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Native Gather took %f seconds\n",GetElapsedTime());
    aa=a;bb = b;ee=e;
    UpdateTime();
    for (i=0;i<total;++i) {
       math (*aa++,*bb++,c,dd,*ee++);
    }
    UpdateTime();
-   fprintf (stderr,"Native Math took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Native Math took %f seconds\n",GetElapsedTime());
 
    aa=a;bb = b;ee=e;
    UpdateTime();
@@ -133,7 +133,7 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
    aa=a;bb = b;ee=e;
 
    UpdateTime();
-   fprintf (stderr,"Native Float Math took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Native Float Math took %f seconds\n",GetElapsedTime());
 
 
    total*=10;
@@ -143,7 +143,7 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
       __BrtFloat1* bbb = (__BrtFloat1*)b; 
       __BrtFloat1* d_data =(__BrtFloat1*)d;
       unsigned int extents[2]={size,size};
-      __BrtArray<__BrtFloat1,2,false> dd (d_data,&extents[0]);
+      __BrtArray<__BrtFloat1> dd (d_data,2,4,&extents[0]);
       __BrtFloat1* eee=(__BrtFloat1*)e;
       __BrtFloat4* cc = (__BrtFloat4*)&c;
       __BrtFloat1* aa=aaa;__BrtFloat1 *bb=bbb; __BrtFloat1 *ee=eee;
@@ -152,14 +152,14 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
       Gather (*aa,*bb,*cc,dd,*ee);
    }
    UpdateTime();
-   fprintf (stderr,"Same Memory BRT Gather took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Same Memory BRT Gather took %f seconds\n",GetElapsedTime());
    aa=aaa;bb = bbb;ee=eee;
    UpdateTime();
    for (i=0;i<total;++i) {
       Math (*aa,*bb,*cc,dd,*ee);
    }
    UpdateTime();
-   fprintf (stderr,"Same Memory BRT Math took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Same Memory BRT Math took %f seconds\n",GetElapsedTime());
 
    aa=aaa;bb = bbb;ee=eee;
    UpdateTime();
@@ -167,7 +167,7 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
       FloatMath (*aa,*bb,*cc,dd,*ee);
    }
    UpdateTime();
-   fprintf (stderr,"Same Memory Float Math took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Same Memory Float Math took %f seconds\n",GetElapsedTime());
 
    }
 
@@ -177,14 +177,14 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
       gather (*aa,*bb,c,dd,*ee);
    }
    UpdateTime();
-   fprintf (stderr,"Same Memory Native Gather took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Same Memory Native Gather took %f seconds\n",GetElapsedTime());
    aa=a;bb = b;ee=e;
    UpdateTime();
    for (i=0;i<total;++i) {
       math (*aa,*bb,c,dd,*ee);
    }
    UpdateTime();
-   fprintf (stderr,"Same Memory Native Math took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Same Memory Native Math took %f seconds\n",GetElapsedTime());
 
    aa=a;bb = b;ee=e;
    UpdateTime();
@@ -192,7 +192,7 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
       floatMath (*aa,*bb,c,dd,*ee);
    }
    UpdateTime();
-   fprintf (stderr,"Same Memory Native Float Math took %lf seconds\n",GetElapsedTime());
+   fprintf (stderr,"Same Memory Native Float Math took %f seconds\n",GetElapsedTime());
 
 }
 

@@ -41,7 +41,7 @@ template <class VALUE> class __BrtArray {
 public:
   __BrtArray(VALUE * data, unsigned int dims, unsigned int elemsize, 
              const unsigned int *extents):s(0) {
-    init(data,dims,extents);
+    init(data,dims,elemsize,extents);
   }
 
   __BrtArray(brook::Stream * stm):s(0) {
