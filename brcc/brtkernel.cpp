@@ -514,12 +514,18 @@ void BRTCPUKernelCode::initializeIndexOf(std::ostream&out)const {
    functionProperties::iterator end=FunctionProp[name].end();
    for (;it!=end;++it) {
       indent(out,1);
+      /*
       out << "unsigned int dim"<<*it<<"=";
       PrintAccessStream(out,*it,"getDimension");
       out << ";"<<std::endl<<"const unsigned int * extents"<<*it<<"=";
       PrintAccessStream(out,*it,"getExtents");
+      */
       out << ";"<<std::endl<<"__BrtFloat4 indexof"<<*it;
-      out << " = computeIndexOf(mapbegin, dim"<<*it<<", extents"<<*it<<");";
+      out << " = computeIndexOf(mapbegin, ";
+      PrintAccessStream(out,*it,"getDimension");
+      out << ", ";
+      PrintAccessStream(out,*it,"getExtents");
+      out << ");";
       out <<std::endl;
    }
 }
@@ -530,7 +536,11 @@ void BRTCPUKernelCode::incrementIndexOf(std::ostream&out)const {
    functionProperties::iterator end=FunctionProp[name].end();
    for (;it!=end;++it) {
       indent(out,2);
-      out<<"incrementIndexOf (indexof"<<*it<<",dim"<<*it<<",extents"<<*it<<");";
+      out<<"incrementIndexOf (indexof"<<*it<<", ";
+      PrintAccessStream(out,*it,"getDimension");
+      out << ", ";
+      PrintAccessStream(out,*it,"getExtents");
+      out << ");";
       out<<std::endl;
    }
 }
