@@ -44,13 +44,28 @@ BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr)
 
 }
 
+
 void
 BrtGatherExpr::print (std::ostream& out) const
 {
-   out << "_gather" << ndims << "(";
+   // we need the type of the gather variable
+   assert(base->etype == ET_Variable);
+   Variable *v = (Variable *) base;   
+   assert(v->name);
+   assert(v->name->entry);
+   assert(v->name->entry->IsParamDecl());
+   assert(v->name->entry->uVarDecl);
+   assert(v->name->entry->uVarDecl->form);
+   assert(v->name->entry->uVarDecl->form->isArray());
+   ArrayType *a = (ArrayType *) v->name->entry->uVarDecl->form;
+   BaseType *b = a->getBase();
+
+   out << "__gather_";
+   b->printBase( out, 0 );
+   out << "(";
    base->print(out);
 
-   out << ",(";
+   out << ",__gatherindex((";
    
    if (dims.size() == 1) 
      dims[0]->print(out);
@@ -82,6 +97,11 @@ BrtGatherExpr::print (std::ostream& out) const
                << "GPU runtimes can't handle gathers greater than 2D.\n";
    }
 
+   out << ", _const_";
+   base->print(out);
+   out << "_scalebias))";
+
+   /* TIM: new gather functionality:
    out << ",(";
 
    if (dims.size() == 1) 
@@ -152,10 +172,11 @@ BrtGatherExpr::print (std::ostream& out) const
       out << ".xyzw ";
       break;
    default:
-      fprintf(stderr, "Strange array base type:");
-      b->printBase(std::cerr, 0);
-      abort();
-   }
+     break;
+//      fprintf(stderr, "Strange array base type:");
+//      b->printBase(std::cerr, 0);
+//      abort();
+   }*/
 }
 
 

@@ -80,6 +80,8 @@ static Variable * NewGatherArg (Variable * v) {
 
 }
 
+// TIM: HACK
+int getGatherStructureSamplerCount( Type* form );
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function prints the code of an internally callable kernel
@@ -98,7 +100,10 @@ void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
       Symbol * nam = ft->args[i]->name;
       Type * t = ft->args[i]->form;
       if (recursiveIsGather(t)) {
-         out << "_stype "<<nam->name <<","<<std::endl;
+         out << "_stype "<<nam->name <<"[";
+         // TIM: HACK:
+         out << getGatherStructureSamplerCount(t);
+         out << "],"<<std::endl;
          out << blank << "float4 _const_"<<nam->name<<"_scalebias";
       }else {
         if ((ft->args[i]->form->getQualifiers() & TQ_Reduce) != 0) {

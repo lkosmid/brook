@@ -94,6 +94,104 @@ static void printShaderStructureDef( std::ostream& out, StructDef* structure )
 	out << "};\n\n";
 }
 
+int getGatherStructureSamplerCount( StructDef* structure )
+{
+  int result = 0;
+  int fieldCount = structure->nComponents;
+	for( int i = 0; i < fieldCount; i++ )
+	{
+		Decl* fieldDecl = structure->components[i];
+		if( fieldDecl->isStatic() ) continue;
+		if( fieldDecl->isTypedef() ) continue;
+
+    StructDef* subStructure = findStructureDef( fieldDecl->form );
+    if( subStructure )
+      result += getGatherStructureSamplerCount( subStructure );
+    else
+      result++;
+	}
+  return result;
+}
+
+int getGatherStructureSamplerCount( Type* form )
+{
+  StructDef* structure = findStructureDef( form );
+  if( !structure ) return 1;
+  return getGatherStructureSamplerCount( structure );
+}
+
+static bool printGatherStructureFunctionBody( std::ostream& out, const std::string& name, StructDef* structure, int& ioIndex )
+{
+  int fieldCount = structure->nComponents;
+	for( int i = 0; i < fieldCount; i++ )
+	{
+		Decl* fieldDecl = structure->components[i];
+		if( fieldDecl->isStatic() ) continue;
+		if( fieldDecl->isTypedef() ) continue;
+    
+    std::string subName = name + "." + fieldDecl->name->name;
+
+    Type* form = fieldDecl->form;
+    StructDef* subStructure = findStructureDef( form );
+    if( subStructure )
+    {
+      if(!printGatherStructureFunctionBody( out, subName, subStructure, ioIndex ))
+        return false;
+    }
+    else
+    {
+      out << "result" << subName << " = ";
+
+      BaseType* base = form->getBase();
+      switch(base->typemask) {
+      case BT_Float:
+        out << "__fetch_float";
+      break;
+      case BT_Float2:
+        out << "__fetch_float2";
+      break;
+      case BT_Float3:
+        out << "__fetch_float3";
+      break;
+      case BT_Float4:
+        out << "__fetch_float4";
+      break;
+      default:
+        out << "__fetchunknown";
+        break;
+      }
+      out << "( ";
+      out << "samplers[" << ioIndex++ << "], index );\n";
+    }
+	}
+  return true;
+}
+
+static void printGatherStructureFunction( std::ostream& out, const std::string& name, Type* form )
+{
+  StructDef* structure = findStructureDef( form );
+  if( !structure ) return;
+
+  std::stringstream s;
+  int index = 0;
+  if(!printGatherStructureFunctionBody( s, "", structure, index ))
+    return;
+  std::string body = s.str();
+
+
+  out << name << " __gather_" << name << "( _stype samplers[" << getGatherStructureSamplerCount(form);
+  out << "], float index ) {\n";
+  out << name << " result;\n";
+  out << body;
+  out << "\treturn result;\n}\n\n";
+
+  out << name << " __gather" << name << "( _stype samplers[" << getGatherStructureSamplerCount(form);
+  out << "], float2 index ) {\n";
+  out << name << " result;\n";
+  out << body;
+  out << "\treturn result;\n}\n\n";
+}
+
 static void generate_shader_type_declaration( std::ostream& out, DeclStemnt* inStmt )
 {
 	for( DeclVector::iterator i = inStmt->decls.begin(); i != inStmt->decls.end(); ++i )
@@ -113,6 +211,8 @@ static void generate_shader_type_declaration( std::ostream& out, DeclStemnt* inS
 			form->printBase(out,0);
 			out << " " << decl->name->name;
 			out << ";\n\n";
+
+      printGatherStructureFunction( out, decl->name->name, decl->form );
 		}
 	}
 }
@@ -387,13 +487,28 @@ static void expandStreamStructureFetches( std::ostream& shader, const std::strin
 		}
 		else
 		{
-			shader << "\t" << subFieldName << " = _sfetch"
-				<< "(__structsampler" << ioIndex++ << "_" << argumentName << ","
-				<< " _tex_" << argumentName << "_pos).";
+      shader << subFieldName << " = ";
 
-			printSwizzle( shader, base );
+      switch(base->typemask) {
+      case BT_Float:
+        shader << "__fetch_float";
+        break;
+      case BT_Float2:
+        shader << "__fetch_float2";
+       break;
+      case BT_Float3:
+        shader << "__fetch_float3";
+       break;
+      case BT_Float4:
+        shader << "__fetch_float4";
+       break;
+      default:
+        shader << "__gatherunknown";
+        break;
+      }
 
-			shader << ";\n";
+      shader << "( __structsampler" << ioIndex++ << "_" << argumentName
+        << ", _tex_" << argumentName << "_pos );\n";
 		}
 	}
 }
@@ -425,13 +540,29 @@ static void expandStreamFetches( std::ostream& shader, const std::string& argume
 	}
 	else
 	{
-		shader << "\t" << argumentName << " = _sfetch"
-			<< "(_tex_" << argumentName << ", _tex_" << argumentName
-			<< "_pos).";
+    shader << argumentName << " = ";
 
-		printSwizzle( shader, elementType );
+    BaseType* base = inForm->getBase();
+    switch(base->typemask) {
+    case BT_Float:
+      shader << "__fetch_float";
+      break;
+    case BT_Float2:
+      shader << "__fetch_float2";
+      break;
+    case BT_Float3:
+      shader << "__fetch_float3";
+      break;
+    case BT_Float4:
+      shader << "__fetch_float4";
+      break;
+    default:
+      shader << "__fetchunknown";
+      break;
+    }
 
-		shader << ";\n";
+    shader << "(_tex_" << argumentName
+      << ", _tex_" << argumentName << "_pos );\n";
 	}
 }
 
@@ -446,16 +577,47 @@ generate_shader_code (Decl **args, int nArgs,
   shader << "#ifdef USERECT\n";
   shader << "#define _stype   samplerRECT\n";
   shader << "#define _sfetch  texRECT\n";
-  shader << "#define _gather1(a,b,c) texRECT((a),float2(b,0))\n";
-  shader << "#define _gather2(a,b,c) texRECT((a),(b))\n";
+  shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
+  shader << "#define __sample2(s,i) texRECT((s),(i))\n";
   shader << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
+  shader << "float __gatherindex( float index, float4 scalebias ) { ";
+  shader << "return index; }\n";
+  shader << "float2 __gatherindex( float2 index, float4 scalebias ) { ";
+  shader << "return index; }\n";
   shader << "#else\n";
   shader << "#define _stype   sampler\n";
   shader << "#define _sfetch  tex2D\n";
-  shader << "#define _gather1(a,b,c) tex1D((a),(c))\n";
-  shader << "#define _gather2(a,b,c) tex2D((a),(c))\n";
+  shader << "#define __sample1(s,i) tex1D((s),(i))\n";
+  shader << "#define __sample2(s,i) tex2D((s),(i))\n";
   shader << "#define _computeindexof(a,b) (b)\n";
+  shader << "float __gatherindex( float index, float4 scalebias ) { ";
+  shader << "return index*scalebias.x+scalebias.z; }\n";
+  shader << "float2 __gatherindex( float2 index, float4 scalebias ) { ";
+  shader << "return index*scalebias.xy+scalebias.zw; }\n";
   shader << "#endif\n\n";
+
+  // TIM: simple subroutines
+  shader << "float __fetch_float( _stype s, float i ) { return __sample1(s,i).x; }\n";
+  shader << "float __fetch_float( _stype s, float2 i ) { return __sample2(s,i).x; }\n";
+  shader << "float2 __fetch_float2( _stype s, float i ) { return __sample1(s,i).xy; }\n";
+  shader << "float2 __fetch_float2( _stype s, float2 i ) { return __sample2(s,i).xy; }\n";
+  shader << "float3 __fetch_float3( _stype s, float i ) { return __sample1(s,i).xyz; }\n";
+  shader << "float3 __fetch_float3( _stype s, float2 i ) { return __sample2(s,i).xyz; }\n";
+  shader << "float4 __fetch_float4( _stype s, float i ) { return __sample1(s,i).xyzw; }\n";
+  shader << "float4 __fetch_float4( _stype s, float2 i ) { return __sample2(s,i).xyzw; }\n";
+
+  shader << "\n\n";
+
+  shader << "float __gather_float( _stype s[1], float i ) { return __sample1(s[0],i).x; }\n";
+  shader << "float __gather_float( _stype s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
+  shader << "float2 __gather_float2( _stype s[1], float i ) { return __sample1(s[0],i).xy; }\n";
+  shader << "float2 __gather_float2( _stype s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
+  shader << "float3 __gather_float3( _stype s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
+  shader << "float3 __gather_float3( _stype s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
+  shader << "float4 __gather_float4( _stype s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_float4( _stype s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+
+  shader << "\n\n";
 
   generate_shader_structure_definitions(shader);
   generate_shader_subroutines(shader);
@@ -527,12 +689,16 @@ generate_shader_code (Decl **args, int nArgs,
             << texcoord++;
       }
     } else if (args[i]->isArray()) {
+
+      int samplerCount = getGatherStructureSamplerCount( args[i]->form );
       
+      // TIM: TODO: handle multi-sampler array for gathers...
       shader <<  ",\n\t\t";
       shader << "uniform _stype " << *args[i]->name;
-      shader << " : register (s" << samplerreg++ << ")";
+      shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
+      samplerreg += samplerCount;
       shader <<  ",\n\t\t";
-      shader << "uniform float4 _const_" << *args[i]->name << "_scalebias"
+      shader << "uniform float4 __gatherconst_" << *args[i]->name
                 << " : register (c" << constreg++ << ")";
     
     } else {
@@ -604,11 +770,9 @@ generate_shader_code (Decl **args, int nArgs,
     if( i != 0 )
       shader << ",\n\t\t";
     std::string name = args[i]->name->name;
-    Type* form = args[i]->form;
-    if( args[i]->isArray() ) {// hacked way to detect a gather
-      shader << name << ", " << "_const_" << name << "_scalebias";
-    }
-    else {
+    if( args[i]->isArray() ) {
+      shader << name << ", __gatherconst_" << name;
+    } else {
       shader << name;
     }
   }

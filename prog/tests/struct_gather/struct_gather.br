@@ -1,5 +1,4 @@
-// struct_input.br
-// Tests use of structures for input parameters.
+// struct_gather.br
 
 #include <stdio.h>
 
@@ -8,14 +7,17 @@ typedef struct Pair_t {
   float second;
 } Pair;
 
-kernel void sumPairs( Pair p<>, out float result<> ) {
+kernel void gatherPairs( float index<>, Pair pairs[], out float result<> ) {
+  Pair p = pairs[index];
   result = p.first + p.second;
 }
 
 int main() {
   Pair pairs< 100 >;
+  float indices< 100 >;
   float output< 100 >;
   Pair pairs_data[100];
+  float indices_data[100];
   float output_data[100];
   int i;
 
@@ -23,10 +25,12 @@ int main() {
   {
     pairs_data[i].first = (float)i;
     pairs_data[i].second = (float)(i*100);
+    indices_data[i] = (float)(99-i);
   }
 
   streamRead( pairs, pairs_data );
-  sumPairs( pairs, output );
+  streamRead( indices, indices_data );
+  gatherPairs( indices, pairs, output );
   streamWrite( output, output_data );
 	
 	for( i = 0; i < 100; i++ )
