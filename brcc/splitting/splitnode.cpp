@@ -16,8 +16,7 @@ SplitNode::SplitNode()
 
   _rdsFixedMarked = false;
   _rdsFixedUnmarked = false;
-  _rdsSplitHere = false;
-  _mergeSplitHere = false;
+  _splitHere = false;
 
   _isOutput = false;
 
@@ -29,6 +28,8 @@ SplitNode::SplitNode()
   _linkEvalLabel = this;
 
   _markBits = 0;
+
+  _isPDTNode = false;
 }
 
 void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream )
@@ -69,11 +70,6 @@ void SplitNode::removeChild( SplitNode* inNode )
     _graphChildren.erase( i );
     return;
   }
-}
-
-void SplitNode::traverseChildren( SplitNodeTraversal& ioTraversal )
-{
-  ioTraversal( _graphChildren );
 }
 
 SplitNode* SplitNode::eval()
@@ -152,7 +148,7 @@ void InputInterpolantSplitNode::printArgumentInfo( std::ostream& inStream, Split
 void InputInterpolantSplitNode::printAnnotationInfo( std::ostream& inStream ) {
   inStream << ".interpolant(" << (argumentIndex+1) << "," << componentIndex << ")";
 }
-
+/*
 void OutputSplitNode::dump( std::ostream& inStream )
 {
   printTemporaryName( inStream );
@@ -201,7 +197,7 @@ void OutputSplitNode::printAnnotationInfo( std::ostream& inStream ) {
 
 void OutputSplitNode::traverseChildren( SplitNodeTraversal& ioTraversal ) {
   ioTraversal( value );
-}
+}*/
 
 void LocalVariableSplitNode::assign( SplitNode* inValue )
 {

@@ -247,6 +247,8 @@ Subprocess_Run(char *argv[], char *input)
   ret = WIFEXITED(ret) ? WEXITSTATUS(ret) : -1;
 #endif
 
+  close (hStdOutPipe[READ_HANDLE]);
+
   if (ret != 0) {
     if (debug) fprintf (stderr, "%s exited with an error (%#x):\n", argv[0], ret);
     fwrite (output, strlen(output), 1, stderr);
@@ -254,6 +256,5 @@ Subprocess_Run(char *argv[], char *input)
     return NULL;
   }
 
-  close (hStdOutPipe[READ_HANDLE]);
   return output;
 }

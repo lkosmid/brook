@@ -15,7 +15,6 @@ class SplitTreeBuilder;
 class SplitArgumentCounter;
 class SplitTree;
 class SplitCompiler;
-class OutputSplitNode;
 class IndexofableSplitNode;
 
 class SplitNode
@@ -25,12 +24,19 @@ public:
   bool _isMagic;
   bool _isMRNodeWorthConsidering;
 
+  bool _wasConsidered;
+  bool _wasSaved;
+
+  bool _wasConsideredSave;
+  bool _wasSavedSave;
+  bool _wasConsideredRecompute;
+  bool _wasSavedRecompute;
+
   enum MarkBit
   {
     kMarkBit_Printed = 0x01,
     kMarkBit_Merged = 0x02,
-    kMarkBit_PartitionCost = 0x04,
-    kMarkBit_SubPrinted = 0x08
+    kMarkBit_SubPrinted = 0x04
   };
 
   void mark( MarkBit inMarkBit ) {
@@ -52,13 +58,8 @@ public:
   // print a function that will evaluate this node's value
   void printSubFunction( const std::string& inFunctionName, std::ostream& inStream );
 
-  bool isRDSSplit() {
-    return _rdsSplitHere;
-  }
-
   void rdsUnmark() {
-    _rdsSplitHere = false;
-    _mergeSplitHere = false;
+    _splitHere = false;
     _consideredForMergeCount = 0;
   }
 
@@ -75,7 +76,7 @@ public:
   }
 
   bool isMarkedAsSplit() {
-    return _rdsSplitHere || _mergeSplitHere;
+    return _splitHere;
   }
 
   int getTemporaryID() {
@@ -83,13 +84,6 @@ public:
   }
   void setTemporaryID( int inID ) {
     _temporaryID = inID;
-  }
-
-  const SplitShaderHeuristics& getHeuristics() {
-    return _heuristics;
-  }
-  void setHeuristics( const SplitShaderHeuristics& inHeuristics ) {
-    _heuristics = inHeuristics;
   }
 
   // print an expression to get this node's value
@@ -114,7 +108,6 @@ public:
 
   virtual GatherArgumentSplitNode* isGatherArgument() { return 0; }
   virtual StreamArgumentSplitNode* isStreamArgument() { return 0; }
-  virtual OutputSplitNode* isOutputNode() { return 0; }
   virtual IndexofableSplitNode* isIndexofable() { return 0; }
 
   // whacky stuff to let arguments pass their value off to another node:
@@ -123,15 +116,39 @@ public:
   // TIM: total break in protection... :)
   SplitBasicType inferredType;
 
-  void getChildren( std::vector<SplitNode*>& outResult ) {
-    outResult = _graphChildren;
-  }
+//  void getChildren( std::vector<SplitNode*>& outResult ) {
+//    outResult = _graphChildren;
+//  }
 
   static bool nodeIdLess( SplitNode* a, SplitNode* b ) {
     return a->_spanningNodeID < b->_spanningNodeID;
   }
 
-  void traverseChildren( SplitNodeTraversal& ioTraversal );
+//  void traverseChildren( SplitNodeTraversal& ioTraversal );
+
+  size_t getGraphChildCount() {
+    return _graphChildren.size();
+  }
+
+  SplitNode* getIndexedGraphChild( size_t inIndex ) {
+    return _graphChildren[inIndex];
+  }
+
+  size_t getPDTChildCount() {
+    return _pdtChildren.size();
+  }
+
+  SplitNode* getIndexedPDTChild( size_t inIndex ) {
+    return _pdtChildren[inIndex];
+  }
+
+  bool isPDTNode() {
+    return _isPDTNode;
+  }
+
+  bool isMultiplyReferenced() {
+    return _graphParents.size() > 1;
+  }
 
   virtual bool isTrivial() { return false; }
 
@@ -172,13 +189,25 @@ private:
 
   bool _rdsFixedMarked;
   bool _rdsFixedUnmarked;
-  bool _rdsSplitHere;
-  bool _mergeSplitHere;
   bool _isOutput;
 
-  int _temporaryID;
+  bool _splitHere;
+  bool _isPDTNode;
 
-  SplitShaderHeuristics _heuristics;
+  int _temporaryID;
+};
+
+class SplitRootNode : public SplitNode
+{
+public:
+  SplitRootNode() {}
+
+  void addChild( SplitNode* inChild ) {
+    SplitNode::addChild( inChild );
+  }
+
+  void printTemporaryExpression( std::ostream& inStream ) {}
+  void printExpression( std::ostream& inStream ) {}
 };
 
 class InputSplitNode : public SplitNode
@@ -243,7 +272,7 @@ public:
 
     virtual bool isTrivial() { return true; }
 };
-
+/*
 class OutputSplitNode : public SplitNode
 {
 public:
@@ -276,6 +305,7 @@ private:
   int argumentIndex;
   int componentIndex;
 };
+*/
 
 class LocalVariableSplitNode : public SplitNode
 {

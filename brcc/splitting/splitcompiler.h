@@ -13,8 +13,9 @@
 class SplitTree;
 class SplitNode;
 
-struct SplitShaderHeuristics
+class SplitShaderHeuristics
 {
+public:
   bool valid; // whether this shader can be compiled
   float cost; // the cost of this shader (if valid)
   bool recompute; // should we recompute this shader, rather than save it?

@@ -14,13 +14,15 @@
 #include <algorithm>
 
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler )
-  : _resultValue(NULL), _compiler(inCompiler)
+  : _resultValue(NULL), _compiler(inCompiler), _pseudoRoot(NULL)
 {
+  std::cout << "$$$$$ creating a split tree for " << inFunctionDef->FunctionName()->name << std::endl;
+
   build( inFunctionDef );
 }
 
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler, const std::vector<SplitNode*>& inArguments )
-  : _resultValue(NULL), _compiler(inCompiler)
+: _resultValue(NULL), _compiler(inCompiler), _pseudoRoot(NULL)
 {
   build( inFunctionDef, inArguments );
 }
@@ -29,30 +31,37 @@ SplitTree::~SplitTree()
 {
 }
 
-/// static std::ofstream dumpFile;
+//static std::ofstream dumpFile;
 
 void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream )
 {
-///   dumpFile.open( "dump.txt" );
+//  dumpFile.open( "dump.txt" );
 
-  preRdsMagic();
+//  preRdsMagic();
 
   rdsSearch();
-  rdsSubdivide();
+//  rdsSubdivide();
 
   // TIM: we need to split somewhere
   for( size_t i = 0; i < _outputList.size(); i++ )
-    _outputList[i]->_rdsSplitHere = true;
+  {
+    assert( _outputList[i]->_splitHere );
+  }
 
 //  std::cerr << "printing!!!" << std::endl;
-
-  // assign temporary ids to any non-output split nodes
+  // assign "registers" to all split nodes
+  {for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i ) {
+    (*i)->setTemporaryID( 0 );
+  }}
+  int outputID = 0;
+  {for( NodeList::iterator i = _outputList.begin(); i != _outputList.end(); ++i ) {
+    (*i)->setTemporaryID( _outputArgumentIndices[outputID++] );
+  }}
   int temporaryID = 1;
-  {for( size_t i = 0; i < _dagOrderNodeList.size(); i++ )
+  {for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
   {
-    SplitNode* node = _dagOrderNodeList[i];
-    if( node->isMarkedAsSplit() && !(node->isOutputNode()) )
-      node->setTemporaryID( temporaryID++ );
+    if( (*i)->isMarkedAsSplit() && ((*i)->getTemporaryID() == 0) )
+      (*i)->setTemporaryID( -(temporaryID++) );
   }}
   int temporaryCount = temporaryID-1;
 
@@ -64,30 +73,26 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
     inStream << "\t\t.temporaries(" << temporaryCount << ")" << std::endl;
   }
 
-  SplitUnmarkTraversal unmark( SplitNode::kMarkBit_Printed );
-  unmark( _dagOrderNodeList );
-  unmark( _outputPositionInterpolant );
+  unmark( SplitNode::kMarkBit_Printed );
 
-  {for( size_t i = 0; i < _outputList.size(); i++ ){
-    _outputList[i]->rdsPrint( *this, _compiler, inStream );
-  }}
+  _pseudoRoot->rdsPrint( *this, _compiler, inStream );
+
   inStream << "\t)";
 
-///   dumpFile.close();
+//  dumpFile.close();
 }
 
-class SplitRDSUnmarkTraversal : public SplitNodeTraversal
+void SplitTree::unmark( int inMarkBit ) const
 {
-public:
-  void traverse( SplitNode* inNode ) {
-    inNode->rdsUnmark();
-  }
-};
+  SplitNode::MarkBit markBit = (SplitNode::MarkBit)(inMarkBit);
+  for( NodeList::const_iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
+    (*i)->unmark( markBit );
+  _outputPositionInterpolant->unmark( markBit );
+}
 
 void SplitTree::preRdsMagic()
 {
-  for( NodeList::iterator i = _outputList.begin(); i != _outputList.end(); ++i )
-    preRdsMagic( *i );
+  preRdsMagic( _pseudoRoot );
 }
 
 void SplitTree::preRdsMagic( SplitNode* inNode )
@@ -124,313 +129,498 @@ void SplitTree::preRdsMagic( SplitNode* inNode )
 
 void SplitTree::rdsSearch()
 {
-///   dumpFile << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%search%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
 
-  for( size_t i = 0; i < _multiplyReferencedNodes.size(); i++ )
+  // TIM: this is a pretty good early
+  // exit, but it assumes a single output...
+  /*if( _outputList.size() == 1 )
   {
-    SplitNode* m = _multiplyReferencedNodes[i];
+    if( rdsCompile( _outputList[0] ) )
+      return;
+  }*/
 
-    if( !m->_isMRNodeWorthConsidering ) continue;
+  {for( NodeList::iterator j = _dagOrderNodeList.begin(); j != _dagOrderNodeList.end(); ++j )
+  {
+    (*j)->_wasConsidered = false;
+    (*j)->_wasSaved = false;
+    (*j)->_wasConsideredSave = false;
+    (*j)->_wasSavedSave = false;
+    (*j)->_wasConsideredRecompute = false;
+    (*j)->_wasSavedRecompute = false;
+  }}
 
-///     dumpFile << "%%%%%%%%%%%%%%%%%% making save/recompute decision for: " << (void*)m << std::endl;
-///     dumpFile << "%%%%%%%%%%%%%%%%%% deciding whether to save\n";
-///     m->dump( dumpFile );
-///     dumpFile << std::endl;
+  float bestCost;
 
-    m->_rdsFixedUnmarked = false;
-    m->_rdsFixedMarked = true;
-    rdsSubdivide();
-    float costSave = getPartitionCost();
-///     dumpFile << "%%%%%%%%%%%%%%%%%% " << (void*)m << " save cost = " << costSave << std::endl;
-    std::cerr << "%%%%%%%%%%%%%%%%%% " << (void*)m << " save cost = " << costSave << std::endl;
+  size_t index = 0;
+  size_t count = _multiplyReferencedNodes.size();
+  for( NodeList::iterator i = _multiplyReferencedNodes.begin(); i != _multiplyReferencedNodes.end(); ++i )
+  {
+    SplitNode* node = *i;
 
-    m->_rdsFixedMarked = false;
-    m->_rdsFixedUnmarked = true;
-    rdsSubdivide();
-    float costRecompute = getPartitionCost();
-///     dumpFile << "%%%%%%%%%%%%%%%%%% " << (void*)m << " recompute cost = " << costRecompute << std::endl;
-    std::cerr << "%%%%%%%%%%%%%%%%%% " << (void*)m << " recompute cost = " << costRecompute << std::endl;
+    std::cout << "search step is considering node " << (void*)node <<
+      " - number " << index++ << " of " << count << std::endl;
 
-    if( costSave < costRecompute ) {
-      m->_rdsFixedUnmarked = false;
-      m->_rdsFixedMarked = true;
+    bool trySave = true;
+    bool tryRecompute = true;
+    float saveCost = 0;
+    float recomputeCost = 0;
 
-///       dumpFile << "!!! %%%%%%%%%%%%%%%%%% " << (void*)m << " search step decided to save " << (void*)m << " :\n";
-///       m->dump( dumpFile );
-///       dumpFile << std::endl;
+    if( i != _multiplyReferencedNodes.begin() )
+    {
+      if( !node->_wasConsideredSave && !node->_wasConsideredRecompute )
+      {
+        // this node has no real impact, it never got looked at
+        std::cout << "skipping !!!" << std::endl;
+        continue; 
+      }
 
-      rdsSubdivide();
+      if( node->_wasConsideredSave
+        && node->_wasConsideredRecompute
+        && (node->_wasSavedSave == node->_wasSavedRecompute) )
+      {
+        if( node->_wasSavedSave )
+        {
+          std::cout << "skipping save" << std::endl;
+          trySave = false;
+          saveCost = bestCost;
+        }
+        else
+        {
+          std::cout << "skipping recompute" << std::endl;
+          tryRecompute = false;
+          recomputeCost = bestCost;
+        }
+      }
+    }
+/*
+    {for( NodeList::iterator j = _dagOrderNodeList.begin(); j != _dagOrderNodeList.end(); ++j )
+    {
+      (*j)->_wasConsidered = false;
+      (*j)->_wasSaved = false;
+    }}*/
+
+    if( trySave )
+    {
+      {for( NodeList::iterator j = _dagOrderNodeList.begin(); j != _dagOrderNodeList.end(); ++j )
+      {
+        (*j)->_wasConsidered = false;
+        (*j)->_wasSaved = false;
+      }}
+
+      node->_rdsFixedMarked = true;
+      node->_rdsFixedUnmarked = false;
+      saveCost = rdsCompileConfiguration();
+
+      {for( NodeList::iterator j = _dagOrderNodeList.begin(); j != _dagOrderNodeList.end(); ++j )
+      {
+        (*j)->_wasConsideredSave = (*j)->_wasConsidered;
+        (*j)->_wasSavedSave = (*j)->_wasSaved;
+      }}
+    }
+//    dumpFile << "####### save cost is " << saveCost << std::endl;
+
+    if( tryRecompute )
+    {
+      {for( NodeList::iterator j = _dagOrderNodeList.begin(); j != _dagOrderNodeList.end(); ++j )
+      {
+        (*j)->_wasConsidered = false;
+        (*j)->_wasSaved = false;
+      }}
+
+      node->_rdsFixedMarked = false;
+      node->_rdsFixedUnmarked = true;
+      recomputeCost = rdsCompileConfiguration();
+
+      {for( NodeList::iterator j = _dagOrderNodeList.begin(); j != _dagOrderNodeList.end(); ++j )
+      {
+        (*j)->_wasConsideredRecompute = (*j)->_wasConsidered;
+        (*j)->_wasSavedRecompute = (*j)->_wasSaved;
+      }}
+    }
+//    dumpFile << "####### recompute cost is " << saveCost << std::endl;
+
+    if( saveCost < recomputeCost )
+    {
+      bestCost = saveCost;
+      node->_rdsFixedUnmarked = false;
+      node->_rdsFixedMarked = true;
+
+//      dumpFile << "####### @final decision is to save " << (void*)node << std::endl << "  ";
+//      node->dump( dumpFile );
+//      dumpFile << std::endl;
+    }
+    else
+    {
+      bestCost = recomputeCost;
+      node->_rdsFixedUnmarked = true;
+      node->_rdsFixedMarked = false;
+
+//      dumpFile << "####### final decision is to recompute " << (void*)node << std::endl << "  ";
+//      node->dump( dumpFile );
+//      dumpFile << std::endl;
     }
   }
+
+  // use the resulting configuration
+  // for one final compile pass
+  rdsCompileConfiguration();
 }
 
-class SplitRDSMergeTraversal : public SplitNodeTraversal
+float SplitTree::rdsCompileConfiguration()
 {
-public:
-  SplitRDSMergeTraversal( SplitTree& inTree, SplitNode* inRoot )
-    : _tree(inTree), _root(inRoot) {}
 
-  void traverse( SplitNode* inNode )
+  rdsSubdivide();
+  return getPartitionCost();
+}
+
+void SplitTree::rdsMerge( SplitNode* n, SplitShaderHeuristics& outHeuristics )
+{
+  assert( n );
+
+//  dumpFile << "MERGE " << (void*)n << std::endl << "   ";
+//  n->dump( dumpFile );
+//  dumpFile << std::endl;
+
+  // unvisit nodes
+  unmark( SplitNode::kMarkBit_Merged );
+
+  size_t childCount = n->getGraphChildCount();
+  for( size_t i = 0; i < childCount; i++ )
   {
-    if( inNode->isMarked( SplitNode::kMarkBit_Merged ) ) return;
-    inNode->mark( SplitNode::kMarkBit_Merged );
-
-    // magic nodes are such that the entire subgraph rooted there
-    // is valid, so we can assume a complete merge is possible
-    if( inNode->_isMagic )
-      return;
-
-    if( inNode->isMarkedAsSplit() && (inNode != _root) )
-      return;
-
-    inNode->traverseChildren( *this );
-    _tree.rdsMerge( inNode );
+    SplitNode* child = n->getIndexedGraphChild(i);
+    rdsMergeRec( child );
   }
 
-private:
-  SplitTree& _tree;
-  SplitNode* _root;
-};
+  rdsTryMerge( n, outHeuristics );
+}
+
+void SplitTree::rdsTryMerge( SplitNode* n, SplitShaderHeuristics& outHeuristics )
+{
+  assert( n );
+
+//  dumpFile << "TRY MERGE " << (void*)n << std::endl;
+//  n->dump( dumpFile );
+//  dumpFile << std::endl;
+
+  // first try to merge with all children
+  if( rdsCompile( n, outHeuristics ) )
+    return;
+
+//  dumpFile << "whole thing didn't work, trying to split" << std::endl;
+
+  // count the number of unsaved kids
+  size_t childCount = n->getGraphChildCount();
+  NodeList unsavedChildren;
+  for( size_t i = 0; i < childCount; i++ )
+  {
+    SplitNode* child = n->getIndexedGraphChild(i);
+    if( !child->isMarkedAsSplit() )
+      unsavedChildren.push_back( child );
+  }
+  size_t unsavedChildCount = unsavedChildren.size();
+
+  assert( unsavedChildCount > 0 );
+
+  size_t subsetSize = unsavedChildCount;
+  while( subsetSize-- > 0 )
+  {
+    // try to do merges with the given subset size
+//    dumpFile << "trying merges of " << subsetSize << " of the " << unsavedChildCount << " children" << std::endl;
+    if( rdsMergeSome( n, unsavedChildren, subsetSize, outHeuristics ) )
+      return;
+  }
+
+  assert( false );
+}
+
+bool SplitTree::rdsMergeSome( SplitNode* n, const NodeList& inUnsavedChildren, size_t inSubsetSize, SplitShaderHeuristics& outHeuristics )
+{
+  const NodeList& unsavedChildren = inUnsavedChildren;
+  size_t unsavedChildCount = unsavedChildren.size();
+  size_t subsetSize = inSubsetSize;
+
+  std::vector< size_t > validSubsets;
+  std::vector< SplitShaderHeuristics > validHeuristics;
+
+  SplitSubsetGenerator generator( subsetSize, unsavedChildCount );
+  while( generator.hasMore() )
+  {
+    size_t subsetBitfield = generator.getNext();
+
+//    dumpFile << "subset chosen was " << subsetBitfield << std::endl;
+
+    for( size_t i = 0; i < unsavedChildCount; i++ )
+      unsavedChildren[i]->_splitHere = (subsetBitfield & (1 << i)) == 0;
+
+    SplitShaderHeuristics subsetHeuristics;
+    if( rdsCompile( n, subsetHeuristics ) )
+    {
+//      dumpFile << "subset " << subsetBitfield << " was valid (cost = " << subsetHeuristics.cost << ")" << std::endl;
+
+      validSubsets.push_back( subsetBitfield );
+      validHeuristics.push_back( subsetHeuristics );
+    }
+  }
+
+  size_t validSubsetCount = validSubsets.size();
+  
+  if( validSubsetCount == 0 )
+    return false;
+
+  size_t bestSubset = validSubsets[0];
+  SplitShaderHeuristics bestHeuristics = validHeuristics[0];
+
+  for( size_t i = 1; i < validSubsetCount; i++ )
+  {
+    size_t otherSubset = validSubsets[i];
+    SplitShaderHeuristics otherHeuristics = validHeuristics[i];
+
+    if( otherHeuristics.cost < bestHeuristics.cost )
+    {
+      bestSubset = otherSubset;
+      bestHeuristics = otherHeuristics;
+    }
+  }
+
+//  dumpFile << "subset " << bestSubset << " was chosen (cost = " << bestHeuristics.cost << ")" << std::endl;
+
+  // set the state of the child nodes to reflect
+  // the chosen subset
+  for( size_t i = 0; i < unsavedChildCount; i++ )
+  {
+    if( (bestSubset & (1 << i)) == 0 )
+    {
+      unsavedChildren[i]->_splitHere = true;
+
+//      dumpFile << "merge step decided to @save " << (void*)(unsavedChildren[i]) << std::endl << "  ";
+//      unsavedChildren[i]->dump( dumpFile );
+//      dumpFile << std::endl;
+    }
+    else
+      unsavedChildren[i]->_splitHere = false;
+  }
+
+  outHeuristics = bestHeuristics;
+  return true;
+}
+
+void SplitTree::rdsMergeRec( SplitNode* n )
+{
+  assert( n );
+
+//  dumpFile << "MERGE REC " << (void*)n << "   " << std::endl;
+//  n->dump( dumpFile );
+//  dumpFile << std::endl;
+
+  if( n->isMarkedAsSplit() )
+  {
+//    dumpFile << "ignored as it was a split" << std::endl;
+    return;
+  }
+
+  if( n->isPDTNode() )
+  {
+//    dumpFile << "ignored as it was a PDT node" << std::endl;
+    return;
+  }
+
+  if( n->isMarked( SplitNode::kMarkBit_Merged ) )
+  {
+//    dumpFile << "ignored as it was an already-considered node" << std::endl;
+    return;
+  }
+
+  n->mark( SplitNode::kMarkBit_Merged );
+
+  size_t childCount = n->getGraphChildCount();
+  
+  // leaf nodes had better always work...
+  if( childCount == 0 )
+  {
+    if( !rdsCompile( n ) )
+      assert( false );
+  }
+
+  // first merge the subtrees
+  for( size_t i = 0; i < childCount; i++ )
+  {
+    SplitNode* child = n->getIndexedGraphChild(i);
+    rdsMergeRec( child );
+  }
+
+  SplitShaderHeuristics unused;
+  rdsTryMerge( n, unused );
+
+//  dumpFile << "MERGE REC DONE " << (void*)n << std::endl;
+}
 
 void SplitTree::rdsSubdivide()
 {
-  SplitRDSUnmarkTraversal rdsUnmark;
-  rdsUnmark( _outputList );
+  for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
+    (*i)->rdsUnmark();
+  _outputPositionInterpolant->rdsUnmark();
 
-  for( size_t i = 0; i < _outputList.size(); i++ )
-    rdsSubdivide( _outputList[i] );
+  SplitShaderHeuristics unused;
+  rdsSubdivide( _pseudoRoot, unused );
 }
 
-void SplitTree::rdsSubdivide( SplitNode* t )
+void SplitTree::rdsSubdivide( SplitNode* t, SplitShaderHeuristics& outHeuristics )
 {
-///   dumpFile << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ SUBDIVIDE " << (void*)t << " $$$$$$$$$$$$$$$$$$$$$$$\n" << std::endl;
-///   t->dump( dumpFile );
-///   dumpFile << std::endl;
+  assert( t );
+  assert( t->isPDTNode() );
 
-  if( rdsCompile( t ) ) {
-///     dumpFile << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ VALID SUBDIVIDE " << (void*)t << " $$$$$$$$$$$$$$$$$$$$$$$\n" << std::endl;
+//  dumpFile << "SUBDIVIDE " << (void*)t << "   " << std::endl;
+//  t->dump( dumpFile );
+//  dumpFile << std::endl;
+
+  // if it fits in a single pass, just do that...
+  if( rdsCompile( t, outHeuristics ) )
+  {
+//    dumpFile << "it worked in a single pass!!" << std::endl;
     return;
   }
 
-  for( NodeList::iterator i = t->_pdtChildren.begin(); i != t->_pdtChildren.end(); ++i )
-  {
-    SplitNode* k = *i;
-    rdsSubdivide( k );
-    if( k->_graphParents.size() <= 1 ) continue;
-    
-    // if it's multiply-referenced
-    if( k->_rdsFixedMarked )
-      k->_rdsSplitHere = true;
-    else if( k->_rdsFixedUnmarked )
-      k->_rdsSplitHere = false;
-    else
-    {
-      k->_rdsSplitHere = !k->getHeuristics().recompute;
-    }
-
-    /*if( k->_rdsSplitHere )
-    {
-      dumpFile << "!!! subdivide step decided to save " << (void*)k << " : ";
-      k->dump( dumpFile );
-      dumpFile << std::endl;
-    }*/
-
-  }
-
-  SplitUnmarkTraversal unmark( SplitNode::kMarkBit_Merged );
-  unmark( _dagOrderNodeList );
-  SplitRDSMergeTraversal merge( *this, t );
-  merge( t );
-
-///   dumpFile << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ END SUBDIVIDE " << (void*)t << " $$$$$$$$$$$$$$$$$$$$$$$\n" << std::endl;
-}
-
-void SplitTree::rdsMerge( SplitNode* n )
-{
-///   dumpFile << "^^^^^^^^^^^^^^^^^^^^^^^^ MERGE " << (void*)n << "^^^^^^^^^^^^^^^^^^^\n";
-
-  n->_consideredForMergeCount++;
-
-///   dumpFile << (void*)n << " has been considered for merge " << n->_consideredForMergeCount << " times" << std::endl;
-
-///   dumpFile << "merge" << std::endl;
-///   n->dump( dumpFile );
-///   dumpFile << "\n***" << std::endl;
-
-  std::vector< SplitNode* > children;
-
-  size_t childCount = n->_graphChildren.size();
-  for( size_t c = 0; c < childCount; c++ )
-  {
-    SplitNode* child = n->_graphChildren[c];
-    if( child->isMarkedAsSplit() ) continue;
-    children.push_back( child );
-  }
-  childCount = children.size();
-
-
-/*  std::cerr << "children are:" << std::endl;
+  size_t childCount = t->getPDTChildCount();
   for( size_t i = 0; i < childCount; i++ )
   {
-    n->_graphChildren[i]->printExpression( std::cerr );
-    std::cerr << std::endl;
-  }*/
+    SplitNode* child = t->getIndexedPDTChild(i);
 
-  for( size_t d = childCount+1; d-- > 0; )
+    // subdivide the child
+    SplitShaderHeuristics childHeuristics;
+    rdsSubdivide( child, childHeuristics );
+
+    // try again to compile the current node
+    if( rdsCompile( t, outHeuristics ) )
+    {
+//      dumpFile << "early exist after child subdivide" << std::endl;
+      return;
+    }
+
+    // make save/recompute decision
+    // for the child node
+    rdsDecideSave( child, childHeuristics );
+  }
+
+  // last chance - compile again and hope it works
+  if( rdsCompile( t, outHeuristics ) )
   {
-    std::vector<size_t> validSubsets;
-    std::vector<SplitShaderHeuristics> validHeuristics;
-
-//    std::cerr << "childCount = " << d << " out of " << childCount << std::endl;
-
-    SplitSubsetGenerator generator( d, childCount );
-    while( generator.hasMore() )
-    {
-      size_t subsetBitfield = generator.getNext();
-
-//      std::cerr << "subset = " << subsetBitfield << std::endl;
-
-//      if( subsetBitfield == 65537 )
-//        assert(false);
-
-      for( size_t i = 0; i < childCount; i++ )
-        children[i]->_mergeSplitHere = (subsetBitfield & (1 << i)) == 0;
-
-     if( rdsCompile( n ) ) {
-//        std::cerr << "subset " << subsetBitfield << " was valid" << std::endl;
-        validSubsets.push_back( subsetBitfield );
-        validHeuristics.push_back( n->getHeuristics() );
-      }
-    }
-
-    if( validSubsets.size() == 0 )
-      continue;
-
-    size_t bestSubset;
-    SplitShaderHeuristics bestHeuristics;
-    bestSubset = validSubsets[0];
-    bestHeuristics = validHeuristics[0];
-
-    for( size_t j = 1; j < validSubsets.size(); j++ )
-    {
-      SplitShaderHeuristics h = validHeuristics[j];
-
-      if( h.cost < bestHeuristics.cost )
-      {
-        bestHeuristics = h;
-        bestSubset = validSubsets[j];
-      }
-    }
-
-    // mark children according to that subset
-    // and we are done!!!
-//    std::cerr << "subset " << bestSubset << " was chosen" << std::endl;
-    for( size_t i = 0; i < childCount; i++ )
-    {
-      /*if( (bestSubset & (1 << i)) == 0 )
-      {
-        dumpFile << "\n!!!! merge step decided to subdivide ";
-        children[i]->dump( dumpFile );
-        dumpFile << std::endl;
-      }*/
-
-      children[i]->_rdsSplitHere = (bestSubset & (1 << i)) == 0;
-    }
-
-    n->setHeuristics( bestHeuristics );
-
-///     dumpFile << "^^^^^^^^^^^^^^^^^^^^^^^^ END MERGE " << (void*)n << "^^^^^^^^^^^^^^^^^^^\n";
+//    dumpFile << "early exist after all children subdivided" << std::endl;
     return;
   }
 
-///   dumpFile << "!!!!!!! empty subset was chosen" << std::endl;
-  {for( size_t i = 0; i < childCount; i++ ){
-    children[i]->_rdsSplitHere = true;
-  }}
+//  dumpFile << "have to apply merging to this subtree" << std::endl;
+  // otherwise we need to apply merging
+  rdsMerge( t, outHeuristics );
+}
 
-  // TIM: force heuristic update?
-  rdsCompile( n );
+void SplitTree::rdsDecideSave( SplitNode* n, const SplitShaderHeuristics& inHeuristics )
+{
+  if( !n->isMultiplyReferenced() )
+    return;
 
-///   dumpFile << "^^^^^^^^^^^^^^^^^^^^^^^^ END MERGE " << (void*)n << "^^^^^^^^^^^^^^^^^^^\n";
-  // we couldn't manage any of them...
-  // mark all children for saving,
-  // and then return
+//  dumpFile << "subdivide is deciding whether to save " << (void*)n << std::endl;
+//  n->dump( dumpFile );
+//  dumpFile << std::endl;
+
+  if( n->_rdsFixedMarked )
+  {
+//    dumpFile << "fixed as saved" << std::endl;
+    n->_splitHere = true;
+  }
+  else if( n->_rdsFixedUnmarked )
+  {
+//    dumpFile << "fixed as unsaved" << std::endl;
+    n->_splitHere = false;
+  }
+  else
+  {
+    n->_splitHere = !( inHeuristics.recompute );
+
+    n->_wasConsidered = true;
+    n->_wasSaved = n->_splitHere;
+
+//    dumpFile << "heuristic decided to " << (n->_splitHere ? "@save" : "recompute" ) << std::endl;
+  }
 }
 
 bool SplitTree::rdsCompile( SplitNode* inNode )
 {
-  // TIM: we really need to handle this better:
-  if( inNode->isTrivial() )
+  SplitShaderHeuristics heuristics;
+  rdsCompile( inNode, heuristics );
+  return heuristics.valid;
+}
+
+bool SplitTree::rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeuristics )
+{
+  if( inNode == _pseudoRoot )
   {
-    SplitShaderHeuristics heuristics;
-    heuristics.cost = 0;
-    heuristics.recompute = true;
-    heuristics.valid = true;
+    // TIM: the pseudo root will only
+    // compile succesfully if all
+    // of its children are splits
+    bool valid = true;
+    size_t childCount = _pseudoRoot->getGraphChildCount();
+    for( size_t i = 0; i < childCount; i++ )
+    {
+      if( !_pseudoRoot->getIndexedGraphChild(i)->isMarkedAsSplit() )
+        valid = false;
+    }
+
+    outHeuristics.cost = 0;
+    outHeuristics.recompute = true;
+    outHeuristics.valid = valid;
+    return valid;
+  }
+
+  // TIM: we really need to handle this better:
+  if( inNode->getGraphChildCount() == 0 )
+  {
+    outHeuristics.cost = 0;
+    outHeuristics.recompute = true;
+    outHeuristics.valid = true;
     return true;
   }
 
   std::vector<SplitNode*>  outputVector;
   outputVector.push_back( inNode );
 
-  SplitShaderHeuristics heuristics;
-
   std::ostringstream nullStream;
-  _compiler.compile( *this, outputVector, nullStream, heuristics );
+  _compiler.compile( *this, outputVector, nullStream, outHeuristics );
 
-  /*/ TIM: if you want to see the output at the point of failure...
-  static size_t errorNumber = 0;
-  if( !heuristics.valid )
-  {
-//    std::cerr << "****" << std::endl;
-//    inNode->dump( std::cerr );
-//    std::cerr << "****" << std::endl;
-
-    if( ++errorNumber == 1 )
-      throw 1;
-  }// */
-
-  if( heuristics.valid )
-    inNode->setHeuristics( heuristics );
-
-  return heuristics.valid;
+  return outHeuristics.valid;
 }
 
 float SplitTree::getPartitionCost()
 {
-  SplitUnmarkTraversal unmark( SplitNode::kMarkBit_PartitionCost );
-  unmark( _dagOrderNodeList );
-  unmark( _outputPositionInterpolant );
-
-  class AccumulateCostTraversal : public SplitNodeTraversal
+  // TIM: print it out for my edification :)
+  for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
   {
-  public:
-    float _cost;
-    virtual void traverse( SplitNode* inNode ) {
+    SplitNode* node = *i;
 
-      if( inNode->isMarked( SplitNode::kMarkBit_PartitionCost ) )
-        return;
-      inNode->mark( SplitNode::kMarkBit_PartitionCost );
+    if( !node->isMarkedAsSplit() ) continue;
 
-      inNode->traverseChildren( *this );
+//    std::cerr << "%%%%%%%%%%%%%%%\n";
+//    node->dump( std::cerr );
+//    std::cerr << std::endl;
+  }
 
-      if( inNode->isMarkedAsSplit() )
-      {
-        _cost += inNode->getHeuristics().cost;
-      }
-    }
-  };
+  float totalCost = 0;
+  SplitShaderHeuristics heuristics;
+  for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
+  {
+    SplitNode* node = *i;
 
-  AccumulateCostTraversal accumulate;
-  accumulate._cost = 0;
-  accumulate( _outputList );
+    if( !node->isMarkedAsSplit() ) continue;
 
-  return accumulate._cost;
+    bool valid = rdsCompile( node, heuristics );
+    assert( valid );
+
+    totalCost += heuristics.cost;
+  }
+
+  return totalCost;
 }
 
 void SplitTree::printShaderFunction( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const
 {
-  SplitUnmarkTraversal unmark( SplitNode::kMarkBit_SubPrinted );
-
   SplitArgumentTraversal printArguments(inStream,_outputPositionInterpolant);
   SplitStatementTraversal printStatements(inStream,_outputPositionInterpolant);
 
@@ -444,14 +634,12 @@ void SplitTree::printShaderFunction( const std::vector<SplitNode*>& inOutputs, s
   // create the wrapper for the function
   inStream << "void main(" << std::endl;
 
-  unmark( _dagOrderNodeList );
-  unmark( _outputPositionInterpolant );
+  unmark( SplitNode::kMarkBit_SubPrinted );
   printArguments( inOutputs );
 
   inStream << " ) {" << std::endl;
 
-  unmark( _dagOrderNodeList );
-  unmark( _outputPositionInterpolant );
+  unmark( SplitNode::kMarkBit_SubPrinted );
   printStatements( inOutputs );
 
   inStream << "}" << std::endl;
@@ -459,11 +647,9 @@ void SplitTree::printShaderFunction( const std::vector<SplitNode*>& inOutputs, s
 
 void SplitTree::printArgumentAnnotations( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const
 {
-  SplitUnmarkTraversal unmark( SplitNode::kMarkBit_SubPrinted );
   SplitAnnotationTraversal printAnnotations(inStream,_outputPositionInterpolant);
 
-  unmark( _dagOrderNodeList );
-  unmark( _outputPositionInterpolant );
+  unmark( SplitNode::kMarkBit_SubPrinted );
   printAnnotations( inOutputs );
 }
 
@@ -534,6 +720,8 @@ void SplitTree::build( FunctionDef* inFunctionDef )
     statement = statement->next;
   }
 
+  _pseudoRoot = new SplitRootNode();
+
   _resultValue = builder.getResultValue();
 
   for( i = 0; i < functionType->nArgs; i++ )
@@ -545,10 +733,19 @@ void SplitTree::build( FunctionDef* inFunctionDef )
     if( (argumentType->getQualifiers() & TQ_Out) != 0 )
     {
       SplitNode* outputValue = builder.findVariable( name )->getValueNode();
-      // TIM: we assume here that each output is single-valued... :(
-      SplitNode* outputNode = new OutputSplitNode( outputValue, i, 0 );
-      outputValues[name] = outputNode;
+
+      _pseudoRoot->addChild( outputValue );
+
+      _outputList.push_back( outputValue );
+      _outputArgumentIndices.push_back( (i+1) );
     }
+  }
+
+  if( _resultValue )
+  {
+    _pseudoRoot->addChild( _resultValue );
+    _outputList.push_back( _resultValue );
+    _outputArgumentIndices.push_back( 0 );
   }
 
   buildDominatorTree();

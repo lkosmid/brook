@@ -3,9 +3,11 @@
 
 #include "splitnode.h"
 
-void SplitUnmarkTraversal::traverse( SplitNode* inNode )
+void SplitNodeTraversal::traverseGraphChildren( SplitNode* inNode )
 {
-  inNode->unmark( (SplitNode::MarkBit)_markBit );
+  size_t childCount = inNode->getGraphChildCount();
+  for( size_t i = 0; i < childCount; i++ )
+    traverse( inNode->getIndexedGraphChild(i) );
 }
 
 void SplitArgumentTraversal::traverse( SplitNode* inNode )
@@ -17,7 +19,7 @@ void SplitArgumentTraversal::traverse( SplitNode* inNode )
 
   if( inNode->isMarkedAsOutput() )
   {
-    inNode->traverseChildren( *this );
+    traverseGraphChildren( inNode );
 
     if( hasOutput )
       stream << ",\n\t\t";
@@ -51,7 +53,7 @@ void SplitArgumentTraversal::traverse( SplitNode* inNode )
   }
 
   if( traverseChildren )
-    inNode->traverseChildren( *this );
+    traverseGraphChildren( inNode );
 
   if( !inNode->needsArgument() ) return;
 
@@ -74,7 +76,7 @@ void SplitStatementTraversal::traverse( SplitNode* inNode )
 
   if( inNode->isMarkedAsOutput() )
   {
-    inNode->traverseChildren( *this );
+    traverseGraphChildren( inNode );
 
     inNode->printTemporaryName( stream );
     stream << " = float4(";
@@ -115,7 +117,7 @@ void SplitStatementTraversal::traverse( SplitNode* inNode )
     return;
   }
 
-  inNode->traverseChildren( *this );
+  traverseGraphChildren( inNode );
 
   stream << "\t";
   if( inNode->needsTemporaryVariable() )
@@ -149,20 +151,11 @@ void SplitAnnotationTraversal::traverse( SplitNode* inNode )
 
   if( inNode->isMarkedAsOutput() )
   {
-    inNode->traverseChildren( *this );
+    traverseGraphChildren( inNode );
 
-    if( OutputSplitNode* output = inNode->isOutputNode() )
-    {
-      stream << "\t\t\t";
-      inNode->printAnnotationInfo( stream );
-      stream << "\n";
-    }
-    else
-    {
-      stream << "\t\t\t";
-      stream << ".output(-" << inNode->getTemporaryID() << ",0)";
-      stream << "\n";
-    }
+    stream << "\t\t\t";
+    stream << ".output(" << inNode->getTemporaryID() << ",0)";
+    stream << "\n";
     return;
   }
 
@@ -171,13 +164,13 @@ void SplitAnnotationTraversal::traverse( SplitNode* inNode )
     traverse( outputPosition );
 
     stream << "\t\t\t";
-    stream << ".sampler(-" << inNode->getTemporaryID() << ",0)";
+    stream << ".sampler(" << inNode->getTemporaryID() << ",0)";
     stream << "\n";
     // mark temporary sampler...
     return;
   }
 
-  inNode->traverseChildren( *this );
+  traverseGraphChildren( inNode );
 
   if( !inNode->needsAnnotation() ) return;
 

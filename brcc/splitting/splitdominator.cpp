@@ -4,71 +4,40 @@
 
 #include <fstream>
 
-class SplitDominatorDFSTraversal :
-  public SplitNodeTraversal
+void SplitTree::dominatorDFS( SplitNode* inNode, SplitNode* inParent, size_t& ioID )
 {
-public:
-  SplitDominatorDFSTraversal( std::vector<SplitNode*>& ioNodeList, std::vector<SplitNode*>& ioDagOrderList )
-    : _id(1), _parent(0), _nodeList(ioNodeList), _dagOrderNodeList(ioDagOrderList)
-  {}
+  if( inParent )
+    inNode->_graphParents.push_back( inParent );
 
-  void traverse( SplitNode* inNode )
+  if( inNode->_spanningNodeID > 0 )
+    return;
+
+  inNode->_spanningParent = inParent;
+
+  inNode->_spanningNodeID = ioID++;
+  inNode->_spanningSemidominatorID = inNode->_spanningNodeID;
+  _rdsNodeList.push_back( inNode );
+
+  size_t childCount = inNode->getGraphChildCount();
+  for( size_t i = 0; i < childCount; i++ )
   {
-
-    if( _parent ) {
-      inNode->_graphParents.push_back( _parent );
-    }
-
-    if( inNode->_spanningNodeID > 0 )
-      return;
-
-//    std::cerr << "dominator DFS id (" << _id << ") : ";
-//    inNode->dump( std::cerr );
-//    std::cerr << std::endl;
-
-    inNode->_spanningParent = _parent;
-//    _parent->_spanningChildren.push_back( inNode );
-
-    inNode->_spanningNodeID = _id++;
-    inNode->_spanningSemidominatorID = inNode->_spanningNodeID;
-    _nodeList.push_back( inNode );
-
-//    std::cerr << "{";
-    SplitDominatorDFSTraversal subTraversal( _id, inNode, _nodeList, _dagOrderNodeList );
-    inNode->traverseChildren( subTraversal );
-//    std::cerr << "}";
-
-    _dagOrderNodeList.push_back( inNode );
-
-    _id = subTraversal._id;
+    SplitNode* child = inNode->getIndexedGraphChild(i);
+    dominatorDFS( child, inNode, ioID );
   }
 
-private:
-  SplitDominatorDFSTraversal( size_t inID, SplitNode* inParent, std::vector<SplitNode*>& ioNodeList, std::vector<SplitNode*>& ioDagOrderList )
-    : _id(inID), _parent(inParent), _nodeList(ioNodeList), _dagOrderNodeList(ioDagOrderList)
-  {}
-
-  size_t _id;
-  SplitNode* _parent;
-  std::vector<SplitNode*>& _nodeList;
-  std::vector<SplitNode*>& _dagOrderNodeList;
-};
+  _dagOrderNodeList.push_back( inNode );
+}
 
 void SplitTree::buildDominatorTree()
 {
 //  std::cerr << "buildDominatorTree" << std::endl;
 
-  for( NodeMap::iterator i = outputValues.begin(); i != outputValues.end(); ++i )
-    _outputList.push_back( (*i).second );
-  if( _resultValue )
-    _outputList.push_back( _resultValue );
-
 //  std::cerr << "step 1" << std::endl;
 
   // build the immediate dominator info...
   // step 1 - dfs
-  SplitDominatorDFSTraversal dominatorDFS( _rdsNodeList, _dagOrderNodeList );
-  dominatorDFS( _outputList );
+  size_t id = 1;
+  dominatorDFS( _pseudoRoot, NULL, id );
 
 //  std::cerr << "steps 2,3" << std::endl;
   // step 2 and 3, build semidominators
@@ -128,8 +97,6 @@ void SplitTree::buildDominatorTree()
   // we have dominator info... 
   // now we need to prune it to the Partial Dominator Tree,
   // and the list of MR nodes...
-  // we iterate in reverse order, because the
-  // roots are at the beginning of the list...
   {for( size_t i = 0; i < _dagOrderNodeList.size(); i++ )
   {
     SplitNode* n = _dagOrderNodeList[i];
@@ -141,12 +108,14 @@ void SplitTree::buildDominatorTree()
     // (that is, those that should never be saved)
     if( n->_graphParents.size() > 1 /*&& !n->isTrivial()*/ )
     {
+      n->_isPDTNode = true;
       _multiplyReferencedNodes.push_back( n );
       if( n->_pdtDominator )
         n->_pdtDominator->_pdtChildren.push_back( n );
     }
     else if( n->_pdtChildren.size() != 0 )
     {
+      n->_isPDTNode = true;
       if( n->_pdtDominator )
         n->_pdtDominator->_pdtChildren.push_back( n );
     }
@@ -158,13 +127,7 @@ void SplitTree::buildDominatorTree()
 void SplitTree::dumpDominatorTree()
 {
   std::ofstream dumpFile("dominator_dump.txt");
-
-  size_t outputCount = _outputList.size();
-  for( size_t o = 0; o < outputCount; o++ )
-  {
-    SplitNode* output = _outputList[o];
-    dumpDominatorTree( dumpFile, output );
-  }
+  dumpDominatorTree( dumpFile, _pseudoRoot );
 }
 
 void SplitTree::dumpDominatorTree( std::ostream& inStream, SplitNode* inNode, int inLevel )

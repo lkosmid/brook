@@ -15,6 +15,7 @@ class FunctionDef;
 class SplitNode;
 class SplitTechniqueDesc;
 class SplitCompiler;
+class SplitShaderHeuristics;
 
 class SplitTree
 {
@@ -31,8 +32,6 @@ public:
   void printShaderFunction( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const;
   void printArgumentAnnotations( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const;
 
-  void rdsMerge( SplitNode* n );
-
   const SplitCompiler& getComplier() {
     return _compiler;
   }
@@ -46,10 +45,16 @@ public:
   }
 
 private:
+  friend class SplitTreeBuilder;
+  typedef std::map< std::string, SplitNode* > NodeMap;
+  typedef std::vector< SplitNode* > NodeList;
+  typedef std::set< SplitNode* > NodeSet;
+
   void build( FunctionDef* inFunctionDef );
   void build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>& inArguments );
 
   void buildDominatorTree();
+  void dominatorDFS( SplitNode* inNode, SplitNode* inParent, size_t& ioID );
   void dumpDominatorTree();
   void dumpDominatorTree( std::ostream& inStream, SplitNode* inNode, int inLevel = 0 );
 
@@ -57,27 +62,33 @@ private:
   void preRdsMagic( SplitNode* inNode );
 
   void rdsSearch();
+  float rdsCompileConfiguration();
   void rdsSubdivide();
-  void rdsSubdivide( SplitNode* t );
-  std::vector<SplitNode*> _rdsNodeList;
+  void rdsSubdivide( SplitNode* t, SplitShaderHeuristics& outHeuristics );
+  void rdsDecideSave( SplitNode* n, const SplitShaderHeuristics& inHeuristics );
+
+  void rdsMerge( SplitNode* n, SplitShaderHeuristics& outHeuristics );
+  void rdsTryMerge( SplitNode* n, SplitShaderHeuristics& outHeuristics );
+  bool rdsMergeSome( SplitNode* n, const NodeList& inUnsavedChildren, size_t inSubsetSize, SplitShaderHeuristics& outHeuristics );
+  void rdsMergeRec( SplitNode* n );
+
+  void unmark( int inMarkBit ) const;
+
+  NodeList _rdsNodeList;
 
   bool rdsCompile( SplitNode* inNode );
+  bool rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeuristics );
 
   float getPartitionCost();
 
-  typedef std::vector< SplitNode* > NodeList;
 
-  friend class SplitTreeBuilder;
-  typedef std::map< std::string, SplitNode* > NodeMap;
-  NodeMap outputValues;
+  SplitNode* _pseudoRoot;
 
-  //typedef std::vector< SplitNode* > NodeList;
   NodeList _outputList;
+  std::vector<int> _outputArgumentIndices;
   NodeList _multiplyReferencedNodes;
 
   NodeList _dagOrderNodeList;
-
-  typedef std::set< SplitNode* > NodeSet;
 
   SplitNode* _outputPositionInterpolant;
   SplitNode* _resultValue;

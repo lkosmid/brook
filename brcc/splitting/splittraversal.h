@@ -20,19 +20,8 @@ public:
   }
 
   virtual void traverse( SplitNode* inNode ) = 0;
-};
 
-class SplitUnmarkTraversal :
-  public SplitNodeTraversal
-{
-public:
-  SplitUnmarkTraversal( unsigned int inMarkBit )
-    : _markBit(inMarkBit) {}
-
-  void traverse( SplitNode* inNode );
-
-private:
-  unsigned int _markBit;
+  void traverseGraphChildren( SplitNode* inNode );
 };
 
 class SplitArgumentCounter

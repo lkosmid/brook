@@ -18,7 +18,7 @@ public:
     _end = 0;
     for( size_t i = 0; i < _subsetSize; i++ )
       _end |= 1 << (i + (_setSize-_subsetSize));
-    _current = 0;
+    _current = 0xFFFFFFFF;
   }
 
   bool hasMore()
@@ -28,7 +28,7 @@ public:
 
   size_t getNext()
   {
-    if( _current == 0 )
+    if( _current == 0xFFFFFFFF )
     {
       for( size_t i = 0; i < _subsetSize; i++ )
         _state.push_back(i);
