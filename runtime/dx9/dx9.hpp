@@ -6,6 +6,21 @@
 
 #define DX9_RUNTIME_STRING "dx9"
 
+// TIM: 'helper' struct for defining the bounds
+// of a stream in its texture:
+struct DX9Rect
+{
+  DX9Rect() {}
+  DX9Rect( float inLeft, float inTop, float inRight, float inBottom )
+    : left(inLeft), top(inTop), right(inRight), bottom(inBottom) {}
+  
+  operator float*() { return (float*)this; }
+    
+  operator const float*() const { return (const float*)this; }
+
+  float left, top, right, bottom;
+};
+
 class DX9Kernel : public __BrookKernel {
 public:
   DX9Kernel(DX9RunTime* runtime, const char* source[]);
@@ -27,6 +42,8 @@ private:
 
   DX9RunTime* runtime;
   DX9PixelShader* pixelShader;
+  DX9Rect inputRects[8]; // TIM: TODO: named constant?
+  DX9Rect outputRect;
 };
 
 class DX9Stream : public __BrookStream {
@@ -38,12 +55,16 @@ public:
 
   IDirect3DTexture9* getTextureHandle();
   IDirect3DSurface9* getSurfaceHandle();
+  const DX9Rect& getInputRect() { return inputRect; }
+  const DX9Rect& getOutputRect() { return outputRect; }
 
 private:
   IDirect3DDevice9* getDevice();
 
   DX9RunTime* runtime;
   DX9Texture* texture;
+  DX9Rect inputRect;
+  DX9Rect outputRect;
 };
 
 class DX9RunTime : public __BrookRunTime {
@@ -58,11 +79,18 @@ public:
     return passthroughVertexShader;
   }
 
+  void execute( const DX9Rect& outputRect, const DX9Rect* inputRects );
+
 private:
+  void initializeVertexBuffer();
+
   DX9Window* window;
   DX9VertexShader* passthroughVertexShader;
   IDirect3D9* direct3D;
   IDirect3DDevice9* device;
+  IDirect3DVertexBuffer9* vertexBuffer;
+  IDirect3DIndexBuffer9* indexBuffer;
+  IDirect3DVertexDeclaration9* vertexDecl;
 };
 
 

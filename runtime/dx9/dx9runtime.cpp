@@ -18,6 +18,10 @@ DX9RunTime::DX9RunTime() {
   // TIM: initialize D3D
   DX9Trace("DX9RunTime::DX9RunTime");
 
+  vertexBuffer = NULL;
+  indexBuffer = NULL;
+  vertexDecl = NULL;
+
   window = DX9Window::create();
   HWND windowHandle = window->getWindowHandle();
 
@@ -35,7 +39,7 @@ DX9RunTime::DX9RunTime() {
 	deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
 
 	HRESULT result = direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
-		D3DCREATE_SOFTWARE_VERTEXPROCESSING, &deviceDesc, &device );
+		D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &device );
 	DX9CheckResult( result );
 
 	// TIM: set up initial state
@@ -57,4 +61,97 @@ __BrookStream * DX9RunTime::CreateStream(const char type[], int dims, int extent
 DX9RunTime::~DX9RunTime() {
   // Does nothing
   // TIM: finalize D3D
+}
+
+// TIM: this all needs to move somewhere else... I think...
+struct Vector2
+{
+  float x, y;
+};
+
+typedef unsigned short UInt16;
+
+struct DX9Vertex
+{
+  Vector2 position;
+  Vector2 texcoords[8]; // TIM: TODO: named constant
+};
+
+void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
+{
+  HRESULT result;
+  initializeVertexBuffer();
+
+
+  result = device->BeginScene();
+  DX9CheckResult( result );
+
+  result = device->SetVertexDeclaration( vertexDecl );
+  DX9CheckResult( result );
+
+  DX9Vertex* vertices;
+  result = vertexBuffer->Lock( 0, 0, (void**)&vertices, 0 );
+  DX9CheckResult( result );
+
+  DX9Vertex vertex;
+  for( int i = 0; i < 4; i++ )
+  {
+    int xIndex = (i&0x01) ? 0 : 2;
+    int yIndex = (i&0x02) ? 3 : 1;
+
+    vertex.position.x = outputRect[xIndex];
+    vertex.position.y = outputRect[yIndex];
+
+    for( int t = 0; t < 8; t++ )
+    {
+      vertex.texcoords[t].x = inputRects[t][xIndex];
+      vertex.texcoords[t].y = inputRects[t][yIndex];
+    }
+
+    *vertices++ = vertex;
+  }
+  result = vertexBuffer->Unlock();
+  DX9CheckResult( result );
+
+  result = device->SetStreamSource( 0, vertexBuffer, 0, sizeof(DX9Vertex) );
+  DX9CheckResult( result );
+
+  result = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, 2 );
+  DX9CheckResult( result );
+
+  result = device->EndScene();
+  DX9CheckResult( result );
+}
+
+static const D3DVERTEXELEMENT9 kDX9VertexElements[] =
+{
+	{ 0, 0, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+	{ 0, 2*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+	{ 0, 4*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+	{ 0, 6*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 2 },
+	{ 0, 8*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 3 },
+	{ 0, 10*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 4 },
+	{ 0, 12*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 5 },
+	{ 0, 14*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 6 },
+	{ 0, 16*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 7 },
+	D3DDECL_END()
+};
+
+void DX9RunTime::initializeVertexBuffer()
+{
+  if( vertexBuffer != NULL ) return;
+
+  static const int kMaxVertexCount = 64;
+  static const int kMaxIndexCount = 128;
+
+  HRESULT result = device->CreateVertexBuffer(
+    kMaxVertexCount*sizeof(DX9Vertex), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &vertexBuffer, NULL );
+  DX9CheckResult( result );
+
+  result = device->CreateIndexBuffer(
+    kMaxIndexCount*sizeof(UInt16), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &indexBuffer, NULL );
+  DX9CheckResult( result );
+
+  result = device->CreateVertexDeclaration( kDX9VertexElements, &vertexDecl );
+  DX9CheckResult( result );
 }

@@ -37,8 +37,7 @@ void DX9Kernel::SetInput(const int arg, const __BrookStream *s) {
   int textureUnit = mapArgumentToTextureUnit( arg );
   getDevice()->SetTexture( textureUnit, textureHandle );
 
-  // TIM: TODO:
-  // setup rectangle to be rendered from...
+  inputRects[textureUnit] = stream->getInputRect();
 }
 
 void DX9Kernel::SetConstantFloat(const int arg, const float &val) {
@@ -111,8 +110,7 @@ void DX9Kernel::SetOutput(const __BrookStream *s) {
 
   getDevice()->SetRenderTarget( 0, surfaceHandle );
 
-  // TIM: TODO:
-  // set up the vertex rect to be rendered to...
+  outputRect = stream->getOutputRect();
 }
 
 void DX9Kernel::Exec(void) {
@@ -123,8 +121,7 @@ void DX9Kernel::Exec(void) {
   getDevice()->SetPixelShader( pixelShader->getHandle() );
   getDevice()->SetVertexShader( vertexShader->getHandle() );
 
-  // XXX: TODO
-  // render with pre-determined rects...
+  runtime->execute( outputRect, inputRects );
 }
 
 DX9Kernel::~DX9Kernel() {
