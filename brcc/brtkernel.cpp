@@ -58,36 +58,38 @@ BRTPS20KernelCode::BRTPS20KernelCode(const FunctionDef& _fDef)
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *
 BRTPS20KernelCode::ConvertGathers (Expression *expr) {
-   BrtGatherExpr *gather;
-   if (expr->etype == ET_IndexExpr) {
-      
-      if (globals.verbose) {
-         std::cerr << "Found Index Expr: " << expr << std::endl;
-      }
-      
-      // Check to see if the expression is from a gather stream
-      IndexExpr *p = (IndexExpr *) expr;
-      for (p = (IndexExpr *) p->array; 
-           p && p->etype == ET_IndexExpr;
-           p = (IndexExpr *) p->array);
-      
-      // If things have gone horribly wrong
-      if (!p) return expr;
-      if (p->etype != ET_Variable) return expr;
- 
-      Variable *v = (Variable *) p;
-      assert(v->name->entry);
-      
-      if (v->name->entry->type != ParamDeclEntry)
-         return expr;
-      // XXX Daniel: BrtGatherExpr asserts that it is indeed an array, not a TT_Stream
-      if (v->name->entry->uVarDecl)
-         if (v->name->entry->uVarDecl->form)
-            if (v->name->entry->uVarDecl->form->type!=TT_Array)
-               return expr;
-      gather = new BrtGatherExpr((IndexExpr *) expr);
-
-    //delete expr;  // IAB: XXX For some reason I can't delete expr!!!
+  BrtGatherExpr *gather;
+  if (expr->etype == ET_IndexExpr) {
+    
+    if (globals.verbose) {
+      std::cerr << "Found Index Expr: " << expr << std::endl;
+    }
+    
+    // Check to see if the expression is from a gather stream
+    IndexExpr *p = (IndexExpr *) expr;
+    for (p = (IndexExpr *) p->array; 
+         p && p->etype == ET_IndexExpr;
+         p = (IndexExpr *) p->array);
+    
+    // If things have gone horribly wrong
+    if (!p) return expr;
+    if (p->etype != ET_Variable) return expr;
+    
+    Variable *v = (Variable *) p;
+    assert(v->name->entry);
+    
+    if (v->name->entry->type != ParamDeclEntry)
+      return expr;
+    // XXX Daniel: BrtGatherExpr asserts that it is
+    //             indeed an array, not a TT_Stream
+    if (v->name->entry->uVarDecl)
+      if (v->name->entry->uVarDecl->form)
+        if (v->name->entry->uVarDecl->form->type!=TT_Array)
+          return expr;
+    gather = new BrtGatherExpr((IndexExpr *) expr);
+    
+    // IAB: XXX For some reason I can't delete expr!!!
+    //delete expr; 
     return gather;
   }
   return expr;
