@@ -1,6 +1,6 @@
 #include "cpu.hpp"
 namespace brook{
-	const char * CPU_RUNTIME_STRING="CPU_RUNTIME";
+	const char * CPU_RUNTIME_STRING="cpu";
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     CPURunTime::CPURunTime() {

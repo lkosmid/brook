@@ -61,7 +61,38 @@ namespace brook {
     char *env = getenv(RUNTIME_ENV_VAR);
 
     if (!env) {
-      fprintf (stderr,"No runtime requested. Using CPU\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*******************************\n");
+      fprintf (stderr,"*                             *\n");
+      fprintf (stderr,"* BRT_RUNTIME env variable is *\n");
+      fprintf (stderr,"* not set. Defaulting to CPU  *\n");
+      fprintf (stderr,"* rutime.                     *\n");
+      fprintf (stderr,"*                             *\n");
+      fprintf (stderr,"* CPU Backend:                *\n");
+      fprintf (stderr,"* BRT_RUNTIME = cpu           *\n");
+      fprintf (stderr,"*                             *\n");
+      fprintf (stderr,"* NVIDIA NV30 Backend:        *\n");
+      fprintf (stderr,"* BRT_RUNTIME = nv30gl        *\n");
+      fprintf (stderr,"*                             *\n");
+      fprintf (stderr,"* DirectX9 Backend:           *\n");
+      fprintf (stderr,"* BRT_RUNTIME = dx9           *\n");
+      fprintf (stderr,"*                             *\n");
+      fprintf (stderr,"*******************************\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n");
       return new CPURunTime();
     }
 
