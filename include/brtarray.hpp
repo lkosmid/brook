@@ -45,8 +45,8 @@ public:
 		if (copy_data)
 			free(this->data);
 	}
-	template <class T> int indexOf (const T &index) const{
-           int i=T::size-1;
+	template <class T> unsigned int indexOf (const T &index) const{
+           unsigned int i=T::size-1;
            if (dims<T::size)
               i=dims-1;
            unsigned int total=(unsigned int) index.getAt(i);
