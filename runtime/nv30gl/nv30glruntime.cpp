@@ -59,9 +59,7 @@ Stream *
 NV30GLRunTime::CreateStream(
       int fieldCount, const __BRTStreamType fieldTypes[],
       int dims, const int extents[]) {
-  assert(fieldCount == 1);
-  __BRTStreamType type = fieldTypes[0];
-  return new NV30GLStream( this, type, dims, extents );
+  return new NV30GLStream( this, fieldCount, fieldTypes, dims, extents );
 }
 
 Iter * 

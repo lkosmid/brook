@@ -42,10 +42,16 @@ void brook::__check_gl(int line, char *file) {
                    << mem/(1024*1024) << " MB\n";
 
          for (s=rt->streamlist; s; s=s->next) {
-            int size = s->width*s->height*s->ncomp*sizeof(float);
+            int size;
+            int ncomp = 0;
 
-         std::cerr << "Stream    (" << s->width << " x " 
-                      << s->height << " x " << s->ncomp
+            for (unsigned int i=0; i<s->nfields; i++)
+               ncomp += s->ncomp[i];
+
+            size = s->width*s->height*ncomp*sizeof(float);
+
+            std::cerr << "Stream    (" << s->width << " x " 
+                      << s->height << " x " << ncomp
                       << "): ";
             if (size < 1024) 
                std::cerr << size << " bytes\n";

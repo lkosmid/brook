@@ -5,13 +5,13 @@
 
 using namespace brook;
 
-NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
-                            __BRTStreamType type, int dims, 
-                            const int extents[])
-  : elementType(type), runtime(rt) { 
+NV30GLStream::NV30GLStream (NV30GLRunTime *rt, int fieldCount,
+                            const __BRTStreamType fieldType[], 
+                            int dims, const int extents[])
+  : runtime(rt) { 
 
    int i;
-  
+
   // Initialize width and height
   height  = 1;
   switch (dims) {
@@ -37,23 +37,39 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
     exit(1);
   }
 
-  // Initialize ncomp
-  ncomp = type;
-  if (ncomp < 1 || ncomp > 4) {
-    fprintf (stderr, "NV30GL: Unsupported stream type created\n");
-    exit(1);
-  }
+  id = (GLuint *) malloc (fieldCount * sizeof (GLuint));
+  ncomp = (unsigned int *) malloc (fieldCount * sizeof(unsigned int));
+  stride = (unsigned int *) malloc (fieldCount * sizeof(unsigned int));
+  nfields = (unsigned int) fieldCount;
 
-  glGenTextures(1, &id);
-  
-  glActiveTextureARB(GL_TEXTURE0_ARB+15);
-  glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
-  
-  // Create a texture with NULL data
-  glTexImage2D (GL_TEXTURE_RECTANGLE_NV, 0, GLtype[ncomp], 
-                width, height, 0, 
-                GLformat[ncomp], GL_FLOAT, NULL);
+  glGenTextures(nfields, id);
   CHECK_GL();
+
+  elemsize = 0;
+  for (i=0; i<fieldCount; i++) {
+     // Initialize ncomp
+     ncomp[i] = fieldType[i];
+     if (ncomp[i] < 1 || ncomp[i] > 4) {
+        fprintf (stderr, "NV30GL: Unsupported stream type created\n");
+        exit(1);
+     }
+
+     elemsize += ncomp[i];
+
+     if (!i)
+        stride[i] = 0;
+     else
+        stride[i] = stride[i-1]+ncomp[i-1];
+
+     glActiveTextureARB(GL_TEXTURE0_ARB+15);
+     glBindTexture (GL_TEXTURE_RECTANGLE_NV, id[i]);
+     
+     // Create a texture with NULL data
+     glTexImage2D (GL_TEXTURE_RECTANGLE_NV, 0, GLtype[ncomp[i]], 
+                   width, height, 0, 
+                   GLformat[ncomp[i]], GL_FLOAT, NULL);
+     CHECK_GL();
+  }
   
   // Initialize the cacheptr
   cacheptr = NULL;
@@ -63,6 +79,7 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
     this->extents[i] = extents[i];
   this->dims = dims;
   
+  // Add to stream alloc linked list
   next = NULL;
   prev = NULL;
   if (rt->streamlist == NULL)
@@ -77,109 +94,167 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
 
 void
 NV30GLStream::GLReadData (void *data) {
+   float *p = (float *) data;
+   unsigned int i;
 
-   glActiveTextureARB(GL_TEXTURE0_ARB+15);
-   glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
-   
-   if (ncomp == 2) {
-      float4 *p = (float4 *) malloc (sizeof(float)*4*width*height);
-      glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GL_RGBA,
-                    GL_FLOAT, p);
-       
-       for (unsigned int i=0; i<width*height; i++) {
-          ((float2 *) data)[i].x = p[i].x;
-          ((float2 *) data)[i].y = p[i].y;
-       }
-       
-       free (p);
-    } else {
-       
+   for (i=0; i<nfields; i++) {
+      
+      glActiveTextureARB(GL_TEXTURE0_ARB);
+      glBindTexture (GL_TEXTURE_RECTANGLE_NV, id[i]);
+
+      if (ncomp[i] == 2) {
+         float4 *t = (float4 *) malloc (sizeof(float)*4*width*height);
+         glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GL_RGBA,
+                       GL_FLOAT, t);
+         
+         if (nfields == 1) {
+            for (unsigned int j=0; j<width*height; j++) {
+               ((float2 *) data)[j].x = t[j].x;
+               ((float2 *) data)[j].y = t[j].y;
+            }
+         } else
+            for (unsigned int j=0; j<width*height; j++) {
+               ((float2 *) (p+stride[i]))[j].x = t[j].x;
+               ((float2 *) (p+stride[i]))[j].y = t[j].y;
+            }
+         
+         free (t);
+      } else {
+         float *t;
+         if ( nfields == 1)
+            t = p;
+         else
+            t = (float *) malloc (sizeof(float)*ncomp[i]*width*height);
+         
+         
+         if (width == 1 && height == 1) {
+            glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp[i]],
+                          GL_FLOAT, (void *)(t));
+            return;
+         }
 #if 1
-       if (width == 1 && height == 1) {
-          glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp],
-                        GL_FLOAT, data);
-          return;
-       }
-
-       glActiveTextureARB(GL_TEXTURE0_ARB);
-       glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
-       glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
-       
-       glViewport (0, 0, width, height);
-       if (height == 1) {
-          glBegin(GL_TRIANGLES);
-          glTexCoord2f(0.0f, 0.5f);
-          glVertex2f(-1.0f, -1.0f);
-          glTexCoord2f(width*2.0f, 0.5f);
-          glVertex2f(3.0f, -1.0f);
-          glTexCoord2f(0.0f, 0.5f);
-          glVertex2f(-1.0f, 3.0f);
-          glEnd();
-       } else if (width == 1) {
-          glBegin(GL_TRIANGLES);
-          glTexCoord2f(0.5f, 0.0f);
-          glVertex2f(-1.0f, -1.0f);
-          glTexCoord2f(0.5f, 0.0f);
-          glVertex2f(3.0f, -1.0f);
-          glTexCoord2f(0.5f, height*2.0f);
-          glVertex2f(-1.0f, 3.0f);
-          glEnd();
-       } else {
-          glBegin(GL_TRIANGLES);
-          glTexCoord2f(0.0f, 0.0f);
-          glVertex2f(-1.0f, -1.0f);
-          glTexCoord2f(width*2.0f, 0.0f);
-          glVertex2f(3.0f, -1.0f);
-          glTexCoord2f(0.0f, height*2.0f);
-          glVertex2f(-1.0f, 3.0f);
-          glEnd();
-       }
-       glFinish();
-       glReadPixels (0, 0, width, height, GLformat[ncomp],
-                     GL_FLOAT, data);
+         
+         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
+         
+         glViewport (0, 0, width, height);
+         if (height == 1) {
+            glBegin(GL_TRIANGLES);
+            glTexCoord2f(0.0f, 0.5f);
+            glVertex2f(-1.0f, -1.0f);
+            glTexCoord2f(width*2.0f, 0.5f);
+            glVertex2f(3.0f, -1.0f);
+            glTexCoord2f(0.0f, 0.5f);
+            glVertex2f(-1.0f, 3.0f);
+            glEnd();
+         } else if (width == 1) {
+            glBegin(GL_TRIANGLES);
+            glTexCoord2f(0.5f, 0.0f);
+            glVertex2f(-1.0f, -1.0f);
+            glTexCoord2f(0.5f, 0.0f);
+            glVertex2f(3.0f, -1.0f);
+            glTexCoord2f(0.5f, height*2.0f);
+            glVertex2f(-1.0f, 3.0f);
+            glEnd();
+         } else {
+            glBegin(GL_TRIANGLES);
+            glTexCoord2f(0.0f, 0.0f);
+            glVertex2f(-1.0f, -1.0f);
+            glTexCoord2f(width*2.0f, 0.0f);
+            glVertex2f(3.0f, -1.0f);
+            glTexCoord2f(0.0f, height*2.0f);
+            glVertex2f(-1.0f, 3.0f);
+            glEnd();
+         }
+         glFinish();
+         glReadPixels (0, 0, width, height, GLformat[ncomp[i]],
+                       GL_FLOAT, t);
 #else
-       glFinish();
-       glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp],
-                     GL_FLOAT, data);
+         glFinish();
+         glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp[i]],
+                       GL_FLOAT, t);
 #endif
+
+         if (nfields != 1) {
+            unsigned int j,k;
+            float *src = t;
+            float *dst = p+stride[i];
+            for (j=0; j<width*height; j++) {
+               for (k=0; k<ncomp[i]; k++)
+                  *dst++ = *src++;
+               dst += elemsize-k;
+            }
+            free(t);
+         }
+      }
     }
     CHECK_GL();
 }
 
 void
 NV30GLStream::GLWriteData (const void *data) {
-   
-   glActiveTextureARB(GL_TEXTURE0_ARB+15);
-   glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
-   
-    if (ncomp == 2) {
-       float4 *p = (float4 *) malloc (sizeof(float)*4*width*height);
-       for (unsigned int i=0; i<width*height; i++) {
-          p[i].x = ((float2 *) data)[i].x;
-          p[i].y = ((float2 *) data)[i].y;
-          p[i].z = 0.0f;
-          p[i].w = 0.0f;
-       }
-       
-       glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                       0, 0, width, height, GL_RGBA,
-                       GL_FLOAT, p);
-       
-       free (p);
-    } else { 
-       glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                       0, 0, width, height, GLformat[ncomp],
-                       GL_FLOAT, data);
-    }
+   unsigned int i;
+   float *p = (float*) data;
+
+   glActiveTextureARB(GL_TEXTURE0_ARB);
+
+   for (i=0; i<nfields; i++) {
+
+      glBindTexture (GL_TEXTURE_RECTANGLE_NV, id[i]);
+      
+      if (ncomp[i] == 2) {
+         float4 *t = (float4 *) malloc (sizeof(float)*4*width*height);
+         for (unsigned int j=0; j<width*height; j++) {
+            t[j].x = ((float2 *) (p+stride[i]))[j].x;
+            t[j].y = ((float2 *) (p+stride[i]))[j].y;
+            t[j].z = 0.0f;
+            t[j].w = 0.0f;
+         }
+         
+         glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                         0, 0, width, height, GL_RGBA,
+                         GL_FLOAT, t);
+         
+         free (t);
+      } else { 
+         
+         if (nfields == 1)
+            glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                            0, 0, width, height, GLformat[ncomp[i]],
+                            GL_FLOAT, data);
+         else {
+            float *t = (float *) malloc (sizeof(float)*ncomp[i]*width*height);
+            float *src = p+stride[i];
+            float *dst = t;
+            for (unsigned int j=0; j<width*height; j++) {
+               for (unsigned int k=0; k<ncomp[i]; k++)
+                  *dst++ = *src++;
+               src += elemsize-k;
+            }
+
+            glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                            0, 0, width, height, GLformat[ncomp[i]],
+                            GL_FLOAT, t);
+            free(t);
+         }            
+      }
+      
+   }
     
-    CHECK_GL();
+   CHECK_GL();
 }
 
 void * 
 NV30GLStream::getData (unsigned int flags) {
   
-  cacheptr = malloc (sizeof(float)*4*width*height);
-  
+   if (nfields == 1)
+      cacheptr = malloc (sizeof(float)*4*width*height);
+   else {
+      int size = 0;
+      for (unsigned int i=0; i<nfields; i++) 
+         size += ncomp[i];
+      cacheptr = malloc (sizeof(float)*size*width*height);
+   }
+      
   if (flags == StreamInterface::READ ||
       flags == StreamInterface::READWRITE) {    
      GLReadData(cacheptr);
@@ -213,13 +288,18 @@ void NV30GLStream::Write(void *p) {
 }
 
 NV30GLStream::~NV30GLStream () {
-  glDeleteTextures (1, &id);
-  CHECK_GL();
 
-  if (prev)
-     prev->next = next;
-  if (next)
-     next->prev = prev;
-  if (runtime->streamlist == this)
-     runtime->streamlist = next;
+   glDeleteTextures (nfields, id);
+   CHECK_GL();
+
+   free (ncomp);
+   free (stride);
+   free (id);
+
+   if (prev)
+      prev->next = next;
+   if (next)
+      next->prev = prev;
+   if (runtime->streamlist == this)
+      runtime->streamlist = next;
 }

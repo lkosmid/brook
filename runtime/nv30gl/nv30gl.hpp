@@ -128,8 +128,9 @@ void __check_gl(int line, char *file);
 
   class NV30GLStream : public Stream {
   public:
-    NV30GLStream (NV30GLRunTime * runtime,
-                  __BRTStreamType type, int dims, const int extents[]);
+     NV30GLStream (NV30GLRunTime * runtime, int fieldCount,
+                   const __BRTStreamType type[],
+                   int dims, const int extents[]);
     void Read(const void* inData);
     void Write(void* outData);
     void * getData (unsigned int flags);
@@ -137,10 +138,9 @@ void __check_gl(int line, char *file);
     const unsigned int * getExtents() const {return extents;}
     unsigned int getDimension() const {return dims;}
 
-    virtual int getFieldCount() const {return 1;}
+    virtual int getFieldCount() const {return nfields;}
     virtual __BRTStreamType getIndexedFieldType(int i) const {
-      assert(i == 0);
-      return elementType;
+      return (__BRTStreamType) ncomp[i];
     }
 
      void GLReadData (void *p);
@@ -150,8 +150,11 @@ void __check_gl(int line, char *file);
      unsigned int width, height;
      unsigned int extents[3];
      unsigned int dims;
-     unsigned int ncomp;
-     GLuint id;
+     unsigned int *ncomp;
+     unsigned int *stride;
+     unsigned int nfields;
+     unsigned int elemsize;
+     GLuint *id;
      void *cacheptr;
 
      NV30GLStream *prev;
