@@ -408,8 +408,16 @@ BRTKernelDef::CheckSemantics() const
 
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
-/*TIM: remove type checking for arglist
    for (int i = 0; i < fType->nArgs; i++) {
+      if (!fType->args[i]->isStream() &&
+            (fType->args[i]->form->getQualifiers() & TQ_Iter) != 0) {
+         std::cerr << location << "'";
+         fType->args[i]->print(std::cerr, true);
+         std::cerr << "' is tagged an iter, but is not a stream!\n";
+         return false;
+      }
+
+/*TIM: remove type checking for arglist (because of structs)
       BaseTypeSpec baseType;
 
       baseType = fType->args[i]->form->getBase()->typemask;
@@ -419,8 +427,8 @@ BRTKernelDef::CheckSemantics() const
          std::cerr << ". (Must be floatN).\n";
          return false;
       }
-   }
 */
+   }
    if (!fType->subType->isBaseType() ||
       ((BaseType *) fType->subType)->typemask != BT_Void) {
       std::cerr << location << "Illegal return type for kernel "
