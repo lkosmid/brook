@@ -422,21 +422,21 @@ void NV30GLKernel::ResetStateMachine() {
 
 void NV30GLKernel::Map() {
    
-   unsigned int i, j;
+   unsigned int i, j, scount;
    int w, h;
    nvfloat4 f1[8], f2[8];
    
-   w = -1; h = -1;
+   w = -1; h = -1; scount = 0;
 
    for (j=0; j<npasses; ) {
       
-     if (w != outstream[j]->width ||
-         h != outstream[j]->height) {
+     if (w != outstream[scount]->width ||
+         h != outstream[scount]->height) {
 
        // Compute texture coords
 
-       w = outstream[j]->width;
-       h = outstream[j]->height;
+       w = outstream[scount]->width;
+       h = outstream[scount]->height;
      
        /* Compute texture coordinates */
        for (i=0; i<8; i++) {
@@ -472,8 +472,8 @@ void NV30GLKernel::Map() {
        glViewport(0,0,w,h);
      }
       
-     unsigned int nfields = outstream[j]->nfields;
-     NV30GLStream *outp = outstream[j];
+     unsigned int nfields = outstream[scount]->nfields;
+     NV30GLStream *outp = outstream[scount];
      for (unsigned int k=0; k < nfields; k++) {
         if (runtime->pbuffer_ncomp != outp->ncomp[k])
            runtime->createPBuffer(outp->ncomp[k]);
@@ -525,6 +525,7 @@ void NV30GLKernel::Map() {
 
         j++;
      }
+	 scount++;
    }
 
    ResetStateMachine();
