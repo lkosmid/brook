@@ -2,6 +2,9 @@
 #include <stdlib.h>
 
 unsigned int debug_vout = 0;
+unsigned int toui(float f) {
+   return (unsigned int)f;
+}
 
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
@@ -215,7 +218,6 @@ kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
 
 }
 
-
 float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
                           BRT_TYPE (*output_stream)<>,
                        int WIDTH, 
@@ -223,7 +225,6 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
                        int sign) {
    float tmp_stream<WIDTH,LENGTH>;
    float ret_stream<WIDTH,LENGTH>;
-   float guess_stream<WIDTH,LENGTH>;
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
@@ -249,47 +250,47 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
      kernelReadItem(ret_stream,index,item);
      streamWrite(item,&maxshift);
    }
-   LogNMinusK=logN-2;
-   i= logN-1;//could make this k! rather than N
-   // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-   EstablishGuessBRT_TYPE(ret_stream,
-                          guess_stream,
-                          list_stream,
-                          (float)(1 << LogNMinusK),
-                          maxvalue,
-                          (float)(1<<i),
-                          (float)sign);
-   for (i=1;i<logN;++i) {
-      LogNMinusK=logN-1-i;
-      streamSwap(tmp_stream,guess_stream);
-      UpdateGuessBRT_TYPE (ret_stream,//scatter values
-                           guess_stream,//new guess
-                           list_stream,//actual values
-                           (float)(1<<LogNMinusK),
-                           maxvalue,
-                           tmp_stream,//old guess
-                           (float)sign);
-   }
-   debugStreamPrint(guess_stream,"Gather Value");
-   if (1) {
-      unsigned int size,width;
-      size = (unsigned int)LENGTH*(unsigned int)WIDTH
-         - (unsigned int) maxshift;
-      width = size/LENGTH+((size%LENGTH)?1:0);
-      if (1) {
-        BRT_TYPE proper_output_stream<width,LENGTH>;
-        if (width) {
-          RelativeGatherBRT_TYPE(proper_output_stream,
-                                 guess_stream,
-                                 list_stream,
-                                 *sentinelStream(2),
-                                 (float)sign,
-                                 maxvalue,
-                                 maxshift);
-        }
-        streamSwap(*output_stream,proper_output_stream);
+   {
+      unsigned int size= LENGTH*WIDTH - toui(maxshift);
+      unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
+      float guess_stream<width,LENGTH>;
+      LogNMinusK=logN-2;
+      i= logN-1;//could make this k! rather than N
+      // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
+      EstablishGuessBRT_TYPE(ret_stream,
+                             guess_stream,
+                             list_stream,
+                             (float)(1 << LogNMinusK),
+                             maxvalue,
+                             (float)(1<<i),
+                             (float)sign);
+      for (i=1;i<logN;++i) {
+         LogNMinusK=logN-1-i;
+         UpdateGuessBRT_TYPE (ret_stream,//scatter values
+                              guess_stream,//new guess
+                              list_stream,//actual values
+                              (float)(1<<LogNMinusK),
+                              maxvalue,
+                              guess_stream,//old guess
+                              (float)sign);
       }
-      debugStreamPrint(*output_stream, "Final Value");
+      debugStreamPrint(guess_stream,"Gather Value");
+      if (1) {
+         if (1) {
+            BRT_TYPE proper_output_stream<width,LENGTH>;
+            if (width) {
+               RelativeGatherBRT_TYPE(proper_output_stream,
+                                      guess_stream,
+                                      list_stream,
+                                      *sentinelStream(2),
+                                      (float)sign,
+                                      maxvalue,
+                                      maxshift);
+            }
+            streamSwap(*output_stream,proper_output_stream);
+         }
+         debugStreamPrint(*output_stream, "Final Value");
+      }
    }
    return maxshift;
 }
