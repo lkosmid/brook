@@ -12,10 +12,18 @@
 #include "brtstemnt.h"
 #include "main.h"
 #include "brook2cpp.h"
-
-template <class ConverterFunctor> Expression *ConvertToT (Expression * expression);
 using std::cout;
 using std::endl;
+
+template <class ConverterFunctor> Expression *ConvertToT (Expression * expr);
+Expression *ConvertToTConstantExprConverter (Expression *);
+Expression *ConvertToTIndexExprConverter(Expression * e);
+Expression *ConvertToTMaskConverter (Expression * e);
+
+//set of items we do not want to change to int1 objects.
+std::set<Expression *> ArrayBlacklist;
+
+//the following function translates Assign Ops to equivalent Binary Ops for mask
 BinaryOp TranslatePlusGets (AssignOp ae) {
                 BinaryOp bo=BO_Assign;
                 switch (ae) {
@@ -51,6 +59,9 @@ BinaryOp TranslatePlusGets (AssignOp ae) {
                 }
                 return bo;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+//the following function sees if the member operator target looks like a mask
 bool looksLikeMask (std::string s) {
     if (s.length()<=4) {
         for (unsigned int i=0;i<s.length();++i) {
@@ -63,6 +74,10 @@ bool looksLikeMask (std::string s) {
     }
     return false;
 }
+
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+//the following translates a letter for a swizzle into a number
 int translateSwizzle (char mask) {
     switch (mask) {
     case 'y':
@@ -78,6 +93,9 @@ int translateSwizzle (char mask) {
         return 0;
     }
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+//the following translates a mask into a mask.
 std::string translateMask (int swizzle) {
     switch (swizzle) {
     case 3:
@@ -90,6 +108,9 @@ std::string translateMask (int swizzle) {
         return "maskX";
     }
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+//The following class replaces a lval.mask = rval into lval.mask(rval)
 class MaskExpr : public BinaryExpr {
   public:
     std::string mask;
@@ -105,7 +126,10 @@ class MaskExpr : public BinaryExpr {
     int precedence() const { return 16;/*maybe left expr's prec*/ }
 
     Expression *dup0()  const {
-        MaskExpr *ret = new MaskExpr(_leftExpr->dup(),_rightExpr->dup(),mask, location);
+        MaskExpr *ret = new MaskExpr(_leftExpr->dup(),
+                                     _rightExpr->dup(),
+                                     mask, 
+                                     location);
         ret->type = type;  
         return ret;
     }
@@ -116,7 +140,7 @@ class MaskExpr : public BinaryExpr {
         else
             out << *lValue();
         out << ".mask"<< mask.length()<<"(";
-        int commaprecedence = BinaryExpr(BO_Comma,NULL,NULL,location).precedence();        
+        int commaprecedence = BinaryExpr(BO_Comma,0,0,location).precedence(); 
         if (rValue()->precedence()<commaprecedence/*comma*/)
             out << "(" <<*rValue() <<")";
         else
@@ -129,12 +153,26 @@ class MaskExpr : public BinaryExpr {
     }
 
 };
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// the following class translates the Trinary ?: expr into a function call
 class NewQuestionColon :public TrinaryExpr {public:
-    NewQuestionColon (Expression * c, Expression * t, Expression * f, const Location &l):TrinaryExpr(c,t,f,l) {}
-    Expression * dup0() const {return new NewQuestionColon(condExpr()->dup(),trueExpr()->dup(),falseExpr()->dup(),location);}
+    NewQuestionColon (Expression * c, 
+                      Expression * t, 
+                      Expression * f, 
+                      const Location &l)
+      :TrinaryExpr(c,t,f,l) {
+    }
+
+    Expression * dup0() const {
+        return new NewQuestionColon(condExpr()->dup(),
+                                    trueExpr()->dup(),
+                                    falseExpr()->dup(),
+                                    location);
+    }
     int precedence() const {return 3;}
     void print(std::ostream &out) const {
-        int memberprecedence = BinaryExpr(BO_Member,NULL,NULL,location).precedence();
+        int memberprecedence = BinaryExpr(BO_Member,0,0,location).precedence();
         if (condExpr()->precedence()<memberprecedence)/*member*/ 
             out << "(";
         out<<*condExpr();
@@ -148,6 +186,9 @@ class NewQuestionColon :public TrinaryExpr {public:
     }
         
 };
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// The following functor actually finds trinary expressions and converts them into function calls
 class QuestionColonConverter{public:
     Expression * operator()(Expression * e) {
         TrinaryExpr * te;
@@ -161,17 +202,26 @@ class QuestionColonConverter{public:
         return ret;
     }
 };
-std::set<Expression *> ArrayBlacklist;//set of items we do not want to change to int1 objects.
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+//The following class prints out base types with the BRT equivalents
 class BaseType1:public BaseType {public:
+
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+  // Do not recusively translate an integer
     BaseType1(const BaseType &t):BaseType(t){
 	ArrayBlacklist.insert((Expression *)this);
     }
+
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+oo+
+  // Upon destruction, delete it from the blacklist
     BaseType1::~BaseType1() {
 	std::set<Expression *>::iterator i = ArrayBlacklist.find((Expression *)this);
 	if (i!=ArrayBlacklist.end())
 	    ArrayBlacklist.erase(i);
     }
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+  // to duplicate, follow the duplication procedure of the normal base type.
 	Type * BaseType1::dup0()const {
 		BaseType * ret =new BaseType1 (*this);
          ret->storage = storage; 
@@ -183,8 +233,11 @@ class BaseType1:public BaseType {public:
          ret->enDefn = enDefn->dup();
          return ret;
 	}
-	virtual void printBase(std::ostream& out, int level) const {
-		//this->printQual(out,qualifier);
+
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+  //to print out the base type, see if it falls into the set of classes with BRT replacements
+    virtual void printBase(std::ostream& out, int level) const {
+        //this->printQual(out,qualifier);
 	int special = BT_Char|BT_Int|BT_Float|BT_Float2|BT_Float3|BT_Float4|BT_Long;
 	if ((typemask&special)!=0){
 		if (qualifier &TQ_Const)
@@ -193,40 +246,50 @@ class BaseType1:public BaseType {public:
 			out << "volatile ";
 		
 		if (typemask & BT_Char)
-			out << "char1 ";
+			out << "__BrtChar1 ";
 		else if (typemask & BT_Float)
-			out << "float1 ";
+			out << "__BrtFloat1 ";
 		else if (typemask & BT_Float2)
-			out << "float2 ";
+			out << "__BrtFloat2 ";
 		else if (typemask & BT_Float3)
-			out << "float3 ";
+			out << "__BrtFloat3 ";
 		else if (typemask & BT_Float4)
-			out << "float4 ";
+			out << "__BrtFloat4 ";
 		else
-			out << "int1 ";
+			out << "__BrtInt1 ";
 		
 		if (qualifier &TQ_Out){
 			//out << "&";
 		}
 		
 	}else {
+               //no BRT equivalent fallback
 		BaseType::printBase(out,level);
 	}
 	}
 };
 
 
-
-Expression *ArrayBlackmailer(Expression * e) {
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// insert an expression into the blacklist, yet do not alter it...
+Expression *ArrayBlacklister(Expression * e) {
    ArrayBlacklist.insert(e);   
    return e;
 }
-void BlackmailType(Type **t);
 
-void BlackmailBaseType (BaseType **t) {
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+//this function makes a type's size expressions off limits so that they are not transformed
+void BlacklistType(Type **t);
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+//this function does the same as above but since they require **, it needs to look at a stored BaseType
+void BlacklistBaseType (BaseType **t) {
 	*t = new BaseType1(**t);
 }
-void BlackmailType (Type **t) {
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function goes through a type looking for array bounds to mark those to not be touched
+void BlacklistType (Type **t) {
 	if (!t)
 		return;
     if (!(*t))
@@ -240,127 +303,153 @@ void BlackmailType (Type **t) {
     ArrayType *at ;
     if ((*t)->type==TT_Array&&(at = static_cast<ArrayType *>(*t))) {
 	if (at->size) {
-	    ArrayBlackmailer(at->size);	
-	    at->size->findExpr(ArrayBlackmailer);
+	    ArrayBlacklister(at->size);	
+	    at->size->findExpr(ArrayBlacklister);
 	}
     }
-	if ((*t)->type==TT_Array||(*t)->type==TT_Stream)
-	    BlackmailType(&(static_cast<ArrayType *>(*t)->subType));//this takes care of Streams as well as constant arrays    
+	if ((*t)->type==TT_Array||(*t)->type==TT_Stream)//this takes care of Streams as well as arrays    
+	    BlacklistType(&(static_cast<ArrayType *>(*t)->subType));
 	if ((*t)->type==TT_Pointer)
-	    BlackmailType (&(static_cast<PtrType *>(*t)->subType));
+	    BlacklistType (&(static_cast<PtrType *>(*t)->subType));
 	if ((*t)->type==TT_BitField)
-	    BlackmailType (&(static_cast<BitFieldType *>(*t)->subType));
+	    BlacklistType (&(static_cast<BitFieldType *>(*t)->subType));
     BrtStreamType * st;
 
     if ((*t)->type==TT_BrtStream && (st = static_cast<BrtStreamType *>(*t))) {
-        BlackmailBaseType(&st->base);
+        BlacklistBaseType(&st->base);
         
     }
     FunctionType * ft;
     if ((*t)->type==TT_Function&&(ft = static_cast<FunctionType *>(*t))) {
 		for (int i=0;i<ft->nArgs;++i) {
-			BlackmailType(&ft->args[i]->form);
+			BlacklistType(&ft->args[i]->form);
 		}
-		BlackmailType(&ft->subType);
+		BlacklistType(&ft->subType);
     }
     
     
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+//This finds all types so that sizes may not be altered
 void FindTypesDecl (Statement * s) {
     DeclStemnt * ds;
 
     if (s->isDeclaration()&&(ds=static_cast<DeclStemnt*>(s))) {
         for (unsigned int i=0;i<ds->decls.size();++i) {
-            BlackmailType(&ds->decls[i]->form);
+            BlacklistType(&ds->decls[i]->form);
         }
 //        ds->print(std::cout,0);        
     }
     FunctionDef * fd;
     if (s->isFuncDef() && (fd = static_cast<FunctionDef *>(s))) {
-        BlackmailType(&fd->decl->form);
+        BlacklistType(&fd->decl->form);
       }
     
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This class overrides the index expr with one that prints [(int)<lookupExpr>]
+// It is no longer needed for the current transformation since we now demand float4 lookups for 4d gather
 class NewIndexExpr :public IndexExpr {public:
-    NewIndexExpr (Expression * a, Expression * s,const Location &l):IndexExpr(a,s,l) {}
+    NewIndexExpr (Expression * a, Expression * s,const Location &l)
+        :IndexExpr(a,s,l) {}
+
     Expression * dup0() const {return new NewIndexExpr(array->dup(),_subscript->dup(),location);}
+
     void print(std::ostream &out) const {
-    if (array->precedence() < precedence())
-    {
+      if (array->precedence() < precedence())
+      {
         out << "(";
         array->print(out);
         out << ")";
-    }
-    else
+      }
+      else
         array->print(out);
 
-    out << "[(int)";
-    int castprecedence= CastExpr(NULL,NULL,location).precedence();
-    if (_subscript->precedence()<=castprecedence)
+      out << "[(int)";
+      int castprecedence= CastExpr(NULL,NULL,location).precedence();
+      if (_subscript->precedence()<=castprecedence)
         out <<"(";
-    _subscript->print(out);
-    if (_subscript->precedence()<=castprecedence)
+      _subscript->print(out);
+      if (_subscript->precedence()<=castprecedence)
         out <<")";    
-    out << "]";
-
+      out << "]";
     }
-        
 };
-Expression *ConvertToTIndexExprConverter(Expression * e);
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This class finds the indices to convert from [E] to [(int)E]
 class IndexExprConverter{public:
     Expression * operator()(Expression * e) {
         IndexExpr *ie;
         IndexExpr * ret=NULL;
-        if (e->etype==ET_IndexExpr&&(ie=static_cast<IndexExpr*>(e))) {
-            ret = new NewIndexExpr (ie->array->dup(),ie->_subscript->dup(),e->location);
+        if (e->etype==ET_IndexExpr&&(ie=static_cast<IndexExpr*>(e))) 
+        {
+            ret = new NewIndexExpr (ie->array->dup(),
+                                    ie->_subscript->dup(),
+                                    e->location);
             ret->array->findExpr(&ConvertToTIndexExprConverter);
             ret->_subscript->findExpr(&ConvertToTIndexExprConverter);            
         }
         CastExpr * ce;
         if (e->etype==ET_CastExpr&&(ce=static_cast<CastExpr*>(e))) {
-            BlackmailType(&ce->castTo);
+            BlacklistType(&ce->castTo);
         }
         return ret;
     }
 };
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This int constant is specifies its type as a brt type
 class NewIntConstant:public IntConstant {public:
     NewIntConstant(long val, const Location &l):IntConstant(val,l){}
     virtual void print (std::ostream&out) const{
-        out << "int1(";
+        out << "__BrtInt1(";
         (this)->IntConstant::print(out);
         out << ")";
     }
 };
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This int constant is specifies its type as a brt type
 class NewUIntConstant:public UIntConstant {public:
     NewUIntConstant(unsigned int val, const Location &l):UIntConstant(val,l){}
     virtual void print (std::ostream&out) const{
-        out << "int1(";
+        out << "__BrtInt1(";
         (this)->UIntConstant::print(out);
         out << ")";
     }
 };
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This char constant is specifies its type as a brt type
 class NewCharConstant:public CharConstant {public:
     NewCharConstant(char val, const Location &l):CharConstant(val,l){}
     virtual void print (std::ostream&out) const{
-        out << "char1(";
+        out << "__BrtChar1(";
         (this)->CharConstant::print(out);
         out << ")";
     }
 };
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This float constant is specifies its type as a brt type
 class NewFloatConstant:public FloatConstant {public:
     NewFloatConstant(double val, const Location &l):FloatConstant(val,l){}
     virtual void print (std::ostream&out) const{
-        out << "float1(";
+        out << "__BrtFloat1(";
         (this)->FloatConstant::print(out);
         out << ")";
     }
 };
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This array constant is specifies its type as a constructor for a brt type
 class NewArrayConstant:public ArrayConstant {public:
     NewArrayConstant(const Location &l):ArrayConstant(l){}
     virtual void print (std::ostream&out) const{
-        out << "float"<<items.size()<<"(";
+        out << "__BrtFloat"<<items.size()<<"(";
         for (unsigned int i=0;i<items.size();++i) {
             items[i]->print(out);
             if (i!=items.size()-1) {
@@ -370,12 +459,12 @@ class NewArrayConstant:public ArrayConstant {public:
         out << ")";
     }
 };
-Expression *ConvertToTConstantExprConverter (Expression *);
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class ConstantExprConverter{public:
     Expression * operator()(Expression * e) {
         Constant *con;
         Constant * ret=NULL;
-//		cout << "converting using "<< e<<endl;
         if (e->etype==ET_Constant&&(con=static_cast<Constant*>(e))) {
             switch (con->ctype) {
             case CT_Char:
@@ -399,7 +488,7 @@ class ConstantExprConverter{public:
             case CT_Float:
             {
                 FloatConstant * cc = static_cast<FloatConstant *>(con);
-                ret = new NewFloatConstant(cc->doub,cc->location);                                                
+                ret = new NewFloatConstant(cc->doub,cc->location);           
                 break;
             }
             case CT_Array:
@@ -420,22 +509,27 @@ class ConstantExprConverter{public:
     }
 };
 
-
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class SwizzleConverter{public:
     Expression * operator()(Expression * e) {
         BinaryExpr * be;
         if (e->etype==ET_BinaryExpr&& (be = static_cast<BinaryExpr*>(e))) {
             if (be->op()==BO_Member) {
                 Variable * vswiz;
-                if (be->rightExpr()->etype==ET_Variable&&(vswiz = static_cast<Variable*>(be->rightExpr()))) {
+                if (be->rightExpr()->etype==ET_Variable
+                    && 
+                    (vswiz = static_cast<Variable*>(be->rightExpr()))) {
+
                     if (looksLikeMask(vswiz->name->name)) {
-//                        printf ("swizzlefound %s",vswiz->name->name.c_str());
                         unsigned int len =vswiz->name->name.length();
                         char swizlength [2]={len+'0',0};
                         std::string rez=std::string("swizzle")+swizlength+"<";
                         for (unsigned int i=0;i<len;++i) {
-                            char swizchar [3] =  {'0'+translateSwizzle(vswiz->name->name[i]),i==len-1?'\0':',','\0'};
-                            rez+=swizchar;
+                          char swizch[3]={'0' +
+                                          translateSwizzle(vswiz->name->name[i])
+                                          ,i==len-1?'\0':','
+                                          ,'\0'};
+                            rez+=swizch;
                         }
                         rez+=">()";
                         vswiz->name->name=rez;
@@ -446,27 +540,40 @@ class SwizzleConverter{public:
         return NULL;
     }
 };
-Expression *ConvertToTMaskConverter (Expression * e);
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class MaskConverter{public:
 Expression * operator () (Expression * e) {
     AssignExpr * ae;
     BinaryExpr * ret =NULL;
     Variable * vmask=NULL;
-    if (e->etype == ET_BinaryExpr&&static_cast<BinaryExpr*>(e)->op()==BO_Assign&&(ae= static_cast<AssignExpr *> (e))) {
-        //now lets identify what expression is to the left... if it's a dot then we go!
+    if(e->etype == ET_BinaryExpr
+       &&
+       static_cast<BinaryExpr*>(e)->op()==BO_Assign
+       &&
+       (ae= static_cast<AssignExpr *> (e))) {
+        //now lets identify what expression is to the left... 
+        //if it's a dot then we go!
         BinaryExpr * lval;
         if (ae->lValue()->etype==ET_BinaryExpr&& (lval = static_cast<BinaryExpr*>(ae->lValue()))) {
             if (lval->op()==BO_Member) {
                 if (lval->rightExpr()->etype==ET_Variable&&(vmask = static_cast<Variable*>(lval->rightExpr()))) {
                     if (looksLikeMask(vmask->name->name)) {
-                        //printf ("mask detected %s\n",vmask->name->name.c_str());
                         BinaryOp bo =TranslatePlusGets (ae->op());
                         if (bo!=BO_Assign) {
-                            //now we             need to move the lval to the right
-                            ae->_rightExpr = new BinaryExpr(bo,ae->lValue()->dup(),ae->_rightExpr,ae->location);
+
+                            //now we need to move the lval to the right
+                            ae->_rightExpr = new BinaryExpr(bo,
+                                                            ae->lValue()->dup(),
+                                                            ae->_rightExpr,
+                                                            ae->location);
                             ae->aOp=AO_Equal;
                         }
-                        ret = new MaskExpr (lval->leftExpr()->dup(),ae->rValue()->dup(),vmask->name->name,lval->location);
+                        ret = new MaskExpr (lval->leftExpr()->dup(),
+                                            ae->rValue()->dup(),
+                                            vmask->name->name,
+                                            lval->location);
+
 			ret->findExpr(&ConvertToTMaskConverter);
                     }
                 }
@@ -476,6 +583,8 @@ Expression * operator () (Expression * e) {
     return ret;
     
 }};
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class ChainExpression:public Expression {
 public:
     ChainExpression (Expression * e):Expression(e->etype,e->location) {
@@ -489,74 +598,94 @@ public:
     }
     virtual void findExpr( fnExprCallback cb ) { next->findExpr(cb); }    
 };
-template <class ConverterFunctor> Expression *ConvertToT (Expression * expression) {
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+template <class ConverterFunctor> Expression *ConvertToT (Expression * eexpr) {
+    Expression * expression = eexpr;
     if (ArrayBlacklist.find(expression)==ArrayBlacklist.end()) {
         Expression * e = ConverterFunctor()(expression);
         if (e) {
-//        (*expression)=ChainExpression(e);
-			return e;
-#if 0
-			//this is for the old system where expr didn't return anything
-            Expression * k = new ChainExpression(e);//memory leak--but how else are we to guarantee the integrity of our expression..it's a lost cause unless we have some way of assinging to the passed in expression without rewriting the whole loop.
-            char location[sizeof(Location)];
-            memcpy (&location[0],&expression->location,sizeof(Location));
-            memcpy (expression,k,sizeof(Expression));//DANGEROUS but we don't have access to the code
-            memcpy (&expression->location,&location[0],sizeof(Location));
-#endif	
-            
+          return e;
         }
     }
     return expression;
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *ConvertToTMaskConverter (Expression * e) {
 	return ConvertToT<MaskConverter>(e);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindMask (Statement * s) {
     s->findExpr(&ConvertToTMaskConverter);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *ConvertToTSwizzleConverter (Expression * e) {
 	return ConvertToT<SwizzleConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindSwizzle (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTSwizzleConverter);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *ConvertToTQuestionColonConverter (Expression * e) {
 	return ConvertToT<QuestionColonConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindQuestionColon (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTQuestionColonConverter);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *ConvertToTIndexExprConverter (Expression * e) {
 	return ConvertToT<IndexExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindIndexExpr (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTIndexExprConverter);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *ConvertToTConstantExprConverter (Expression * e) {
 	return ConvertToT<ConstantExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindConstantExpr (Statement * s) {
    Expression * (*tmp)(class Expression *) = &ConvertToTConstantExprConverter;
    s->findExpr(tmp);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void RestoreTypes(FunctionDef *fDef){
 	ArrayBlacklist.clear();
 	fDef->findStemnt (FindTypesDecl);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *ChangeFunctionTarget (Expression * e) {
 	if (e->etype==ET_FunctionCall) {
 		Expression *k= static_cast<FunctionCall *>(e)->function;
 		if (k->etype==ET_Variable) {
 			Symbol * s =static_cast<Variable*>(k)->name;
-			s->name="_cpu_"+s->name;
+			s->name="__"+s->name+"_cpu_inner";
 		}
 	}
         return e;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindFunctionCall (Statement * s) {
 	s->findExpr(ChangeFunctionTarget);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void Brook2Cpp_ConvertKernel(FunctionDef *fDef) {
     RestoreTypes(fDef);
     fDef->findStemnt(&FindMask);

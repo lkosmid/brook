@@ -100,7 +100,10 @@ BRTPS20KernelCode::printCode(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void printType (std::ostream & out, Type * t, bool addIndirection, std::string name ="") {
+void printType (std::ostream & out, 
+                Type * t, 
+                bool addIndirection, 
+                std::string name ="") {
     Symbol sym;
     sym.name=name;
     if (addIndirection)
@@ -110,6 +113,7 @@ void printType (std::ostream & out, Type * t, bool addIndirection, std::string n
     t->printAfter(out);
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static std::string tostring(unsigned int i) {
     char c[1024];
     c[1023]=0;
@@ -117,17 +121,23 @@ static std::string tostring(unsigned int i) {
     return std::string(c);
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static Symbol getSymbol(std::string in) {
     Symbol name;
     name.name =in;
     return name;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class PrintCPUArg {
     Decl * a;
     unsigned int index;
 public:
+
     PrintCPUArg(Decl * arg,unsigned int index):a(arg),index(index){}
     enum STAGE {HEADER,DEF,USE};
+   
+   //this function determines if the size actually is specified for this dim
     bool isDimensionlessHelper(Type * t) {
         if (t->type==TT_Array) {
             ArrayType* a = static_cast<ArrayType*>(t);
@@ -140,15 +150,19 @@ public:
         }
         return false; 
     }
+   // this function figures that all arrays have a chance to have all dims specified
     bool isDimensionless() {
         if (a->form->type==TT_Array) {
-            return isDimensionlessHelper(static_cast<ArrayType*>(a->form)->subType);
+            return isDimensionlessHelper(static_cast<ArrayType*>
+                                         (a->form)->subType);
         }
         return false;
     }
+
     bool isArray() {
         return (a->form->type==TT_Array);
     }
+
     void printDimensionlessGatherStream(std::ostream&out,STAGE s){
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
@@ -163,7 +177,7 @@ public:
         }
         case DEF:{
             CPUGatherType cgt (*t,false);        
-            Symbol arg1;arg1.name="arg"+tostring(index)                ;
+            Symbol arg1;arg1.name="arg"+tostring(index);
             
             cgt.printType(out,&arg1,false,0);
             out << "("<<std::endl;
@@ -186,6 +200,9 @@ public:
         
         }
     }
+
+   //The following function is obsolete for now since static sized
+   //arrays are no longer helpful
     void printDimensionalGatherStream(std::ostream &out, STAGE s) {
 	printDimensionlessGatherStream(out,s);
 	return;
@@ -222,6 +239,8 @@ public:
         }
         }
     }
+
+   //standard args, not gather or scatter
     void printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
         TypeQual tq= t->getQualifiers();
@@ -257,6 +276,7 @@ public:
         }
     }
     
+   //redirects call
     void printCPUFunctionArg(std::ostream & out){
         if(isArray())
             if (isDimensionless())
@@ -266,6 +286,8 @@ public:
         else
             printNormalArg(out,HEADER);
     }
+
+   //redirects call
     void printInternalDef(std::ostream &out){
         if(isArray())
             if (isDimensionless())
@@ -275,6 +297,8 @@ public:
         else
             printNormalArg(out,DEF);
     }
+
+   //redirects call
     void printInternalUse(std::ostream &out){
         if(isArray())
             if (isDimensionless())
@@ -319,7 +343,9 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
     out << "static void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
     func->printBefore(out,&enhanced_name,0);
-    out << "(const std::vector<void *>&args, unsigned int mapbegin, unsigned int mapend) {"<<std::endl;
+    out << "(const std::vector<void *>&args, ";
+    out <<  "unsigned int mapbegin, ";
+    out <<  "unsigned int mapend) {"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printInternalDef(out);
@@ -327,7 +353,8 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
     }}
     indent(out,1);
     out << "for (unsigned int i=mapbegin;i<mapend;++i) {"<<std::endl;
-    indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner ("<<std::endl;
+    indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner (";
+    out<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         if (i!=0)
             out <<","<<std::endl;
