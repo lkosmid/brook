@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "streamholder.h"
+
 kernel void valueAt (float value[][],
                              float2 index,
                              out float output<>,
@@ -38,8 +38,8 @@ kernel void CountToRight (float value [][],
    output = value[indexof(output)]+neighbor;
 }
 
-void CountValues(struct StreamHolder list_stream,
-                 struct StreamHolder output_stream,
+void CountValues(float list_stream<4,3>,
+                 float output_stream<4,3>,
                  int WIDTH, 
                  int LENGTH, 
                  int sign) {
@@ -51,7 +51,7 @@ void CountValues(struct StreamHolder list_stream,
 
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   CountToRight (*list_stream,output_stream,(float)sign,maxvalue);   
+   CountToRight(list_stream,output_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       printf ("\nStage %d\n",i);
       streamPrint(i%2?output_stream:tmp_stream);
@@ -61,7 +61,7 @@ void CountValues(struct StreamHolder list_stream,
          CountToRight (tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
-     streamSwap(tmp_stream,*output_stream);
+     streamSwap(tmp_stream,output_stream);
 }
 
 int main () {
@@ -85,16 +85,16 @@ int main () {
 	streamRead(inputindex,ind);
 	streamRead(inputval,val);
 	if (0) {
-	streamPrint(inputindex);
-	printf ("\n");
-	getIndexAt(inputindex,-8,max,outputindex);
-	streamPrint(outputindex);
-	}else {
-		printf ("input\n");
-		streamPrint(inputval);
-		CountValues(&inputval,&outputval,4,3,-1);
-		printf ("\noutput\n");
-		streamPrint(outputval);		
+           streamPrint(inputindex);
+           printf ("\n");
+           getIndexAt(inputindex,-8,max,outputindex);
+           streamPrint(outputindex);
+	} else {
+           printf ("input\n");
+           streamPrint(inputval);
+           CountValues(inputval,outputval,4,3,-1);
+           printf ("\noutput\n");
+           streamPrint(outputval);
 	}
 	printf("\n");
 	return 0;
