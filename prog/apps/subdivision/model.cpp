@@ -16,7 +16,7 @@ void checkEdgeNeighbor(const float4 &a, const float4 &b, float4 &c,const Tri &t)
    if ((t.B==a&&t.C==b)||(t.B==b&&t.C==a))
       c = t.A;
 }
-float neighboreps=0.000001;
+float neighboreps=0.000001f;
 bool eq(float a, float b) {
   return fabs(a-b)<neighboreps;
 }

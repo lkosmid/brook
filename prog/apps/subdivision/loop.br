@@ -331,13 +331,7 @@ void __printf_cpu_inner(float f) {
 void __printnew_cpu_inner() {
   printf ("\n");
 }
-kernel float printf4(float4 f) {
-  printf(f.x);
-  printf(f.y);
-  printf(f.z);
-    printnew();
-    return 0;
-}
+
 //moves the 6 split values into 4 individual triangles (with a result of 12 vertices)
 //moves the 12 split neighbors into 4 individual neighbor lists
 //uses fmod with x or y to determine which direction should matter wrt fmod.
@@ -365,26 +359,7 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
   float4 AB_B = {newnei.AB.w,
                  newnei.BBC.w,
                  newnei.ABB.w,1};
-  if (0)if((indexof tri).y<1&&(indexof tri).x<1) {
-    printf4(newnei.AB);
-    printf4(newnei.BBC);
-    printf4(newnei.ABB);
-    printf4(newnei.BC);
-    printf4(newnei.ACC);
-    printf4(newnei.BCC);
-    printf4(newnei.AC);
-    printf4(newnei.AAB);
-    printf4(newnei.AAC);
-    printf4(AB_B);
-    printf4(AC_A);
-    printf4(BC_C);
-    printf4(ab);
-    printf4(bc);
-    printf4(ac);
-    printf4(a);
-    printf4(b);
-    printf4(c);
-  }
+ 
   if (which<.5) {
     tri.A=identity(a,1);
     tri.B=identity(ab,1);
@@ -539,7 +514,7 @@ void subdivide (Neighbor (*neighbors)<>,
         streamWrite(*neighbors,neigh);
         streamWrite(*triangles,tri);
         recomputeNeighbors(tri,checknei,totalsize);
-        checkNeighbors(neigh,checknei,totalsize);
+        //checkNeighbors(neigh,checknei,totalsize);
         free (tri);
         free (neigh);
         free(checknei);
