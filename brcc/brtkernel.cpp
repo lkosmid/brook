@@ -218,8 +218,7 @@ void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&
             cgt.printSubtype(out,&nothing,true,0);
             out<<"*)";
             PrintAccessStream(out,index,"getData","brook::Stream::READ");
-	    out <<","<<std::endl;
-            indent(out,3);
+	    out <<", ";
             PrintAccessStream(out,index,"getExtents");
             out<< ");";
             break;
