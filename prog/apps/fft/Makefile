@@ -1,6 +1,7 @@
 ROOTDIR = ../../..
-EXECUTABLE = fft
-FILES = gpufft wfft testfft
+#EXECUTABLE = fft
+STATIC_LIBRARY=gpufft
+FILES = gpufft wfft
 LIBRARIES =  $(RUNTIME_LIBS)
 BRCCFLAGS = 
 
