@@ -5,26 +5,30 @@
 
 typedef struct Particle_t {
   float3 position;
+  float oneOverMass;
   float3 velocity;
 } Particle;
 
 typedef struct Spring_t {
-  float firstParticleIndex;
-  float secondParticleIndex;
+  float2 otherParticleIndex;
   float restLength;
   float springConstant;
 } Spring;
 
 kernel void stepParticles( Particle p<>, float deltaT, float3 force<>, out Particle result<> )
 {
+  float3 f = force;
+  f += float3( 0, -0.001, 0 ); // fake gravity
+  f *= p.oneOverMass;
+
   result.position = p.position + deltaT*p.velocity;
-  result.velocity = p.velocity + deltaT*force;
+  result.velocity = p.velocity + deltaT*f;
+  result.oneOverMass = p.oneOverMass;
 }
 
-kernel void calculateSpringForces( Spring s<>, Particle particles[], out float3 force<> )
+kernel void calculateSpringForces( Spring s<>, Particle p1<>, Particle particles[][], out float3 force<> )
 {
-  Particle p1 = particles[s.firstParticleIndex];
-  Particle p2 = particles[s.secondParticleIndex];
+  Particle p2 = particles[s.otherParticleIndex];
 
   float3 relativePosition = p1.position - p2.position;
   float3 relativeVelocity = p1.velocity - p2.velocity;
@@ -34,76 +38,148 @@ kernel void calculateSpringForces( Spring s<>, Particle particles[], out float3 
   float3 springAxis = relativePosition / length;
 
   float perturbation = length - s.restLength;
-  float strength = s.springConstant * perturbation;
 
   float velocityInSpring = dot( springAxis, relativeVelocity );
 
-  strength += 0.25 * velocityInSpring;
-
+  float strength = s.springConstant * (perturbation + 2.5 * velocityInSpring);
   force = strength * springAxis;
+//DEBUG  force = float3( s.otherParticleIndex.x, s.otherParticleIndex.y, 0 );
+//DEBUG  force = p2.position;
 }
 
 reduce void sum( float3 input<>, reduce float3 output<> ) {
   output += input;
 }
 
+void initializeParticles( int inParticlesPerSide, Particle* outParticles, Spring* outSprings )
+{
+  int x, y;
+  Particle* p;
+  Spring* s;
+
+  p = outParticles;
+  for( y = 0; y < inParticlesPerSide; y++ )
+  {
+    for( x = 0; x < inParticlesPerSide; x++ )
+    {
+      p->position = float3( (float)x, (float)y, 0 );
+      p->velocity = float3( 0, 0, 0 );
+      p->oneOverMass = (y == 0 && (x == 0 || x == inParticlesPerSide-1)) ? 0.0f : 1.0f;
+      p++;
+    }
+  }
+
+  // up to four springs per particle...
+  memset( outSprings, 0, inParticlesPerSide*inParticlesPerSide*4*sizeof(Spring) );
+  s = outSprings;
+  for( y = 0; y < inParticlesPerSide; y++ )
+  {
+    for( x = 0; x < inParticlesPerSide; x++ )
+    {
+      // left
+      if( x > 0 )
+      {
+        s->otherParticleIndex = float2( (float)(x-1), (float)(y) );
+        s->restLength = 1.0f;
+        s->springConstant = 0.1f;
+      }
+      s++;
+      // top
+      if( y > 0 )
+      {
+        s->otherParticleIndex = float2( (float)(x), (float)(y-1) );
+        s->restLength = 1.0f;
+        s->springConstant = 0.1f;
+      }
+      s++;
+    }
+    for( x = 0; x < inParticlesPerSide; x++ )
+    {
+      // right
+      if( x != inParticlesPerSide-1 )
+      {
+        s->otherParticleIndex = float2( (float)(x+1), (float)(y) );
+        s->restLength = 1.0f;
+        s->springConstant = 0.1f;
+      }
+      s++;
+      // bottom
+      if( y != inParticlesPerSide-1 )
+      {
+        s->otherParticleIndex = float2( (float)(x), (float)(y+1) );
+        s->restLength = 1.0f;
+        s->springConstant = 0.1f;
+      }
+      s++;
+    }
+  }
+
+}
+
 void iterate()
 {
-  Particle particles< 2 >;
-  Spring springs< 2 >;
-  float3 springForces< 2 >;
-  float3 particleForces< 2 >;
+  Particle particles< 2, 2 >;
+  Spring springs< 4, 4 >;
+  float3 springForces< 4, 4 >;
+  float3 particleForces< 2, 2 >;
   int i, j;
   float3 p;
-  Particle particles_data[2];
-  Spring springs_data[2];
-  float3 force_data[2];
+  Particle particles_data[4];
+  Spring springs_data[16];
+  float3 spring_force_data[16];
+  float3 force_data[4];
 
   // initialize
-  particles_data[0].position = float3(0,0,0);
-  particles_data[0].velocity = float3(0,0,0);
-  particles_data[1].position = float3(1,0,0);
-  particles_data[1].velocity = float3(0,0,0);
-  
-  springs_data[0].firstParticleIndex = (float)0;
-  springs_data[0].secondParticleIndex = (float)0;
-  springs_data[0].restLength = (float)0;
-  springs_data[0].springConstant = (float)0;
-  springs_data[1].firstParticleIndex = (float)0;
-  springs_data[1].secondParticleIndex = (float)1;
-  springs_data[1].restLength = (float)1.5f;
-  springs_data[1].springConstant = (float)0.1f;
+  initializeParticles( 2, particles_data, springs_data );
 
   streamRead( particles, particles_data );
   streamRead( springs, springs_data );
 
-  for( i = 0; i < 10000; i++ )
+  for( i = 0; i < 100; i++ )
   {
-    if( i % 100 == 0 )
+    if( i % 10 == 0 )
     {
     streamWrite( particles, particles_data );
-    printf("positions: ");
-    for( j = 0; j < 2; j++ )
+    printf("positions:\n");
+    for( j = 0; j < 4; j++ )
     {
       p = particles_data[j].position;
-      printf( "{%6.3f %6.3f %6.3f} ", p.x, p.y, p.z );
+      printf( "{%6.3f %6.3f} ", p.x, p.y );
+      if( j % 2 == 1 )
+        printf( "\n" );
     }
-    printf( "\n" );
     }
     
-    calculateSpringForces( springs, particles, springForces );
+    calculateSpringForces( springs, particles, particles, springForces );
+/*
+    if( i % 10 == 0 )
+    {
+    streamWrite( springForces, spring_force_data );
+    printf("spring forces:\n");
+    for( j = 0; j < 16; j++ )
+    {
+      p = spring_force_data[j];
+      printf( "{%6.3f %6.3f} ", p.x, p.y );
+      if( j % 4 == 3 )
+        printf( "\n" );
+    }
+    }
+*/
     sum( springForces, particleForces );
 /*
+    if( i % 10 == 0 )
+    {
     streamWrite( particleForces, force_data );
-    printf("forces: ");
-    for( j = 0; j < 2; j++ )
+    printf("forces:\n");
+    for( j = 0; j < 4; j++ )
     {
       p = force_data[j];
-      printf( "{%6.3f %6.3f %6.3f} ", p.x, p.y, p.z );
+      printf( "{%6.3f %6.3f} ", p.x, p.y );
+      if( j % 2 == 1 )
+        printf( "\n" );
     }
-    printf( "\n" );
+    }
 */
-
     stepParticles( particles, 0.1f, particleForces, particles );
 
   }
