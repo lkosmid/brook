@@ -2752,7 +2752,7 @@ MATRIXXY_CLASS(__BrtChar,1,1);
 #undef MATRIXXY_CLASS
 
 
-
+/*
 
 inline static __BrtFloat4 computeIndexOf(unsigned int i,
                                          unsigned int dim,
@@ -2783,7 +2783,7 @@ inline static void incrementIndexOf(__BrtFloat4 &indexof,
          }
       }
    }
-}
+   }*/
 #endif
 #endif
 

@@ -1,5 +1,8 @@
 // dx9.hpp
 #pragma once
+#ifdef _WIN32
+#pragma warning(disable:4786)
+#endif
 
 #include "../runtime.hpp"
 #include "dx9base.hpp"
