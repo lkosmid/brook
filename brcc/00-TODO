@@ -11,6 +11,8 @@ Off the cuff
 
    * Fix (boost) priority of 'indexof'
 
+   * Command line / env override of paths to cgc / fxc?
+
 Medium
 ------
 
