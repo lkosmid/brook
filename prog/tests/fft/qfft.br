@@ -195,12 +195,12 @@ void FftwTransform2d(float2 *data, unsigned long N, unsigned long M,
                     float2 clampsize,
                     float scale,
                     float blurfactor,
-                    float two) {
+                    float one) {
   // float4 i=indexof(indata);
   // float4 zero = {0.0,0.0,0.0,0.0};
   //	float zeroit= (abs(negtopos.x)>.95||abs(negtopos.y)>.95)&&(i.x>0&&i.y>0);
   //outdata = zeroit.xxxx?zero:indata/scale;
-  outdata=indata*(exp (-blurfactor*(two-dot(negtopos,negtopos))))/scale;
+  outdata=indata*(exp (-blurfactor*(2-one*dot(negtopos,negtopos))))/scale;
   
 }
 kernel void setOne(float4 indata<>, 
@@ -287,7 +287,7 @@ void blur (float4 freqSpace<>,
            float2 clampsize;
            clampsize.x = (float)(M/4);
            clampsize.y = (float)(N/2);
-           setZero(freqSpace,freqSpace,normalized,negtopos,clampsize,(float)(M*N),7.2,2);
+           setZero(freqSpace,freqSpace,normalized,negtopos,clampsize,(float)(M*N),7.2,1);
 }
 void edgeDetect (float4 freqSpace<>,
            int N, int M) {
