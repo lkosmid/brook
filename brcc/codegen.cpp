@@ -1894,10 +1894,13 @@ CodeGen_GenerateCode(Type *retType, const char *name,
     generateReductionTechniques( args, nArgs, name, target, false, techniques );
     
     //TIM: huge hack to get a not address-trans version available
+    /*
+    //TIM: we'd *like* to do this, but it won't actually work,
+    // because subkernel calls will not have gather arguments converted correctly
     globals.enableGPUAddressTranslation = false;
     generateReductionTechniques( args, nArgs, name, target, false, techniques );
     globals.enableGPUAddressTranslation = true;
-
+    */
   }
   else
   {

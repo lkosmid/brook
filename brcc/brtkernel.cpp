@@ -60,6 +60,12 @@ static Variable * NewGatherArg (Variable * v) {
   return new Variable(s,v->location);
 }
 
+static Variable * NewAddressTransArg (Variable * v, const char* prefix) {
+  Symbol * s = new Symbol;
+  s->name = prefix+v->name->name;
+  return new Variable(s,v->location);
+}
+
 // TIM: HACK
 int getGatherStructureSamplerCount( Type* form );
 
@@ -179,8 +185,20 @@ BRTGPUKernelCode::ConvertGathers (Expression *expr) {
                     Variable * v = static_cast<Variable*>(fc->args[i]);
                     if (v->name->entry&&v->name->entry->uVarDecl) {
                        if(recursiveIsGather(v->name->entry->uVarDecl->form)) {
-                          ++i;
-                          fc->args.insert(fc->args.begin()+i,NewGatherArg(v));
+                          if( globals.enableGPUAddressTranslation )
+                          {
+                            ++i;
+                            fc->args.insert(fc->args.begin()+i,NewAddressTransArg(v,"__gatherlinearize_"));
+                            ++i;
+                            fc->args.insert(fc->args.begin()+i,NewAddressTransArg(v,"__gathertexshape_"));
+                            ++i;
+                            fc->args.insert(fc->args.begin()+i,NewAddressTransArg(v,"__gatherdomainmin_"));
+                          }
+                          else
+                          {
+                            ++i;
+                           fc->args.insert(fc->args.begin()+i,NewGatherArg(v));
+                          }
                        }
                     }
                  }
