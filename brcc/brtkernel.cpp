@@ -95,7 +95,6 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
   return expr;
 }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTPS20KernelCode::printCode(std::ostream& out) const
 {
@@ -151,6 +150,8 @@ static Symbol getSymbol(std::string in) {
 }
 
 extern bool recursiveIsGather(Type*);
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool recursiveIsArrayType(Type * form) {
    if ((form->getQualifiers()&TQ_Reduce)!=0) {
       return form->type==TT_Array;
@@ -178,29 +179,6 @@ public:
     }
     enum STAGE {HEADER,DEF,USE,CLEANUP};
   
-   //this function determines if the size actually is specified for this dim
-    bool isDimensionlessHelper(Type * t) {
-        if (t->type==TT_Array) {
-            ArrayType* a = static_cast<ArrayType*>(t);
-            Expression * size=  a->size;
-	    if (size==NULL)
-		return true;
-            if (size->etype==ET_VoidExpr)
-                return true;
-            return isDimensionlessHelper (a->subType);
-        }
-        return false; 
-    }
-   // this function figures that all arrays have a chance to have all dims specified
-#if 0
-    bool isDimensionless() {
-        if (a->form->type==TT_Array) {
-            return isDimensionlessHelper(static_cast<ArrayType*>
-                                         (a->form)->subType);
-        }
-        return false;
-    }
-#endif
     void printDimensionlessGatherStream(std::ostream&out,STAGE s){
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
@@ -371,14 +349,15 @@ public:
 
 };
 
-
-
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::string whiteout (std::string s) {
    for (unsigned int i=0;i<s.length();++i) {
       s[i]=' ';
    }
    return s;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void printInnerFunction (std::ostream & out,
                          std::string name,
                          FunctionDef *fDef, 
@@ -408,24 +387,65 @@ void printInnerFunction (std::ostream & out,
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void
-BRTCPUKernelCode::printCode(std::ostream& out) const
+void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
+    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
+    BrookCombine_ConvertKernel(fDef);
+    Brook2Cpp_ConvertKernel(fDef);
+    std::vector <PrintCPUArg> myArgs;
+    printInnerFunction (out,
+                        "__"+fDef->decl->name->name+"_cpu_inner",
+                        fDef,
+                        myArgs,
+                        true);    
+    Symbol enhanced_name;
+    enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
+    out << "void  ";
+    fDef->decl->form->printBefore(out,&enhanced_name,0);
+    out << " (const std::vector<void *>&args, unsigned int mapbegin) {";
+    out << std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+        indent(out,1);
+        myArgs[i].printCPU(out,PrintCPUArg::DEF);
+        out << std::endl;
+    }}    
+    indent(out,2);out<< "__" <<fDef->decl->name->name<<"_cpu_inner (";
+    out << std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+        if (i!=0)
+            out <<","<<std::endl;
+        indent(out,3);
+        myArgs[i].printCPU(out,PrintCPUArg::USE);
+    }}
+    out<< ");"<<std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+        myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
+    }}    
+    out << "}"<<std::endl;   
+
+}
+
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void BRTCPUKernelCode::printCode(std::ostream& out) const
 {
     bool copy_on_write=false;
     bool dims_specified=false;        
   /* We've already transformed everything, so just print ourselves */
  
     std::vector<PrintCPUArg> myArgs;
-    FunctionDef * baseCase = static_cast<FunctionDef*>(this->fDef->dup());
+    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
     
-    Brook2Cpp_ConvertKernel(this->fDef);
+    Brook2Cpp_ConvertKernel(fDef);
 
     printInnerFunction (out,
                         "__"+fDef->decl->name->name+"_cpu_inner",
                         fDef,
                         myArgs,
-                        shadowOutput);    
-    {
+                        false);    
+    bool reduceneeded=reduceNeeded(fDef);
+    
+    if (reduceneeded){
+       FunctionDef * baseCase = static_cast<FunctionDef*>(this->fDef->dup());
        std::vector<PrintCPUArg>temp;
        BrookReduce_ConvertKernel(baseCase);
        Brook2Cpp_ConvertKernel(baseCase);
@@ -433,7 +453,8 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
                            "__"+baseCase->decl->name->name+"_cpu_inner",
                            baseCase,
                            temp,
-                           shadowOutput);
+                           false);
+       delete baseCase;
     }
    //we don't want to automatically print this for it would say "kernel void" which means Nothing
     Symbol enhanced_name;
@@ -451,7 +472,7 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
     }}
-    bool reduceneeded=true;
+
     if (reduceneeded) {
        indent(out,1); out << "if (mapbegin!=0&&mapbegin<mapend) {"<<std::endl;
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
@@ -483,4 +504,7 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
     }}    
     out << "}"<<std::endl;   
+    delete fDef;
+    if (reduceneeded)
+       printCombineCode(out);
 }

@@ -6,6 +6,24 @@
 #include <map>
 #include <string>
 #include <vector>
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool reduceNeeded (const FunctionDef * fd) {
+   if (fd->decl->isReduce()) {
+      return false;
+   }
+   bool ret =false;
+   Type * form = fd->decl->form;
+   assert (form->isFunction());
+   FunctionType* func = static_cast<FunctionType *>(form);
+   for (unsigned int i=0;i<func->nArgs;++i) {
+      if (func->args[i]->isReduce())
+         return true;
+   }
+   return ret;
+}
+
+
 static std::map <std::string,Expression*>reducenames;
 typedef std::map<std::string,Expression*>::value_type reducenameval;
 static std::string functionmodifier;
@@ -136,8 +154,22 @@ Expression *ChangeFirstReduceFunction (Expression * e) {
                   }
                }else if (sym->name.find(functionmodifier)==std::string::npos){
                   std::string tmp = sym->name;
-                  //                  callname->name = new Symbol(*sym);
-                  callname->name->name = tmp+functionmodifier;
+                  for (unsigned int i=0;i<fc->nArgs();++i) {
+                     if (fc->args[i]->etype==ET_Variable) {
+                        Variable * v = static_cast<Variable*>(fc->args[i]);                        
+                        if (v->name->entry&&v->name->entry->uVarDecl) {
+                           if (v->name->entry->uVarDecl->isReduce()) {
+                              callname->name->name = tmp+functionmodifier;
+                              // change kernels taking in a reduction
+                              // to be the appropriate combine function
+                              // other kernels might not even have such a 
+                              // construct as they may not be reduce funcs
+                              break;
+                           }
+                        }
+                     }
+                  }
+
                }
             }
          }

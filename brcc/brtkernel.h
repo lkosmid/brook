@@ -65,22 +65,14 @@ class BRTPS20KernelCode : public BRTKernelCode
 
 class BRTCPUKernelCode : public BRTKernelCode
 {
-   bool shadowOutput;
   public:
-   ///When printing a function shadowing the output causes no out or vout vars
-   ///to be modified.  This is useful when only side effects are desired
-   ///as in when combining the last reduction variables.
-    void changeShadowOuputVars(bool shadow) {shadowOutput=shadow;}
-    BRTCPUKernelCode(const FunctionDef& _fDef) : BRTKernelCode(_fDef) {
-       this->shadowOutput=false;
-    }
+    BRTCPUKernelCode(const FunctionDef& _fDef) : BRTKernelCode(_fDef) {}
    ~BRTCPUKernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
 
     BRTKernelCode *dup0() const { 
-       BRTCPUKernelCode* ret=new BRTCPUKernelCode(*this->fDef); 
-       ret->shadowOutput=shadowOutput;
-       return ret;
+       return new BRTCPUKernelCode(*this->fDef); 
     }
+    void printCombineCode(std::ostream& out)const;
     void printCode(std::ostream& out) const;
 };
 

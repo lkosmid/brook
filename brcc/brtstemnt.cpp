@@ -112,11 +112,17 @@ BRTKernelDef::printStub(std::ostream& out) const
    }
    out << ") {\n";
 
-   out << "  static const void *__" << *FunctionName() << "_fp[] = {\n";
-   out << "     \"fp30\", __" << *FunctionName() << "_fp30,\n";
-   out << "     \"ps20\", __" << *FunctionName() << "_ps20,\n";
-   out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,\n";
-   out << "     NULL, NULL };\n";
+   out << "  static const void *__" << *FunctionName() << "_fp[] = {";
+   out << std::endl;
+   out << "     \"fp30\", __" << *FunctionName() << "_fp30," << std::endl;
+   out << "     \"ps20\", __" << *FunctionName() << "_ps20," << std::endl;
+   out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;
+   if (reduceNeeded(this)) {
+      out << "     \"combine\", (void *) __";
+      out << *FunctionName() << "__combine_cpu,";
+      out << std::endl;
+   }
+   out << "     NULL, NULL };"<<std::endl;
 
    out << "  static __BRTKernel k("
        << "__" << *FunctionName() << "_fp);\n\n";

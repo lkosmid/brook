@@ -8,6 +8,7 @@
 #define __BROOK2CPP_H__
 
 class FunctionDef;
+extern bool reduceNeeded(const FunctionDef * fDef);
 
 extern void
 Brook2Cpp_ConvertKernel(FunctionDef *kDef);
