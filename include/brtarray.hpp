@@ -12,7 +12,7 @@ public:
 	TYPE getAt(unsigned int i) const{ return GetAt((VALUE)*this,i);}
 	*/
 	template <class T> __ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
-		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
+		for (int i=T::size-1;i>=0&&indices[dims]<dims;++i){
 			int k=indices[dims];
 			
 			indices[k]=(unsigned int)a.getAt(i);
@@ -32,7 +32,7 @@ public:
 		this->parent=parent;
 	}
 	template <class T> __XSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
-		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
+		for (int i=T::size-1;i>=0&&indices[dims]<dims;++i){
 			
 			indices[indices[dims]++]=(unsigned int)a.getAt(i);
 		}
@@ -96,20 +96,12 @@ public:
 			free(this->data);
 	}
 	unsigned int linearaddresscalc (const unsigned int * indices)const {
-		// TIM: I believe the old code was reversed from what it should be
-		unsigned int result = 0;
-		for( int i = dims-1; i >= 0; i-- )
-		{
-			result *= extents[i];
-			result += indices[i];
-		}
-		return result;
-/*		unsigned int total=0;
+		unsigned int total=0;
 		for (unsigned int i=0;i<dims;++i) {
 			total*=extents[i];
 			total+=indices[i];
 		}
-		return total;*/
+		return total;
 	}
 	const VALUE &get(const unsigned int * indices)const {
 		return data[this->linearaddresscalc(indices)];
