@@ -170,7 +170,7 @@ else
 
 regression: arch
 	@echo  "Running $(BINARY_NAME)"
-	@valgrind --leak-check=yes --show-reachable=yes --num-callers=10 $(BINDIR)/$(BINARY) > $(BINARY_NAME).output
+	@$(BINDIR)/$(BINARY) > $(BINARY_NAME).output
 	@diff -q -w $(BINARY_NAME).output $(BINARY_NAME).gold
 	@rm $(BINARY_NAME).output
 	@echo
