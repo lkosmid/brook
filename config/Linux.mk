@@ -31,3 +31,4 @@ LIBRARIES         +=
 ARFLAGS		 := -rc 
 AR_OUTPUT_FLAG	 := 
 RUNTIME_LIBS     := brook cpu
+RANLIB           := ranlib

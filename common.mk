@@ -152,6 +152,7 @@ $(BINDIR)/$(BINARY):  $(ADDITIONAL_DEPENDANCIES) $(OBJS)
 	@$(ECHO) Building $@
 ifdef STATIC_LIBRARY
 	$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)
+	$(RANLIB) $@
 else
 	$(LD) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LDFLAGS)
 endif
