@@ -35,10 +35,6 @@ namespace brook {
     virtual void Reduce();
 
   private:
-    enum {
-      kBaseConstantIndex = 1
-    };
-
     DX9Kernel( DX9RunTime* inRuntime );
     bool initialize( const void* inSource[] );
     bool initialize( const char** inProgramStrings );

@@ -369,9 +369,16 @@ void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
     DX9AssertResult( result, "SetTexture failed" );
   }
 
-  // TIM: TODO: set up workspace constant
+  for( i = 0; i < constantCount; i++ )
+  {
+    result = device->SetPixelShaderConstantF( i, (float*)&(inputConstants[i]), 1 );
+    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
+  }
 
-  int baseConstantIndex = kBaseConstantIndex;
+  // TIM: The workspace constant is dead, long live the workspace constant...
+  // we now put any special or "magical" constants (like the deceased WS
+  // constant or the blasphemous adress-translation cosntants) *after*
+  // the constants consumed by normal arguments.
   if( runtime->isAddressTranslationOn() )
   {
     DX9Stream* outputStream = outputStreams[0];
@@ -379,19 +386,12 @@ void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
     float4 outputConstant = outputStream->getATOutputConstant();
     float4 hackConstant(1,1,1,1);
 
-    result = device->SetPixelShaderConstantF( 0, (float*)&(outputConstant), 1 );
+    result = device->SetPixelShaderConstantF( constantCount+0, (float*)&(outputConstant), 1 );
     DX9AssertResult( result, "SetPixelShaderConstantF failed" );
-    result = device->SetPixelShaderConstantF( 1, (float*)&(hackConstant), 1 );
-    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
-
-    baseConstantIndex = 2;
-  }
-
-  for( i = 0; i < constantCount; i++ )
-  {
-    result = device->SetPixelShaderConstantF( i+baseConstantIndex, (float*)&(inputConstants[i]), 1 );
+    result = device->SetPixelShaderConstantF( constantCount+1, (float*)&(hackConstant), 1 );
     DX9AssertResult( result, "SetPixelShaderConstantF failed" );
   }
+
 
   runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
 
@@ -671,7 +671,7 @@ void DX9Kernel::beginReduction( ReductionState& ioState )
 
   for( i = 0; i < constantCount; i++ )
   {
-    result = device->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
+    result = device->SetPixelShaderConstantF( i, (float*)&(inputConstants[i]), 1 );
     DX9AssertResult( result, "SetPixelShaderConstantF failed" );
   }
 
