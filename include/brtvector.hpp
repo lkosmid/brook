@@ -130,13 +130,19 @@ template <class T> class BracketOp {public:
   }
 };
 template <> class BracketOp <float> {public:
-  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {
+     return vec<float,1>(u.unsafeGetAt(i));
+  }
 };
 template <> class BracketOp <int> {public:
-  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {
+     return vec<int,1>(u.unsafeGetAt(i));  
+  }
 };
 template <> class BracketOp <char> {public:
-  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {
+     return vec<char,1>(u.unsafeGetAt(i));
+  }
 };
 
 enum MASKS {
