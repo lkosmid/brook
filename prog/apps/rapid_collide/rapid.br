@@ -58,6 +58,13 @@ typedef struct Tri_t {
   float3 B;
   float3 C;
 } Tri;
+#ifdef _WIN32
+const     int maxwid=2048;
+#else
+#define maxwide maxwid
+const     int maxwide=1024;
+#undef maxwide
+#endif 
 
 kernel float modTwo(float who) {
   float tmp = fmod(who,2.0);
@@ -628,7 +635,8 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
      Collide(trav,m1,m2,nextNode,hits);
      xsize = (int)streamSize(nextNode).x;
      ysize = (int)streamSize(nextNode).y;     
-     stretchX= (ysize*2>2048)?1.0:0.0;
+     
+     stretchX= (ysize*2>maxwid)?1.0:0.0;
      if (stretchX) xsize*=2; else ysize*=2;
      if (xsize&&ysize) {
         Traverser temp<ysize,xsize>;
