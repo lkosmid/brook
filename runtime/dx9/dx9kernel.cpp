@@ -217,7 +217,13 @@ void DX9Kernel::ReduceToStream()
   DX9Fail("Can't reduce to stream right now");
 }
 
-static void DumpBuffer( float4* buffer, int leftW, int leftH, int rightW, int rightH )
+/*
+ *  I took the 'static' off this function so vc7 wouldn't (correctly)
+ * complain it was an unused function.  I figure it's worth keeping around
+ * for debugging purposes.  Another alternative is to leave it here, but
+ * ifdef'ed out, which is what I'd do for production-type code.  --Jeremy.
+ */
+void DumpBuffer( float4* buffer, int leftW, int leftH, int rightW, int rightH )
 {
   DX9Print( "Left Buffer:\n" );
   if( leftW != 0 )
