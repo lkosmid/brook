@@ -241,9 +241,10 @@ float2 * getData(int N) {
    float2 *ret;
    ret  = (float2*)malloc(sizeof(float2)*N);
    for (i=0;i<N;++i ) {
-      ret[i].x = i+1;
+      ret[i].x = 0;//i+1;
       ret[i].y = 0;
    }
+   ret[1].x=1;
    return ret;
 }
 float2 * getTwiddleFactor(int N) {
@@ -299,11 +300,11 @@ int main(int argc, char **argv)
   streamPrint(s); 
 
   four1((float*)dat,logN,1);
+  free (dat);
+  dat = getTwiddleFactor(N);  
   for (nDataLength=0;nDataLength<N;nDataLength+=2) {
      printf("{%f, %f}",dat[nDataLength],dat[nDataLength+1]);
   }
-  free (dat);
-  dat = getTwiddleFactor(N);  
   streamRead(W,dat);
   printf("Stream Print Twiddle\n");
   streamPrint(W);
