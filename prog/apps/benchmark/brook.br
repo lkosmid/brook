@@ -14,10 +14,10 @@ kernel void floatMath (float a<>, float b<>, float4 c,
    float g=a+b;
    float h=b*b;
    float i = g*h+a*b;
-   float j = a>.5?g*i/(h>.001?h:1.0)+h:g*i*h-h;
+   float j = .5<a?g*i/(.001<h?h:1.0)+h:g*i*h-h;
    float k = g*i*h+h;
    float l = g+h*g+k*i;
-   float m = g+j*k-i*k/(h>.001?h:1.0);
+   float m = g+j*k-i*k/(.001<h?h:1.0);
    float o = k;
    o+=5;
    g+=9;
@@ -25,8 +25,8 @@ kernel void floatMath (float a<>, float b<>, float4 c,
    i*=1;
    o+=0+0+0+0+0+0+0+0+0+0+0+0+0+0+0+0+0;
    o+=21049;
-   o+=h*i+g+i-m*(l-j)/(k>.001?k:1.0);
-   e= g+h*i/(k>.001?k:1.0)+m*l*1*1*1*1*1*1*1*1*1*1*1;
+   o+=h*i+g+i-m*(l-j)/(.001<k?k:1.0);
+   e= g+h*i/(.001<k?k:1.0)+m*l*1*1*1*1*1*1*1*1*1*1*1;
 }
 kernel void math(float a<>, float b<>, float4 c,
                     float d[10][10], out float e<>) {

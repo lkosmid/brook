@@ -1,5 +1,7 @@
 #include "brook.hpp"
 #include "lin_time.h"
+#include <stdio.h>
+#include <stdlib.h>
 static void floatMath (float a, float b, float4 c,
                     float d[10][10], float &e) {
    float g=a+b;
@@ -28,20 +30,20 @@ static void  FloatMath (const __BrtFloat1  &a,
   __BrtFloat1  g = a + b;
   __BrtFloat1  h = b * b;
   __BrtFloat1  i = g * h + a * b;
-  __BrtFloat1  j = (a.getAt(0) > 0.5)?(g * i / ((h.getAt(0) > 0.001)?h:__BrtFloat1(1)) + h):g * i * h - h;
+  __BrtFloat1  j = (__BrtFloat1(0.5) < a).questioncolon(g * i / ((__BrtFloat1(0.001) < h).questioncolon(h,__BrtFloat1(1))) + h,g * i * h - h);
   __BrtFloat1  k = g * i * h + h;
   __BrtFloat1  l = g + h * g + k * i;
-  __BrtFloat1  m = g + j * k - i * k / (h.getAt(0) > 0.001?h:__BrtFloat1(1));
+  __BrtFloat1  m = g + j * k - i * k / ((__BrtFloat1(0.001) < h).questioncolon(h,__BrtFloat1(1)));
   __BrtFloat1  o = k;
 
-  o += 5;
-  g += 9;
-  h *= 4;
-  i *= 1;
-  o += 0+0 + 0+0 +0 +0 +0 + 0 + 0 + 0 + 0 +0 + 0 + 0 + 0 + 0 + 0;
-  o += 21049;
-  o += h * i + g + i - m * (l - j) / ((k.getAt(0) > 0.001)?k:__BrtFloat1(1));
-  e = g + h * i / ((k.getAt(0) > 0.001)?k:__BrtFloat1(1)) + m*l *__BrtFloat1(1 * 1 * 1 * 1 * 1 * 1 * 1 * 1 * 1 * 1 * 1);
+  o += __BrtInt1(5);
+  g += __BrtInt1(9);
+  h *= __BrtInt1(24);
+  i *= __BrtInt1(1);
+  o += __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0);
+  o += __BrtInt1(21049);
+  o += h * i + g + i - m * (l - j) / ((__BrtFloat1(0.001) < k).questioncolon(k,__BrtFloat1(1)));
+  e = g + h * i / ((__BrtFloat1(0.001) < k).questioncolon(k,__BrtFloat1(1))) + m * l * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1);
 }
 
 
