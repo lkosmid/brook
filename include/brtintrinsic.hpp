@@ -86,51 +86,51 @@ template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>:
 }
 
 #define TRIINTRINSIC(FUNC,CALLFUNC) \
-inline __BrtFloat4 __##FUNC##_cpu_inner (const __BrtFloat4 &f, \
+template <class ThirdEye> __BrtFloat4 __##FUNC##_cpu_inner (const __BrtFloat4 &f, \
              const __BrtFloat4 &g, \
-             const __BrtFloat4 &h) { \
+             const ThirdEye &h) { \
   return __BrtFloat4 (CALLFUNC (f.unsafeGetAt(0), \
                                        g.unsafeGetAt(0), \
                                        h.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1), \
                                        g.unsafeGetAt(1), \
-                                       h.unsafeGetAt(1)), \
+                                       h.getAt(1)), \
                       CALLFUNC (f.unsafeGetAt(2), \
                                        g.unsafeGetAt(2), \
-                                       h.unsafeGetAt(2)), \
+                                       h.getAt(2)), \
                       CALLFUNC (f.unsafeGetAt(3), \
                                        g.unsafeGetAt(3), \
-                                       h.unsafeGetAt(3))); \
+                                       h.getAt(3))); \
 } \
-inline __BrtFloat3 __##FUNC##_cpu_inner (const __BrtFloat3 &f, \
+template <class ThirdEye> __BrtFloat3 __##FUNC##_cpu_inner (const __BrtFloat3 &f, \
                          const __BrtFloat3 &g, \
-                         const __BrtFloat3 &h) { \
+                         const ThirdEye &h) { \
   return __BrtFloat3 (CALLFUNC (f.unsafeGetAt(0), \
                                        g.unsafeGetAt(0), \
                                        h.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1), \
                                        g.unsafeGetAt(1), \
-                                       h.unsafeGetAt(1)), \
+                                       h.getAt(1)), \
                       CALLFUNC (f.unsafeGetAt(2), \
                                        g.unsafeGetAt(2), \
-                                       h.unsafeGetAt(2))); \
+                                       h.getAt(2))); \
 } \
-inline __BrtFloat2 __##FUNC##_cpu_inner (const __BrtFloat2 &f, \
-                         const __BrtFloat2 &g, \
-                         const __BrtFloat2 &h) { \
+template <class ThirdEye> __BrtFloat2 __##FUNC##_cpu_inner (const __BrtFloat2 &f, \
+                                                            const __BrtFloat2 &g, \
+                                                            const ThirdEye &h) { \
   return __BrtFloat2 (CALLFUNC (f.unsafeGetAt(0), \
                                        g.unsafeGetAt(0), \
                                        h.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1), \
                                        g.unsafeGetAt(1), \
-                                       h.unsafeGetAt(1))); \
+                                       h.getAt(1))); \
 } \
-inline __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f, \
-                         const __BrtFloat1 &g, \
-                         const __BrtFloat1 &h) { \
+template <class ThirdEye> __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f, \
+                                                            const __BrtFloat1 &g, \
+                                                            const ThirdEye &h) { \
   return __BrtFloat1 (CALLFUNC (f.unsafeGetAt(0), \
-                                       g.unsafeGetAt(0), \
-                                       h.unsafeGetAt(0))); \
+                                g.unsafeGetAt(0),    \
+                                h.unsafeGetAt(0)));        \
 }
 
 template <class T> T __normalize_cpu_inner (const T &x) {
