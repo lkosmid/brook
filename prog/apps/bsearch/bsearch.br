@@ -1,0 +1,121 @@
+/***************************************************************************
+  Binary Search
+
+  Finds index of first occurance in an array of ARRAYSIZE floats of each of a given
+  set of NUM_SEARCHES values.  If value not present found, search produces -1.
+
+****************************************************************************/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+
+#define ARRAYSIZE     32
+#define LG_ARRAYSIZE  5
+#define NUM_SEARCHES  10
+
+
+
+kernel void bsearch(float searchValue<>, float array[ARRAYSIZE], out float index<>, float arraySize) {
+ 
+  float i;
+  float numIter = 5.0 - 1.0;
+  float stride;
+  float compareValue, dir;
+
+  float idx = stride = floor(arraySize * 0.5);
+
+  index = 0.0;
+
+  for (i=0; i<numIter; i+=1) {
+    stride = floor(stride * 0.5);
+    compareValue = array[idx];
+    dir = (searchValue <= compareValue) ? -1.0 : 1.0;
+    idx = idx + dir * stride;
+  }
+
+    
+  
+  // last iteration has stride fixed at 1
+  compareValue = array[idx];
+  idx = idx + ((searchValue <= compareValue) ? -1.0 : 1.0);
+
+  
+  // last pass check
+  compareValue = array[idx];
+  idx = idx + ((searchValue <= compareValue) ? 0.0 : 1.0);
+
+  compareValue = array[idx];
+  idx = (searchValue == compareValue) ? idx : -1.0;
+  
+  index = idx;
+}
+
+
+
+int main() {
+
+  int i;
+  float* array;
+  float* searchValues;
+  float* indices;
+
+  float searchValuesStrm<NUM_SEARCHES>;
+  float indicesStrm<NUM_SEARCHES>;
+  float arrayStrm<ARRAYSIZE>;
+
+  float arraySize = ARRAYSIZE;
+  int index;
+
+  array = (float*)malloc(sizeof(float) * ARRAYSIZE);
+  searchValues = (float*)malloc(sizeof(float) * NUM_SEARCHES);
+  indices = (float*)malloc(sizeof(float) * NUM_SEARCHES);
+
+  srand(time(NULL));
+
+  // initialize list of ARRAYSIZE random numbers (in ascending sorted order as required by bsearch)
+  array[0] = (float)(rand() % 10);
+  for (i=1; i<ARRAYSIZE; i++)
+    array[i] = array[i-1] + (float)(rand() % 10);
+
+  // randomly choose some numbers in the array to search for (plus some other random numbers)
+  for (i=0; i<NUM_SEARCHES; i++) {
+    index = (rand() % (2*ARRAYSIZE));
+    searchValues[i] = (index < ARRAYSIZE) ? array[index] : (float)(rand() % (ARRAYSIZE * 10));
+  }
+
+  printf("Peforming %d parallel searches on array of size = %d\n", NUM_SEARCHES, ARRAYSIZE);
+
+  printf("Original list:\n");
+  for (i=0;i<ARRAYSIZE;i++) {
+    if (i==16)
+      printf("*");
+    printf("%3.2f ", array[i]);
+  }
+  printf("\n\n");
+
+  streamRead(arrayStrm, array);
+  streamRead(searchValuesStrm, searchValues);
+  bsearch(searchValuesStrm, arrayStrm, indicesStrm, arraySize);
+  streamWrite(indicesStrm, indices);
+
+
+  printf("Search values:\n");
+  for (i=0;i<NUM_SEARCHES;i++)
+    printf("%3.1f ", searchValues[i]);
+  printf("\n");
+
+  printf("Search results:\n");
+  for (i=0;i<NUM_SEARCHES;i++)
+    printf("%3.1f ", indices[i]);
+  printf("\n");
+
+
+  free(array);
+  free(searchValues);
+  free(indices);
+
+	return 0;
+}
