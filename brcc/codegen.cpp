@@ -13,26 +13,12 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <fcntl.h>
-
-#ifdef WIN32
-#include <process.h>
-#include <io.h>
-#else
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#endif
 }
 
 #include "main.h"
 #include "decl.h"
-#include "project.h"
+#include "subprocess.h"
 
-#define READ_HANDLE 0
-#define WRITE_HANDLE 1
-
-static const char legaltypes[][16] = { "float", "float2", "float3", "float4" };
 static const char fp30_assist[] =
 #include "v01/fp30_assist.cg.bin"
 ;
@@ -204,211 +190,13 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 static char *
 compile_cg_code (char *cgcode) {
 
-  bool debug = Project::gDebug;
-  int hStdOut;
-  int hStdOutPipe[2];
-  int hStdIn;
-  int hStdInPipe[2];
-
-  int pid;
-
-  int ret;
-
-  char *fpcode;
-  int  fpcode_alloc;
-  int  fpcode_pos;
-  char buf[1024];
-  char *endline;
+  char *argv[16] = { "cgc", "-profile", "fp30", "-quiet", NULL };
+  char *fpcode, *endline;
 
   /* Only support fp30 right now */
   assert (globals.target == TARGET_FP30);
 
-  // Create the pipe
-#ifdef WIN32
-  if(_pipe(hStdOutPipe, 512, O_TEXT | O_NOINHERIT) == -1) {
-    fprintf (stderr, "Unable to create pipe\n");
-    exit (1);
-  }
-  if(_pipe(hStdInPipe, 512, O_TEXT | O_NOINHERIT) == -1) {
-    fprintf (stderr, "Unable to create pipe\n");
-    exit (1);
-  }
-
-  // Save the current stdout/stdin handles
-  hStdOut = _dup(_fileno(stdout));
-  hStdIn  = _dup(_fileno(stdin));
-
-  // Duplicate the pipes
-  if(_dup2(hStdOutPipe[WRITE_HANDLE], _fileno(stdout)) != 0) {
-    fprintf (stderr, "Unable to redirect stdout\n");
-    exit (1);
-  }
-  if(_dup2(hStdInPipe[READ_HANDLE], _fileno(stdin)) != 0) {
-    fprintf (stderr, "Unable to redirect stdin\n");
-    exit (1);
-  }
-
-#else
-  if(pipe(hStdOutPipe) == -1) {
-       fprintf (stderr, "Unable to create pipe\n");
-       exit (1);
-  }
-  if(pipe(hStdInPipe) == -1) {
-    fprintf (stderr, "Unable to create pipe\n");
-    exit (1);
-  }
-  if((hStdOut = dup(fileno(stdout)))  == -1 ){
-       fprintf (stderr, "dup stdout\n");
-       exit (1);
-  }
-  if((hStdIn  = dup(fileno(stdin))) == -1 ){
-       fprintf (stderr, "dup stdin\n");
-       exit (1);
-  };
-  if( dup2(hStdOutPipe[WRITE_HANDLE], fileno(stdout)) == -1 ){
-       fprintf (stderr, "Unable to redirect stdout\n");
-       exit (1);
-  }
-  if( dup2(hStdInPipe[READ_HANDLE], fileno(stdin)) == -1) {
-       fprintf (stderr, "Unable to redirect stdout\n");
-       exit (1);
-  }
-#endif
-
-  // Close our side of the pipes.
-  // Cgc will be writing/reading these pipes
-  if(close(hStdOutPipe[WRITE_HANDLE]) !=0){
-       fprintf(stderr, "Write close error\n");
-  }
-  if(close(hStdInPipe[READ_HANDLE]) !=0){
-       fprintf(stderr, "Write close error\n");
-  }
-
-#if WIN32
-
-  /* Excute the compiler */
-  if( ( pid = _spawnlp( P_NOWAIT, "cgc", "cgc", "-profile",
-			"fp30", "-quiet", NULL)) == -1) {
-    fprintf( stderr, "Unable to start cgc\n" );
-    exit(1);
-  }
-
-#else
-
-  if ((pid = fork()) == 0) {
-       close (hStdInPipe[WRITE_HANDLE]);
-
-       if (execlp( "cgc", "cgc", "-profile",
-		   "fp30", "-quiet", NULL) == -1) {
-	    fprintf( stderr, "Unable to start cgc\n" );
-	    exit(1);
-       }
-       /* Unreached... */
-  } else{
-       fprintf(stderr, "Child has pid %d\n", pid);
-  }
-
-#endif
-
-
-#if WIN32
-  // Restore the pipes for us.
-  if(_dup2(hStdOut, _fileno(stdout)) != 0) {
-    fprintf (stderr, "Unable to restore stdout\n");
-    exit (1);
-  }
-  if(_dup2(hStdIn, _fileno(stdin)) != 0) {
-    fprintf (stderr, "Unable to restore stdin\n");
-    exit (1);
-  }
-#else
-  if(dup2(hStdOut, fileno(stdout)) == -1) {
-       fprintf (stderr, "Unable to restore stdout\n");
-       exit (1);
-  }
-  if( dup2(hStdIn, fileno(stdin)) == -1) {
-       fprintf (stderr, "Unable to restore stdin\n");
-       exit (1);
-  }
-#endif
-
-
-  // Close the remaining pipes
-  if(close(hStdOut) !=0){
-       fprintf(stderr, "Write close error\n");
-  }
-  if(close(hStdIn) !=0){
-       fprintf(stderr, "Write close error\n");
-  }
-
-  /* Feed the cg code to the compiler */
-  if (debug) fprintf(stderr, "Sending CG code to the compiler\n");
-#if WIN32
-  _write (hStdInPipe[WRITE_HANDLE], cgcode, strlen(cgcode));
-#else
-  {
-       char eof_holder = EOF;
-
-       /* fprintf(stderr, "Writing\n[35;1m%s[0m\n", cgcode); */
-       if (debug) fprintf(stderr, "Writing...\n");
-       if(write (hStdInPipe[WRITE_HANDLE], cgcode, strlen(cgcode))
-	  != strlen(cgcode)){
-	    perror("Write problem: ");
-       }
-       write(hStdInPipe[WRITE_HANDLE], &eof_holder, 1);
-  }
-#endif
-  if (debug) fprintf(stderr, "Closing pipe to cgc\n");
-  if(close(hStdInPipe[WRITE_HANDLE]) !=0){
-       fprintf(stderr, "Write close error\n");
-  }
-
-  fpcode = (char *) malloc (1024);
-  fpcode_alloc = 1024;
-  fpcode_pos   = 0;
-
-  while (1) {
-    if (debug) fprintf(stderr, "Reading pipe from cgc...\n");
-#ifdef WIN32
-    ret = _read(hStdOutPipe[READ_HANDLE], buf, 1023);
-#else
-    ret = read(hStdOutPipe[READ_HANDLE], buf, 1023);
-#endif
-
-    if (ret == 0) {
-      if (debug) fprintf(stderr, "Got everything from cgc.\n");
-      break;
-    } else if (ret == -1) {
-      fprintf (stderr, "Error reading output compiler pipe.\n");
-      exit(1);
-    }
-    buf[ret]='\0';
-
-    if (debug) fprintf(stderr, "Read %d bytes\n", ret);
-    /*fprintf(stderr, "Read %d bytes '%s'\n", ret, buf);*/
-    while (fpcode_alloc - fpcode_pos  <= ret) {
-      fpcode = (char *) realloc (fpcode, fpcode_alloc*2);
-      fpcode_alloc *= 2;
-    }
-    memcpy (fpcode + fpcode_pos, buf, ret);
-    fpcode_pos += ret;
-  }
-  fpcode[fpcode_pos] = '\0';
-
-#if WIN32
-  /* Wait for cgc to be done, get the return value */
-  _cwait(&ret, pid, 0);
-#else
-  waitpid(pid, &ret, 0);
-  ret = WIFEXITED(ret) ? 0 : WEXITSTATUS(ret);
-#endif
-  if (ret != 0) {
-    fprintf (stderr, "cgc exited with an error:\n");
-    fwrite (fpcode, strlen(fpcode), 1, stderr);
-    exit(1);
-  }
-
-  close (hStdOutPipe[READ_HANDLE]);
+  fpcode = Subprocess_Run(argv, cgcode);
 
   /* Tolerate CRLF or LF line endings. */
   endline = strstr (fpcode, "\nEND\n");
@@ -416,10 +204,11 @@ compile_cg_code (char *cgcode) {
      endline = strstr (fpcode, "\nEND\r\n");
   }
   if (!endline) {
-       fprintf (stderr, "Unable to parse returned CG Code: [35;1m%s[0m\n",
-                fpcode);
-       exit(1);
+     fprintf(stderr, "Unable to parse returned CG Code: [35;1m%s[0m\n",
+             fpcode);
+     exit(1);
   }
+
   endline += strlen("\nEND");
   *endline = '\0';
   endline++;

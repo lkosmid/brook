@@ -5,7 +5,7 @@
 #define TARGET_ARB  2
 
 struct globals_struct {
-  int verbose;
+  bool verbose;
   char *sourcename;
   char *compilername;
   char *cgoutputname;
