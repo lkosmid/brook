@@ -86,10 +86,10 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int e
   inputRect = DX9Rect( 0, 1, 1, 0 );
   outputRect = DX9Rect( -1, -1, 1, 1 );
 
-  float scaleX = 1.0f / width;
-  float scaleY = 1.0f / height;
-  float offsetX = 0.5f / width;
-  float offsetY = 0.5f / height;
+  float scaleX = 1.0f / (width);
+  float scaleY = 1.0f / (height);
+  float offsetX = 1.0f / (1 << 15);//0.5f / width;
+  float offsetY = 1.0f / (1 << 15);//0.5f / height;
   gatherConstant.x = scaleX;
   gatherConstant.y = scaleY;
   gatherConstant.z = offsetX;

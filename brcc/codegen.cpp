@@ -221,11 +221,11 @@ generate_shader_code (Decl **args, int nArgs,
        if( FunctionProp[funtionName].contains(i) )
          {
            shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "
-                  << "__computeindexof( "
+                  << "_computeindexof( "
                   << "_tex_" << *args[i]->name << "_pos, "
                   << "float4( _tex_" << *args[i]->name << "_pos*"
                   << *args[i]->name << "_invscalebias.xy + "
-                  << *args[i]->name << "_invscalebias.zw,0,0);\n";
+                  << *args[i]->name << "_invscalebias.zw,0,0));\n";
          }
      }
   }
