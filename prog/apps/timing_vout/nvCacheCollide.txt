@@ -1,0 +1,525 @@
+../../../bin/timing_vout.exe -precache -rapid -angle90 dragon.ply
+CPU Time: 8.000000
+CPU Time: 15.000000
+Run 0 Time is up 4274.000000
+Run 1 Time is up 3837.000000
+Run 2 Time is up 804.000000
+Run 3 Time is up 722.000000
+Run 4 Time is up 720.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle90 dragon.ply
+CPU Time: 8.000000
+CPU Time: 16.000000
+Run 0 Time is up 4242.000000
+Run 1 Time is up 2362.000000
+Run 2 Time is up 800.000000
+Run 3 Time is up 719.000000
+Run 4 Time is up 718.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle82.5 dragon.ply
+CPU Time: 15.000000
+CPU Time: 27.000000
+Run 0 Time is up 3373.000000
+Run 1 Time is up 2954.000000
+Run 2 Time is up 864.000000
+Run 3 Time is up 784.000000
+Run 4 Time is up 784.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle82.5 dragon.ply
+CPU Time: 15.000000
+CPU Time: 27.000000
+Run 0 Time is up 3365.000000
+Run 1 Time is up 1966.000000
+Run 2 Time is up 866.000000
+Run 3 Time is up 783.000000
+Run 4 Time is up 783.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle75 dragon.ply
+CPU Time: 21.000000
+CPU Time: 43.000000
+Run 0 Time is up 2975.000000
+Run 1 Time is up 2555.000000
+Run 2 Time is up 1018.000000
+Run 3 Time is up 932.000000
+Run 4 Time is up 935.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle75 dragon.ply
+CPU Time: 22.000000
+CPU Time: 43.000000
+Run 0 Time is up 2983.000000
+Run 1 Time is up 1864.000000
+Run 2 Time is up 1020.000000
+Run 3 Time is up 938.000000
+Run 4 Time is up 936.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle67.5 dragon.ply
+CPU Time: 29.000000
+CPU Time: 58.000000
+Run 0 Time is up 2893.000000
+Run 1 Time is up 2485.000000
+Run 2 Time is up 1070.000000
+Run 3 Time is up 982.000000
+Run 4 Time is up 983.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle67.5 dragon.ply
+CPU Time: 29.000000
+CPU Time: 57.000000
+Run 0 Time is up 2860.000000
+Run 1 Time is up 1841.000000
+Run 2 Time is up 1056.000000
+Run 3 Time is up 969.000000
+Run 4 Time is up 971.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle60 dragon.ply
+CPU Time: 37.000000
+CPU Time: 79.000000
+Run 0 Time is up 3403.000000
+Run 1 Time is up 3114.000000
+Run 2 Time is up 1266.000000
+Run 3 Time is up 1220.000000
+Run 4 Time is up 1211.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle60 dragon.ply
+CPU Time: 37.000000
+CPU Time: 79.000000
+Run 0 Time is up 3413.000000
+Run 1 Time is up 2205.000000
+Run 2 Time is up 1260.000000
+Run 3 Time is up 1174.000000
+Run 4 Time is up 1177.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle52.5 dragon.ply
+CPU Time: 45.000000
+CPU Time: 91.000000
+Run 0 Time is up 3215.000000
+Run 1 Time is up 2985.000000
+Run 2 Time is up 1335.000000
+Run 3 Time is up 1286.000000
+Run 4 Time is up 1286.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle52.5 dragon.ply
+CPU Time: 45.000000
+CPU Time: 91.000000
+Run 0 Time is up 3212.000000
+Run 1 Time is up 2135.000000
+Run 2 Time is up 1309.000000
+Run 3 Time is up 1227.000000
+Run 4 Time is up 1226.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle45 dragon.ply
+CPU Time: 50.000000
+CPU Time: 99.000000
+Run 0 Time is up 3547.000000
+Run 1 Time is up 3118.000000
+Run 2 Time is up 1429.000000
+Run 3 Time is up 1342.000000
+Run 4 Time is up 1347.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle45 dragon.ply
+CPU Time: 50.000000
+CPU Time: 99.000000
+Run 0 Time is up 3560.000000
+Run 1 Time is up 2372.000000
+Run 2 Time is up 1426.000000
+Run 3 Time is up 1340.000000
+Run 4 Time is up 1342.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle37.5 dragon.ply
+CPU Time: 56.000000
+CPU Time: 117.000000
+Run 0 Time is up 3169.000000
+Run 1 Time is up 2756.000000
+Run 2 Time is up 1439.000000
+Run 3 Time is up 1355.000000
+Run 4 Time is up 1359.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle37.5 dragon.ply
+CPU Time: 56.000000
+CPU Time: 117.000000
+Run 0 Time is up 3164.000000
+Run 1 Time is up 2180.000000
+Run 2 Time is up 1437.000000
+Run 3 Time is up 1349.000000
+Run 4 Time is up 1354.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle30 dragon.ply
+CPU Time: 62.000000
+CPU Time: 127.000000
+Run 0 Time is up 3503.000000
+Run 1 Time is up 3079.000000
+Run 2 Time is up 1583.000000
+Run 3 Time is up 1494.000000
+Run 4 Time is up 1496.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle30 dragon.ply
+CPU Time: 62.000000
+CPU Time: 127.000000
+Run 0 Time is up 3501.000000
+Run 1 Time is up 2421.000000
+Run 2 Time is up 1583.000000
+Run 3 Time is up 1497.000000
+Run 4 Time is up 1496.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle22.5 dragon.ply
+CPU Time: 79.000000
+CPU Time: 159.000000
+Run 0 Time is up 3954.000000
+Run 1 Time is up 3520.000000
+Run 2 Time is up 1865.000000
+Run 3 Time is up 1783.000000
+Run 4 Time is up 1783.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle22.5 dragon.ply
+CPU Time: 81.000000
+CPU Time: 158.000000
+Run 0 Time is up 3974.000000
+Run 1 Time is up 2789.000000
+Run 2 Time is up 1862.000000
+Run 3 Time is up 1784.000000
+Run 4 Time is up 1783.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle15 dragon.ply
+CPU Time: 98.000000
+CPU Time: 200.000000
+Run 0 Time is up 4353.000000
+Run 1 Time is up 4110.000000
+Run 2 Time is up 2134.000000
+Run 3 Time is up 2080.000000
+Run 4 Time is up 2076.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle15 dragon.ply
+CPU Time: 100.000000
+CPU Time: 200.000000
+Run 0 Time is up 4365.000000
+Run 1 Time is up 3110.000000
+Run 2 Time is up 2110.000000
+Run 3 Time is up 2020.000000
+Run 4 Time is up 2024.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle7.5 dragon.ply
+CPU Time: 127.000000
+CPU Time: 273.000000
+Run 0 Time is up 4340.000000
+Run 1 Time is up 4080.000000
+Run 2 Time is up 2542.000000
+Run 3 Time is up 2490.000000
+Run 4 Time is up 2500.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle7.5 dragon.ply
+CPU Time: 128.000000
+CPU Time: 273.000000
+Run 0 Time is up 4382.000000
+Run 1 Time is up 3315.000000
+Run 2 Time is up 2519.000000
+Run 3 Time is up 2431.000000
+Run 4 Time is up 2432.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle1 dragon.ply
+CPU Time: 204.000000
+CPU Time: 438.000000
+Run 0 Time is up 5370.000000
+Run 1 Time is up 4913.000000
+Run 2 Time is up 3346.000000
+Run 3 Time is up 3261.000000
+Run 4 Time is up 3260.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle1 dragon.ply
+CPU Time: 203.000000
+CPU Time: 439.000000
+Run 0 Time is up 5374.000000
+Run 1 Time is up 4194.000000
+Run 2 Time is up 3341.000000
+Run 3 Time is up 3254.000000
+Run 4 Time is up 3255.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle0.125 dragon.ply
+CPU Time: 240.000000
+CPU Time: 505.000000
+Run 0 Time is up 5705.000000
+Run 1 Time is up 5252.000000
+Run 2 Time is up 3628.000000
+Run 3 Time is up 3543.000000
+Run 4 Time is up 3546.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle0.125 dragon.ply
+CPU Time: 240.000000
+CPU Time: 506.000000
+Run 0 Time is up 5674.000000
+Run 1 Time is up 4481.000000
+Run 2 Time is up 3607.000000
+Run 3 Time is up 3523.000000
+Run 4 Time is up 3526.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle0.003125 dragon.ply
+CPU Time: 251.000000
+CPU Time: 526.000000
+Run 0 Time is up 5723.000000
+Run 1 Time is up 5260.000000
+Run 2 Time is up 3661.000000
+Run 3 Time is up 3575.000000
+Run 4 Time is up 3575.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle0.003125 dragon.ply
+CPU Time: 251.000000
+CPU Time: 524.000000
+Run 0 Time is up 5754.000000
+Run 1 Time is up 4565.000000
+Run 2 Time is up 3684.000000
+Run 3 Time is up 3596.000000
+Run 4 Time is up 3598.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle90 bunny.ply
+CPU Time: 53.000000
+CPU Time: 109.000000
+Run 0 Time is up 4771.000000
+Run 1 Time is up 4452.000000
+Run 2 Time is up 1755.000000
+Run 3 Time is up 1715.000000
+Run 4 Time is up 1708.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle90 bunny.ply
+CPU Time: 54.000000
+CPU Time: 108.000000
+Run 0 Time is up 4771.000000
+Run 1 Time is up 3026.000000
+Run 2 Time is up 1735.000000
+Run 3 Time is up 1648.000000
+Run 4 Time is up 1649.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle82.5 bunny.ply
+CPU Time: 66.000000
+CPU Time: 137.000000
+Run 0 Time is up 4733.000000
+Run 1 Time is up 4270.000000
+Run 2 Time is up 1914.000000
+Run 3 Time is up 1830.000000
+Run 4 Time is up 1828.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle82.5 bunny.ply
+CPU Time: 66.000000
+CPU Time: 138.000000
+Run 0 Time is up 4726.000000
+Run 1 Time is up 3105.000000
+Run 2 Time is up 1918.000000
+Run 3 Time is up 1833.000000
+Run 4 Time is up 1833.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle75 bunny.ply
+CPU Time: 83.000000
+CPU Time: 182.000000
+Run 0 Time is up 5103.000000
+Run 1 Time is up 4644.000000
+Run 2 Time is up 2173.000000
+Run 3 Time is up 2089.000000
+Run 4 Time is up 2080.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle75 bunny.ply
+CPU Time: 83.000000
+CPU Time: 182.000000
+Run 0 Time is up 5121.000000
+Run 1 Time is up 3450.000000
+Run 2 Time is up 2185.000000
+Run 3 Time is up 2103.000000
+Run 4 Time is up 2101.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle67.5 bunny.ply
+CPU Time: 81.000000
+CPU Time: 162.000000
+Run 0 Time is up 5077.000000
+Run 1 Time is up 4589.000000
+Run 2 Time is up 2194.000000
+Run 3 Time is up 2107.000000
+Run 4 Time is up 2114.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle67.5 bunny.ply
+CPU Time: 81.000000
+CPU Time: 164.000000
+Run 0 Time is up 5039.000000
+Run 1 Time is up 3474.000000
+Run 2 Time is up 2192.000000
+Run 3 Time is up 2111.000000
+Run 4 Time is up 2110.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle60 bunny.ply
+CPU Time: 85.000000
+CPU Time: 170.000000
+Run 0 Time is up 5496.000000
+Run 1 Time is up 5216.000000
+Run 2 Time is up 2345.000000
+Run 3 Time is up 2282.000000
+Run 4 Time is up 2286.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle60 bunny.ply
+CPU Time: 86.000000
+CPU Time: 171.000000
+Run 0 Time is up 5509.000000
+Run 1 Time is up 3738.000000
+Run 2 Time is up 2315.000000
+Run 3 Time is up 2226.000000
+Run 4 Time is up 2227.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle52.5 bunny.ply
+CPU Time: 108.000000
+CPU Time: 221.000000
+Run 0 Time is up 5284.000000
+Run 1 Time is up 4828.000000
+Run 2 Time is up 2643.000000
+Run 3 Time is up 2552.000000
+Run 4 Time is up 2557.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle52.5 bunny.ply
+CPU Time: 110.000000
+CPU Time: 222.000000
+Run 0 Time is up 5292.000000
+Run 1 Time is up 3815.000000
+Run 2 Time is up 2649.000000
+Run 3 Time is up 2564.000000
+Run 4 Time is up 2562.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle45 bunny.ply
+CPU Time: 129.000000
+CPU Time: 254.000000
+Run 0 Time is up 5404.000000
+Run 1 Time is up 4932.000000
+Run 2 Time is up 2899.000000
+Run 3 Time is up 2814.000000
+Run 4 Time is up 2811.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle45 bunny.ply
+CPU Time: 129.000000
+CPU Time: 255.000000
+Run 0 Time is up 5409.000000
+Run 1 Time is up 3973.000000
+Run 2 Time is up 2892.000000
+Run 3 Time is up 2810.000000
+Run 4 Time is up 2812.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle37.5 bunny.ply
+CPU Time: 159.000000
+CPU Time: 306.000000
+Run 0 Time is up 5663.000000
+Run 1 Time is up 5407.000000
+Run 2 Time is up 3420.000000
+Run 3 Time is up 3365.000000
+Run 4 Time is up 3379.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle37.5 bunny.ply
+CPU Time: 159.000000
+CPU Time: 304.000000
+Run 0 Time is up 5649.000000
+Run 1 Time is up 4318.000000
+Run 2 Time is up 3355.000000
+Run 3 Time is up 3270.000000
+Run 4 Time is up 3273.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle30 bunny.ply
+CPU Time: 197.000000
+CPU Time: 395.000000
+Run 0 Time is up 6548.000000
+Run 1 Time is up 6080.000000
+Run 2 Time is up 3964.000000
+Run 3 Time is up 3874.000000
+Run 4 Time is up 3888.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle30 bunny.ply
+CPU Time: 196.000000
+CPU Time: 395.000000
+Run 0 Time is up 7661.000000
+Run 1 Time is up 5058.000000
+Run 2 Time is up 3965.000000
+Run 3 Time is up 3878.000000
+Run 4 Time is up 3897.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle22.5 bunny.ply
+CPU Time: 336.000000
+CPU Time: 706.000000
+Run 0 Time is up 8565.000000
+Run 1 Time is up 8078.000000
+Run 2 Time is up 5984.000000
+Run 3 Time is up 6026.000000
+Run 4 Time is up 6055.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle22.5 bunny.ply
+CPU Time: 335.000000
+CPU Time: 707.000000
+Run 0 Time is up 8851.000000
+Run 1 Time is up 7244.000000
+Run 2 Time is up 6115.000000
+Run 3 Time is up 6139.000000
+Run 4 Time is up 6178.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle15 bunny.ply
+CPU Time: 600.000000
+CPU Time: 1257.000000
+Run 0 Time is up 12980.000000
+Run 1 Time is up 13039.000000
+Run 2 Time is up 10008.000000
+Run 3 Time is up 10227.000000
+Run 4 Time is up 10222.000000
+
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle15 bunny.ply
+CPU Time: 601.000000
+CPU Time: 1256.000000
+Run 0 Time is up 12980.000000
+Run 1 Time is up 11025.000000
+Run 2 Time is up 9962.000000
+Run 3 Time is up 9937.000000
+Run 4 Time is up 9936.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle7.5 bunny.ply
+CPU Time: 893.000000
+CPU Time: 1841.000000
+Run 0 Time is up 17955.000000
+Run 1 Time is up 17387.000000
+Run 2 Time is up 15029.000000
+Run 3 Time is up 15190.000000
+Run 4 Time is up 16689.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle7.5 bunny.ply
+CPU Time: 896.000000
+CPU Time: 1840.000000
+Run 0 Time is up 17962.000000
+Run 1 Time is up 15709.000000
+Run 2 Time is up 15183.000000
+Run 3 Time is up 15227.000000
+Run 4 Time is up 17075.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle1 bunny.ply
+CPU Time: 2045.000000
+CPU Time: 4263.000000
+Run 0 Time is up 40873.000000
+Run 1 Time is up 44349.000000
+Run 2 Time is up 36473.000000
+Run 3 Time is up 37374.000000
+Run 4 Time is up 41583.000000
+
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle1 bunny.ply
+CPU Time: 2047.000000
+CPU Time: 4258.000000
+Run 0 Time is up 46349.000000
+Run 1 Time is up 39646.000000
+Run 2 Time is up 34536.000000
+Run 3 Time is up 37743.000000
+Run 4 Time is up 38360.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle0.125 bunny.ply
+CPU Time: 3203.000000
+CPU Time: 7091.000000
+Run 0 Time is up 68908.000000
+Run 1 Time is up 68669.000000
+Run 2 Time is up 58352.000000
+Run 3 Time is up 58446.000000
+Run 4 Time is up 58853.000000
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle0.125 bunny.ply
+CPU Time: 3209.000000
+CPU Time: 7106.000000
+Run 0 Time is up 71266.000000
+Run 1 Time is up 67335.000000
+Run 2 Time is up 55835.000000
+Run 3 Time is up 58408.000000
+Run 4 Time is up 58509.000000
+
+../../../bin/timing_vout.exe -precache -rapid -angle0.003125 bunny.ply
+CPU Time: 4071.000000
+CPU Time: 8313.000000
+Run 0 Time is up 76951.000000
+Run 1 Time is up 91516.000000
+Run 2 Time is up 66684.000000
+Run 3 Time is up 70921.000000
+Run 4 Time is up 70852.000000
+
+../../../bin/timing_vout.exe -precache -noscatter -rapid -angle0.003125 bunny.ply
+CPU Time: 4074.000000
+CPU Time: 8310.000000
+Run 0 Time is up 92696.000000
+Run 1 Time is up 89456.000000
+Run 2 Time is up 86409.000000
+Run 3 Time is up 85346.000000
+Run 4 Time is up 84764.000000
+

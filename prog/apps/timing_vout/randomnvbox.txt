@@ -1,0 +1,187 @@
+$ ..\..\..\bin\precache -mc 192
+......binprecache: not found
+$ pwd
+/cygdrive/w/brook/prog/apps/timing_vout
+$ ../../../bin/precache.exe -mc 192
+*****WARNING*****WARNING*******
+*****WARNING*****WARNING*******
+*****WARNING*****WARNING*******
+*******************************
+*                             *
+* BRT_RUNTIME env variable is *
+* not set. Defaulting to CPU  *
+* rutime.                     *
+*                             *
+* CPU Backend:                *
+* BRT_RUNTIME = cpu           *
+*                             *
+* CPU Multithreaded Backend:  *
+* BRT_RUNTIME = cpumt         *
+*                             *
+* NVIDIA NV30 Backend:        *
+* BRT_RUNTIME = nv30gl        *
+*                             *
+* OpenGL ARB Backend:         *
+* BRT_RUNTIME = arb           *
+*                             *
+* DirectX9 Backend:           *
+* BRT_RUNTIME = dx9           *
+*                             *
+*******************************
+*****WARNING*****WARNING*******
+*****WARNING*****WARNING*******
+*****WARNING*****WARNING*******
+
+$ export BRT_RUNTIME=nv30gl
+$ ../../../bin/precache.exe -mc 16
+One Time Cost 87.000000
+One Time Cost 63.000000
+Ready time 711.000000 711.000000 Total time with reads 711.000000
+Ready time 386.000000 386.000000 Total time with reads 386.000000
+Ready time 144.000000 144.000000 Total time 144.000000Total time with reads 144.000000
+Ready time 134.000000 134.000000 Total time 135.000000Total time with reads 135.000000
+Ready time 135.000000 135.000000 Total time 135.000000Total time with reads 135.000000
+Ready time 135.000000 135.000000 Total time 135.000000Total time with reads 135.000000
+Ready time 143.000000 143.000000 Total time 143.000000Total time with reads 143.000000
+Ready time 136.000000 136.000000 Total time 136.000000Total time with reads 137.000000
+$ ../../../bin/precache.exe -mc 24
+One Time Cost 119.000000
+One Time Cost 93.000000
+Ready time 984.000000 984.000000 Total time with reads 984.000000
+Ready time 657.000000 657.000000 Total time with reads 657.000000
+Ready time 255.000000 255.000000 Total time 256.000000Total time with reads 256.000000
+Ready time 238.000000 238.000000 Total time 238.000000Total time with reads 238.000000
+Ready time 237.000000 237.000000 Total time 237.000000Total time with reads 237.000000
+Ready time 238.000000 238.000000 Total time 238.000000Total time with reads 238.000000
+Ready time 246.000000 246.000000 Total time 246.000000Total time with reads 246.000000
+Ready time 238.000000 238.000000 Total time 238.000000Total time with reads 239.000000
+$ ../../../bin/precache.exe -mc 32
+One Time Cost 150.000000
+One Time Cost 125.000000
+Ready time 1347.000000 1347.000000 Total time with reads 1347.000000
+Ready time 1001.000000 1001.000000 Total time with reads 1001.000000
+Ready time 385.000000 385.000000 Total time 385.000000Total time with reads 385.000000
+Ready time 364.000000 364.000000 Total time 364.000000Total time with reads 364.000000
+Ready time 364.000000 364.000000 Total time 364.000000Total time with reads 364.000000
+Ready time 371.000000 371.000000 Total time 372.000000Total time with reads 372.000000
+Ready time 367.000000 367.000000 Total time 368.000000Total time with reads 368.000000
+Ready time 365.000000 365.000000 Total time 366.000000Total time with reads 366.000000
+$ ../../../bin/precache.exe -mc 48
+One Time Cost 216.000000
+One Time Cost 194.000000
+Ready time 2252.000000 2252.000000 Total time with reads 2252.000000
+Ready time 1887.000000 1887.000000 Total time with reads 1887.000000
+Ready time 709.000000 709.000000 Total time 710.000000Total time with reads 710.000000
+Ready time 700.000000 700.000000 Total time 701.000000Total time with reads 701.000000
+Ready time 703.000000 703.000000 Total time 704.000000Total time with reads 704.000000
+Ready time 713.000000 713.000000 Total time 714.000000Total time with reads 714.000000
+Ready time 702.000000 702.000000 Total time 702.000000Total time with reads 702.000000
+Ready time 702.000000 702.000000 Total time 703.000000Total time with reads 703.000000
+$ ../../../bin/precache.exe -mc 64
+One Time Cost 282.000000
+One Time Cost 259.000000
+Ready time 3411.000000 3411.000000 Total time with reads 3411.000000
+Ready time 3021.000000 3021.000000 Total time with reads 3021.000000
+Ready time 1145.000000 1145.000000 Total time 1146.000000Total time with reads 1146.000000
+Ready time 1120.000000 1120.000000 Total time 1121.000000Total time with reads 1121.000000
+Ready time 1129.000000 1129.000000 Total time 1130.000000Total time with reads 1130.000000
+Ready time 1121.000000 1121.000000 Total time 1122.000000Total time with reads 1122.000000
+Ready time 1120.000000 1120.000000 Total time 1120.000000Total time with reads 1120.000000
+Ready time 1121.000000 1121.000000 Total time 1122.000000Total time with reads 1122.000000
+$ ../../../bin/precache.exe -mc 96
+One Time Cost 417.000000
+One Time Cost 384.000000
+Ready time 6713.000000 6713.000000 Total time with reads 6713.000000
+Ready time 6318.000000 6318.000000 Total time with reads 6318.000000
+Ready time 2302.000000 2302.000000 Total time 2304.000000Total time with reads 2304.000000
+Ready time 2262.000000 2262.000000 Total time 2264.000000Total time with reads 2264.000000
+Ready time 2265.000000 2265.000000 Total time 2267.000000Total time with reads 2267.000000
+Ready time 2261.000000 2261.000000 Total time 2263.000000Total time with reads 2263.000000
+Ready time 2270.000000 2270.000000 Total time 2273.000000Total time with reads 2273.000000
+Ready time 2288.000000 2288.000000 Total time 2290.000000Total time with reads 2290.000000
+$ ../../../bin/precache.exe -mc 128
+One Time Cost 585.000000
+One Time Cost 534.000000
+Ready time 11176.000000 11176.000000 Total time with reads 11176.000000
+Ready time 10757.000000 10757.000000 Total time with reads 10757.000000
+Ready time 3814.000000 3814.000000 Total time 3818.000000Total time with reads 3818.000000
+Ready time 3840.000000 3840.000000 Total time 3844.000000Total time with reads 3844.000000
+Ready time 3827.000000 3827.000000 Total time 3831.000000Total time with reads 3831.000000
+Ready time 3831.000000 3831.000000 Total time 3836.000000Total time with reads 3836.000000
+Ready time 3831.000000 3831.000000 Total time 3835.000000Total time with reads 3835.000000
+Ready time 3829.000000 3829.000000 Total time 3833.000000Total time with reads 3833.000000
+$ ../../../bin/precache.exe -mc -noamplify 128
+One Time Cost 581.000000
+One Time Cost 523.000000
+Ready time 5917.000000 5917.000000 Total time 5918.000000Total time with reads 6181.000000
+Ready time 5690.000000 5690.000000 Total time 5690.000000Total time with reads 6000.000000
+Ready time 3686.000000 3686.000000 Total time 3690.000000Total time with reads 3690.000000
+Ready time 3686.000000 3686.000000 Total time 3690.000000Total time with reads 3690.000000
+Ready time 3685.000000 3685.000000 Total time 3689.000000Total time with reads 3689.000000
+Ready time 3744.000000 3744.000000 Total time 3748.000000Total time with reads 3748.000000
+Ready time 3748.000000 3748.000000 Total time 3752.000000Total time with reads 3752.000000
+Ready time 3747.000000 3747.000000 Total time 3750.000000Total time with reads 3751.000000
+$ ../../../bin/timing_vout -mc 128
+One Time Cost 586.000000
+One Time Cost 546.000000
+Ready time 191507.000000 191507.000000 Total time with reads 191507.000000
+Ready time 192419.000000 192419.000000 Total time with reads 192419.000000
+Ready time 82173.000000 82173.000000 Total time 82188.000000Total time with reads 82188.000000
+Ready time 81844.000000 81844.000000 Total time 81859.000000Total time with reads 81859.000000
+$ ../../../bin/timing_vout -mc 96
+One Time Cost 427.000000
+One Time Cost 376.000000
+Ready time 78582.000000 78582.000000 Total time with reads 78582.000000
+Ready time 78443.000000 78443.000000 Total time with reads 78443.000000
+Ready time 31149.000000 31149.000000 Total time 31158.000000Total time with reads 31158.000000
+Ready time 34886.000000 34886.000000 Total time 34895.000000Total time with reads 34895.000000
+$ ../../../bin/timing_vout -mc 64
+One Time Cost 292.000000
+One Time Cost 254.000000
+Ready time 24071.000000 24071.000000 Total time with reads 24071.000000
+Ready time 23759.000000 23759.000000 Total time with reads 23759.000000
+Ready time 9502.000000 9502.000000 Total time 9505.000000Total time with reads 9505.000000
+Ready time 9474.000000 9474.000000 Total time 9478.000000Total time with reads 9478.000000
+$ ../../../bin/timing_vout -mc 48
+One Time Cost 223.000000
+One Time Cost 186.000000
+Ready time 10686.000000 10686.000000 Total time with reads 10686.000000
+Ready time 10371.000000 10371.000000 Total time with reads 10371.000000
+Ready time 4133.000000 4133.000000 Total time 4135.000000Total time with reads 4135.000000
+Ready time 4158.000000 4158.000000 Total time 4159.000000Total time with reads 4159.000000
+$ ../../../bin/timing_vout -mc 32
+One Time Cost 152.000000
+One Time Cost 124.000000
+Ready time 3709.000000 3709.000000 Total time with reads 3709.000000
+Ready time 3426.000000 3426.000000 Total time with reads 3426.000000
+Ready time 1347.000000 1347.000000 Total time 1348.000000Total time with reads 1348.000000
+Ready time 1325.000000 1325.000000 Total time 1326.000000Total time with reads 1326.000000
+$ ../../../bin/timing_vout -mc 24
+../../../bin/timing_vout -mc 16
+One Time Cost 118.000000
+One Time Cost 93.000000
+Ready time 1938.000000 1938.000000 Total time with reads 1938.000000
+Ready time 1658.000000 1658.000000 Total time with reads 1658.000000
+Ready time 639.000000 639.000000 Total time 639.000000Total time with reads 639.000000
+Ready time 637.000000 637.000000 Total time 637.000000Total time with reads 637.000000
+$ One Time Cost 90.000000
+One Time Cost 63.000000
+Ready time 939.000000 939.000000 Total time with reads 939.000000
+Ready time 659.000000 659.000000 Total time with reads 659.000000
+Ready time 258.000000 258.000000 Total time 258.000000Total time with reads 258.000000
+Ready time 239.000000 239.000000 Total time 239.000000Total time with reads 240.000000
+$ ../../../bin/timing_vout -mc 8
+One Time Cost 54.000000
+One Time Cost 31.000000
+Ready time 459.000000 459.000000 Total time with reads 459.000000
+Ready time 193.000000 193.000000 Total time with reads 193.000000
+Ready time 70.000000 70.000000 Total time 70.000000Total time with reads 70.000000
+Ready time 70.000000 70.000000 Total time 70.000000Total time with reads 70.000000
+$ ../../../bin/timing_vout -noamplify -mc 64
+One Time Cost 283.000000
+One Time Cost 249.000000
+Ready time 24056.000000 24057.000000 Total time with reads 24057.000000
+Ready time 10062.000000 10062.000000 Total time 10066.000000Total time with reads 10922.000000
+Ready time 9472.000000 9472.000000 Total time 9474.000000Total time with reads 9474.000000
+Ready time 9463.000000 9463.000000 Total time 9466.000000Total time with reads 9466.000000
+$ 

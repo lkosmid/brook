@@ -1,0 +1,124 @@
+headsmall.den../../../bin/timing_vout.exe -mc headsmall.den
+One Time Cost 64.000000
+One Time Cost 40.000000
+
+Total Triangles 231606 Wasted Triangles 357904 Total Volume wid:128 hei 128 dep 113
+Ready time 2981.000000 2981.000000 Total time with reads 2981.000000
+Ready time 2115.000000 2115.000000 Total time with reads 2115.000000
+Ready time 62.000000 62.000000 Total time 67.000000Total time with reads 67.000000
+Ready time 60.000000 60.000000 Total time 64.000000Total time with reads 64.000000
+../../../bin/timing_vout.exe -noamplify -mc headsmall.den
+One Time Cost 62.000000
+One Time Cost 39.000000
+
+Total Triangles 231606 Wasted Triangles 357904 Total Volume wid:128 hei 128 dep 113
+Ready time 2600.000000 2600.000000 Total time with reads 2600.000000
+Ready time 946.000000 946.000000 Total time 947.000000Total time with reads 1931.000000
+Ready time 58.000000 58.000000 Total time 62.000000Total time with reads 62.000000
+Ready time 59.000000 59.000000 Total time 64.000000Total time with reads 64.000000
+../../../bin/timing_vout.exe -noscatter -mc headsmall.den
+One Time Cost 77.000000
+One Time Cost 40.000000
+
+Total Triangles 231606 Wasted Triangles 357904 Total Volume wid:128 hei 128 dep 113
+Ready time 2577.000000 2577.000000 Total time with reads 2577.000000
+Ready time 1339.000000 1339.000000 Total time with reads 1339.000000
+Ready time 65.000000 65.000000 Total time 69.000000Total time with reads 69.000000
+Ready time 62.000000 62.000000 Total time 66.000000Total time with reads 66.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc headsmall.den
+One Time Cost 65.000000
+One Time Cost 41.000000
+
+Total Triangles 231606 Wasted Triangles 357904 Total Volume wid:128 hei 128 dep 113
+Ready time 2600.000000 2600.000000 Total time with reads 2600.000000
+Ready time 591.000000 591.000000 Total time 592.000000Total time with reads 1535.000000
+Ready time 60.000000 60.000000 Total time 65.000000Total time with reads 65.000000
+Ready time 59.000000 59.000000 Total time 64.000000Total time with reads 64.000000
+
+bighead.den../../../bin/timing_vout.exe -mc bighead.den
+One Time Cost 247.000000
+One Time Cost 191.000000
+
+Total Triangles 1481730 Wasted Triangles 1745120 Total Volume wid:256 hei 256 dep 225
+Ready time 12594.000000 12594.000000 Total time with reads 12594.000000
+Ready time 14332.000000 14332.000000 Total time with reads 14332.000000
+Ready time 312.000000 312.000000 Total time 333.000000Total time with reads 333.000000
+Ready time 312.000000 312.000000 Total time 332.000000Total time with reads 333.000000
+../../../bin/timing_vout.exe -noamplify -mc bighead.den
+One Time Cost 263.000000
+One Time Cost 190.000000
+
+Total Triangles 1481730 Wasted Triangles 1745120 Total Volume wid:256 hei 256 dep 225
+Ready time 12596.000000 12596.000000 Total time with reads 12596.000000
+Ready time 7763.000000 7763.000000 Total time 7766.000000Total time with reads 13486.000000
+Ready time 313.000000 313.000000 Total time 335.000000Total time with reads 335.000000
+Ready time 312.000000 312.000000 Total time 334.000000Total time with reads 334.000000
+../../../bin/timing_vout.exe -noscatter -mc bighead.den
+One Time Cost 247.000000
+One Time Cost 191.000000
+
+Total Triangles 1481730 Wasted Triangles 1745120 Total Volume wid:256 hei 256 dep 225
+Ready time 12588.000000 12588.000000 Total time with reads 12588.000000
+Ready time 8481.000000 8481.000000 Total time with reads 8481.000000
+Ready time 307.000000 307.000000 Total time 328.000000Total time with reads 328.000000
+Ready time 312.000000 312.000000 Total time 333.000000Total time with reads 333.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc bighead.den
+One Time Cost 247.000000
+One Time Cost 191.000000
+
+Total Triangles 1481730 Wasted Triangles 1745120 Total Volume wid:256 hei 256 dep 225
+Ready time 12565.000000 12565.000000 Total time with reads 12565.000000
+Ready time 4802.000000 4802.000000 Total time 4805.000000Total time with reads 10510.000000
+Ready time 312.000000 312.000000 Total time 334.000000Total time with reads 334.000000
+Ready time 296.000000 296.000000 Total time 317.000000Total time with reads 317.000000
+
+headsmall.den../../../bin/timing_vout.exe -precache -mc headsmall.den
+One Time Cost 65.000000
+One Time Cost 40.000000
+
+Total Triangles 231606 Wasted Triangles 357904 Total Volume wid:128 hei 128 dep 113
+Ready time 2528.000000 2528.000000 Total time with reads 2528.000000
+Ready time 1686.000000 1686.000000 Total time with reads 1686.000000
+Ready time 62.000000 62.000000 Total time 66.000000Total time with reads 66.000000
+Ready time 97.000000 97.000000 Total time 102.000000Total time with reads 102.000000
+../../../bin/timing_vout.exe -precache -noamplify -mc headsmall.den
+One Time Cost 64.000000
+One Time Cost 40.000000
+
+Total Triangles 231606 Wasted Triangles 357904 Total Volume wid:128 hei 128 dep 113
+Ready time 2517.000000 2517.000000 Total time with reads 2517.000000
+Ready time 713.000000 713.000000 Total time 714.000000Total time with reads 1670.000000
+Ready time 62.000000 62.000000 Total time 66.000000Total time with reads 66.000000
+Ready time 61.000000 61.000000 Total time 65.000000Total time with reads 65.000000
+../../../bin/timing_vout.exe -precache -noscatter -mc headsmall.den
+One Time Cost 65.000000
+One Time Cost 40.000000
+
+Total Triangles 231606 Wasted Triangles 357904 Total Volume wid:128 hei 128 dep 113
+Ready time 2461.000000 2461.000000 Total time with reads 2461.000000
+Ready time 983.000000 983.000000 Total time with reads 983.000000
+Ready time 60.000000 60.000000 Total time 65.000000Total time with reads 65.000000
+Ready time 59.000000 59.000000 Total time 64.000000Total time with reads 64.000000
+../../../bin/timing_vout.exe -precache -noscatter -noamplify -mc headsmall.den
+One Time Cost 64.000000
+One Time Cost 41.000000
+
+Total Triangles 231606 Wasted Triangles 357904 Total Volume wid:128 hei 128 dep 113
+Ready time 2527.000000 2527.000000 Total time with reads 2527.000000
+Ready time 405.000000 405.000000 Total time 406.000000Total time with reads 1375.000000
+Ready time 62.000000 62.000000 Total time 67.000000Total time with reads 67.000000
+Ready time 61.000000 61.000000 Total time 65.000000Total time with reads 65.000000
+
+bighead.den../../../bin/timing_vout.exe -precache -mc bighead.den
+One Time Cost 267.000000
+One Time Cost 193.000000
+../../../bin/timing_vout.exe -precache -noamplify -mc bighead.den
+One Time Cost 247.000000
+One Time Cost 190.000000
+../../../bin/timing_vout.exe -precache -noscatter -mc bighead.den
+One Time Cost 277.000000
+One Time Cost 190.000000
+../../../bin/timing_vout.exe -precache -noscatter -noamplify -mc bighead.den
+One Time Cost 247.000000
+One Time Cost 191.000000
+

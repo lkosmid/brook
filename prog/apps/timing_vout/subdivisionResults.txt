@@ -1,0 +1,814 @@
+0.75../../../bin/timing_vout.exe -subdiv -eps0.75 puma.ply
+Time 971.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 795.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 725.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 56.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 151.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 119.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 140.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 141.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+../../../bin/timing_vout.exe -noscatter -subdiv -eps0.75 puma.ply
+Time 939.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 452.000000 NumRnd 9 AdapNumTri 414736 NumTri 9961472
+Time 449.000000 NumRnd 9 AdapNumTri 414736 NumTri 9961472
+Time 35.000000 NumRnd 9 AdapNumTri 414736 NumTri 9961472
+Time 142.000000 NumRnd 9 AdapNumTri 414736 NumTri 9961472
+Time 141.000000 NumRnd 9 AdapNumTri 414736 NumTri 9961472
+Time 148.000000 NumRnd 9 AdapNumTri 414736 NumTri 9961472
+Time 154.000000 NumRnd 9 AdapNumTri 414736 NumTri 9961472
+../../../bin/timing_vout.exe -precache -subdiv -eps0.75 puma.ply
+Time 902.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 719.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 695.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 68.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 105.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 143.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 142.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 141.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps0.75 puma.ply
+Time 918.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 424.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 422.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 34.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 141.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 140.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 140.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+Time 142.000000 NumRnd 9 AdapNumTri 413520 NumTri 9961472
+
+1../../../bin/timing_vout.exe -subdiv -eps1 puma.ply
+Time 608.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 391.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 443.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 30.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 83.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 75.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 86.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 74.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+../../../bin/timing_vout.exe -noscatter -subdiv -eps1 puma.ply
+Time 590.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 238.000000 NumRnd 8 AdapNumTri 208512 NumTri 2490368
+Time 255.000000 NumRnd 8 AdapNumTri 208512 NumTri 2490368
+Time 31.000000 NumRnd 8 AdapNumTri 208512 NumTri 2490368
+Time 81.000000 NumRnd 8 AdapNumTri 208512 NumTri 2490368
+Time 71.000000 NumRnd 8 AdapNumTri 208512 NumTri 2490368
+Time 93.000000 NumRnd 8 AdapNumTri 208512 NumTri 2490368
+Time 73.000000 NumRnd 8 AdapNumTri 208512 NumTri 2490368
+../../../bin/timing_vout.exe -precache -subdiv -eps1 puma.ply
+Time 548.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 355.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 412.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 40.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 75.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 77.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 75.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 86.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps1 puma.ply
+Time 526.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 231.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 203.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 30.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 76.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 72.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 70.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+Time 70.000000 NumRnd 8 AdapNumTri 206336 NumTri 2490368
+
+1.25../../../bin/timing_vout.exe -subdiv -eps1.25 puma.ply
+Time 507.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 296.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 287.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 30.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 54.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 53.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 54.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 55.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+../../../bin/timing_vout.exe -noscatter -subdiv -eps1.25 puma.ply
+Time 500.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 178.000000 NumRnd 8 AdapNumTri 139200 NumTri 2490368
+Time 195.000000 NumRnd 8 AdapNumTri 139200 NumTri 2490368
+Time 55.000000 NumRnd 8 AdapNumTri 139200 NumTri 2490368
+Time 54.000000 NumRnd 8 AdapNumTri 139200 NumTri 2490368
+Time 74.000000 NumRnd 8 AdapNumTri 139200 NumTri 2490368
+Time 33.000000 NumRnd 8 AdapNumTri 139200 NumTri 2490368
+Time 52.000000 NumRnd 8 AdapNumTri 139200 NumTri 2490368
+../../../bin/timing_vout.exe -precache -subdiv -eps1.25 puma.ply
+Time 467.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 243.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 252.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 31.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 65.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 47.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 54.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 54.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps1.25 puma.ply
+Time 516.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 173.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 164.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 30.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 53.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 65.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 84.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+Time 39.000000 NumRnd 8 AdapNumTri 138752 NumTri 2490368
+
+1.5../../../bin/timing_vout.exe -subdiv -eps1.5 puma.ply
+Time 430.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 228.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 248.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 42.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 43.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 53.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 43.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+../../../bin/timing_vout.exe -noscatter -subdiv -eps1.5 puma.ply
+Time 453.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 155.000000 NumRnd 7 AdapNumTri 103684 NumTri 622592
+Time 174.000000 NumRnd 7 AdapNumTri 103684 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 103684 NumTri 622592
+Time 42.000000 NumRnd 7 AdapNumTri 103684 NumTri 622592
+Time 44.000000 NumRnd 7 AdapNumTri 103684 NumTri 622592
+Time 53.000000 NumRnd 7 AdapNumTri 103684 NumTri 622592
+Time 43.000000 NumRnd 7 AdapNumTri 103684 NumTri 622592
+../../../bin/timing_vout.exe -precache -subdiv -eps1.5 puma.ply
+Time 390.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 260.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 184.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 37.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 42.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 58.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 43.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 42.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps1.5 puma.ply
+Time 387.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 149.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 171.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 28.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 43.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 42.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+Time 42.000000 NumRnd 7 AdapNumTri 103364 NumTri 622592
+
+1.75../../../bin/timing_vout.exe -subdiv -eps1.75 puma.ply
+Time 345.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 180.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 200.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 34.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 33.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 44.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 33.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+../../../bin/timing_vout.exe -noscatter -subdiv -eps1.75 puma.ply
+Time 355.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 126.000000 NumRnd 7 AdapNumTri 75708 NumTri 622592
+Time 129.000000 NumRnd 7 AdapNumTri 75708 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 75708 NumTri 622592
+Time 32.000000 NumRnd 7 AdapNumTri 75708 NumTri 622592
+Time 33.000000 NumRnd 7 AdapNumTri 75708 NumTri 622592
+Time 39.000000 NumRnd 7 AdapNumTri 75708 NumTri 622592
+Time 38.000000 NumRnd 7 AdapNumTri 75708 NumTri 622592
+../../../bin/timing_vout.exe -precache -subdiv -eps1.75 puma.ply
+Time 352.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 154.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 161.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 44.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 33.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 32.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 33.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps1.75 puma.ply
+Time 329.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 106.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 96.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 46.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 34.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 32.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+Time 33.000000 NumRnd 7 AdapNumTri 75148 NumTri 622592
+
+2../../../bin/timing_vout.exe -subdiv -eps2 puma.ply
+Time 321.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 143.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 147.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 38.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+../../../bin/timing_vout.exe -noscatter -subdiv -eps2 puma.ply
+Time 317.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 107.000000 NumRnd 7 AdapNumTri 52012 NumTri 622592
+Time 94.000000 NumRnd 7 AdapNumTri 52012 NumTri 622592
+Time 44.000000 NumRnd 7 AdapNumTri 52012 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 52012 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 52012 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 52012 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 52012 NumTri 622592
+../../../bin/timing_vout.exe -precache -subdiv -eps2 puma.ply
+Time 307.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 119.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 132.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 38.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 31.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 44.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps2 puma.ply
+Time 304.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 77.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 87.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 51596 NumTri 622592
+
+2.25../../../bin/timing_vout.exe -subdiv -eps2.25 puma.ply
+Time 325.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 148.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 144.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 80.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+../../../bin/timing_vout.exe -noscatter -subdiv -eps2.25 puma.ply
+Time 305.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 90.000000 NumRnd 7 AdapNumTri 43544 NumTri 622592
+Time 98.000000 NumRnd 7 AdapNumTri 43544 NumTri 622592
+Time 28.000000 NumRnd 7 AdapNumTri 43544 NumTri 622592
+Time 36.000000 NumRnd 7 AdapNumTri 43544 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 43544 NumTri 622592
+Time 23.000000 NumRnd 7 AdapNumTri 43544 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 43544 NumTri 622592
+../../../bin/timing_vout.exe -precache -subdiv -eps2.25 puma.ply
+Time 295.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 108.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 123.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 42.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps2.25 puma.ply
+Time 318.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 70.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 126.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 28.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 23.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+Time 50.000000 NumRnd 7 AdapNumTri 43160 NumTri 622592
+
+2.5../../../bin/timing_vout.exe -subdiv -eps2.5 puma.ply
+Time 298.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 131.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 153.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 28.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 23.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+../../../bin/timing_vout.exe -noscatter -subdiv -eps2.5 puma.ply
+Time 335.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 86.000000 NumRnd 7 AdapNumTri 35012 NumTri 622592
+Time 99.000000 NumRnd 7 AdapNumTri 35012 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 35012 NumTri 622592
+Time 23.000000 NumRnd 7 AdapNumTri 35012 NumTri 622592
+Time 42.000000 NumRnd 7 AdapNumTri 35012 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 35012 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 35012 NumTri 622592
+../../../bin/timing_vout.exe -precache -subdiv -eps2.5 puma.ply
+Time 315.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 100.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 121.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 52.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps2.5 puma.ply
+Time 291.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 68.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 81.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 26.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+Time 37.000000 NumRnd 7 AdapNumTri 34772 NumTri 622592
+
+2.75../../../bin/timing_vout.exe -subdiv -eps2.75 puma.ply
+Time 289.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 112.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 124.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 40.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+../../../bin/timing_vout.exe -noscatter -subdiv -eps2.75 puma.ply
+Time 306.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 74.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 83.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 23.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 22.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 20.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 21.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 32.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+../../../bin/timing_vout.exe -precache -subdiv -eps2.75 puma.ply
+Time 274.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 121.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 111.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 27.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 25.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 52.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps2.75 puma.ply
+Time 321.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 78.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 63.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 41.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+Time 24.000000 NumRnd 7 AdapNumTri 28228 NumTri 622592
+
+3../../../bin/timing_vout.exe -subdiv -eps3 puma.ply
+Time 260.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 111.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 132.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 42.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps3 puma.ply
+Time 274.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 83.000000 NumRnd 6 AdapNumTri 25912 NumTri 155648
+Time 81.000000 NumRnd 6 AdapNumTri 25912 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 25912 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 25912 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 25912 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 25912 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 25912 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps3 puma.ply
+Time 265.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 99.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 95.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 34.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps3 puma.ply
+Time 286.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 69.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 55.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 42.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+Time 19.000000 NumRnd 6 AdapNumTri 25816 NumTri 155648
+
+3.25../../../bin/timing_vout.exe -subdiv -eps3.25 puma.ply
+Time 264.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 113.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 120.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 79.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps3.25 puma.ply
+Time 254.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 94.000000 NumRnd 6 AdapNumTri 23108 NumTri 155648
+Time 67.000000 NumRnd 6 AdapNumTri 23108 NumTri 155648
+Time 37.000000 NumRnd 6 AdapNumTri 23108 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 23108 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 23108 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 23108 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 23108 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps3.25 puma.ply
+Time 264.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 94.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 90.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps3.25 puma.ply
+Time 249.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 76.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 53.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 22980 NumTri 155648
+
+3.5../../../bin/timing_vout.exe -subdiv -eps3.5 puma.ply
+Time 264.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 108.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 111.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps3.5 puma.ply
+Time 289.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 83.000000 NumRnd 6 AdapNumTri 18840 NumTri 155648
+Time 63.000000 NumRnd 6 AdapNumTri 18840 NumTri 155648
+Time 37.000000 NumRnd 6 AdapNumTri 18840 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 18840 NumTri 155648
+Time 19.000000 NumRnd 6 AdapNumTri 18840 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 18840 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 18840 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps3.5 puma.ply
+Time 249.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 90.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 75.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 37.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps3.5 puma.ply
+Time 249.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 65.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 49.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 71.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 18696 NumTri 155648
+
+3.75../../../bin/timing_vout.exe -subdiv -eps3.75 puma.ply
+Time 251.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 103.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 103.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 34.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps3.75 puma.ply
+Time 248.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 84.000000 NumRnd 6 AdapNumTri 15632 NumTri 155648
+Time 63.000000 NumRnd 6 AdapNumTri 15632 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 15632 NumTri 155648
+Time 39.000000 NumRnd 6 AdapNumTri 15632 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 15632 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 15632 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 15632 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps3.75 puma.ply
+Time 250.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 91.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 75.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 37.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps3.75 puma.ply
+Time 247.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 64.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 50.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 39.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 15472 NumTri 155648
+
+4../../../bin/timing_vout.exe -subdiv -eps4 puma.ply
+Time 254.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 103.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 103.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps4 puma.ply
+Time 246.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 88.000000 NumRnd 6 AdapNumTri 13100 NumTri 155648
+Time 63.000000 NumRnd 6 AdapNumTri 13100 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 13100 NumTri 155648
+Time 44.000000 NumRnd 6 AdapNumTri 13100 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 13100 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 13100 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 13100 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps4 puma.ply
+Time 280.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 87.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 74.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 37.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps4 puma.ply
+Time 250.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 73.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 50.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 37.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 12924 NumTri 155648
+
+4.25../../../bin/timing_vout.exe -subdiv -eps4.25 puma.ply
+Time 243.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 113.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 105.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps4.25 puma.ply
+Time 285.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 77.000000 NumRnd 6 AdapNumTri 11976 NumTri 155648
+Time 63.000000 NumRnd 6 AdapNumTri 11976 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 11976 NumTri 155648
+Time 35.000000 NumRnd 6 AdapNumTri 11976 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 11976 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 11976 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 11976 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps4.25 puma.ply
+Time 242.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 92.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 75.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 47.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps4.25 puma.ply
+Time 236.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 59.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 48.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 27.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 58.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 11944 NumTri 155648
+
+4.5../../../bin/timing_vout.exe -subdiv -eps4.5 puma.ply
+Time 243.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 86.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 90.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 25.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps4.5 puma.ply
+Time 228.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 62.000000 NumRnd 6 AdapNumTri 10916 NumTri 155648
+Time 60.000000 NumRnd 6 AdapNumTri 10916 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 10916 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 10916 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 10916 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 10916 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 10916 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps4.5 puma.ply
+Time 227.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 74.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 72.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps4.5 puma.ply
+Time 227.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 50.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 50.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 10840 NumTri 155648
+
+4.75../../../bin/timing_vout.exe -subdiv -eps4.75 puma.ply
+Time 229.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 87.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 88.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps4.75 puma.ply
+Time 227.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 61.000000 NumRnd 6 AdapNumTri 9770 NumTri 155648
+Time 64.000000 NumRnd 6 AdapNumTri 9770 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 9770 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 9770 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 9770 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 9770 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 9770 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps4.75 puma.ply
+Time 228.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 74.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 74.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps4.75 puma.ply
+Time 224.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 50.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 49.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 9754 NumTri 155648
+
+5../../../bin/timing_vout.exe -subdiv -eps5 puma.ply
+Time 227.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 87.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 87.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 25.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps5 puma.ply
+Time 226.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 61.000000 NumRnd 6 AdapNumTri 8798 NumTri 155648
+Time 62.000000 NumRnd 6 AdapNumTri 8798 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 8798 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8798 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 8798 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 8798 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 8798 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps5 puma.ply
+Time 221.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 73.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 73.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps5 puma.ply
+Time 226.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 54.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 50.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 8766 NumTri 155648
+
+5.25../../../bin/timing_vout.exe -subdiv -eps5.25 puma.ply
+Time 226.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 84.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 84.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps5.25 puma.ply
+Time 225.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 60.000000 NumRnd 6 AdapNumTri 7926 NumTri 155648
+Time 61.000000 NumRnd 6 AdapNumTri 7926 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 7926 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 7926 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 7926 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 7926 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7926 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps5.25 puma.ply
+Time 222.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 74.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 72.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps5.25 puma.ply
+Time 222.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 48.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 50.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7866 NumTri 155648
+
+5.5../../../bin/timing_vout.exe -subdiv -eps5.5 puma.ply
+Time 225.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 83.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 83.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps5.5 puma.ply
+Time 221.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 61.000000 NumRnd 6 AdapNumTri 7250 NumTri 155648
+Time 60.000000 NumRnd 6 AdapNumTri 7250 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 7250 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7250 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 7250 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 7250 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7250 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps5.5 puma.ply
+Time 220.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 70.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 71.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps5.5 puma.ply
+Time 226.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 51.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 47.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 7206 NumTri 155648
+
+5.75../../../bin/timing_vout.exe -subdiv -eps5.75 puma.ply
+Time 220.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 80.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 80.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+../../../bin/timing_vout.exe -noscatter -subdiv -eps5.75 puma.ply
+Time 220.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 58.000000 NumRnd 6 AdapNumTri 6894 NumTri 155648
+Time 60.000000 NumRnd 6 AdapNumTri 6894 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 6894 NumTri 155648
+Time 23.000000 NumRnd 6 AdapNumTri 6894 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 6894 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 6894 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 6894 NumTri 155648
+../../../bin/timing_vout.exe -precache -subdiv -eps5.75 puma.ply
+Time 218.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 67.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 74.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 24.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps5.75 puma.ply
+Time 219.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 47.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 47.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 20.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 22.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+Time 21.000000 NumRnd 6 AdapNumTri 6846 NumTri 155648
+
+6../../../bin/timing_vout.exe -subdiv -eps6 puma.ply
+Time 207.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 70.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 71.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 19.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 17.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 17.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 17.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 19.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+../../../bin/timing_vout.exe -noscatter -subdiv -eps6 puma.ply
+Time 205.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 50.000000 NumRnd 5 AdapNumTri 6442 NumTri 38912
+Time 50.000000 NumRnd 5 AdapNumTri 6442 NumTri 38912
+Time 19.000000 NumRnd 5 AdapNumTri 6442 NumTri 38912
+Time 17.000000 NumRnd 5 AdapNumTri 6442 NumTri 38912
+Time 17.000000 NumRnd 5 AdapNumTri 6442 NumTri 38912
+Time 16.000000 NumRnd 5 AdapNumTri 6442 NumTri 38912
+Time 18.000000 NumRnd 5 AdapNumTri 6442 NumTri 38912
+../../../bin/timing_vout.exe -precache -subdiv -eps6 puma.ply
+Time 204.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 61.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 58.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 20.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 16.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 18.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 17.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 18.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+../../../bin/timing_vout.exe -precache -noscatter -subdiv -eps6 puma.ply
+Time 203.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 40.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 40.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 20.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 16.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 17.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 16.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+Time 18.000000 NumRnd 5 AdapNumTri 6402 NumTri 38912
+

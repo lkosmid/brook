@@ -1,0 +1,263 @@
+72../../../bin/timing_vout.exe -mc 72
+One Time Cost 47.000000
+One Time Cost 24.000000
+
+Total Triangles 47276 Wasted Triangles 70934 Total Volume wid:72 hei 72 dep 72
+Ready time 1426.000000 1426.000000 Total time with reads 1427.000000
+Ready time 1058.000000 1058.000000 Total time with reads 1058.000000
+Ready time 41.000000 41.000000 Total time 44.000000Total time with reads 44.000000
+Ready time 37.000000 37.000000 Total time 39.000000Total time with reads 39.000000
+../../../bin/timing_vout.exe -noamplify -mc 72
+One Time Cost 48.000000
+One Time Cost 25.000000
+
+Total Triangles 47276 Wasted Triangles 70934 Total Volume wid:72 hei 72 dep 72
+Ready time 1440.000000 1440.000000 Total time with reads 1440.000000
+Ready time 485.000000 485.000000 Total time 487.000000Total time with reads 811.000000
+Ready time 38.000000 38.000000 Total time 41.000000Total time with reads 41.000000
+Ready time 37.000000 37.000000 Total time 40.000000Total time with reads 40.000000
+../../../bin/timing_vout.exe -noscatter -mc 72
+One Time Cost 82.000000
+One Time Cost 41.000000
+
+Total Triangles 47276 Wasted Triangles 70934 Total Volume wid:72 hei 72 dep 72
+Ready time 1431.000000 1431.000000 Total time with reads 1431.000000
+Ready time 690.000000 690.000000 Total time with reads 690.000000
+Ready time 41.000000 41.000000 Total time 44.000000Total time with reads 44.000000
+Ready time 37.000000 37.000000 Total time 40.000000Total time with reads 40.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc 72
+One Time Cost 47.000000
+One Time Cost 23.000000
+
+Total Triangles 47276 Wasted Triangles 70934 Total Volume wid:72 hei 72 dep 72
+Ready time 1408.000000 1408.000000 Total time with reads 1408.000000
+Ready time 306.000000 306.000000 Total time 308.000000Total time with reads 512.000000
+Ready time 36.000000 36.000000 Total time 39.000000Total time with reads 39.000000
+Ready time 37.000000 37.000000 Total time 39.000000Total time with reads 39.000000
+
+68../../../bin/timing_vout.exe -mc 68
+One Time Cost 45.000000
+One Time Cost 22.000000
+
+Total Triangles 42140 Wasted Triangles 63230 Total Volume wid:68 hei 68 dep 68
+Ready time 1331.000000 1331.000000 Total time with reads 1331.000000
+Ready time 1092.000000 1092.000000 Total time with reads 1092.000000
+Ready time 39.000000 39.000000 Total time 42.000000Total time with reads 42.000000
+Ready time 36.000000 36.000000 Total time 37.000000Total time with reads 37.000000
+../../../bin/timing_vout.exe -noamplify -mc 68
+One Time Cost 46.000000
+One Time Cost 22.000000
+
+Total Triangles 42140 Wasted Triangles 63230 Total Volume wid:68 hei 68 dep 68
+Ready time 1371.000000 1371.000000 Total time with reads 1371.000000
+Ready time 461.000000 461.000000 Total time 463.000000Total time with reads 659.000000
+Ready time 37.000000 37.000000 Total time 39.000000Total time with reads 39.000000
+Ready time 36.000000 36.000000 Total time 38.000000Total time with reads 38.000000
+../../../bin/timing_vout.exe -noscatter -mc 68
+One Time Cost 45.000000
+One Time Cost 23.000000
+
+Total Triangles 42140 Wasted Triangles 63230 Total Volume wid:68 hei 68 dep 68
+Ready time 1325.000000 1325.000000 Total time with reads 1325.000000
+Ready time 638.000000 638.000000 Total time with reads 638.000000
+Ready time 40.000000 40.000000 Total time 43.000000Total time with reads 43.000000
+Ready time 36.000000 36.000000 Total time 38.000000Total time with reads 38.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc 68
+One Time Cost 46.000000
+One Time Cost 21.000000
+
+Total Triangles 42140 Wasted Triangles 63230 Total Volume wid:68 hei 68 dep 68
+Ready time 1404.000000 1404.000000 Total time with reads 1404.000000
+Ready time 407.000000 407.000000 Total time 409.000000Total time with reads 604.000000
+Ready time 37.000000 37.000000 Total time 40.000000Total time with reads 40.000000
+Ready time 35.000000 35.000000 Total time 38.000000Total time with reads 38.000000
+
+64../../../bin/timing_vout.exe -mc 64
+One Time Cost 44.000000
+One Time Cost 22.000000
+
+Total Triangles 37148 Wasted Triangles 55742 Total Volume wid:64 hei 64 dep 64
+Ready time 1228.000000 1228.000000 Total time with reads 1228.000000
+Ready time 903.000000 903.000000 Total time with reads 903.000000
+Ready time 36.000000 36.000000 Total time 38.000000Total time with reads 38.000000
+Ready time 33.000000 33.000000 Total time 35.000000Total time with reads 35.000000
+../../../bin/timing_vout.exe -noamplify -mc 64
+One Time Cost 44.000000
+One Time Cost 22.000000
+
+Total Triangles 37148 Wasted Triangles 55742 Total Volume wid:64 hei 64 dep 64
+Ready time 1282.000000 1282.000000 Total time with reads 1282.000000
+Ready time 458.000000 458.000000 Total time 459.000000Total time with reads 605.000000
+Ready time 34.000000 34.000000 Total time 36.000000Total time with reads 37.000000
+Ready time 34.000000 34.000000 Total time 36.000000Total time with reads 36.000000
+../../../bin/timing_vout.exe -noscatter -mc 64
+One Time Cost 43.000000
+One Time Cost 22.000000
+
+Total Triangles 37148 Wasted Triangles 55742 Total Volume wid:64 hei 64 dep 64
+Ready time 1227.000000 1227.000000 Total time with reads 1227.000000
+Ready time 589.000000 589.000000 Total time with reads 589.000000
+Ready time 156.000000 156.000000 Total time 157.000000Total time with reads 158.000000
+Ready time 34.000000 34.000000 Total time 36.000000Total time with reads 36.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc 64
+One Time Cost 45.000000
+One Time Cost 22.000000
+
+Total Triangles 37148 Wasted Triangles 55742 Total Volume wid:64 hei 64 dep 64
+Ready time 1240.000000 1240.000000 Total time with reads 1240.000000
+Ready time 262.000000 262.000000 Total time 263.000000Total time with reads 410.000000
+Ready time 34.000000 34.000000 Total time 36.000000Total time with reads 36.000000
+Ready time 33.000000 33.000000 Total time 35.000000Total time with reads 35.000000
+
+96../../../bin/timing_vout.exe -mc 96
+One Time Cost 59.000000
+One Time Cost 32.000000
+
+Total Triangles 84956 Wasted Triangles 127454 Total Volume wid:96 hei 96 dep 96
+Ready time 1961.000000 1961.000000 Total time with reads 1961.000000
+Ready time 1500.000000 1500.000000 Total time with reads 1500.000000
+Ready time 54.000000 54.000000 Total time 58.000000Total time with reads 58.000000
+Ready time 50.000000 50.000000 Total time 53.000000Total time with reads 54.000000
+../../../bin/timing_vout.exe -noamplify -mc 96
+One Time Cost 60.000000
+One Time Cost 32.000000
+
+Total Triangles 84956 Wasted Triangles 127454 Total Volume wid:96 hei 96 dep 96
+Ready time 2106.000000 2106.000000 Total time with reads 2106.000000
+Ready time 709.000000 709.000000 Total time 710.000000Total time with reads 1037.000000
+Ready time 50.000000 50.000000 Total time 54.000000Total time with reads 54.000000
+Ready time 51.000000 51.000000 Total time 55.000000Total time with reads 55.000000
+../../../bin/timing_vout.exe -noscatter -mc 96
+One Time Cost 57.000000
+One Time Cost 31.000000
+
+Total Triangles 84956 Wasted Triangles 127454 Total Volume wid:96 hei 96 dep 96
+Ready time 1971.000000 1971.000000 Total time with reads 1971.000000
+Ready time 952.000000 953.000000 Total time with reads 953.000000
+Ready time 54.000000 54.000000 Total time 58.000000Total time with reads 58.000000
+Ready time 50.000000 50.000000 Total time 53.000000Total time with reads 53.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc 96
+One Time Cost 58.000000
+One Time Cost 32.000000
+
+Total Triangles 84956 Wasted Triangles 127454 Total Volume wid:96 hei 96 dep 96
+Ready time 2265.000000 2265.000000 Total time with reads 2265.000000
+Ready time 446.000000 446.000000 Total time 449.000000Total time with reads 774.000000
+Ready time 51.000000 51.000000 Total time 55.000000Total time with reads 55.000000
+Ready time 52.000000 52.000000 Total time 56.000000Total time with reads 56.000000
+
+128../../../bin/timing_vout.exe -mc 128
+One Time Cost 73.000000
+One Time Cost 46.000000
+
+Total Triangles 151724 Wasted Triangles 227606 Total Volume wid:128 hei 128 dep 128
+Ready time 2734.000000 2734.000000 Total time with reads 2734.000000
+Ready time 2156.000000 2156.000000 Total time with reads 2156.000000
+Ready time 69.000000 69.000000 Total time 76.000000Total time with reads 76.000000
+Ready time 66.000000 66.000000 Total time 72.000000Total time with reads 72.000000
+../../../bin/timing_vout.exe -noamplify -mc 128
+One Time Cost 73.000000
+One Time Cost 46.000000
+
+Total Triangles 151724 Wasted Triangles 227606 Total Volume wid:128 hei 128 dep 128
+Ready time 2869.000000 2869.000000 Total time with reads 2869.000000
+Ready time 1045.000000 1045.000000 Total time 1047.000000Total time with reads 1637.000000
+Ready time 66.000000 66.000000 Total time 73.000000Total time with reads 73.000000
+Ready time 67.000000 67.000000 Total time 73.000000Total time with reads 73.000000
+../../../bin/timing_vout.exe -noscatter -mc 128
+One Time Cost 72.000000
+One Time Cost 45.000000
+
+Total Triangles 151724 Wasted Triangles 227606 Total Volume wid:128 hei 128 dep 128
+Ready time 2735.000000 2735.000000 Total time with reads 2735.000000
+Ready time 1405.000000 1406.000000 Total time with reads 1406.000000
+Ready time 193.000000 193.000000 Total time 199.000000Total time with reads 199.000000
+Ready time 66.000000 66.000000 Total time 71.000000Total time with reads 72.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc 128
+One Time Cost 74.000000
+One Time Cost 44.000000
+
+Total Triangles 151724 Wasted Triangles 227606 Total Volume wid:128 hei 128 dep 128
+Ready time 2733.000000 2733.000000 Total time with reads 2733.000000
+Ready time 667.000000 667.000000 Total time 670.000000Total time with reads 1261.000000
+Ready time 67.000000 67.000000 Total time 72.000000Total time with reads 72.000000
+Ready time 66.000000 66.000000 Total time 73.000000Total time with reads 73.000000
+
+192../../../bin/timing_vout.exe -mc 192
+One Time Cost 132.000000
+One Time Cost 93.000000
+
+Total Triangles 343092 Wasted Triangles 514653 Total Volume wid:192 hei 192 dep 192
+Ready time 6199.000000 6199.000000 Total time with reads 6199.000000
+Ready time 5323.000000 5323.000000 Total time with reads 5323.000000
+Ready time 113.000000 113.000000 Total time 125.000000Total time with reads 125.000000
+Ready time 109.000000 109.000000 Total time 120.000000Total time with reads 120.000000
+../../../bin/timing_vout.exe -noamplify -mc 192
+One Time Cost 132.000000
+One Time Cost 93.000000
+
+Total Triangles 343092 Wasted Triangles 514653 Total Volume wid:192 hei 192 dep 192
+Ready time 6085.000000 6085.000000 Total time with reads 6085.000000
+Ready time 3492.000000 3492.000000 Total time 3496.000000Total time with reads 4923.000000
+Ready time 109.000000 109.000000 Total time 120.000000Total time with reads 120.000000
+Ready time 108.000000 108.000000 Total time 120.000000Total time with reads 120.000000
+../../../bin/timing_vout.exe -noscatter -mc 192
+One Time Cost 132.000000
+One Time Cost 93.000000
+
+Total Triangles 343092 Wasted Triangles 514653 Total Volume wid:192 hei 192 dep 192
+Ready time 6227.000000 6227.000000 Total time with reads 6227.000000
+Ready time 3219.000000 3219.000000 Total time with reads 3219.000000
+Ready time 112.000000 112.000000 Total time 124.000000Total time with reads 124.000000
+Ready time 108.000000 108.000000 Total time 121.000000Total time with reads 121.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc 192
+One Time Cost 132.000000
+One Time Cost 94.000000
+
+Total Triangles 343092 Wasted Triangles 514653 Total Volume wid:192 hei 192 dep 192
+Ready time 6249.000000 6249.000000 Total time with reads 6249.000000
+Ready time 1962.000000 1962.000000 Total time 1966.000000Total time with reads 3498.000000
+Ready time 108.000000 108.000000 Total time 120.000000Total time with reads 120.000000
+Ready time 108.000000 108.000000 Total time 120.000000Total time with reads 120.000000
+
+256../../../bin/timing_vout.exe -mc 256
+One Time Cost 282.000000
+One Time Cost 217.000000
+
+Total Triangles 612476 Wasted Triangles 918734 Total Volume wid:256 hei 256 dep 256
+Ready time 11754.000000 11754.000000 Total time with reads 11754.000000
+Ready time 10579.000000 10579.000000 Total time with reads 10579.000000
+Ready time 246.000000 246.000000 Total time 269.000000Total time with reads 269.000000
+Ready time 243.000000 243.000000 Total time 268.000000Total time with reads 268.000000
+../../../bin/timing_vout.exe -noamplify -mc 256
+One Time Cost 283.000000
+One Time Cost 215.000000
+
+Total Triangles 612476 Wasted Triangles 918734 Total Volume wid:256 hei 256 dep 256
+Ready time 11838.000000 11838.000000 Total time with reads 11838.000000
+Ready time 7860.000000 7860.000000 Total time 7865.000000Total time with reads 10592.000000
+Ready time 242.000000 242.000000 Total time 266.000000Total time with reads 266.000000
+Ready time 242.000000 242.000000 Total time 265.000000Total time with reads 265.000000
+../../../bin/timing_vout.exe -noscatter -mc 256
+One Time Cost 286.000000
+One Time Cost 216.000000
+
+Total Triangles 612476 Wasted Triangles 918734 Total Volume wid:256 hei 256 dep 256
+Ready time 11771.000000 11771.000000 Total time with reads 11771.000000
+Ready time 6376.000000 6376.000000 Total time with reads 6376.000000
+Ready time 246.000000 246.000000 Total time 271.000000Total time with reads 271.000000
+Ready time 243.000000 243.000000 Total time 267.000000Total time with reads 267.000000
+../../../bin/timing_vout.exe -noscatter -noamplify -mc 256
+One Time Cost 283.000000
+One Time Cost 216.000000
+
+Total Triangles 612476 Wasted Triangles 918734 Total Volume wid:256 hei 256 dep 256
+Ready time 11752.000000 11752.000000 Total time with reads 11752.000000
+Ready time 4404.000000 4404.000000 Total time 4411.000000Total time with reads 7066.000000
+Ready time 242.000000 242.000000 Total time 267.000000Total time with reads 267.000000
+Ready time 243.000000 243.000000 Total time 267.000000Total time with reads 267.000000
+
+384../../../bin/timing_vout.exe -mc 384
+One Time Cost 885.000000
+One Time Cost 719.000000
+../../../bin/timing_vout.exe -noamplify -mc 384
