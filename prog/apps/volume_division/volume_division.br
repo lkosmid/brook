@@ -15,7 +15,7 @@ kernel float eval1 (float3 loc<>) {
 }
 kernel float eval (float3 loc<>) {
   float  power;
-  const float3 offset=0;
+  const float3 offset=32;
   float3 center =loc-offset;
   power = dot(center,center);
   /*
@@ -41,7 +41,7 @@ kernel float eval (float3 loc<>) {
   */
   {
 
-    const float  density = 9;
+     const float  density = 32*32;
     //printf (power,loc.z,density,power-density);
     return density-power;
   }
@@ -136,11 +136,11 @@ kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, o
   //whichVolumeTriangle.x*=(float)(whichVolumeTriangle.x+.5<3);
   if (whichVolumeTriangle.x+.5>3) whichVolumeTriangle.x=0;
   trianglesA=vertices.xyz+volumeTriangles[whichVolumeTriangle];
-  whichVolumeTriangle.x+=4;
+  whichVolumeTriangle.x+=3;
   trianglesB=vertices.xyz+volumeTriangles[whichVolumeTriangle];
-  whichVolumeTriangle.x+=4;
+  whichVolumeTriangle.x+=3;
   trianglesC=vertices.xyz+volumeTriangles[whichVolumeTriangle];
-  whichVolumeTriangle.x+=4;  
+  whichVolumeTriangle.x+=3;  
   trianglesD=vertices.xyz+volumeTriangles[whichVolumeTriangle];  
 }
 unsigned int reverseBits(unsigned int x, unsigned int base) {
@@ -152,22 +152,21 @@ unsigned int reverseBits(unsigned int x, unsigned int base) {
    }
    return ret;
 }
-typedef float3 Triangle[3][4];
+typedef float3 Triangle[5][3];
 char volumeTriangles(Triangle tri[256]) {
    unsigned int i,j,k;
 
    for (i=0;i<256;++i) {
-      for (j=0;j<12;++j) {
-         tri[i][(j/4)%3][j%4]=/*float3((float)i,(float)i,(float)i);*/float3(1.0f/(float)floor(.5),1.0f/(float)floor(.5),1.0f/(float)floor(.5));
+      for (j=0;j<15;++j) {
+         tri[i][(j/3)%5][j%3]=/*float3((float)i,(float)i,(float)i);*/float3(1.0f/(float)floor(.5),1.0f/(float)floor(.5),1.0f/(float)floor(.5));
       }
-      
+      //      continue;
       j=0;
       while(1) {
          if (m_triTable[i][j]==-1){
             m_triNum[i]=(float)(j/3);
             break;           
          }
-         if (j<12)
          for (k=0;k<3;++k) {
             float3 * p=&tri[i][j/3][k];
             p->x=m_triTable[i][j+k];
@@ -231,7 +230,7 @@ int toi (float a) {
   return (int)a;
 }
  int main (int argc, char ** argv) {
-   float3 volumeTriangles<256,12>;
+   float3 volumeTriangles<256,15>;
    struct ppm dat;
    float * slice=0;
    char generatedData=0;
