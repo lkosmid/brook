@@ -134,9 +134,13 @@ Statement * InitialInfSet (std::string fname,
                        new AssignExpr (AO_Equal,
                                        new Variable(vout_sym,location),
 #ifdef INF_SENTINEL
-                                       new Variable
-                                       (findSentinel(ft),
-                                        location),
+                                      new IndexExpr (new Variable
+                                                     (findSentinel(ft),
+                                                      location),
+                                                     new FloatConstant
+                                                      (0.0,
+                                                      location),
+                                                     location),
 #else
                                        new Variable(findSentinel(ft),
                                                          location),
