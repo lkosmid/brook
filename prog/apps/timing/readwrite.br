@@ -1,0 +1,109 @@
+/*
+ * readwrite.br
+ *
+ *      Very simple tests of how long it takes to fill and then read back a
+ *      stream.
+ */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+
+#include "main.h"
+#include "readwrite.h"
+
+static void
+TimeReadWrite1D(int length)
+{
+   float *in, *output;
+   float s<length>;
+   int numBytes, i;
+
+   numBytes = length * sizeof(*in);
+   in = (float *) malloc(numBytes);
+   assert(in);
+   output = (float *) malloc(numBytes);
+   assert(output);
+
+   for (i = 0; i < length; i++) {
+      in[i] = (float) i;
+      output[i] = -1.0f;
+   }
+
+   start = GetTime();
+   streamRead(s, in);
+   mid = GetTime();
+   streamWrite(s, output);
+   stop = GetTime();
+
+   printf("TimeRead1D: read took %d usecs, write took %d.\n",
+           (int) (mid - start), (int) (stop - mid));
+   printf("TimeRead1D: read got %.2f MB/sec, write got %.2f MB/sec.\n",
+          numBytes / (float) (mid - start), numBytes / (float) (stop - mid));
+
+   for (i = 0; i < length; i++) {
+      if (in[i] != output[i]) {
+         fprintf(stderr, "ReadWrite1D: Mismatch %d.  In: %f, Out: %f\n",
+                 i, in[i], output[i]);
+      }
+   }
+}
+
+
+static void
+TimeReadWrite2D(int length)
+{
+   float4 *in, *output;
+   float4 s<length, length>;
+   int numBytes, i, j;
+
+   numBytes = length * length * sizeof(*in);
+   in = (float4 *) malloc(numBytes);
+   assert(in);
+   output = (float4 *) malloc(numBytes);
+   assert(output);
+
+   for (i = 0; i < length; i++) {
+      for (j = 0; j < length; j++) {
+         (*(in + i*length + j)).x = (float) (i * length + j);
+         (*(in + i*length + j)).y = (float) (i * length + j);
+         (*(in + i*length + j)).z = (float) (i * length + j);
+         (*(in + i*length + j)).w = (float) (i * length + j);
+         *(output + i*length + j) = float4(-1.0f, -1.0f, -1.0f, -1.0f);
+      }
+   }
+
+   start = GetTime();
+   streamRead(s, in);
+   mid = GetTime();
+   streamWrite(s, output);
+   stop = GetTime();
+
+   printf("TimeRead2D: read took %d usecs, write took %d.\n",
+           (int) (mid - start), (int) (stop - mid));
+   printf("TimeRead2D: read got %.2f MB/sec, write got %.2f MB/sec.\n",
+          numBytes / (float) (mid - start), numBytes / (float) (stop - mid));
+
+   for (i = 0; i < length; i++) {
+      for (j = 0; j < length; j++) {
+         float4 cur_in, cur_out;
+
+         cur_in = *(in + i*length + j);
+         cur_out = *(output + i*length + j);
+         if (cur_in.x != cur_out.x &&
+             cur_in.y != cur_out.y &&
+             cur_in.z != cur_out.z &&
+             cur_in.w != cur_out.w) {
+            fprintf(stderr, "ReadWrite2D: Mismatch %d, %d.  In: %f, Out: %f\n",
+                    i, j, cur_in.x, cur_out.x);
+         }
+      }
+   }
+}
+
+void
+TimeReadWrite(int length)
+{
+   TimeReadWrite1D(length);
+   TimeReadWrite2D(length);
+}
