@@ -93,16 +93,21 @@ class BRTCPUKernelCode : public BRTKernelCode
     BRTKernelCode *dup0() const { 
        return new BRTCPUKernelCode(*this->fDef); 
     }
+    static std::vector<PrintCPUArg>getPrintableArgs(FunctionDef * fDef,
+                                                    bool shadowOutput);
     void incrementIndexOf(std::ostream &out)const;
     void initializeIndexOf(std::ostream &out)const;
     void printIndexOfCallingArgs(std::ostream & out)const;
-    void printCombineCode(std::ostream& out)const;
+    void printCombineCode(std::ostream& out,bool constructInnerFunction)const;
+    void printTightLoop(std::ostream&out, 
+                        FunctionDef * fDef, 
+                        std::vector<PrintCPUArg> args,
+                        bool reduceneeded)const;
     void printCode(std::ostream& out) const;
 	
     static void printInnerFunction(std::ostream&out,
                                    std::string fullname,
                                    FunctionDef*fDef,
-                                   std::vector<PrintCPUArg>&args,
                                    bool shadowOutput,
                                    std::string origname);
 

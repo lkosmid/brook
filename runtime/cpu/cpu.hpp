@@ -24,10 +24,14 @@ namespace brook {
        typedef void callable(const std::vector<void *>&args,
                              unsigned int start, 
                              unsigned int end);
+       typedef void nDcallable(const std::vector<void *>&args,
+                               unsigned int * start,
+                               const unsigned int * end);
        typedef void combinable (const std::vector<void*>&args,
                                 unsigned int start);
        callable * func;
        combinable *combine;
+       nDcallable *nDfunc;
        std::vector<void *> args;
        class ReductionArg {public:
           unsigned int which;

@@ -12,7 +12,7 @@ BINSUFFIX        :=
 
 CFLAGS           += 
 C_INCLUDE_FLAG   := -I  
-C_DEBUG_FLAG     := -ggdb3 
+C_DEBUG_FLAG     := -ggdb3 -Wall 
 #-O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -finline-limit=10000 -frerun-loop-opt 
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := -o 

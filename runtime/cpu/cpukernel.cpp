@@ -36,6 +36,9 @@ namespace brook{
             if (strcmp(src[i],"combine")==0) {
                combine=(combinable*)source[i+1];
             }
+            if (strcmp(src[i],"nDcpu")==0) {
+               nDfunc=(nDcallable*)source[i+1];
+            }
 	}
         Cleanup();
     }
@@ -106,19 +109,46 @@ namespace brook{
        if (!streamReduction){
           subMap(0,totalsize);
        }else {
+          unsigned int i;
           unsigned int rdim = streamReduction->getDimension();
           const unsigned int * rextents = streamReduction->getExtents();
           unsigned int total = streamReduction->getTotalSize();
           std::vector<ReductionArg>::iterator j;
           for (j=reductions.begin();j!=reductions.end();++j) {
+             assert ((*j).type==__BRTSTREAM);
              args[(*j).which]=(*j).stream->getData(brook::Stream::WRITE);
           }
-          for (unsigned int i=0;i<total;++i) {
+          unsigned int * buffer = (unsigned int *)malloc(4*dim*sizeof(unsigned int));
+          unsigned int * e =buffer;
+          memset (e,0,sizeof(unsigned int)*4*dim);
+          unsigned int *f=e+dim;
+          unsigned int * mag = f+dim;
+          unsigned int * scratch=mag+dim;
+          for (i=0;i<dim;++i) {
+             if (i<rdim)
+                mag[i] = extents[i]/rextents[i];
+             else
+                mag[i] = extents[i];             
+          }
+          for (i=0;i<total;++i) {
+             unsigned int k;
              for (j=reductions.begin();j!=reductions.end();++j) {
                 args[(*j).which]=(char*)args[(*j).which]+(*j).stream->getStride();
              }
-             
+             for (k=0;k<dim;++k) {
+                scratch[k]=e[k];
+                f[k]=e[k]+mag[k];
+             }
+             (*nDfunc)(args,scratch,f);
+             e[0]+=mag[0];
+             for (k=0;k<rdim-1;++k) {
+                if (e[k]>=extents[k]){
+                   e[k]=0;
+                   e[k+1]+=mag[k+1];                   
+                }else break;
+             }
           }
+          free (e);
           for (j=reductions.begin();j!=reductions.end();++j) {
              (*j).stream->releaseData(brook::Stream::WRITE);
           }

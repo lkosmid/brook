@@ -15,9 +15,11 @@
  
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool reduceNeeded (const FunctionDef * fd) {
+   
    if (fd->decl->isReduce()) {
       return false;
    }
+   
    bool ret =false;
    Type * form = fd->decl->form;
    assert (form->isFunction());
@@ -80,7 +82,6 @@ Expression * FirstQuestionColon (std::string reducename,
    Location l (ifFirst->location);
    fprintf (stderr,"firstquestioncolon %s\n",reducename.c_str());
    Decl * reducebool =reductionBools[reducename];
-   Symbol * reducesym = reducebool->name;
    return 
       new TrinaryExpr(ReduceVar(reducebool,l),
                       new BinaryExpr(BO_Comma,

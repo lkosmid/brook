@@ -241,10 +241,7 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s)
             if ((tq&TQ_Const)==0&&isOut==false&&(tq&TQ_Reduce)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
-			Type * tmp = a->form;
-			t->printType(out,a->name,true,0);
- 
-			
+            t->printType(out,a->name,true,0);
             break;
         }
         case DEF:{
@@ -302,6 +299,8 @@ void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
        case USE:
           out << "arg"<<index;
           break;
+       case CLEANUP:
+         break;
        }
 }  
    //standard args, not gather or scatter
@@ -383,15 +382,23 @@ std::string whiteout (std::string s) {
    }
    return s;
 }
-
+std::vector<BRTCPUKernelCode::PrintCPUArg> BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
+    Type * form = fDef->decl->form;
+    assert (form->isFunction());
+    FunctionType* func = static_cast<FunctionType *>(form->dup());
+    std::vector<PrintCPUArg> myArgs;
+    {for (int i=0;i<func->nArgs;++i) {
+        myArgs.push_back(PrintCPUArg(func->args[i],i,shadowOutput));
+    }}  
+    return myArgs;
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
-										   std::string fullname,
-										   FunctionDef *fDef, 
-										   std::vector<PrintCPUArg>&myArgs,
-										   bool shadowOutput,
-										   std::string origname) {
-   Type * form = fDef->decl->form;
+                                           std::string fullname,
+                                           FunctionDef *fDef, 
+                                           bool shadowOutput,
+                                           std::string origname) {
+    Type * form = fDef->decl->form;
     assert (form->isFunction());
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     std::string myvoid("void  ");
@@ -400,9 +407,7 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
     enhanced_name.name = fullname;
     func->printBefore(out,&enhanced_name,0);
     out << " (";
-    {for (int i=0;i<func->nArgs;++i) {
-        myArgs.push_back(PrintCPUArg(func->args[i],i,shadowOutput));
-    }}
+    std::vector<PrintCPUArg>myArgs=getPrintableArgs(fDef,shadowOutput);
     {
        unsigned int i;
        std::string long_name(whiteout(myvoid+enhanced_name.name+" ("));
@@ -426,18 +431,21 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
+void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) const{
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
     Brook2Cpp_ConvertKernel(fDef);
     BrookCombine_ConvertKernel(fDef);
 
-    std::vector <PrintCPUArg> myArgs;
-    printInnerFunction (out,
-                        "__"+fDef->decl->name->name+"_cpu_inner",
-                        fDef,
-                        myArgs,
-                        true,
-                        this->fDef->decl->name->name);    
+    std::vector <PrintCPUArg> myArgs = getPrintableArgs (fDef,true);
+    if (print_inner) {
+      printInnerFunction (out,
+                          "__"+fDef->decl->name->name+"_cpu_inner",
+                          fDef,
+                          true,
+                          this->fDef->decl->name->name);    
+    }
+    
+    
     std::string enhanced_name= "__"+fDef->decl->name->name + "_cpu";
     std::string myvoid ("void  ");
     out << myvoid;
@@ -507,40 +515,10 @@ void BRTCPUKernelCode::incrementIndexOf(std::ostream&out)const {
       out<<std::endl;
    }
 }
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void BRTCPUKernelCode::printCode(std::ostream& out) const
-{
-    bool copy_on_write=false;
-    bool dims_specified=false;        
-  /* We've already transformed everything, so just print ourselves */
- 
-    std::vector<PrintCPUArg> myArgs;
-    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
-    
-    Brook2Cpp_ConvertKernel(fDef);
-
-    printInnerFunction (out,
-                        "__"+fDef->decl->name->name+"_cpu_inner",
-                        fDef,
-                        myArgs,
-                        false,
-                        this->fDef->decl->name->name);    
-    bool reduceneeded=reduceNeeded(fDef);
-    
-    if (reduceneeded){
-       FunctionDef * baseCase = static_cast<FunctionDef*>(this->fDef->dup());
-       std::vector<PrintCPUArg>temp;
-       Brook2Cpp_ConvertKernel(baseCase);
-       BrookReduce_ConvertKernel(baseCase);
-       printInnerFunction (out,
-                           "__"+baseCase->decl->name->name+"_cpu_inner",
-                           baseCase,
-                           temp,
-                           false,
-                           this->fDef->decl->name->name);
-       delete baseCase;
-    }
-   //we don't want to automatically print this for it would say "kernel void" which means Nothing
+void BRTCPUKernelCode::printTightLoop(std::ostream&out, 
+                                      FunctionDef * fDef, 
+                                      std::vector<PrintCPUArg> myArgs,
+                                      bool reduceneeded)const{ 
     Symbol enhanced_name;
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
     std::string myvoid("void  ");
@@ -593,8 +571,40 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
     }}    
-    out << "}"<<std::endl;   
+    out << "}"<<std::endl;     
+}
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void BRTCPUKernelCode::printCode(std::ostream& out) const
+{
+  /* We've already transformed everything, so just print ourselves */
+ 
+
+    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
+    
+    Brook2Cpp_ConvertKernel(fDef);
+    std::vector<PrintCPUArg> myArgs=getPrintableArgs(fDef,false);
+    printInnerFunction (out,
+                        "__"+fDef->decl->name->name+"_cpu_inner",
+                        fDef,
+                        false,
+                        this->fDef->decl->name->name);    
+    bool reduceneeded=reduceNeeded(fDef);
+    
+    if (reduceneeded){
+       FunctionDef * baseCase = static_cast<FunctionDef*>(this->fDef->dup());
+       Brook2Cpp_ConvertKernel(baseCase);
+       BrookReduce_ConvertKernel(baseCase);
+       printInnerFunction (out,
+                           "__"+baseCase->decl->name->name+"_cpu_inner",
+                           baseCase,
+                           false,
+                           this->fDef->decl->name->name);
+       delete baseCase;
+    }
+   //we don't want to automatically print this for it would say "kernel void" which means Nothing
+
+    printTightLoop(out,fDef,myArgs,reduceneeded);
     delete fDef;
     if (reduceneeded)
-       printCombineCode(out);
+       printCombineCode(out,true);
 }
