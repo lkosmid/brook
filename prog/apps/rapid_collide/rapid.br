@@ -87,15 +87,10 @@ kernel float COMPUTE_INTERVALS (float3 VV<>,
                                 float3 D<>,
                                 float DOD1<>, float DOD2<>,
                                 out float2 isect<>) {
-  float ret = 1;
   float pred;
-  float3 VVord;
-  float3 Dord;
-  pred= (float)(ret&&DOD1>0.0f);
-  
-  VVord = VV.zxy; 
-  Dord = D.zxy;  
-  ret=pred?0:ret;
+  float3 VVord = VV.zxy;
+  float3 Dord = D.zxy;
+  float ret = DOD1>0.0f?0:1.0f;
   pred = (float)(ret&&DOD2>0.0f);
   VVord = pred?VV.yxz:VVord; Dord = pred?D.yxz:Dord;
   ret=pred?0:ret;
@@ -141,7 +136,6 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   float du0du2;
   float dv0dv1;
   float dv0dv2;
-  float index;
   float3 vp;
   float3 up;
   float EPSILON=.000001;
@@ -175,7 +169,6 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   D = cross(N2,N1);
   // compute and index to the largest component of D 
   max = abs  (D [0]);
-  index = 0;
   vp=float3(V0.x,V1.x,V2.x);
   up=float3(U0.x,U1.x,U2.x);
   b = abs  (D [1]);
