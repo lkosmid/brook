@@ -860,7 +860,7 @@ void combineStreamsfloat (float (**streams)<>,
                           unsigned int width, 
                           unsigned int length,
                              float (*output)<>) {
-   unsigned int  lengthmodmodulus=length%num;
+   unsigned int  lengthmodmodulus=num!=0?(length%num):0;
    float tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
@@ -1874,7 +1874,7 @@ void combineStreamsfloat2 (float2 (**streams)<>,
                           unsigned int width, 
                           unsigned int length,
                              float2 (*output)<>) {
-   unsigned int  lengthmodmodulus=length%num;
+   unsigned int  lengthmodmodulus=num!=0?(length%num):0;
    float2 tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
@@ -2888,7 +2888,7 @@ void combineStreamsfloat3 (float3 (**streams)<>,
                           unsigned int width, 
                           unsigned int length,
                              float3 (*output)<>) {
-   unsigned int  lengthmodmodulus=length%num;
+   unsigned int  lengthmodmodulus=num!=0?(length%num):0;
    float3 tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
@@ -3902,7 +3902,7 @@ void combineStreamsfloat4 (float4 (**streams)<>,
                           unsigned int width, 
                           unsigned int length,
                              float4 (*output)<>) {
-   unsigned int  lengthmodmodulus=length%num;
+   unsigned int  lengthmodmodulus=num!=0?(length%num):0;
    float4 tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
