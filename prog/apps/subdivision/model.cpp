@@ -18,8 +18,10 @@ unsigned int loadModelData(const char * filename,
                            Tri ** tri,
                            Neighbor ** neigh) {
    std::vector<Tri>tList;
+   fprintf(stderr, "filename: %s\n", filename);
    LoadPly(filename,tList);
    *tri = (Tri*)malloc(sizeof(Tri)*tList.size());
+   fprintf(stderr, "Return tri length = %d\n", tList.size());
    *neigh =(Neighbor*)malloc(sizeof(Neighbor)*tList.size());
    for (unsigned int i=0;i<tList.size();++i) {
       unsigned int j;

@@ -574,6 +574,7 @@ unsigned int bestWidth(unsigned int totalSize){
 }
 unsigned int loadModelData(char* file,Tri **triangles,Neighbor **neighbors);
 int main (int argc, char**argv) {
+  unsigned int i = 0;
   float epsilon=.0001;
   Tri *triangledata = 0;
   Neighbor *neighbordata = 0;
@@ -585,10 +586,20 @@ int main (int argc, char**argv) {
   streamRead(triangles,triangledata);
   streamRead(neighbors,neighbordata);
   initVertexArray(&v);
+  fprintf(stderr, "IN vertex list:\n");
+  for(i=0; i<v.size; i++){
+    fprintf(stderr, "%3.3f, %3.3f, %3.3f\n", v.v[i].x, v.v[i].y, v.v[i].z);
+  }
+  fprintf(stderr, "done\n");
   
   // initialize neighbors and triangles
   smallEnough(triangles,neighbors,triangles,neighbors,epsilon);
   subdivide(&neighbors,&triangles,&v,epsilon,0);
+  fprintf(stderr, "OUT vertex list:\n");
+  for(i=0; i<v.size; i++){
+    fprintf(stderr, "%3.3f, %3.3f, %3.3f\n", v.v[i].x, v.v[i].y, v.v[i].z);
+  }
+  fprintf(stderr, "done\n");
   return 0;
 }
 
