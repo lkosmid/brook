@@ -597,6 +597,12 @@ extern void doTest(float * matrix,
                    float3 * hitsa,
                    float3* hitsb,
                    float4 * ohits);
+
+extern void doTestNoDiv(float * matrix,
+                        int sizex,int sizey,
+                        float3 * hitsa,
+                        float3* hitsb,
+                        float4 * ohits);
 #define SIZEX 1
 #define SIZEY 1
 void SetTriangles(int size, float3* a, float3 *b) {
@@ -614,32 +620,41 @@ int main (int argc, char ** argv) {
   float3 * a= (float3*)malloc(sizeof(float3)*3*SIZEX*SIZEY);
   float3 * b= (float3*)malloc(sizeof(float3)*3*SIZEX*SIZEY);
   float4 * rez = (float4*) malloc (sizeof(float4)*SIZEX*SIZEY);
+  float4 * rez_nodiv = (float4*) malloc (sizeof(float4)*SIZEX*SIZEY);
   float matrix[16]={1,0,0,0,
                     0,1,0,0,
                     0,0,1,0,
                     0,0,0,1};
   srand(1);
-  for (unsigned int k=0;k<3;++k) {
+  for (unsigned int k=0;k<12;++k) {
   SetTriangles(SIZEX*SIZEY,a,b);
   }
   int counter=0;
-
+  int counter2=0;
   for (unsigned int j=0;j<1024*64;++j) {
   SetTriangles(SIZEX*SIZEY,a,b);
   doTest(matrix,SIZEX,SIZEY,a,b,rez);
+  doTestNoDiv(matrix,SIZEX,SIZEY,a,b,rez_nodiv);
   for (unsigned int i=0;i<SIZEX*SIZEY;++i) {
     bool hit = (rez[i].x!=-1);
+    bool khitnodiv = (rez_nodiv[i].x!=-1);
     bool hitnodiv = tri_contact_nodiv(a[i*3],a[i*3+1],a[i*3+2],
                                       b[i*3],b[i*3+1],b[i*3+2]);
     bool hitdiv = tri_contact(a[i*3],a[i*3+1],a[i*3+2],
                               b[i*3],b[i*3+1],b[i*3+2]);
     assert(hit==hitdiv);
-    if (hit!=hitnodiv) {
+    //    assert(khitnodiv==hitnodiv);
+    if (hit!=hitnodiv)
+      counter2++;
+    if (hit&&!hitnodiv) {
+      counter--;
+    }
+    if (hitnodiv&&!hit) {
       counter++;
     }
   }
   }
-  printf ("Num differences btw dif and nodiv %d\n",counter);
+  printf ("Num differences btw dif and nodiv %d %d\n",counter2, counter);
   free (a);
   free (b);
   free (rez);
