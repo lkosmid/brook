@@ -127,7 +127,7 @@ bool DX9Stream::initialize(
       return false;
     }
 
-    DX9Texture* fieldTexture = DX9Texture::create( runtime, textureWidth, textureHeight, fieldComponentCount );
+    DX9Texture* fieldTexture = DX9Texture::create( runtime->getDevice(), textureWidth, textureHeight, fieldComponentCount );
     if( fieldTexture == NULL )
     {
       DX9WARN << "Texture allocation failed during sream initialization.";

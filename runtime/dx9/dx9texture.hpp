@@ -8,7 +8,7 @@ namespace brook {
   class DX9Texture
   {
   public:
-	  static DX9Texture* create( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents );
+	  static DX9Texture* create( IDirect3DDevice9* inDevice, int inWidth, int inHeight, int inComponents );
 	  ~DX9Texture();
 
     int getWidth() { return width; }
@@ -41,7 +41,7 @@ namespace brook {
     }
 
   private:
-	  DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents );
+	  DX9Texture( IDirect3DDevice9* inDevice, int inWidth, int inHeight, int inComponents );
     bool initialize();
 
     void flushCachedToShadow();

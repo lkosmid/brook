@@ -236,7 +236,7 @@ DX9Texture* DX9RunTime::getReductionBuffer0( int inMinWidth, int inMinHeight )
   if( reductionBuffer0 != NULL )
     delete reductionBuffer0;
 
-  reductionBuffer0 = DX9Texture::create( this, inMinWidth, inMinHeight, 4 );
+  reductionBuffer0 = DX9Texture::create( device, inMinWidth, inMinHeight, 4 );
   DX9Assert( reductionBuffer0 != NULL, "Failed to allocate reduction buffer 0." );
   return reductionBuffer0;
 }
@@ -253,7 +253,7 @@ DX9Texture* DX9RunTime::getReductionBuffer1( int inMinWidth, int inMinHeight )
   if( reductionBuffer1 != NULL )
     delete reductionBuffer1;
 
-  reductionBuffer1 = DX9Texture::create( this, inMinWidth, inMinHeight, 4 );
+  reductionBuffer1 = DX9Texture::create( device, inMinWidth, inMinHeight, 4 );
   DX9Assert( reductionBuffer1 != NULL, "Failed to allocate reduction buffer 1." );
   return reductionBuffer1;
 }
@@ -270,7 +270,7 @@ DX9Texture* DX9RunTime::getSlopBuffer( int inMinWidth, int inMinHeight )
   if( slopBuffer != NULL )
     delete slopBuffer;
 
-  slopBuffer = DX9Texture::create( this, inMinWidth, inMinHeight, 4 );
+  slopBuffer = DX9Texture::create( device, inMinWidth, inMinHeight, 4 );
   DX9Assert( slopBuffer != NULL, "Failed to allocate reduction slop buffer." );
   return slopBuffer;
 }
@@ -278,7 +278,7 @@ DX9Texture* DX9RunTime::getSlopBuffer( int inMinWidth, int inMinHeight )
 DX9Texture* DX9RunTime::getReductionTargetBuffer() {
   if( reductionTargetBuffer != NULL ) return reductionTargetBuffer;
 
-  reductionTargetBuffer = DX9Texture::create( this, 1, 1, 4 );
+  reductionTargetBuffer = DX9Texture::create( device, 1, 1, 4 );
   DX9Assert( reductionTargetBuffer != NULL, "Failed to allocate reduction target buffer." );
   return reductionTargetBuffer;
 }

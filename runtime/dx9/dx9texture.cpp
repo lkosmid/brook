@@ -5,7 +5,7 @@
 
 using namespace brook;
 
-DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents )
+DX9Texture::DX9Texture( IDirect3DDevice9* inDevice, int inWidth, int inHeight, int inComponents )
 	: width(inWidth),
   height(inHeight),
   components(inComponents),
@@ -16,7 +16,7 @@ DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int in
   surfaceHandle(NULL),
   shadowSurface(NULL)
 {
-	device = inContext->getDevice();
+	device = inDevice;
   device->AddRef();
 }
 
@@ -79,10 +79,10 @@ DX9Texture::~DX9Texture()
     device->Release();
 }
 
-DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents  )
+DX9Texture* DX9Texture::create( IDirect3DDevice9* inDevice, int inWidth, int inHeight, int inComponents  )
 {
   DX9PROFILE("DX9Texture::create")
-  DX9Texture* result = new DX9Texture( inContext, inWidth, inHeight, inComponents );
+  DX9Texture* result = new DX9Texture( inDevice, inWidth, inHeight, inComponents );
   if( result->initialize() )
     return result;
   delete result;

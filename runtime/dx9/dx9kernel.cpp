@@ -460,7 +460,7 @@ void DX9Kernel::mapTechnique( const DX9Kernel::Technique& inTechnique )
 
     for( int i = 0; i < inTechnique.temporaryCount; i++ )
     {
-      DX9Texture* texture = DX9Texture::create( runtime, width, height, 4 );
+      DX9Texture* texture = DX9Texture::create( device, width, height, 4 );
       temporaries.push_back( texture );
     }
   }

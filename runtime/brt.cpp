@@ -8,6 +8,7 @@
 #include <math.h>
 #include <float.h>
 #ifdef BUILD_DX9
+#include "gpu/gpuruntimedx9.hpp"
 #include "dx9/dx9.hpp"
 #endif
 
