@@ -389,8 +389,9 @@ void printInnerFunction (std::ostream & out,
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
-    BrookCombine_ConvertKernel(fDef);
     Brook2Cpp_ConvertKernel(fDef);
+    BrookCombine_ConvertKernel(fDef);
+
     std::vector <PrintCPUArg> myArgs;
     printInnerFunction (out,
                         "__"+fDef->decl->name->name+"_cpu_inner",
@@ -447,8 +448,8 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
     if (reduceneeded){
        FunctionDef * baseCase = static_cast<FunctionDef*>(this->fDef->dup());
        std::vector<PrintCPUArg>temp;
-       BrookReduce_ConvertKernel(baseCase);
        Brook2Cpp_ConvertKernel(baseCase);
+       BrookReduce_ConvertKernel(baseCase);
        printInnerFunction (out,
                            "__"+baseCase->decl->name->name+"_cpu_inner",
                            baseCase,

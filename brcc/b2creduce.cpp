@@ -4,9 +4,10 @@
 #endif
 #include "ctool.h"
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
-
+ 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool reduceNeeded (const FunctionDef * fd) {
    if (fd->decl->isReduce()) {
@@ -23,11 +24,11 @@ bool reduceNeeded (const FunctionDef * fd) {
    return ret;
 }
 
-
-static std::map <std::string,Expression*>reducenames;
+std::map<std::string,Decl *> reductionBools;
+static std::set <Expression*> searchedexpressions;
 typedef std::map<std::string,Expression*>::value_type reducenameval;
 static std::string functionmodifier;
-static void (*ModifyAssignExpr)(AssignExpr*ae)=0;
+static Expression * (*ModifyAssignExpr)(AssignExpr*ae)=0;
 static Expression * (*ModifyFunctionCall)(FunctionCall *, 
                                           unsigned int, 
                                           unsigned int)=0;
@@ -43,8 +44,9 @@ static Expression* ConvertToNop(Expression*fc) {
 }
 const std::string dual_reduction_arg="__partial_";
 
-static void DemoteAssignExpr (AssignExpr * ae) {
-   ae->aOp=AO_Equal;   
+static Expression *  DemoteAssignExpr (AssignExpr * ae) {
+   ae->aOp=AO_Equal;
+   return ae;   
 }
 Expression *ChangeVariable(Expression * lv) {
    if (lv->etype==ET_Variable) {
@@ -53,11 +55,43 @@ Expression *ChangeVariable(Expression * lv) {
    }
    return lv;
 }
-static void DuplicateLVal(AssignExpr * ae) {
+static Expression *  DuplicateLVal(AssignExpr * ae) {
    Expression * rval = ae->rValue();
    ae->_rightExpr=ChangeVariable(ae->lValue()->dup());
    delete rval;
+   return ae;
 }
+Variable * ReduceVar (Decl *reducebool,const Location &l) {
+   Variable * ret = new Variable(reducebool->name->dup(),l);
+   ret->name->entry=new SymEntry(VarDeclEntry,ret->name->name,reducebool);
+   ret->name->entry->uVarDecl = reducebool->dup();
+   return ret;
+}
+Expression * FirstQuestionColon (std::string reducename,
+                                 Expression * ifFirst,
+                                 Expression * ifFuture) {
+   searchedexpressions.insert(ifFirst);
+   searchedexpressions.insert(ifFuture);
+   Location l (ifFirst->location);
+   fprintf (stderr,"firstquestioncolon %s\n",reducename.c_str());
+   Decl * reducebool =reductionBools[reducename];
+   Symbol * reducesym = reducebool->name;
+   return 
+      new TrinaryExpr(ReduceVar(reducebool,l),
+                      new BinaryExpr(BO_Comma,
+                                     ifFirst,
+                                     new AssignExpr(AO_Equal,
+                                                    ReduceVar(reducebool,l),
+                                                    new IntConstant(0,l),
+                                                    l),
+                                     l),
+                      new BinaryExpr(BO_Comma,
+                                     ifFuture,
+                                     new IntConstant(0,l),
+                                     l),
+                      l);
+}
+
 static Expression* CombineReduceStream(FunctionCall *func,
                                        unsigned int reduce,
                                        unsigned int stream) {
@@ -66,13 +100,65 @@ static Expression* CombineReduceStream(FunctionCall *func,
    delete tmp;
    return func;
 }
+static Expression * ArrayAssign (Expression * lval, Expression* rval, const Location &l, Type * t) {
+   //now we have the job of making a comma separated expression that assigns all the values in type t
+   //prepare ship for ludicrous speed.
+   std::vector <Expression*>bounds;
+   while (t->type==TT_Array) {
+      ArrayType * at= static_cast<ArrayType*>(t);
+      if (!at->size) {
+         std::cerr << "error: ";
+         l.printLocation(std::cerr);
+         std::cerr << " All bounds must be specified.\n";
+         exit(1);
+      }
+      bounds.push_back(at->size);
+      t=at->subType;
+   };
+   Expression * cur = NULL;
+   while (!bounds.empty()) {
+      Expression * size = bounds.back();bounds.pop_back();
+      if (!cur) cur =size;
+      else {
+         cur = new BinaryExpr(BO_Mult,size->dup(),cur->dup(),l);
+      }
+   }
+   Symbol * mymemcpy = new Symbol();mymemcpy->name="memcpy";
+   mymemcpy->entry = new SymEntry(FctDeclEntry);
+   FunctionCall * fc =  new FunctionCall(new Variable(mymemcpy,l),l);
+   fc->addArg(lval);
+   fc->addArg(rval);
+   fc->addArg(new BinaryExpr(BO_Mult,new SizeofExpr(t->getBase(),l),cur,l));
+   return fc;
+   return new AssignExpr(AO_Equal,
+                         lval,
+                         rval,
+                         l);///XXX FIXME   
+}
 static Expression* FunctionCallToAssign(FunctionCall *func,
                                         unsigned int reduce,
                                         unsigned int stream) {
       Location l (func->location);
       Expression * mreduce=func->args[reduce]->dup();
       Expression * mstream=func->args[stream]->dup();
-      //delete func;
+      delete func;
+      if (mreduce->etype==ET_Variable) {
+         Variable * vreduce = static_cast<Variable*>(mreduce);
+         if (vreduce->name->entry){
+            if (vreduce->name->entry->uVarDecl) {
+               Type * t = vreduce->name->entry->uVarDecl->form;
+               if (t) {
+                  if (t->type==TT_Array) {
+                     return ArrayAssign (mreduce,
+                                         mstream,
+                                         l,
+                                         static_cast<ArrayType*>(t));
+                  }
+               }
+            }
+
+         }
+      }
       return new AssignExpr(AO_Equal,
                             mreduce,
                             mstream,
@@ -80,7 +166,9 @@ static Expression* FunctionCallToAssign(FunctionCall *func,
 }
 
 static Expression * ConvertPlusTimesGets(Expression * e) {
-   if (e->etype==ET_BinaryExpr&&static_cast<BinaryExpr*>(e)->bOp==BO_Assign) {
+   if (e->etype==ET_BinaryExpr
+       &&static_cast<BinaryExpr*>(e)->bOp==BO_Assign
+       &&searchedexpressions.find(e)==searchedexpressions.end()) {
       
       AssignExpr * ae = static_cast<AssignExpr*>(e);
       if (ae->lValue()->etype==ET_Variable) {
@@ -89,12 +177,12 @@ static Expression * ConvertPlusTimesGets(Expression * e) {
          if (s->uVarDecl) {
             if (s->uVarDecl->form){ 
                if (s->uVarDecl->isReduce()) {
-                  if (reducenames.find(v->name->name)==reducenames.end()) {
-                     (*ModifyAssignExpr)(ae);
-                     reducenames.insert(reducenameval(v->name->name,e));
-                  }else if (reducenames[v->name->name]!=e){
-                     return (*ModifyFutureReduceOperator)(ae);
-                  }
+                  AssignExpr * ab = static_cast<AssignExpr*>(ae->dup());
+                  std::string assignname(v->name->name);
+                  return FirstQuestionColon(assignname,
+                                            (*ModifyAssignExpr)(ab),
+                                            (*ModifyFutureReduceOperator)(ae));
+                 
                }
             }
          }
@@ -112,13 +200,10 @@ static Expression * ConvertReduceToGets(FunctionCall* func, FunctionType * type)
       if (type->args[i]->isReduce()) {
          if (func->args[i]->etype==ET_Variable) {
             Variable * v = static_cast<Variable*>(func->args[i]);
-            if (reducenames.find(v->name->name)==reducenames.end()) {
-               reducename=v->name->name;
-               mreduce = func->args[i];
-               reduceloc=i;
-            }else if (reducenames[v->name->name]!=func) {
-               return (*ModifyFutureReduceOperator) (func);
-            }
+            reducename=v->name->name;
+            mreduce = func->args[i];
+            reduceloc=i;
+
          }
       }
       if (type->args[i]->isStream()) {
@@ -126,10 +211,14 @@ static Expression * ConvertReduceToGets(FunctionCall* func, FunctionType * type)
          streamloc=i;
       }
    }
-   if (mreduce&&mstream) {
-      Expression * e =(*ModifyFunctionCall)(func,reduceloc,streamloc);
-      reducenames.insert(reducenameval(reducename,func));
-      return e;               
+   if (mreduce&&mstream
+       &&searchedexpressions.find(func)==searchedexpressions.end()) {
+      FunctionCall * fcdup=static_cast<FunctionCall*>(func->dup());
+      return FirstQuestionColon(reducename,
+                                (*ModifyFunctionCall)(func,
+                                                      reduceloc,
+                                                      streamloc),
+                                (*ModifyFutureReduceOperator) (fcdup));
    }
    return func;
 }
@@ -184,8 +273,27 @@ void FindFirstReduceFunctionCall (Statement * s) {
    s->findExpr(&ChangeFirstReduceFunction);
    s->findExpr(&ConvertPlusTimesGets);
 }
+void addReductionBools (FunctionDef *fDef) {
+   FunctionType * t = static_cast<FunctionType*>(fDef->decl->form);
+   for (unsigned int i=0;i<t->nArgs;++i) {
+      if (t->args[i]->isReduce()) {
+         DeclStemnt * ds = new DeclStemnt(fDef->location);
+         ds->next = fDef->head;
+         fDef->head=ds;
+         Decl * newchar = new Decl(new BaseType(BT_Char));
+         Symbol * s = new Symbol;
+         s->name = "__first_reduce_"+t->args[i]->name->name;
+         newchar->name=s;
+         newchar->initializer = new IntConstant(1,fDef->location);
+         ds->addDecl(newchar);
+         reductionBools[t->args[i]->name->name]=newchar;
+      }
+   }
+}
 void BrookReduce_ConvertKernel(FunctionDef *fDef) {
-   reducenames.clear();
+   reductionBools.clear();
+   searchedexpressions.clear();
+   addReductionBools(fDef);
    functionmodifier="__base";
    ModifyAssignExpr= &DemoteAssignExpr;
    ModifyFunctionCall=&FunctionCallToAssign;
@@ -195,8 +303,10 @@ void BrookReduce_ConvertKernel(FunctionDef *fDef) {
    fDef->decl->name->name+=functionmodifier;
 }
 
-void BrookCombine_ConvertKernel(FunctionDef *fDef) {
-   reducenames.clear();
+void BrookCombine_ConvertKernel(FunctionDef *fDef) { 
+   reductionBools.clear();
+   searchedexpressions.clear();
+   addReductionBools(fDef);
    functionmodifier="__combine";
    ModifyAssignExpr= &DuplicateLVal;
    ModifyFunctionCall=&CombineReduceStream;
