@@ -1,7 +1,7 @@
 #pragma warning(disable:4275)
 #include <complex>
 #include <cmath>
-
+#include <fftw3.h>
 // NOTE:
 // Please generate the dataset and the twiddle factors by running the data.cc program in this directory
 // and then run this program. This program currently works for power of 2 lengths. 
@@ -18,11 +18,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#include <fftw3.h>
 //c version from FFT book
+#ifndef M_PI
 #define M_PI 3.1415926536
+#endif
 #define SWAP(a,b) tempr=(a); (a) = (b); (b) = tempr
+typedef int mycomplex;
+typedef int myplan;
+#define mycomplex fftwf_complex
+#define myplan fftwf_plan
+void FftwTransform(float2 *data, unsigned long N, int isign) {
+  myplan p;
+  mycomplex *in;
+  mycomplex *output;
+  unsigned long i;
+  in = (mycomplex*)fftwf_malloc(sizeof(fftwf_complex) * N);
+  output = (mycomplex*)fftwf_malloc(sizeof(fftwf_complex) * N);
+  for (i=0;i<N;++i) {
+    in[i][0]=data[i].x;
+    in[i][1]=data[i].y;
+  }
+  p = fftwf_plan_dft_1d(N, in, output, FFTW_FORWARD, FFTW_ESTIMATE);
+  fftwf_execute(p); /* repeat as needed */
+  fftwf_destroy_plan(p);
+  printf("cpu version\n");
+  for (i=0;i<N;++i) {
+    float x = output[i][0];
+    float y = output[i][1];
+    printf ("{%.2f, %.2f}",x,y);
+  }
+  printf ("\n");
+  fftwf_free(output);
+  fftwf_free(in); 
 
+
+}
 void four1(float data[], unsigned long nn, int isign) {
    unsigned long n, mmax, m, j, istep, i;
    double wtemp, wr, wpr, wpi, wi, theta;
@@ -47,7 +78,7 @@ void four1(float data[], unsigned long nn, int isign) {
       istep =mmax<<1;
       theta=isign*(2*M_PI/mmax);
       wtemp = sin (0.5*theta);
-      wpr = -2.0*wtemp*wtemp;
+      wpr = cos(theta);//-2.0*wtemp*wtemp;
       wpi = sin(theta);
       wr = 1.0;
       wi = 0.0;
@@ -66,6 +97,11 @@ void four1(float data[], unsigned long nn, int isign) {
       }
       mmax=istep;
    }
+   printf ("Base Case FFT \n");
+   for (i=0;i<nn;++i) {
+     printf("{%f, %f}",data[2*i],data[2*i+1]);     
+   }
+   printf("\n");
 }
 
 
@@ -132,15 +168,14 @@ DoDFT (float2 s[],
        float2 W[],
        float2 StrideN,
        out float4 s_prime<>) {
-  float index = indexof (s_prime);
+  float index = (indexof s_prime).x;
   float2 temp,r,t,twiddle;
   twiddle = W[index-fmod(index,StrideN.x)];
-  r = s[floor(index/2)];
-  t = s[floor((index+StrideN.y)/2)];
+  r = s[index];
+  t = s[index+round(StrideN.y/2)];
   s_prime.xy = r+t ;
   mult ((r-t), twiddle, temp);
   s_prime.zw = temp;
-  printf(W[index], W[index-fmod(index,StrideN.x)], r,t);
 } 
 kernel void flattenS (out float2 s<>, 
                       float4 s_prime<>,
@@ -241,10 +276,10 @@ float2 * getData(int N) {
    float2 *ret;
    ret  = (float2*)malloc(sizeof(float2)*N);
    for (i=0;i<N;++i ) {
-      ret[i].x = 0;//i+1;
+      ret[i].x = i+1;
       ret[i].y = 0;
    }
-   ret[1].x=1;
+   //   ret[1].x=1;
    return ret;
 }
 float2 * getTwiddleFactor(int N) {
@@ -254,7 +289,7 @@ float2 * getTwiddleFactor(int N) {
    float wtemp = sin(0.5*theta);
    ret  = (float2 *)malloc(sizeof(float2)*N);
    ret[0].x=1;ret[0].y=0;   
-   ret[1].x=-2.0*wtemp*wtemp;
+   ret[1].x=cos(theta);
    ret[1].y = sin(theta);
    for (i=2;i<N;++i) {
       ret[i]=cmult(ret[i-1],ret[1]);
@@ -296,18 +331,12 @@ int main(int argc, char **argv)
   streamRead(s,dat);
   
   printf("The stream length is %d\n", N);
-  printf("The given data is\n");
   streamPrint(s); 
-
-  four1((float*)dat,logN,1);
+  
+  FftwTransform(dat,N,1);
   free (dat);
   dat = getTwiddleFactor(N);  
-  for (nDataLength=0;nDataLength<N;nDataLength+=2) {
-     printf("{%f, %f}",dat[nDataLength],dat[nDataLength+1]);
-  }
   streamRead(W,dat);
-  printf("Stream Print Twiddle\n");
-  streamPrint(W);
   free(dat);
   nDataLength = N;
 
@@ -341,10 +370,7 @@ int main(int argc, char **argv)
         if (1) {           
            float fN=N;
            iter float iterstream<N> = iter (0.0f,fN);
-           flattenS(s, s_prime,iterstream);
-           printf ("Iteration %d::\n",nPassCounter);
-           streamPrint (s);
-           
+           flattenS(s, s_prime,iterstream);           
         }
         // update the PassCounter
         ++nPassCounter;
@@ -359,7 +385,7 @@ int main(int argc, char **argv)
     printf("The FFT of the given data is\n");
     streamPrint(s_out); 
     printf("\n");
-    scanf("%d",&N);
+    //    scanf("%d",&N);
   } // end of else construct
   
   return 0;
