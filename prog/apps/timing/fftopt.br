@@ -25,15 +25,18 @@ kernel void DoDFTHorizontalInner (float2 r<>,
   mult_complex1 ((r-t), W, temp);
   s_prime.zw = temp;
 }
+kernel void getW(float Kay, float N, out float2 twiddle<>) {
+	float angle = -2*3.1415926536*Kay/N;
+	twiddle=float2(cos(angle),sin(angle));
+}
 kernel void
-DFTX (float4 s[][], 
-        float2 W[],
-        float2 StrideNo4,
+DFTX (float4 s[][],
+        float3 StrideNo4,
         out float4 s_prime<>) {
   float2 index = {floor((indexof s_prime).x/2),(indexof s_prime).y};
   float4 r,t;
   float2 temp,twiddle;
-  twiddle = W[(indexof s_prime).x-fmod((indexof s_prime).x,StrideNo4.x)];
+  getW((indexof s_prime).x-fmod((indexof s_prime).x,StrideNo4.x),StrideNo4.z,twiddle);
   temp = float2(StrideNo4.y,0);
   r = s[index]; t = s[index+temp];
   temp.x = round(fmod((indexof s_prime).x,2))==1;
@@ -52,12 +55,11 @@ kernel void DoDFTVerticalInner (float4 r<>,
 }
 kernel void
 DFTY (float4 s[][], 
-        float2 W[],
-        float2 StrideNo2,
+        float3 StrideNo2,
         out float4 s_prime<>) {
   float2 index = {(indexof s_prime).x,floor((indexof s_prime).y/2)};
   float2 temp,twiddle;
-  twiddle = W[index.y-fmod(index.y,StrideNo2.x)];
+  getW(index.y-fmod(index.y,StrideNo2.x),StrideNo2.z,twiddle);
   temp = float2(0,StrideNo2.y);
   DoDFTVerticalInner (s[index],s[index+temp],twiddle,s_prime);
 } 
@@ -162,7 +164,7 @@ void computeFFT2d(float2 *input,
       nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
-            DFTX(s,W_horiz,float2((float) nStride, (float) (M/4)),s_out);
+            DFTX(s,float3((float) nStride, (float) (M/4),(float)M),s_out);
             if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
                streamPrint(s_out);
@@ -172,7 +174,7 @@ void computeFFT2d(float2 *input,
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
-            DFTY(s,W_vert,float2((float) nStride, (float) (N/2)),s_out);
+            DFTY(s,float3((float) nStride, (float) (N/2),(float)N),s_out);
             if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
                streamPrint(s_out);

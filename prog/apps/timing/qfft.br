@@ -208,12 +208,14 @@ void computeFFT2d(float2 *input,
 
 void doOptFFT(int logN) {
    int logM = logN-1; 
-   int N = (1<<logN);
+   int i,N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
    output = (float2*)malloc(sizeof(float2)*2*M*N);
    start = GetTime();
+   for (i=0;i<4;++i) {
    computeFFT2d(data,output,logM,logN,M,N,FFT_2D); 
+   }
    stop = GetTime();
    {
       PrintResults(start,stop,"FFT");
