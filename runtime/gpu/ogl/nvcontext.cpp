@@ -69,8 +69,8 @@ sizefactor[4][3] = { {1,1,1}, {4,2,2}, {4,3,3}, {4,4,4} };
 const static unsigned int 
 atomSize[4][3]={{4,2,1},{4,2,1},{4,2,1},{4,2,1}};
 
-NVTexture::NVTexture ( size_t inWidth, 
-                       size_t inHeight, 
+NVTexture::NVTexture ( unsigned int inWidth, 
+                       unsigned int inHeight, 
                        GPUContext::TextureFormat inFormat) :
   OGLTexture(inWidth, inHeight, inFormat, 
              nvformats, nvtypes, sizefactor, atomSize)
