@@ -152,7 +152,7 @@ kernel void fireFP(float  p[],       // permutations texture
     float4 v;
     float4 frag_pos;
 	
-    frag_pos = it;
+    frag_pos = float4( it.x, it.y, z_pos, 1);
     uv = float2( frag_pos.x, z_pos );
     uv += uv;
     uv *= uv;
