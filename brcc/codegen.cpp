@@ -127,7 +127,11 @@ CodeGen_Init(void) {
    case COMPILER_CGC:
       shadercompile[CODEGEN_PS20] = compile_cgc;
       shadercompile[CODEGEN_PS2B] = compile_cgc;
+#ifdef WIN32
       shadercompile[CODEGEN_PS30] = compile_fxc;
+#else
+      shadercompile[CODEGEN_PS30] = NULL;
+#endif
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_cgc;
@@ -1570,7 +1574,9 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
     }
 
     assert (target < CODEGEN_NUM_TARGETS && target >= 0);
-    assert (shadercompile[target]);
+
+    if (shadercompile[target] == NULL)
+      return NULL;
 
     fpcode = shadercompile[target]((std::string(globals.shaderoutputname) + "_" + name).c_str(), 
                                    shadercode, target, 0, true);

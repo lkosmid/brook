@@ -12,7 +12,7 @@
 #include "gpu/dx9/dx9runtime.hpp"
 #endif
 
-#ifdef BUILD_ARB
+#ifdef BUILD_OGL
 #include "gpu/ogl/oglruntime.hpp"
 #endif
 
@@ -81,34 +81,39 @@ namespace brook {
     BROOK_LOG(0) << "Brook Runtime starting up" << std::endl;
 
     if (!env) {
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*******************************\n");
-      fprintf (stderr,"*                             *\n");
-      fprintf (stderr,"* BRT_RUNTIME env variable is *\n");
-      fprintf (stderr,"* not set. Defaulting to CPU  *\n");
-      fprintf (stderr,"* rutime.                     *\n");
-      fprintf (stderr,"*                             *\n");
-      fprintf (stderr,"* CPU Backend:                *\n");
-      fprintf (stderr,"* BRT_RUNTIME = cpu           *\n");
-      fprintf (stderr,"*                             *\n");
-      fprintf (stderr,"* CPU Multithreaded Backend:  *\n");
-      fprintf (stderr,"* BRT_RUNTIME = cpumt         *\n");
-      fprintf (stderr,"*                             *\n");
-      fprintf (stderr,"* NVIDIA NV30 Backend:        *\n");
-      fprintf (stderr,"* BRT_RUNTIME = nv30gl        *\n");
-      fprintf (stderr,"*                             *\n");
-      fprintf (stderr,"* OpenGL ARB Backend:         *\n");
-      fprintf (stderr,"* BRT_RUNTIME = arb           *\n");
-      fprintf (stderr,"*                             *\n");
-      fprintf (stderr,"* DirectX9 Backend:           *\n");
-      fprintf (stderr,"* BRT_RUNTIME = dx9           *\n");
-      fprintf (stderr,"*                             *\n");
-      fprintf (stderr,"*******************************\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n\n");
+      fprintf (stderr,"*****WARNING*****WARNING**********\n");
+      fprintf (stderr,"*****WARNING*****WARNING**********\n");
+      fprintf (stderr,"*****WARNING*****WARNING**********\n");
+      fprintf (stderr,"**********************************\n");
+      fprintf (stderr,"*                                *\n");
+      fprintf (stderr,"* BRT_RUNTIME env variable is    *\n");
+      fprintf (stderr,"* not set. Defaulting to CPU     *\n");
+      fprintf (stderr,"* rutime.                        *\n");
+      fprintf (stderr,"*                                *\n");
+      fprintf (stderr,"* CPU Backend:                   *\n");
+      fprintf (stderr,"* BRT_RUNTIME = cpu              *\n");
+      fprintf (stderr,"*                                *\n");
+      fprintf (stderr,"* CPU Multithreaded Backend:     *\n");
+      fprintf (stderr,"* BRT_RUNTIME = cpumt            *\n");
+      fprintf (stderr,"*                                *\n");
+      fprintf (stderr,"* OpenGL Backend:                *\n");
+#ifdef BUILD_OGL
+      fprintf (stderr,"* BRT_RUNTIME = %s              *\n", OGL_RUNTIME_STRING);
+#else
+      fprintf (stderr,"* Not supported on this platform *\n");
+#endif
+      fprintf (stderr,"*                                *\n");
+      fprintf (stderr,"* DirectX9 Backend:              *\n");
+#ifdef BUILD_DX9                                       
+      fprintf (stderr,"* BRT_RUNTIME = %s              *\n", DX9_RUNTIME_STRING);
+#else
+      fprintf (stderr,"* Not supported on this platform *\n");
+#endif
+      fprintf (stderr,"*                               *\n");
+      fprintf (stderr,"*********************************\n");
+      fprintf (stderr,"*****WARNING*****WARNING*********\n");
+      fprintf (stderr,"*****WARNING*****WARNING*********\n");
+      fprintf (stderr,"*****WARNING*****WARNING*********\n\n");
       fflush  (stderr);
       return new CPURunTime(false);
     }
@@ -122,18 +127,20 @@ namespace brook {
 
       fprintf(stderr, 
 	      "Unable to initialize DX9 runtime, falling back to CPU\n");
+      fflush(stderr);
       return new CPURunTime(false);
     }
 #endif
 
-#ifdef BUILD_ARB
-    if (!strcmp(env, ARB_RUNTIME_STRING)) {
+#ifdef BUILD_OGL
+    if (!strcmp(env, OGL_RUNTIME_STRING)) {
       RunTime* result = OGLRuntime::create();
       if( result )
         return result;
 
       fprintf(stderr, 
 	      "Unable to initialize OpenGL runtime, falling back to CPU\n");
+      fflush(stderr);
       return new CPURunTime(false);
     }
 #endif
@@ -142,6 +149,7 @@ namespace brook {
         strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)) {
       fprintf (stderr, 
 	       "Unknown runtime requested: %s falling back to CPU\n", env);
+      fflush(stderr);
     }
     return new CPURunTime(strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)==0);
   }

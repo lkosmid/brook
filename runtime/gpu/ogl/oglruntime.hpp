@@ -4,7 +4,7 @@
 
 #include "../gpuruntime.hpp"
 
-#define ARB_RUNTIME_STRING "arb"
+#define OGL_RUNTIME_STRING "ogl"
 
 namespace brook
 {
