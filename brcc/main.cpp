@@ -97,7 +97,7 @@ parse_args (int argc, char *argv[]) {
   argv += optind;
   argc -= optind;
   /* if (argc < 1) usage(); */
-  globals.sourcename = argc < 1 ? "toy.br" : argv[0];
+  globals.sourcename = (char *) (argc < 1 ? "toy.br" : argv[0]);
 
   n = strlen(globals.sourcename);
   if (n < 4 || strcmp (globals.sourcename + n - 3, ".br"))
@@ -140,7 +140,7 @@ parse_args (int argc, char *argv[]) {
  *      Converts stream declaration statement objects into BrtStreams.
  */
 
-static void
+void
 ConvertToBrtStreams(Statement *s)
 {
    DeclStemnt *declStemnt;
@@ -171,7 +171,7 @@ ConvertToBrtStreams(Statement *s)
  *      Converts FunctionDef *'s for kernel definitions into BRTKernelDef *'s.
  */
 
-static FunctionDef *
+FunctionDef *
 ConvertToBrtKernels(FunctionDef *fDef)
 {
    if (!fDef->decl->isKernel()) { return NULL; }
@@ -186,7 +186,7 @@ ConvertToBrtKernels(FunctionDef *fDef)
  *      Drive everything.  Parse the arguments, the compile the requested
  *      file.
  */
-
+extern bool compileCpp();
 int
 main(int argc, char *argv[])
 {
@@ -195,6 +195,7 @@ main(int argc, char *argv[])
 
    parse_args(argc, argv);
    std::cerr << "***Compiling " << globals.sourcename << "\n";
+   compileCpp();
 
    proj = new Project();
    tu = proj->parse(globals.sourcename, false, NULL, false, NULL, NULL, NULL);
