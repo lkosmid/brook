@@ -8,11 +8,11 @@ namespace brook{
 	for (unsigned int i=0;;i+=2) {
 	    if (src[i]==NULL||src[i+1]==NULL){
 		func=&nothing;
+		std::cerr<<"CPUKernel failure - no CPU program strnig found."<<std::endl;		
 		break;
 	    }
 	    if (strcmp(src[i],"cpu")==0){
 		func = (callable*)source[i+1];
-		std::cerr<<"CPUKernel failure - no CPU program strnig found."<<std::endl;
 		break;
 	    }
 	}
