@@ -5,6 +5,23 @@ POUND include <stdlib.h>
 
 #include "streamTypes.h"
 
+/*
+ * All rayState manipulation is hidden behind these macros for two reasons.
+ * The macro names are a lot clearer than the field names and changing the
+ * encoding is completely localized this way.
+ */
+
+#define SET_TRAVERSING(rayState)        (rayState = float4(1,0,0,0))
+#define SET_INTERSECTING(rayState, tri) (rayState = float4(0,1,0, (tri)))
+#define SET_SHADING(rayState)           (rayState = float4(0,0,1,0))
+#define SET_DEAD(rayState)              (rayState = float4(0,0,0,0))
+
+#define IS_TRAVERSING(rayState)         (rayState.x > 0)
+#define IS_INTERSECTING(rayState)       (rayState.y > 0)
+#define IS_SHADING(rayState)            (rayState.z > 0)
+
+#define GET_CUR_TRI_IDX(rayState)       (rayState.w)
+
 
 /*
  * krnFloat4Set --
@@ -50,9 +67,12 @@ krnGenEyeRays(float3 lookFrom, float3 u, float3 v, float3 w,
   scale = txty * filmPos;
   ray.d = w + u*scale.x + v*scale.y;
 
-  // XXX Normalize is busted?  Says who?  It seems to work for me. --Jeremy.
-  ray.d = ray.d / sqrt(dot(ray.d, ray.d)); // normalize is busted
-
+  /*
+   * Note: There was a comment here claiming "normalize is busted".  It
+   * seems to work for me and the old comment had no justification or name
+   * attached to it, so I'm assuming it was stale.  --Jeremy.
+   */
+  ray.d = normalize(ray.d);
   ray.tmax = -1;
 
   t1 = (grid_min - ray.o) / ray.d;
@@ -78,9 +98,9 @@ krnGenEyeRays(float3 lookFrom, float3 u, float3 v, float3 w,
 kernel void
 krnSetupTraversal(Ray ray<>,
                   float3 grid_min, float3 grid_vsize, float3 grid_dim,
-                  out TraversalDataDyn travdatdyn<>,
+                  out TraversalDataDyn travDataDyn<>,
                   out TraversalDataStatic travdatstatic<>,
-                  out RayState raystate<>)
+                  out RayState rayState<>)
 {
   float3 temp, curpos;
   float3 minusone, one, zero;
@@ -94,27 +114,27 @@ krnSetupTraversal(Ray ray<>,
   curpos = ray.o + ray.d*ray.tmax;
 
   // determine starting voxel
-  travdatdyn.voxNo = floor((curpos - grid_min) / grid_vsize);
+  travDataDyn.voxNo = floor((curpos - grid_min) / grid_vsize);
 
   //these ? : should be made much smarter...
-  travdatdyn.voxNo.x = (travdatdyn.voxNo.x) >= grid_dim.x ?
-     travdatdyn.voxNo.x-1 : travdatdyn.voxNo.x;
-  travdatdyn.voxNo.y = (travdatdyn.voxNo.y) >= grid_dim.y ?
-     travdatdyn.voxNo.y-1 : travdatdyn.voxNo.y;
-  travdatdyn.voxNo.z = (travdatdyn.voxNo.z) >= grid_dim.z ?
-     travdatdyn.voxNo.z-1 : travdatdyn.voxNo.z;
+  travDataDyn.voxNo.x = (travDataDyn.voxNo.x) >= grid_dim.x ?
+     travDataDyn.voxNo.x-1 : travDataDyn.voxNo.x;
+  travDataDyn.voxNo.y = (travDataDyn.voxNo.y) >= grid_dim.y ?
+     travDataDyn.voxNo.y-1 : travDataDyn.voxNo.y;
+  travDataDyn.voxNo.z = (travDataDyn.voxNo.z) >= grid_dim.z ?
+     travDataDyn.voxNo.z-1 : travDataDyn.voxNo.z;
 
   // temp is point ray leaves current voxel
-  temp.x = (ray.d.x > 0.0f ? (travdatdyn.voxNo.x+1)*grid_vsize.x + grid_min.x :
-	    travdatdyn.voxNo.x*grid_vsize.x + grid_min.x);
-  temp.y = (ray.d.y > 0.0f ? (travdatdyn.voxNo.y+1)*grid_vsize.y + grid_min.y :
-	    travdatdyn.voxNo.y*grid_vsize.y + grid_min.y);
-  temp.z = (ray.d.z > 0.0f ? (travdatdyn.voxNo.z+1)*grid_vsize.z + grid_min.z :
-	    travdatdyn.voxNo.z*grid_vsize.z + grid_min.z);
+  temp.x = (ray.d.x > 0.0f ? (travDataDyn.voxNo.x+1)*grid_vsize.x + grid_min.x :
+	    travDataDyn.voxNo.x*grid_vsize.x + grid_min.x);
+  temp.y = (ray.d.y > 0.0f ? (travDataDyn.voxNo.y+1)*grid_vsize.y + grid_min.y :
+	    travDataDyn.voxNo.y*grid_vsize.y + grid_min.y);
+  temp.z = (ray.d.z > 0.0f ? (travDataDyn.voxNo.z+1)*grid_vsize.z + grid_min.z :
+	    travDataDyn.voxNo.z*grid_vsize.z + grid_min.z);
 
   // tmax corresponding end of current voxel
-  travdatdyn.tMax = (temp - curpos) / ray.d + ray.tmax;
-  travdatdyn.voxToUse = float3(0,0,0); //needed??
+  travDataDyn.tMax = (temp - curpos) / ray.d + ray.tmax;
+  travDataDyn.voxToUse = float3(0,0,0); //needed??
 
 
   // now set up state that is constant for each ray through the entire
@@ -133,71 +153,70 @@ krnSetupTraversal(Ray ray<>,
   travdatstatic.outNo = ray.d > zero ? grid_dim : minusone;
 
   // All rays start in the traversal state
-  raystate.state = float4(1,0,0,0);
+  SET_TRAVERSING(rayState);
 }
 
 
 // steps a ray in traversal mode into the next grid voxel
 kernel void
 krnTraverseVoxel(Ray ray<>, TraversalDataStatic travdatstatic<>,
-                 TraversalDataDyn travdatdynold<>, RayState oldraystate<>,
-                 GridTrilistOffset listoffset[], float3 grid_dim,
-                 out TraversalDataDyn travdatdyn<>, out RayState raystate<>)
+                 TraversalDataDyn oldTravDataDyn<>, RayState oldRayState<>,
+                 GridTrilistOffset listOffset[], float3 grid_dim,
+                 out TraversalDataDyn travDataDyn<>, out RayState rayState<>)
 {
    float3 compmask;
    float minval;
    float offsetaddr;
-   float trilistpos;
+   float triListPos;
 
-   if (oldraystate.state.x > 0) {
-      minval = min(min(travdatdynold.tMax.x,
-                       travdatdynold.tMax.y), travdatdynold.tMax.z);
+   if (IS_TRAVERSING(oldRayState)) {
+      minval = min(min(oldTravDataDyn.tMax.x,
+                       oldTravDataDyn.tMax.y), oldTravDataDyn.tMax.z);
 
-      if (minval == travdatdynold.tMax.x) {
+      if (minval == oldTravDataDyn.tMax.x) {
          compmask = float3(1,0,0);
-      } else if (minval == travdatdynold.tMax.y) {
+      } else if (minval == oldTravDataDyn.tMax.y) {
          compmask = float3(0,1,0);
-      } else if (minval == travdatdynold.tMax.z) {
+      } else if (minval == oldTravDataDyn.tMax.z) {
          compmask = float3(0,0,1);
       }
 
-      if (travdatdynold.voxNo.x == travdatstatic.outNo.x ||
-            travdatdynold.voxNo.y == travdatstatic.outNo.y ||
-            travdatdynold.voxNo.z == travdatstatic.outNo.z ||
-            dot(travdatdynold.tMax, compmask) > 999999) { //should be tmax, but busted now...
+      if (oldTravDataDyn.voxNo.x == travdatstatic.outNo.x ||
+            oldTravDataDyn.voxNo.y == travdatstatic.outNo.y ||
+            oldTravDataDyn.voxNo.z == travdatstatic.outNo.z ||
+            dot(oldTravDataDyn.tMax, compmask) > 999999) { //should be tmax, but busted now...
 
          // ray is out of grid, do nothing
-         travdatdyn.voxNo = travdatdynold.voxNo;
-         travdatdyn.tMax = travdatdynold.tMax;
-         travdatdyn.voxToUse = travdatdynold.voxToUse;
-         raystate.state = float4(0,0,0,0);
+         travDataDyn.voxNo = oldTravDataDyn.voxNo;
+         travDataDyn.tMax = oldTravDataDyn.tMax;
+         travDataDyn.voxToUse = oldTravDataDyn.voxToUse;
+         SET_DEAD(rayState);
       } else {
 
          // use linear offset of current voxel to fetch offset into the
          // triangle list The list of triangles located in this voxel starts
          // at this offset in the global triangle list
-         offsetaddr = grid_dim.z*(travdatdynold.voxNo.x*grid_dim.y +
-                                  travdatdynold.voxNo.y) + travdatdynold.voxNo.z;
-         trilistpos = listoffset[offsetaddr].listOffset;
-         travdatdyn.voxToUse = travdatdynold.voxNo;
+         offsetaddr = grid_dim.z*(oldTravDataDyn.voxNo.x*grid_dim.y +
+                                  oldTravDataDyn.voxNo.y) + oldTravDataDyn.voxNo.z;
+         triListPos = listOffset[offsetaddr];
+         travDataDyn.voxToUse = oldTravDataDyn.voxNo;
 
          // update dynamic ray state to next voxel
-         travdatdyn.voxNo = travdatdynold.voxNo + compmask*travdatstatic.step;
-         travdatdyn.tMax = travdatdynold.tMax + compmask*travdatstatic.tDelta;
+         travDataDyn.voxNo = oldTravDataDyn.voxNo + compmask*travdatstatic.step;
+         travDataDyn.tMax = oldTravDataDyn.tMax + compmask*travdatstatic.tDelta;
 
-         if (trilistpos >= 0) {
-            // go into isect state if triangles in this voxel
-            raystate.state = float4(0,1,0,trilistpos);
+         if (triListPos >= 0) {
+            SET_INTERSECTING(rayState, triListPos);
          } else {
-            raystate.state = float4(1,0,0,0); // no triangles, continue stepping
+            SET_TRAVERSING(rayState);
          }
       }
    } else {
       // do nothing, ray not in traversal state
-      travdatdyn.voxNo = travdatdynold.voxNo;
-      travdatdyn.tMax = travdatdynold.tMax;
-      travdatdyn.voxToUse = travdatdynold.voxToUse;
-      raystate.state = oldraystate.state;
+      travDataDyn.voxNo = oldTravDataDyn.voxNo;
+      travDataDyn.tMax = oldTravDataDyn.tMax;
+      travDataDyn.voxToUse = oldTravDataDyn.voxToUse;
+      rayState = oldRayState;
    }
 }
 
@@ -216,30 +235,29 @@ krnTraverseVoxel(Ray ray<>, TraversalDataStatic travdatstatic<>,
 
 kernel void
 krnIntersectTriangle(Ray ray<>, Triangle tris[], RayState rayState<>,
-                     GridTrilist trilist[], out Hit candidateHit<>)
+                     GridTrilist triList[], out Hit candidateHit<>)
 {
-   float idx, det, inv_det;
+   float triNum, det, inv_det;
    float3 edge1, edge2, pvec, tvec, qvec;
 
-   if (rayState.state.y > 0) {
-      // starting index of triangle list to search is stored in rayState.state.w
+   if (IS_INTERSECTING(rayState)) {
       // first get a triangle number
-      idx = trilist[rayState.state.w].triNum;
+      triNum = triList[GET_CUR_TRI_IDX(rayState)];
 
-      edge1 = tris[idx].v1 - tris[idx].v0;
-      edge2 = tris[idx].v2 - tris[idx].v0;
+      edge1 = tris[triNum].v1 - tris[triNum].v0;
+      edge2 = tris[triNum].v2 - tris[triNum].v0;
       pvec = cross(ray.d, edge2);
       det = dot(edge1, pvec);
       inv_det = 1.0f/det;
-      tvec = ray.o - tris[idx].v0;
+      tvec = ray.o - tris[triNum].v0;
       qvec = cross( tvec, edge1 );
 
-      candidateHit.data.x = dot(edge2, qvec) * inv_det;   // ray tHit
-      candidateHit.data.y = dot(tvec, pvec) * inv_det;    // uu
-      candidateHit.data.z = dot(ray.d, qvec) * inv_det;   // vv
-      candidateHit.data.w = idx;                          // triangleNum
+      candidateHit.x = dot(edge2, qvec) * inv_det;   // ray tHit
+      candidateHit.y = dot(tvec, pvec) * inv_det;    // uu
+      candidateHit.z = dot(ray.d, qvec) * inv_det;   // vv
+      candidateHit.w = triNum;                       // triangleNum
    } else {
-      candidateHit.data = float4(0,0,0,-1);
+      candidateHit = float4(0,0,0,-1);
    }
 }
 
@@ -263,11 +281,11 @@ krnIntersectTriangle(Ray ray<>, Triangle tris[], RayState rayState<>,
 kernel void
 krnValidateIntersection(Ray ray<>, Hit candidateHit<>,
                         float3 grid_min, float3 grid_vsize, float3 grid_dim,
-                        Hit prevHit<>, TraversalDataDyn travdatdyn<>,
-                        RayState oldRayState<>, GridTrilist trilist[],
+                        Hit prevHit<>, TraversalDataDyn travDataDyn<>,
+                        RayState oldRayState<>, GridTrilist triList[],
                         out Hit hit<>, out RayState rayState<>)
 {
-   if (oldRayState.state.y > 0) {
+   if (IS_INTERSECTING(oldRayState)) {
       float triNum;
       float validHit;
 
@@ -280,10 +298,10 @@ krnValidateIntersection(Ray ray<>, Hit candidateHit<>,
        *  - A non-negative hit time.
        */
 
-      validHit = (candidateHit.data.y >= 0.0f && candidateHit.data.z >= 0.0f &&
-                 (candidateHit.data.y + candidateHit.data.z) <= 1.0f &&
-                 candidateHit.data.x <= prevHit.data.x &&
-                 candidateHit.data.x >= 0.0f) ? 1 : 0;
+      validHit = (candidateHit.y >= 0.0f && candidateHit.z >= 0.0f &&
+                 (candidateHit.y + candidateHit.z) <= 1.0f &&
+                 candidateHit.x <= prevHit.x &&
+                 candidateHit.x >= 0.0f) ? 1 : 0;
 
       /*
        * We also make sure the candidate hit intersects the portion of the
@@ -296,15 +314,15 @@ krnValidateIntersection(Ray ray<>, Hit candidateHit<>,
          float3 fudgeUp, fudgeDown;
 
          // fudge .01 to elimate speckles...
-         hitP = ray.o + ray.d*(candidateHit.data.x - 0.01f);
+         hitP = ray.o + ray.d*(candidateHit.x - 0.01f);
          myVox = floor((hitP - grid_min) / grid_vsize);
          myVox.x = myVox.x >= grid_dim.x ? myVox.x-1 : myVox.x;
          myVox.y = myVox.y >= grid_dim.y ? myVox.y-1 : myVox.y;
          myVox.z = myVox.z >= grid_dim.z ? myVox.z-1 : myVox.z;
 
          // fudge more since equality is busted...
-         fudgeUp = travdatdyn.voxToUse + 0.1f;
-         fudgeDown = travdatdyn.voxToUse - 0.1f;
+         fudgeUp = travDataDyn.voxToUse + 0.1f;
+         fudgeDown = travDataDyn.voxToUse - 0.1f;
 
          validHit = (myVox.x >= fudgeDown.x && myVox.x <= fudgeUp.x &&
                      myVox.y >= fudgeDown.y && myVox.y <= fudgeUp.y &&
@@ -312,7 +330,7 @@ krnValidateIntersection(Ray ray<>, Hit candidateHit<>,
        }
 
       // Either propagate any hit we've already found or replace it.
-      hit.data = validHit > 0 ? candidateHit.data : prevHit.data;
+      hit = validHit > 0 ? candidateHit : prevHit;
 
       /*
        * We're done with this hit.  Adjust rayState either to check the next
@@ -322,104 +340,103 @@ krnValidateIntersection(Ray ray<>, Hit candidateHit<>,
        * a hit.
        */
 
-      triNum = trilist[oldRayState.state.w+1].triNum;
+      triNum = triList[GET_CUR_TRI_IDX(oldRayState) + 1];
       if (triNum < 0) {
-         if (hit.data.w >= 0) {
-            rayState.state = float4(0,0,1,0);
+         if (hit.w >= 0) {
+            SET_SHADING(rayState);
          } else {
-            rayState.state = float4(1,0,0,0);
+            SET_TRAVERSING(rayState);
          }
       } else {
-         rayState.state = float4(0,1,0, oldRayState.state.w + 1);
+         SET_INTERSECTING(rayState, GET_CUR_TRI_IDX(oldRayState) + 1);
       }
    } else {
       // Not in intersection mode, just propagate values.
-      hit.data = prevHit.data;
-      rayState.state = oldRayState.state;
+      hit = prevHit;
+      rayState = oldRayState;
    }
 }
 
 
 kernel void
 krnBruteIntersectTriangle(Ray ray<>, Triangle tris[], float idx,
-                          Hit oldhit<>,TraversalDataDyn travdatdyn<>,
-                          RayState oldraystate<>,
-                          out Hit hit<>, out RayState raystate<>)
+                          Hit oldhit<>,TraversalDataDyn travDataDyn<>,
+                          RayState oldRayState<>,
+                          out Hit hit<>, out RayState rayState<>)
 {
-  float det, inv_det;
-  float3 edge1, edge2, pvec, tvec, qvec;
-  float validhit;
-  float4 newhit;  //tt,uu,vv,id
+   float det, inv_det;
+   float3 edge1, edge2, pvec, tvec, qvec;
+   float validhit;
+   float4 newhit;  //tt,uu,vv,id
 
-  if (oldraystate.state.y > 0) {
-    edge1 = tris[idx].v1 - tris[idx].v0;
-    edge2 = tris[idx].v2 - tris[idx].v0;
-    pvec = cross(ray.d, edge2);
-    det = dot(edge1, pvec);
-    inv_det = 1.0f/det;
-    tvec = ray.o - tris[idx].v0;
-    newhit.y = dot( tvec, pvec ) * inv_det;
-    qvec = cross( tvec, edge1 );
-    newhit.z = dot( ray.d, qvec ) * inv_det;
-    newhit.x = dot( edge2, qvec ) * inv_det;
-    newhit.w = idx;
+   if (IS_INTERSECTING(oldRayState)) {
+      edge1 = tris[idx].v1 - tris[idx].v0;
+      edge2 = tris[idx].v2 - tris[idx].v0;
+      pvec = cross(ray.d, edge2);
+      det = dot(edge1, pvec);
+      inv_det = 1.0f/det;
+      tvec = ray.o - tris[idx].v0;
+      newhit.y = dot( tvec, pvec ) * inv_det;
+      qvec = cross( tvec, edge1 );
+      newhit.z = dot( ray.d, qvec ) * inv_det;
+      newhit.x = dot( edge2, qvec ) * inv_det;
+      newhit.w = idx;
 
-    validhit = (newhit.y >= 0.0f && newhit.z >= 0.0f &&
-                (newhit.y + newhit.z) <= 1.0f &&
-		newhit.x <= oldhit.data.x && newhit.x >= 0.0f) ? 1 : 0;
+      validhit = (newhit.y >= 0.0f && newhit.z >= 0.0f &&
+                  (newhit.y + newhit.z) <= 1.0f &&
+                  newhit.x <= oldhit.x && newhit.x >= 0.0f) ? 1 : 0;
 
-    // valid only if in voxel too...
+      // valid only if in voxel too...
 
-    if (validhit) {
-      hit.data = newhit;
-    } else {
-      hit.data = oldhit.data;
-    }
+      if (validhit) {
+         hit = newhit;
+      } else {
+         hit = oldhit;
+      }
 
-    //only done at end of voxel
-    raystate.state = float4(0, 0, 1, oldraystate.state.w+1);
-  }
+      //only done at end of voxel
+      SET_SHADING(rayState);    // XXX This makes no sense to me.  --Jeremy.
+   }
 }
 
 
 // simple unshadowed diffuse shading of surface
 kernel void
-krnShadeHits(Ray ray<>, Hit hit<>, Triangle tris[],
-             ShadingInfo shadinf[], float3 pointlight,
-             RayState oldraystate<>, out Pixel pixel<>)
+krnShadeHits(Ray ray<>, Hit hit<>, Triangle tris[], ShadingInfo shadeInfo[],
+             float3 pointlight, RayState rayState<>, out Pixel pixel<>)
 {
-  float3 hitpoint, lightdir, barycoord, N, C;
-  float NdotL;
-  float3 newcolor;
+   float3 hitpoint, lightdir, barycoord, N, C;
+   float NdotL;
+   float3 newcolor;
 
-  if (oldraystate.state.z > 0) {
-    // Might need to change ordering
-    barycoord = float3(hit.data.y, hit.data.z, 1.0f - hit.data.y - hit.data.z);
+   if (IS_SHADING(rayState)) {
+      // Might need to change ordering
+      barycoord = float3(hit.y, hit.z, 1.0f - hit.y - hit.z);
 
-    N = shadinf[hit.data.w].n0*barycoord.x +
-      shadinf[hit.data.w].n1*barycoord.y +
-      shadinf[hit.data.w].n2*barycoord.z;
+      N = shadeInfo[hit.w].n0 * barycoord.x +
+          shadeInfo[hit.w].n1 * barycoord.y +
+          shadeInfo[hit.w].n2 * barycoord.z;
 
-    C = shadinf[hit.data.w].c0*barycoord.x +
-      shadinf[hit.data.w].c1*barycoord.y +
-      shadinf[hit.data.w].c2*barycoord.z;
+      C = shadeInfo[hit.w].c0 * barycoord.x +
+          shadeInfo[hit.w].c1 * barycoord.y +
+          shadeInfo[hit.w].c2 * barycoord.z;
 
-    hitpoint = ray.o + ray.d*hit.data.x;
+      hitpoint = ray.o + ray.d * hit.x;
 
-    lightdir = pointlight - hitpoint;
-    lightdir = lightdir/sqrt(dot(lightdir, lightdir)); //normalize
+      lightdir = pointlight - hitpoint;
+      lightdir = normalize(lightdir);
 
-    NdotL = max(0,dot(N, lightdir)); //one sided lighting
+      NdotL = max(0, dot(N, lightdir)); //one sided lighting
 
-    newcolor = C*NdotL;
+      newcolor = C * NdotL;
 
-    if (hit.data.w >= 0) {
-      pixel.data = float4(newcolor.x, newcolor.y, newcolor.z, 1);
-    } else {
-      pixel.data = float4(0,1,0,0);  // shade as red if bogus hit surfuce
-    }
-  } else {
-    // no hit
-    pixel.data = float4(0,0,0,0);
-  }
+      if (hit.w >= 0) {
+         pixel = float4(newcolor.x, newcolor.y, newcolor.z, 1);
+      } else {
+         pixel = float4(0,1,0,0);  // shade as red if bogus hit surface
+      }
+   } else {
+      // no hit
+      pixel = float4(0,0,0,0);
+   }
 }

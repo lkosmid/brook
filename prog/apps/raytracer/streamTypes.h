@@ -24,13 +24,14 @@ typedef struct ray_t {
   float tmax;
 } Ray;
 
-typedef struct raystate_t {
-  // an active ray is in either the traversal, intersection, or
-  // shading states. so first 3 components are either (1,0,0) (0,1,0)
-  // or (0,0,1).  If in isect state, the w component stores index of
-  // next triangle to test for intersection
-  float4 state; //x=trav, y=isect, z=shade, w=trinum
-} RayState;
+/*
+ * An active ray is in either the traversal, intersection, or shading
+ * states. so first 3 components are either (1,0,0) (0,1,0) or (0,0,1).  If
+ * in isect state, the w component stores index of next triangle to test for
+ * intersection
+ */
+
+typedef float4 RayState;
 
 typedef struct triangle_t {
   float3 v0;
@@ -47,24 +48,15 @@ typedef struct shadinginfo_t {
   float3 c2;
 } ShadingInfo;
 
-typedef struct hit_t {
-  // data is packed as ( ray t, uu, vv, triangle id )
-  // Note the third bary coord is not stored, compute
-  // it from the first two
-  float4 data;
-} Hit;
+/*
+ * Data is packed as (ray tHit, uu, vv, triangle id)
+ * Note the third bary coord is not stored, but computed from the first two
+ */
+typedef float4 Hit;
 
-typedef struct pixel_t {
-  float4 data;  //rgba
-} Pixel;
-
-typedef struct gridtrilistoffset_t {
-  float listOffset;  //actually ints
-} GridTrilistOffset;
-
-typedef struct gridtrilist_t {
-  float triNum;  //actually ints
-} GridTrilist;
+typedef float4 Pixel;                   // Really just RGBA
+typedef float GridTrilistOffset;        // Actually integers (indices)
+typedef float GridTrilist;              // Actually integers (triangle nums)
 
 typedef struct traversaldatadyn_t {
   float3 tMax;     // t when exiting current voxel

@@ -351,6 +351,7 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
    stream Bhits = stream::create<Hit>(imageW, imageH);
    stream BtravDatDyn = stream::create<TraversalDataDyn>(imageW, imageH);
 
+   Timer_Reset();
 
    assert(3 * grid.nTris <= sizeof triDat / sizeof triDat[0]);
    for (ii=0; ii < grid.nTris; ii++) {
@@ -363,13 +364,13 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
 
    assert(numVoxels <= sizeof listOffsetDat / sizeof listOffsetDat[0]);
    for (ii = 0; ii < numVoxels; ii++) {
-      listOffsetDat[ii].listOffset = (float) grid.trilistOffset[ii];
+      listOffsetDat[ii] = (float) grid.trilistOffset[ii];
    }
    listOffset.read(listOffsetDat);
 
    assert(grid.trilistSize <= sizeof trilistDat / sizeof trilistDat[0]);
    for (ii = 0; ii < grid.trilistSize; ii++) {
-      trilistDat[ii].triNum = (float) grid.trilist[ii];
+      trilistDat[ii] = (float) grid.trilist[ii];
    }
    trilist.read(trilistDat);
 
@@ -404,13 +405,14 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
    states = new RayState [imageW * imageH];
    lastLive = imageW * imageH;
    printf("%6d Live rays.", lastLive);
-   Timer_Reset();
+   now = Timer_GetMS();
    for (lastLive = -1, ii = 0; ii < maxIters; ii++) {
       int jj, live;
 
       //fprintf(stderr, "traverse voxel %i\n", ii);
       krnTraverseVoxel(rays, travDatStatic, travDatDyn, rayStates,
                        listOffset, gridDim, BtravDatDyn, BrayStates);
+#if 1
       krnTraverseVoxel(rays, travDatStatic, BtravDatDyn, BrayStates,
                        listOffset, gridDim, travDatDyn, rayStates);
 
@@ -420,6 +422,7 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
       krnValidateIntersection(rays, candidateHits, grid.min, grid.vsize,
                               gridDim, hits, travDatDyn, rayStates, trilist,
                               Bhits, BrayStates);
+#endif
       krnIntersectTriangle(rays, tris, BrayStates, trilist, candidateHits);
       krnValidateIntersection(rays, candidateHits, grid.min, grid.vsize,
                               gridDim, Bhits, travDatDyn, BrayStates, trilist,
@@ -432,7 +435,7 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
 
       rayStates.write(states);
       for (live = 0, jj = 0; jj < imageW * imageH; jj++) {
-         if (states[jj].state.x > 0 || states[jj].state.y > 0) {
+         if (states[jj].x > 0 || states[jj].y > 0) {
             live++;
          }
       }
@@ -443,9 +446,9 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
          if (live == 0) break;
       }
    }
+   now = Timer_GetMS() - now;
    delete [] states;
-   now = Timer_GetMS() / 1000.0f;
-   printf("\nFinished in %d iterations (%3.2f seconds).\n", ii, now);
+   printf("\nFinished in %d iterations (%3.2f seconds).\n", ii, now / 1000.0f);
 
 #if 0
    for (ii = 0; ii < grid.nTris; ii++) {
@@ -468,6 +471,8 @@ TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
    krnShadeHits(rays, hits, tris, shadInfo, pointLight, rayStates, pixels);
 
    pixels.write(imageBuf);
+   now = Timer_GetMS();
+   printf("TraceRays took %3.2f seconds.\n", now / 1000.0f);
 }
 
 
