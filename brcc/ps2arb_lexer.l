@@ -25,7 +25,7 @@ char * copy_string (const char * in) {
 }
 
 %}
-R_PSHEADER          ps("."|"_")[0-9]("."|"_")[0-9]
+R_PSHEADER          ps("."|"_")[0-9]("."|"_")[0-9a-z]
 R_FLOAT             ("+"|"-")?(("."[0-9]+)|([0-9]+"."[0-9]*)|([0-9]+))(e("+"|"-")?[0-9]+)?(f?)
 R_NEGATE            "-"
 R_SWIZZLEMASK       "."[rgbaw-z]([rgbaw-z]?)([rgbaw-z]?)([rgbaw-z]?)
