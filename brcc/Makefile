@@ -19,5 +19,7 @@ lexer.cpp: lexer.l gram.h
 
 gram.cpp gram.h:  gram.y
 	bison -d -b gram -o gram.cpp $<
-	mv gram.hpp gram.h
-
+	touch gram.cpp.h
+	-mv -f gram.cpp.h gram.h
+	-mv -f gram.hpp gram.h
+#the gram.cpp.h line is for macs
