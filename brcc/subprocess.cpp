@@ -121,8 +121,8 @@ Subprocess_Run(char *argv[], char *input)
        close (hStdInPipe[WRITE_HANDLE]);
 
        if (execvp(argv[0], argv) == -1) {
-	    fprintf( stderr, "Unable to start cgc\n" );
-	    return NULL;
+	    fprintf( stderr, "Unable to start %s\n",argv[0] );
+	    exit(-1);
        }
        /* Unreached... */
   } else {
