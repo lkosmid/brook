@@ -74,6 +74,71 @@ inline unsigned int getIndexOf(unsigned int i,
    }
    return getIndexOf(ret,extent,dim,refextent);
 }
+inline static __BrtFloat4 computeReferenceIndexOf(unsigned int i,
+                                                  const unsigned int *extents,
+                                                  unsigned int dim){
+   return __BrtFloat4((float)(i%extents[dim-1]),
+                      dim>1?(float)((i/extents[dim-1])%extents[dim-2])
+                           :0.0f,
+                      dim>2?(float)((i/(extents[dim-2]*extents[dim-1]))
+                                    %extents[dim-3])
+                           :0.0f,
+                      dim>3?(float)(i/(extents[dim-3]
+                                       *extents[dim-2]
+                                       *extents[dim-1]))
+                           :0.0f
+                      );
+}
+
+inline static __BrtFloat4 computeIndexOf(unsigned int i,
+                                         const unsigned int *extents,
+                                         unsigned int dim,
+                                         const unsigned int *refextents){
+   return __BrtFloat4((float)(((i%refextents[dim-1])*(int64)extents[dim-1])
+                              /refextents[dim-1]),
+                      dim>1?(float)((((i/refextents[dim-1])%refextents[dim-2])*
+                                     (int64)extents[dim-2]/refextents[dim-2]))
+                           :0.0f,
+                      dim>2?(float)((((i/(refextents[dim-2]*refextents[dim-1]))
+                                      %extents[dim-3])
+                                     *(int64)extents[dim-3])/refextents[dim-3])
+                           :0.0f,
+                      dim>3?(float)(((i/(refextents[dim-3]
+                                         *refextents[dim-2]
+                                         *refextents[dim-1]))
+                                     *(int64)extents[dim-3])/refextents[dim-3])
+                           :0.0f
+                      );
+}
+inline __BrtFloat4 computeIndexOf(unsigned int i, 
+                                  const unsigned int *mapbegin,
+                                  const unsigned int *mapextent,
+                                  const unsigned int *extent,
+                                  unsigned int dim,
+                                  const unsigned int *refextent) {
+   return computeIndexOf(getIndexOf(i,mapbegin,mapextent,extent,dim,refextent),
+                         extent,
+                         dim,
+                         refextent);
+}
+
+inline static void incrementIndexOf(__BrtFloat4 &indexof,
+                                    unsigned int dim, 
+                                    const unsigned int *extents) {
+   indexof.unsafeGetAt(0)+=1;
+   if (indexof.unsafeGetAt(0)>=extents[dim-1]) {
+      indexof.unsafeGetAt(0)-=extents[dim-1];
+      indexof.unsafeGetAt(1)+=1;
+      if (dim>1&&indexof.unsafeGetAt(1)>=extents[dim-2]) {
+         indexof.unsafeGetAt(1)-=extents[dim-2];
+         indexof.unsafeGetAt(2)+=1;
+         if (dim>2&&indexof.unsafeGetAt(2)>=extents[dim-3]) {
+            indexof.unsafeGetAt(2)-=extents[dim-3];
+            indexof.unsafeGetAt(3)+=1;
+         }
+      }
+   }
+}
 
 #if defined(BROOK_ENABLE_ADDRESS_TRANSLATION)
 namespace {

@@ -575,37 +575,6 @@ MATRIXXY_CLASS(__BrtChar,1,1);
 
 
 
-
-inline static __BrtFloat4 computeIndexOf(unsigned int i,
-                                         unsigned int dim,
-                                         const unsigned int *extents){
-   return __BrtFloat4((float)(i%extents[dim-1]),
-                      dim>1?(float)((i/extents[dim-1])%extents[dim-2]):0.0f,
-                      dim>2?(float)((i/(extents[dim-2]*extents[dim-1]))
-                            %extents[dim-3]):0.0f,
-                      dim>3?(float)(i/(extents[dim-3]
-                                       *extents[dim-2]
-                                       *extents[dim-1])):0.0f
-                      );
-}
-
-inline static void incrementIndexOf(__BrtFloat4 &indexof,
-                                    unsigned int dim, 
-                                    const unsigned int *extents) {
-   indexof.unsafeGetAt(0)+=1;
-   if (indexof.unsafeGetAt(0)>=extents[dim-1]) {
-      indexof.unsafeGetAt(0)-=extents[dim-1];
-      indexof.unsafeGetAt(1)+=1;
-      if (dim>1&&indexof.unsafeGetAt(1)>=extents[dim-2]) {
-         indexof.unsafeGetAt(1)-=extents[dim-2];
-         indexof.unsafeGetAt(2)+=1;
-         if (dim>2&&indexof.unsafeGetAt(2)>=extents[dim-3]) {
-            indexof.unsafeGetAt(2)-=extents[dim-3];
-            indexof.unsafeGetAt(3)+=1;
-         }
-      }
-   }
-}
 #endif
 #endif
 
