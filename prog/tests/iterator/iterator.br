@@ -30,8 +30,8 @@ main (int argc, char *argv[]) {
 
    for (i=0; i<20; i++) {
       for (j=0; j<10; j++) {
-         data_d[i][j].x = i*1000.0f;
-         data_d[i][j].y = j*1000.0f;
+         data_d[i][j].x = (float)i;
+         data_d[i][j].y = (float)j;
       }
    }
 
