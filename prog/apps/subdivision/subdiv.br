@@ -905,8 +905,6 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
       }
     }
     if (counter>=counterMax) {
-      float3 outputTri<toi(streamSize(*triangles).y),
-                       toi(streamSize(*triangles).x*3)>;
       if (out4) {
         int sizey = output4->size;      
         expandVertexArray4(output4,
@@ -914,6 +912,8 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
         streamWrite(*triangles,output4->v+sizey);
       }else {
         int sizey = output->size;      
+        float3 outputTri<toi(streamSize(*triangles).y),
+                       toi(streamSize(*triangles).x*3)>;
         copyFinalTriangles(*triangles,outputTri);
         if (!onlyCracks){
           expandVertexArray(output,
