@@ -442,7 +442,7 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
        if (finite_flt(x)) {
          
          if (x==36893206672442393000.00)
-           printf("sen");
+           printf("inf");
          else if (x==-18446321861244485632.0f) {
            printf ("inf");
          }else if (fabs(x)<.000001)
