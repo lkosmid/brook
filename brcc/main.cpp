@@ -177,15 +177,19 @@ ConvertToBrtStreamParams(FunctionType *fType)
    unsigned int i;
 
    for (i = 0; i < fType->nArgs; i++) {
-      if (fType->args[i]->isStream()) {
-         Type *newForm;
-
-         newForm = new BrtStreamParamType((ArrayType *) fType->args[i]->form);
-         /*
-          * Types are all on the global type list, so we can't just nuke it.
-         delete fType->args[i]->form;
-          */
-         fType->args[i]->form = newForm;
+      Type ** paramTyp=&fType->args[i]->form;
+      while(paramTyp) {
+         if ((*paramTyp)->isStream()) {
+            Type *newForm;
+            
+            newForm = new BrtStreamParamType((ArrayType *) *paramTyp);
+            /*
+             * Types are all on the global type list, so we can't just nuke it.
+             delete fType->args[i]->form;
+            */
+            (*paramTyp) = newForm;
+         }
+         paramTyp = (*paramTyp)->getSubType();
       }
    }
    return;

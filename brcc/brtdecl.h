@@ -71,9 +71,14 @@ public:
 
   void printType(std::ostream& out, Symbol *name,
 		  bool showBase, int level ) const;
+  void printBefore(std::ostream& out, Symbol *name, int level) const {
+  }
+  void printAfter(std::ostream& out ) const {
+  }
+
   void printForm(std::ostream& out) const;
   void printInitializer(std::ostream& out) const;
-
+  void printBase(std::ostream& out, int level) const;
 protected:
   BrtStreamParamType(const BaseType *_base, const ExprVector _dims)
      : BrtStreamType(_base, _dims) {} /* Only for dup0() */
@@ -122,12 +127,13 @@ protected:
 
 class CPUGatherType{
 public:
-  const Type * at;
-  const Type * subtype;
+  Type * at;
+  Type * subtype;
   bool copy_on_write;
   unsigned int dimension;
-  CPUGatherType(const ArrayType &t,bool copy_on_write);
+  CPUGatherType(ArrayType &t,bool copy_on_write);
   Type * dup0()const;
+  virtual Type ** getSubType() {return &subtype;}
   void printType(std::ostream & out, Symbol *name, bool showBase, int level) const;
   void printBefore(std::ostream & out, Symbol *name, int level) const;
   void printAfter(std::ostream &out)const;

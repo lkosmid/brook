@@ -270,7 +270,7 @@ class Type : public DupableType
   public:
     Type(TypeType _type=TT_Base);
     virtual ~Type();
-
+    virtual Type ** getSubType() {return NULL;}
     virtual int     precedence() const { return 16; }
     virtual Type*   dup0() const =0;    // deep-copy
 
@@ -368,7 +368,7 @@ class PtrType : public Type
     PtrType(TypeQual qual = TQ_None)
         : Type(TT_Pointer), qualifier(qual), subType(NULL){};
     ~PtrType(){};
-
+    virtual Type ** getSubType() {return &subType;}
     int    precedence() const { return 15; }
 
     Type* dup0() const;    // deep-copy
@@ -411,7 +411,7 @@ class ArrayType : public Type
     Type* dup0() const;    // deep-copy
 
     Type* extend(Type *extension);
-
+    virtual Type ** getSubType() {return &subType;}
     bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
       return false;
     }
@@ -445,7 +445,7 @@ class BitFieldType : public Type
     ~BitFieldType();
 
     Type* dup0() const;    // deep-copy
-
+    virtual Type ** getSubType() {return &subType;}
     Type* extend(Type *extension);
 
     bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
@@ -482,7 +482,7 @@ class FunctionType : public Type
     Type* dup0() const;    // deep-copy
 
     Type* extend(Type *extension);
-
+    virtual Type ** getSubType() {return &subType;}
     bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
       return false;
     }
@@ -521,7 +521,7 @@ class StreamType : public Type
           : Type(TT_Stream), subType(NULL), size(s) {};
 
     ~StreamType();
-
+    virtual Type ** getSubType() {return &subType;}
     Type* dup0() const;    // deep-copy
 
     Type* extend(Type *extension);

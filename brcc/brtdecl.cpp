@@ -90,7 +90,11 @@ BrtStreamParamType::printType(std::ostream& out, Symbol *name,
   if (name)
     out << *name;
 }
-
+void 
+BrtStreamParamType::printBase(std::ostream &out, int level) const 
+{
+   out << "::brook::stream";
+}
 void
 BrtStreamParamType::printForm(std::ostream& out) const
 {
@@ -317,7 +321,7 @@ BrtIterType::findExpr( fnExprCallback cb )
 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-CPUGatherType::CPUGatherType(const ArrayType &t,bool copy_on_write) {
+CPUGatherType::CPUGatherType(ArrayType &t,bool copy_on_write) {
 	dimension=0;
 	at = &t;
 	this->copy_on_write=copy_on_write;
