@@ -50,10 +50,18 @@ void PerformCopyTests(size_t maxSize) {
 
 
   // additional tests to include in the sanity check.  Adding some
-  // non-power-of-two sizes here to increase test coverage
-  correct &= streamCopyTest(1023, 1023, 4, testValues, outputValues);
-  correct &= streamCopyTest(511, 513, 4, testValues, outputValues);
-  
+  // non-power-of-two sizes here to increase test coverage also adding
+  // some small sizes size I've seen those have issues as well due to
+  // drivers neglecting to flush cache
+  for (size_t components=1; components<=4; components++) {
+    correct &= streamCopyTest(1023, 1023, components, testValues, outputValues);
+    correct &= streamCopyTest(511, 1023, components, testValues, outputValues);
+    correct &= streamCopyTest(511, 513, components, testValues, outputValues);
+    correct &= streamCopyTest(255, 255, components, testValues, outputValues);
+    correct &= streamCopyTest(255, 257, components, testValues, outputValues);
+    correct &= streamCopyTest(31, 33, components, testValues, outputValues);
+    correct &= streamCopyTest(3, 5, components, testValues, outputValues);
+  }
 
 
   if (correct) {
@@ -118,15 +126,29 @@ void PerformMultiOutTests(size_t maxSize) {
 
   GenerateTestValues(testValues, testDataSize);
 
-  // test multiple outputs with float1's
+  // test multiple outputs with float1's (bunch of pow-of-two sizes)
   for (size_t outputs=2; outputs<=4; outputs++)
     for (size_t size=1; size<=maxSize; size*=2)
       correct &= multiOutTest(size, size, 1, outputs, testValues);  
 
+  // and a few non-pow-of-two sizes
+  for (size_t outputs=2; outputs<=4; outputs++) {
+    correct &= multiOutTest(255, 257, 1, outputs, testValues); 
+    correct &= multiOutTest(511, 513, 1, outputs, testValues); 
+  }
+  
   // test multiple outputs with float4's
   for (size_t outputs=2; outputs<=4; outputs++)
     for (size_t size=1; size<=maxSize; size*=2)
       correct &= multiOutTest(size, size, 4, outputs, testValues);  
+
+  // and again the non-pow-of-two sizes
+  for (size_t outputs=2; outputs<=4; outputs++) {
+    correct &= multiOutTest(255, 257, 4, outputs, testValues); 
+    correct &= multiOutTest(511, 513, 4, outputs, testValues); 
+  }
+  
+
 
   if (correct) {
     printf("All multiple output tests passed.\n");
@@ -209,6 +231,11 @@ int main(int argc, char** argv) {
     PerformRandomMultiOutTests(maxSize, numRandomTests);
 
   }
+
+
+  // <kayvonf> Future notes:  Additional tests to put here might include:
+  //    - OGL style buffer ping-ponging with wglBindPbuffer (but how to get this in Brook)
+  //    - Occlusion query correctness
 
 
   return 0;
