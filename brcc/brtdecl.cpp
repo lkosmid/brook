@@ -108,3 +108,18 @@ BrtStreamType::lookup( Symbol* sym ) const
     return false;
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+TypeQual
+BrtStreamType::getQualifiers( void )
+{
+   return base->getQualifiers();
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BaseType *
+BrtStreamType::getBase( void )
+{
+   return base->getBase();
+}
+
+

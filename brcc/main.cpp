@@ -17,11 +17,13 @@
 
 struct globals_struct globals;
 
+
 /*
  * usage --
  *
  *      Dumps the legitimate commandline options and exits.
  */
+
 static void
 usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
@@ -33,7 +35,7 @@ usage (void) {
 
 
 /*
- * initargs --
+ * parse_args --
  *
  *      Parses argv and sets the global options as a result.
  */
@@ -126,6 +128,13 @@ parse_args (int argc, char *argv[]) {
   free(outputprefix);
 }
 
+
+/*
+ * ConvertToBrtStream --
+ *
+ *      Converts stream declaration statement objects into BrtStreams.
+ */
+
 void ConvertToBrtStream (Statement *stemnt) {
   if (!stemnt->isDeclaration())
     return;
@@ -138,11 +147,11 @@ void ConvertToBrtStream (Statement *stemnt) {
     if (form->type != TT_Stream) continue;
     ArrayType *tarray = (ArrayType *) form;
 
-    BrtStreamType *brtStream = new BrtStreamType (tarray);    
+    BrtStreamType *brtStream = new BrtStreamType (tarray);
     decl->form = brtStream;
     assert (decl->initializer == NULL);
 
-    decl->initializer = new BrtStreamInitializer(brtStream, 
+    decl->initializer = new BrtStreamInitializer(brtStream,
 						 stemnt->location);
   }
 }

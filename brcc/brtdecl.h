@@ -44,7 +44,10 @@ public:
   void findExpr( fnExprCallback cb );
   
   bool lookup( Symbol* sym ) const;
-  
+
+  TypeQual getQualifiers( void );
+  BaseType *getBase( void );
+ 
   BaseType       *base;
   ExprVector     dims;
 };

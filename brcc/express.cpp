@@ -1491,14 +1491,8 @@ ConstructorExpr::ConstructorExpr( BaseType *bType, Expression *exprs[],
 {
     int nExprs;
 
-    if (bType->typemask & BT_Float2) {
-       nExprs = 2;
-    } else if (bType->typemask & BT_Float3) {
-       nExprs = 3;
-    } else {
-       assert(bType->typemask & BT_Float4);
-       nExprs = 4;
-    }
+    nExprs = FloatDimension(bType->typemask);
+    assert(nExprs > 0);
 
     _bType = bType;
     _nExprs = nExprs;

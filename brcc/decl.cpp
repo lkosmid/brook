@@ -362,6 +362,20 @@ BaseType::lookup( Symbol* sym ) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+TypeQual
+BaseType::getQualifiers( void )
+{
+   return qualifier;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BaseType *
+BaseType::getBase( void )
+{
+   return this;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Type*
 PtrType::dup0() const
 {
@@ -462,6 +476,20 @@ PtrType::lookup( Symbol* sym ) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+TypeQual
+PtrType::getQualifiers( void )
+{
+   return qualifier;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BaseType *
+PtrType::getBase( void )
+{
+   return subType->getBase();
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 ArrayType::~ArrayType()
 {
     // Handled by deleting the global type list
@@ -551,6 +579,20 @@ ArrayType::lookup( Symbol* sym ) const
         return subType->lookup(sym);
     else
         return false;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+TypeQual
+ArrayType::getQualifiers( void )
+{
+   return subType->getQualifiers();
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BaseType *
+ArrayType::getBase( void )
+{
+   return subType->getBase();
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -644,6 +686,20 @@ BitFieldType::lookup( Symbol* sym ) const
         return subType->lookup(sym);
     else
         return false;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+TypeQual
+BitFieldType::getQualifiers( void )
+{
+   return subType->getQualifiers();
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BaseType *
+BitFieldType::getBase( void )
+{
+   return subType->getBase();
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -838,6 +894,20 @@ FunctionType::lookup( Symbol* sym ) const
         return subType->lookup(sym);
     else
         return false;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+TypeQual
+FunctionType::getQualifiers( void )
+{
+   return subType->getQualifiers();
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BaseType *
+FunctionType::getBase( void )
+{
+   return subType->getBase();
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

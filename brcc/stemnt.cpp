@@ -32,11 +32,13 @@
 
 #include <cstring>
 #include <cassert>
+#include <sstream>
 
 #include "stemnt.h"
 #include "symbol.h"
 #include "decl.h"
 #include "project.h"
+#include "codegen.h"
 
 #include "gram.h"
 
@@ -1461,10 +1463,24 @@ FunctionDef::print(std::ostream& out, int) const
         out << " */" << std::endl;
     }
 
-    decl->print(out,true); 
+    decl->print(out,true);
     out << std::endl;
 
-    Block::print(out,0);
+    if (decl->isKernel()) {
+       FunctionType *fType;
+       std::ostringstream wrapOut;
+
+       Block::print(wrapOut, 0);
+       out << "Wrapped '\n" << wrapOut.str() << "\n'\n";
+
+       assert (decl->form->type == TT_Function);
+       fType = (FunctionType *) decl->form;
+
+       CodeGen_Kernel(fType->subType, FunctionName()->name.c_str(),
+                      fType->args, fType->nArgs, wrapOut.str().c_str());
+    } else {
+       Block::print(out, 0);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

@@ -246,6 +246,9 @@ class Type : public DupableType
 
     virtual bool lookup( Symbol* sym ) const { return false; }
 
+    virtual TypeQual getQualifiers( void ) = 0;
+    virtual BaseType *getBase( void ) = 0;
+
     bool    isBaseType() const { return (type == TT_Base); }
     bool    isPointer() const { return (type == TT_Pointer); }
     bool    isFunction() const { return (type == TT_Function); }
@@ -288,6 +291,9 @@ class BaseType : public Type
 
     bool lookup( Symbol* sym ) const;
 
+    TypeQual getQualifiers( void );
+    BaseType *getBase( void );
+
     BaseTypeSpec    typemask;
 
     TypeQual        qualifier;
@@ -325,6 +331,9 @@ class PtrType : public Type
 
     bool lookup( Symbol* sym ) const;
 
+    TypeQual getQualifiers( void );
+    BaseType *getBase( void );
+
     TypeQual        qualifier;
     Type           *subType;
 };
@@ -355,6 +364,9 @@ class ArrayType : public Type
 
     bool lookup( Symbol* sym ) const;
 
+    TypeQual getQualifiers( void );
+    BaseType *getBase( void );
+
     Type           *subType;
 
     Expression     *size;
@@ -383,6 +395,9 @@ class BitFieldType : public Type
     void findExpr( fnExprCallback cb );
 
     bool lookup( Symbol* sym ) const;
+
+    TypeQual getQualifiers( void );
+    BaseType *getBase( void );
 
     Expression     *size;
 
@@ -414,6 +429,9 @@ class FunctionType : public Type
     void findExpr( fnExprCallback cb );
 
     bool lookup( Symbol* sym ) const;
+
+    TypeQual getQualifiers( void );
+    BaseType *getBase( void );
 
     bool            KnR_decl;    // old-style function declaration?
     int             nArgs;
@@ -447,6 +465,9 @@ class StreamType : public Type
     void findExpr( fnExprCallback cb );
 
     bool lookup( Symbol* sym ) const;
+
+    TypeQual getQualifiers( void );
+    BaseType *getBase( void );
 
     Type           *subType;
 
@@ -524,6 +545,27 @@ typedef    std::vector<Decl*>    DeclVector;
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
 Decl*	ReverseList( Decl* dList );
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+
+
+/*
+ * FloatDimension --
+ *
+ *      Simple helper function to tell how many elements a FloatN type has
+ *      fiven its TypeSpec.  Only annoying because type specs are bitmasks,
+ *      not linear.
+ */
+
+static inline int
+FloatDimension(BaseTypeSpec bt)
+{
+   if (bt & BT_Float) return 1;
+   else if (bt & BT_Float2) return 2;
+   else if (bt & BT_Float3) return 3;
+   else if (bt & BT_Float4) return 4;
+   else return 0;
+}
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
