@@ -850,7 +850,7 @@ void combineStreamsBRT_TYPE (BRT_TYPE (**streams)<>,
                           unsigned int width, 
                           unsigned int length,
                              BRT_TYPE (*output)<>) {
-   unsigned int  lengthmodmodulus=length%num;
+   unsigned int  lengthmodmodulus=num!=0?(length%num):0;
    BRT_TYPE tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
