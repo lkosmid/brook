@@ -7,6 +7,7 @@
 #include "graphics.h"
 #include <stdio.h>
 using std::vector;
+using namespace std;//vc6 bug
 /*
 class float4 {
  public:
