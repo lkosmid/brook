@@ -8,9 +8,6 @@
 
 
 
-#ifdef _WIN32
-#pragma warning(disable:4244)
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -230,14 +227,15 @@ void CountValuesfloat(float list_stream <>,
    float2 maxvalue;
    unsigned int logN;
 
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;
+   maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat (list_stream,output_stream,sign,maxvalue);   
+   NanToRightfloat (list_stream,output_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightfloat (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
-      else
-         NanToRightfloat (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+    if (i%2)
+      NanToRightfloat(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
+    else
+      NanToRightfloat(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
      streamSwap(tmp_stream,output_stream);
@@ -256,22 +254,22 @@ float shiftValuesfloat(float list_stream <>,
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift;
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat (list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightfloat (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
-         NanToRightfloat (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
+         NanToRightfloat(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
       else
-         NanToRightfloat (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
+         NanToRightfloat(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
      if (sign==-1) {
-       index.y = WIDTH-1; index.x = LENGTH-1;
+       index.y = (float)(WIDTH-1); index.x = (float)(LENGTH-1);
      }else {
        index.y=index.x=0;
      }
@@ -284,28 +282,28 @@ float shiftValuesfloat(float list_stream <>,
    EstablishGuessfloat(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
                           list_stream,
-                          (1 << LogNMinusK),
+                          (float)(1 << LogNMinusK),
                           maxvalue,
-                          1<<i,
-                          sign);
+                          (float)(1<<i),
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
          UpdateGuessfloat (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              sign);
+                              (float)sign);
       else
          UpdateGuessfloat (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              sign);
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -318,7 +316,7 @@ float shiftValuesfloat(float list_stream <>,
         RelativeGatherfloat(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
                                list_stream,
-                               float2(sign,1/floor(.5)),
+                               float2((float)sign,1.0f/(float)floor(.5)),
                                maxvalue);
         streamSwap(output_stream,proper_output_stream);
       }
@@ -885,18 +883,18 @@ void combineStreamsfloat (float (**streams)<>,
    case 2:
       floatstreamCombine2f(*streams[0],
                       *streams[1],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 3:
       floatstreamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 4:
@@ -904,9 +902,9 @@ void combineStreamsfloat (float (**streams)<>,
                       *streams[1],
                       *streams[2],
                       *streams[3],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 5:
@@ -916,9 +914,9 @@ void combineStreamsfloat (float (**streams)<>,
                       *streams[2],
                       *streams[3],
                       *streams[4],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
@@ -929,10 +927,10 @@ void combineStreamsfloat (float (**streams)<>,
          combineStreamsHelperfloat(streams+5,
                                       num-5,
                                       output,
-                                      num,
-                                      5-.5,
-                                      length,
-                                      lengthmodmodulus);
+                                      (float)num,
+                                      (float)(5-.5),
+                                      (float)length,
+                                      (float)lengthmodmodulus);
       }
       /*
       break;
@@ -1043,8 +1041,8 @@ unsigned int  voutCombinefloat(float outleft_stream<>,
                                float output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
-   maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
-   maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
+   maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
+   maxrightvalue.x=(float)LENGTH;maxrightvalue.y=(float)RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
                 -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
@@ -1248,14 +1246,15 @@ void CountValuesfloat2(float2 list_stream <>,
    float2 maxvalue;
    unsigned int logN;
 
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;
+   maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat2 (list_stream,output_stream,sign,maxvalue);   
+   NanToRightfloat2 (list_stream,output_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightfloat2 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
-      else
-         NanToRightfloat2 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+    if (i%2)
+      NanToRightfloat2(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
+    else
+      NanToRightfloat2(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
      streamSwap(tmp_stream,output_stream);
@@ -1274,22 +1273,22 @@ float shiftValuesfloat2(float2 list_stream <>,
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift;
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat2 (list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightfloat2 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
-         NanToRightfloat2 (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
+         NanToRightfloat2(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
       else
-         NanToRightfloat2 (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
+         NanToRightfloat2(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
      if (sign==-1) {
-       index.y = WIDTH-1; index.x = LENGTH-1;
+       index.y = (float)(WIDTH-1); index.x = (float)(LENGTH-1);
      }else {
        index.y=index.x=0;
      }
@@ -1302,28 +1301,28 @@ float shiftValuesfloat2(float2 list_stream <>,
    EstablishGuessfloat2(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
                           list_stream,
-                          (1 << LogNMinusK),
+                          (float)(1 << LogNMinusK),
                           maxvalue,
-                          1<<i,
-                          sign);
+                          (float)(1<<i),
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
          UpdateGuessfloat2 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              sign);
+                              (float)sign);
       else
          UpdateGuessfloat2 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              sign);
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -1336,7 +1335,7 @@ float shiftValuesfloat2(float2 list_stream <>,
         RelativeGatherfloat2(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
                                list_stream,
-                               float2(sign,1/floor(.5)),
+                               float2((float)sign,1.0f/(float)floor(.5)),
                                maxvalue);
         streamSwap(output_stream,proper_output_stream);
       }
@@ -1903,18 +1902,18 @@ void combineStreamsfloat2 (float2 (**streams)<>,
    case 2:
       float2streamCombine2f(*streams[0],
                       *streams[1],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 3:
       float2streamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 4:
@@ -1922,9 +1921,9 @@ void combineStreamsfloat2 (float2 (**streams)<>,
                       *streams[1],
                       *streams[2],
                       *streams[3],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 5:
@@ -1934,9 +1933,9 @@ void combineStreamsfloat2 (float2 (**streams)<>,
                       *streams[2],
                       *streams[3],
                       *streams[4],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
@@ -1947,10 +1946,10 @@ void combineStreamsfloat2 (float2 (**streams)<>,
          combineStreamsHelperfloat2(streams+5,
                                       num-5,
                                       output,
-                                      num,
-                                      5-.5,
-                                      length,
-                                      lengthmodmodulus);
+                                      (float)num,
+                                      (float)(5-.5),
+                                      (float)length,
+                                      (float)lengthmodmodulus);
       }
       /*
       break;
@@ -2061,8 +2060,8 @@ unsigned int  voutCombinefloat2(float2 outleft_stream<>,
                                float2 output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
-   maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
-   maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
+   maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
+   maxrightvalue.x=(float)LENGTH;maxrightvalue.y=(float)RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
                 -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
@@ -2266,14 +2265,15 @@ void CountValuesfloat3(float3 list_stream <>,
    float2 maxvalue;
    unsigned int logN;
 
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;
+   maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat3 (list_stream,output_stream,sign,maxvalue);   
+   NanToRightfloat3 (list_stream,output_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightfloat3 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
-      else
-         NanToRightfloat3 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+    if (i%2)
+      NanToRightfloat3(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
+    else
+      NanToRightfloat3(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
      streamSwap(tmp_stream,output_stream);
@@ -2292,22 +2292,22 @@ float shiftValuesfloat3(float3 list_stream <>,
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift;
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat3 (list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightfloat3 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
-         NanToRightfloat3 (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
+         NanToRightfloat3(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
       else
-         NanToRightfloat3 (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
+         NanToRightfloat3(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
      if (sign==-1) {
-       index.y = WIDTH-1; index.x = LENGTH-1;
+       index.y = (float)(WIDTH-1); index.x = (float)(LENGTH-1);
      }else {
        index.y=index.x=0;
      }
@@ -2320,28 +2320,28 @@ float shiftValuesfloat3(float3 list_stream <>,
    EstablishGuessfloat3(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
                           list_stream,
-                          (1 << LogNMinusK),
+                          (float)(1 << LogNMinusK),
                           maxvalue,
-                          1<<i,
-                          sign);
+                          (float)(1<<i),
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
          UpdateGuessfloat3 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              sign);
+                              (float)sign);
       else
          UpdateGuessfloat3 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              sign);
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -2354,7 +2354,7 @@ float shiftValuesfloat3(float3 list_stream <>,
         RelativeGatherfloat3(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
                                list_stream,
-                               float2(sign,1/floor(.5)),
+                               float2((float)sign,1.0f/(float)floor(.5)),
                                maxvalue);
         streamSwap(output_stream,proper_output_stream);
       }
@@ -2921,18 +2921,18 @@ void combineStreamsfloat3 (float3 (**streams)<>,
    case 2:
       float3streamCombine2f(*streams[0],
                       *streams[1],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 3:
       float3streamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 4:
@@ -2940,9 +2940,9 @@ void combineStreamsfloat3 (float3 (**streams)<>,
                       *streams[1],
                       *streams[2],
                       *streams[3],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 5:
@@ -2952,9 +2952,9 @@ void combineStreamsfloat3 (float3 (**streams)<>,
                       *streams[2],
                       *streams[3],
                       *streams[4],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
@@ -2965,10 +2965,10 @@ void combineStreamsfloat3 (float3 (**streams)<>,
          combineStreamsHelperfloat3(streams+5,
                                       num-5,
                                       output,
-                                      num,
-                                      5-.5,
-                                      length,
-                                      lengthmodmodulus);
+                                      (float)num,
+                                      (float)(5-.5),
+                                      (float)length,
+                                      (float)lengthmodmodulus);
       }
       /*
       break;
@@ -3079,8 +3079,8 @@ unsigned int  voutCombinefloat3(float3 outleft_stream<>,
                                float3 output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
-   maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
-   maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
+   maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
+   maxrightvalue.x=(float)LENGTH;maxrightvalue.y=(float)RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
                 -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
@@ -3284,14 +3284,15 @@ void CountValuesfloat4(float4 list_stream <>,
    float2 maxvalue;
    unsigned int logN;
 
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;
+   maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat4 (list_stream,output_stream,sign,maxvalue);   
+   NanToRightfloat4 (list_stream,output_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
-      if (i%2)
-         NanToRightfloat4 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
-      else
-         NanToRightfloat4 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+    if (i%2)
+      NanToRightfloat4(output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
+    else
+      NanToRightfloat4(tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
      streamSwap(tmp_stream,output_stream);
@@ -3310,22 +3311,22 @@ float shiftValuesfloat4(float4 list_stream <>,
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift;
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat4 (list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightfloat4 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
-         NanToRightfloat4 (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
+         NanToRightfloat4(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
       else
-         NanToRightfloat4 (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
+         NanToRightfloat4(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
      if (sign==-1) {
-       index.y = WIDTH-1; index.x = LENGTH-1;
+       index.y = (float)(WIDTH-1); index.x = (float)(LENGTH-1);
      }else {
        index.y=index.x=0;
      }
@@ -3338,28 +3339,28 @@ float shiftValuesfloat4(float4 list_stream <>,
    EstablishGuessfloat4(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
                           list_stream,
-                          (1 << LogNMinusK),
+                          (float)(1 << LogNMinusK),
                           maxvalue,
-                          1<<i,
-                          sign);
+                          (float)(1<<i),
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
          UpdateGuessfloat4 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              sign);
+                              (float)sign);
       else
          UpdateGuessfloat4 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
                               list_stream,//actual values
-                              1<<LogNMinusK,
+                              (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              sign);
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -3372,7 +3373,7 @@ float shiftValuesfloat4(float4 list_stream <>,
         RelativeGatherfloat4(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
                                list_stream,
-                               float2(sign,1/floor(.5)),
+                               float2((float)sign,1.0f/(float)floor(.5)),
                                maxvalue);
         streamSwap(output_stream,proper_output_stream);
       }
@@ -3939,18 +3940,18 @@ void combineStreamsfloat4 (float4 (**streams)<>,
    case 2:
       float4streamCombine2f(*streams[0],
                       *streams[1],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 3:
       float4streamCombine3f(*streams[0],
                       *streams[1],
                       *streams[2],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 4:
@@ -3958,9 +3959,9 @@ void combineStreamsfloat4 (float4 (**streams)<>,
                       *streams[1],
                       *streams[2],
                       *streams[3],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       break;
    case 5:
@@ -3970,9 +3971,9 @@ void combineStreamsfloat4 (float4 (**streams)<>,
                       *streams[2],
                       *streams[3],
                       *streams[4],
-                      num,
-                      length,
-                      lengthmodmodulus,
+                      (float)num,
+                      (float)length,
+                      (float)lengthmodmodulus,
                       output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
@@ -3983,10 +3984,10 @@ void combineStreamsfloat4 (float4 (**streams)<>,
          combineStreamsHelperfloat4(streams+5,
                                       num-5,
                                       output,
-                                      num,
-                                      5-.5,
-                                      length,
-                                      lengthmodmodulus);
+                                      (float)num,
+                                      (float)(5-.5),
+                                      (float)length,
+                                      (float)lengthmodmodulus);
       }
       /*
       break;
@@ -4097,8 +4098,8 @@ unsigned int  voutCombinefloat4(float4 outleft_stream<>,
                                float4 output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
-   maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
-   maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
+   maxleftvalue.x=(float)LENGTH;maxleftvalue.y=(float)LEFTWIDTH;
+   maxrightvalue.x=(float)LENGTH;maxrightvalue.y=(float)RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
                 -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
