@@ -537,15 +537,13 @@ class SwizzleConverter{public:
                     if (looksLikeMask(vswiz->name->name)) {
                         unsigned int len =vswiz->name->name.length();
                         char swizlength [2]={len+'0',0};
-                        std::string rez=std::string("swizzle")+swizlength+"<";
+                        std::string rez=std::string("swizzle")+swizlength+"(";
                         for (unsigned int i=0;i<len;++i) {
-                          char swizch[3]={'0' +
-                                          translateSwizzle(vswiz->name->name[i])
-                                          ,i==len-1?'\0':','
-                                          ,'\0'};
-                            rez+=swizch;
+			  if (i!=0)
+			    rez+=", ";
+                            rez+=translateMask(translateSwizzle(vswiz->name->name[i]));			    
                         }
-                        rez+=">()";
+                        rez+=")";
                         vswiz->name->name=rez;
                     }
                 }
