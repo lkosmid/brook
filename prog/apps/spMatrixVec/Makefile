@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
-EXECUTABLE = csrMatvec
-FILES = csrMatvec
+EXECUTABLE = spMatrixVec
+FILES = spMatrixVec
 LIBRARIES = $(RUNTIME_LIBS)
 
 

@@ -95,7 +95,7 @@ void reshuffleData(float nz[MAX_NZ], int cols[MAX_NZ], int rowStart[NUM_ROWS+1],
 int parseCmdLine(int argc, char** argv, char* filename) {
   
   if (argc < 2) {
-	  strncpy(filename, "csrMatrix.txt", 70);
+	  strncpy(filename, "spMatrixVec.txt", 70);
 	  return 0;
   }
 
