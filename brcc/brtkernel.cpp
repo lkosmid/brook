@@ -80,7 +80,11 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
       
       if (v->name->entry->type != ParamDeclEntry)
          return expr;
-
+      // XXX Daniel: BrtGatherExpr asserts that it is indeed an array, not a TT_Stream
+      if (v->name->entry->uVarDecl)
+         if (v->name->entry->uVarDecl->form)
+            if (v->name->entry->uVarDecl->form->type!=TT_Array)
+               return expr;
       gather = new BrtGatherExpr((IndexExpr *) expr);
 
     //delete expr;  // IAB: XXX For some reason I can't delete expr!!!
@@ -236,33 +240,21 @@ public:
     void printArrayStream(std::ostream &out, STAGE s) {
         Type * t=a->form;
 	//temporarily dissect type.
-	Type * u=t;
-	Type ** typeToRestore=NULL;
-	Type * originalTarget=NULL;
-	assert(u->type==TT_Array);
-	while (u->type==TT_Array) {
-	  ArrayType * uu =static_cast<ArrayType*>(u);
-	  if (uu->subType->type==TT_Stream) {
-	    //now we hop to the base type;
-	    typeToRestore = &uu->subType;
-	    originalTarget = uu->subType;
-	    uu->subType = static_cast<ArrayType*>(uu->subType)->subType;
-	    break;
-	  }else if (uu->subType->type==TT_Array) {
-	    u = uu->subType;
-	  }
-	}
+		assert (t->type==TT_Stream||t->type==TT_Array);
+		t=static_cast<ArrayType*>(t)->subType;
         switch (s) {
         case HEADER:{
             TypeQual tq= t->getQualifiers();            
             if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
-            a->print(out,0);
+			Type * tmp = a->form;
+			t->printType(out,a->name,true,0);
+ 
+			
             break;
         }
         case DEF:{
-            t=static_cast<ArrayType*>(t)->subType;
             Symbol s;
             if (t->type==TT_Base)
                 s=getSymbol(std::string("*arg")+tostring(index));
@@ -272,26 +264,18 @@ public:
             out << " = (";
             s=(t->type==TT_Base)?getSymbol("*"):getSymbol("(*)");
             t->printType(out,&s,true,0);
-            out << ")"<<std::endl;
-            indent(out,2);
-            out <<"args["<<index<<"];";
+            out << ")";
+			out<<"args["<<index<<"];";
             break;
         }
         case USE:{
-            out <<"arg"<<index;
+            out <<"*arg"<<index<<"++";
             break;
         }
 	case CLEANUP:
-	  indent(out,1);
-	  out << "reinterpret_cast<brook::Stream*>";
-	  out << "(args["<<index<<"])->releaseData(brook::Stream::READ);";
-	  out << std::endl;
 	  break;
         }
-	if (typeToRestore)
-	  *typeToRestore = originalTarget;
     }
-
    //standard args, not gather or scatter
     void printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
@@ -331,41 +315,15 @@ public:
     }
     
    //redirects call
-    void printCPUFunctionArg(std::ostream & out){
+    void printCPU(std::ostream & out,STAGE s){
         if(isGather())
-	  printDimensionlessGatherStream(out,HEADER);
+	  printDimensionlessGatherStream(out,s);
 	else if (isArrayStream())
-	  printArrayStream(out,HEADER);
+	  printArrayStream(out,s);
         else
-	  printNormalArg(out,HEADER);
+	  printNormalArg(out,s);
     }
 
-   //redirects call
-    void printInternalDef(std::ostream &out){
-        if(isGather())
-	  printDimensionlessGatherStream(out,DEF);
-	else if (isArrayStream())            
-	  printArrayStream(out,DEF);
-        else
-	  printNormalArg(out,DEF);
-    }
-   //redirects call
-    void printInternalUse(std::ostream &out){
-        if(isGather())
-	  printDimensionlessGatherStream(out,USE);
-	else if (isArrayStream())           
-	  printArrayStream(out,USE);
-        else
-	  printNormalArg(out,USE);
-    }
-    void printInternalCleanup(std::ostream &out){
-        if(isGather())
-	  printDimensionlessGatherStream(out,CLEANUP);
-	else if (isArrayStream())
-	  printArrayStream(out,CLEANUP);
-        else
-	  printNormalArg(out,CLEANUP);
-    }
 };
 
 
@@ -394,7 +352,7 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
     {for (unsigned int i=0;i<myArgs.size();++i) {
         if (i!=0)
             out << ", ";
-        myArgs[i].printCPUFunctionArg(out);
+        myArgs[i].printCPU(out,PrintCPUArg::HEADER);
     }}
     out << ")";    
     fDef->Block::print(out,0);
@@ -406,7 +364,7 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
     out <<  "unsigned int mapend) {"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
-        myArgs[i].printInternalDef(out);
+        myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
     }}
     indent(out,1);
@@ -417,11 +375,11 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
         if (i!=0)
             out <<","<<std::endl;
         indent(out,3);
-        myArgs[i].printInternalUse(out);
+        myArgs[i].printCPU(out,PrintCPUArg::USE);
     }}
     out<< ");"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
-        myArgs[i].printInternalCleanup(out);
+        myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
     }}    
     indent(out,1);out <<"}"<<std::endl;
     out << "}"<<std::endl;   

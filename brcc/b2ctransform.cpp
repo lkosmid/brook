@@ -115,7 +115,11 @@ class MaskExpr : public BinaryExpr {
   public:
     std::string mask;
 	Expression * emask;
-    MaskExpr( Expression *lExpr, Expression *rExpr, std::string mask, const Location& l, Expression *emask=NULL ):
+    MaskExpr( Expression *lExpr, 
+              Expression *rExpr, 
+              std::string mask, 
+              const Location& l, 
+              Expression *emask=NULL ):
         BinaryExpr(BO_Member,lExpr,rExpr,l) {
         this->mask=mask;
 		this->emask=emask;
@@ -374,15 +378,37 @@ void FindTypesDecl (Statement * s) {
 	}
    
 }
-
+extern bool recursiveIsGather(Type *t);
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This class overrides the index expr with one that prints [(int)<lookupExpr>]
 // It is no longer needed for the current transformation since we now demand float4 lookups for 4d gather
 class NewIndexExpr :public IndexExpr {public:
+   bool isGather;
+   Variable * findVariable(Expression * e) {
+	   if (e->etype==ET_Variable)
+		   return static_cast<Variable*>(e);
+	   if (e->etype==ET_IndexExpr)
+		   return findVariable(static_cast<IndexExpr*>(e)->array);
+	   return NULL;
+   }
    NewIndexExpr (Expression * a, Expression * s,const Location &l)
-      :IndexExpr(a,s,l) {}
+      :IndexExpr(a,s,l) {
+	   isGather=false;
+	   Variable * v = findVariable(a);
+	   if (v) 
+		   if (v->name->entry)
+			   if (v->name->entry->type==ParamDeclEntry)
+				   if (v->name->entry->uVarDecl)
+					   if (v->name->entry->uVarDecl->form)
+						   if (v->name->entry->uVarDecl->form->type==TT_Array)
+							   isGather=true;
+   }
    
-   Expression * dup0() const {return new NewIndexExpr(array->dup(),_subscript->dup(),location);}
+   Expression * dup0() const {
+     return new NewIndexExpr(array->dup()
+                             ,_subscript->dup(),
+                             location);
+   }
    void printIndex(std::ostream&out, bool printCast) const{
       if (array->precedence() < precedence()) {
         out << "(";
@@ -396,7 +422,9 @@ class NewIndexExpr :public IndexExpr {public:
          out << ")";
       }
 
-      out << "[";//(int)
+      out << "[";
+	  if (!isGather)
+		  out <<"(int)";
       /*
       int castprecedence= CastExpr(NULL,NULL,location).precedence();
       if (_subscript->precedence()<=castprecedence)
@@ -408,7 +436,7 @@ class NewIndexExpr :public IndexExpr {public:
         out <<")";    
       */
       out << "]";
-      if (printCast) {
+      if (printCast&&isGather) {
          out << ".cast()";
       }
    }
@@ -582,18 +610,53 @@ class SwizzleConverter{public:
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class MaskConverter{public:
-	void PropogatePlusGets (AssignExpr * ae) {
-		BinaryOp bo =TranslatePlusGets (ae->op());
-		if (bo!=BO_Assign) {
-			//now we need to move the lval to the right
-			ae->_rightExpr = new BinaryExpr(bo,
-											ae->lValue()->dup(),
-											ae->_rightExpr,
-											ae->location);
-			ae->aOp=AO_Equal;
-		}
-	}
-Expression * operator () (Expression * e) {
+  void PropogatePlusGets (AssignExpr * ae) {
+    BinaryOp bo =TranslatePlusGets (ae->op());
+    if (bo!=BO_Assign) {
+      //now we need to move the lval to the right
+      ae->_rightExpr = new BinaryExpr(bo,
+                                      ae->lValue()->dup(),
+                                      ae->_rightExpr,
+                                      ae->location);
+      ae->aOp=AO_Equal;
+    }
+  }
+  Type * getSymEntryType(SymEntry * se ) {
+    switch (se->type) {
+    case TypedefEntry:
+    case VarDeclEntry:
+    case ParamDeclEntry:
+    case VarFctDeclEntry:
+    case FctDeclEntry:
+      return se->uVarDecl->form;
+    case EnumConstEntry:
+    default:
+      return NULL;
+    }
+  }
+  bool IndexExprDepthGreaterType (IndexExpr * i) {
+    int count=1;
+    while (i->array->etype==ET_IndexExpr) {
+      i= static_cast<IndexExpr*>(i->array);
+      count++;
+    }
+    if (i->array->etype==ET_Variable) {
+      Variable * v= static_cast<Variable*>(i->array);
+      Type * t = getSymEntryType(v->name->entry);
+      if (t) {
+        int vcount=0;
+        if (t->type==TT_Stream)
+          t = static_cast<ArrayType*>(t)->subType;
+        while (t->type==TT_Array) {
+          t=  static_cast<ArrayType*>(t)->subType;
+          vcount++;
+        }
+        return vcount<count;
+      }
+    }
+    return false;
+  }
+  Expression * operator () (Expression * e) {
     AssignExpr * ae;
     BinaryExpr * ret =NULL;
     Variable * vmask=NULL;
@@ -607,14 +670,18 @@ Expression * operator () (Expression * e) {
 
 		if (ae->lValue()->etype==ET_IndexExpr) {
 			IndexExpr * lval= static_cast<IndexExpr*>(ae->lValue());
-			//FIXME: what if it's an array lookup, rather than an assignment to a vec*
-			PropogatePlusGets(ae);
-			ret = new MaskExpr (lval->array->dup(),
-								ae->rValue()->dup(),
-								"x",
-								lval->location,
-								lval->_subscript->dup());
-			ret->findExpr(&ConvertToTMaskConverter);			
+
+                        if (IndexExprDepthGreaterType (lval)){
+                          //FIXME: what if it's an structure component mask, 
+                          //rather than an assignment to an array
+                          PropogatePlusGets(ae);
+                          ret = new MaskExpr (lval->array->dup(),
+                                              ae->rValue()->dup(),
+                                              "x",
+                                              lval->location,
+                                              lval->_subscript->dup());
+                          ret->findExpr(&ConvertToTMaskConverter);			
+                        }
 		}
 		BinaryExpr * lval;				
         if (ae->lValue()->etype==ET_BinaryExpr&& (lval = static_cast<BinaryExpr*>(ae->lValue()))) {

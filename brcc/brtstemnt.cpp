@@ -26,10 +26,14 @@ bool recursiveIsGather(Type * form) {
   return ret&&t->type!=TT_Stream;
 }
 bool recursiveIsArrayStream(Type * form) {
-  return form->type==TT_Array&&(!recursiveIsGather(form));
+	if (form->type==TT_Stream
+		&&recursiveIsGather(static_cast<ArrayType*>(form)->subType)) {
+		return true;
+	}
+	return false;
 } 
 bool recursiveIsStream(Type* form) {
-  return (form->type==TT_Array||form->type==TT_Stream)&&(!recursiveIsGather(form));
+	return (form->type==TT_Stream);
 }
 
 
