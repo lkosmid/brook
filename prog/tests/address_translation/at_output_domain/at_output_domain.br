@@ -1,0 +1,172 @@
+// at_output_domain.br
+
+// test address-translation code for
+// writing to a domain
+
+#include <stdio.h>
+
+// arbitrary large stream sizes
+#define X_1D 10000
+#define X_1D_START 347
+#define X_1D_END 7123
+
+#define X_2D 5000
+#define X_2D_START 3997
+#define X_2D_END 4128
+#define Y_2D 4
+#define Y_2D_START 1
+#define Y_2D_END 4
+
+#define X_3D 40
+#define X_3D_START 11
+#define X_3D_END 25
+#define Y_3D 10
+#define Y_3D_START 3
+#define Y_3D_END 5
+#define Z_3D 7
+#define Z_3D_START 0
+#define Z_3D_END 7
+
+#define X_4D 3
+#define X_4D_START 1
+#define X_4D_END 3
+#define Y_4D 6
+#define Y_4D_START 2
+#define Y_4D_END 5
+#define Z_4D 8
+#define Z_4D_START 0
+#define Z_4D_END 7
+#define W_4D 5
+#define W_4D_START 0
+#define W_4D_END 5
+
+kernel void clear1( out float result<> ) { result = -1; }
+kernel void clear2( out float2 result<> ) { result = -1; }
+kernel void clear3( out float3 result<> ) { result = -1; }
+kernel void clear4( out float4 result<> ) { result = -1; }
+
+kernel void getIndexStream1( out float result<> ) {
+	result = (indexof result).x;
+}
+
+kernel void getIndexStream2( out float2 result<> ) {
+	result = (indexof result).xy;
+}
+
+kernel void getIndexStream3( out float3 result<> ) {
+	result = (indexof result).xyz;
+}
+
+kernel void getIndexStream4( out float4 result<> ) {
+	result = indexof result;
+}
+
+void check( int dim, int expected, float actual, const char* dimName )
+{
+	if( (int)actual == expected )
+		return;
+//		printf("%dD.%s : %f\n", dim, dimName, actual ); else
+	
+	printf("FAIL: %dD.%s : expected %d got %f\n", dim, dimName, expected, actual );
+	exit(0);
+}
+
+int main( int argc, char** argv )
+{
+	float stream_1d< X_1D >;
+	float2 stream_2d< Y_2D, X_2D >;
+	float3 stream_3d< Z_3D, Y_3D, X_3D >;
+	float4 stream_4d< W_4D, Z_4D, Y_4D, X_4D >;
+	
+	float* data_1d = (float*)malloc( X_1D*sizeof(float) );
+	float* data_2d = (float*)malloc( Y_2D*X_2D*sizeof(float2) );
+	float* data_3d = (float*)malloc( Z_3D*Y_3D*X_3D*sizeof(float3) );
+	float* data_4d = (float*)malloc( W_4D*Z_4D*Y_4D*X_4D*sizeof(float4) );
+	
+	float* temp;
+	int x, y, z, w;
+	int xd, yd, zd, wd;
+	int inDomain;
+	
+	clear1( stream_1d );
+	clear2( stream_2d );
+	clear3( stream_3d );
+	clear4( stream_4d );
+	
+	getIndexStream1( stream_1d.domain( X_1D_START, X_1D_END ) );
+	getIndexStream2( stream_2d.domain(
+		int2( Y_2D_START, X_2D_START ),
+		int2( Y_2D_END, X_2D_END ) ) );
+	getIndexStream3( stream_3d.domain(
+		int3( Z_3D_START, Y_3D_START, X_3D_START ),
+		int3( Z_3D_END, Y_3D_END, X_3D_END ) ) );
+	getIndexStream4( stream_4d.domain(
+		int4( W_4D_START, Z_4D_START, Y_4D_START, X_4D_START ),
+		int4( W_4D_END, Z_4D_END, Y_4D_END, X_4D_END ) ) );
+	
+	streamWrite( stream_1d, data_1d );
+	streamWrite( stream_2d, data_2d );
+	streamWrite( stream_3d, data_3d );
+	streamWrite( stream_4d, data_4d );
+	
+	temp = data_1d;
+	for( x = 0; x < X_1D; x++ )
+	{
+		xd = x - X_1D_START;
+//		printf("<%d> ~ <%d>\n", x, xd);
+		inDomain = (x >= X_1D_START) && (x < X_1D_END);
+		check( 1, inDomain ? xd : -1, *temp++, "x" );
+	}
+	
+	temp = data_2d;
+	for( y = 0; y < Y_2D; y++ )
+	for( x = 0; x < X_2D; x++ )
+	{
+		xd = x - X_2D_START;
+		yd = y - Y_2D_START;
+//		printf("<%d, %d> ~ <%d, %d>\n", x, y, xd, yd);
+		inDomain = (x >= X_2D_START) && (x < X_2D_END)
+			&& (y >= Y_2D_START) && (y < Y_2D_END);
+		check( 2, inDomain ? xd : -1, *temp++, "x" );
+		check( 2, inDomain ? yd : -1, *temp++, "y" );
+	}
+	
+	temp = data_3d;
+	for( z = 0; z < Z_3D; z++ )
+	for( y = 0; y < Y_3D; y++ )
+	for( x = 0; x < X_3D; x++ )
+	{
+		xd = x - X_3D_START;
+		yd = y - Y_3D_START;
+		zd = z - Z_3D_START;
+		inDomain = (x >= X_3D_START) && (x < X_3D_END)
+			&& (y >= Y_3D_START) && (y < Y_3D_END)
+			&& (z >= Z_3D_START) && (z < Z_3D_END);
+		check( 3, inDomain ? xd : -1, *temp++, "x" );
+		check( 3, inDomain ? yd : -1, *temp++, "y" );
+		check( 3, inDomain ? zd : -1, *temp++, "z" );
+	}
+
+	temp = data_4d;
+	for( w = 0; w < W_4D; w++ )
+	for( z = 0; z < Z_4D; z++ )
+	for( y = 0; y < Y_4D; y++ )
+	for( x = 0; x < X_4D; x++ )
+	{
+		xd = x - X_4D_START;
+		yd = y - Y_4D_START;
+		zd = z - Z_4D_START;
+		wd = w - W_4D_START;
+		inDomain = (x >= X_4D_START) && (x < X_4D_END)
+			&& (y >= Y_4D_START) && (y < Y_4D_END)
+			&& (z >= Z_4D_START) && (z < Z_4D_END)
+			&& (w >= W_4D_START) && (w < W_4D_END);
+		check( 4, inDomain ? xd : -1, *temp++, "x" );
+		check( 4, inDomain ? yd : -1, *temp++, "y" );
+		check( 4, inDomain ? zd : -1, *temp++, "z" );
+		check( 4, inDomain ? wd : -1, *temp++, "w" );
+	}
+	printf( "pass\n" );
+
+	return 0;
+}

@@ -809,12 +809,14 @@ generate_shader_support(std::ostream& shader)
   shader << "#define _sfetch  texRECT\n";
   shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) texRECT((s),(i))\n";
+  shader << "#define __FRAGMENTKILL discard\n";
   shader << "#define SKIPSCALEBIAS\n";
   shader << "#else\n";
   shader << "#define _stype   sampler2D\n";
   shader << "#define _sfetch  tex2D\n";
   shader << "#define __sample1(s,i) tex2D((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) tex2D((s),(i))\n";
+  shader << "#define __FRAGMENTKILL discard\n";
   shader << "#endif\n\n";
 
   if( !globals.enableGPUAddressTranslation ) {
@@ -872,12 +874,14 @@ generate_shader_support(std::ostream& shader)
     shader << "return float2( texX, texY ) * reshapeConst;\n}\n\n";
 
     shader << "void __calculateoutputpos( float2 interpolant, float2 linearize,\n";
-    shader << "\tfloat4 stride, float4 invStride, float4 invExtent, out float4 index ) {\n";
+    shader << "\tfloat4 stride, float4 invStride, float4 invExtent, float4 domainMin, float4 domainExtent, out float4 index ) {\n";
     shader << "\tfloat2 cleanInterpolant = floor( interpolant );\n";
     shader << "\tfloat linearIndex = dot( cleanInterpolant, linearize );\n";
     shader << "\tfloat4 temp0 = floor( (linearIndex + 0.5) * invStride );\n";
     shader << "\tfloat4 temp1 = linearIndex - temp0*stride;\n";
-    shader << "\tindex = floor( (temp1 + 0.5) * invExtent );\n";
+    shader << "\tindex = floor( (temp1 + 0.5) * invExtent - domainMin );\n";
+    shader << "\tif( any( index < 0 ) ) __FRAGMENTKILL;\n";
+    shader << "\tif( any( index >= domainExtent ) ) __FRAGMENTKILL;\n";
     shader << "}\n\n";
 
 #if 0
@@ -1186,6 +1190,10 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
     shader << ",\n\t\t";
     shader << "uniform float4 __outputinvextent : register(c" << constreg++ << ")";
     shader << ",\n\t\t";
+    shader << "uniform float4 __outputdomainmin : register(c" << constreg++ << ")";
+    shader << ",\n\t\t";
+    shader << "uniform float4 __outputdomainsize : register(c" << constreg++ << ")";
+    shader << ",\n\t\t";
     shader << "uniform float __hackconst : register(c" << constreg++ << ")";
 
     outPass.addInterpolant( 0, "kGlobalInterpolant_ATOutputTex" );
@@ -1194,6 +1202,8 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
     outPass.addConstant( 0, "kGlobalConstant_ATOutputStride" );
     outPass.addConstant( 0, "kGlobalConstant_ATOutputInvStride" );
     outPass.addConstant( 0, "kGlobalConstant_ATOutputInvExtent" );
+    outPass.addConstant( 0, "kGlobalConstant_ATOutputDomainMin" );
+    outPass.addConstant( 0, "kGlobalConstant_ATOutputDomainSize" );
     outPass.addConstant( 0, "kGlobalConstant_ATHackConstant" );
   }
 
@@ -1227,7 +1237,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
      shader << "\tfloat4 __indexofoutput;\n";
      shader << "\t__calculateoutputpos( __outputaddrinterpolant, "
             << "__outputlinearize, __outputstride, __outputinvstride, "
-            << "__outputinvextent, __indexofoutput );\n";
+            << "__outputinvextent, __outputdomainmin, __outputdomainsize, __indexofoutput );\n";
   }
 
   /*

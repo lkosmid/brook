@@ -19,6 +19,8 @@ namespace brook
       kGlobalConstant_ATOutputStride,
       kGlobalConstant_ATOutputInvStride,
       kGlobalConstant_ATOutputInvExtent,
+      kGlobalConstant_ATOutputDomainMin,
+      kGlobalConstant_ATOutputDomainSize,
       kGlobalConstant_ATHackConstant
     };
     enum

@@ -212,9 +212,11 @@ namespace brook
     _outHeight = outputStream->getTextureHeight();
     unsigned int outRank = outputStream->getRank();
     const unsigned int* outReversed = outputStream->getReversedExtents();
+    const unsigned int* outDomainMin = outputStream->getDomainMin();
+    const unsigned int* outDomainMax = outputStream->getDomainMax();
 
     bool requiresBaseAddressTranslation = false;
-    bool requiresInputAddressTranslation = false;
+    bool shapeMismatch;
 
     if( outputStream->requiresAddressTranslation() )
         requiresBaseAddressTranslation = true;
@@ -225,31 +227,25 @@ namespace brook
     for( arg = 0; arg < streamArgumentCount; arg++ )
     {
         GPUStream* stream = _streamArguments[arg];
-        bool mismatch = stream->requiresAddressTranslation();
-
-        if( !mismatch )
-        {
-            unsigned int rank = stream->getRank();
-            if( rank != outRank )
-                mismatch = true;
-
-            if( !mismatch )
-            {
-                for( unsigned int r = 0; r < rank; r++ )
-                {
-                    unsigned int extent = stream->getExtents()[r];
-                    unsigned int outExtent = outputStream->getExtents()[r];
-                    if( extent != outExtent )
-                        mismatch = true;
-                }
-            }
-        }
-
-        if( mismatch )
-        {
+        if( stream->requiresAddressTranslation() )
             requiresBaseAddressTranslation = true;
-            requiresInputAddressTranslation = true;
-            break;
+
+        unsigned int rank = stream->getRank();
+        if( rank != outRank )
+            shapeMismatch = true;
+
+        if( !shapeMismatch )
+        {
+            const unsigned int* domainMin = stream->getDomainMin();
+            const unsigned int* domainMax = stream->getDomainMax();
+
+            for( unsigned int r = 0; r < rank; r++ )
+            {
+                unsigned int extent = domainMax[r] - domainMin[r];
+                unsigned int outExtent = outDomainMax[r] - outDomainMin[r];
+                if( extent != outExtent )
+                    shapeMismatch = true;
+            }
         }
     }
     size_t gatherArgumentCount = _gatherArguments.size();
@@ -262,9 +258,8 @@ namespace brook
         }
     }
 
-    bool requiresAddressTranslation =
-        requiresBaseAddressTranslation || requiresInputAddressTranslation;
-    if( requiresAddressTranslation )
+    bool requiresInputAddressTranslation = requiresBaseAddressTranslation && shapeMismatch;
+    if( requiresBaseAddressTranslation )
     {
         // set up additional "global" constants/interpolants
 
@@ -272,6 +267,8 @@ namespace brook
         float4 outputStride = float4(0,0,0,0);
         float4 outputInvStride = float4(0,0,0,0);
         float4 outputInvExtent = float4(0,0,0,0);
+        float4 outputDomainMin = float4(0,0,0,0);
+        float4 outputDomainSize = float4(0.5,0.5,0.5,0.5);
 
         outputLinearize.x = 1.0f;
         outputLinearize.y = (float)_outWidth;
@@ -290,12 +287,21 @@ namespace brook
             ((float*)&outputStride)[r] = (float) strides[r];
             ((float*)&outputInvStride)[r] = 1.0f / (float) strides[r];
             ((float*)&outputInvExtent)[r] = 1.0f / (float) extents[r];
+
+            // must reversed the domain ranges since they are in [w][z][y][x] order
+            unsigned int domainMin = outDomainMin[ outRank - (r+1) ];
+            unsigned int domainMax = outDomainMax[ outRank - (r+1) ];
+
+            ((float*)&outputDomainMin)[r] = (float)domainMin;
+            ((float*)&outputDomainSize)[r] = (float)(domainMax - domainMin) - 0.5f;
         }
 
         _globalConstants.push_back( outputLinearize );
         _globalConstants.push_back( outputStride );
         _globalConstants.push_back( outputInvStride );
         _globalConstants.push_back( outputInvExtent );
+        _globalConstants.push_back( outputDomainMin );
+        _globalConstants.push_back( outputDomainSize );
 
         float4 hackConstant = float4(1,1,1,1);
         _globalConstants.push_back( hackConstant );
@@ -329,7 +335,7 @@ namespace brook
         bool techniqueTrans = technique.outputAddressTranslation || technique.inputAddressTranslation;
         bool techniqueInputTrans = technique.inputAddressTranslation;
 
-        if( requiresAddressTranslation != techniqueTrans )
+        if( requiresBaseAddressTranslation != techniqueTrans )
             continue;
 
         if( requiresInputAddressTranslation != techniqueInputTrans )
