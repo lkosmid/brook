@@ -1,8 +1,15 @@
 #include "brtvout.h"
 
 #include "ctool.h"
-
-#define SENTINEL_VALUE -18446321861244485632.0
+/*
+const double SENTINEL_VALUE = -18446321861244485632.0;
+std::string DoubleToString(double a) {
+   char str[1024];
+   sprintf(str,"%lf",a);
+   return str;
+}
+std::string SENTINEL_STRING= DoubleToString(SENTINEL_VALUE);
+*/
 VoutFunctionType voutFunctions;
 
 FunctionDef *IdentifyVoutFunc(FunctionDef * fd){
@@ -48,15 +55,17 @@ FunctionDef * TransformHeader (FunctionDef * fd) {
    Decl * VoutCounter =  new Decl (voutCounter);
    VoutCounter->form = new BaseType (BT_Float);
    ft->addArg(VoutCounter);
-#ifdef INF_SENTINEL
    Symbol * Inf = new Symbol;
    Inf->name = "__inf";
    Decl * InfDecl =  new Decl (Inf);
+#ifdef INF_SENTINEL
    ArrayType * streamtype = new ArrayType(TT_Array,NULL);
    streamtype->extend(new BaseType(BT_Float));
    InfDecl->form=streamtype;
-   ft->addArg(InfDecl);
+#else
+   InfDecl->form = new BaseType(BT_Float);
 #endif
+   ft->addArg(InfDecl);
    return NULL;
 }
 FunctionDef * TransformVoutToOut (FunctionDef * fd) {
@@ -110,7 +119,7 @@ Statement * InitialInfSet (std::string fname,
                                          new FloatConstant(0.0,location),
                                          location),
 #else
-                          new FloatConstant(SENTINEL_VALUE,location),
+                          new Variable(findSentinel(ft),location),
 #endif
                           location),
           location);
@@ -129,7 +138,7 @@ Statement * InitialInfSet (std::string fname,
                                        (findSentinel(ft),
                                         location),
 #else
-                                       new FloatConstant(SENTINEL_VALUE,
+                                       new Variable(findSentinel(ft),
                                                          location),
 #endif
                                        location),  

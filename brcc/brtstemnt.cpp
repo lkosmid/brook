@@ -131,6 +131,8 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
    out << "  float __vout_counter=0.0f;"<<std::endl;
 #ifdef INF_SENTINEL
    out << "  brook::Stream * __inf = *sentinelStream(1);";
+#else
+   out << "  float __inf = getSentinel();";
 #endif //INF_SENTINEL
    out << std::endl;
    out << "  int maxextents[2]={0,0};"<<std::endl;
