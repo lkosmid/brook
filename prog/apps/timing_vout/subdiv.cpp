@@ -454,7 +454,7 @@ int  subdivision(int  argc, char  **argv)
        if (debugLoop) {
           fprintf (stderr,"Time %f\n",(float)(stop-start));
        }else {
-          printf ("Time %f\n",(float)(stop-start));
+          printf ("Time %f ",(float)(stop-start));
        }
        if (debugLoop&&rr==2) {
           printf("%d\n",v.size);
@@ -472,7 +472,7 @@ int  subdivision(int  argc, char  **argv)
        if (debugLoop) {
           fprintf(stderr,"Num Rounds %d Adaptive Num Vertices %d Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,totalTriCount, vcount);
        }else {
-          printf("Num Rounds %d Adaptive Num Vertices %d Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,totalTriCount, vcount);
+          printf("NumRnd %d AdapNumTri %d NumTri %d\n",subdivisiondepth,totalTriCount, vcount);
        }
        totalTriCount=0;
     }
