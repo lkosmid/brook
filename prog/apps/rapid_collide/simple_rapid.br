@@ -227,3 +227,6 @@ kernel void SimpleCheckTriangleCollide(float3 mRx,
   hits= TrianglesHaveContact(mRx,mRy,mRz,mT,
                              t1,t2)?collisions:neg1;
 }
+int main (int argc, char ** argv) {
+  return 0;
+}

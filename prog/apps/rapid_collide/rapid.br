@@ -378,4 +378,3 @@ kernel void SimpleCheckTriangleCollide(float3 mRx,
                              t1,t2)?collisions:neg1;
 }
 
-
