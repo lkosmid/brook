@@ -1685,7 +1685,7 @@ type_qual_token: CONST
         {
            TypeQual r($1);
            r.vout=$3;
-           $$ = r
+           $$ = r;
         }
         ;
 
