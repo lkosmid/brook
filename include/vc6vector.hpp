@@ -337,6 +337,15 @@ template <> class BracketType <int> {public:
 template <> class BracketType <char> {public:
   typedef vec<char,1> type;
 };
+template <> class BracketType <vec<float,1> > {public:
+  typedef vec<vec<float,1>,1> type;
+};
+template <> class BracketType <vec<int,1> > {public:
+  typedef vec<vec<int,1>,1 > type;
+};
+template <> class BracketType <vec<char,1> > {public:
+  typedef vec<vec<char,1>,1 > type;
+};
 
 template <class T> class BracketOp {public:
   template <class U> T& operator ()(const U&u, unsigned int i) {
@@ -347,16 +356,22 @@ template <class T> class BracketOp {public:
   }
 };
 template <> class BracketOp <float> {public:
-  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
-  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
 };
 template <> class BracketOp <int> {public:
-  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
-  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
 };
 template <> class BracketOp <char> {public:
-  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
-  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
+};
+template <> class BracketOp <vec<float,1> > {public:
+	template <class U> vec<vec<float,1>,1> operator ()(const U&u, unsigned int i) {return vec<vec<float,1>,1>(u.getAt(0));}
+};
+template <> class BracketOp <vec<int,1> > {public:
+  template <class U> vec<vec<int,1>,1> operator ()(const U&u, unsigned int i) {return u.getAt(0);}
+};
+template <> class BracketOp <vec<char,1> > {public:
+  template <class U> vec<vec<char,1>,1> operator ()(const U&u, unsigned int i) {return u.getAt(0);}
 };
 
 
@@ -419,8 +434,7 @@ protected:
 public:
     const VALUE &getAt (unsigned int i) const{return f[i%size];}
     VALUE &getAt (unsigned int i) {return f[i%size];}
-    const typename BracketType<VALUE>::type &operator [] (unsigned int i)const {return BracketOp<VALUE>()(*this,i);}
-    typename BracketType<VALUE>::type &operator [] (unsigned int i) {return BracketOp<VALUE>()(*this,i);}
+    typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
     vec<VALUE,tsize>& cast() {
         return *this;
     }
@@ -443,19 +457,19 @@ public:
     BROOK_UNARY_OP(-)
     BROOK_UNARY_OP(!)    
 #undef BROOK_UNARY_OP
-    vec<VALUE,4> swizzle4(MASKS x,MASKS y,MASKS z,MASKS w)const {
+    vec<VALUE,4> swizzle4(int x,int y,int z,int w)const {
         return vec<VALUE,4>(getAt(x),
                             getAt(y),
                             getAt(z),
                             getAt(w));
     }
-    vec<VALUE,3> swizzle3(MASKS x,MASKS y,MASKS z)const {
+    vec<VALUE,3> swizzle3(int x,int y,int z)const {
         return vec<VALUE,3>(getAt(x),getAt(y),getAt(z));
     }
-    vec<VALUE,2> swizzle2(MASKS x,MASKS y)const {
+    vec<VALUE,2> swizzle2(int x,int y)const {
         return vec<VALUE,2>(getAt(x),getAt(y));
     }
-    vec<VALUE, 1> swizzle1(MASKS x)const {
+    vec<VALUE, 1> swizzle1(int x)const {
         return vec<VALUE,1>(getAt(x));
     }
     vec() {
@@ -1348,7 +1362,7 @@ public:
 
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<float,1> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<float,1> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1359,20 +1373,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<float,1> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<float,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<float,1> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<float,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<float,1> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<float,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1388,7 +1402,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<int,1> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<int,1> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1399,20 +1413,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<int,1> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<int,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<int,1> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<int,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<int,1> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<int,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1428,7 +1442,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<char,1> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<char,1> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1439,20 +1453,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<char,1> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<char,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<char,1> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<char,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<char,1> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<char,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1468,7 +1482,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<float,1>,1> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<float,1>,1> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1479,20 +1493,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<float,1>,1> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<float,1>,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<float,1>,1> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<float,1>,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<float,1>,1> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<float,1>,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1508,7 +1522,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<float,1>,2> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<float,1>,2> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1519,20 +1533,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<float,1>,2> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<float,1>,2> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<float,1>,2> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<float,1>,2> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<float,1>,2> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<float,1>,2> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1548,7 +1562,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<float,1>,3> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<float,1>,3> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1559,20 +1573,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<float,1>,3> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<float,1>,3> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<float,1>,3> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<float,1>,3> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<float,1>,3> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<float,1>,3> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1588,7 +1602,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<float,1>,4> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<float,1>,4> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1599,20 +1613,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<float,1>,4> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<float,1>,4> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<float,1>,4> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<float,1>,4> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<float,1>,4> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<float,1>,4> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1628,7 +1642,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<int,1>,1> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<int,1>,1> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1639,20 +1653,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<int,1>,1> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<int,1>,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<int,1>,1> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<int,1>,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<int,1>,1> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<int,1>,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1668,7 +1682,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<int,1>,2> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<int,1>,2> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1679,20 +1693,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<int,1>,2> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<int,1>,2> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<int,1>,2> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<int,1>,2> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<int,1>,2> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<int,1>,2> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1708,7 +1722,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<int,1>,3> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<int,1>,3> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1719,20 +1733,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<int,1>,3> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<int,1>,3> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<int,1>,3> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<int,1>,3> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<int,1>,3> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<int,1>,3> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1748,7 +1762,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<int,1>,4> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<int,1>,4> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1759,20 +1773,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<int,1>,4> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<int,1>,4> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<int,1>,4> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<int,1>,4> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<int,1>,4> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<int,1>,4> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1788,7 +1802,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<char,1>,1> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<char,1>,1> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1799,20 +1813,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<char,1>,1> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<char,1>,1> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<char,1>,1> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<char,1>,1> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<char,1>,1> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<char,1>,1> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1828,7 +1842,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<char,1>,2> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<char,1>,2> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1839,20 +1853,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<char,1>,2> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<char,1>,2> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<char,1>,2> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<char,1>,2> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<char,1>,2> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<char,1>,2> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1868,7 +1882,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<char,1>,3> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<char,1>,3> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1879,20 +1893,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<char,1>,3> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<char,1>,3> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<char,1>,3> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<char,1>,3> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<char,1>,3> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<char,1>,3> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1908,7 +1922,7 @@ public:
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
-      vec<VALUE,4> mask4 (const vec<vec<char,1>,4> &in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const vec<vec<char,1>,4> &in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -1919,20 +1933,20 @@ public:
                     getAt(W));
     }
     
-      vec<VALUE,3> mask3 (const vec<vec<char,1>,4> &in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const vec<vec<char,1>,4> &in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
      
-      vec<VALUE,2> mask2 (const vec<vec<char,1>,4> &in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const vec<vec<char,1>,4> &in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
      
-      vec<VALUE,1> mask1 (const vec<vec<char,1>,4> &in,MASKS X) {
+      vec<VALUE,1> mask1 (const vec<vec<char,1>,4> &in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
@@ -1958,7 +1972,7 @@ public:
 #define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
     vec<typename TYPESPECIFIER<VALUE,VALUE>::type, \
        LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<VALUE,1>  &b)const{ \
-      return vec<INTERNALTYPENAME TYPESPECIFIER<VALUE, \
+      return vec< TYPESPECIFIER<VALUE, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
@@ -1991,7 +2005,7 @@ public:
 #define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
     vec<typename TYPESPECIFIER<VALUE,VALUE>::type, \
        LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<VALUE,2>  &b)const{ \
-      return vec<INTERNALTYPENAME TYPESPECIFIER<VALUE, \
+      return vec< TYPESPECIFIER<VALUE, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
@@ -2024,7 +2038,7 @@ public:
 #define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
     vec<typename TYPESPECIFIER<VALUE,VALUE>::type, \
        LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<VALUE,3>  &b)const{ \
-      return vec<INTERNALTYPENAME TYPESPECIFIER<VALUE, \
+      return vec< TYPESPECIFIER<VALUE, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
@@ -2057,7 +2071,7 @@ public:
 #define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
     vec<typename TYPESPECIFIER<VALUE,VALUE>::type, \
        LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<VALUE,4>  &b)const{ \
-      return vec<INTERNALTYPENAME TYPESPECIFIER<VALUE, \
+      return vec< TYPESPECIFIER<VALUE, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
