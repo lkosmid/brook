@@ -21,7 +21,7 @@ public:
 
 class NV30GLStream : public __BrookStream {
 public:
-  NV30GLStream (const char type[], const __BrookIntArray &);
+  NV30GLStream (const char type[], int dims, int extents[]);
   virtual void streamRead(void *p);
   virtual void streamWrite(void *p);
   virtual ~NV30GLStream ();
@@ -30,9 +30,8 @@ public:
 class NV30GLRunTime : public __BrookRunTime {
 public:
   NV30GLRunTime();
-  virtual __BrookKernel *LoadKernel(const char[][__MAXPROGLENGTH]);
-  virtual __BrookStream *CreateStream(const char type[], 
-				      const __BrookIntArray &);
+  virtual __BrookKernel *LoadKernel(const char*[]);
+  virtual __BrookStream *CreateStream(const char type[], int dims, int extents[]);
   virtual ~NV30GLRunTime();
 
 };

@@ -2,6 +2,7 @@
 #include <brt.hpp>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <assert.h>
 #include <string.h>
 
@@ -9,7 +10,11 @@
 #include <nv30gl/nv30gl.hpp>
 
 // Perform runtime initialization
-__BrookRunTime *__brt = RunTimeFactory();
+__BrookRunTime *__brt()
+{
+    static __BrookRunTime* result = RunTimeFactory();
+    return result;
+}
 
 __BrookRunTime *RunTimeFactory(void) {
   char *env = getenv(RUNTIME_ENV_VAR);
@@ -27,13 +32,21 @@ __BrookRunTime *RunTimeFactory(void) {
   abort();
 }
 
-__BrookIntArray::__BrookIntArray(...) {
-  // XXX To Do
-  v = (int*) 0;
-}
+__BrookStream* CreateStream(const char type[], ... )
+{
+  int dimensions = 0;
+  int extents[__MAXSTREAMDIMS];
 
+  va_list args;
+  va_start(args,type);
+  int extent = 0;
+  for(;;)
+  {
+    extent = va_arg(args,int);
+    if( extent <= 0 ) break;
+    extents[dimensions++] = extent;
+  }
+  va_end(args);
 
-__BrookIntArray::~__BrookIntArray() {
-  if (v)
-    delete v;
+  return __brt()->CreateStream(type,dimensions,extents);
 }

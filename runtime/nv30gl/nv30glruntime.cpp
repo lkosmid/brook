@@ -4,13 +4,12 @@ NV30GLRunTime::NV30GLRunTime() {
   // XXX: TO DO
 }
 
-__BrookKernel * NV30GLRunTime::LoadKernel(const char[][__MAXPROGLENGTH]) {
+__BrookKernel * NV30GLRunTime::LoadKernel(const char*[]) {
   // XXX: TO DO
   return (__BrookKernel *) 0;
 }
 
-__BrookStream * NV30GLRunTime::CreateStream(const char type[], 
-					    const __BrookIntArray & dims) {
+__BrookStream * NV30GLRunTime::CreateStream(const char type[], int dims, int extents[]) {
   // XXX: TO DO
   return (__BrookStream *) 0;
 }

@@ -1,9 +1,8 @@
 #include <nv30gl.hpp>
 
 
-NV30GLStream::NV30GLStream (const char type[],
-			    const __BrookIntArray & dims):
-  __BrookStream(type, dims) { 
+NV30GLStream::NV30GLStream (const char type[], int dims, int extents[]):
+  __BrookStream(type, dims, extents) { 
   // XXX: TO DO
 }
 
