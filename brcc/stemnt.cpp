@@ -347,6 +347,11 @@ Statement::findExpr( fnExprCallback cb )
     }
 }
 
+void Statement::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  // TIM: default statement case - nothing to add to the tree
+}
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 FileLineStemnt::FileLineStemnt(const std::string& incl, int lino, const Location& l):
   Statement( ST_FileLineStemnt, l ), filename(incl), linenumber(lino)
@@ -540,6 +545,13 @@ ExpressionStemnt::findExpr( fnExprCallback cb )
    
    expression = (cb)(expression);
    expression->findExpr(cb);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+void ExpressionStemnt::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  expression->buildSplitTree( ioBuilder );
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

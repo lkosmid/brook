@@ -74,7 +74,7 @@ parse_args (int argc, char *argv[]) {
    */
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-  while ((opt = getopt(argc, argv, "d:hkntyANo:p:vw")) != EOF) {
+  while ((opt = getopt(argc, argv, "d:hkntyANSo:p:vw")) != EOF) {
      switch(opt) {
      case 'h':
         usage();
@@ -97,6 +97,9 @@ parse_args (int argc, char *argv[]) {
         break;
      case 'N':
         globals.allowKernelToKernel = false;
+        break;
+     case 'S':
+        globals.enableKernelSplitting = true;
         break;
      case 'o':
 	if (outputprefix) usage();

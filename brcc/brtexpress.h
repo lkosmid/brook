@@ -18,6 +18,9 @@ public:
    ~BrtGatherExpr () {/* do nothing*/}
 
    void print (std::ostream& out) const;
+
+   // TIM: adding DAG-building for kernel splitting support
+   virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
    
    int ndims;
 

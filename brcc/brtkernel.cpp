@@ -19,6 +19,7 @@
 #include "brtexpress.h"
 #include "codegen.h"
 #include "main.h"
+#include "splitting/splitting.h"
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::string whiteout (std::string s) {
@@ -281,22 +282,30 @@ BRTGPUKernelCode::printCodeForType(std::ostream& out,
    std::ostringstream wrapOut;
    char *fpcode;
 
-   fDef->Block::print(wrapOut, 0);
-   if (globals.verbose) {
-      std::cerr << "***Wrapping***\n";
-      fDef->decl->print(std::cerr, true);
-      std::cerr << std::endl << wrapOut.str() << "\n**********\n";
+   if( globals.enableKernelSplitting )
+   {
+    // TIM: insert attempt to build a split tree
+    CodeGen_SplitAndEmitCode( fDef, ps20_not_fp30, out );
    }
+   else
+   {
+    fDef->Block::print(wrapOut, 0);
+    if (globals.verbose) {
+        std::cerr << "***Wrapping***\n";
+        fDef->decl->print(std::cerr, true);
+        std::cerr << std::endl << wrapOut.str() << "\n**********\n";
+    }
 
-   assert (fDef->decl->form->type == TT_Function);
-   fType = (FunctionType *) fDef->decl->form;
-   fpcode = CodeGen_GenerateCode(fType->subType,
-                                 fDef->FunctionName()->name.c_str(),
-                                 fType->args, fType->nArgs,
-                                 wrapOut.str().c_str(),
-                                 ps20_not_fp30);
-   out << fpcode;
-   free(fpcode);
+    assert (fDef->decl->form->type == TT_Function);
+    fType = (FunctionType *) fDef->decl->form;
+    fpcode = CodeGen_GenerateCode(fType->subType,
+                                  fDef->FunctionName()->name.c_str(),
+                                  fType->args, fType->nArgs,
+                                  wrapOut.str().c_str(),
+                                  ps20_not_fp30);
+    out << fpcode;
+    free(fpcode);
+   }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

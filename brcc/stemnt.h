@@ -124,6 +124,9 @@ typedef    std::vector<Label*>    LabelVector;
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
+// TIM: adding DAG-building
+class SplitTreeBuilder;
+
 class Statement;
 typedef Dup<Statement> DupableStatement;
 
@@ -152,6 +155,9 @@ class Statement : public DupableStatement
 
     virtual void findExpr( fnExprCallback cb );
     virtual void findStemnt( fnStemntCallback cb ) { (cb)(this); }
+
+    // TIM: adding DAG-building for kernel splitting support
+    virtual void buildSplitTree( SplitTreeBuilder& ioBuilder );
 
     StatementType    type;
     LabelVector      labels;
@@ -213,6 +219,9 @@ class ExpressionStemnt : public Statement
     void print(std::ostream& out, int level) const;
 
     void findExpr( fnExprCallback cb );
+
+    // TIM: adding DAG-building for kernel splitting support
+    virtual void buildSplitTree( SplitTreeBuilder& ioBuilder );
 
     Expression    *expression;
 };

@@ -28,6 +28,7 @@ extern "C" {
 #include "stemnt.h"
 #include "brtkernel.h"
 #include "b2ctransform.h"
+#include "splitting/splitting.h"
 
 // TIM: needed?
 #include "brtdecl.h"
@@ -1099,13 +1100,15 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
  */
 static std::set<std::string> cg_warnings;
 static char *
-compile_cg_code (char *cgcode) {
+compile_cg_code (const char *cgcode) {
 
   char *argv[16] = { "cgc", "-profile", "fp30", 
                      "-DUSERECT", "-quiet", NULL };
   char *fpcode, *endline;
 
-  fpcode = Subprocess_Run(argv, cgcode);
+  char* tempCode = strdup( cgcode );
+  fpcode = Subprocess_Run(argv, tempCode);
+  free( tempCode );
   if (fpcode == NULL) {
      fprintf(stderr, "%s resulted in an error, skipping fp30 / nv30gl target ",
              argv[0]);
@@ -1160,7 +1163,7 @@ compile_cg_code (char *cgcode) {
  */
 
 static char *
-compile_hlsl_code (char *hlslcode) {
+compile_hlsl_code (const char *hlslcode) {
 
   char *argv[] = { "fxc", "/Tps_2_0", "/nologo", 0, 0, NULL };
   char *fpcode,  *errcode;
@@ -1539,3 +1542,62 @@ CodeGen_GenerateCode(Type *retType, const char *name,
   return c_code;
 }
 
+/*
+*	CodeGen_SplitAndEmitCode
+*  A simplified entry point for generating shaders that need to be split.
+*/
+void CodeGen_SplitAndEmitCode( FunctionDef* inFunctionDef, bool inIsDirectX, std::ostream& inStream ) {
+  SplitTree* splitTree = new SplitTree( inFunctionDef );
+
+  std::string functionName = inFunctionDef->FunctionName()->name;
+
+  std::stringstream shaderStream;
+
+  shaderStream << "#ifdef USERECT\n";
+  shaderStream << "#define _stype   samplerRECT\n";
+  shaderStream << "#define _sfetch  texRECT\n";
+  shaderStream << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
+  shaderStream << "#define __sample2(s,i) texRECT((s),(i))\n";
+  shaderStream << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
+  shaderStream << "#else\n";
+  shaderStream << "#define _stype   sampler\n";
+  shaderStream << "#define _sfetch  tex2D\n";
+  shaderStream << "#define __sample1(s,i) tex1D((s),(i))\n";
+  shaderStream << "#define __sample2(s,i) tex2D((s),(i))\n";
+  shaderStream << "#define _computeindexof(a,b) (b)\n";
+  shaderStream << "#endif\n\n";
+
+  splitTree->printShaderFunction( shaderStream );
+  std::string shaderString = shaderStream.str();
+
+  if( globals.verbose )
+    std::cerr << "***Produced this shader:\n" << shaderString << std::endl;
+
+  if( globals.keepFiles ) {
+    std::ofstream fileStream;
+    fileStream.open( globals.shaderoutputname );
+    if (fileStream.fail()) {
+      std::cerr << "***Unable to open " << globals.shaderoutputname << std::endl;
+    } else {
+      fileStream << shaderString;
+      fileStream.close();
+    }
+  }
+
+  if( globals.verbose ) {
+    std::cerr << "Generating " << (inIsDirectX ? "ps20" : "fp30")
+      << " code for " << functionName << "." << std::endl;
+  }
+  std::string assemblerString = (inIsDirectX ? compile_hlsl_code : compile_cg_code)(shaderString.c_str());
+
+  if( globals.verbose )
+    std::cerr << "***Produced this assembly:\n" << assemblerString << std::endl;
+
+  std::vector<std::string> passStrings;
+  passStrings.push_back( assemblerString );
+
+  char* c_code = generate_c_code( passStrings, functionName.c_str(), inIsDirectX?"ps20":"fp30" );
+  inStream << c_code << std::endl;
+}
+
+                                

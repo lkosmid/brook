@@ -27,6 +27,8 @@ struct globals_struct {
   bool enableGPUAddressTranslation;
   bool allowKernelToKernel;
   bool noTypeChecks;
+  // TIM: hacked flag for now
+  bool enableKernelSplitting;
 };
 
 extern struct globals_struct globals;

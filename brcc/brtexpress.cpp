@@ -3,6 +3,7 @@
  *  the actual code to convert gathers streams and indexof exprs
  */ 
 #include "brtexpress.h"
+#include "splitting/splitting.h"
 #include "main.h"
 #include <stdio.h>
 
@@ -144,6 +145,18 @@ BrtGatherExpr::print (std::ostream& out) const
    }
 }
 
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* BrtGatherExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  SplitNode* stream = base->buildSplitTree( ioBuilder );
+  std::vector<SplitNode*> indices;
+  for( ExprVector::iterator i = dims.begin(); i != dims.end(); i++ )
+  {
+    indices.push_back( (*i)->buildSplitTree(ioBuilder) );
+  }
+
+  return ioBuilder.addGather( stream, indices );
+}
 
 BrtStreamInitializer::BrtStreamInitializer(const BrtStreamType *type,
 					 const Location& loc )

@@ -168,6 +168,10 @@ enum BinaryOp
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
+// TIM: adding DAG-building for kernel splitting support
+class SplitTreeBuilder;
+class SplitNode;
+
 class Expression;
 typedef Dup<Expression> DupableExpression;
 
@@ -184,6 +188,9 @@ class Expression : public DupableExpression
     virtual void print(std::ostream& out) const;
 
     virtual void findExpr( fnExprCallback cb ) { (cb)(this); }
+
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder ) { return 0; }
 
     ExpressionType    etype;
     Location          location;
@@ -210,6 +217,9 @@ class Constant : public Expression
  
     virtual Expression *dup0() const = 0;
     virtual void print(std::ostream& out) const = 0;
+
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
 
     ConstantType    ctype;   
 };
@@ -323,6 +333,9 @@ class Variable : public Expression
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
+
     Symbol    *name;
 };
 
@@ -391,6 +404,9 @@ class BinaryExpr : public Expression
 
     void findExpr( fnExprCallback cb );
 
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
+
     BinaryOp    bOp;
 
     Expression *_leftExpr;
@@ -438,6 +454,9 @@ class AssignExpr : public BinaryExpr
 
     Expression *dup0() const;
     void print(std::ostream& out) const;
+
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
 
     AssignOp    aOp;
 };

@@ -12,4 +12,6 @@ CodeGen_GenerateCode(Type *retType, const char *name,
                      Decl **args, int nArgs, const char *body,
                      bool ps20_not_fp30);
 
+void CodeGen_SplitAndEmitCode( FunctionDef* inFunctionDef, bool inIsDirectX, std::ostream& inStream );
+
 #endif

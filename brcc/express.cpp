@@ -44,6 +44,7 @@
 #include "gram.h"
 #include "token.h"
 #include "stemnt.h"
+#include "splitting/splitting.h"
 
 //#define SHOW_TYPES
 
@@ -371,6 +372,13 @@ Constant::Constant(ConstantType ct, const Location& l)
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Constant::~Constant()
 {
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* Constant::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  return ioBuilder.addConstant( this );
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -758,6 +766,12 @@ Variable::print(std::ostream& out) const
         out << " */";
     }
 #endif
+}
+
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* Variable::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  return ioBuilder.findVariable( name->name );
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1242,6 +1256,25 @@ BinaryExpr::findExpr( fnExprCallback cb )
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* BinaryExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  SplitNode* left = _leftExpr->buildSplitTree( ioBuilder );
+
+  if( bOp == BO_Member ) // TIM: no pointer members to contend with in kernels
+  {
+    assert( _rightExpr->etype == ET_Variable );
+    std::string name = ((Variable*)_rightExpr)->name->name;
+    return ioBuilder.addMember( left, name );
+  }
+  else
+  {
+    SplitNode* right = _rightExpr->buildSplitTree( ioBuilder );
+    return ioBuilder.addBinaryOp( bOp, left, right );
+  }
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 TrinaryExpr::TrinaryExpr( Expression *cExpr,
                           Expression *tExpr, Expression *fExpr,
 			  const Location& l )
@@ -1355,6 +1388,26 @@ AssignExpr::print(std::ostream& out) const
     }
 #endif
 }
+
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* AssignExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  if( lValue()->etype == ET_Variable )
+  {
+    SplitNode* value = rValue()->buildSplitTree( ioBuilder );
+    std::string name = ((Variable*)lValue())->name->name;
+
+    return ioBuilder.assign( name, value );
+  }
+  else
+  {
+    std::cerr << "Assign to a non-variable - couldn't build DAG." << std::endl;
+    print( std::cerr );
+    std::cerr << std::endl;
+    return NULL;
+  }
+}
+
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 RelExpr::RelExpr( RelOp _op, Expression *lExpr, Expression *rExpr,
