@@ -67,6 +67,7 @@ namespace brook {
   class StreamInterface {
   protected:
     StreamInterface(){}
+    virtual ~StreamInterface(){}
   public:
     virtual void Release() {delete this;}
     enum USAGEFLAGS {NONE=0x0,READ=0x1,WRITE=0x2,READWRITE=0x3};
@@ -104,6 +105,7 @@ namespace brook {
     virtual __BRTStreamType getStreamType ()const{return type;}
   protected:
     __BRTStreamType type;
+    virtual ~Iter() {}
   };
 
 }

@@ -4,13 +4,13 @@
 
 
 #define MAX_NZ_PER_ROW  7
-#define NUM_ROWS        100
+#define NUM_ROWS        140
 #define MAX_NZ          (NUM_ROWS*MAX_NZ_PER_ROW)
 
 
 /*** Kernels needed for Sparse Matrix-Vector multiplication *****************************************/
 
-kernel void gather(float index<>, float x[NUM_ROWS+1], out float result<>) {
+kernel void gather(float index<>, float x[], out float result<>) {
   result = x[index];
 }
 
@@ -18,8 +18,9 @@ kernel void mult(float a<>, float b<>, out float c<>) {
   c = a*b;
 }
 
-reduce void sumRows(float nzValues<>, reduce float result<>) {
-  result += nzValues;
+kernel void sparse_matmult_product( float index<>, float x[], float A<>, out float result<> )
+{
+  result = x[index] * A;
 }
 
 
@@ -169,7 +170,7 @@ int main(int argc, char** argv) {
   float  cIdx[MAX_NZ];
   float  x[NUM_ROWS];
   float  b[NUM_ROWS];
-  float  zeros[NUM_ROWS];
+  //float  zeros[NUM_ROWS];
   //float  tmp[NUM_ROWS];
 
   float  AStrm<MAX_NZ>;
@@ -226,7 +227,7 @@ int main(int argc, char** argv) {
 
   /////////////////////////////////////////////////////////////////////////////////
 
-  createCSRFromPoisson(10, 1, csrNz, csrCols, csrRowStart);
+  createCSRFromPoisson(NUM_ROWS, 1, csrNz, csrCols, csrRowStart);
 
   // convert from pure CSR to a padded scheme better suited for streaming
   reshuffleData(csrNz, csrCols, csrRowStart, Anz, cIdx);
@@ -281,7 +282,7 @@ int main(int argc, char** argv) {
   for (i=0;i<NUM_ROWS;i++) {
     x[i] = 0.0f;
     b[i] = 50.0f;
-    zeros[i] = 0.0f;
+//    zeros[i] = 0.0f;
   }
 
 
@@ -291,11 +292,9 @@ int main(int argc, char** argv) {
   streamRead(bStrm, b);
 
   // Ax_0
-  // these four lines constitute a sparse matrix-vector multiply
-  streamRead(rStrm, zeros);
-  gather(cIdxStrm, xStrm, vecGatherStrm);
-  mult(AStrm, vecGatherStrm, productsStrm);
-  sumRows(productsStrm, rStrm);
+  // these two lines constitute a sparse matrix-vector multiply
+  sparse_matmult_product( cIdxStrm, xStrm, AStrm, productsStrm );
+  sum( productsStrm, rStrm );
 
   // r = b - Ax
   subtract(bStrm, rStrm, rStrm);
@@ -327,11 +326,9 @@ int main(int argc, char** argv) {
 	    scaleAdd(rStrm, dStrm, resNew / resOld, dStrm);
 
 	  // q = Ad
-    // these four lines constitute a sparse matrix-vector multiply
-    streamRead(qStrm, zeros);
-    gather(cIdxStrm, dStrm, vecGatherStrm);
-    mult(AStrm, vecGatherStrm, productsStrm);
-    sumRows(productsStrm, qStrm);
+    // these two lines constitute a sparse matrix-vector multiply
+    sparse_matmult_product( cIdxStrm, dStrm, AStrm, productsStrm );
+    sum( productsStrm, qStrm );
 
     //printf("qStrm:\n");
     //streamWrite(qStrm, tmp);
@@ -340,7 +337,6 @@ int main(int argc, char** argv) {
     //printf("\n");
 
     // alpha = d dot q
-	  alpha = 0.0f;
 	  mult(dStrm, qStrm, tmpStrm);
 
     //printf("tmpStrm:\n");
@@ -374,7 +370,6 @@ int main(int argc, char** argv) {
 
     // resNew = r dot r
     resOld = resNew;
-	  resNew = 0.0f;
 	  square(rStrm, tmpStrm);
     sum(tmpStrm, resNew);
 
