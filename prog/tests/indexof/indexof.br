@@ -4,7 +4,7 @@ extern void printf();
 extern void streamRead();
 extern void streamWrite();
 
-kernel void foo (float d_prime<>, float b<>, float4 c,
+kernel void bar (float d_prime<>, float b<>, float4 c,
 		 float d[10][10], out float e<>) {
   e = ((d_prime==d[indexof(d_prime)])
        &&(d_prime==d[indexof(d_prime)])
@@ -12,7 +12,11 @@ kernel void foo (float d_prime<>, float b<>, float4 c,
        &&!(d_prime==d[(indexof d_prime ).yx]));
   /* this test should make a matrix of 1 and a diagonal of 0's*/
 }
-
+kernel void foo (float ay<>, 
+                 float mydprime<>, float4 c, float d[10][10],out float e<>) {
+   
+   bar(mydprime,ay,c,d,e);
+}
 int main () {
 
   float a<10, 10>;
@@ -40,7 +44,7 @@ int main () {
   streamRead(b, data_b);
   streamRead(d, data_d);
 
-  foo(d,b,c,d,e);
+  foo(b,d,c,d,e);
   //foo(a,b,c,d_broken,e);
 
   streamWrite(e, data_e);
