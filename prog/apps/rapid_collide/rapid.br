@@ -80,8 +80,8 @@ kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
 }
 
 kernel void ISECT(float3 VV<>, float3 D, out float2 isect<>) {
-  isect[0] = VV[0] + (VV[1]-VV[0])*D[0]/(D[0]-D[1]);
-  isect[1] = VV[1] + (VV[2]-VV[0])*D[0]/(D[0]-D[2]);
+  isect = float2(VV[0] + (VV[1]-VV[0])*D[0]/(D[0]-D[1]),
+                 VV[1] + (VV[2]-VV[0])*D[0]/(D[0]-D[2]));
 }
 kernel float COMPUTE_INTERVALS (float3 VV<>,
                                 float3 D<>,
@@ -111,8 +111,7 @@ kernel float COMPUTE_INTERVALS (float3 VV<>,
 }
 kernel void sort2(float2 input, out float2 output<>) {
   if (input.x>input.y) {
-    output.y = input.x;
-    output.x = input.y;
+    output = input.yx;
   }else {
     output=input;
   }
@@ -150,7 +149,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   du = float3(dot(N1,U0)+d1,
               dot(N1,U1)+d1,
               dot(N1,U2)+d1);
-  du*=(float3)(abs(du)>=EPSILON);
+  du=du*(float3)(abs(du)>=EPSILON);
   du0du1 = du[0] *du[1];
   du0du2 = du[0] *du[2];
   
