@@ -14,7 +14,7 @@
 // uncomment this line to have the DX9
 // runtime spit out
 // lots of debug trace information
-#define BROOK_DX9_TRACE
+// #define BROOK_DX9_TRACE
 
 // uncomment this line and the one above
 // to make the DX9 runtime spit out
