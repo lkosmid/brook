@@ -73,7 +73,7 @@ template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>:
   return f.CALLFUNC(g); \
 } \
 template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
-       LUB<TEMPL_TYPESIZE,3>::size> FUNC (const __BrtFloat3 &f, const BRT_TYPE &g) { \
+       LUB<TEMPL_TYPESIZE,3>::size> __##FUNC##_cpu_inner (const __BrtFloat3 &f, const BRT_TYPE &g) { \
   return f.CALLFUNC(g); \
 } \
 template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
@@ -81,7 +81,7 @@ template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>:
   return f.CALLFUNC(g); \
 } \
 template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
-       LUB<TEMPL_TYPESIZE,1>::size> FUNC (const __BrtFloat1 &f, const BRT_TYPE &g) { \
+       LUB<TEMPL_TYPESIZE,1>::size> __##FUNC##_cpu_inner (const __BrtFloat1 &f, const BRT_TYPE &g) { \
   return f.CALLFUNC(g); \
 }
 
