@@ -13,10 +13,17 @@
 
 #include <algorithm>
 
+// uncomment this to switch to slow-as-hell sort of exhaustive search
+//#define SPLIT_SEARCH_EXHAUSTIVE
+
+// uncomment this to turn on the greedy merging that improves RDS
+#define SPLIT_SEARCH_MERGE
+
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler )
   : _resultValue(NULL), _compiler(inCompiler), _pseudoRoot(NULL)
 {
-  std::cout << "$$$$$ creating a split tree for " << inFunctionDef->FunctionName()->name << std::endl;
+  _functionName = inFunctionDef->FunctionName()->name;
+  std::cout << "$$$$$ creating a split tree for " << _functionName << std::endl;
 
   build( inFunctionDef );
 }
@@ -39,8 +46,13 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
 
 //  preRdsMagic();
 
+#ifdef SPLIT_SEARCH_EXHAUSTIVE
+
+  exhaustiveSearch();
+
+#else
   rdsSearch();
-//  rdsSubdivide();
+#endif
 
   // TIM: we need to split somewhere
   for( size_t i = 0; i < _outputList.size(); i++ )
@@ -73,28 +85,162 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
 
   unmark( SplitNode::kMarkBit_Printed );
 
+  dumpPassConfiguration( std::cout );
+
   for( PassSet::iterator p = _passes.begin(); p != _passes.end(); ++p )
     rdsPrintPass( *p, inStream );
 
   inStream << "\t)";
 
-/*
+//  dumpFile.close();
+}
 
-  // go recursively through the nodes
-  // and print out anything that we split at...
-  inStream << "\t.technique( gpu_technique_desc()" << std::endl;
-  if( temporaryCount )
+void SplitTree::dumpPassConfiguration( std::ostream& inStream )
+{
+  inStream << "Split configuration generated for " << _functionName << std::endl;
+  
+#if defined(SPLIT_SEARCH_EXHAUSTIVE)
+  inStream << "Exhaustive search" << std::endl;
+#elif defined(SPLIT_SEARCH_MERGE)
+  inStream << "RDS with integrated merge" << std::endl;
+#else
+  inStream << "Standard RDS" << std::endl;
+#endif
+
+  size_t nodeCount = _dagOrderNodeList.size();
+  inStream << "totalNodes = " << nodeCount << std::endl;
+
+  size_t mrNodeCount = 0;
+  for( NodeList::iterator n = _dagOrderNodeList.begin(); n != _dagOrderNodeList.end(); ++n )
   {
-    inStream << "\t\t.temporaries(" << temporaryCount << ")" << std::endl;
+    SplitNode* node = *n;
+    if( node->getGraphParentCount() > 1 )
+      mrNodeCount++;
   }
 
-  unmark( SplitNode::kMarkBit_Printed );
+  inStream << "multiplyReferencedNodes = " << mrNodeCount << std::endl;
 
-  _pseudoRoot->rdsPrint( *this, _compiler, inStream );
+  inStream << "passCount = " << _passes.size() << std::endl;
 
-  inStream << "\t)";*/
+  int totalCost = 0;
 
-//  dumpFile.close();
+  for( PassSet::iterator p = _passes.begin(); p != _passes.end(); ++p )
+  {
+    inStream << "<pass>" << std::endl;
+
+    SplitShaderHeuristics heuristics = (*p)->heuristics;
+
+    inStream << "cost = " << heuristics.cost << std::endl;
+
+    totalCost += heuristics.cost;
+
+    inStream << "</pass>" << std::endl;
+  }
+
+  inStream << "totalCost = " << totalCost << std::endl;
+}
+
+void SplitTree::exhaustiveSearch()
+{
+  // first label the outputs
+  for( NodeList::iterator i = _outputList.begin(); i != _outputList.end(); ++i )
+  {
+    (*i)->_splitHere = true;
+  }
+
+  // now collect all the unlabeled, nontrivial nodes:
+  NodeList nodesToConsider;
+  for( NodeList::iterator j = _dagOrderNodeList.begin(); j != _dagOrderNodeList.end(); ++j )
+  {
+    if( (*j)->isMarkedAsSplit() ) continue;
+    if( !(*j)->canBeSaved() ) continue;
+    if( *j == _pseudoRoot ) continue;
+    nodesToConsider.push_back( *j );
+  }
+
+  size_t nodeCount = nodesToConsider.size();
+
+  int bestScore = INT_MAX;
+
+  for( size_t subsetSize = 0; subsetSize < nodeCount; subsetSize++ )
+  {
+    std::cout << "considering subsets of size " << subsetSize << " out of " << nodeCount << std::endl;
+
+    int bestScoreForSubsetSize = INT_MAX;
+    exhaustiveSubsetSearch( subsetSize, nodesToConsider, bestScoreForSubsetSize );
+
+    std::cout << "best split has score: " << bestScoreForSubsetSize << std::endl;
+
+    if( bestScoreForSubsetSize != INT_MAX )
+    {
+      if( (bestScore != INT_MAX) && (bestScoreForSubsetSize > bestScore) )
+      {
+        // there probably isn't a better partition, lets use this :)
+        break;
+      }
+
+      if( bestScoreForSubsetSize < bestScore )
+        bestScore = bestScoreForSubsetSize;
+    }
+  }
+
+  std::cout << "best overall score found before giving up: " << bestScore << std::endl;
+}
+
+void SplitTree::exhaustiveSubsetSearch( size_t inSubsetSize, const NodeList& inNodes, int& outBestScore )
+{
+  size_t subsetSize = inSubsetSize;
+  size_t nodeCount = inNodes.size();
+  SplitSubsetGenerator2 generator( subsetSize, nodeCount );
+
+  outBestScore = INT_MAX;
+
+  while( generator.hasMore() )
+  {
+    generator.getNext();
+
+    for( size_t i = 0; i < subsetSize; i++ )
+      inNodes[ generator.getIndexedValue(i) ]->_splitHere = true;
+
+    int score;
+    if( exhaustiveSplitIsValid( score ) )
+    {
+      // TIM: find the optimal merge...
+
+      rdsMergePasses();
+      score = getPartitionCost();
+
+      if( score < outBestScore )
+        outBestScore = score;
+    }
+
+    for( size_t i = 0; i < subsetSize; i++ )
+      inNodes[ generator.getIndexedValue(i) ]->_splitHere = false;
+  }
+}
+
+bool SplitTree::exhaustiveSplitIsValid( int& outScore )
+{
+  int totalCost = 0;
+  for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
+  {
+    SplitNode* node = *i;
+    if( !node->isMarkedAsSplit() ) continue;
+
+    SplitShaderHeuristics heuristics;
+    if( !rdsCompile( node, heuristics ) )
+      return false;
+
+    node->setHeuristics( heuristics );
+
+    totalCost += heuristics.cost;
+  }
+
+//  std::cout << "exhaustive search found valid split with cost: " << totalCost << std::endl;
+
+  outScore = totalCost;
+
+  return true;
 }
 
 void SplitTree::rdsMergePasses()
@@ -117,6 +263,8 @@ void SplitTree::rdsMergePasses()
     rdsAccumulatePassDescendents( *j );
   }
 
+#ifdef SPLIT_SEARCH_MERGE
+
   // now that we have all the passes, lets start building up potential merges...
   bool didMerge = true;
   while( didMerge )
@@ -125,7 +273,7 @@ void SplitTree::rdsMergePasses()
 
     didMerge = false;
 
-    float bestScore = 0;
+    int bestScore = 0;
     SplitPassInfo* bestA = 0;
     SplitPassInfo* bestB = 0;
     SplitPassInfo* bestMerged = 0;
@@ -143,7 +291,7 @@ void SplitTree::rdsMergePasses()
 
         std::cout << "*";
 
-        float score = (a->cost + b->cost) - merged->cost;
+        int score = (a->cost + b->cost) - merged->cost;
 
         if( score > bestScore || bestMerged == NULL )
         {
@@ -175,8 +323,9 @@ void SplitTree::rdsMergePasses()
       for( NodeSet::iterator i = bestMerged->outputs.begin(); i != bestMerged->outputs.end(); ++i )
         (*i)->_assignedPass = bestMerged;
     }
-
   }
+
+#endif
 }
 
 SplitPassInfo* SplitTree::rdsCreatePass( SplitNode* inNode )
@@ -189,11 +338,16 @@ SplitPassInfo* SplitTree::rdsCreatePass( SplitNode* inNode )
 
   result->outputs.insert( inNode );
 
+  SplitShaderHeuristics heuristics = inNode->getHeuristics();
+
+  /* TIM: we assume nodes already have the proper heuristic installed
   SplitShaderHeuristics heuristics;
   rdsCompile( inNode, heuristics );
   assert( heuristics.valid );
+  */
 
   result->cost = heuristics.cost;
+  result->heuristics = heuristics;
 
 //  dumpFile << "CREATED " << (void*)result << " with cost " << result->cost << std::endl;
 
@@ -332,6 +486,7 @@ SplitPassInfo* SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB
   result->outputs.swap( mergedOutputs );
   
   result->cost = heuristics.cost;
+  result->heuristics = heuristics;
 
   NodeSet tempX;
   NodeSet tempY;
@@ -430,7 +585,7 @@ void SplitTree::rdsSearch()
     (*j)->_wasSavedRecompute = false;
   }}
 
-  float bestCost;
+  int bestCost;
 
   size_t index = 0;
   size_t count = _multiplyReferencedNodes.size();
@@ -449,8 +604,8 @@ void SplitTree::rdsSearch()
 
     bool trySave = true;
     bool tryRecompute = true;
-    float saveCost = 0;
-    float recomputeCost = 0;
+    int saveCost = 0;
+    int recomputeCost = 0;
 
     if( i != _multiplyReferencedNodes.begin() )
     {
@@ -504,7 +659,7 @@ void SplitTree::rdsSearch()
         (*j)->_wasSavedSave = (*j)->_wasSaved;
       }}
     }
-//    dumpFile << "####### save cost is " << saveCost << std::endl;
+    std::cout << "####### save cost is " << saveCost << std::endl;
 
     if( tryRecompute )
     {
@@ -524,7 +679,7 @@ void SplitTree::rdsSearch()
         (*j)->_wasSavedRecompute = (*j)->_wasSaved;
       }}
     }
-//    dumpFile << "####### recompute cost is " << recomputeCost << std::endl;
+    std::cout << "####### recompute cost is " << recomputeCost << std::endl;
 
     if( saveCost < recomputeCost )
     {
@@ -532,9 +687,9 @@ void SplitTree::rdsSearch()
       node->_rdsFixedUnmarked = false;
       node->_rdsFixedMarked = true;
 
-//      dumpFile << "####### @final decision is to save " << (void*)node << std::endl << "  ";
-//      node->dump( dumpFile );
-//      dumpFile << std::endl;
+      std::cout << "####### @final decision is to save " << (void*)node << std::endl << "  ";
+//      node->dump( std::cout );
+//      std::cout << std::endl;
     }
     else
     {
@@ -542,7 +697,7 @@ void SplitTree::rdsSearch()
       node->_rdsFixedUnmarked = true;
       node->_rdsFixedMarked = false;
 
-//      dumpFile << "####### final decision is to recompute " << (void*)node << std::endl << "  ";
+      std::cout << "####### final decision is to recompute " << (void*)node << std::endl << "  ";
 //      node->dump( dumpFile );
 //      dumpFile << std::endl;
     }
@@ -550,11 +705,11 @@ void SplitTree::rdsSearch()
 
   // use the resulting configuration
   // for one final compile pass
-  float finalCost = rdsCompileConfiguration();
+  int finalCost = rdsCompileConfiguration();
 //  dumpFile << "final cost is " << finalCost << std::endl;
 }
 
-float SplitTree::rdsCompileConfiguration()
+int SplitTree::rdsCompileConfiguration()
 {
   rdsSubdivide();
   rdsMergePasses();
@@ -680,6 +835,10 @@ bool SplitTree::rdsMergeSome( SplitNode* n, const NodeList& inUnsavedChildren, s
     if( (bestSubset & (1 << i)) == 0 )
     {
       unsavedChildren[i]->_splitHere = true;
+
+      SplitShaderHeuristics heuristics;
+      rdsCompile( unsavedChildren[i], heuristics );
+      unsavedChildren[i]->setHeuristics( heuristics );
 
 //      dumpFile << "merge step decided to @save " << (void*)(unsavedChildren[i]) << std::endl << "  ";
 //      unsavedChildren[i]->dump( dumpFile );
@@ -811,10 +970,13 @@ void SplitTree::rdsDecideSave( SplitNode* n, const SplitShaderHeuristics& inHeur
 //  n->dump( dumpFile );
 //  dumpFile << std::endl;
 
+  n->setHeuristics( inHeuristics );
+
   if( n->_rdsFixedMarked )
   {
 //    dumpFile << "fixed as saved" << std::endl;
     n->_splitHere = true;
+    n->setHeuristics( inHeuristics );
   }
   else if( n->_rdsFixedUnmarked )
   {
@@ -827,6 +989,9 @@ void SplitTree::rdsDecideSave( SplitNode* n, const SplitShaderHeuristics& inHeur
 
     n->_wasConsidered = true;
     n->_wasSaved = n->_splitHere;
+
+    if( n->_splitHere )
+      n->setHeuristics( inHeuristics );
 
 //    dumpFile << "heuristic decided to " << (n->_splitHere ? "@save" : "recompute" ) << std::endl;
   }
@@ -883,36 +1048,9 @@ bool SplitTree::rdsCompile( const NodeSet& inNodes, SplitShaderHeuristics& outHe
   return outHeuristics.valid;
 }
 
-float SplitTree::getPartitionCost()
+int SplitTree::getPartitionCost()
 {
-  /*
-  // TIM: print it out for my edification :)
-  for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
-  {
-    SplitNode* node = *i;
-
-    if( !node->isMarkedAsSplit() ) continue;
-
-//    std::cerr << "%%%%%%%%%%%%%%%\n";
-//    node->dump( std::cerr );
-//    std::cerr << std::endl;
-  }
-
-  float totalCost = 0;
-  SplitShaderHeuristics heuristics;
-  for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
-  {
-    SplitNode* node = *i;
-
-    if( !node->isMarkedAsSplit() ) continue;
-
-    bool valid = rdsCompile( node, heuristics );
-    assert( valid );
-
-    totalCost += heuristics.cost;
-  }*/
-
-  float totalCost = 0;
+  int totalCost = 0;
   for( PassSet::iterator i = _passes.begin(); i != _passes.end(); ++i )
     totalCost += (*i)->cost;
 

@@ -18,7 +18,7 @@ void SplitCompiler::compile(
 //  std::cerr << "\n###about to compile: \n" << bodyStream.str() << "\n###" << std::endl;
 
   std::ostringstream assemblerStream;
-  compileShader( bodyStream.str(), assemblerStream, outHeuristics );
+  compileShader( bodyStream.str(), assemblerStream, inTree.getConfiguration(), outHeuristics );
   std::string assemblerCode = assemblerStream.str();
 
   if( assemblerCode == "" && forReal )

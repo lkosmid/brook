@@ -7,6 +7,8 @@
 //debug symbol warning
 #endif
 
+#include "splitconfiguration.h"
+
 #include <vector>
 #include <set>
 #include <iostream>
@@ -18,7 +20,7 @@ class SplitShaderHeuristics
 {
 public:
   bool valid; // whether this shader can be compiled
-  float cost; // the cost of this shader (if valid)
+  int cost; // the cost of this shader (if valid)
   bool recompute; // should we recompute this shader, rather than save it?
 };
 
@@ -35,7 +37,7 @@ public:
 protected:
   virtual void printHeaderCode( std::ostream& inStream ) const {};
   virtual void printFooterCode( std::ostream& inStream ) const {};
-  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& inAssemblerStream, SplitShaderHeuristics& outHeuristics ) const = 0;
+  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& inAssemblerStream, const SplitConfiguration& inConfiguration, SplitShaderHeuristics& outHeuristics ) const = 0;
 
   void printStringConstant( const std::string& inString, const std::string& inPrefix, std::ostream& inStream ) const;
 };

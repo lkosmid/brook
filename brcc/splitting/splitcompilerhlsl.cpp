@@ -10,31 +10,35 @@
 void SplitCompilerHLSL::printHeaderCode( std::ostream& inStream ) const
 {
   inStream
-    << "#ifdef USERECT\n"
-    << "#define _stype   samplerRECT\n"
-    << "#define _sfetch  texRECT\n"
-    << "#define __sample1(s,i) texRECT((s),float2(i,0))\n"
-    << "#define __sample2(s,i) texRECT((s),(i))\n"
-    << "#define _computeindexof(a,b) float4(a, 0, 0)\n"
-    << "#else\n"
+//    << "#ifdef USERECT\n"
+//    << "#define _stype   samplerRECT\n"
+//    << "#define _sfetch  texRECT\n"
+//    << "#define __sample1(s,i) texRECT((s),float2(i,0))\n"
+//    << "#define __sample2(s,i) texRECT((s),(i))\n"
+//    << "#define _computeindexof(a,b) float4(a, 0, 0)\n"
+//    << "#else\n"
     << "#define _stype   sampler\n"
     << "#define _sfetch  tex2D\n"
     << "#define __sample1(s,i) tex1D((s),(i))\n"
-    << "#define __sample2(s,i) tex2D((s),(i))\n"
-    << "#define _computeindexof(a,b) (b)\n"
-    << "#endif\n\n";
+    << "#define __sample2(s,i) tex2D((s),(i))\n";
+//    << "#define _computeindexof(a,b) (b)\n"
+//    << "#endif\n\n";
 
 }
 
-void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode, SplitShaderHeuristics& outHeuristics ) const
+void SplitCompilerHLSL::compileShader(
+  const std::string& inHighLevelCode, std::ostream& outLowLevelCode, const SplitConfiguration& inConfiguration, SplitShaderHeuristics& outHeuristics ) const
 {
   ShaderResourceUsage usage;
 
-  char* assemblerBuffer = compile_fxc( inHighLevelCode.c_str(), CODEGEN_PS20, &usage );
+  bool shouldValidate = inConfiguration.validateShaders;
+
+  char* assemblerBuffer = compile_fxc( inHighLevelCode.c_str(), CODEGEN_PS20, &usage, shouldValidate );
+
   if( assemblerBuffer == NULL )
   {
     outHeuristics.valid = false;
-    outHeuristics.cost = 0.0f;
+    outHeuristics.cost = 0;
     outHeuristics.recompute = true;
     return;
   }
@@ -45,30 +49,48 @@ void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::
   int interpolantCount = usage.interpolantRegisterCount;
   int constantCount = usage.constantRegisterCount;
   int temporaryCount = usage.temporaryRegisterCount;
+  int outputCount = usage.outputRegisterCount;
 
-  static const float passCost = 32.0f;
-  static const float textureInstructionCost = 3.0f;
-  static const float arithmeticInstructionCost = 1.0f;
-//  static const float passCost = 15.7f;
-//  static const float textureInstructionCost = 1.36f;
-//  static const float arithmeticInstructionCost = 1.0f;
-  static const float samplerCost = 0.0f;
-  static const float interpolantCost = 0.2f;
-  static const float constantCost = 0.1f;
-  static const float temporaryCost = 0.2f;
+  if( !shouldValidate )
+  {
+    if( (textureInstructionCount > inConfiguration.maximumTextureInstructionCount)
+      || (arithmeticInstructionCount > inConfiguration.maximumArithmeticInstructionCount)
+      || (samplerCount > inConfiguration.maximumSamplerCount)
+      || (interpolantCount > inConfiguration.maximumSamplerCount)
+      || (constantCount > inConfiguration.maximumConstantCount)
+      || (temporaryCount > inConfiguration.maximumTemporaryCount)
+      || (outputCount > inConfiguration.maximumOutputCount) )
+    {
+      std::cout << "compile failed because of configuration limits..." << std::endl;
+      outHeuristics.valid = false;
+      outHeuristics.cost = 0;
+      outHeuristics.recompute = true;
+      return;
+    }
+  }
 
-  float shaderCost = passCost
+  int passCost = inConfiguration.passCost;
+  int textureInstructionCost = inConfiguration.textureInstructionCost;
+  int arithmeticInstructionCost = inConfiguration.arithmeticInstructionCost;
+  int samplerCost = inConfiguration.samplerCost;
+  int interpolantCost = inConfiguration.interpolantCost;
+  int constantCost = inConfiguration.constantCost;
+  int temporaryCost = inConfiguration.temporaryCost;
+  int outputCost = inConfiguration.outputCost;
+
+  int shaderCost = passCost
     + textureInstructionCost*textureInstructionCount
     + arithmeticInstructionCost*arithmeticInstructionCount
     + samplerCost*samplerCount
     + interpolantCost*interpolantCount
     + constantCost*constantCount
-    + temporaryCost*temporaryCount;
+    + temporaryCost*temporaryCount
+    + outputCost*outputCount;
 
   bool shouldRecompute = true;
-  if( textureInstructionCount > 8 )
+  if( textureInstructionCount*2 > inConfiguration.maximumTextureInstructionCount )
     shouldRecompute = false;
-  if( arithmeticInstructionCount > 32 )
+  if( arithmeticInstructionCount*2 > inConfiguration.maximumArithmeticInstructionCount )
     shouldRecompute = false;
 //  if( samplerCount > 8 )
 //    shouldRecompute = false;

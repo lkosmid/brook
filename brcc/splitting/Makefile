@@ -1,5 +1,5 @@
 ROOTDIR = ../..
 STATIC_LIBRARY = brccsplitting
-FILES = splittree splitnode splitbuilder splittraversal splittypes splitcompiler splitcompilercg splitcompilerhlsl splitdominator
+FILES = splittree splitnode splitbuilder splittraversal splittypes splitcompiler splitcompilercg splitcompilerhlsl splitdominator splitconfiguration
 
 include ../../common.mk

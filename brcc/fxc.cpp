@@ -31,9 +31,11 @@ extern "C" {
  */
 
 char *
-compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outUsage) {
+compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outUsage, bool inValidate) {
 
-  char *argv[] = { "fxc", "/Tps_2_0", "/nologo", 0, 0, NULL };
+  static const int kInputFileArgument = 5;
+  static const int kOutputFileArgument = 4;
+  char *argv[] = { "fxc", inValidate ? "/Tps_2_0" : "/Tps_2_sw", inValidate ? "" : "/Vd", "/nologo", 0, 0, NULL };
   char *fpcode,  *errcode;
 
   FILE *fp = fopen (globals.shaderoutputname, "wb+");
@@ -54,10 +56,10 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
      return NULL;
   }
   
-  argv[3] = (char *) malloc(strlen("/Fc.ps") +
+  argv[kOutputFileArgument] = (char *) malloc(strlen("/Fc.ps") +
                             strlen(globals.shaderoutputname) + 1);
-  sprintf (argv[3], "/Fc%s.ps", globals.shaderoutputname);
-  argv[4] = globals.shaderoutputname;
+  sprintf (argv[kOutputFileArgument], "/Fc%s.ps", globals.shaderoutputname);
+  argv[kInputFileArgument] = globals.shaderoutputname;
 
   /* Run FXC */
   errcode = Subprocess_Run(argv, NULL);
@@ -69,7 +71,7 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
     fprintf(stderr, "%s resulted in an error,"
             "skipping ps20 / dx9 target ", argv[0]);
     
-     remove(argv[3]+3);
+     remove(argv[kOutputFileArgument]+3);
      return NULL;
   }
 
@@ -77,10 +79,10 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
     fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
             errcode);
 
-  fp = fopen(argv[3]+3, "rt");
+  fp = fopen(argv[kOutputFileArgument]+3, "rt");
   if (fp == NULL) {
     fprintf (stderr, "Unable to open compiler output file %s\n", 
-             argv[3]+3);
+             argv[kOutputFileArgument]+3);
     fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
             errcode);
     return NULL;
@@ -159,6 +161,7 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
     int interpolantCount = 0;
     int constantCount = 0;
     int registerCount = 0;
+    int outputCount = 0;
 
     char registerName[128];
 
@@ -176,17 +179,21 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
       sprintf( registerName, " r%d", i );
       if( strstr( fpcode, registerName ) )
         registerCount = i+1;
+      sprintf( registerName, " oC%d", i );
+      if( strstr( fpcode, registerName ) )
+        outputCount = i+1;
     }
     outUsage->samplerRegisterCount = samplerCount;
     outUsage->interpolantRegisterCount = interpolantCount;
     outUsage->constantRegisterCount = constantCount;
     outUsage->temporaryRegisterCount = registerCount;
+    outUsage->outputRegisterCount = outputCount;
   }
   free(comments);
   
   fclose(fp);
-  remove(argv[3]+3);
-  free(argv[3]);
+  remove(argv[kOutputFileArgument]+3);
+  free(argv[kOutputFileArgument]);
 
   if (target == CODEGEN_ARB) {
      std::istringstream ifpcode(fpcode);

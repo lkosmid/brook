@@ -299,6 +299,8 @@ SplitNode* SplitTreeBuilder::addFunctionCall( Expression* inFunction, const std:
 
     BRTGPUKernelCode* kernelCode = new BRTPS20KernelCode( *function );
 
+//    std::cout << "foo " << (void*)kernelCode << std::endl;
+
     function = kernelCode->fDef;
 
     // whoopee :)
@@ -307,6 +309,7 @@ SplitNode* SplitTreeBuilder::addFunctionCall( Expression* inFunction, const std:
     // TIM: is that enough?
 //    std::cerr << "} " << functionName << std::endl;
 
+//    std::cout << "bar " << (void*)kernelCode << std::endl;
     delete kernelCode;
     SplitNode* resultValue = subfunctionTree.getResultValue();
     return resultValue;

@@ -165,6 +165,14 @@ public:
 
   virtual bool canBeSaved() { return true; }
 
+  SplitShaderHeuristics& getHeuristics() {
+    return _heuristics;
+  }
+
+  void setHeuristics( const SplitShaderHeuristics& inHeuristics ) {
+    _heuristics = inHeuristics;
+  }
+
 protected:
   void addChild( SplitNode* inNode );
   void removeChild( SplitNode* inNode );
@@ -208,6 +216,8 @@ private:
   bool _isPDTNode;
 
   int _temporaryID;
+
+  SplitShaderHeuristics _heuristics;
 };
 
 class SplitRootNode : public SplitNode

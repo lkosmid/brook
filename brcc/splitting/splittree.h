@@ -6,6 +6,9 @@
 //debug symbol warning
 #endif
 
+#include "splitconfiguration.h"
+#include "splitcompiler.h"
+
 #include <string>
 #include <map>
 #include <set>
@@ -15,14 +18,13 @@ class FunctionDef;
 class SplitNode;
 class SplitTechniqueDesc;
 class SplitCompiler;
-class SplitShaderHeuristics;
 
 class SplitPassInfo
 {
 public:
   SplitPassInfo()
   {
-    cost = 0.0f;
+    cost = 0;
     ancestorVisited = false;
     descendentVisited = false;
     printVisited = false;
@@ -35,11 +37,13 @@ public:
   NodeSet ancestors;
   NodeSet descendents;
 
-  float cost;
+  int cost;
 
   bool ancestorVisited;
   bool descendentVisited;
   bool printVisited;
+
+  SplitShaderHeuristics heuristics;
 };
 
 class SplitTree
@@ -69,6 +73,10 @@ public:
     return _outputPositionInterpolant;
   }
 
+  const SplitConfiguration& getConfiguration() const {
+    return _compilerConfiguration;
+  }
+
   friend class SplitTreeBuilder;
   typedef std::map< std::string, SplitNode* > NodeMap;
   typedef std::vector< SplitNode* > NodeList;
@@ -84,11 +92,12 @@ private:
   void dumpDominatorTree();
   void dumpDominatorTree( std::ostream& inStream, SplitNode* inNode, int inLevel = 0 );
 
-  void preRdsMagic();
-  void preRdsMagic( SplitNode* inNode );
+  void exhaustiveSearch();
+  void exhaustiveSubsetSearch( size_t inSubsetSize, const NodeList& inNodes, int& outScore );
+  bool exhaustiveSplitIsValid( int& outScore );
 
   void rdsSearch();
-  float rdsCompileConfiguration();
+  int rdsCompileConfiguration();
   void rdsSubdivide();
   void rdsSubdivide( SplitNode* t, SplitShaderHeuristics& outHeuristics );
   void rdsDecideSave( SplitNode* n, const SplitShaderHeuristics& inHeuristics );
@@ -107,6 +116,8 @@ private:
   SplitPassInfo* rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB );
   void rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream );
 
+  void dumpPassConfiguration( std::ostream& inStream );
+
   void rdsAccumulatePassAncestors( SplitPassInfo* ioPass );
   void rdsAccumulatePassAncestorsRec( SplitNode* inNode, SplitPassInfo* ioPass );
   void rdsAccumulatePassDescendents( SplitPassInfo* ioPass );
@@ -120,7 +131,7 @@ private:
   bool rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeuristics );
   bool rdsCompile( const NodeSet& inNodes, SplitShaderHeuristics& outHeuristics );
 
-  float getPartitionCost();
+  int getPartitionCost();
 
 
   SplitNode* _pseudoRoot;
@@ -135,6 +146,9 @@ private:
   SplitNode* _resultValue;
 
   const SplitCompiler& _compiler;
+  SplitConfiguration _compilerConfiguration;
+
+  std::string _functionName;
 };
 
 #endif

@@ -1,0 +1,64 @@
+// fractal.br
+// tests kernel splitting of an iterative construct
+
+kernel void mandelbrotIterate(
+	float4 x<>, float4 y<>,
+	float4 cx<>, float4 cy<>,
+	out float4 outX<>, out float4 outY<> )
+{
+	outX = x*x - y*y + cx;
+	outY = 2*x*y + cy;
+}
+
+kernel void mandelbrot( float4 cx<>, float4 cy<>, out float4 outInside<> )
+{
+	float4 x = cx;
+	float4 y = cy;
+	
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 0
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 1
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 2
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 3
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 4
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 5
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 6
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 7
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 8
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 9
+
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 10
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 11
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 12
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 13
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 14
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 15
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 16
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 17
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 18
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 19
+
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 20
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 21
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 22
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 23
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 24
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 25
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 26
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 27
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 28
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 29
+
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 30
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 31
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 32
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 33
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 34
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 35
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 36
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 37
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 38
+	mandelbrotIterate( x, y, cx, cy, x, y ); // 39
+	
+	outInside = (x*x + y*y) < 4;
+	
+}
