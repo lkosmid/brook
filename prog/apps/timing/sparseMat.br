@@ -52,13 +52,12 @@ reduce void sumRows(float a<>, reduce float result<>) {
 
 
 reduce void sumRowsfloat4(float4 a<>, reduce float result<>) {
-  //result += (a.x + a.y + a.z + a.w);
-  result += a.x;
-  result += a.y;
-  result += a.z;
-  result += a.w;
+  result += a;
 }
 
+kernel void float4Tofloat1(float4 a<>, out float b<>) {
+  b = a.x + a.y + a.z + a.w;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -149,9 +148,13 @@ static void spMatVecf4(int strmDim, float* A, float* Aind, float* x, float* y, i
   float4 AindStrm<strmDim, (MAX_NZ_PER_ROW/4) >;
   float4 productsStrm<strmDim, (MAX_NZ_PER_ROW/4) >;
   float  xStrm<strmDim>;
+  float4 yfloat4Strm<strmDim, 1>;   // 2D for the multiD reduction
   float  yStrm<strmDim, 1>;   // 2D for the multiD reduction
 
   int millisStart, millisStop;
+
+  printf("Here!\n");
+  fflush(stdout);
 
   streamRead(AStrm, A);
   streamRead(AindStrm, Aind);
@@ -168,18 +171,13 @@ static void spMatVecf4(int strmDim, float* A, float* Aind, float* x, float* y, i
 
   for (i=1;i<=num_iter;i++) {
     sparseMatVecfloat4( AindStrm, xStrm, AStrm, productsStrm );
-    sumRowsfloat4( productsStrm, yStrm );
-  }
+    sumRowsfloat4( productsStrm, yfloat4Strm );
+    float4Tofloat1(yfloat4Strm, yStrm);
 
-  /*
-  streamWrite(productsStrm, A);
-  for (i=0;i<strmDim;i++) {
-    for (j=0;j<8;j++)
-      printf("%.2f ", A[8*i + j]);
-    printf("\n");
-  }
-  */
+    printf("%d\n", i);
+    fflush(stdout);
 
+  }
 
   flush1(yStrm, flush1Strm);
   streamWrite(flush1Strm, flush);
@@ -254,18 +252,13 @@ static void do_spMatVec(int length, int num_iter, int* timing, float* flops) {
 
   createMatrix(length, A, Aind);
 
-  /*
-  for (i=0;i<length;i++) {
-    for (j=0;j<8;j++)
-      printf("%.2f ", A[8*i + j]);
-    printf("\n");
-  }
-  */
-
   for (i=0;i<length;i++)
     x[i] = 2.0f;
 
   millisStart = GetTimeMillis();
+
+  printf("Starting...\n");
+  fflush(stdout);
 
   if (USE_VIRTUAL_ADDRESSING)
     spMatVecf4(length, A, Aind, x, y, num_iter, &innerTime);
@@ -346,14 +339,18 @@ void SparseMat_Time(int length) {
   num_iter = 1;
   skip = 1;
 
+  printf("Begin...\n");
+  fflush(stdout);
+
   startup();
 
-  if (length < 2048) {
-    for (i=0; i<num_iter;i++) {
-      iterations = skip*(i+1);
-      do_spMatVec(length, iterations, ms, flops);
-      printData("spMat", length, iterations, ms, flops);
-    }
+  printf("Post startup.\n");
+  fflush(stdout);
+
+  for (i=0; i<num_iter;i++) {
+    iterations = skip*(i+1);
+    do_spMatVec(length, iterations, ms, flops);
+    printData("spMat", length, iterations, ms, flops);
   }
 
 }
