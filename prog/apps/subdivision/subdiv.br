@@ -50,8 +50,16 @@ int counterMax = 1024;
 extern float neighboreps;
 int low_texture_ram=0;
 int subdivisiondepth=0;
+#ifdef _WIN32
 const unsigned int maxTexDim=2048;
 const unsigned int maxTexDimLog2=11;
+#else
+#define maxTexDime maxTexDim
+#define maxTexDimeLog2 maxTexDimLog2
+const unsigned int maxTexDime=1024;
+const unsigned int maxTexDimeLog2=10;
+
+#endif
 void recomputeNeighbors(STri*, Neighbor *, unsigned int);
 void checkNeighbors(STri * tri, Neighbor * in, Neighbor * out, unsigned int);
 void __printf_cpu_inner(float f,float g, float h) {
