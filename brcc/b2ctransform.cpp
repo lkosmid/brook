@@ -206,7 +206,7 @@ class BaseType1:public BaseType {public:
 
 void ArrayBlackmailer(Expression * e) {
     ArrayBlacklist.insert(e);
-	cout << "blackmailing "<< e<<endl; 
+//	cout << "blackmailing "<< e<<endl; 
 }
 void BlackmailType(Type **t);
 
@@ -362,7 +362,7 @@ class ConstantExprConverter{public:
     Expression * operator()(Expression * e) {
         Constant *con;
         Constant * ret=NULL;
-		cout << "converting using "<< e<<endl;
+//		cout << "converting using "<< e<<endl;
         if (e->etype==ET_Constant&&(con=static_cast<Constant*>(e))) {
             switch (con->ctype) {
             case CT_Char:
