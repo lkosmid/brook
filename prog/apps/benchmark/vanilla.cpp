@@ -143,7 +143,8 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
       __BrtFloat1* bbb = (__BrtFloat1*)b; 
       __BrtFloat1* d_data =(__BrtFloat1*)d;
       unsigned int extents[2]={size,size};
-      __BrtArray<__BrtFloat1> dd (d_data,2,4,&extents[0]);
+      unsigned int domain[2]={0,0};
+      __BrtArray<__BrtFloat1> dd (d_data,2,4,&extents[0],&domain[0],&extents[0]);
       __BrtFloat1* eee=(__BrtFloat1*)e;
       __BrtFloat4* cc = (__BrtFloat4*)&c;
       __BrtFloat1* aa=aaa;__BrtFloat1 *bb=bbb; __BrtFloat1 *ee=eee;
