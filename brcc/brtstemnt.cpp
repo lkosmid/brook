@@ -273,15 +273,18 @@ BRTKernelDef::printStub(std::ostream& out) const
 {
    FunctionType *fType;
    int i,NumArgs;
-   printPrototypes (out,"float");
-   printPrototypes (out,"float2");
-   printPrototypes (out,"float3");
-   printPrototypes (out,"float4");
+   bool vout=voutFunctions.find(FunctionName()->name)!=voutFunctions.end();
+   if (vout) {
+      printPrototypes (out,"float");
+      printPrototypes (out,"float2");
+      printPrototypes (out,"float3");
+      printPrototypes (out,"float4");
+   }
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
    std::vector <bool> streamOrVal;
    NumArgs=fType->nArgs;
-   bool vout=voutFunctions.find(FunctionName()->name)!=voutFunctions.end();
+
    if (vout) {
 
    }
