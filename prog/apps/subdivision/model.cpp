@@ -16,17 +16,29 @@ void checkEdgeNeighbor(const float4 &a, const float4 &b, float4 &c,const Tri &t)
    if ((t.B==a&&t.C==b)||(t.B==b&&t.C==a))
       c = t.A;
 }
+bool ne(float4 a, float4 b){
+	return !(a.x == b.x && a.y == b.y && a.z == b.z);
+}
+
+void checkEdgeNeighbor2(const float4 &a, const float4 &alreadyhave, const float4 &b, float4 &c, const Tri &t){ 
+	if (((t.A==a&&t.B==b)||(t.A==b&&t.B==a))&&(ne(t.C,alreadyhave)))
+      c = t.C;
+	if (((t.A==a&&t.C==b)||(t.A==b&&t.C==a))&&(ne(t.B,alreadyhave)))
+      c = t.B;
+	if (((t.B==a&&t.C==b)||(t.B==b&&t.C==a))&&(ne(t.A,alreadyhave)))
+      c = t.A;
+}
+
+
 unsigned int loadModelData(const char * filename,
                            Tri ** tri,
                            Neighbor ** neigh) {
    std::vector<Tri>tList;
-   fprintf(stderr, "filename: %s\n", filename);
    if (strcmp(filename,"dabunny")==0) 
      LoadPly("bunny.ply",tList);
    else
      LoadPly(filename,tList);
    *tri = (Tri*)malloc(sizeof(Tri)*tList.size());
-   fprintf(stderr, "Return tri length = %d\n", tList.size());
    *neigh =(Neighbor*)malloc(sizeof(Neighbor)*tList.size());
    for (unsigned int i=0;i<tList.size();++i) {
       unsigned int j;
@@ -41,18 +53,22 @@ unsigned int loadModelData(const char * filename,
         for (j=0;j<tList.size();++j) {
           //check for AB, BC, AC
           Tri nei=tList[j];
+					if(j==i)
+						continue;
           checkEdgeNeighbor(t.A,t.B,n.AB,nei);
           checkEdgeNeighbor(t.A,t.C,n.AC,nei);
           checkEdgeNeighbor(t.B,t.C,n.BC,nei);         
         }
         for (j=0;j<tList.size();++j) {
           Tri nei=tList[j];
-          checkEdgeNeighbor(t.A,n.AC,n.AAC,nei);
-          checkEdgeNeighbor(t.A,n.AB,n.AAB,nei);
-          checkEdgeNeighbor(t.B,n.BC,n.BBC,nei);
-          checkEdgeNeighbor(t.B,n.AB,n.ABB,nei);
-          checkEdgeNeighbor(t.C,n.BC,n.BCC,nei);
-          checkEdgeNeighbor(t.C,n.AC,n.ACC,nei);
+					if(j==i)
+						continue;
+          checkEdgeNeighbor2(t.A,t.C,n.AC,n.AAC,nei);
+          checkEdgeNeighbor2(t.A,t.B,n.AB,n.AAB,nei);
+          checkEdgeNeighbor2(t.B,t.C,n.BC,n.BBC,nei);
+          checkEdgeNeighbor2(t.B,t.A,n.AB,n.ABB,nei);
+          checkEdgeNeighbor2(t.C,t.B,n.BC,n.BCC,nei);
+          checkEdgeNeighbor2(t.C,t.A,n.AC,n.ACC,nei);
         }
       }
       if (n.ABB==n.BBC)
