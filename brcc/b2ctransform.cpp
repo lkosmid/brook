@@ -499,25 +499,25 @@ void FindMask (Statement * s) {
     s->findExpr(&ConvertToTMaskConverter);
 }
 void ConvertToTSwizzleConverter (Expression * e) {
-	ConvertToT<SwizzleConverter>(e);//this function is created because VC++ can't take the address of a template function and "know" its type...blame ole billyG
+	ConvertToT<SwizzleConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
 void FindSwizzle (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTSwizzleConverter);
 }
 void ConvertToTQuestionColonConverter (Expression * e) {
-	ConvertToT<QuestionColonConverter>(e);//this function is created because VC++ can't take the address of a template function and "know" its type...blame ole billyG
+	ConvertToT<QuestionColonConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
 void FindQuestionColon (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTQuestionColonConverter);
 }
 void ConvertToTIndexExprConverter (Expression * e) {
-	ConvertToT<IndexExprConverter>(e);//this function is created because VC++ can't take the address of a template function and "know" its type...blame ole billyG
+	ConvertToT<IndexExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
 void FindIndexExpr (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTIndexExprConverter);
 }
 void ConvertToTConstantExprConverter (Expression * e) {
-	ConvertToT<ConstantExprConverter>(e);//this function is created because VC++ can't take the address of a template function and "know" its type...blame ole billyG
+	ConvertToT<ConstantExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
 void FindConstantExpr (Statement * s) {
 	void (*tmp)(class Expression *) = &ConvertToTConstantExprConverter;
