@@ -1196,6 +1196,13 @@ DeclStemnt::print(std::ostream& out, int level) const
     }
 
     out << ";";
+
+    // TIM: add mangled declarations as needed:
+    DeclVector::const_iterator k = decls.begin();
+    for(; k != decls.end(); ++k )
+    {
+        (*k)->printStructureStreamHelpers(out);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1364,6 +1371,15 @@ Block::print(std::ostream& out, int level) const
 
     indent(out,level);
     out << "{\n";
+
+    // TIM:
+    // the Cg compiler apparently hates empty functions
+    // so we make this change here... this is a terrible
+    // place to do it, but I can't think of a better solution
+    if( head == NULL )
+    {
+      out << "int __bogus=0; // to make empty function non-empty" << std::endl;
+    }
 
     isDecl = (head != NULL) ? head->isDeclaration() : false;
     for (stemnt=head; stemnt; stemnt=stemnt->next)

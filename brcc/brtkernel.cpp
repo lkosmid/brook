@@ -101,6 +101,9 @@ void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
          out << "_stype "<<nam->name <<","<<std::endl;
          out << blank << "float4 _const_"<<nam->name<<"_scalebias";
       }else {
+        if ((ft->args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
+          out << "inout ";
+        }
          if (ft->args[i]->isStream()) {
             t = static_cast<ArrayType *>(t)->subType;
          }
@@ -369,10 +372,9 @@ void BRTCPUKernelCode::
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
         case HEADER:{
-           Symbol name;
-           name=getSymbol("&"+a->name->name);
-           out << "const ";
-           CPUGatherType(*t,false).printType(out,
+            Symbol name=getSymbol("&"+a->name->name);
+            out << "const ";
+            CPUGatherType(*t,false).printType(out,
                                               &name,
                                               true,
                                               false);
@@ -655,15 +657,11 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         bool isStream = (t->type==TT_Stream);
         switch(s) {
         case HEADER:{
-            if ((tq&TQ_Const)==0
-                &&isOut==false
-                &&(tq&TQ_Reduce)==0
-                &&a->name->name!="__vout_counter"){
+            if ((tq&TQ_Const)==0&&isOut==false&&(tq&TQ_Reduce)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
             Symbol name=getSymbol(a->name->name);
-            if (a->name->name!="__vout_counter")
-               name=getSymbol("&"+a->name->name);            
+            name=getSymbol("&"+a->name->name);
             if (isStream)
                 t = static_cast<ArrayType*>(t)->subType;
             t->printType(out,&name,true,0);

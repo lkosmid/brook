@@ -210,6 +210,7 @@ class StructDef
     StructDef*   dup() const;    // deep-copy
 
     void    print(std::ostream& out, Symbol *name, int level) const;
+    bool printStructureStreamHelper(std::ostream& out) const;
 
     void    findExpr( fnExprCallback cb );
 
@@ -277,6 +278,8 @@ class Type : public DupableType
     virtual void printType( std::ostream& out, Symbol *name,
 			    bool showBase, int level ) const;
 
+    virtual bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const = 0;
+
     virtual void printBase( std::ostream& out, int level ) const {}
     virtual void printBefore( std::ostream& out, Symbol *name, int level) const {}
     virtual void printAfter( std::ostream& out ) const {}
@@ -324,6 +327,8 @@ class BaseType : public Type
 
     Type* extend(Type *extension) { assert(0); return NULL; }
 
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const;
+
     void printBase( std::ostream& out, int level ) const;
     void printBefore( std::ostream& out, Symbol *name, int level) const;
     void printAfter( std::ostream& out ) const;
@@ -362,6 +367,10 @@ class PtrType : public Type
 
     Type* extend(Type *extension);
 
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+      return false;
+    }
+
     void printBase( std::ostream& out, int level ) const;
     void printBefore( std::ostream& out, Symbol *name, int level) const;
     void printAfter( std::ostream& out ) const;
@@ -395,6 +404,10 @@ class ArrayType : public Type
 
     Type* extend(Type *extension);
 
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+      return false;
+    }
+
     void printBase( std::ostream& out, int level ) const;
     void printBefore( std::ostream& out, Symbol *name, int level) const;
     void printAfter( std::ostream& out ) const;
@@ -427,6 +440,10 @@ class BitFieldType : public Type
 
     Type* extend(Type *extension);
 
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+      return false;
+    }
+
     void printBase( std::ostream& out, int level ) const;
     void printBefore( std::ostream& out, Symbol *name, int level) const;
     void printAfter( std::ostream& out ) const;
@@ -457,6 +474,10 @@ class FunctionType : public Type
     Type* dup0() const;    // deep-copy
 
     Type* extend(Type *extension);
+
+    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+      return false;
+    }
 
     void printBase( std::ostream& out, int level ) const;
     void printBefore( std::ostream& out, Symbol *name, int level) const;
@@ -568,6 +589,8 @@ class Decl
     void    copy(const Decl& decl);    // shallow copy
 
     void    print(std::ostream& out, bool showBase, int level=0) const;
+    void printStructureStreamHelpers( std::ostream& out ) const;
+    bool printStructureStreamInternals( std::ostream& out ) const;
     void    printBase(std::ostream& out, Symbol *name,
                        bool showBase, int level) const;
 

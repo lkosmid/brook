@@ -29,6 +29,9 @@ extern "C" {
 #include "brtkernel.h"
 #include "b2ctransform.h"
 
+// TIM: needed?
+#include "brtdecl.h"
+
 /*
  * generate_hlsl_code --
  *
@@ -41,19 +44,402 @@ static void generate_shader_subroutines(std::ostream&  out) {
    for (ste=tu->head, prev=NULL; ste; prev = ste, ste=ste->next) {
       if (ste->isFuncDef()) {
          FunctionDef * fd = static_cast<FunctionDef *> (ste);
-         if (fd->decl->isKernel()&&!fd->decl->isReduce()) {
+//TIM: I'm unsure why we don't output the reductions
+//         if (fd->decl->isKernel()&&!fd->decl->isReduce()) {
+         if (fd->decl->isKernel()) {
             BRTPS20KernelCode(*fd).printInnerCode(out);
          }
       }
    }
 }
 
+static Symbol* findStructureTag( Type* inType )
+{
+	BaseType* base = inType->getBase();
+	while(true)
+	{
+		BaseTypeSpec mask = base->typemask;
+		if( mask & BT_UserType )
+		{
+			base = base->typeName->entry->uVarDecl->form->getBase();
+		}
+		else if( mask & BT_Struct )
+			return base->tag;
+		else break;
+	}
+	return NULL;
+}
+
+static StructDef* findStructureDef( Type* inType )
+{
+	Symbol* tag = findStructureTag( inType );
+	if( tag == NULL ) return NULL;
+	return tag->entry->uStructDef->stDefn;
+}
+
+static void printShaderStructureDef( std::ostream& out, StructDef* structure )
+{
+	out << "struct " << structure->tag->name << " {\n";
+	int fieldCount = structure->nComponents;
+	for( int i = 0; i < fieldCount; i++ )
+	{
+		Decl* fieldDecl = structure->components[i];
+		if( fieldDecl->isStatic() ) continue;
+		if( fieldDecl->isTypedef() ) continue;
+
+		out << "\t";
+		fieldDecl->form->printType( out, fieldDecl->name, true, 0 );
+		out << ";\n";
+	}
+	out << "};\n\n";
+}
+
+static void generate_shader_type_declaration( std::ostream& out, DeclStemnt* inStmt )
+{
+	for( DeclVector::iterator i = inStmt->decls.begin(); i != inStmt->decls.end(); ++i )
+	{
+		Decl* decl = *i;
+		Type* form = decl->form;
+		/*
+		Symbol* structureTag = findStructureTag( form );
+		if( structureTag != NULL ) {
+			StructDef* structure = structureTag->entry->uStructDef->stDefn;
+			printShaderStructureDef( out, structure );
+		}*/
+
+		if( decl->isTypedef() )
+		{
+			out << "typedef ";
+			form->printBase(out,0);
+			out << " " << decl->name->name;
+			out << ";\n\n";
+		}
+	}
+}
+
+static void generate_shader_structure_definitions( std::ostream& out ) {
+	TransUnit * tu = gProject->units.back();
+	Statement *ste, *prev;
+	for (ste=tu->head, prev=NULL; ste; prev = ste, ste=ste->next) {
+		if(ste->isDeclaration() || ste->isTypedef())
+		{
+			DeclStemnt* decl = static_cast<DeclStemnt*>(ste);
+			generate_shader_type_declaration( out, decl );
+		}
+	}
+}
+
+static void expandOutputArgumentStructureDecl(
+  std::ostream& shader, const std::string& argumentName, StructDef* structure, int& ioOutputReg )
+{
+	assert( !structure->isUnion() );
+
+	int elementCount = structure->nComponents;
+	for( int i = 0; i < elementCount; i++ )
+	{
+		Decl* elementDecl = structure->components[i];
+		if( elementDecl->storage & ST_Static ) continue;
+		Type* form = elementDecl->form;
+
+		// TIM: for now
+		assert( form->isBaseType() );
+		BaseType* base = form->getBase();
+		StructDef* structure = findStructureDef( base );
+		if( structure )
+			expandOutputArgumentStructureDecl( shader, argumentName, structure, ioOutputReg );
+		else
+		{
+		  // it had better be just a floatN
+      shader << ",\n\t\t";
+      shader << "out float4 __output_" << ioOutputReg;
+      shader << " : COLOR" << ioOutputReg++;
+		}
+	}
+}
+
+
+static void expandOutputArgumentDecl(
+  std::ostream& shader, const std::string& argumentName, Type* form, int& ioOutputReg )
+{
+  StructDef* structure = NULL;
+
+  if( form->isStream() )
+  {
+	  BrtStreamType* streamType = (BrtStreamType*)(form);
+
+	  // TIM: can't handle arrays with a BaseType
+	  BaseType* elementType = streamType->getBase();
+	  structure = findStructureDef( elementType );
+  }
+  else
+  {
+    assert( (form->getQualifiers() & TQ_Reduce) != 0 );
+    structure = findStructureDef( form );
+  }
+
+	if( structure )
+	{
+		expandOutputArgumentStructureDecl( shader, argumentName, structure, ioOutputReg );
+	}
+	else
+	{
+		// it had better be just a floatN
+    shader << ",\n\t\t";
+    shader << "out float4 __output_" << ioOutputReg;
+    shader << " : COLOR" << ioOutputReg++;
+	}
+}
+
+static void expandSimpleOutputArgumentWrite(
+  std::ostream& shader, const std::string& argumentName, Type* form, int outputReg )
+{
+  assert( form );
+	BaseType* base = form->getBase();
+	assert( base );
+
+  shader << "\t__output_" << outputReg << " = ";
+
+	switch(base->typemask) {
+		case BT_Float:
+			shader << "float4( " << argumentName << ", 0, 0, 0);\n";
+			break;
+		case BT_Float2:
+			shader << "float4( " << argumentName << ", 0, 0);\n";
+			break;
+		case BT_Float3:
+			shader << "float4( " << argumentName << ", 0);\n";
+			break;
+		case BT_Float4:
+			shader << argumentName << ";\n";
+			break;
+		default:
+			fprintf(stderr, "Strange stream base type:");
+			base->printBase(std::cerr, 0);
+			abort();
+	}
+}
+
+static void expandOutputArgumentStructureWrite( std::ostream& shader, const std::string& fieldName, StructDef* structure, int& ioOutputReg )
+{
+	assert( !structure->isUnion() );
+
+	int elementCount = structure->nComponents;
+	for( int i = 0; i < elementCount; i++ )
+	{
+		Decl* elementDecl = structure->components[i];
+		if( elementDecl->storage & ST_Static ) continue;
+		Type* form = elementDecl->form;
+
+		std::string subFieldName = fieldName + "." + elementDecl->name->name;
+
+		// TIM: for now
+		assert( form->isBaseType() );
+		BaseType* base = form->getBase();
+		StructDef* structure = findStructureDef( base );
+		if( structure )
+		{
+			expandOutputArgumentStructureWrite( shader, subFieldName, structure, ioOutputReg );
+		}
+		else
+		{
+      expandSimpleOutputArgumentWrite( shader, subFieldName, base, ioOutputReg++ );
+		}
+	}
+}
+
+static void expandOutputArgumentWrite(
+  std::ostream& shader, const std::string& argumentName, Type* form, int& ioOutputReg )
+{
+  StructDef* structure = NULL;
+  Type* elementType = NULL;
+
+  if( form->isStream() )
+  {
+	  BrtStreamType* streamType = (BrtStreamType*)(form);
+
+	  // TIM: can't handle arrays with a BaseType
+	  elementType = streamType->getBase();
+	  structure = findStructureDef( elementType );
+  }
+  else
+  {
+    assert( (form->getQualifiers() & TQ_Reduce) != 0 );
+    elementType = form;
+    structure = findStructureDef( form );
+  }
+
+	if( structure )
+	{
+		expandOutputArgumentStructureWrite( shader, argumentName, structure, ioOutputReg );
+	}
+	else
+	{
+    expandSimpleOutputArgumentWrite( shader, argumentName, elementType, ioOutputReg++ );
+	}
+}
+
+static void expandStreamStructureSamplerDecls( std::ostream& shader, const std::string& argumentName, StructDef* structure, int& ioIndex, int& ioSamplerReg )
+{
+	assert( !structure->isUnion() );
+
+	int elementCount = structure->nComponents;
+	for( int i = 0; i < elementCount; i++ )
+	{
+		Decl* elementDecl = structure->components[i];
+		if( elementDecl->storage & ST_Static ) continue;
+		Type* form = elementDecl->form;
+
+		// TIM: for now
+		assert( form->isBaseType() );
+		BaseType* base = form->getBase();
+		StructDef* structure = findStructureDef( base );
+		if( structure )
+			expandStreamStructureSamplerDecls( shader, argumentName, structure, ioIndex, ioSamplerReg );
+		else
+		{
+      shader <<  ",\n\t\t";
+			shader << "uniform _stype __structsampler" << ioIndex++ <<"_" << argumentName;
+			shader << " : register (s" << ioSamplerReg++ << ")";
+		}
+	}
+}
+
+static void exandStreamSamplerDecls( std::ostream& shader, const std::string& inArgumentName, Type* inForm, int& samplerreg )
+{
+  StructDef* structure = NULL;
+
+  if( inForm->isStream() )
+  {
+	  BrtStreamType* streamType = (BrtStreamType*)(inForm);
+
+	  // TIM: can't handle arrays with a BaseType
+	  BaseType* elementType = streamType->getBase();
+	  structure = findStructureDef( elementType );
+  }
+  else
+  {
+    assert( (inForm->getQualifiers() & TQ_Reduce) != 0 );
+    structure = findStructureDef( inForm );
+  }
+
+  if( structure )
+	{
+		int index = 0;
+		expandStreamStructureSamplerDecls( shader, inArgumentName, structure, index, samplerreg );
+	}
+	else
+	{
+		// it had better be just a floatN
+		// Output a sampler, texcoord, and scale_bias for 
+		// a stream
+    shader <<  ",\n\t\t";
+		shader << "uniform _stype _tex_" << inArgumentName;
+		shader << " : register (s" << samplerreg++ << ")";
+	}
+}
+
+static void printSwizzle( std::ostream& shader, Type* inForm )
+{
+	assert( inForm );
+	BaseType* base = inForm->getBase();
+	assert( base );
+
+	switch(base->typemask) {
+		case BT_Float:
+			shader << "x";
+			break;
+		case BT_Float2:
+			shader << "xy";
+			break;
+		case BT_Float3:
+			shader << "xyz";
+			break;
+		case BT_Float4:
+			shader << "xyzw";
+			break;
+		default:
+			fprintf(stderr, "Strange stream base type:");
+			base->printBase(std::cerr, 0);
+			abort();
+	}
+}
+
+static void expandStreamStructureFetches( std::ostream& shader, const std::string& argumentName, const std::string& fieldName, StructDef* structure, int& ioIndex )
+{
+	assert( !structure->isUnion() );
+
+	int elementCount = structure->nComponents;
+	for( int i = 0; i < elementCount; i++ )
+	{
+		Decl* elementDecl = structure->components[i];
+		if( elementDecl->storage & ST_Static ) continue;
+		Type* form = elementDecl->form;
+
+		std::string subFieldName = fieldName + "." + elementDecl->name->name;
+
+		// TIM: for now
+		assert( form->isBaseType() );
+		BaseType* base = form->getBase();
+		StructDef* structure = findStructureDef( base );
+		if( structure )
+		{
+			expandStreamStructureFetches( shader, argumentName, subFieldName, structure, ioIndex );
+		}
+		else
+		{
+			shader << "\t" << subFieldName << " = _sfetch"
+				<< "(__structsampler" << ioIndex++ << "_" << argumentName << ","
+				<< " _tex_" << argumentName << "_pos).";
+
+			printSwizzle( shader, base );
+
+			shader << ";\n";
+		}
+	}
+}
+
+static void expandStreamFetches( std::ostream& shader, const std::string& argumentName, Type* inForm )
+{
+  StructDef* structure = NULL;
+  Type* elementType = NULL;
+
+  if( inForm->isStream() )
+  {
+	  BrtStreamType* streamType = (BrtStreamType*)(inForm);
+
+	  // TIM: can't handle arrays with a BaseType
+	  elementType = streamType->getBase();
+	  structure = findStructureDef( elementType );
+  }
+  else
+  {
+    assert( (inForm->getQualifiers() & TQ_Reduce) != 0 );
+    elementType = inForm;
+    structure = findStructureDef( inForm );
+  }
+
+	if( structure )
+	{
+		int index = 0;
+		expandStreamStructureFetches( shader, argumentName, argumentName, structure, index );
+	}
+	else
+	{
+		shader << "\t" << argumentName << " = _sfetch"
+			<< "(_tex_" << argumentName << ", _tex_" << argumentName
+			<< "_pos).";
+
+		printSwizzle( shader, elementType );
+
+		shader << ";\n";
+	}
+}
+
 static char *
 generate_shader_code (Decl **args, int nArgs, 
-                    const char *body, const char* funtionName) {
+                    const char *body, const char* functionName) {
   const char xyzw[] = "xyzw";
   std::ostringstream shader;
-  Decl *outArg = NULL;
   bool isReduction = false;
   int texcoord, constreg, samplerreg, i;
 
@@ -71,29 +457,24 @@ generate_shader_code (Decl **args, int nArgs,
   shader << "#define _computeindexof(a,b) (b)\n";
   shader << "#endif\n\n";
 
+  generate_shader_structure_definitions(shader);
   generate_shader_subroutines(shader);
 
-  // Find the output
+  // Find if it is a reduction
   for (i=0; i < nArgs; i++) {
     TypeQual qual = args[i]->form->getQualifiers();
     
-    if ((qual & TQ_Out) != 0) {
-      outArg = args[i];
-      continue;
-    }
-    
-    /* Flag if it is a reduction */
     if ((qual & TQ_Reduce) != 0) {
-      outArg = args[i];
       isReduction = true;
     }
   }
 
-  shader << "float4 main (";
+  shader << "void main (";
 
   constreg = 0;
   texcoord = 0;
   samplerreg = 0;
+  int outputReg = 0;
 
   // Add the workspace variable
   shader << "   uniform float4 _workspace    : register (c"
@@ -101,10 +482,14 @@ generate_shader_code (Decl **args, int nArgs,
 
   /* Print the argument list */
 
-
   for (i=0; i < nArgs; i++) {
     TypeQual qual = args[i]->form->getQualifiers();
-
+    
+    /* put the output in the argument list */
+    if ((qual & TQ_Out) != 0 || (qual & TQ_Reduce) != 0) {
+      expandOutputArgumentDecl( shader, (args[i]->name)->name, args[i]->form, outputReg );      
+    }
+    
     if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
 
       if ((qual & TQ_Iter) != 0) {
@@ -114,37 +499,35 @@ generate_shader_code (Decl **args, int nArgs,
         args[i]->form->getBase()->qualifier &= ~TQ_Iter;
         args[i]->form->printBase(shader, 0);
         args[i]->form->getBase()->qualifier = qual;
-          shader << *args[i]->name << " : TEXCOORD" << texcoord++; 
+        
+        shader << *args[i]->name << " : TEXCOORD" << texcoord++; 
 
       } else if((qual & TQ_Out) != 0) {
-        // Output a sampler, texcoord, and scale_bias for 
-        // a stream
-        if( FunctionProp[funtionName].contains(i) ) {
+        if( FunctionProp[functionName].contains(i) ) {
           shader <<  ",\n\t\t";
           shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
-          << " : register (c" << constreg++ << ")";
+                << " : register (c" << constreg++ << ")";
           shader <<  ",\n\t\t";
           shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
-          << texcoord++;
+              << texcoord++;
         }
       } else
       {
 
-        // Output a sampler, texcoord, and scale_bias for 
-        // a stream
+    		exandStreamSamplerDecls( shader, (args[i]->name)->name, args[i]->form, samplerreg );
+
+        // Output a texcoord, and optional scale/bias
+        if( FunctionProp[functionName].contains(i) ) {
+          shader <<  ",\n\t\t";
+          shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
+                << " : register (c" << constreg++ << ")";
+        }
         shader <<  ",\n\t\t";
-         shader << "uniform _stype _tex_" << *args[i]->name;
-         shader << " : register (s" << samplerreg++ << ")";
-         if( FunctionProp[funtionName].contains(i) ) {
-           shader <<  ",\n\t\t";
-           shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
-                  << " : register (c" << constreg++ << ")";
-         }
-         shader <<  ",\n\t\t";
-         shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
-                << texcoord++;
+        shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
+            << texcoord++;
       }
     } else if (args[i]->isArray()) {
+      
       shader <<  ",\n\t\t";
       shader << "uniform _stype " << *args[i]->name;
       shader << " : register (s" << samplerreg++ << ")";
@@ -159,23 +542,26 @@ generate_shader_code (Decl **args, int nArgs,
       shader << " : register (c" << constreg++ << ")";
     }
   }
-  shader << ") : COLOR0 {\n";
+  shader << ") {\n";
 
 
   /* Declare the output variable */
-  shader << "float4 _OUT;\n\t\t";
+//  shader << "float4 _OUT;\n\t\t";
 
   /* Declare the stream variables */
   for (i=0; i < nArgs; i++) {
      TypeQual qual = args[i]->form->getQualifiers();
 
-     if (args[i] == outArg) {
-        outArg->form->getBase()->qualifier &= ~TQ_Out;
+     if((qual & TQ_Iter) != 0)
+       continue;
+
+     if ((qual & TQ_Out) != 0) {
+        args[i]->form->getBase()->qualifier &= ~TQ_Out;
         shader << "\t";
         args[i]->form->printBase(shader, 0);
         shader << " " << *args[i]->name << ";\n";
-        outArg->form->getBase()->qualifier = qual;
-     } else if (args[i]->isStream() && ((qual & TQ_Iter) == 0)) {
+        args[i]->form->getBase()->qualifier = qual;
+     } else if(args[i]->isStream() || (qual & TQ_Reduce) != 0) {
         shader << "\t";
         args[i]->form->printBase(shader, 0);
         shader << " " << *args[i]->name << ";\n";
@@ -188,41 +574,13 @@ generate_shader_code (Decl **args, int nArgs,
 
      if ((qual & TQ_Iter) != 0) continue; /* No texture fetch for iterators */
 
-     if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
+     if (args[i]->isStream() || 
+         (qual & TQ_Reduce) != 0) {
 
-       if((qual & TQ_Out) == 0) {
-        int dimension = FloatDimension(args[i]->form->getBase()->typemask);
-        assert(dimension > 0);
-          
-        shader << "\t" << *args[i]->name << " = _sfetch"
-                << "(_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
-                << "_pos)";
-          
-        assert (args[i]->form);
-        BaseType *b = args[i]->form->getBase();
-        switch (b->typemask) {
-        case BT_Float:
-          shader << ".x";
-          break;
-        case BT_Float2:
-          shader << ".xy";
-          break;
-        case BT_Float3:
-          shader << ".xyz";
-          break;
-        case BT_Float4:
-          shader << ".xyzw";
-          break;
-        default:
-          fprintf(stderr, "Strange array base type:");
-          b->printBase(std::cerr, 0);
-          abort();
+        if ((qual & TQ_Out) == 0 ) {
+	        expandStreamFetches( shader, args[i]->name->name, args[i]->form );
         }
-          
-        shader << ";\n";
-       }
-          
-       if( FunctionProp[funtionName].contains(i) )
+       if( FunctionProp[functionName].contains(i) )
          {
            shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "
                   << "_computeindexof( "
@@ -235,23 +593,45 @@ generate_shader_code (Decl **args, int nArgs,
   }
 
   /* Include the body of the kernel */
-  shader << body << std::endl;
+//  shader << body << std::endl;
+  // TIM: just call the body as a subroutine
+  shader << std::endl;
 
-  /* Return the result */
-  assert (outArg);
+  shader << "\t" << functionName << "(\n";
+  shader << "\t\t";
 
-  int dimension = FloatDimension(outArg->form->getBase()->typemask);
-  
-  for (i=0; i < dimension; i++) {
-    shader << "\t_OUT." << xyzw[i] << " = " << *outArg->name << "."
-       << xyzw[i] << ";\n";
+  for (i=0; i < nArgs; i++) {
+    if( i != 0 )
+      shader << ",\n\t\t";
+    std::string name = args[i]->name->name;
+    Type* form = args[i]->form;
+    if( args[i]->isArray() ) {// hacked way to detect a gather
+      shader << name << ", " << "_const_" << name << "_scalebias";
+    }
+    else {
+      shader << name;
+    }
   }
-  for (; i < 4; i++) {
-    shader << "\t_OUT." << xyzw[i] << " = " << *outArg->name << "."
-       << xyzw[dimension-1] << ";\n";
+  std::set<unsigned int>::iterator indexofIterator=
+    FunctionProp[ functionName ].begin();
+  std::set<unsigned int>::iterator indexofEnd =
+    FunctionProp[ functionName ].end();
+  for(; indexofIterator != indexofEnd; ++indexofIterator ) {
+    shader << ",\n\t\t__indexof_" << args[*indexofIterator]->name->name;
   }
-  
-  shader << "\treturn _OUT;\n}\n";
+
+  shader << " );\n\n";
+
+  /* do any output unpacking */
+  outputReg = 0;
+  for (i=0; i < nArgs; i++) {
+    TypeQual qual = args[i]->form->getQualifiers();
+    if((qual & TQ_Out) == 0 && (qual & TQ_Reduce) == 0) continue;
+    
+    expandOutputArgumentWrite( shader, (args[i]->name)->name, args[i]->form, outputReg );
+  }
+
+  shader << "}\n";
 
   return strdup(shader.str().c_str());
 }
@@ -265,7 +645,7 @@ generate_shader_code (Decl **args, int nArgs,
  */
 
 static char *
-compile_cg_code (char *cgcode, const char * name) {
+compile_cg_code (char *cgcode) {
 
   char *argv[16] = { "cgc", "-profile", "fp30", 
                      "-DUSERECT", "-quiet", NULL };
@@ -292,7 +672,7 @@ compile_cg_code (char *cgcode, const char * name) {
   endline += strlen("\nEND");
   *endline = '\0';
   endline++;
-  fprintf(stderr, "***Summary information from cgc executed on %s:\n",name);
+  fprintf(stderr, "***Summary information from cgc:\n");
   fwrite (endline, strlen(endline), 1, stderr);
   return fpcode;
 }
@@ -305,7 +685,7 @@ compile_cg_code (char *cgcode, const char * name) {
  */
 
 static char *
-compile_hlsl_code (char *hlslcode, const char * name) {
+compile_hlsl_code (char *hlslcode) {
 
   char *argv[] = { "fxc", "/Tps_2_0", "/nologo", 0, 0, NULL };
   char *fpcode,  *errcode;
@@ -322,7 +702,6 @@ compile_hlsl_code (char *hlslcode, const char * name) {
                             strlen(globals.shaderoutputname) + 1);
   sprintf (argv[3], "/Fc%s.ps", globals.shaderoutputname);
   argv[4] = globals.shaderoutputname;
-  fprintf (stderr, "***Summary information from fxc executed on %s\n",name);
   errcode = Subprocess_Run(argv, NULL);
   if (!globals.keepFiles) remove(globals.shaderoutputname);
   if (errcode == NULL) {
@@ -331,7 +710,7 @@ compile_hlsl_code (char *hlslcode, const char * name) {
      remove(argv[3]+3);
      return NULL;
   }
-  
+
   if (globals.verbose)
     fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
             errcode);
@@ -516,8 +895,7 @@ CodeGen_GenerateCode(Type *retType, const char *name,
         }
      }
 
-     fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode,
-                                                                    name);
+     fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
      free(shadercode);
   } else {
      fpcode = NULL;

@@ -210,6 +210,76 @@ BaseType::dup0() const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+
+bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::string& name ) const
+{
+    printQual(out,qualifier);
+
+    if (typemask & BT_UnSigned)
+        out << "unsigned ";
+    else if (typemask & BT_Signed)
+        out << "signed ";
+
+    if (typemask & BT_Void)
+        out << "void ";
+    else if (typemask & BT_Char)
+        out << "char ";
+    else if (typemask & BT_Short)
+        out << "short ";
+    else if (typemask & BT_LongLong)
+        out << "long long ";
+    else if (typemask & BT_Float)
+        out << "__BrtFloat1 ";
+    else if (typemask & BT_Float2)
+        out << "__BrtFloat2 ";
+    else if (typemask & BT_Float3)
+        out << "__BrtFloat3 ";
+    else if (typemask & BT_Float4)
+        out << "__BrtFloat4 ";
+    else if ((typemask & BT_Double) && (typemask & BT_Long))
+        out << "long double ";
+    else if (typemask & BT_Double)
+        out << "double ";
+    else if (typemask & BT_Ellipsis)
+        out << "...";
+    else if (typemask & BT_Long)
+        out << "long ";
+    else if (typemask & BT_Struct)
+    {
+        if (stDefn != NULL)
+        {
+            if( !stDefn->printStructureStreamHelper(out) )
+              return false;
+        }
+        else
+        {
+            out << "struct ";
+
+            if (tag)
+                out << "__cpustruct_" << *tag << " ";
+        }
+    }
+    else if (typemask & BT_Union)
+    {
+      return false;
+    }
+    else if (typemask & BT_Enum)
+    {
+      return false;
+    }
+    else if (typemask & BT_UserType)
+    {
+        if (typeName)
+            out << "__cpustruct_" << *typeName << " ";
+    }
+    else
+    {
+        out << "int ";        // Default
+    }
+    out << name;
+    return true;
+}
+
 void
 BaseType::printBase(std::ostream& out, int level) const
 {
@@ -1004,6 +1074,39 @@ StructDef::print(std::ostream& out, Symbol *name, int level) const
         out << " " << *name;
 }
 
+bool StructDef::printStructureStreamHelper(std::ostream& out) const
+{
+    if (isUnion())
+        out << "union ";
+    else
+        out << "struct ";
+
+    if (tag)
+        out << "__cpustruct_" << *tag << " ";
+
+    out << "{\n"; 
+
+    for (int j=0; j < nComponents; j++)
+    {
+        if(!components[j]->printStructureStreamInternals(out))
+          return false;
+
+        Decl *decl = components[j]->next;
+        while (decl != NULL)
+        {
+            out << ", ";
+            if(!decl->printStructureStreamInternals(out))
+              return false;
+            decl = decl->next;
+        }
+
+        out << ";\n";
+    }
+
+    out << "}\n";
+    return true;
+}
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 StructDef::findExpr( fnExprCallback cb )
@@ -1472,6 +1575,57 @@ Decl::print(std::ostream& out, bool showBase, int level) const
         out << " ]";
     }
     */
+}
+
+void Decl::printStructureStreamHelpers( std::ostream& out ) const
+{
+    assert(this != NULL);
+
+    if((storage & ST_Typedef) == 0) return;
+
+    out << "typedef ";
+    form->printStructureStreamHelperType( out, std::string("__cpustruct_") + name->name );
+    out << ";\n";
+}
+
+bool Decl::printStructureStreamInternals( std::ostream& out ) const
+{
+    assert(this != NULL);
+
+    if (true)
+    {
+        printStorage(out,storage);
+
+        // Hack to fix K&R non-declarations
+        if (form == NULL)
+        {
+            out << "int ";
+        }
+    }
+
+    if (form)
+    {
+        if(!form->printStructureStreamHelperType(out,name->name))
+          return false;
+    }
+    else if (name)
+    {
+        out << *name;
+    }
+
+    if (attrib)
+    {
+        attrib->print(out);
+    }
+
+    if (initializer)
+    {
+        out << " = ";
+
+        initializer->print(out);
+    }
+
+    return true;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

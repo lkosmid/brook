@@ -32,6 +32,10 @@ public:
   
   Type* extend(Type *extension) {assert (0); return NULL;}
   
+  bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+    return false;
+  }
+
   void printBase( std::ostream& out, int level ) const {assert (0);}
   void printBefore( std::ostream& out, Symbol *name, int level) const {assert (0);}
   void printAfter( std::ostream& out ) const {assert (0);}
@@ -71,6 +75,10 @@ public:
 
   void printType( std::ostream& out, Symbol *name,
 		  bool showBase, int level ) const;
+
+  bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+    return false;
+  }
 
   void printForm(std::ostream& out) const;
 

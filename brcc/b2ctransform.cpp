@@ -269,7 +269,7 @@ class BaseType1:public BaseType {public:
   //to print out the base type, see if it falls into the set of classes with BRT replacements
     virtual void printBase(std::ostream& out, int level) const {
         //this->printQual(out,qualifier);
-	int special = BT_Char|BT_Int|BT_Float|BT_Float2|BT_Float3|BT_Float4|BT_Long;
+	int special = BT_Char|BT_Int|BT_Float|BT_Float2|BT_Float3|BT_Float4|BT_Long|BT_UserType|BT_Struct;
 	if ((typemask&special)!=0){
 		if ((qualifier &TQ_Const)!=0)
 			out << "const ";
@@ -286,7 +286,16 @@ class BaseType1:public BaseType {public:
 			out << "__BrtFloat3 ";
 		else if (typemask & BT_Float4)
 			out << "__BrtFloat4 ";
-		else
+		else if (typemask & BT_UserType)
+    {
+      out << "__cpustruct_" << *typeName;
+    }
+    else if (typemask & BT_Struct)
+    {
+      // TIM: hope they didn't define the struct inline...
+      out << "struct __cpustruct_" << *tag;
+    }
+    else
 			out << "__BrtInt1 ";
 		
 		if ((qualifier &TQ_Out)!=0){
