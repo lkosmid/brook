@@ -61,13 +61,28 @@ BrtStreamType::printType( std::ostream& out, Symbol *name,
 			  bool showBase, int level ) const
 {
   out << "__BRTStream ";
+
   if (name) 
     out << *name;
 
   // TIM: add initializer as constructor
-  out << "(\"";
-  base->printBase(out, 0);
-  out << "\",";
+  out << "(";
+  
+  if (base->getBase()->typemask&BT_Float4) {
+    out << "__BRTFLOAT4";
+  }else if (base->getBase()->typemask&BT_Float3) {
+    out << "__BRTFLOAT3";
+  }else if (base->getBase()->typemask&BT_Float2) {
+    out << "__BRTFLOAT2";
+  }else if (base->getBase()->typemask&BT_Float) {
+    out << "__BRTFLOAT";
+  }else {
+    std::cerr << "Warning: Unsupported stream type ";
+    base->printBase(std::cerr,0);
+    std::cerr << std::endl;
+    out << "__BRTFLOAT";
+  }
+  out << ",";
   for (unsigned int i=0; i<dims.size(); i++) {
     dims[i]->print(out);
     out << ",";

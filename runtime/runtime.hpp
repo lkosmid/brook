@@ -10,7 +10,7 @@ namespace brook {
   public:
     RunTime() {}
     virtual Kernel* CreateKernel(const void*[]) = 0;
-    virtual Stream* CreateStream(const char type[], int dims, int extents[]) = 0;
+    virtual Stream* CreateStream(__BRTStreamType, int dims, int extents[]) = 0;
     virtual ~RunTime() {}
 
     static RunTime* GetInstance();

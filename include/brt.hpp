@@ -13,6 +13,12 @@ typedef struct {
 typedef struct {
   float x,y,z,w;
 } float4;
+enum __BRTStreamType {
+     __BRTFLOAT=1,
+     __BRTFLOAT2=2,
+     __BRTFLOAT3=3,
+     __BRTFLOAT4=4
+};
 
 namespace brook {
   class Kernel;
@@ -29,7 +35,7 @@ namespace brook {
     virtual void PushConstant(const float2 &val) = 0;  
     virtual void PushConstant(const float3 &val) = 0; 
     virtual void PushConstant(const float4 &val) = 0;
-    virtual void PushReduce (void * val, unsigned int size)=0;
+    virtual void PushReduce (void * val,  __BRTStreamType type)=0;
     virtual void PushGatherStream(Stream *s) = 0;
     virtual void PushOutput(Stream *s) = 0;
     virtual void Map() = 0;
@@ -38,7 +44,6 @@ namespace brook {
   protected:
     virtual ~Kernel() {}
   };
-
   class Stream {
   public:
     Stream () {}
@@ -51,7 +56,10 @@ namespace brook {
     virtual const unsigned int * getExtents() const {return (unsigned int*)0;}
     virtual unsigned int getDimension() const {return 0;}
     virtual unsigned int getTotalSize() const {return 0;}
+    virtual unsigned int getStride() const {return sizeof(float)*getStreamType();}
+    virtual __BRTStreamType getStreamType ()const{return type;}
   protected:
+    __BRTStreamType type;
     virtual ~Stream() {}
   };
 }
@@ -59,7 +67,7 @@ namespace brook {
 
 class __BRTStream {
 public:
-  __BRTStream(const char* type, ...);
+  __BRTStream(__BRTStreamType , ...);
   ~__BRTStream()
   {
     if( stream != 0 )

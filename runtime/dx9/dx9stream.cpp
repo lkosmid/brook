@@ -22,7 +22,7 @@ static int kKnownTypeComponentCounts[] =
   0
 };
 
-DX9Stream::DX9Stream (DX9RunTime* runtime, const char type[], int dims, int extents[])
+DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int extents[])
   : runtime(runtime)
 {
   DX9Trace("DX9Stream::DX9Stream");
@@ -53,19 +53,26 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, const char type[], int dims, int exte
   }
 
   int i = 0;
-  while( kKnownTypeNames[i] != NULL )
-  {
-    const char* name = kKnownTypeNames[i];
-    if( strcmp(type, name) == 0 )
-    {
-      components = kKnownTypeComponentCounts[i];
-      break;
-    }
-    i++;
+  this->type=type;
+  switch (type) {
+  case __BRTFLOAT:
+     components=1;
+     break;
+  case __BRTFLOAT2:
+     components=2;
+     break;
+  case __BRTFLOAT3:
+     components=3;
+     break;
+  case __BRTFLOAT4:
+     components=4;
+     break;
+  default:
+     components=0;
   }
   if( components == 0 )
   {
-    DX9Trace( "DX9Stream failure, unknown element type %s\n", type );
+    DX9Trace( "DX9Stream failure, unknown element type %d\n", (int)type );
     assert(false);
   }
 

@@ -35,7 +35,7 @@ namespace brook {
     virtual void PushConstant(const float3 &val); 
     virtual void PushConstant(const float4 &val);
     virtual void PushGatherStream(Stream *s);
-    virtual void PushReduce(void * input, unsigned int size);
+    virtual void PushReduce(void * input, __BRTStreamType);
     virtual void PushOutput(Stream *s);
     virtual void Map();
     virtual void Release() {}
@@ -68,7 +68,7 @@ namespace brook {
 
   class DX9Stream : public Stream {
   public:
-    DX9Stream (DX9RunTime* runtime,const char type[], int dims, int extents[]);
+    DX9Stream (DX9RunTime* runtime,__BRTStreamType type, int dims, int extents[]);
     virtual void Read(const void* inData);
     virtual void Write(void* outData);
     virtual void Release() {}
@@ -94,7 +94,7 @@ namespace brook {
   public:
     DX9RunTime();
     virtual Kernel* CreateKernel(const void*[]);
-    virtual Stream* CreateStream(const char type[], int dims, int extents[]);
+    virtual Stream* CreateStream(__BRTStreamType type, int dims, int extents[]);
     virtual ~DX9RunTime();
 
     IDirect3DDevice9* getDevice() { return device; }

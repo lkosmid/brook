@@ -16,7 +16,7 @@ namespace brook {
     virtual void PushConstant(const float2 &val);  
     virtual void PushConstant(const float3 &val); 
     virtual void PushConstant(const float4 &val);
-    virtual void PushReduce(void * val, unsigned int size);
+    virtual void PushReduce(void * val, __BRTStreamType type);
     virtual void PushGatherStream(Stream *s);
     virtual void PushOutput(Stream *s);
     virtual void Map();
@@ -28,7 +28,7 @@ namespace brook {
 
   class NV30GLStream : public Stream {
   public:
-    NV30GLStream (const char type[], int dims, int extents[]);
+    NV30GLStream (__BRTStreamType type, int dims, int extents[]);
     virtual void Read(const void* inData);
     virtual void Write(void* outData);
     virtual void Release() {}
@@ -41,7 +41,7 @@ namespace brook {
   public:
     NV30GLRunTime();
     virtual Kernel* CreateKernel(const void*[]);
-    virtual Stream* CreateStream(const char type[], int dims, int extents[]);
+    virtual Stream* CreateStream(__BRTStreamType type, int dims, int extents[]);
     virtual ~NV30GLRunTime();
 
   private: 

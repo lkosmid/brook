@@ -150,72 +150,72 @@ public:
 protected:
     VALUE f;
 public:
-    const VALUE &getAt (unsigned int i) const{
+    inline const VALUE &getAt (unsigned int i) const{
        return f;
     }
-    VALUE &getAt (unsigned int i) {
+    inline VALUE &getAt (unsigned int i) {
        return f;
     }
-    const VALUE &unsafeGetAt (unsigned int i) const{return f;}
-    VALUE &unsafeGetAt (unsigned int i) {return f;}
-    Float1 operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
-    Float1& cast() {
+    inline const VALUE &unsafeGetAt (unsigned int i) const{return f;}
+    inline VALUE &unsafeGetAt (unsigned int i) {return f;}
+    inline Float1 operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
+    inline Float1& cast() {
         return *this;
     }
-    const Float1& cast() const{
+    inline const Float1& cast() const{
         return *this;
     }
-    template<class BRT_TYPE> BRT_TYPE castTo() {
+    template<class BRT_TYPE> inline BRT_TYPE castTo() {
         return (BRT_TYPE)f;
     }
-#define BROOK_UNARY_OP(op) Float1 operator op ()const { \
+#define BROOK_UNARY_OP(op) inline Float1 operator op ()const { \
       return Float1 (op f); \
     }
     BROOK_UNARY_OP(+)
     BROOK_UNARY_OP(-)
     BROOK_UNARY_OP(!)    
 #undef BROOK_UNARY_OP
-    Float1 swizzle1(int x)const {
+    inline Float1 swizzle1(int x)const {
         return Float1(unsafeGetAt(x));
     }
     Float1() {}
 #define GENERAL_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE> 
-      Float1 (const BRT_TYPE &inx, 
+      inline Float1 (const BRT_TYPE &inx, 
 	   const BRT_TYPE &iny, 
 	   const BRT_TYPE &inz, 
 	   const BRT_TYPE& inw) {
         f=inx;
     }
-    template <class BRT_TYPE> Float1 (const BRT_TYPE& inx, 
+    template <class BRT_TYPE> inline Float1 (const BRT_TYPE& inx, 
 				   const BRT_TYPE& iny, 
 				   const BRT_TYPE& inz) {
         f=inx;
     }
-    template <class BRT_TYPE> Float1 (const BRT_TYPE& inx, const BRT_TYPE& iny) {
+    template <class BRT_TYPE> inline Float1 (const BRT_TYPE& inx, const BRT_TYPE& iny) {
         f=inx;
     }
-    Float1 (const float& scalar) {
+    inline Float1 (const float& scalar) {
         (*this)=scalar;
     }
-    template <class BRT_TYPE> operator BRT_TYPE () const{
+    template <class BRT_TYPE> inline operator BRT_TYPE () const{
       return (BRT_TYPE)f;
     }
-    Float1& operator = (const float & in) { 
+    inline Float1& operator = (const float & in) { 
         f = in;
         return *this;
     }
-    Float1& operator = (const unsigned int & in) { 
+    inline Float1& operator = (const unsigned int & in) { 
         f = in;
         return *this;
     }
-    Float1& operator = (const int & in) { 
+    inline Float1& operator = (const int & in) { 
         f = in;
         return *this;
     }
         
 #define ASSIGN_OP(op) template <class BRT_TYPE> \
-         Float1& operator op (const BRT_TYPE & in) {  \
+         inline Float1& operator op (const BRT_TYPE & in) {  \
         f op GetAt<BRT_TYPE>(in,0);  \
         return *this;  \
     }
@@ -251,12 +251,12 @@ public:
         return vec<VALUE,1>(unsafeGetAt(X));
     }    
     template <class BRT_TYPE> 
-      Float1 questioncolon(const BRT_TYPE &b, 
+      inline Float1 questioncolon(const BRT_TYPE &b, 
 						const BRT_TYPE &c)const {
        return f?b.getAt(0):c.getAt(0);
     }
 #define BROOK_BINARY_OP(op,opgets,TYPESPECIFIER) template <class BRT_TYPE>          \
-    Float1 operator op (const BRT_TYPE &b)const{ \
+    inline Float1 operator op (const BRT_TYPE &b)const{ \
       return Float1(*this) opgets b; \
     }
     BROOK_BINARY_OP(*,*=,LCM);
@@ -266,7 +266,7 @@ public:
     BROOK_BINARY_OP(%,%=,LCM);
 #undef BROOK_BINARY_OP
 #define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class BRT_TYPE>          \
-    Float1 operator op (const BRT_TYPE &b)const{ \
+    inline Float1 operator op (const BRT_TYPE &b)const{ \
       return Float1 \
                 (f op GetAt<BRT_TYPE>(b,0)); \
     }

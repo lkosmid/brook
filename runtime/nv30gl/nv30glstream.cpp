@@ -2,7 +2,8 @@
 
 using namespace brook;
 
-NV30GLStream::NV30GLStream (const char type[], int dims, int extents[]) { 
+NV30GLStream::NV30GLStream (__BRTStreamType type, int dims, int extents[]) { 
+   this->type=type;
   // XXX: TO DO
 }
 

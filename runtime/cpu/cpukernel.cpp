@@ -2,6 +2,7 @@
 #include<assert.h>
 #include "cpu.hpp"
 static void nothing (const std::vector<void*>&args,unsigned int start,unsigned int end){}
+extern unsigned int knownTypeSize(__BRTStreamType);
 namespace brook{
     CPUKernel::CPUKernel(const void * source []){
         const char ** src= (const char**)(source);
@@ -45,8 +46,8 @@ namespace brook{
     void CPUKernel::PushGatherStream(Stream *s){
         args.push_back(s);
     }
-    void CPUKernel::PushReduce(void * data, unsigned int size) {
-       reductions.push_back(ReductionArg(args.size(),size));
+    void CPUKernel::PushReduce(void * data, __BRTStreamType type) {
+       reductions.push_back(ReductionArg(args.size(),knownTypeSize(type)));
        args.push_back(data);
     }
     void CPUKernel::PushOutput(Stream *s){

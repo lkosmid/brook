@@ -25,7 +25,7 @@ void NV30GLKernel::PushConstant(const float3 &val) {
 void NV30GLKernel::PushConstant(const float4 &val) {
   // XXX: TODO
 }
-void NV30GLKernel::PushReduce(void * val, unsigned int size) {
+void NV30GLKernel::PushReduce(void * val, __BRTStreamType) {
   // XXX: TODO
 }
 

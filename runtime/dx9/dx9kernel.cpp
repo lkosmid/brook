@@ -39,17 +39,17 @@ void DX9Kernel::PushStream(Stream *s) {
   PushTexCoord( stream->getInputRect() );
 }
 
-void DX9Kernel::PushReduce(void * val, unsigned int size) {
+void DX9Kernel::PushReduce(void * val, __BRTStreamType type) {
    //XXX Add Reduce functionality
    fprintf (stderr,"Reduce inoperative in DirectX\n");
-   switch (size) {
-   case sizeof(float2):
+   switch (type) {
+   case __BRTFLOAT2:
       PushConstant(*(float2*)val);
       break;
-   case sizeof(float3):
+   case __BRTFLOAT3:
       PushConstant(*(float3*)val);
       break;
-   case sizeof(float4):
+   case __BRTFLOAT4:
       PushConstant(*(float4*)val);
       break;
    default:

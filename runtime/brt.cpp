@@ -36,7 +36,7 @@ namespace brook {
   }
 }
 
-__BRTStream::__BRTStream(const char* type, ...)
+__BRTStream::__BRTStream(__BRTStreamType type, ...)
   : stream(NULL)
 {
   int dimensions = 0;

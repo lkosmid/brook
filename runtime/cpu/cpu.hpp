@@ -14,7 +14,7 @@ namespace brook {
        virtual void PushConstant(const float3 &val); 
        virtual void PushConstant(const float4 &val);
        virtual void PushGatherStream(Stream *s);
-       virtual void PushReduce (void * val, unsigned int size);
+       virtual void PushReduce (void * val, __BRTStreamType type);
        virtual void PushOutput(Stream *s);
        virtual void Map();
        virtual void Release();
@@ -39,7 +39,7 @@ namespace brook {
     };
     class CPUStream: public Stream {
     public:
-	CPUStream (const char type[],int dims, int extents[]);
+	CPUStream (__BRTStreamType type ,int dims, int extents[]);
 	virtual void Read(const void* inData);
 	virtual void Write(void* outData);
 	virtual void Release();
@@ -60,7 +60,7 @@ namespace brook {
     public:
 	CPURunTime();
 	virtual Kernel * CreateKernel(const void*[]);
-	virtual Stream * CreateStream(const char type[], int dims, int extents[]);
+	virtual Stream * CreateStream(__BRTStreamType type, int dims, int extents[]);
 	virtual ~CPURunTime(){}
     };
 }

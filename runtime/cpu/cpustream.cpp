@@ -41,18 +41,28 @@ std::string noWhiteSpace (std::string in) {
 	}
 	return in.substr(0,j);												
 }
-int knownType (std::string typ) {
-	return knownTypes[noWhiteSpace(typ)];
+int knownTypeSize (__BRTStreamType type) {
+   switch (type) {
+   case __BRTFLOAT2:
+      return sizeof(float2);
+   case __BRTFLOAT3:
+      return sizeof(float3);
+   case __BRTFLOAT4:
+      return sizeof(float4);
+   default:
+      return sizeof(float);
+   }
 }
 namespace brook{
-    CPUStream::CPUStream(const char type[], int dims, int extents[]){
+    CPUStream::CPUStream(__BRTStreamType type, int dims, int extents[]){
 	this->extents = (unsigned int *)malloc(dims*sizeof(unsigned int));
 	totalsize=1;
 	for(int i=0;i<dims;++i) {
 	    this->extents[i]=extents[i];
 	    totalsize*=extents[i];
 	}
-	stride=knownType(type);
+        this->type = type;
+	stride=knownTypeSize(type);
 	if (stride) {
 	    data = malloc(stride*totalsize);
 	}else {

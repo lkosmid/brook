@@ -31,7 +31,7 @@ Kernel * NV30GLRunTime::CreateKernel(const void*[]) {
   return (Kernel *) 0;
 }
 
-Stream * NV30GLRunTime::CreateStream(const char type[], int dims, int extents[]) {
+Stream * NV30GLRunTime::CreateStream(__BRTStreamType type, int dims, int extents[]) {
   // XXX: TO DO
   return (Stream *) 0;
 }
