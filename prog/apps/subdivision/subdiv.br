@@ -50,6 +50,8 @@ int counterMax = 1024;
 extern float neighboreps;
 int low_texture_ram=0;
 int subdivisiondepth=0;
+const unsigned int maxTexDim=2048;
+const unsigned int maxTexDimLog2=11;
 void recomputeNeighbors(STri*, Neighbor *, unsigned int);
 void checkNeighbors(STri * tri, Neighbor * in, Neighbor * out, unsigned int);
 void __printf_cpu_inner(float f,float g, float h) {
@@ -324,7 +326,7 @@ kernel void repairTJunctions(STri triangles[][],
                              float3 where<>,
                              out float3  tris<>) {
   float2 zero2=0;
-  float2 index = (where.xy>=0&&where.xy<2048)?where.xy:zero2;
+  float2 index = (where.xy>=0&&where.xy<65536)?where.xy:zero2;
   STri tri = triangles[index.xy];
   float mod3 = round(fmod((indexof tris).x,3.0f));
   float3 AC = avg (tri.A.xyz,tri.C.xyz);
@@ -364,11 +366,11 @@ kernel void identifyTJunctions(STri triangles[][],
                              vout[1] float3 cracksA<>,
                              vout[1] float3 cracksB<>) {
   float2 zero2=0;
-  float2 index = (i>=0&&i<2048)?i:zero2;
+  float2 index = (i>=0&&i<65536)?i:zero2;
   STri tri=triangles[index];
   Neighbor oldneighbors=neighbors[index];
   float generous=0;
-  if(i.x>=0&&i.x<2048/*&&(tri.A.w!=0||tri.B.w!=0||tri.C.w!=0)*/) {
+  if(i.x>=0&&i.x<65536/*&&(tri.A.w!=0||tri.B.w!=0||tri.C.w!=0)*/) {
     if ((generous||oldneighbors.AB.w==0)&&tri.A.w==0) {
       //that triangle is rastered as is, we better push out a repair triangle
       cracksA=float3(i.x,i.y,0);
@@ -498,7 +500,7 @@ kernel void splitTrianglesAdaptive (STri triangles[][],
                                     float2 i<>,
                                     out SplitTri splittri<>) {
   float2 zero2=0;
-  float2 index = (i>=0&&i<2048)?i:zero2;
+  float2 index = (i>=0&&i<65536)?i:zero2;
   STri tri=triangles[index];
   Neighbor oldneighbors=neighbors[index];
   splittri=splitTriangles(tri,oldneighbors,0);
@@ -518,7 +520,12 @@ void __printnew_cpu_inner() {
   printf ("\n");
 }
 
-
+kernel float whichMod4 (float2 index, float stretchX) {
+  float num;
+  num= (stretchX*index.x+((float)(stretchX!=1))*index.y);
+  num = fmod(num,4.0f);
+  return num>3.5?0:num;
+}
 //moves the 6 split values into 4 individual triangles (with a result of 12 vertices)
 //moves the 12 split neighbors into 4 individual neighbor lists
 //uses fmod with x or y to determine which direction should matter wrt fmod.
@@ -527,9 +534,10 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
                                        out STri tri<>,
                                        out Neighbor neighbor<>,
                                        float stretchX) {
-  float sindex = stretchX?(indexof tri).x:(indexof tri).y;
-  float unclampedwhich = round(fmod(sindex,4));
-  float which = unclampedwhich>3.5?0:unclampedwhich;
+  //  float sindex = stretchX?(indexof tri).x:(indexof tri).y;
+  //  float unclampedwhich = round(fmod(sindex,4));
+  //  float which = whichMod4(unclampedwhich>3.5?0:unclampedwhich;
+  float which = whichMod4((indexof tri).xy,stretchX);
   float4 ac = splittri.AC;
   float4 ab = splittri.AB;
   float4 bc = splittri.BC;
@@ -545,7 +553,7 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
   float4 AB_B = {newnei.AB.w,
                  newnei.BBC.w,
                  newnei.ABB.w,1};
- 
+  
   if (which<.5) {
     tri.A=identity(a,1);
     tri.B=identity(ab,1);
@@ -691,8 +699,9 @@ void subdivide (Neighbor (*neighbors)<>,
                 char out4) {
   unsigned int streamY=toi(streamSize(*triangles).y);
   unsigned int streamX=toi(streamSize(*triangles).x);
-  float stretchX = streamY*4>2048?1.0f:0.0f;      
-
+  float stretchX = streamY*4>maxTexDim?(streamY*2>maxTexDim?1.0f:2.0f):0.0f;      
+  int xfactor=stretchX==2.0f?2:(stretchX==1.0f?4:1);
+  int yfactor=stretchX==2.0f?2:(stretchX==1.0f?1:4);
   subdivisiondepth++;
   if (counter>=counterMax) {
     if (out4) {
@@ -715,10 +724,13 @@ void subdivide (Neighbor (*neighbors)<>,
     SplitTri sharedTriangles <streamY,streamX>;
     //these new neighbor structs are 4x as big as the old ones
     //input is thus stretched through them based on the fmod
-    Neighbor newNeighbors<(stretchX?streamY:streamY*4),
-      (stretchX?streamX*4:streamX)>;
-    STri newTriangles<(stretchX?streamY:streamY*4),
-      (stretchX?streamX*4:streamX)>;
+
+    Neighbor newNeighbors<(streamY*yfactor),
+      (streamX*xfactor)>;
+    STri newTriangles<(streamY*yfactor),
+      (streamX*xfactor)>;
+    fprintf (stderr,"stretching %f to %d %d\n",stretchX,streamX*xfactor,streamY*yfactor);
+
     //computes the 12 shared neighbor values
     computeNeighborsNoAdaptive(*triangles,*neighbors,sharedNeighbors);
     //computes the 6 new triangle vertex values
@@ -818,17 +830,20 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
       streamY=toi(streamSize(shouldProduce).y);
       //if some should be split and produced then go here
       if (streamY&&streamX) {
-        float stretchX = streamY*4>2048?1.0f:0.0f;      
+        float stretchX = streamY*4>maxTexDim?(streamY*2>maxTexDim?1.0f:2.0f):0.0f;      
+        int xfactor=stretchX==2.0f?2:(stretchX==1.0f?4:1);
+        int yfactor=stretchX==2.0f?2:(stretchX==1.0f?1:4);
         //allocate shared neighbor structs that hold the extra generated floats
         Neighbor sharedNeighbors<streamY,streamX>;
         SplitTri sharedTriangles <streamY,streamX>;
         //these new neighbor structs are 4x as big as the old ones
         //input is thus stretched through them based on the fmod
-        Neighbor newNeighbors<(stretchX?streamY:streamY*4),
-          (stretchX?streamX*4:streamX)>;
-        STri newTriangles<(stretchX?streamY:streamY*4),
-          (stretchX?streamX*4:streamX)>;
+        Neighbor newNeighbors<(streamY*yfactor),
+          (streamX*xfactor)>;
+        STri newTriangles<(streamY*yfactor),
+          (streamX*xfactor)>;
         //computes the 12 shared neighbor values
+        fprintf (stderr,"stretching %f to %d %d\n",stretchX,streamX*xfactor,streamY*yfactor);
         computeNeighborsAdaptive(*triangles,*neighbors,shouldProduce,sharedNeighbors);
         //computes the 6 new triangle vertex values
         splitTrianglesAdaptive(*triangles,*neighbors,shouldProduce,sharedTriangles);
@@ -964,15 +979,15 @@ Neighbor *  createNeighbors (STri * tri, unsigned int howMany) {
 void bestHeiWid(unsigned int totalSize,
                 unsigned int *hei,
                 unsigned int *wid) {
-   int slop=totalSize*2;
-   int maxy = 0;
-   int best = 11;
+   unsigned int slop=totalSize*2;
+   unsigned int maxy = 0;
+   unsigned int best = maxTexDimLog2;
    unsigned int i;
-   for (i=0;i<12;++i) {
-      int x= (1<<i);
-      int y = totalSize/x+(totalSize%x==0?0:1);
-      int tslop;
-      if (x>2048||y>2048)
+   for (i=0;i<maxTexDimLog2+1;++i) {
+      unsigned int x= (1<<i);
+      unsigned int y = totalSize/x+(totalSize%x==0?0:1);
+      unsigned int tslop;
+      if (x>maxTexDim||y>maxTexDim)
          continue;
       tslop = x*y - totalSize;
       if (tslop<0)
