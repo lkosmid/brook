@@ -496,8 +496,8 @@ basefAttribList[4][16] = { {0.0f,0.0f},
 
 #define PBATTRIB \
     GLX_PRESERVED_CONTENTS, GL_TRUE, \
-    GLX_PBUFFER_WIDTH, 2048,      \
-    GLX_PBUFFER_HEIGHT, 2048
+    GLX_PBUFFER_WIDTH, 1024, \
+    GLX_PBUFFER_HEIGHT, 1024
 
 
 /*
@@ -526,11 +526,17 @@ bool         OGLWindow::static_window_created = false;
 bool         OGLWindow::static_pbuffers_initialized = false;
 
 
+#define BASEATTRIB {{PBATTRIB, 0, 0}, \
+                    {PBATTRIB, 0, 0}, \
+                    {PBATTRIB, 0, 0}, \
+                    {PBATTRIB, 0, 0}}
+
+
 static int
-basepiAttribList[4][16] = { {PBATTRIB, 0, 0},
-                            {PBATTRIB, 0, 0},
-                            {PBATTRIB, 0, 0},
-                            {PBATTRIB, 0, 0}};
+basepiAttribList[4][4][16] = { BASEATTRIB,
+                               BASEATTRIB,
+                               BASEATTRIB,
+                               BASEATTRIB};
 
 OGLWindow::OGLWindow() {
   int attrib[] = { GLX_RGBA, None };
@@ -596,7 +602,8 @@ OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
   if (static_pbuffers_initialized)
     return;
   
-  int   (*iAttribList)[64]  = (int (*)[64]) malloc (sizeof(baseiAttribList)); 
+  int   (*iAttribList)[4][64]  = (int   (*)[4][64])
+    malloc (sizeof(baseiAttribList));
   float fAttribList[4][16]  = {{0.0f, 0.0f}, {0.0f, 0.0f}, 
                                {0.0f, 0.0f}, {0.0f, 0.0f}};
 
@@ -623,7 +630,7 @@ OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
 
     glxConfig[i] = glXChooseFBConfig(pDisplay, 
                                      iScreen, 
-                                     iAttribList[i], 
+                                     iAttribList[0][i], 
                                      &iConfigCount);
     
     if (iConfigCount == 0) {
@@ -673,14 +680,30 @@ OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
 }
 
 
-void
-OGLWindow::bindPbuffer(unsigned int ncomponents)
-{
+
+bool
+OGLWindow::bindPbuffer(unsigned int width,
+                       unsigned int height,
+                       unsigned int numOutputs,
+                       unsigned int numComponents) {
 
   /* Sadly, Linux doesn't seem to like rebinding a
   ** context to a different format pbuffer.  So 
   ** we just run everything in a float4 pbuffer.
   */
+
+  if (width > 1024 ||
+      height > 1024) {
+    fprintf (stderr, "Pbuffer not big enough\n");
+    exit(1);
+  }
+
+  if (numOutputs > 1) {
+    fprintf (stderr, "Don't support multiple output on Linux yet\n");
+    exit(1);
+  }
+
+  return true;
 
 #if 0
   static const int pbAttribList[] =
