@@ -14,7 +14,8 @@
 #include "brook2cpp.h"
 
 template <class ConverterFunctor> void ConvertToT (Expression * expression);
-
+using std::cout;
+using std::endl;
 BinaryOp TranslatePlusGets (AssignOp ae) {
                 BinaryOp bo=BO_Assign;
                 switch (ae) {
@@ -205,15 +206,9 @@ class BaseType1:public BaseType {public:
 
 void ArrayBlackmailer(Expression * e) {
     ArrayBlacklist.insert(e);
+	cout << "blackmailing "<< e<<endl; 
 }
 void BlackmailType(Type **t);
-template <class T> void BlackmailT(Type **&t) {
-    T * k;
-    k = static_cast<T *>(*t);
-    if (k) {
-        BlackmailType(&k->subType);
-    }
-}
 
 void BlackmailBaseType (BaseType **t) {
 	*t = new BaseType1(**t);
@@ -235,11 +230,11 @@ void BlackmailType (Type **t) {
         at->size->findExpr(ArrayBlackmailer);
     }
 	if ((*t)->type==TT_Array||(*t)->type==TT_Stream)
-	    BlackmailT<ArrayType>(t);//this takes care of Streams as well as constant arrays    
+	    BlackmailType(&(static_cast<ArrayType *>(*t)->subType));//this takes care of Streams as well as constant arrays    
 	if ((*t)->type==TT_Pointer)
-	    BlackmailT<PtrType>(t);
+	    BlackmailType (&(static_cast<PtrType *>(*t)->subType));
 	if ((*t)->type==TT_BitField)
-	    BlackmailT<BitFieldType>(t);
+	    BlackmailType (&(static_cast<BitFieldType *>(*t)->subType));
     BrtStreamType * st;
 
     if ((*t)->type==TT_BrtStream && (st = static_cast<BrtStreamType *>(*t))) {
@@ -367,6 +362,7 @@ class ConstantExprConverter{public:
     Expression * operator()(Expression * e) {
         Constant *con;
         Constant * ret=NULL;
+		cout << "converting using "<< e<<endl;
         if (e->etype==ET_Constant&&(con=static_cast<Constant*>(e))) {
             switch (con->ctype) {
             case CT_Char:
@@ -533,6 +529,7 @@ void RestoreTypes(BRTKernelDef *kDef){
 }
 
 void Brook2Cpp_ConvertKernel(BRTKernelDef *kDef) {
+    RestoreTypes(kDef);
     kDef->findStemnt(&FindMask);
     RestoreTypes(kDef);
     kDef->findStemnt (&FindSwizzle);
