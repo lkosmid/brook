@@ -6,7 +6,7 @@ REGRESSIONDIRS := accumulate allocate constant convert_iter_to_stream \
 		  read_write reduce reduce_basic reducetostream \
 		  replication_stride struct_gather struct_input \
 		  struct_output sum toy scatter scan vout pack_vout \
-		  domain_streamreadwrite read_write_domain streamcopy
+		  domain_streamreadwrite read_write_domain
 
 
 #ifdef BRT_RUNTIME
@@ -15,7 +15,7 @@ REGRESSIONDIRS := accumulate allocate constant convert_iter_to_stream \
 #endif
 #endif
 
-SUBDIRS := $(REGRESSIONDIRS)
+SUBDIRS := $(REGRESSIONDIRS) streamcopy
 # big  fft infinite tessellate
 
 include $(ROOTDIR)/common.mk
