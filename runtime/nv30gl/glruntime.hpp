@@ -8,84 +8,12 @@
 
 #ifndef _GLRUNTIME_HPP_
 #define _GLRUNTIME_HPP_
-
 #include "../runtime.hpp"
-
-#ifdef WIN32
-#include <windows.h>
-#include <GL/gl.h>
-#include "wglext.h"
-#else
-#include <X11/Xlib.h>
-#define GL_GLEXT_LEGACY
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glx.h>
-#include <stdio.h>
-#endif
+#include "GLee.h"
 
 #define GL_MAX_TEXCOORDS        8
 #define GL_MAX_CONSTS           128
 
-/*
- * Despite its name, this file includes a whole bunch of non-nv30
- * definitions required for various GL calls.
- */
-#include "nv30glext.h"
-
-/*
- * Plug some gaps.  The EXT_texture_rectangle extension hasn't made it into
- * the header files we use yet.
- */
-#define GL_TEXTURE_RECTANGLE_EXT   GL_TEXTURE_RECTANGLE_NV
-
-#ifdef WIN32
-/*
- * For some inexplicable reason, on Windows hosts, the OpenGL libraries
- * don't actually export some of their symbols.  Instead, you have to use
- * wglGetProcAddress() to pry them out.  This doesn't stop their header
- * files from defining said symbols, but you get awkward compiler complaints
- * if you actually allow them to be defined.  So, we fake it all here
- * instead of defining either WGL_WGLEXT_PROTOTYPES or GL_GLEXT_PROTOTYPES.
- */
-
-#define RUNTIME_BONUS_GL_FNS \
-   XXX(PFNWGLCREATEPBUFFERARBPROC,     wglCreatePbufferARB)            \
-   XXX(PFNWGLGETPBUFFERDCARBPROC,      wglGetPbufferDCARB)             \
-   XXX(PFNWGLRELEASEPBUFFERDCARBPROC,  wglReleasePbufferDCARB)         \
-   XXX(PFNWGLDESTROYPBUFFERARBPROC,    wglDestroyPbufferARB)           \
-   XXX(PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB)        \
-   XXX(PFNWGLBINDTEXIMAGEARBPROC,      wglBindTexImageARB)             \
-   XXX(PFNWGLRELEASETEXIMAGEARBPROC,   wglReleaseTexImageARB)          \
-   XXX(PFNGLMULTITEXCOORD2FARBPROC,    glMultiTexCoord2fARB)           \
-   XXX(PFNGLMULTITEXCOORD4FARBPROC,    glMultiTexCoord4fARB)           \
-   XXX(PFNGLACTIVETEXTUREARBPROC,      glActiveTextureARB)             \
-                                                                       \
-   XXX(PFNGLGENPROGRAMSARBPROC,        glGenProgramsARB)               \
-   XXX(PFNGLBINDPROGRAMARBPROC,        glBindProgramARB)               \
-   XXX(PFNGLPROGRAMSTRINGARBPROC,      glProgramStringARB)             \
-   XXX(PFNGLPROGRAMLOCALPARAMETER4FARBPROC, glProgramLocalParameter4fARB) \
-
-
-#define RUNTIME_BONUS_NV_FNS \
-   XXX(PFNGLGENPROGRAMSNVPROC,         glGenProgramsNV)                \
-   XXX(PFNGLLOADPROGRAMNVPROC,         glLoadProgramNV)                \
-   XXX(PFNGLBINDPROGRAMNVPROC,         glBindProgramNV)                \
-   XXX(PFNGLPROGRAMNAMEDPARAMETER4FNVPROC, glProgramNamedParameter4fNV)\
-
-#define XXX(type, fn) \
-   extern type fn;
-
-RUNTIME_BONUS_GL_FNS
-RUNTIME_BONUS_NV_FNS
-#undef XXX
-#endif
-
-#define GL_RGBA_FLOAT32_ATI             0X8814
-#define GL_RGB_FLOAT32_ATI              0X8815
-#define GL_ALPHA_FLOAT32_ATI            0X8816
-#define GL_INTENSITY_FLOAT32_ATI        0X8817
-#define GL_LUMINANCE_ALPHA_FLOAT32_ATI  0X8819
 
 namespace brook {
 
