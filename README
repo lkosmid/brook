@@ -60,7 +60,7 @@ Compiling Brook GPU
 
 Building And Running Brook Programs
 
-	The are some toy programs used for testing the compiler and runtime
+	There are some toy programs used for testing the compiler and runtime
    in prog/tests/ and more interesting programs in prog/apps/ that can be
    used as examples.  Basically, BRCC converts .br files into .cpp files
    which are then compiled and linked against the runtime brook.lib.  At
