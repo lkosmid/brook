@@ -58,7 +58,7 @@ inline unsigned int getIndexOf(unsigned int i,
       refaccum*=mapextent[d];
       accum*=refextent[d];
    }
-   return ret;//return getIndexOf(ret,extent,dim,refextent);
+   return getIndexOf(ret,extent,dim,refextent);
 }
 
 #endif

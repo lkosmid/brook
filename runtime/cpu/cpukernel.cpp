@@ -166,12 +166,12 @@ namespace brook{
                 args[(*j).which]=(char*)args[(*j).which]+
                    (*j).stream->getStride();
              }
-             e[0]+=mag[0];
+             e[rdim-1]+=mag[rdim-1];
              unsigned int k;
-             for (k=0;k<rdim-1;++k) {
+             for (k=rdim-1;k>=1;--k) {
                 if (e[k]>=extent[k]){
                    e[k]=0;
-                   e[k+1]+=mag[k+1];                   
+                   e[k-1]+=mag[k-1];                   
                 }else break;
              }
           }
