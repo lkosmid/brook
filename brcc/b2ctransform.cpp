@@ -352,29 +352,43 @@ void FindTypesDecl (Statement * s) {
 // This class overrides the index expr with one that prints [(int)<lookupExpr>]
 // It is no longer needed for the current transformation since we now demand float4 lookups for 4d gather
 class NewIndexExpr :public IndexExpr {public:
-    NewIndexExpr (Expression * a, Expression * s,const Location &l)
-        :IndexExpr(a,s,l) {}
-
-    Expression * dup0() const {return new NewIndexExpr(array->dup(),_subscript->dup(),location);}
-
-    void print(std::ostream &out) const {
-      if (array->precedence() < precedence())
-      {
+   NewIndexExpr (Expression * a, Expression * s,const Location &l)
+      :IndexExpr(a,s,l) {}
+   
+   Expression * dup0() const {return new NewIndexExpr(array->dup(),_subscript->dup(),location);}
+   void printIndex(std::ostream&out, bool printCast) const{
+      if (array->precedence() < precedence()) {
         out << "(";
-        array->print(out);
-        out << ")";
       }
-      else
-        array->print(out);
+      if (array->etype==ET_IndexExpr) {
+         static_cast<NewIndexExpr *>(array)->printIndex(out,false);
+      }else{
+         array->print(out);
+      }
+      if (array->precedence() < precedence()) {
+         out << ")";
+      }
 
-      out << "[(int)";
+      out << "[";//(int)
+      /*
       int castprecedence= CastExpr(NULL,NULL,location).precedence();
       if (_subscript->precedence()<=castprecedence)
         out <<"(";
+      */
       _subscript->print(out);
-      if (_subscript->precedence()<=castprecedence)
+      /*
+        if (_subscript->precedence()<=castprecedence)
         out <<")";    
+      */
       out << "]";
+      if (printCast) {
+         out << ".cast()";
+      }
+   }
+
+   
+    void print(std::ostream &out) const {
+       printIndex(out,true);
     }
 };
 
@@ -694,9 +708,8 @@ void Brook2Cpp_ConvertKernel(FunctionDef *fDef) {
     RestoreTypes(fDef);
     fDef->findStemnt (&FindQuestionColon);
     RestoreTypes(fDef);
-//    fDef->findStemnt (&FindIndexExpr);
-	//no longer necessary with our floatX empowered Array class
-//    RestoreTypes(fDef);
+    fDef->findStemnt (&FindIndexExpr);
+    RestoreTypes(fDef);
     fDef->findStemnt (&FindConstantExpr);
     RestoreTypes(fDef);
     fDef->findStemnt(&FindFunctionCall);
