@@ -109,31 +109,6 @@ kernel float3 swap3(float3 ain<>, float3 bin<>, out float3 bout<>) {
    bout = max3(ain,bin);
    return ret;
 }
-kernel void max6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, float3 f<>,
-                 out float3 oa<>, out float3 ob<>, out float3 oc<>, out float3 od<>, out float3 oe<>, out float3 of<>) {
-   float3 td,te,tf;
-   oa = min3(a,b);//least
-   ob = max3(a,b);//second least
-   oc = min3(c,d);
-   td = max3(c,d);
-   te = min3(e,f);
-   tf = max3(e,f);
-   
-   oa = swap3(oa,oc,oc);
-   oa = swap3(oa,te,te);
-   te = swap3(te,ob,ob);
-   te = swap3(te,oc,oc);
-   te = swap3(te,td,td);
-   te = swap3(te,tf,tf);
-   ob = swap3(ob,te,te);
-   oc = swap3(oc,td,td);
-   oc = swap3(oc,te,te);
-   oc = swap3(oc,tf,tf);
-   od = mymin(td,te,tf);
-   of = mymax(td,te,tf);
-   oe = mymed(td,te,tf,od,of);   
-}
-
 
 kernel float3 add6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, float3 f<>){
   float3 ad = a+d;
