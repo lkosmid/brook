@@ -29,7 +29,7 @@ void brook::initglfunc(void) {
 #define  XXX(type, fn) fn = (type) wglGetProcAddress(#fn); \
                        GPUAssert(fn, "Failed to load" #fn);
 #else
-#define  XXX(type, fn) fn = (type) glXGetProcAddressARB(#fn); \
+#define  XXX(type, fn) fn = (type) glXGetProcAddressARB((const GLubyte *) #fn); \
                        GPUAssert(fn, "Failed to load" #fn);
 #endif
 
