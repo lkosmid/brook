@@ -123,7 +123,7 @@ BRTKernelDef::printStub(std::ostream& out) const
       if (recursiveIsStream(fType->args[i]->form) || recursiveIsGather(fType->args[i]->form)) {
          out << "const __BRTStream& " << *fType->args[i]->name;
       } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
-         out << "_T"<<num_templates<<" &" << fType->args[i]->name->name;
+         out << "_T"<<num_templates++<<" &" << fType->args[i]->name->name;
       }else {
          out << "const ";
          Symbol name;name.name = fType->args[i]->name->name;
