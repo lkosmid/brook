@@ -67,7 +67,8 @@ typedef struct shortfixed {
 } shortfixed;
 
 typedef struct shortfixed2 {
-  shortfixed2(float _x, float _y) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); }
+  static float clamp(float x) {return x>1?1:(x<0?0:x);}
+  shortfixed2(float _x, float _y) { x = (unsigned short)(.5+clamp(_x)*65535); y = (unsigned short)(.5+clamp(_y)*65535); }
    shortfixed2(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); }
   shortfixed2(unsigned short _x, unsigned short _y) { x = _x;y=_y;}
   shortfixed2(void) {}
@@ -77,8 +78,9 @@ typedef struct shortfixed2 {
 } shortfixed2;
 
 typedef struct shortfixed3 {
+  static float clamp(float x) {return x>1?1:(x<0?0:x);}
   shortfixed3(float _x, float _y, float _z) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); z=(unsigned short)(.5+_z*65535);}
-   shortfixed3(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); z=(unsigned short)(.5+_z*65535);}
+   shortfixed3(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+clamp(_x)*65535); y = (unsigned short)(.5+clamp(_y)*65535); z=(unsigned short)(.5+clamp(_z)*65535);}
   shortfixed3(unsigned short _x, unsigned short _y, unsigned short _z) { x = _x;y=_y;z=_z;}
   shortfixed3(void) {}
   operator __BrtFloat3() const{return __BrtFloat3(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f);}
@@ -87,7 +89,8 @@ typedef struct shortfixed3 {
 } shortfixed3;
 
 typedef struct shortfixed4 {
-  shortfixed4(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); z=(unsigned short)(.5+_z*65535); w=(unsigned short)(.5+_w*65535);}
+  static float clamp(float x) {return x>1?1:(x<0?0:x);}
+  shortfixed4(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+clamp(_x)*65535); y = (unsigned short)(.5+clamp(_y)*65535); z=(unsigned short)(.5+clamp(_z)*65535); w=(unsigned short)(.5+clamp(_w)*65535);}
   shortfixed4(unsigned short _x, unsigned short _y, unsigned short _z, unsigned short _w) { x = _x;y=_y;z=_z;w=_w;}
   shortfixed4(void) {}
   unsigned short x,y,z,w;
