@@ -54,11 +54,12 @@ DFTY (float4 s[][],
       out float4 s_prime<>, 
       iter float2 indexR<>, 
       iter float2 indexI<>) {
-   float4 r =  s[indexR]; float4 t = s[indexI];
-   if (round(fmod((indexof s_prime).y,2))==1) {
-      mult_complex2(r-t,W,s_prime);
-   }else {
-      s_prime=r+t;
+   float4 r =  s[indexR]; 
+   float4 t = s[indexI];
+   mult_complex2(r-t,W,s_prime);
+   if (round(fmod((indexof s_prime).y,2))!=1) {
+     //overwrite s_prime
+     s_prime=r+t;
    }
 } 
 
