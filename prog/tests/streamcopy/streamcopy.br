@@ -81,12 +81,12 @@ int main(int argc, char* argv[]) {
 
       for (k=0;k<numElements;k++) {
 
-	if (!fequals(src[k], dst[k])) {
+	//if (!fequals(src[k], dst[k])) {
 	  if (verbose) 
-	    printf("[stream size %dx%d] pixel (%d,%d): expected %f obtained %f\n",
-		    i, j, (k/4) % i, (k/4) / i, src[k], dst[j]);
+	    printf("[stream size %dx%d] pixel (%d,%d)[%d]: expected %f obtained %f\n",
+		    i, j, (k/4) % i, (k/4) / i, k%4, src[k], dst[k]);
 	  success = 0;
-	}
+	  //}
       }
       
       if (!success)
