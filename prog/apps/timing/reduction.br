@@ -4,6 +4,7 @@
 #include "main.h"
 #include "reduction.h"
 
+int discard;
 
 reduce void reductionKernel(float4 x<>, reduce float4 result<>) {
   result += x;
@@ -12,7 +13,7 @@ reduce void reductionKernel(float4 x<>, reduce float4 result<>) {
 
 kernel void reductionRegKernel(float4 x<>, float4 constant, out float4 result<>) {
   result = x + constant;
-  //discard;
+  discard;
 }
 
 kernel void forceGPUFlush(float4 input<>, out float4 result<>) {
@@ -67,10 +68,11 @@ void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
 	
     start = GetTimeTSC();
     for (i=0;i<iterations;i++) {
-		reductionRegKernel(xStrm, constant, yStrm);	
+		reductionRegKernel(xStrm, constant, yStrm);
+		forceGPUFlush(yStrm, flushStrm);
+		streamWrite(flushStrm, flush);
     }     	
-	forceGPUFlush(yStrm, flushStrm);
-	streamWrite(flushStrm, flush);   	
+	   	
     stop = GetTimeTSC();              
    
   }
@@ -99,9 +101,9 @@ void Reduction_Time(int length) {
   do_reduction(512, simReduceReg, 1, &usec);
 
   printf("(* size *)  (* usec *)\n");
-  for (size = 8; size<=length; size+=8) {
+  for (size = 1; size<=length; size*=2) {
     do_reduction(size, simReduceReg, iterations, &usec);
-    printf("%8d    %.5f    (* reduce *)\n", 4*size*size, (float)usec / (float)iterations );
+    printf("%8d    %.5f         (* kernel reduce *)\n", 4*size*size, (float)usec / (float)iterations );
   }
 
   printf("\n\n\n");
@@ -110,9 +112,9 @@ void Reduction_Time(int length) {
   simReduceReg = 1;
 
   printf("(* size *)  (* usec *)\n");
-  for (size = 8; size<=length; size+=8) {
+  for (size = 1; size<=length; size*=2) {
     do_reduction(size, simReduceReg, iterations, &usec);
-    printf("%8d    %.5f    (* reduce *)\n", 4*size*size, (float)usec / (float)iterations );
+    printf("%8d    %.5f         (* reduce reg*)\n", 4*size*size, (float)usec / (float)iterations );
   }
   
  
