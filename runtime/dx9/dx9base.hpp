@@ -19,11 +19,13 @@ class DX9PixelShader;
 
 inline void DX9Trace( const char* inFormat, ... )
 {
+  static FILE* file = fopen( "./DX9RuntimeLog.txt", "w" );
+
   va_list args;
   va_start( args, inFormat );
-  vfprintf( stderr, inFormat, args );
-  fprintf( stderr, "\n" );
-  fflush( stderr );
+  vfprintf( file, inFormat, args );
+  fprintf( file, "\n" );
+  fflush( file );
   va_end(args);
 }
 
@@ -40,8 +42,7 @@ inline void DX9Fail( const char* inFormat, ... )
 inline void DX9CheckResultImpl( HRESULT result, const char* fileName, int lineNumber )
 {
   if( !FAILED(result) ) return;
-  DX9Trace( "HRESULT failure - %s:(%d)", fileName, lineNumber );
-  assert( false && "DX9 returned failure");
+  DX9Fail( "HRESULT failure - %s:(%d)", fileName, lineNumber );
 }
 
 #define DX9CheckResult( _result ) \

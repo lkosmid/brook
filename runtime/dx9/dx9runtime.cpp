@@ -9,9 +9,21 @@ static const char* kPassthroughVertexShaderSource =
 "dcl_position v0\n"
 "dcl_texcoord0 v1\n"
 "dcl_texcoord1 v2\n"
+"dcl_texcoord2 v3\n"
+"dcl_texcoord3 v4\n"
+"dcl_texcoord4 v5\n"
+"dcl_texcoord5 v6\n"
+"dcl_texcoord6 v7\n"
+"dcl_texcoord7 v8\n"
 "mov oPos, v0\n"
 "mov oT0, v1\n"
-"mov oT1, v2\n";
+"mov oT1, v2\n"
+"mov oT2, v3\n"
+"mov oT3, v4\n"
+"mov oT4, v5\n"
+"mov oT5, v6\n"
+"mov oT6, v7\n"
+"mov oT7, v8\n";
 
 DX9RunTime::DX9RunTime() {
   // XXX: TO DO
@@ -69,11 +81,16 @@ struct Vector2
   float x, y;
 };
 
+struct Vector4
+{
+  float x, y, z, w;
+};
+
 typedef unsigned short UInt16;
 
 struct DX9Vertex
 {
-  Vector2 position;
+  Vector4 position;
   Vector2 texcoords[8]; // TIM: TODO: named constant
 };
 
@@ -83,14 +100,11 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
   initializeVertexBuffer();
 
 
-  result = device->BeginScene();
-  DX9CheckResult( result );
-
-  result = device->SetVertexDeclaration( vertexDecl );
-  DX9CheckResult( result );
+//  result = device->BeginScene();
+//  DX9CheckResult( result );
 
   DX9Vertex* vertices;
-  result = vertexBuffer->Lock( 0, 0, (void**)&vertices, 0 );
+  result = vertexBuffer->Lock( 0, 0, (void**)&vertices, D3DLOCK_DISCARD );
   DX9CheckResult( result );
 
   DX9Vertex vertex;
@@ -101,6 +115,8 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
 
     vertex.position.x = outputRect[xIndex];
     vertex.position.y = outputRect[yIndex];
+    vertex.position.z = 0.5f;
+    vertex.position.w = 1.0f;
 
     for( int t = 0; t < 8; t++ )
     {
@@ -113,27 +129,33 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
   result = vertexBuffer->Unlock();
   DX9CheckResult( result );
 
+  result = device->SetVertexDeclaration( vertexDecl );
+  DX9CheckResult( result );
+
   result = device->SetStreamSource( 0, vertexBuffer, 0, sizeof(DX9Vertex) );
   DX9CheckResult( result );
 
   result = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, 2 );
   DX9CheckResult( result );
 
-  result = device->EndScene();
-  DX9CheckResult( result );
+//  result = device->EndScene();
+//  DX9CheckResult( result );
+
+//  result = device->Present( NULL, NULL, NULL, NULL );
+//	DX9CheckResult( result );
 }
 
 static const D3DVERTEXELEMENT9 kDX9VertexElements[] =
 {
 	{ 0, 0, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-	{ 0, 2*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-	{ 0, 4*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
-	{ 0, 6*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 2 },
-	{ 0, 8*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 3 },
-	{ 0, 10*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 4 },
-	{ 0, 12*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 5 },
-	{ 0, 14*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 6 },
-	{ 0, 16*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 7 },
+	{ 0, 4*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+	{ 0, 6*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+	{ 0, 8*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 2 },
+	{ 0, 10*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 3 },
+	{ 0, 12*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 4 },
+	{ 0, 14*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 5 },
+	{ 0, 16*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 6 },
+	{ 0, 18*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 7 },
 	D3DDECL_END()
 };
 

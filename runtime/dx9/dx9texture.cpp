@@ -63,8 +63,7 @@ void DX9Texture::setData( const float* inData )
 	D3DLOCKED_RECT info;
 
 	result = shadowSurface->LockRect( &info, NULL, 0 );
-	if( FAILED(result) )
-		throw 1;
+	DX9CheckResult( result );
 
 	int pitch = info.Pitch;
 	if( pitch % 4 != 0 )
@@ -90,12 +89,10 @@ void DX9Texture::setData( const float* inData )
 	}
 
 	result = shadowSurface->UnlockRect();
-	if( FAILED(result) )
-		throw 1;
+	DX9CheckResult( result );
 
 	result = device->UpdateSurface( shadowSurface, NULL, surfaceHandle, NULL );
-	if( FAILED(result) )
-		throw 1;
+	DX9CheckResult( result );
 }
 
 void DX9Texture::getData( float* outData )
@@ -138,8 +135,7 @@ void DX9Texture::getData( float* outData )
 	}
 
 	result = shadowSurface->UnlockRect();
-	if( FAILED(result) )
-		throw 1;
+	DX9CheckResult( result );
 }
 
 LPDIRECT3DTEXTURE9 DX9Texture::getTextureHandle()
