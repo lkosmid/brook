@@ -8,7 +8,7 @@
 #endif
 
 #include "splitcompiler.h"
-
+#include <string>
 class SplitCompilerHLSL
   : public SplitCompiler
 {

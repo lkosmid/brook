@@ -52,7 +52,7 @@ class SplitArgumentTraversal :
 {
 public:
   SplitArgumentTraversal( std::ostream& inStream, SplitNode* inOutputPosition )
-    : stream(inStream), hasOutput(false), outputPosition(inOutputPosition) {}
+    : stream(inStream), outputPosition(inOutputPosition), hasOutput(false) {}
 
   void traverse( SplitNode* inNode );
 

@@ -1163,6 +1163,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
   // if we are doing a reduction, we may want to run the kernel
   // body multiple times to reduce n values...
   if (isReduction) {
+     int r;
      assert( reductionStreamArguments.size() == 2 );
      int leftArgumentIndex = reductionStreamArguments[0];
      std::string leftArgumentName = args[leftArgumentIndex]->name->name;
@@ -1171,7 +1172,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
      Type* leftArgumentForm = args[leftArgumentIndex]->form;
 
      // do additional fetches...
-     for (int r = 2; r < reductionFactor; r++ ) {
+     for ( r = 2; r < reductionFactor; r++ ) {
         std::stringstream s;
         s << "__reduce" << r;
         std::string argName = s.str();

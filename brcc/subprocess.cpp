@@ -42,7 +42,7 @@ extern "C" {
 char *
 Subprocess_Run(char *argv[], char *input)
 {
-  bool debug = globals.verbose;
+   bool debug =globals.verbose;
   int hStdOutPipe[2], hStdInPipe[2];
   int hStdOut, hStdIn;
   int pid, ret;

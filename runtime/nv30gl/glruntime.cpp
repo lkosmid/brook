@@ -24,7 +24,7 @@ GLRunTime::GLRunTime()
    createWindow();
    createWindowGLContext();
 #endif
-
+#ifdef _WIN32
    if (strstr((const char *) glGetString(GL_VENDOR), "ATI"))
       arch = ARCH_ATI;
    else if (strstr((const char *)glGetString(GL_VENDOR), "NVIDIA"))
@@ -34,7 +34,9 @@ GLRunTime::GLRunTime()
       fprintf (stderr, "GL: Warning unknown card\n\t%s\n\t%s\n",
                glGetString(GL_VENDOR), glGetString(GL_RENDERER));
    }
-
+#else
+   arch = ARCH_NV30;
+#endif
 #ifdef WIN32
    initglfunc();
 #endif
