@@ -1,19 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "streamholder.h"
 /* vc7 floating point paranoia.  This program is in serious violation. */
 #pragma warning(disable:4244)
 
-extern void sort (struct __BRTStream *list_stream,int WIDTH, int LENGTH);
+extern void sort (struct StreamHolder list_stream,int WIDTH, int LENGTH);
 void __printf_cpu_inner(float inx, float iny, float outx, float outy) {
    printf("%g %g -> %g %g\n",inx,iny,outx,outy);
 }
 unsigned int debug_vout = 0;
 static unsigned int myglobalnum=16;
-void debugStreamPrint (struct __BRTStream *stream,char * title) {
+void debugStreamPrint (struct StreamHolder stream,char * title) {
    if (debug_vout) {
       printf ("%s\n",title);
       
-      streamPrint(*stream,1);
+      streamPrint(**stream,1);
       printf ("\n\n");
    }
 }
@@ -488,9 +489,9 @@ kernel void streamCombine8f(float input0[][],
    }
 }
 */
-void combineStreamsHelper (struct __BRTStream **streams,
+void combineStreamsHelper (struct StreamHolder *streams,
                            unsigned int num,
-                           struct __BRTStream * output,
+                           struct StreamHolder  output,
                            float modulus,
                            float offset,
                            float length,
@@ -549,11 +550,11 @@ void combineStreamsHelper (struct __BRTStream **streams,
       }      
    }
 }
-void combineStreams (struct __BRTStream **streams,
+void combineStreams (struct StreamHolder *streams,
                      unsigned int num,
                      unsigned int width, 
                      unsigned int length,
-                     struct __BRTStream * output) {
+                     struct StreamHolder  output) {
    unsigned int  lengthmodmodulus=length%num;
    float tmp<(num*width),length>;
    streamSwap(tmp,*output);
@@ -637,7 +638,7 @@ reduce void valueProduced (float input <>, reduce float output<>) {
 kernel void isFiniteKernel(float inp<>, out float outp<>) {
 	outp=!isinf(inp);
 }
-int finiteValueProduced (struct __BRTStream * input) {
+int finiteValueProduced (struct StreamHolder  input) {
    float output<1,1>;
    float finiteout<1,1>;
    float ret;
@@ -762,8 +763,8 @@ kernel void RelativeGather(out float output<>,
 kernel void kernelReadItem (float items[][], float2 index, out float item<>) {
   item = items[index];
 }
-float shiftValues(struct __BRTStream *list_stream,
-                  struct __BRTStream *output_stream,
+float shiftValues(struct StreamHolder list_stream,
+                  struct StreamHolder output_stream,
                   int WIDTH, 
                   int LENGTH, 
                   int sign) {
@@ -886,14 +887,14 @@ kernel void combine (float input1[][],
       output=input1[indexof(output)];
    }
 }
-unsigned int  voutCombine(struct __BRTStream *outleft_stream,
+unsigned int  voutCombine(struct StreamHolder outleft_stream,
                           float maxshiftleft,
                           unsigned int LEFTWIDTH,
-                          struct __BRTStream *outright_stream,
+                          struct StreamHolder outright_stream,
                           float maxshiftright,
                           unsigned int RIGHTWIDTH,
                           unsigned int LENGTH,
-                          struct __BRTStream * output){
+                          struct StreamHolder  output){
    unsigned int seed=1043210498210;
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
@@ -927,12 +928,12 @@ unsigned int  voutCombine(struct __BRTStream *outleft_stream,
    return totalsize;
 }
 
-unsigned int totalCombineVout (struct __BRTStream *list_stream, 
+unsigned int totalCombineVout (struct StreamHolder list_stream, 
                                unsigned int WIDTH,
-                               struct __BRTStream *list2_stream,
+                               struct StreamHolder list2_stream,
                                unsigned int WIDTH2,
                                unsigned int LENGTH,
-                               struct __BRTStream * output){
+                               struct StreamHolder  output){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;

@@ -1,35 +1,36 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "streamholder.h"
 /* vc7 floating point paranoia.  This program is in serious violation. */
 #pragma warning(disable:4244)
 extern unsigned int debug_vout;
 static unsigned int myglobalnum=16;
 const unsigned int MAX_VOUT_STREAMS=31;//if you change this, change one 5 lines
-int finiteValueProduced (struct __BRTStream * input);
-float shiftValues(struct __BRTStream *list_stream,
-                  struct __BRTStream *output_stream,
+int finiteValueProduced (struct StreamHolder input);
+float shiftValues(struct StreamHolder list_stream,
+                  struct StreamHolder output_stream,
                   int WIDTH, 
                   int LENGTH, 
                   int sign);
-unsigned int  voutCombine(struct __BRTStream *outleft_stream,
+unsigned int  voutCombine(struct StreamHolder outleft_stream,
                           float maxshiftleft,
                           unsigned int LEFTWIDTH,
-                          struct __BRTStream *outright_stream,
+                          struct StreamHolder outright_stream,
                           float maxshiftright,
                           unsigned int RIGHTWIDTH,
                           unsigned int LENGTH,
-                          struct __BRTStream * output);
-unsigned int totalCombineVout (struct __BRTStream *list_stream, 
+                          struct StreamHolder  output);
+unsigned int totalCombineVout (struct StreamHolder list_stream, 
                                unsigned int WIDTH,
-                               struct __BRTStream *list2_stream,
+                               struct StreamHolder list2_stream,
                                unsigned int WIDTH2,
                                unsigned int LENGTH,
-                               struct __BRTStream * output);
-void combineStreams (struct __BRTStream **streams,
+                               struct StreamHolder  output);
+void combineStreams (struct StreamHolder *streams,
                      unsigned int num,
                      unsigned int width, 
                      unsigned int length,
-                     struct __BRTStream * output);
+                     struct StreamHolder  output);
 float myrand (unsigned int *seed) {
    unsigned int rand_max =1509281;
    *seed = (*seed +26129327)%rand_max;
@@ -166,7 +167,7 @@ int main (int argc,char ** argv) {
       streamRead(h,list);
       streamRead(h1,lust);
       if (1) {
-         struct __BRTStream *streams[25]={&a,&b,&c,&d,&e,&f,&g,&h,
+         struct StreamHolder streams[25]={&a,&b,&c,&d,&e,&f,&g,&h,
                                             &a1,&b1,&c1,&d1,&e1,&f1,&g1,&h1,0};
          combineStreams(streams,
                         mynum,
