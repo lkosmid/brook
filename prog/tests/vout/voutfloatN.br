@@ -95,12 +95,13 @@ kernel void isFiniteKernelfloat(float inp<>, out float outp<>) {
 int finiteValueProducedfloat (struct StreamHolder  input) {
    float output<1,1>;
    float finiteout<1,1>;
+   float rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat(*input,output);
-   streamWrite(output,&ret);
-   if (debug_vout) printf ("\n4RRGH %f\n",ret);
+   streamWrite(output,&rettype);
+   if (debug_vout) printf ("\n4RRGH %f\n",rettype);
    isFiniteKernelfloat(output,finiteout);
    streamWrite(finiteout,&ret);
    if (debug_vout) printf ("\nARRGH %f\n",ret);
@@ -1122,12 +1123,13 @@ kernel void isFiniteKernelfloat2(float2 inp<>, out float outp<>) {
 int finiteValueProducedfloat2 (struct StreamHolder  input) {
    float2 output<1,1>;
    float finiteout<1,1>;
+   float2 rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat2(*input,output);
-   streamWrite(output,&ret);
-   if (debug_vout) printf ("\n4RRGH %f\n",ret);
+   streamWrite(output,&rettype);
+   if (debug_vout) printf ("\n4RRGH %f\n",rettype);
    isFiniteKernelfloat2(output,finiteout);
    streamWrite(finiteout,&ret);
    if (debug_vout) printf ("\nARRGH %f\n",ret);
@@ -2149,12 +2151,13 @@ kernel void isFiniteKernelfloat3(float3 inp<>, out float outp<>) {
 int finiteValueProducedfloat3 (struct StreamHolder  input) {
    float3 output<1,1>;
    float finiteout<1,1>;
+   float3 rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat3(*input,output);
-   streamWrite(output,&ret);
-   if (debug_vout) printf ("\n4RRGH %f\n",ret);
+   streamWrite(output,&rettype);
+   if (debug_vout) printf ("\n4RRGH %f\n",rettype);
    isFiniteKernelfloat3(output,finiteout);
    streamWrite(finiteout,&ret);
    if (debug_vout) printf ("\nARRGH %f\n",ret);
@@ -3176,12 +3179,13 @@ kernel void isFiniteKernelfloat4(float4 inp<>, out float outp<>) {
 int finiteValueProducedfloat4 (struct StreamHolder  input) {
    float4 output<1,1>;
    float finiteout<1,1>;
+   float4 rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat4(*input,output);
-   streamWrite(output,&ret);
-   if (debug_vout) printf ("\n4RRGH %f\n",ret);
+   streamWrite(output,&rettype);
+   if (debug_vout) printf ("\n4RRGH %f\n",rettype);
    isFiniteKernelfloat4(output,finiteout);
    streamWrite(finiteout,&ret);
    if (debug_vout) printf ("\nARRGH %f\n",ret);

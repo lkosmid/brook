@@ -85,12 +85,13 @@ kernel void isFiniteKernelBRT_TYPE(BRT_TYPE inp<>, out float outp<>) {
 int finiteValueProducedBRT_TYPE (struct StreamHolder  input) {
    BRT_TYPE output<1,1>;
    float finiteout<1,1>;
+   BRT_TYPE rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedBRT_TYPE(*input,output);
-   streamWrite(output,&ret);
-   if (debug_vout) printf ("\n4RRGH %f\n",ret);
+   streamWrite(output,&rettype);
+   if (debug_vout) printf ("\n4RRGH %f\n",rettype);
    isFiniteKernelBRT_TYPE(output,finiteout);
    streamWrite(finiteout,&ret);
    if (debug_vout) printf ("\nARRGH %f\n",ret);
