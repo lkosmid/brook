@@ -5,9 +5,19 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
+#ifdef _WIN32
+ #define GPU_ROUTINES
+#else
+ #ifdef GPU_ROUTINES
+  #undef GPU_ROUTINES
+ #endif
+#endif
 
+#ifdef GPU_ROUTINES
+//so far the following runtimes only have Windows backends
 #include "dx9/dx9.hpp"
 #include "nv30gl/nv30gl.hpp"
+#endif
 #include "cpu/cpu.hpp"
 #include "brtscatterintrinsic.hpp"
 __StreamScatterAssign STREAM_SCATTER_ASSIGN;
@@ -30,11 +40,13 @@ namespace brook {
       fprintf (stderr,"No runtime requested. Using CPU\n");
       return new CPURunTime();
     }
+#ifdef GPU_ROUTINES
     if (!strcmp(env, DX9_RUNTIME_STRING))
       return new DX9RunTime();
 
     if (!strcmp(env, NV30GL_RUNTIME_STRING))
       return new NV30GLRunTime();
+#endif
 	if (strcmp(env,CPU_RUNTIME_STRING)) 
 		fprintf (stderr, "Unknown runtime requested: %s falling back to CPU", env);
     return new CPURunTime();
