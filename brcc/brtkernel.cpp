@@ -403,9 +403,9 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
         myArgs[i].printCPU(out,PrintCPUArg::USE);
     }}
     out<< ");"<<std::endl;
+    indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
     }}    
-    indent(out,1);out <<"}"<<std::endl;
     out << "}"<<std::endl;   
 }
