@@ -136,8 +136,8 @@ inline __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f, \
 template <class T> T __normalize_cpu_inner (const T &x) {
    if (T::size==1) return x/x;
    if (T::size==2)
-      return x/__sqrt_cpu_inner(x[__BrtFloat1(0)]*x[__BrtFloat1(0)]
-                                + x[__BrtFloat1(1)]*x[__BrtFloat1(1)]);
+      return x/__sqrt_cpu_inner(x[0]*x[0]
+                                + x[1]*x[1]);
    if (T::size==3)
       return x/__sqrt_cpu_inner(x[0]*x[0]
                                 + x[1]*x[1]
