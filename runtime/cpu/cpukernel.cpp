@@ -25,14 +25,11 @@ namespace brook{
         extent=0;
     }
     void CPUKernel::PushStream(Stream *s){
-      //        Stream * s = const_cast<Stream*>(constStream);
-        args.push_back(s->getData(Stream::READ));
 	unsigned int total_size=s->getTotalSize();
-	if (extent==0)
-	    extent=total_size;
-	else
-	    assert(extent==total_size);
-        
+	if (extent==0)//this is necessary for reductions
+          extent=total_size;//don't override output tho
+
+        args.push_back(s);
 	readOnly.push_back(s);
     }
     void CPUKernel::PushConstant(const float &val){
@@ -55,7 +52,7 @@ namespace brook{
        args.push_back(data);
     }
     void CPUKernel::PushOutput(Stream *s){
-        args.push_back(s->getData(Stream::WRITE));
+        args.push_back(s);
 	unsigned int total_size=s->getTotalSize();
 	if (extent==0)
 	    extent=total_size;
@@ -69,6 +66,7 @@ namespace brook{
     void CPUKernel::Cleanup() {
         reductions.clear();
         args.clear();
+#if 0
 	while (!writeOnlies.empty()){
 	  writeOnlies.back()->releaseData(Stream::WRITE);
 	  writeOnlies.pop_back();
@@ -80,6 +78,7 @@ namespace brook{
 	  readOnly.back()->releaseData(Stream::READ);
 	  readOnly.pop_back();
 	}
+#endif
 	extent=0;
     }
     void CPUKernel::Map(){

@@ -173,7 +173,16 @@ bool BRTCPUKernelCode::PrintCPUArg::isGather() {
 bool BRTCPUKernelCode::PrintCPUArg::isArrayType() {
       return recursiveIsArrayType(a->form);
 }
-  
+void PrintAccessStream(std::ostream &out, 
+                       unsigned int index,
+                       std::string function, 
+                       std::string permissions="") {
+   out << "reinterpret_cast<brook::Stream*>"<<std::endl;
+   indent(out,3);
+   out << "(args["<<index<<"])->"<<function;
+   out << "("<<permissions<<")";
+   
+}  
 void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&out,STAGE s){
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
@@ -198,14 +207,11 @@ void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&
             nothing.name="";
             cgt.printSubtype(out,&nothing,true,0);
             out<<"*)";
-            out <<"reinterpret_cast<brook::Stream*>"<<std::endl;
-	    indent(out,3);
-            out << "(args["<<index<<"])->getData(brook::Stream::READ), ";
-	    out <<std::endl;
+            PrintAccessStream(out,index,"getData","brook::Stream::READ");
+	    out <<","<<std::endl;
             indent(out,3);
-            out<<"reinterpret_cast<brook::Stream*>"<<std::endl;
-	    indent(out,3);
-            out<< "(args["<<index<<"])->getExtents());";
+            PrintAccessStream(out,index,"getExtents");
+            out<< ");";
             break;
         }
         case USE:
@@ -213,18 +219,15 @@ void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&
             break;
         case CLEANUP:
 	  indent(out,1);
-	  out << "reinterpret_cast<brook::Stream*>"<<std::endl;
-	  indent(out,3);
-	  out << "(args["<<index<<"])->releaseData(brook::Stream::READ);";
-	  out << std::endl;
+          PrintAccessStream(out,index,"releaseData","brook::Stream::READ");
+	  out << ";"<<std::endl;
 	  break;
         }
 }
 
-   //The following function is obsolete for now since static sized
-   //arrays are no longer helpful
 void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s) {
         Type * t=a->form;
+        bool isOut = (t->getQualifiers()&TQ_Out)!=0;
 	//temporarily dissect type.
         assert (t->type==TT_Stream||t->type==TT_Array);
         bool isStream=false;
@@ -235,7 +238,7 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s)
         switch (s) {
         case HEADER:{
             TypeQual tq= t->getQualifiers();            
-            if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0&&(tq&TQ_Reduce)==0){
+            if ((tq&TQ_Const)==0&&isOut==false&&(tq&TQ_Reduce)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
 			Type * tmp = a->form;
@@ -255,10 +258,15 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s)
             s=(t->type==TT_Base)?getSymbol("*"):getSymbol("(*)");
             t->printType(out,&s,true,0);
             out << ")";
-			out<<"args["<<index<<"];";
-			if (isStream)
-				out<<" arg"<<index<<"+=mapbegin;";
+            if (isStream){
+               PrintAccessStream(out,index,"getData",isOut?
+                                                     "brook::Stream::WRITE":
+                                                     "brook::Stream::READ");
 
+               out<<"; arg"<<index<<"+=mapbegin;";
+            }else {
+               out << "args["<<index<<"];";
+            }
             break;
         }
         case USE:{
@@ -268,6 +276,13 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s)
             break;
         }
 	case CLEANUP:
+          if (isStream) {
+              indent(out,1);
+              PrintAccessStream(out,index,"releaseData",isOut?
+                                                        "brook::Stream::WRITE":
+                                                        "brook::Stream::READ");
+              out << ";"<<std::endl;
+          }
 	  break;
         }
 }
@@ -293,10 +308,11 @@ void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
 void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
         TypeQual tq= t->getQualifiers();
+        bool isOut = (tq&TQ_Out)!=0;
         bool isStream = (t->type==TT_Stream);        
         switch(s) {
         case HEADER:{
-            if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0&&(tq&TQ_Reduce)==0){
+            if ((tq&TQ_Const)==0&&isOut==false&&(tq&TQ_Reduce)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
             Symbol name=getSymbol(a->name->name);
@@ -313,9 +329,15 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
             printType(out,t,true,"arg"+tostring(index));
             out << " = (";
             printType(out,t,true);
-            out << ")args["<<index<<"];";
-            if (isStream)
-                    out<<" arg"<<index<<"+=mapbegin;";
+            out << ")";
+            if (isStream) {
+               PrintAccessStream(out,index,"getData",isOut?
+                                 "brook::Stream::WRITE":
+                                 "brook::Stream::READ");
+               out<<"; arg"<<index<<"+=mapbegin;";
+            }else {
+               out << "args["<<index<<"];";
+            }
             break;
         case USE:
                 out <<"*arg"<<index;
@@ -323,6 +345,13 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
                     out <<"++";
             break;
 	case CLEANUP:
+           if (isStream) {
+              indent(out,1);
+              PrintAccessStream(out,index,"releaseData",isOut?
+                                                        "brook::Stream::WRITE":
+                                                        "brook::Stream::READ");
+              out << ";"<<std::endl;
+           }
 	  break;
         }
 }

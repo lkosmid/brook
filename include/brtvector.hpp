@@ -11,21 +11,36 @@
 #include "type_promotion.hpp"
 template <class VALUE, unsigned int tsize> class vec;
 
-template <class T, class B> static T singlequestioncolon (const B& a,
+template <class T, class B> inline T singlequestioncolon (const B& a,
                                                           const T&b,
                                                           const T&c){
     return a.questioncolon(b,c);
 };
-template <> static float singlequestioncolon (const char & a,
+template <> inline float singlequestioncolon (const char & a,
                                               const float &b,
                                               const float&c) {
     return a?b:c;
 }
-template <> static float singlequestioncolon (const float & a,
+template <> inline float singlequestioncolon (const float & a,
                                               const float &b,
                                               const float&c) {
     return a?b:c;
 }
+
+template <> inline vec<float,1> singlequestioncolon (const vec<float,1> &a,
+                                                     const vec<float,1> &b,
+                                                     const vec<float,1> &c);
+template <> inline vec<float,2> singlequestioncolon (const vec<float,2> & a,
+                                                     const vec<float,2> &b,
+                                                     const vec<float,2> &c);
+template <> inline vec<float,3> singlequestioncolon (const vec<float,3> &a,
+                                                     const vec<float,3> &b,
+                                                     const vec<float,3> &c);
+template <> inline vec<float,4> singlequestioncolon (const vec<float,4> &a,
+                                                     const vec<float,4> &b,
+                                                     const vec<float,4> &c);
+
+
 
 template <class T> class GetValueOf {public:
     typedef typename T::TYPE type;
@@ -335,6 +350,36 @@ public:
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 };
+
+
+template <> inline vec<float,1> singlequestioncolon (const vec<float,1> &a,
+                                                     const vec<float,1> &b,
+                                                     const vec<float,1> &c) {
+    return a.unsafeGetAt(0)?b:c;
+}
+
+template <> inline vec<float,2> singlequestioncolon (const vec<float,2> & a,
+                                                     const vec<float,2> &b,
+                                                     const vec<float,2> &c) {
+    return vec<float,2> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1));
+}
+template <> inline vec<float,3> singlequestioncolon (const vec<float,3> &a,
+                                              const vec<float,3> &b,
+                                              const vec<float,3> &c) {
+    return vec<float,3> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1),
+                         a.unsafeGetAt(2)?b.unsafeGetAt(2):c.unsafeGetAt(2));
+}
+template <> inline vec<float,4> singlequestioncolon (const vec<float,4> &a,
+                                              const vec<float,4> &b,
+                                              const vec<float,4> &c) {
+    return vec<float,4> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1),
+                         a.unsafeGetAt(2)?b.unsafeGetAt(2):c.unsafeGetAt(2),
+                         a.unsafeGetAt(3)?b.unsafeGetAt(3):c.unsafeGetAt(3));
+}
+
 
 
 
