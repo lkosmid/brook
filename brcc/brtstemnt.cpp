@@ -112,12 +112,11 @@ BRTKernelDef::printStub(std::ostream& out) const
       } else {
          if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)==0)
             out << "const ";
-         fType->args[i]->form->printBase(out, 0);
-         fType->args[i]->form->printBefore(out, NULL, 0);
+         Symbol name;name.name = fType->args[i]->name->name;
          if (fType->args[i]->form->type!=TT_Array)
             //arrays are automatically pass by ref. - Daniel
-            out << "& ";
-         out << *fType->args[i]->name;
+            name.name= "& "+name.name;
+         fType->args[i]->form->printType(out,&name,true,0);
       }
    }
    out << ") {\n";

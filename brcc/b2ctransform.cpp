@@ -393,15 +393,16 @@ class NewIndexExpr :public IndexExpr {public:
    }
    NewIndexExpr (Expression * a, Expression * s,const Location &l)
       :IndexExpr(a,s,l) {
-	   isGather=false;
-	   Variable * v = findVariable(a);
-	   if (v) 
-		   if (v->name->entry)
-			   if (v->name->entry->type==ParamDeclEntry)
-				   if (v->name->entry->uVarDecl)
-					   if (v->name->entry->uVarDecl->form)
-						   if (v->name->entry->uVarDecl->form->type==TT_Array)
-							   isGather=true;
+      isGather=false;
+      Variable * v = findVariable(a);
+      if (v) 
+         if (v->name->entry)
+            if (v->name->entry->type==ParamDeclEntry)
+               if (v->name->entry->uVarDecl)
+                  if (v->name->entry->uVarDecl->form)
+                     if (0==(v->name->entry->uVarDecl->form->getQualifiers()&TQ_Reduce))
+                        if (v->name->entry->uVarDecl->form->type==TT_Array)
+                           isGather=true;
    }
    
    Expression * dup0() const {
