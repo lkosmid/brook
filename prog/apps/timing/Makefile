@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = timing
-FILES = main readwrite runkernel blas oneway_matmult_4x4 fourway_matmult_4x4
+FILES = main readwrite runkernel blas oneway_matmult_4x4 fourway_matmult_4x4 fft fft2d
 LIBRARIES = $(RUNTIME_LIBS)
 GRAPHDIR = graphs
 SLOP = graphs
