@@ -226,6 +226,63 @@ static Statement * PushToIfStatement(Statement * ste) {
       }
       return newstemnt;
 }
+static Expression * TransformExprVoutPush (Expression * expression) {
+   FunctionType * ft = pushFunctionType;
+   Decl * vout_counter = findVoutCounter(ft);
+   if (expression->etype==ET_FunctionCall) {
+      FunctionCall* fc=static_cast<FunctionCall*>(expression);
+      if (fc->args.size()==1
+          &&fc->function->etype==ET_Variable
+          &&static_cast<Variable*>(fc->function)->name->name=="push") {
+         if (fc->args[0]->etype!=ET_Variable) {
+            std::cerr<<"Error: ";
+            fc->args[0]->location.printLocation(std::cerr);
+            std::cerr<< " Push called without specific vout stream.\n";
+            return expression;
+         }
+         std::string voutname=static_cast<Variable*>
+            (fc->args[0])->name->name;
+         Decl * streamDecl=NULL;
+         for (unsigned int i=0;i<(unsigned int)ft->nArgs;++i) {
+            if (ft->args[i]->name->name
+                ==std::string("__")+voutname+"_stream") {
+               streamDecl=ft->args[i];
+               break;
+            }
+         }
+         if (streamDecl==NULL) {
+            std::cerr<<"Error: ";
+            fc->args[0]->location.printLocation(std::cerr);
+            std::cerr<<" Push called on var that is not a vout arg.\n";
+            return expression;
+         }
+         Symbol * Eks = new Symbol; Eks->name="x";
+         Symbol * counter=vout_counter->name->dup();
+         counter->name=vout_counter->name->name;
+         counter->entry=mk_paramdecl(counter->name,vout_counter);
+         Symbol * stream=new Symbol;
+         stream->name="__"+voutname+"_stream";
+         stream->entry=mk_paramdecl(stream->name,streamDecl);
+         expression = new AssignExpr
+            (AO_Equal,
+             new Variable(stream,fc->location),
+             new TrinaryExpr(new RelExpr(RO_Equal,
+                                         new FloatConstant(-1,fc->location),
+                                         new AssignExpr(AO_MinusEql,
+                                                        new Variable (counter,
+                                                                      fc->location),
+                                                        new IntConstant(1,
+                                                                        fc->location),
+                                                        fc->location),
+                                         fc->location),
+                             fc->args[0]->dup(),
+                             new Variable(stream->dup(),fc->location),
+                             fc->location),
+             fc->location);         
+      }
+   }
+   return expression;
+}
 FunctionDef* TransformVoutPush(FunctionDef*fd) {
    VoutFunctionType::iterator func
       =voutFunctions.find(fd->FunctionName()->name);
@@ -233,7 +290,8 @@ FunctionDef* TransformVoutPush(FunctionDef*fd) {
       return NULL;
    FunctionType * ft = static_cast<FunctionType*>(fd->decl->form);
    pushFunctionType = ft;
-   TransformStemnt(fd,&PushToIfStatement);
+   fd->findExpr(&TransformExprVoutPush);
+   if (0) TransformStemnt(fd,&PushToIfStatement);
    Block * MainFunction= new Block(fd->location);
    Statement * tmp=MainFunction->head;
    MainFunction->head=fd->head;
