@@ -143,6 +143,7 @@ public:
   }
 
   void printCode(std::ostream& out) const;
+  void onlyPrintInner(std::ostream& out) const;
   void printInnerCode(std::ostream& out) const;
 };
 

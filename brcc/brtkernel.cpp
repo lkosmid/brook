@@ -424,6 +424,10 @@ void BRTCPUKernelCode::printInnerCode (std::ostream & out) const {
   horrible_horrible_indexof_hack = false;
 }
 
+void BRTCPUKernelCode::onlyPrintInner(std::ostream& out) const {
+  printInnerCode (out);
+}
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const
 {
