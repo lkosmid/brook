@@ -183,6 +183,9 @@ namespace brook
     virtual void* getTextureRenderData( TextureHandle inTexture );
     virtual void synchronizeTextureRenderData( TextureHandle inTexture );
 
+	virtual unsigned int getMaximumOutputCount() const {
+      return _maximumOutputCount;
+	}
 
   private:
     GPUContextDX9Impl();
@@ -197,14 +200,14 @@ namespace brook
     PixelShaderHandle _passthroughPixelShader;
     IDirect3DVertexBuffer9* _vertexBuffer;
     IDirect3DVertexDeclaration9* _vertexDecl;
+	size_t _maximumOutputCount;
 
     enum {
-      kMaximumSamplerCount = 16,
-      kMaximumOutputCount = 4
+      kMaximumSamplerCount = 16
     };
 
     DX9Texture* _boundTextures[16];
-    DX9Texture* _boundOutputs[4];
+	std::vector<DX9Texture*> _boundOutputs;
 
     D3DCAPS9 _deviceCaps;
     bool _supportsPS2B;
@@ -338,10 +341,14 @@ namespace brook
     _passthroughVertexShader = createVertexShader( kPassthroughVertexShaderSource );
     _passthroughPixelShader = createPixelShader( kPassthroughPixelShaderSource );
 
-    for( size_t i = 0; i < kMaximumOutputCount; i++ )
+	_maximumOutputCount = _deviceCaps.NumSimultaneousRTs;
+
+	_boundOutputs.resize( _maximumOutputCount );
+    for( size_t i = 0; i < _maximumOutputCount; i++ )
       _boundOutputs[i] = NULL;
     for( size_t t = 0; t < kMaximumSamplerCount; t++ )
       _boundTextures[t] = NULL;
+
 
     return true;
   }
@@ -742,7 +749,7 @@ namespace brook
     for( size_t i = 0; i < kMaximumSamplerCount; i++ )
       _boundTextures[i] = NULL;
 
-    for( size_t j = 0; j < kMaximumOutputCount; j++ )
+    for( size_t j = 0; j < _maximumOutputCount; j++ )
       _boundOutputs[j] = NULL;
   }
 
@@ -777,6 +784,7 @@ namespace brook
 
   void GPUContextDX9Impl::disableOutput( size_t inIndex )
   {
+    _boundOutputs[inIndex] = NULL;
     HRESULT result = _device->SetRenderTarget( inIndex, NULL );
     GPUAssert( !FAILED(result), "SetRenderTarget failed" );
   }
@@ -830,7 +838,7 @@ namespace brook
     // TIM: we have to flush any host-side changes to
     // the output buffers forward, since we might
     // only be writing to a domain
-    for( size_t j = 0; j < kMaximumOutputCount; j++ )
+    for( size_t j = 0; j < _maximumOutputCount; j++ )
     {
       if( _boundOutputs[j] )
         _boundOutputs[j]->validateCachedData();
@@ -891,7 +899,7 @@ namespace brook
     result = _device->DrawPrimitive( D3DPT_TRIANGLELIST, 0, 1 );
     DX9AssertResult( result, "DrawPrimitive failed" );
 
-    for( size_t j = 0; j < kMaximumOutputCount; j++ )
+    for( size_t j = 0; j < _maximumOutputCount; j++ )
     {
       if( _boundOutputs[j] )
         _boundOutputs[j]->markCachedDataChanged();

@@ -505,7 +505,11 @@ namespace brook
     for( i = 0; i < samplerCount; i++ )
       bindSampler( i, inPass.samplers[i] );
     
-    size_t outputCount = inPass.outputs.size();
+    size_t maximumOutputCount = _context->getMaximumOutputCount();
+    for( i = 1; i < maximumOutputCount; i++ )
+      _context->disableOutput( i );
+
+	size_t outputCount = inPass.outputs.size();
     for( i = 0; i < outputCount; i++ )
       bindOutput( i, inPass.outputs[i] );
 
@@ -513,10 +517,6 @@ namespace brook
     _inputInterpolants.resize( interpolantCount );
     for( i = 0; i < interpolantCount; i++ )
       bindInterpolant( i, inPass.interpolants[i] );
-    
-    size_t maximumOutputCount = _context->getMaximumOutputCount();
-    for( i = outputCount; i < maximumOutputCount; i++ )
-      _context->disableOutput( i );
     
     // Execute
     _context->bindVertexShader( vertexShader );
