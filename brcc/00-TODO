@@ -1,0 +1,36 @@
+Immediate
+---------
+
+   * Augment codegen so that it's fully able to run with the dx9 backend.
+
+Short
+-----
+
+   * The lexer and parser should just passthrough preprocessor directives
+     untouched.
+
+   * Recognize gathers and emit stream gather calls.
+
+   * Be able to fully compile a few useful sample programs (sort?).
+
+   * Be able to compile code for multiple backends.
+
+Medium
+------
+
+   * Incorporate reductions.  Find a sample program the uses reductions.
+
+   * Be able to compile some beefier programs.
+
+   * Other language extensions?
+
+Long
+----
+
+   * Stream allocation
+
+   * Multiple outputs
+
+   * Optimizations within a given kernel
+
+   * Optimizations across kernels (merging?)
