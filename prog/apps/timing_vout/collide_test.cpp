@@ -3,6 +3,7 @@
 #include "rapcol.h"
 #include "prapid.h"
 bool debug_rapid=false;
+extern bool forcevanilla;
 extern void LoadPly (const char * file, std::vector<Tri> &ret);
 extern unsigned int doCollide(unsigned int wida, unsigned int heia, Tri * a,
                               unsigned int bboxwida, unsigned int bboxheia, BBox * bboxesa,
@@ -30,6 +31,10 @@ int rapidCollideMain (int argc, char ** argv) {
      if (strcmp(argv[i],"-debug")==0) {
        match=1;
        debug_rapid=true;
+     }
+     if (strcmp(argv[i],"-precache")==0) {
+       match=1;
+       forcevanilla=false;
      }
      
      if (match) {

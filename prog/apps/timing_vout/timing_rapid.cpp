@@ -1,6 +1,8 @@
 #include "rapcol.h"
 #include <brook.hpp>
 #include <stdio.h>
+#include <GL/gl.h>
+#include "timing.h"
 typedef struct traverser_t {
   float4 index;//.xy is index into the aTree  .zw is index into bTree
   float3 Translation; 
@@ -111,11 +113,11 @@ void  Broken()
   printf("Breaking\n");
 }
 extern bool debug_rapid;
-extern bool forcevanilla;
+
 extern int  checkPassCorrectness(Traverser *, int , int );
 unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsigned int  bboxwidt1, unsigned int  bboxheit1, BBox  *bboxest1, unsigned int  widt2, unsigned int  heit2, Tri  *t2, unsigned int  bboxwidt2, unsigned int  bboxheit2, BBox  *bboxest2, float3  rX, float3  rY, float3  rZ, float3  trans, float3  csRapidColliderrX, float3  csRapidColliderrY, float3  csRapidColliderrZ, float3  csRapidColliderT, float4  **intersections)
 {
-  forcevanilla=false;// this makes it so that our vout stuff is cached;
+
   
   unsigned int  num_intersections = 0;
   unsigned int  temp;
@@ -124,6 +126,9 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
   int  pass = 0;
   float  stretchX;
   unsigned int  alloc_intersections = 16;
+  float toagg[1]={0};
+  ::brook::stream agg(::brook::getStreamType(( float4  *)0), 1 , 1,-1);
+  
   ::brook::stream m1(::brook::getStreamType(( TransposedBBox  *)0), bboxwidt1 , bboxheit1,-1);
   ::brook::stream m2(::brook::getStreamType(( BBox  *)0), bboxwidt2 , bboxheit2,-1);
   ::brook::stream t1List(::brook::getStreamType(( Tri  *)0), widt1 , heit1,-1);
@@ -131,14 +136,13 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
   vector <brook::stream> hitsL;
   vector <brook::stream> nextNodeL;
   vector <brook::stream> travL;
+  //  vector <brook::stream> travT;
   vector <brook::stream> temptravL;
   vector <brook::stream> trioutL;
-  vector <brook::stream> hitsT;
+  vector <brook::stream> trioutT;
   vector <brook::stream> nextNodeT;
-  vector <brook::stream> travT;
-  vector <brook::stream> temptravT;
-  vector <brook::stream> trioutT;  
-  for (int rr=0;rr<2;++rr) {
+  vector <brook::stream> hitsT;
+  for (int rr=0;rr<5;++rr) {
     Traverser  baseTraverser;
 
     if (rr==0) {
@@ -150,37 +154,40 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
     if (rr==2) {
       unsigned int i;
       for (i=0;i<hitsL.size();++i) {
-        hitsT.push_back(::brook::stream(::brook::getStreamType(( float4  *)0), 
+        trioutT.push_back(::brook::stream(::brook::getStreamType(( float4  *)0), 
                                         hitsL[i]->getExtents()[0] , 
                                         hitsL[i]->getExtents()[1],
                                         -1));
       }
+      /*
       for (i=0;i<nextNodeL.size();++i) {
         nextNodeT.push_back(::brook::stream(::brook::getStreamType(( float4  *)0),
-                                            nextNodeT[i]->getExtents()[0],
-                                            nextNodeT[i]->getExtents()[1],
+                                            nextNodeL[i]->getExtents()[0],
+                                            nextNodeL[i]->getExtents()[1],
                                             -1));
-      }
+                                            }*/
       for (i=0;i<travL.size();++i) {
-        travT.push_back(brook::stream(::brook::getStreamType(( Traverser  *)0), 
+        nextNodeT.push_back(brook::stream(::brook::getStreamType(( float4  *)0), 
                                       travL[i]->getExtents()[0],
                                       travL[i]->getExtents()[1],
                                       -1));
+        hitsT.push_back(brook::stream(::brook::getStreamType(( float4  *)0), 
+                                      travL[i]->getExtents()[0],
+                                      travL[i]->getExtents()[1],
+                                      -1));
+        /*travT.push_back(brook::stream(::brook::getStreamType(( Traverser  *)0), 
+                                      travL[i]->getExtents()[0],
+                                      travL[i]->getExtents()[1],
+                                      -1));*/
       }
-      for (i=0;i<temptravL.size();++i) {
-        temptravT.push_back(brook::stream(::brook::getStreamType(( Traverser  *)0),         
-                                          temptravL[i]->getExtents()[0],
-                                          temptravL[i]->getExtents()[1],
-                                          -1));
-        
-      }
+      /*
       for (i=0;i<trioutL.size();++i) {
         trioutT.push_back(brook::stream(::brook::getStreamType(( Traverser  *)0),         
                                         trioutL[i]->getExtents()[0],
                                         trioutL[i]->getExtents()[1],
                                         -1));
         
-      }
+                                        }*/
     }
     ::brook::stream hits= hitsL[0];
     ::brook::stream nextNode=nextNodeL[0];
@@ -199,13 +206,23 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
     streamRead(m2,bboxest2);
     TransposeBBoxes(bboxwidt1 * bboxheit1,bboxest1);
     streamRead(m1,bboxest1);
+    glFinish();
+    glFinish();
+    
+    start = GetTimeMillis();
     int iter=0;
     num_intersections=0;
     do   {
-      Collide(trav,m1,m2,nextNode,hits);
+      if (rr<2) {
+        Collide(trav,m1,m2,nextNode,hits);
+      }else {
+
+        
+        CollideNoCompact(trav,m1,m2,nextNodeT[iter],hitsT[iter],iter>0?nextNodeT[iter-1]:nextNodeT[iter+1]);
+      }
       if (rr==0){
         hitsL.push_back(hits);
-        assert(hitsL.size()==iter+2);
+        assert(hitsL.size()==(unsigned int)(iter+2));
         nextNodeL.push_back(nextNode);
         temptravL.push_back(brook::stream());
         trioutL.push_back(brook::stream());
@@ -226,7 +243,11 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
           }                   
           temptrav = temptravL[iter];          
           streamSwap(temptrav,trav);
-          updateCurrentNode(stretchX,nextNode,m1,m2,temptrav,trav);
+          if (rr<2) {
+            updateCurrentNode(stretchX,nextNode,m1,m2,temptrav,trav);
+          }else {
+            updateCurrentNode(stretchX,nextNode,m1,m2,temptrav,trav);
+          }
           if (rr==0) {
             travL.push_back(trav);
           }
@@ -256,7 +277,16 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
                                             -1);
         }
         brook::stream triout= trioutL[iter];
-        CheckTriangleCollide(csRapidColliderrX,csRapidColliderrY,csRapidColliderrZ,csRapidColliderT,hits,t1List,t2List,triout);
+        if (rr<2) {
+          CheckTriangleCollide(csRapidColliderrX,csRapidColliderrY,csRapidColliderrZ,csRapidColliderT,hits,t1List,t2List,triout);
+        }else {
+          CheckTriangleCollideNoCompact(csRapidColliderrX,csRapidColliderrY,csRapidColliderrZ,csRapidColliderT,
+                                        hits,
+                                        t1List,
+                                        t2List,
+                                        trioutT[iter+1],
+                                        trioutT[iter]);
+        }
         if (rr==0) {
           trioutL[iter]=triout;
         }
@@ -265,33 +295,39 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
       if (temp)
       {
         unsigned int  i;
-
-        while (num_intersections + temp > alloc_intersections)
-        {
-          alloc_intersections *= 2;
-          *intersections = (float4 *) (realloc(*intersections,alloc_intersections * sizeof(float4 ) ));
-        }
-
-        streamWrite(triout,*intersections + num_intersections);
-        for (i = 0; i < temp; ++i)
-        {
-          float4  f4 = *(*intersections + num_intersections + i);
-
-          if (!(f4.x >= 0 && f4.x < streamSize(t1List).x))
-            break;
-          if (!(f4.y >= 0 && f4.y < streamSize(t1List).y))
-            break;
-        }
-
-        num_intersections += i;
-        if (debug_rapid)
+        if (debug_rapid) {
+          while (num_intersections + temp > alloc_intersections) {
+            alloc_intersections *= 2;
+            *intersections = (float4 *) (realloc(*intersections,alloc_intersections * sizeof(float4 ) ));
+          }
+          streamWrite(triout,*intersections + num_intersections);
+          for (i = 0; i < temp; ++i) {
+            float4  f4 = *(*intersections + num_intersections + i);
+            
+            if (!(f4.x >= 0 && f4.x < streamSize(t1List).x))
+              break;
+            if (!(f4.y >= 0 && f4.y < streamSize(t1List).y))
+              break;
+          }
+          num_intersections += i;
           printf("Detected %d hits\n",i);
+        }
+        
+        else if (rr!=3) {
+          Aggregate4(triout,agg,agg);
+          }
       }
 
       } 
     iter++;
     }
     while (xsize && ysize);
+    stop = GetTimeMillis();
+    if (rr>=2&&rr!=3)
+      streamWrite(agg,toagg);
+    else
+      glFinish();
+    printf ("Run %d Time is up %f\n",rr,(float)(stop-start));
   }
 
     return num_intersections;
