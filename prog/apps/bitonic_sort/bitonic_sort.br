@@ -1,0 +1,118 @@
+/***************************************************************************
+  Bitonic Sort
+
+  Sorts ARRAYSIZE numbers in O(ARRAYSIZE * lg^2(ARRAYSIZE) ) time.
+  ARRAYSIZE should be a power of two
+
+  Note: the bitonic sort kernel is written for clarity as an
+  example, not for performance.
+
+****************************************************************************/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define ARRAYSIZE 32
+
+
+kernel void bitonic(iter float idx1<>, float input[ARRAYSIZE], out float output<>, float stageWidth, float offset) {
+
+  float idx2;
+        
+  float sign, dir;
+  float min, max;
+
+  float foo;
+  
+  sign = ( fmod(idx1, 2*offset) < offset) ? 1.0 : -1.0;
+  dir =  ( fmod( floor(idx1/stageWidth), 2) == 0) ? 1.0 : -1.0;
+
+  
+  idx2 = idx1 + sign*offset;
+
+  min = (input[idx1] < input[idx2]) ? input[idx1] : input[idx2];
+  max = (input[idx1] > input[idx2]) ? input[idx1] : input[idx2];
+
+  
+  output = (sign == dir) ? min : max;
+  
+}
+
+
+
+int main() {
+
+  int i;
+  int lg_arraySize;
+  int flip = 0;
+  int stage, step;
+  float stageWidth, offset;
+  float* array;
+
+  float sorted1Strm<ARRAYSIZE>;
+  float sorted2Strm<ARRAYSIZE>;
+
+  float rangeEnd = ARRAYSIZE;  // assigning to float variable first, to get around compiler for ensuring iter constructor
+  iter float idxStrm<ARRAYSIZE> = iter(0.0, rangeEnd);
+
+
+  array = (float*)malloc(sizeof(float) * ARRAYSIZE);
+
+  // compute lg(ArraySize)
+  lg_arraySize = 0;
+  for (i=ARRAYSIZE>>1; i; lg_arraySize++)
+    i = i >> 1;
+
+  srand(time(NULL));
+
+  // initialize list of ARRAYSIZE random numbers
+  for (i=0; i<ARRAYSIZE; i++)
+    array[i] = (float)(rand() % 100);
+
+
+  printf("N = %d  (requires lg_N=%d stages)\n", ARRAYSIZE, lg_arraySize);
+
+  printf("Original list:\n");
+  for (i=0;i<ARRAYSIZE;i++)
+    printf("%3.2f ", array[i]);
+  printf("\n\n");
+
+  streamRead(sorted1Strm, array);
+
+
+  for (stage=1; stage<=lg_arraySize; stage++) {
+
+    stageWidth = (float)pow(2, stage);  // width of each sorted segment (2, 4, 8, ...)
+
+    for (step=1; step<=stage; step++) {
+
+      // offset = (stageWidth/2, stageWidth/4, ... , 2, 1)
+      offset = (float)pow(2, stage-step);  
+
+      // two buffers required since non-sequential gather is performed from src buffer each step.
+      // flip buffers eahc iteration
+      if (!flip)
+        bitonic( idxStrm, sorted1Strm, sorted2Strm, stageWidth, offset);
+      else
+        bitonic( idxStrm, sorted2Strm, sorted1Strm, stageWidth, offset);
+
+      flip = (flip) ? 0 : 1;
+    }
+  }
+
+  if (flip)
+    streamWrite(sorted2Strm, array);
+  else
+    streamWrite(sorted1Strm, array);
+  
+  printf("Sorted list:\n");
+  for (i=0;i<ARRAYSIZE;i++)
+    printf("%3.2f ", array[i]);
+  printf("\n");
+
+  free(array);
+
+	return 0;
+}
