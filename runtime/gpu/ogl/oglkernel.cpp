@@ -184,6 +184,7 @@ OGLContext::get1DInterpolant( const float4 &start,
   }
 
   float4 f1, f2;
+  float bias = 0.00001f;
   
   float x1 = start.x;
   float y1 = start.y;
@@ -208,15 +209,15 @@ OGLContext::get1DInterpolant( const float4 &start,
   float shiftz = ratioz * 0.5f;
   float shiftw = ratiow * 0.5f;
 
-  f1.x = x1 - shiftx;
-  f1.y = y1 - shifty;
-  f1.z = z1 - shiftz;
-  f1.w = w1 - shiftw;
+  f1.x = x1 - shiftx + bias;
+  f1.y = y1 - shifty + bias;
+  f1.z = z1 - shiftz + bias;
+  f1.w = w1 - shiftw + bias;
 
-  f2.x = (x1+2*sx) - shiftx;
-  f2.y = (y1+2*sy) - shifty;
-  f2.z = (z1+2*sz) - shiftz;
-  f2.w = (w1+2*sw) - shiftw;
+  f2.x = (x1+2*sx) - shiftx + bias;
+  f2.y = (y1+2*sy) - shifty + bias;
+  f2.z = (z1+2*sz) - shiftz + bias;
+  f2.w = (w1+2*sw) - shiftw + bias;
 
   interpolant.vertices[0] = f1;
   interpolant.vertices[1] = f2; 
@@ -236,6 +237,7 @@ OGLContext::get2DInterpolant( const float2 &start,
   float y1 = start.y;
   float x2 = end.x;
   float y2 = end.y;
+  float bias = 0.00001f;
   
   if (w==1 && h==1) {
     float4 v (start.x, start.y, 0.0f, 1.0f);
@@ -252,11 +254,11 @@ OGLContext::get2DInterpolant( const float2 &start,
   float shiftx = ratiox * 0.5f;
   float shifty = ratioy * 0.5f;
 
-  f1.x = x1 - shiftx;
-  f1.y = y1 - shifty;
+  f1.x = x1 - shiftx + bias;
+  f1.y = y1 - shifty + bias;
 
-  f2.x = (x1+2*sx) - shiftx;
-  f2.y = (y1+2*sy) - shifty;
+  f2.x = (x1+2*sx) - shiftx + bias;
+  f2.y = (y1+2*sy) - shifty + bias;
 
   if (h==1) {
     interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
@@ -281,7 +283,7 @@ OGLContext::get2DInterpolant( const float2 &start,
 
 float4 
 OGLContext::getStreamIndexofConstant( TextureHandle inTexture ) const {
-  return float4(1.0f, 1.0f, -0.005f, -0.005f);
+  return float4(1.0f, 1.0f, 0.0f, 0.0f);
 }
 
 
@@ -355,9 +357,10 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
                           (GLfloat *) &(interpolants[i].vertices[2]));
   glVertex2f(-1.0f, 3.0f);
   glEnd();
+  CHECK_GL();
 
   /* Copy the output to the texture */
-  glActiveTextureARB(_slopTextureUnit);
+  glActiveTextureARB(GL_TEXTURE0+_slopTextureUnit);
   glBindTexture(GL_TEXTURE_RECTANGLE_NV, _outputTexture->id());
   glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0, w, h);
   CHECK_GL();

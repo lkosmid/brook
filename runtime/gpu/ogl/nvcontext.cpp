@@ -19,19 +19,19 @@ nvtypes[4] =   {GL_FLOAT_R32_NV,
 
 static const unsigned int 
 nvformats[4] =  { GL_RED,
-                  GL_LUMINANCE_ALPHA,
+                  GL_RGBA,
                   GL_RGB,
                   GL_RGBA };
 
 static const unsigned int 
-sizefactor[4] = { 1, 2, 3, 4 };
+sizefactor[4] = { 1, 4, 3, 4 };
 
 
 NVTexture::NVTexture ( size_t inWidth, 
                        size_t inHeight, 
                        GPUContext::TextureFormat inFormat) :
   OGLTexture(inWidth, inHeight, inFormat, 
-             nvtypes, nvformats, sizefactor)
+             nvformats, nvtypes, sizefactor)
 {
   _nativeFormat = nvformats[components()]; 
 }
@@ -104,7 +104,7 @@ static const char nvext[][64] = {
   "GL_ARB_fragment_program",
   "GL_NV_float_buffer",
   "GL_NV_fragment_program",
-  "GL_EXT_texture_rectangle",
+  "GL_NV_texture_rectangle",
   ""};
 
 bool
