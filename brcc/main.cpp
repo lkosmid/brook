@@ -46,7 +46,7 @@ usage (void) {
         "\t-N\t\tdeny support for kernels calling other kernels\n"
         "\t-o prefix\tprefix prepended to all output files\n"
         "\t-w workspace\tworkspace size (16 - 2048, default 1024)\n"
-        "\t-p shader\tcpu / ps20 / fp30 (can specify multiple)\n"
+        "\t-p shader\tcpu / ps20 / fp30 / cpumt (can specify multiple)\n"
         "\n");
 
   exit(1);
@@ -70,16 +70,13 @@ parse_args (int argc, char *argv[]) {
    */
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-  while ((opt = getopt(argc, argv, "d:hkmntyANo:p:vw")) != EOF) {
+  while ((opt = getopt(argc, argv, "d:hkntyANo:p:vw")) != EOF) {
      switch(opt) {
      case 'h':
         usage();
         break;
      case 'k':
         globals.keepFiles = true;
-        break;
-     case 'm':
-        globals.multiThread = true;
         break;
      case 'n':
         globals.parseOnly = true;
@@ -110,6 +107,8 @@ parse_args (int argc, char *argv[]) {
 	  globals.target |= TARGET_FP30;
 	else if (strcasecmp (optarg, "arb") == 0)
 	  globals.target |= TARGET_ARB;
+	else if (strcasecmp (optarg, "cpumt") == 0)
+	  globals.target |= TARGET_MULTITHREADED_CPU;
 	else
 	  usage();
 	break;
@@ -131,7 +130,7 @@ parse_args (int argc, char *argv[]) {
 
      // The default build targets
      if (globals.target == 0)
-        globals.target = TARGET_PS20 | TARGET_CPU | TARGET_FP30;
+        globals.target = TARGET_PS20 | TARGET_CPU | TARGET_MULTITHREADED_CPU | TARGET_FP30;
   }
 
   argv += optind;

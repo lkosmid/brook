@@ -93,7 +93,7 @@ namespace brook {
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n\n");
       fflush  (stderr);
-      return new CPURunTime();
+      return new CPURunTime(false);
     }
 
 #ifdef BUILD_DX9
@@ -111,11 +111,12 @@ namespace brook {
     if (!strcmp(env, NV30GL_RUNTIME_STRING))
       return new NV30GLRunTime();
 #endif
-
-    if (strcmp(env,CPU_RUNTIME_STRING)) 
+    
+    if (strcmp(env,CPU_RUNTIME_STRING)&&strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)){
       fprintf (stderr, 
 	       "Unknown runtime requested: %s falling back to CPU\n", env);
-    return new CPURunTime();
+    }
+    return new CPURunTime(strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)==0);
   }
 
   unsigned int StreamInterface::getElementSize() const

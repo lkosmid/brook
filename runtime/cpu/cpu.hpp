@@ -5,11 +5,11 @@
 
 namespace brook {
     extern const char* CPU_RUNTIME_STRING;	
-
+    extern const char * CPU_MULTITHREADED_RUNTIME_STRING;
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     class CPUKernel : public Kernel {
     public:
-       CPUKernel(const void * source []);
+       CPUKernel(const void * source [],bool multithreaded);
        virtual void PushStreamInterface(StreamInterface * s);
        virtual void PushGatherStreamInterface(StreamInterface * s);
        virtual void PushStream(Stream *s);
@@ -181,8 +181,9 @@ namespace brook {
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
    class CPURunTime: public brook::RunTime {
+        bool multithread;
    public:
-	CPURunTime();
+	CPURunTime(bool multithread);
 	virtual Kernel * CreateKernel(const void*[]);
 	virtual Stream * CreateStream(
     int fieldCount, const __BRTStreamType fieldTypes[],
@@ -192,6 +193,7 @@ namespace brook {
                                   int extents[],
                                   float ranges[]);
 	virtual ~CPURunTime(){}
+      bool isMultithreaded() {return multithread;}
    };
 }
 #endif

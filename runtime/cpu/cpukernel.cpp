@@ -1,4 +1,4 @@
-#define USE_THREASD
+#define USE_THREADS
 #include <iostream>
 #include<assert.h>
 #include "cpu.hpp"
@@ -93,10 +93,10 @@ void AssertSameSize (brook::Stream *reduction,brook::Stream *newreduction) {
 namespace brook{
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    CPUKernel::CPUKernel(const void * source []){
+    CPUKernel::CPUKernel(const void * source [],bool multithread){
         const char ** src= (const char**)(source);
         combine=0;func=0;
-        multiThread=true;
+        multiThread=multithread;
 	for (unsigned int i=0;;i+=2) {
 	    if (src[i]==NULL){
                if (!func){

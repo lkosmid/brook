@@ -822,7 +822,7 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
 // This inner loop will use the combiner second input instead of the stream
 // argument to the first reduce function. Other reduce functions are not called
 void BRTCPUKernelCode::printCombineInnerLoop(std::ostream &out)const {
-   if (!globals.multiThread) return;//only print if multithreading.
+   if ((globals.target&TARGET_MULTITHREADED_CPU)==0) return;//only print if multithreading.
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
     Brook2Cpp_ConvertKernel(fDef);
     BrookCombine_ConvertKernel(fDef);
@@ -840,7 +840,7 @@ void BRTCPUKernelCode::printCombineInnerLoop(std::ostream &out)const {
 // the combine above.
 void BRTCPUKernelCode::printCombineCode(std::ostream &out) const
 {
-    if (!globals.multiThread) return;//only print if multithreading.
+    if ((globals.target&TARGET_MULTITHREADED_CPU)==0) return;//only print if multithreading.
 
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
     Brook2Cpp_ConvertKernel(fDef);

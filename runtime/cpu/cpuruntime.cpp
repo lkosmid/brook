@@ -1,15 +1,15 @@
 #include "cpu.hpp"
 namespace brook{
 	const char * CPU_RUNTIME_STRING="cpu";
-
+        const char * CPU_MULTITHREADED_RUNTIME_STRING="cpumt";
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    CPURunTime::CPURunTime() {
-
+    CPURunTime::CPURunTime(bool multithreaded) {
+       this->multithread=multithreaded;
     }
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     Kernel * CPURunTime::CreateKernel(const void* blah[]) {
-	return new CPUKernel(blah);
+	return new CPUKernel(blah,multithread);
     }
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

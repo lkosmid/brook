@@ -3,17 +3,16 @@
 
 #define TARGET_CPU      (1<<0)
 #define TARGET_PS20     (1<<1)
-#define TARGET_FP30     (1<<2)  /* XXX Not yet */
+#define TARGET_FP30     (1<<2)  
 #define TARGET_ARB      (1<<3)  /* XXX Not yet */
-
+#define TARGET_MULTITHREADED_CPU (1<<4)
 struct globals_struct {
   globals_struct() {
-      multiThread=false,verbose=false,parseOnly=false;
+      verbose=false,parseOnly=false;
       keepFiles=false,fponly=0,target=0,workspace=0;
       allowDX9MultiOut=false,enableGPUAddressTranslation=false;
       allowKernelToKernel=true,noTypeChecks=false;
   }             
-  bool multiThread;
   bool verbose;
   bool parseOnly;
   bool keepFiles;
