@@ -1,0 +1,42 @@
+#include <stdio.h>
+
+int main () {
+
+  float a<10, 10>;
+  float b<10, 10>;
+  float d<10, 10>;
+  float e<10, 10>;
+  
+  float data_a[10][10];
+  float data_b[10][10];
+  float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
+  float data_d[10][10];
+  float data_e[10][10];
+  float d_broken = 0.0f;
+
+  int i,j;
+
+  for (i=0; i<10; i++)
+    for (j=0; j<10; j++) {
+      data_a[i][j] = i+10*j;;
+      data_b[i][j] = 99-(i+10*j);
+      data_d[i][j] = 10*i+j;
+    }
+
+  streamRead(a, data_a);
+  streamRead(b, data_b);
+  streamRead(d, data_d);
+  streamScatterOp(a,b,e,STREAM_SCATTER_ASSIGN);
+  streamScatterOp(a,b,e,STREAM_SCATTER_FLOAT_MUL);
+  //foo(a,b,c,d_broken,e);
+
+  streamWrite(e, data_e);
+  
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f ", data_e[i][j]);
+    }
+    printf ("\n");
+  }
+  return 0;
+}
