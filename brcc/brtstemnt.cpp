@@ -107,14 +107,17 @@ BRTKernelDef::printStub(std::ostream& out) const
    for (i = 0; i < fType->nArgs; i++) {
       if (i) out << ",\n\t\t";
 
-      if (fType->args[i]->isStream() || fType->args[i]->isArray()) {
+      if (recursiveIsStream(fType->args[i]->form) || recursiveIsGather(fType->args[i]->form)) {
          out << "const __BRTStream& " << *fType->args[i]->name;
       } else {
          if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)==0)
             out << "const ";
          fType->args[i]->form->printBase(out, 0);
          fType->args[i]->form->printBefore(out, NULL, 0);
-         out << "& " << *fType->args[i]->name;
+         if (fType->args[i]->form->type!=TT_Array)
+            //arrays are automatically pass by ref. - Daniel
+            out << "& ";
+         out << *fType->args[i]->name;
       }
    }
    out << ") {\n";
