@@ -272,6 +272,12 @@ static bool printGatherStructureFunctionBody( std::ostream& out, const std::stri
          
          BaseType* base = form->getBase();
          switch(base->typemask) {
+         case BT_Double:
+           out << "__fetch_double";
+           break;
+         case BT_Double2:
+           out << "__fetch_double2";
+           break;
          case BT_Float:
          case BT_Fixed:
          case BT_Half:
@@ -280,7 +286,6 @@ static bool printGatherStructureFunctionBody( std::ostream& out, const std::stri
          case BT_Float2:
          case BT_Fixed2:
          case BT_Half2:
-         case BT_Double:
             out << "__fetch_float2";
             break;
          case BT_Float3:
@@ -291,7 +296,6 @@ static bool printGatherStructureFunctionBody( std::ostream& out, const std::stri
          case BT_Float4:
          case BT_Fixed4:
          case BT_Half4:
-         case BT_Double2:
             out << "__fetch_float4";
             break;
          default:
@@ -568,7 +572,6 @@ static void expandSimpleOutputArgumentWrite(
   case BT_Float2:
   case BT_Fixed2:
   case BT_Half2:
-  case BT_Double:
     shader << "float4( " << argumentName << ", 0, 0);\n";
     break;
   case BT_Float3:
@@ -579,8 +582,13 @@ static void expandSimpleOutputArgumentWrite(
   case BT_Float4:
   case BT_Fixed4:
   case BT_Half4:
-  case BT_Double2:
     shader << argumentName << ";\n";
+    break;
+  case BT_Double:
+    shader << "float4( "<<argumentName<<".x, 0, 0)\n";
+    break;
+  case BT_Double2:
+    shader << "float4( "<<argumentName<<".xy)\n";
     break;
   default:
     fprintf(stderr, "Strange stream base type:");
@@ -589,10 +597,17 @@ static void expandSimpleOutputArgumentWrite(
   }
 
   shader << "\t#else\n";
-
-  shader << "\t__output_" << outr << " = " 
-         << argumentName << ";\n";
-
+  shader << "\t__output_" << outr << " = ";
+  switch (base->typemask) {
+  case BT_Double:
+    shader << argumentName <<".x;\n";
+    break;
+  case BT_Double2:
+    shader << "float4 ("<< argumentName << ".xy);\n";
+    break;
+  default:
+    shader << argumentName << ";\n";
+  }
   shader << "\t#endif\n";
     
 }
@@ -773,7 +788,6 @@ expandStreamStructureFetches(std::ostream& shader,
          case BT_Float2:
          case BT_Half2:
          case BT_Fixed2:
-         case BT_Double:
             shader << "__fetch_float2";
             break;
          case BT_Float3:
@@ -784,9 +798,14 @@ expandStreamStructureFetches(std::ostream& shader,
          case BT_Float4:
          case BT_Fixed4:
          case BT_Half4:
-         case BT_Double2:
             shader << "__fetch_float4";
             break;
+         case BT_Double:
+           shader << "__fetch_double";
+           break;
+         case BT_Double2:
+           shader << "__fetch_double2";
+           break;
          default:
             shader << "__gatherunknown";
             break;
@@ -834,6 +853,12 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
 #else
      BaseType* base = inForm->getBase();
      switch(base->typemask) {
+     case BT_Double:
+       shader <<"__fetch_double";
+       break;
+     case BT_Double2:
+       shader <<"__fetch_double2";
+       break;
      case BT_Float:
      case BT_Half:
      case BT_Fixed:
@@ -842,7 +867,6 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      case BT_Float2:
      case BT_Half2:
      case BT_Fixed2:
-     case BT_Double:
         shader << "__fetch_float2";
         break;
      case BT_Float3:
@@ -853,7 +877,6 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      case BT_Float4:
      case BT_Half4:
      case BT_Fixed4:
-     case BT_Double2:
         shader << "__fetch_float4";
         break;
      default:
@@ -882,6 +905,10 @@ generate_shader_support(std::ostream& shader)
   shader << "#define fixed4 float4\n";
   shader << "#define half4 float4\n";
   shader << "#endif\n";
+  shader << "#define double real\n";
+  shader << "#define double2 real2\n";
+  shader << "typedef struct double_struct {float2 x;} real;\n";
+  shader << "typedef struct double2_struct {float4 xy;} real2;\n";
   shader << "#if defined(DXPIXELSHADER) || !defined(USERECT)\n";
   shader << "#define _stype   sampler2D\n";
   shader << "#define _sfetch  tex2D\n";
@@ -917,6 +944,12 @@ generate_shader_support(std::ostream& shader)
   }
 
   // TIM: simple subroutines
+  shader << "double __fetch_double( _stype s, float i ) { double r; r.x= __sample1(s,i).xy; return r;}\n";
+  shader << "double __fetch_double( _stype s, float2 i ) { double r; r.x = __sample2(s,i).xy; return r;}\n";
+
+  shader << "double2 __fetch_double2( _stype s, float i ) { double2 r; r.xy= __sample1(s,i).xyzw; return r;}\n";
+  shader << "double2 __fetch_double2( _stype s, float2 i ) { double2 r; r.xy = __sample2(s,i).xyzw; return r;}\n";
+
   shader << "float __fetch_float( _stype s, float i ) { return __sample1(s,i).x; }\n";
   shader << "float __fetch_float( _stype s, float2 i ) { return __sample2(s,i).x; }\n";
   shader << "float2 __fetch_float2( _stype s, float i ) { return __sample1(s,i).xy; }\n";
