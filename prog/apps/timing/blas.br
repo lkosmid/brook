@@ -241,7 +241,8 @@ void sdot_2d(int dim1, int dim2, float* x, float* y, float* result, int num_iter
   float4 flush[1];
   float4 flushStrm<1>;
 
-  float4 sums;
+  float sums[4];
+  float4 sumsStrm<1,1>;
   float4 xStrm<dim1, dim2>;
   float4 yStrm<dim1, dim2>;
   float4 tmpStrm<dim1, dim2>;
@@ -259,17 +260,19 @@ void sdot_2d(int dim1, int dim2, float* x, float* y, float* result, int num_iter
 
   for (i=1;i<=num_iter;i++) {
     multKernel(xStrm, yStrm, tmpStrm);
-    sumReduceKernel(tmpStrm, sums);
+    sumReduceKernel(tmpStrm, sumsStrm);
   }
 
-  forceGPUFlush_float4(xStrm, flushStrm);
+  forceGPUFlush_float4(sumsStrm, flushStrm);
   streamRead(flushStrm, flush);
 
   millisStop = GetTimeMillis();
 
+  streamRead(sumsStrm, &sums);
+
   *innerTime = (int)(millisStop - millisStart);
 
-  *result = sums.x + sums.y + sums.z + sums.w;
+  *result = sums[0] + sums[1] + sums[2] + sums[3];
 }
 
 
@@ -661,37 +664,42 @@ void printData(char* str, int length, int iterations, int ms[2], float flops[2])
 
 
 // command line args: length iter skip
-void Blas_Time(int argc, char** argv) {
+void Blas_Time(int length) {
 
   int i;
-  int skip, length, iterations, num_iter;
+  int skip, iterations, num_iter;
 
   int    ms[2];
   float  flops[2]; 
 
-
+	/*
   if (argc < 4) {
     printf("Not enough args.\n");
     return;
   }
+  *
 
   length = atoi(argv[1]);
   num_iter = atoi(argv[2]);
   skip = atoi(argv[3]);
+  */
+  
+  num_iter = 1;
+  skip = 500;
 
   startup();
 
   // hack to get around bug in DX9 code
-  if (length < 2048) {
+  //if (length < 2048) {
     for (i=0; i<num_iter;i++) {
       iterations = skip*(i+1);
       do_sdot(length*length, iterations, ms, flops);
       printData("sdot ", length*length, iterations, ms, flops);
     }
-  }
+  //}
 
   printf("\n");
-
+  
   for (i=0; i<num_iter;i++) {
     iterations = skip*(i+1);
     do_saxpy(length*length, iterations, ms, flops);

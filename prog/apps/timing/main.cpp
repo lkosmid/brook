@@ -31,7 +31,7 @@ static const struct timingEntry tests[] = {
    { "rw2d",    ReadWrite2D_Time },
    { "runk1d",  RunKernel1D_Time },
    { "runk2d",  RunKernel2D_Time },
-   //{ "blas",    Blas_Time },
+   { "blas",    Blas_Time },
    //{ "spMV",    SpMatVec_Time },
    //{ "conj",    ConjGrad_Time },
    { "mm4_1w",  Matmult4x4_1way_Time },
