@@ -42,11 +42,6 @@ namespace brook{
     void CPUStream::Write(void * outData) {
 	memcpy(outData,data,stride*totalsize);
     }
-
-   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    void CPUStream::Release() {
-	delete this;
-    }
    
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     CPUStream::~CPUStream() {

@@ -1,5 +1,9 @@
 // simulationKernel.br
 
+kernel void clearKernel( out float4 result<> ) {
+	result = 0;
+}
+
 kernel void simulationKernel( float4 input<>, float4 inputs[][], float4 control, out float4 result<> ) {
 	float2 index = (indexof input).xy;
 	

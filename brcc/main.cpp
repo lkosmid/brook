@@ -143,12 +143,22 @@ parse_args (int argc, char *argv[]) {
   globals.sourcename = (char *) argv[0];
 
   n = strlen(globals.sourcename);
-  if (n < 4 || strcmp (globals.sourcename + n - 3, ".br"))
+  int suffixLength;
+  bool isHeader = false;
+  if (n >= 3 && !strcmp (globals.sourcename + n - 3, ".br")) {
+    suffixLength = 3;
+  }
+  else if (n >= 4 && !strcmp(globals.sourcename + n - 4, ".brh")) {
+    suffixLength = 4;
+    isHeader = true;
+  }
+  else {
     usage();
+  }
 
   if (!outputprefix) {
     outputprefix = strdup(globals.sourcename);
-    outputprefix[n-3] = (char)  '\0';
+    outputprefix[n-suffixLength] = (char)  '\0';
   }
 
   globals.shaderoutputname = (char *) malloc (strlen(outputprefix) +
@@ -156,11 +166,12 @@ parse_args (int argc, char *argv[]) {
   sprintf (globals.shaderoutputname, "%s.cg",outputprefix);
 
   globals.coutputname = (char *) malloc (strlen(outputprefix) +
-					 strlen(".cpp") + 1);
-  sprintf (globals.coutputname, "%s.cpp",outputprefix);
-  globals.houtputname = (char *) malloc (strlen(outputprefix) +
-					 strlen(".h") + 1);
-  sprintf (globals.houtputname, "%s.h",outputprefix);
+					 suffixLength + 2);
+  if( isHeader ) {
+    sprintf (globals.coutputname, "%s.hpp",outputprefix);
+  } else {
+    sprintf (globals.coutputname, "%s.cpp",outputprefix);
+  }
 
   free(outputprefix);
 }
@@ -186,10 +197,14 @@ ConvertToBrtStreamParams(FunctionType *fType)
             Type *newForm;
             
             newForm = new BrtStreamParamType((ArrayType *) *paramTyp);
+
             /*
              * Types are all on the global type list, so we can't just nuke it.
              delete fType->args[i]->form;
             */
+            (*paramTyp) = newForm;
+         } else if (fType->isKernel() && (*paramTyp)->isArray()) {
+            Type* newForm = new BrtStreamParamType((ArrayType *) *paramTyp);
             (*paramTyp) = newForm;
          }
          paramTyp = (*paramTyp)->getSubType();
@@ -272,6 +287,7 @@ ConvertToBrtFunctions(FunctionDef *fDef)
     * because, for better or for worse, reduction kernels are also
     * considered kernels.
     */
+
    if (fDef->decl->isReduce()) {
       return new BRTReduceKernelDef(*fDef);
    } else if (fDef->decl->isKernel()) {
@@ -283,6 +299,28 @@ ConvertToBrtFunctions(FunctionDef *fDef)
    }
 
 }
+
+static void
+ConvertToBrtDecls(Statement *stmt)
+{
+   DeclStemnt* declStemnt;
+
+   if (!stmt->isDeclaration()) { return; }
+   declStemnt = (DeclStemnt *) stmt;
+
+   for (unsigned int i=0; i<declStemnt->decls.size(); i++) {
+      Decl *decl = declStemnt->decls[i];
+
+      if (!decl->form) continue;
+
+      if (decl->form->isKernel()) {
+
+         Type *brtType = new BrtKernelType((FunctionType* ) decl->form);
+         decl->form = brtType;
+      }
+   }
+}
+
 /*
  * TypeCheckFunctionCallsExprFinder --
  *
@@ -345,6 +383,8 @@ main(int argc, char *argv[])
          tu->findStemnt(ConvertToBrtStreams);
          tu->findStemnt(ConvertToBrtScatters);
          tu->findFunctionDef(ConvertToBrtFunctions);
+
+         tu->findStemnt(ConvertToBrtDecls);
       }
 
      out.open(globals.coutputname);

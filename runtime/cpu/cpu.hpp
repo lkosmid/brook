@@ -141,7 +141,6 @@ namespace brook {
                    const int extents[]);
 	virtual void Read(const void* inData);
 	virtual void Write(void* outData);
-	virtual void Release();
 	virtual void *getData(unsigned int flags) {return data;}
         virtual void releaseData(unsigned int flags){}
 	virtual const unsigned int * getExtents() const{return extents;}

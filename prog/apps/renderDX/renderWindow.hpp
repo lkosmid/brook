@@ -23,11 +23,10 @@ private:
   float mouseX;
   float mouseY;
 
-  brook::stream* fluidStreams[2];
-  IDirect3DTexture9* fluidTextures[2];
-  int currentStream;
+  brook::stream fluidStream0;
+  brook::stream fluidStream1;
 
-  brook::stream* normalStream;
+  brook::stream normalStream;
   IDirect3DTexture9* normalTexture;
 
   fibble::VertexShader* vertexShader;

@@ -39,40 +39,30 @@ enum __BRTStreamType {
 
 namespace brook {
   class Kernel;
+  class StreamInterface;
   class Stream;
   class Iter;
+  class stream;
+  class iter;
 
   static const unsigned int MAXPROGLENGTH = 1024*32;
   static const unsigned int MAXSTREAMDIMS = 8;
 
   void initialize( const char* inRuntimeName, void* inContextValue = 0 );
 
-  class Kernel {
-  public:
-    Kernel() {}
-    virtual void PushStream(Stream *s) = 0;
-    virtual void PushIter(class Iter * v) = 0;
-    virtual void PushConstant(const float &val) = 0;  
-    virtual void PushConstant(const float2 &val) = 0;  
-    virtual void PushConstant(const float3 &val) = 0; 
-    virtual void PushConstant(const float4 &val) = 0;
-    virtual void PushReduce (void * val,  __BRTStreamType type)=0;
-    virtual void PushGatherStream(Stream *s) = 0;
-    virtual void PushOutput(Stream *s) = 0;
-    virtual void Map() = 0;
-    virtual void Reduce() {Map();}
-    virtual void Release() {delete this;}
-
+    class StreamInterface {
+  private:
+    size_t referenceCount;
   protected:
-    virtual ~Kernel() {}
-  };
-
-  class StreamInterface {
-  protected:
-    StreamInterface(){}
+    StreamInterface()
+      : referenceCount(1) {}
     virtual ~StreamInterface(){}
   public:
-    virtual void Release() {delete this;}
+    void acquireReference() { referenceCount++; }
+    void releaseReference() {
+      if( --referenceCount == 0 ) delete this;
+    }
+
     enum USAGEFLAGS {NONE=0x0,READ=0x1,WRITE=0x2,READWRITE=0x3};
     virtual void * getData (unsigned int flags)=0;
     virtual void releaseData(unsigned int flags)=0;
@@ -128,6 +118,73 @@ namespace brook {
     virtual ~Iter() {}
   };
 
+  class stream
+  {
+  public:
+    stream();
+    stream( const stream& );
+    stream& operator=( const stream& );
+
+    // easy-to-use constructors for C++ interface
+    template<typename T>
+    static stream create( int x ) {
+      return stream( ::brook::getStreamType((T*)0), inExtent0, -1 );
+    }
+
+    template<typename T>
+    static stream create( int y, int x ) {
+      return stream( ::brook::getStreamType((T*)0), y, x, -1 );
+    }
+
+    // standard constructors for BRCC-generated code
+    stream(const __BRTStreamType*,...);
+    stream(int * extents,int dims,const __BRTStreamType *type);
+    stream( const ::brook::iter& );
+    ~stream();
+
+    void swap(::brook::stream& other) {
+      ::brook::Stream* s = other._stream;
+      other._stream = _stream;
+      _stream = s;
+    }
+
+    operator ::brook::Stream*() const {
+      return _stream;
+    }
+
+
+    operator ::brook::StreamInterface*() const {
+      return _stream;
+    }
+
+    ::brook::Stream* operator->() const {
+      return _stream;
+    }
+
+  private:
+    ::brook::Stream* _stream;
+  };
+
+  class Kernel {
+  public:
+    Kernel() {}
+    virtual void PushStream(Stream *s) = 0;
+    virtual void PushIter(class Iter * v) = 0;
+    virtual void PushConstant(const float &val) = 0;  
+    virtual void PushConstant(const float2 &val) = 0;  
+    virtual void PushConstant(const float3 &val) = 0; 
+    virtual void PushConstant(const float4 &val) = 0;
+    virtual void PushReduce (void * val,  __BRTStreamType type)=0;
+    virtual void PushGatherStream(Stream *s) = 0;
+    virtual void PushOutput(Stream *s) = 0;
+    virtual void Map() = 0;
+    virtual void Reduce() {Map();}
+    virtual void Release() {delete this;}
+
+  protected:
+    virtual ~Kernel() {}
+  };
+
   template<typename T>
   const __BRTStreamType* getStreamType(T* unused=0);
 
@@ -159,7 +216,7 @@ namespace brook {
   public:
     iter(__BRTStreamType,...);
     ~iter() {
-      if(_iter) _iter->Release();
+      if(_iter) _iter->releaseReference();
     }
 
     operator ::brook::Iter*() const {
@@ -177,40 +234,6 @@ namespace brook {
   private:
     iter( const ::brook::iter& ); // no copy constructor
     ::brook::Iter* _iter;
-  };
-
-  class stream
-  {
-  public:
-    stream(const __BRTStreamType*,...);
-    stream(int * extents,int dims,const __BRTStreamType *type);
-    stream( const ::brook::iter& );
-    ~stream() {
-      if(_stream) _stream->Release();
-    }
-
-    void swap(::brook::stream& other) {
-      ::brook::Stream* s = other._stream;
-      other._stream = _stream;
-      _stream = s;
-    }
-
-    operator ::brook::Stream*() const {
-      return _stream;
-    }
-
-
-    operator ::brook::StreamInterface*() const {
-      return _stream;
-    }
-
-    ::brook::Stream* operator->() const {
-      return _stream;
-    }
-
-  private:
-    stream( const stream& ); // no copy constructor
-    ::brook::Stream* _stream;
   };
 
   class RunTime;

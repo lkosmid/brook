@@ -6,3 +6,5 @@ LIBRARIES = $(RUNTIME_LIBS) fibble
 
 include $(ROOTDIR)/common.mk
 
+renderWindow.cpp: ./built/simulationKernel.hpp
+

@@ -140,7 +140,19 @@ public:
   void printSubtype(std::ostream &out,Symbol *name, bool showBase,int level)const;
 };
 
+class BrtKernelType : public FunctionType
+{
+public:
+  BrtKernelType(FunctionType *functionType);
+  ~BrtKernelType();
 
+  Type* dup0() const { return new BrtKernelType(_functionType); }
+
+private:
+  Type* convertArgumentType(Type*);
+
+  FunctionType* _functionType;
+};
 
 #endif  /* BRTDECL_H */
 

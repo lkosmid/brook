@@ -19,7 +19,6 @@ struct globals_struct {
   char *sourcename;
   char *compilername;
   char *shaderoutputname;
-  char *houtputname;
   char *coutputname;
   int fponly;
   int target;

@@ -25,8 +25,10 @@ BrtStreamType::BrtStreamType(const ArrayType *t)
   // First find the base type of the array;
   for (p = t;
        p->subType && p->subType->isArray(); p = (ArrayType *)p->subType) {
-     assert(p->size);
-     dims.push_back(p->size->dup0());
+
+     //assert(p->size);
+     if (p->size)
+         dims.push_back(p->size->dup0());
   }
 
   /*
@@ -85,7 +87,7 @@ void
 BrtStreamParamType::printType(std::ostream& out, Symbol *name,
                               bool showBase, int level) const
 {
-  out << "::brook::stream &";
+  out << "::brook::stream ";
 
   if (name)
     out << *name;
@@ -379,6 +381,27 @@ void CPUGatherType::printAfter(std::ostream &out) const{
 		//nothing happens
 		//you fail to obtain anything
 		//...
+}
+
+BrtKernelType::BrtKernelType(FunctionType *functionType)
+  : _functionType(functionType)
+{
+  extend((*_functionType->getSubType())->dup0());
+  for (unsigned int i=0;i<_functionType->nArgs;i++)
+    addArg(_functionType->args[i]->dup0());
+
+  for (unsigned int i=0;i<nArgs;i++)
+  {
+    TypeQual q = args[i]->form->getQualifiers();
+    if( (q & TQ_Out) == 0 )
+    {
+      BaseType* b = args[i]->form->getBase();
+      b->qualifier |= TQ_Const;
+    }
+  }
+}
+
+BrtKernelType::~BrtKernelType() {
 }
 
 

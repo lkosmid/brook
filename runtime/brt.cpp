@@ -166,6 +166,30 @@ namespace brook {
      releaseData(READ);
   }
 
+  stream::stream()
+    : _stream(0)
+  {
+  }
+  
+  stream::stream( const stream& inStream )
+    : _stream(inStream._stream)
+  {
+    if( _stream ) _stream->acquireReference();
+  }
+  
+  stream& stream::operator=( const stream& inStream )
+  {
+    Stream* s = inStream._stream;
+    if( s ) s->acquireReference();
+    if( _stream ) _stream->releaseReference();
+    _stream = s;
+    return *this;
+  }
+
+  stream::~stream() {
+    if(_stream) _stream->releaseReference();
+  }
+
   
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   stream::stream(const __BRTStreamType* inElementTypes, ...)

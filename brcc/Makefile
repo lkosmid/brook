@@ -22,3 +22,4 @@ gram.cpp gram.h:  gram.y
 	bison -d -b gram $<
 	mv -f gram.tab.c gram.cpp
 	mv -f gram.tab.h gram.h
+# DO NOT DELETE

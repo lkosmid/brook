@@ -127,6 +127,13 @@ ifdef INCLUDEDEPS
 include $(DEPS)
 endif
 
+##  Compile .brh files  ##
+$(OBJDIR)/%.hpp: %.brh
+ifndef COMPILER_ECHOES
+	@$(ECHO) $<
+endif
+	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $<
+
 ##  Compile .c files  ##
 $(OBJDIR)/%$(OBJSUFFIX): %.c
 ifndef COMPILER_ECHOS
@@ -167,10 +174,11 @@ else
 	$(LD) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LDFLAGS)
 endif
 
-## Clean BRCC generated .cpp files ##
+## Clean BRCC generated .cpp/.hpp files ##
 BR_FILES_CLEAN   = $(addsuffix .br-clean, $(FILES))
 %.br-clean:
 	if test -f $*.br; then rm -rf $*.cpp; fi	
+	if test -f $*.brh; then rm -rf $*.hpp; fi	
 
 ## Clean
 clean: $(BR_FILES_CLEAN)

@@ -1,7 +1,7 @@
 // renderWindow.cpp
 #include "renderWindow.hpp"
 
-#include "simulationKernel.hpp"
+#include "built/simulationKernel.hpp"
 
 static const int kWindowSize = 512;
 static const int kFluidSize = 256;
@@ -54,7 +54,8 @@ RenderWindow::RenderWindow()
   device(NULL),
   mouseDown(false)
 {
-  using namespace fibble;
+  using namespace fibble; // stupid DX9 wrapper classes
+  using namespace brook; // Brook Runtime classes
   
   context = Context::create( this );
   device = context->getDevice();
@@ -72,28 +73,22 @@ RenderWindow::RenderWindow()
   result = device->GetRenderTarget( 0, &defaultRenderTarget );
   if( FAILED(result) ) throw -1;
 
+  // Initialize the Brook Runtime
+  // We pass in the identifier of the runtime we wish to use,
+  // as well as a context value that holds our existing
+  // rendering device...
   brook::initialize( "dx9", (void*)device );
 
-  fluidStreams[0] = new brook::stream( brook::getStreamType((float4*)0), kFluidSize, kFluidSize, -1 );
-  fluidTextures[0] = (IDirect3DTexture9*)((*fluidStreams[0])->getIndexedFieldRenderData(0));
-  fluidStreams[1] = new brook::stream( brook::getStreamType((float4*)0), kFluidSize, kFluidSize, -1 );
-  fluidTextures[1] = (IDirect3DTexture9*)((*fluidStreams[1])->getIndexedFieldRenderData(0));
-  normalStream = new brook::stream( brook::getStreamType((float3*)0), kFluidSize, kFluidSize, -1 );
-  normalTexture = (IDirect3DTexture9*)((*normalStream)->getIndexedFieldRenderData(0));
+  // Create streams
+  fluidStream0 = stream::create<float4>( kFluidSize, kFluidSize );
+  fluidStream1 = stream::create<float4>( kFluidSize, kFluidSize );
+  normalStream = stream::create<float3>( kFluidSize, kFluidSize );
 
-  float4* fluidData = new float4[ kFluidSize * kFluidSize ];
-  for( int i = 0; i < kFluidSize*kFluidSize; i++ )
-  {
-    fluidData[i].x = 0.0f; // position
-    fluidData[i].y = 0.0f; // velocity
-    fluidData[i].z = 0.0f;
-    fluidData[i].w = 0.0f;
-  }
-  //fluidData[10*kFluidSize + 10].x = 100.0f;
-  (*fluidStreams[0])->Read( fluidData );
-  delete[] fluidData;
+  // Get a handle to the texture being used by the normal stream as a backing store
+  normalTexture = (IDirect3DTexture9*)(normalStream->getIndexedFieldRenderData(0));
 
-  currentStream = 0;
+  // Initialize the fluid data
+  clearKernel( fluidStream0 );
 }
 
 RenderWindow::~RenderWindow()
@@ -122,24 +117,30 @@ void RenderWindow::handleIdle()
 {
   HRESULT result;
 
-  // simulate
+  // Call kernels to execute the simulation
+  
+  // The simulation kernel integrates the heightfield under
+  // neighbor forces interactions (diffusion)
   float4 controlConstant(0,0,0,0);
   if( mouseDown )
   {
     float controlRadius = 8.0f;
     float controlHeight = -5.0f;
-    controlConstant.x = (float)mouseX;
-    controlConstant.y = (float)mouseY;
-    controlConstant.z = controlHeight;
-    controlConstant.w = controlRadius*controlRadius;
+    controlConstant = float4( (float)mouseX, (float)mouseY, controlHeight, controlRadius*controlRadius );
   }
-  simulationKernel( *fluidStreams[currentStream], *fluidStreams[currentStream], controlConstant, *fluidStreams[1-currentStream] );
-  currentStream = 1 - currentStream;
-  smoothKernel( *fluidStreams[currentStream], *fluidStreams[currentStream], *fluidStreams[1-currentStream] );
-  currentStream = 1 - currentStream;
-  normalGenerationKernel( *fluidStreams[currentStream], *normalStream );
+  simulationKernel( fluidStream0, fluidStream0, controlConstant, fluidStream1 );
 
-  (*normalStream)->synchronizeRenderData();
+  // The smoothing kernel does a very simple neighbor-sampling filter
+  // to help keep the simulation stable and smooth
+  smoothKernel( fluidStream1, fluidStream1, fluidStream0 );
+
+  // The normal generation kernel (not surprisingly) generates a normal
+  // map from the heightfield, allowing us to draw it with bump-mapping
+  normalGenerationKernel( fluidStream0, normalStream );
+
+  // We call "synchronizeRenderData" on the normal stream to make sure
+  // that it's data is available in a texture, and then bind it
+  normalStream->synchronizeRenderData();
   result = device->SetTexture( 0, normalTexture );
   if( FAILED(result) ) throw -1;
 

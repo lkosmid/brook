@@ -307,10 +307,10 @@ static void printPrototypes(std::ostream & out, std::string type) {
    for (i=1;i<=2;++i) {
       std::string dimensionstring = getDimensionString (i);
       out << "extern int finiteValueProduced"<<dimensionstring ;
-      out << type << " (brook::stream &input);\n"      ;
+      out << type << " (brook::stream input);\n"      ;
       out <<"extern float shiftValues"<<dimensionstring;
-      out << type << "(brook::stream &list_stream,\n"
-         "                         brook::stream& output_stream,\n"
+      out << type << "(brook::stream list_stream,\n"
+         "                         brook::stream output_stream,\n"
          "                         int WIDTH, \n"
          "                         int LENGTH, \n"
          "                         int sign);\n"
@@ -319,7 +319,7 @@ static void printPrototypes(std::ostream & out, std::string type) {
          "                     unsigned int num,\n"
          "                     unsigned int width, \n"
          "                     unsigned int length,\n"
-         "                     brook::stream &output) ;\n";
+         "                     brook::stream output) ;\n";
       
    }
 }
@@ -368,16 +368,13 @@ BRTKernelDef::printStub(std::ostream& out) const
                   t = static_cast<ArrayType*>(fType->args[i]->form)->subType;                  
                t->printType(out,&name,true,0);
             }else{
-               out << "::brook::stream& "<< *fType->args[i]->name;
+               out << "::brook::stream "<< *fType->args[i]->name;
             }
          } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
             out << "const __BRTIter& " << *fType->args[i]->name;
          } else if (recursiveIsStream(fType->args[i]->form) ||
                     recursiveIsGather(fType->args[i]->form)) {
-            if ((fType->args[i]->form->getQualifiers()&TQ_Out)==0) {
-               out << "const ";
-            }
-            out << "::brook::stream& " << *fType->args[i]->name;
+            out << "::brook::stream " << *fType->args[i]->name;
          } else {
             out << "const ";
             Symbol name;name.name = fType->args[i]->name->name;
