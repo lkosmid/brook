@@ -117,7 +117,8 @@ void readPPM3dSlice(const ppm &fp,
       readindata+=size+size+size;
       fread(readindata, size, 1, fp.fp);
       for (unsigned int i=0;i<size;++i) {
-         data[i]=readindata[i]/255.0f-.5f;//because we only support float format!
+         data[i]=(readindata[i]/255.0f) >0.39f?1.0f:0.0f;
+                  //because we only support float format!
       }
    }else if (dorandom)for (unsigned int i=0;i<size;++i) data[i] = myrand();
    else {
