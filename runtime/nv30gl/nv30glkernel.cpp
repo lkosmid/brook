@@ -471,8 +471,8 @@ void NV30GLKernel::Map() {
    CHECK_GL();
 
    glBindTexture (GL_TEXTURE_RECTANGLE_NV, outstream->id);
-   glCopyTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                    GLtype[outstream->ncomp], 0, 0, w, h, 0);
+   glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0, w, h);
+
    CHECK_GL();
 
    ResetStateMachine();
@@ -639,9 +639,9 @@ NV30GLKernel::ReduceScalar() {
 
       glActiveTextureARB(GL_TEXTURE0_ARB);
       glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-      glCopyTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                       GLtype[ncomp], 0, 0, 
-                       half+remainder, h, 0);
+      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                       0, 0, 0, 0, 
+                       half+remainder, h);
       if (sreg0)
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
 
@@ -705,9 +705,9 @@ NV30GLKernel::ReduceScalar() {
         glActiveTextureARB(GL_TEXTURE0_ARB);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
-        glCopyTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                         GLtype[ncomp], 0, 0, 
-                         1, half+remainder, 0);
+        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                         0, 0, 0, 0, 
+                         1, half+remainder);
         if (sreg0)
           glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
       }
