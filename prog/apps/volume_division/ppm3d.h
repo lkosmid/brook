@@ -5,7 +5,7 @@ struct ppm {
    unsigned int width;
    unsigned int height;
    unsigned int depth;
-   std::vector<float4> vertices;
+   std::vector<float3> vertices;
    ppm () {fp=NULL;start=width=height=0;}
    void init (unsigned int width,unsigned int height,unsigned int depth) {
       this->width=width;
@@ -31,7 +31,7 @@ ppm openPPM (char * name) {
    return ret;
 }
 void printVolume (const ppm &fp) {
-   std::vector<float4>::const_iterator i=fp.vertices.begin();
+   std::vector<float3>::const_iterator i=fp.vertices.begin();
    unsigned int j=0;
    printf ("<Mesh texture=\"white.bmp\">\n");
    printf("<Points>\n");
@@ -75,7 +75,7 @@ void readPPM3dSlice(const ppm &fp,
 void closePPM (const ppm &fp) {
    fclose (fp.fp);
 }
-unsigned int findNaN(std::vector<float4> v) {
+unsigned int findNaN(std::vector<float3> v) {
    unsigned int half = v.size()/4;
    unsigned int pos = v.size()/2;
    while (half) {
@@ -93,20 +93,20 @@ unsigned int findNaN(std::vector<float4> v) {
          pos+=1;
    return pos;
 }
-float4* consolidateVertices(ppm &fp,float4 ss/*stream size*/) {
+float3* consolidateVertices(ppm &fp,float4 ss/*stream size*/) {
    unsigned int siz = fp.vertices.size();
    fp.vertices.insert(fp.vertices.end(),
                       (unsigned int)ss.x*(unsigned int)ss.y,
-                      float4(0.0f,0.0f,0.0f,0.0f));
+                      float3(0,0,0));
    return &fp.vertices[siz];
    unsigned int size = (unsigned int)ss.x*(unsigned int)ss.y;
    unsigned int nanloc= findNaN(fp.vertices);
    if (size>fp.vertices.size()-nanloc) {
       unsigned int newguys = size-(fp.vertices.size()-nanloc);
-      fp.vertices.insert(fp.vertices.end(),newguys,float4(0,0,0,0));
+      fp.vertices.insert(fp.vertices.end(),newguys,float3(0,0,0));
    }
    if (!&fp.vertices[nanloc]) {
-      static float4 x;
+      static float3 x;
       return &x;
    }
    return &fp.vertices[nanloc];

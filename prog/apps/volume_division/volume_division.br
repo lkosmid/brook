@@ -130,7 +130,21 @@ kernel void processVirtualSliceNoCompact(out float4 vertex<>,
     vertex=float4(-1.0,-1.0f,-1.0f,-1.0f);
   }
 }
-typedef float Triangle[3];
+
+kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, out float3 trianglesC<>,out float3 trianglesD<>, float4 vertices<>,float3 volumeTriangles[][]) {
+  float4 whichVolumeTriangle=fmod((indexof trianglesA).x,3);
+  //whichVolumeTriangle.x*=(float)(whichVolumeTriangle.x+.5<3);
+  if (whichVolumeTriangle.x+.5>3) whichVolumeTriangle.x=0;
+  trianglesA=volumeTriangles[whichVolumeTriangle];
+  whichVolumeTriangle.x+=4;
+  trianglesB=vertices.xyz+volumeTriangles[whichVolumeTriangle];
+  whichVolumeTriangle.x+=4;
+  trianglesC=vertices.xyz+volumeTriangles[whichVolumeTriangle];
+  whichVolumeTriangle.x+=4;  
+  trianglesD=vertices.xyz+volumeTriangles[whichVolumeTriangle];  
+}
+
+typedef float3 Triangle[3][4];
 char volumeTriangles(Triangle tri[256]) {
   //fill in with brilliant triangle computations
   return 0;
@@ -144,7 +158,12 @@ Triangle* getVolumeTriangles () {
 float tof (int a) {
   return (float)a;
 }
+int toi (float a) {
+  return (int)a;
+}
  int main (int argc, char ** argv) {
+   float3 volumeTriangles<256,12>;
+   streamRead(volumeTriangles,getVolumeTriangles());
    if (argc<2) {
       printf ("Usage: volume_division <FILE.pnm>\n      volume_divison <width>\n");
       exit (1);
@@ -185,7 +204,10 @@ float tof (int a) {
            = iter (float2(1.0f,0.0f),
                    float2(1.0f+tof(dat.width),
                           tof(dat.height)));
-                                                         
+         if (dat.width>512) {
+           printf("Exceeded 512 wide texture bounds %d\n",dat.width);
+           return 1;
+         }
          readPPM3dSlice(dat,0,slice);
          streamRead(next,slice);
 
@@ -193,13 +215,39 @@ float tof (int a) {
          for (i=0;i<dat.depth-1;++i) {
             readPPM3dSlice(dat,i+1,slice);
             streamSwap(cur,next);
-            streamRead(next,slice);
-            processSlice(cur,next,v,center,up,upforward,forward,sliceZ);
-            streamWrite(v,consolidateVertices(dat,streamSize(v)));
+            if (i!=dat.depth-1) {
+              streamRead(next,slice);
+            }
+            processSlice(cur,
+                         i!=dat.depth-1?next:cur,
+                         v,
+                         center,
+                         up,
+                         upforward,
+                         forward,
+                         sliceZ);
+            if (streamSize(v).y){
+              float3 trianglesA<(toi(streamSize(v).y)),
+                               (toi(streamSize(v).x)*3)>;
+              float3 trianglesB<(toi(streamSize(v).y)),
+                               (toi(streamSize(v).x)*3)>;
+              float3 trianglesC<(toi(streamSize(v).y)),
+                               (toi(streamSize(v).x)*3)>;
+              float3 trianglesD<(toi(streamSize(v).y)),
+                               (toi(streamSize(v).x)*3)>;
+              processTriangles(trianglesA,trianglesB,trianglesC,trianglesD,v,
+                               volumeTriangles);
+              streamWrite(trianglesA,
+                          consolidateVertices(dat,streamSize(trianglesA)));
+              streamWrite(trianglesB,
+                          consolidateVertices(dat,streamSize(trianglesB)));
+              streamWrite(trianglesC,
+                          consolidateVertices(dat,streamSize(trianglesC)));
+              streamWrite(trianglesD,
+                          consolidateVertices(dat,streamSize(trianglesD)));
+            }
             sliceZ.x++;sliceZ.y++;
          }
-         processSlice(next,next,v,center,up,upforward,forward,sliceZ);
-         streamWrite(v,consolidateVertices(dat,streamSize(v)));         
       }
       free(slice);
       printVolume(dat);
