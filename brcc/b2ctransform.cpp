@@ -11,6 +11,7 @@
 #include "brtdecl.h"
 #include "brtstemnt.h"
 #include "main.h"
+#include "brook2cpp.h"
 
 template <class ConverterFunctor> void ConvertToT (Expression * expression);
 
@@ -517,20 +518,20 @@ void FindConstantExpr (Statement * s) {
 	void (*tmp)(class Expression *) = &ConvertToTConstantExprConverter;
     s->findExpr(tmp);
 }
-void RestoreTypes(BRTCPUKernelDef *cpuDef){
+void RestoreTypes(BRTKernelDef *kDef){
 	ArrayBlacklist.clear();
-	cpuDef->findStemnt (FindTypesDecl);        	
+	kDef->findStemnt (FindTypesDecl);
 }
 
-void compileCpp(BRTCPUKernelDef *cpuDef) {
-    cpuDef->findStemnt(&FindMask);
-    RestoreTypes(cpuDef);
-    cpuDef->findStemnt (&FindSwizzle);
-    RestoreTypes(cpuDef);
-    cpuDef->findStemnt (&FindQuestionColon);
-    RestoreTypes(cpuDef);
-    cpuDef->findStemnt (&FindIndexExpr);
-    RestoreTypes(cpuDef);
-    cpuDef->findStemnt (&FindConstantExpr);
-    RestoreTypes(cpuDef);
+void Brook2Cpp_ConvertKernel(BRTKernelDef *kDef) {
+    kDef->findStemnt(&FindMask);
+    RestoreTypes(kDef);
+    kDef->findStemnt (&FindSwizzle);
+    RestoreTypes(kDef);
+    kDef->findStemnt (&FindQuestionColon);
+    RestoreTypes(kDef);
+    kDef->findStemnt (&FindIndexExpr);
+    RestoreTypes(kDef);
+    kDef->findStemnt (&FindConstantExpr);
+    RestoreTypes(kDef);
 }

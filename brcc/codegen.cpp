@@ -90,7 +90,7 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
   const char xyzw[] = "xyzw";
   std::ostringstream cg;
   Decl *outArg = NULL;
-  int texcoord;
+  int texcoord, i;
 
   if (globals.target != TARGET_FP30) {
     fprintf (stderr, "Only FP30 target supported\n");
@@ -107,7 +107,6 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 
   /* Print the argument list */
   texcoord = 0;
-  int i;
   for (i=0; i < nArgs; i++) {
      /* Don't put the output in the argument list */
      if (args[i]->form->getQualifiers() & TQ_Out) {

@@ -7,6 +7,7 @@
 #define    _BRTSTEMNT_H_
 
 #include "stemnt.h"
+#include "brook2cpp.h"
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class BRTKernelDef : public FunctionDef
@@ -36,13 +37,11 @@ class BRTGPUKernelDef : public BRTKernelDef
 };
 
 
-class BRTCPUKernelDef;
-extern void compileCpp(BRTCPUKernelDef *cpuDef);
-
 class BRTCPUKernelDef : public BRTKernelDef
 {
   public:
     BRTCPUKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {
+       Brook2Cpp_ConvertKernel(this);
        compileCpp(this);
     }
    ~BRTCPUKernelDef() { /* Nothing, ~FunctionDef() does all the work */ }
