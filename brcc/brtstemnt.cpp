@@ -191,6 +191,16 @@ BRTGPUKernelDef::printCode(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void printType (std::ostream & out, Type * t, bool addIndirection) {
+		Symbol sym;
+		sym.name="";
+	
+		t->printBase(out,0);
+		t->printBefore(out,&sym,0);
+		if (addIndirection) out << "*";			
+		t->printAfter(out);
+}
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTCPUKernelDef::printCode(std::ostream& out) const
 {
@@ -203,7 +213,9 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     
     out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
-    func->printBefore(out,decl->name,0);
+	Symbol enhanced_name;
+	enhanced_name.name = "_cpu_"+decl->name->name;
+    func->printBefore(out,&enhanced_name,0);
     
     out << "(";
     for (int j=0; j < func->nArgs; j++) {
@@ -224,7 +236,7 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 		if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
 			out << "const ";//kernels are only allowed to touch out params
 		}
-		if ((tq&TQ_Out)==0&&form->type!=TT_Array/*no gather*/)
+		if (/*(tq&TQ_Out)==0&&*/form->type!=TT_Array/*no gather*/)
 			func->args[j]->name->name=std::string("&")+func->args[j]->name->name;
 	}
 	func->args[j]->form = form;
@@ -234,5 +246,39 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
     
     out << ")";
     //delete func;
+	func = static_cast<FunctionType *>(form);
     Block::print(out,0);
+	//now it's time to print the automated wrapper function.
+	out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
+	enhanced_name.name = "_cpu_loop_"+decl->name->name;
+	func->printBefore(out,&enhanced_name,0);
+	out << "(const std::vector<char *>&args,unsigned int mapbegin,unsigned int mapend) {"<<endl;
+	indent(out,1);
+	out << "for (unsigned int i=mapbegin;i<mapend;++i) {"<<endl;
+	indent(out,2);out << "_cpu_" <<decl->name->name<<" ("<<endl;
+	{for (unsigned int i=0;i<func->nArgs;++i) {
+		if (i!=0)
+			out <<","<<endl;
+		indent(out,3);
+		
+		if (func->args[i]->form->type==TT_Stream) {
+			Type * t=static_cast<ArrayType*>(func->args[i]->form)->subType;
+			out <<"*(";
+			printType(out,t,true);						
+			out << ")(args["<<i<<"]+i*sizeof(";
+			printType(out,t,false);									
+			out <<"))";
+		}else {
+
+			bool isArray = (func->args[i]->form->type==TT_Array);
+			if (!isArray) out << "*";
+			out << "(";
+			printType(out,func->args[i]->form,!isArray);			
+			out <<")(args["<<i<<"])";
+		}
+	}}
+	out<< ");"<<endl;
+	indent(out,1);out <<"}"<<endl;
+	out << "}"<<endl;
+	
 }

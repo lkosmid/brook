@@ -193,8 +193,10 @@ class BaseType1:public BaseType {public:
 			out << "float4 ";
 		else
 			out << "int1 ";
-		if (qualifier &TQ_Out)
-			out << "&";
+		
+		if (qualifier &TQ_Out){
+			//out << "&";
+		}
 		
 	}else {
 		BaseType::printBase(out,level);
