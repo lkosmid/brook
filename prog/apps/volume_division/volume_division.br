@@ -201,13 +201,6 @@ kernel float4 interp (float4 a, float4 b) {
   return lerp (0,1,1-(.39-a)/(b-a));  
 }
 kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>, 
-                                            out float4 vertices2<>,
-                                            out float2 xlowGather<>,
-                                            out float xlow<>,
-                                            out float2 xhighGather<>,
-                                            out float xhigh<>,
-                                            out float3 xconfig<>,
-                                            out float div<>,
                                             float4 verticesinf<>,
                                             float3 volumeTriangles[][],
                                             float curgather[][],
@@ -216,55 +209,48 @@ kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>,
   float2 threefive={3.0f,5.0f};
   float3 onehalf=.5;
   float2 onehalf2=.5;
-  float4 zero4=0;
+  float2 zero2=0;
   float4 four256=256;
-  float3 five=5;
   float4 curiso,nextiso;
-  float4 vertices1=(verticesinf<four256&&verticesinf>=zero4)?verticesinf:zero4;
+  float4 vertices1=(verticesinf<four256&&verticesinf>=zero2.xxxx)
+    ? verticesinf
+    : zero2.xxxx;
   float2 whichVolumeTriangle={0,vertices1.w};
   float3 vertices=vertices1.xyz;
   float2 mod35=round(fmod((indexof trianglesA).xy,threefive));
-  vertices2=vertices1;
-  mod35 = (mod35+onehalf2>threefive)?zero4.xx:mod35;
+  mod35 = (mod35+onehalf2>threefive)?zero2:mod35;
   whichVolumeTriangle.x=mod35.x+mod35.y*3; 
   {
     float3 configinf = volumeTriangles[whichVolumeTriangle].xyz;
-    float3 config =(configinf<five)?configinf:zero4.xxx; 
+    float3 config = configinf<four256.xxx?configinf:zero2.xxx;
     float low,high;
     float3 ishalf,tmp;
-    ishalf=(float3)configinf==onehalf;
+    ishalf=(float3)config==onehalf;
     if (ishalf.z) {
        float2 lhGather = vertices.xy+config.xy;
        low = curgather[lhGather];
        high = nextgather[lhGather];
-       xlow = low;
-       xhigh = high;
-       xlowGather=lhGather;
-       xhighGather=lhGather;
     }else {
        float2 lowGather,highGather;
        if (ishalf.x) {
-          lowGather=float2(vertices.x,vertices.y+1.1*config.y);
-          highGather=float2(vertices.x+1.1f,vertices.y+1.1*config.y);
+          lowGather=float2(vertices.x,vertices.y+config.y);
+          highGather=float2(vertices.x+1.0f,vertices.y+config.y);
        } else {
-          lowGather=float2(vertices.x+1.1*config.x,vertices.y);
-          highGather=float2(vertices.x+1.1*config.x,vertices.y+1.1f);          
+          lowGather=float2(vertices.x+config.x,vertices.y);
+          highGather=float2(vertices.x+config.x,vertices.y+1.0f);
        }
-       xlowGather=lowGather;
-       xhighGather=highGather;
-       if (config.z==0) {
+       if (configinf.z==0) {
           low = curgather[lowGather];
           high = curgather[highGather];
        }else {
           low = nextgather[lowGather];
-          high= nextgather[highGather];          
+          high= nextgather[highGather];
        }
+
     }
-    xlow=low;
-    xhigh=high;
-    tmp = div=(isovalue-low)/(high-low);
-    xconfig =config;
-    trianglesA=vertices+(ishalf?tmp:configinf);//vertices+config;
+    tmp = (isovalue-low)/(high-low);
+    config=ishalf?tmp:configinf;
+    trianglesA=vertices+config;
   }
    
 }/*
@@ -625,21 +611,6 @@ int main (int argc, char ** argv) {
                 // each triangle stream will be 3x bigger than the volume
                  float3 trianglesA<(toi(streamSize(v).y)*5),
                   (toi(streamSize(v).x)*3)>;
-                 float4 vertices<(toi(streamSize(v).y)*5),
-                  (toi(streamSize(v).x)*3)>;
-
-                 float2 lowgather<(toi(streamSize(v).y)*5),
-                  (toi(streamSize(v).x)*3)>;
-                 float low<(toi(streamSize(v).y)*5),
-                  (toi(streamSize(v).x)*3)>;
-                 float2 highgather<(toi(streamSize(v).y)*5),
-                  (toi(streamSize(v).x)*3)>;
-                 float high<(toi(streamSize(v).y)*5),
-                  (toi(streamSize(v).x)*3)>;
-                 float3 config<(toi(streamSize(v).y)*5),
-                  (toi(streamSize(v).x)*3)>;
-                 float div<(toi(streamSize(v).y)*5),
-                  (toi(streamSize(v).x)*3)>;
                    /*                 float3 trianglesB<(toi(streamSize(v).y)),
                                   (toi(streamSize(v).x)*3)>;
                  float3 trianglesC<(toi(streamSize(v).y)),
@@ -650,15 +621,7 @@ int main (int argc, char ** argv) {
                  (toi(streamSize(v).x)*3)>;
 */
                  // output exactly 5 vertices for each input 
-                    
                  processTrianglesNoCompactOneOut(trianglesA,
-                                                 vertices,
-                                                 lowgather,
-                                                 low,
-                                                 highgather,
-                                                 high,
-                                                 config,
-                                                 div,
                                                  /*     
                                                         trianglesB,
                                                         trianglesC,
@@ -673,22 +636,6 @@ int main (int argc, char ** argv) {
                  // write them all into mem
                  streamWrite(trianglesA,
                              consolidateVertices(dat,streamSize(trianglesA)));
-                    /*
-                    printf("\nVertices\n");
-                    streamPrint(vertices);
-                    printf("\nLow Gather\n");
-                    streamPrint(lowgather);
-                    printf("\nLow\n");
-                    streamPrint(low);
-                    printf("\nHigh Gather\n");
-                    streamPrint(highgather);
-                    printf("\nHigh\n");
-                    streamPrint(high);
-                    printf("\nConfig\n");
-                    streamPrint(config);
-                    printf("\nRatio\n");
-                    streamPrint(div);
-                    printf("\n");*/
                    /*                 streamWrite(trianglesB,
                              consolidateVertices(dat,streamSize(trianglesB)));
                  streamWrite(trianglesC,
