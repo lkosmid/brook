@@ -256,11 +256,7 @@ public:
     template <class BRT_TYPE> 
       Float1 questioncolon(const BRT_TYPE &b, 
 						const BRT_TYPE &c)const {
-        return Float1
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+       return f?b.getAt(0):c.getAt(0);
     }
 #if defined (_MSC_VER) && (_MSC_VER <= 1200)
 #define TEMPL_TYPESIZE sizeof(BRT_TYPE)/sizeof(BRT_TYPE::TYPE)

@@ -24,10 +24,10 @@ static void  FloatMath (const Float1  &a,
   g += Float1(9);
   h *= Float1(24);
   i *= Float1(1);
-  o += Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0) + Float1(0);
+  o += Float1(0+0+0+0 +0 +0 +0 +0 +0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0);
   o += Float1(21049);
   o += h * i + g + i - m * (l - j) / ((Float1(0.001) < k).questioncolon(k,Float1(1)));
-  e = g + h * i / ((Float1(0.001) < k).questioncolon(k,Float1(1))) + m * l * Float1(1) * Float1(1) * Float1(1) * Float1(1) * Float1(1) * Float1(1) * Float1(1) * Float1(1) * Float1(1) * Float1(1) * Float1(1);
+  e = g + h * i / ((Float1(0.001) < k).questioncolon(k,Float1(1))) + m * l * Float1(1*1*1 *1 * 1 * 1 * 1 * 1 * 1 * 1 * 1);
 }
 
 
