@@ -9,7 +9,6 @@ kernel void copy( float a[][][][], out float b<> ) {
 
 int main( int argc, char** argv ) {
 	int SIZE = atoi( argv[1] );
-  int SIZE2 = SIZE*2;
 	int i, j;
 	
 	float a< 1, 1, 1, SIZE >;
