@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "rapcol.h"
 #include "prapid.h"
+bool debug_rapid=false;
 extern void LoadPly (const char * file, std::vector<Tri> &ret);
 extern unsigned int doCollide(unsigned int wida, unsigned int heia, Tri * a,
                               unsigned int bboxwida, unsigned int bboxheia, BBox * bboxesa,
@@ -17,10 +18,31 @@ float3 convertVec(csVector3 v){
 }
 
 int rapidCollideMain (int argc, char ** argv) {
+   float angle=90;
+   int i;
+   for (i=0;i<argc;++i) {
+     char match=0;
+     int j;
+     if (strncmp(argv[i],"-angle",6)==0) {
+       match=1;
+       angle=atof(argv[i]+6);
+     }
+     if (strcmp(argv[i],"-debug")==0) {
+       match=1;
+       debug_rapid=true;
+     }
+     
+     if (match) {
+       for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
+       argc--;
+       i--;
+     }
+   }
+  
   float4 * intersections =0;
-
-  csMatrix3 R1(0,1,0,
-                1,0,0,
+  angle*=3.1415926536/180;
+  csMatrix3 R1(cos(angle),sin(angle),0,
+                -sin(angle),cos(angle),0,
                 0,0,1);
   csVector3 T1(0,0,0);
  

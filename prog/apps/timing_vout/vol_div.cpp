@@ -9,6 +9,7 @@ char use_vout_filter=1;
 char use_vout_amplify=1;
 bool firstRound=true;
 bool vanilla=false;
+bool forcevanilla=true;
 int count=0;
 int hpcount=0;
 int qtcount=0;
@@ -16,7 +17,7 @@ bool debug_model=true;
 static std::vector<brook::stream> savedStreams;
 ::brook::stream & quickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
 
-   if (1||vanilla) {
+   if (forcevanilla||vanilla) {
       static brook::stream s;
       s= brook::stream(t,wid,len,gar);
       return s;
