@@ -1,4 +1,8 @@
 #include <vector>
+
+struct den_header {
+   unsigned char  map_max[62];//44,45 && 46,47 && 48,49
+};
 struct ppm {
    FILE * fp;
    unsigned int start;
@@ -19,13 +23,15 @@ ppm randomPPM (unsigned int width,unsigned int height, unsigned int depth) {
    return p;
 }
 ppm openPPM (char * name) {
-   int nbyte;
    ppm ret;
    ret.fp = fopen (name,"rb");
    if (ret.fp) {
       ret.width=ret.height=ret.depth=256;
-      fscanf (ret.fp, "P5\n %d %d %d\n", &ret.width, &ret.depth, &nbyte);
-      ret.height=ret.width;
+      den_header dh;
+      fread(&dh,sizeof(char)*62,1,ret.fp);
+      ret.width=((int)dh.map_max[45])+256*(int)dh.map_max[44];
+      ret.height=((int)dh.map_max[47])+256*(int)dh.map_max[46];
+      ret.depth=((int)dh.map_max[49])+256*(int)dh.map_max[48];
       ret.start = ftell(ret.fp);
    }
    return ret;
@@ -74,13 +80,13 @@ void readPPM3dSlice(const ppm &fp,
    unsigned int size = fp.width*fp.height;
    static bool dorandom=false;
    if (fp.fp) {
-      char * readindata = (char *) data;
-      fseek (fp.fp,fp.start+whichslice*size*sizeof(char),SEEK_SET);
-      assert (sizeof(float)==4*sizeof(char));
+      unsigned char * readindata = (unsigned char *) data;
+      fseek (fp.fp,fp.start+whichslice*size*sizeof(unsigned char),SEEK_SET);
+      assert (sizeof(float)==4*sizeof(unsigned char));
       readindata+=size+size+size;
       fread(readindata, size, 1, fp.fp);
       for (unsigned int i=0;i<size;++i) {
-         data[i]=readindata[i]/255.0f-.5f;//because we only support float format!
+         data[i]=readindata[i]/255.0f;//because we only support float format!
       }
    }else if (dorandom)for (unsigned int i=0;i<size;++i) data[i] = myrand();
    else {
