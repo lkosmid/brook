@@ -80,18 +80,18 @@ static void fillArray(float *a, int n, float val) {
 // length is in stream elements
 void convert1d_to_2d(int length, int* dim1, int* dim2) {
 
-  if (length <= MAX_DIM) {
+  if (length <= (MAX_DIM/2)) {
     *dim1 = 1;
     *dim2 = length;
   } else {
 
-    *dim1 = length / MAX_DIM;
+    *dim1 = length / (MAX_DIM/2);
 
     // may need to pad to fit in a 2d texture
-    if (length % MAX_DIM > 0)
+    if (length % (MAX_DIM/2) > 0)
       (*dim1)++;
 
-    *dim2 = MAX_DIM;
+    *dim2 = (MAX_DIM/2);
   }
 }
 
@@ -147,7 +147,7 @@ void do_saxpy(int length, int num_iter, int* timing, float* flops) {
   //printf("TimeBlas - saxpy: Running saxpy test. (vector size = %d)\n", length);
 
   assert(length % 4 == 0);
-  assert(length/4 <= MAX_DIM * MAX_DIM);
+  assert(length/4 <= MAX_DIM * MAX_DIM / 2);
 
 
   convert1d_to_2d(length/4, &dim1, &dim2);
@@ -260,7 +260,7 @@ void do_sdot(int length, int num_iter, int* timing, float* flops) {
   //printf("TimeBlas - sdot: Running sdot test. (vector size = %d)\n", length);
 
   assert(length % 4 == 0);
-  assert(length/4 <= MAX_DIM * MAX_DIM);
+  assert(length/4 <= MAX_DIM * MAX_DIM/2);
 
   convert1d_to_2d(length/4, &dim1, &dim2);
   paddedLength = 4 * dim1 * dim2;
