@@ -275,7 +275,7 @@ inline float isinf_float (float x) {
 #undef UNINTRINSIC
 #undef BININTRINSIC
 #undef TRIINTRINSIC
-inline __BrtFloat3 cross (const __BrtFloat3 &u, const __BrtFloat3 v) {
+inline __BrtFloat3 __cross_cpu_inner (const __BrtFloat3 &u, const __BrtFloat3 v) {
      return __BrtFloat3( u.unsafeGetAt(1)*v.unsafeGetAt(2)
                          -u.unsafeGetAt(2)*v.unsafeGetAt(1),
                          u.unsafeGetAt(2)*v.unsafeGetAt(0)
