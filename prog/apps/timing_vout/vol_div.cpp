@@ -301,7 +301,7 @@ int volume_division (int argc, char ** argv) {
      int numactivetextures=dat.depth;
       readPPM3dSlice(dat,i,slice);
       if (useCharTex) {
-#ifdef _WIN32
+#if 0
         volumeData.push_back(::brook::stream (brook::getStreamType(( char  *)0), dat.height , dat.width,-1));
 #endif
         streamRead(volumeData.back(),slice);        
