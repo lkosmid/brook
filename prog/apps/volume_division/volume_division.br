@@ -1,11 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ppm3d.h"
+kernel float test(float vol){
+  return vol>0;
+}
 kernel void processSlice (float prevslice[][], 
-                   float curslice<>, 
-                   float curgather[][],
-                   float nextslice[][],
-                   vout [1]float v<>) {
+                          float curslice<>, 
+                          float curgather[][],
+                          float nextslice[][],
+                          vout [1]float vertex<>,
+                          iter float below<>,
+                          iter float above<>,
+                          iter float left<>,
+                          iter float right<>,
+                          iter float center<>) {
   
 }
 int main (int argc, char ** argv) {
