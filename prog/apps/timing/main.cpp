@@ -18,7 +18,7 @@
  * This is lame, but cTool doesn't cope with typedefs or #includes, so we
  * stash the unusual variables here.  I'm a bad person.  --Jeremy.
  */
-int64 start, mid, stop;
+int64 start, mid, mid2, stop;
 
 #ifdef WIN32
 #include <windows.h>

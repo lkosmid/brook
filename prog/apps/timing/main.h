@@ -21,5 +21,5 @@ extern int64 GetTime(void);
  * just prototype all these here.  Since brcc runs before cpp, we sidestep
  * the issue.  I apologize deeply.  --Jeremy.
  */
-extern int64 start, mid, stop;
+extern int64 start, mid, mid2, stop;
 #endif

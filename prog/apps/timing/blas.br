@@ -7,7 +7,7 @@
 
 #define MAX_DIM     2048
 
-#define DO_VERIFY   1 
+#define DO_VERIFY   0 
 
 #define EPS 1e-3f
 
@@ -25,6 +25,10 @@ reduce void sumReduceKernel(float4 x<>, reduce float4 result<>) {
   result += x;
 }
 
+
+kernel void forceReadBack(out float result<>) {
+  result = 0.0f;
+}
 
 
 // SAXPY related kernels ////////////////////////////////////////////////////////////
@@ -105,28 +109,42 @@ static int fequals(float a, float b, float tol) {
 }
 
 
-void saxpy_2d(int dim1, int dim2, float *x, float *y, float alpha) {
+void saxpy_2d(int dim1, int dim2, float *x, float *y, float alpha, int num_iter, int* innerTime) {
 
+  float  force[1];
+  float  forceStrm<1>;
   float4 xStrm<dim1, dim2>;
   float4 yStrm<dim1, dim2>;
+  int i;
 
   streamRead(xStrm, x);
   streamRead(yStrm, y);
 
-  saxpyKernel(xStrm, yStrm, alpha, yStrm);
+  mid = GetTime();
 
-  streamWrite(yStrm, y);
+  for (i=1;i<=num_iter;i++)
+    saxpyKernel(xStrm, yStrm, alpha, xStrm);
+
+  forceReadBack(forceStrm);
+  streamRead(forceStrm, force);
+
+  mid2 = GetTime();
+
+  *innerTime = (int)(mid2-mid);
+
+  streamWrite(xStrm, y);
 }
 
 
-void do_saxpy(int length) {
+void do_saxpy(int length, int num_iter, int* timing, float* flops) {
 
   int i;
   float *x, *y, *tmp;
   float alpha;
   int paddedLength, dim1, dim2;
+  int innerTime;
 
-  printf("TimeBlas - saxpy: Running saxpy test. (vector size = %d)\n", length);
+  //printf("TimeBlas - saxpy: Running saxpy test. (vector size = %d)\n", length);
 
   assert(length % 4 == 0);
   assert(length/4 <= MAX_DIM * MAX_DIM);
@@ -136,7 +154,7 @@ void do_saxpy(int length) {
   paddedLength = 4 * dim1 * dim2;
   x = (float*)malloc(sizeof(float) * paddedLength);
   y = (float*)malloc(sizeof(float) * paddedLength);
-  tmp = (float*)malloc(sizeof(float)*paddedLength);
+  tmp = (float*)malloc(sizeof(float) * paddedLength);
 
   fillArray(x, length, 1.0f);
   fillArray(y, length, 1.0f);
@@ -149,7 +167,7 @@ void do_saxpy(int length) {
   alpha = 2.0f;
 
   start = GetTime();
-  saxpy_2d(dim1, dim2, x, y, alpha);
+  saxpy_2d(dim1, dim2, x, y, alpha, num_iter, &innerTime);
   stop = GetTime();
 
   // Computation of ax + y requires:
@@ -157,7 +175,12 @@ void do_saxpy(int length) {
   // N adds
   // ----------------
   // 2N float operations
-  printf("TimeBlas - saxpy: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f*length)/(float)(stop-start) );
+  //printf("TimeBlas - saxpy: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f*length)/(float)(stop-start) );
+
+  timing[0] = (int)(stop-start);
+  timing[1] = innerTime;
+  flops[0] = (2.0f*num_iter*length)/(float)(timing[0]);
+  flops[1] = (2.0f*num_iter*length)/(float)(timing[1]);
 
   if (DO_VERIFY) {
 
@@ -192,32 +215,49 @@ void sdot(int strmSize, float* x, float* y, float* result) {
 }
 
 
-void sdot_2d(int dim1, int dim2, float* x, float* y, float* result) {
+void sdot_2d(int dim1, int dim2, float* x, float* y, float* result, int num_iter, int* innerTime) {
+
+  float force[1];
+  float forceStrm<1>;
+
   float4 sums;
   float4 xStrm<dim1, dim2>;
   float4 yStrm<dim1, dim2>;
   float4 tmpStrm<dim1, dim2>;
+  int i;
 
   streamRead(xStrm, x);
   streamRead(yStrm, y);
 
-  multKernel(xStrm, yStrm, tmpStrm);
-  sumReduceKernel(tmpStrm, sums);
- 
+  mid = GetTime();
+
+  for (i=1;i<=num_iter;i++) {
+    multKernel(xStrm, yStrm, tmpStrm);
+    sumReduceKernel(tmpStrm, sums);
+  }
+
+  forceReadBack(forceStrm);
+  streamRead(forceStrm, force);
+
+  mid2 = GetTime();
+
+  *innerTime = (int)(mid2-mid);
+
   *result = sums.x + sums.y + sums.z + sums.w;
 }
 
 
 
-void do_sdot(int length) {
+void do_sdot(int length, int num_iter, int* timing, float* flops) {
 
   float *x, *y;
   float result;
   float val;
   int i;
   int paddedLength, dim1, dim2;
+  int innerTime;
 
-  printf("TimeBlas - sdot: Running sdot test. (vector size = %d)\n", length);
+  //printf("TimeBlas - sdot: Running sdot test. (vector size = %d)\n", length);
 
   assert(length % 4 == 0);
   assert(length/4 <= MAX_DIM * MAX_DIM);
@@ -233,7 +273,7 @@ void do_sdot(int length) {
   fillArray(y+length, paddedLength-length, 0.0f);
 
   start = GetTime();
-  sdot_2d( dim1, dim2, x, y, &result);
+  sdot_2d( dim1, dim2, x, y, &result, num_iter, &innerTime);
   stop = GetTime();
 
   // Computation of xTy requires:
@@ -241,8 +281,12 @@ void do_sdot(int length) {
   // N-1 adds
   // ----------------
   // 2N-1 float operations
-  printf("TimeBlas - sdot: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f*length - 1.0f)/(float)(stop-start) );
+  //printf("TimeBlas - sdot: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f*length - 1.0f)/(float)(stop-start) );
 
+  timing[0] = (int)(stop-start);
+  timing[1] = innerTime;
+  flops[0] = (2.0f*num_iter*length - 1.0f)/(float)(timing[0]);
+  flops[1] = (2.0f*num_iter*length - 1.0f)/(float)(timing[1]);
 
   if (DO_VERIFY) {
 
@@ -262,34 +306,20 @@ void do_sdot(int length) {
 }
 
 
-kernel void testKernel(iter float2 it1<>, iter float2 it2<>,
-                       iter float2 it3<>, iter float2 it4<>,
-                       float4 A[][], float4 x<>, out float4 result<>) {
-
-  float4 data1 = A[it1.xy];
-  float4 data2 = A[it2.xy];
-  float4 data3 = A[it3.xy];
-  float4 data4 = A[it4.xy];
-    
-  result  = x.x * data1;
-  result += x.y * data2;
-  result += x.z * data3;
-  result += x.w * data4;
-}
-
-
 
 void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
-                 float* x, float* y, float* A, float alpha, float beta) {
+                 float* x, float* y, float* A, float alpha, float beta, int num_iter, int* innerTime) {
 
+  float force[1];
+  float forceStrm<1>;
+
+  int i;
   float4 xStrm<1,dim>;
-  float4 yStrm<1, dim>;
+  float4 yStrm<dim, 1>;
   float4 AStrm<dim, wideDim>;
 
   float4 tmpStrm<dim, dim>;
   float4 resultStrm<dim, 1>;
-
-  //float4 test[100];
 
   iter float2 it1<dim, dim> = iter( float2(0.0f, 0.0f), float2(fWideDim, fDim) );
   iter float2 it2<dim, dim> = iter( float2(1.0f, 0.0f), float2(fWideDim+1.0f, fDim));
@@ -300,15 +330,27 @@ void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
   streamRead(yStrm, y);
   streamRead(AStrm, A);
 
-  denseMatVecKernel(it1, it2, it3, it4, AStrm, xStrm, tmpStrm);
-  sumReduceKernel(tmpStrm, resultStrm);
-  denseMatVecScaleAddKernel(yStrm, resultStrm, resultStrm, alpha, beta);
+  mid = GetTime();
 
-  streamWrite(resultStrm, y);
+  for (i=1;i<=num_iter;i++) {
+    denseMatVecKernel(it1, it2, it3, it4, AStrm, xStrm, tmpStrm);
+    sumReduceKernel(tmpStrm, resultStrm);
+    denseMatVecScaleAddKernel(yStrm, resultStrm, yStrm, alpha, beta);
+  }
+
+  forceReadBack(forceStrm);
+  streamRead(forceStrm, force);
+
+
+  mid2 = GetTime();
+
+  *innerTime = (int)(mid2-mid);
+
+  streamWrite(yStrm, y);
 }
 
 
-void sgemv(int dim, float* x, float* y, float* A, float alpha, float beta) {
+void sgemv(int dim, float* x, float* y, float* A, float alpha, float beta, int num_iter, int* innerTime) {
 
   float fDim;
   float fWideDim;
@@ -317,19 +359,20 @@ void sgemv(int dim, float* x, float* y, float* A, float alpha, float beta) {
   fWideDim = (float)(4*dim);
 
   // Hack, to get around no casts in initializers rule
-  sgemv_inner(dim, 4*dim, fDim, fWideDim, x, y, A, alpha, beta);
+  sgemv_inner(dim, 4*dim, fDim, fWideDim, x, y, A, alpha, beta, num_iter, innerTime);
 }
 
 
-void do_sgemv(int length) {
+void do_sgemv(int length, int num_iter, int* timing, float* flops) {
 
   float *x, *y, *A, *tmp;
   float alpha, beta;
 
   float val[4];
   int i,j,k, base;
+  int innerTime;
 
-  printf("TimeBlas - sgemv: Running sgemv test. (vector & matrix size = %d)\n", length);
+  //printf("TimeBlas - sgemv: Running sgemv test. (vector & matrix size = %d)\n", length);
 
   assert(length % 4 == 0);
   assert(length/4 <= MAX_DIM);
@@ -365,7 +408,7 @@ void do_sgemv(int length) {
     tmp[i] = y[i];
 
   start = GetTime();
-  sgemv(length/4, x, y, A, alpha, beta);
+  sgemv(length/4, x, y, A, alpha, beta, num_iter, &innerTime);
   stop = GetTime();
 
   // Computation of aAx + by for general dense matrix:
@@ -373,7 +416,12 @@ void do_sgemv(int length) {
   // N + N(N-1) adds
   // ----------------
   // 2 * (N^2 + N) float operations
-  printf("TimeBlas - sgemv: Computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f * (length*length + length))/(float)(stop-start) );
+  // printf("TimeBlas - sgemv: Computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f * (length*length + length))/(float)(stop-start) );
+
+  timing[0] = (int)(stop-start);
+  timing[1] = innerTime;
+  flops[0] = (2.0f * num_iter * (length*length + length))/ (float)(timing[0]);
+  flops[1] = (2.0f * num_iter * (length*length + length))/ (float)(timing[1]);
 
   if (DO_VERIFY) {
 
@@ -403,11 +451,44 @@ void do_sgemv(int length) {
   free(A);
 }
 
+#define MAX_ITER 5
+
 
 void Blas_Time(int streamLength) {
 
-  do_sdot(streamLength);
-  do_saxpy(streamLength);
-  do_sgemv(streamLength);
+  int i;
+  int* times;
+  float* flops;
+
+  times = (int*)malloc(sizeof(int) * 3 * 2 * MAX_ITER);
+  flops = (float*)malloc(sizeof(float) * 3 * 2 * MAX_ITER);
+
+  for (i=0; i<MAX_ITER;i++) {
+    do_sdot(streamLength, i+1, &times[2*(3*i)], &flops[2*(3*i)]);
+    do_saxpy(streamLength, i+1, &times[2*(3*i+1)], &flops[2*(3*i+1)]);
+    do_sgemv(streamLength, i+1, &times[2*(3*i+2)], &flops[2*(3*i+2)]);
+  }
+  
+  printf("\n\n");
+  printf("Data set size = %d\n", streamLength);
+
+  printf("\n\n");
+  printf("sdot\n");
+  for (i=0;i<MAX_ITER;i++)
+    printf("%2d  %9d  %5.6f    %9d  %5.6f\n", i+1, times[2*(3*i)], flops[2*(3*i)], times[2*(3*i) + 1], flops[2*(3*i) + 1]);
+ 
+  printf("\n\n");
+  printf("saxpy\n");
+  for (i=0;i<MAX_ITER;i++)
+    printf("%2d  %9d  %5.6f    %9d  %5.6f\n", i+1, times[2*(3*i+1)], flops[2*(3*i+1)], times[2*(3*i+1) + 1], flops[2*(3*i+1) + 1]);
+
+  printf("\n\n");
+  printf("sgemv\n");
+  for (i=0;i<MAX_ITER;i++)
+    printf("%2d  %9d  %5.6f    %9d  %5.6f\n", i+1, times[2*(3*i+2)], flops[2*(3*i+2)], times[2*(3*i+2) + 1], flops[2*(3*i+2) + 1]);
+
+
+  free(times);
+  free(flops);
 
 }
