@@ -181,7 +181,8 @@ BRTKernelDef::printStub(std::ostream& out) const
       }
       out << ") {\n";
       if (vout) {
-         out << "  unsigned int __vout_counter=0;"<<std::endl;
+         out << "  float2 __vout_counter(0.0f, 1.0f / (float)floor (.5));";
+         out << std::endl;
       }
       out << "  static const void *__" << *FunctionName() << "_fp[] = {";
       out << std::endl;
