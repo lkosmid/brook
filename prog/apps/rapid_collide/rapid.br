@@ -373,6 +373,26 @@ kernel void CheckTriangleCollide(float3 mRx,
     push(hits);
   }
 }
+kernel void CheckTriangleCollideNoCompact(float3 mRx,
+                                          float3 mRy,
+                                          float3 mRz,
+                                          float3 mT,
+                                          float4 collisions<>,
+                                          Tri t1List[][],
+                                          Tri t2List[][],
+                                          out float4 hits<>) {
+  float isASentinel = (collisions.x>=0&&collisions.x<16384)?0:1;
+  float4 sentinelHolder = {1,0,1,0};
+  float4 triIndex = isASentinel?sentinelHolder:collisions;
+  Tri t1 = t1List[triIndex.xy];
+  Tri t2 = t2List[triIndex.zw];
+  if ((isASentinel==0)&&TrianglesHaveContact(mRx,mRy,mRz,mT,
+                                             t1,t2)) {
+    hits = collisions;
+  }else {
+    hits = sentinelHolder;
+  }
+}
 kernel float GetBBSize (float3 Radius ) {
   return Radius.x;
 }
@@ -414,102 +434,45 @@ kernel void Collide (Traverser currentNode<>,
 }
 
 
-
-/* Collision code to be used if we ever do structures with stuff
-kernel void CollideOBB (Traverser currentNode<>,
-                        TransposedBBox b1Tree[][], 
-                        BBox b2Tree[][], 
-                        out float4 collide<>//if xy>=0 xy is parent yz is first of two childs
-                                                  //additionally if yz <0 then it's -b-1
-                             // if xy< 0 then it's a triangle compare
-                             // all zero is miss
-                          ) {
+kernel void CollideNoCompact (Traverser currentNode<>,
+                              TransposedBBox b1Tree[][], 
+                              BBox b2Tree[][], 
+                              out float4 nextNode<>,//xy is parent yz is first of two childs
+                              //additionally if it's <0 then it's -b-1
+                              out float4 collisions<>//index into triangle list
+                              ) {
   //push nextNode if currentNode has collision
   TransposedBBox b1=b1Tree[currentNode.index.xy];
   BBox b2=b2Tree[currentNode.index.zw];
-  float b1Greaterb2 = GetBBSize(b1.Radius.xyz)>GetBBSize(b2.Radius.xyz)?1:0;
-  float4 temp;
-  collide = obb_disjoint(currentNode.Rotationx.xyz,
-                         currentNode.Rotationy,
-                         cross (currentNode.Rotationx,
-                                currentNode.Rotationy.xyz)*currentNode.Rotationx.w,
-                         currentNode.Translation,
-                         b1.Radius.xyz,
-                         b2.Radius.xyz)?0:1;
-  temp = float4(b1.Children.x,b1.Children.y,b2.Children.x,b2.Children.y);
-  collide = collide.x&&b1.Radius.w!=0&&b2.Radius.w!=0?-temp-1:collide;
-  temp = float4((indexof currentNode).x,
-                (indexof currentNode).y,
-                b1.Children.x,
-                b1.Children.y);                
-  collide = (collide.x&&b1.Radius.w==0&&(b2.Radius.w!=0||b1Greaterb2))
-    ?temp:collide;
-  temp = float4((indexof currentNode).x,
-                (indexof currentNode).y,
-                -b2.Children.x-1,
-                -b2.Children.y-1);                
-  collide = (collide.x&&b2.Radius.w==0&&(b1.Radius.w!=0||!b1Greaterb2))
-    ?temp:collide;
-
-}
-                       
-kernel void CollideVout (float4 collisions<>,
-                         vout [1]float4 nextNode<>,//xy is parent yz is first of two childs
-                         //additionally if it's <0 then it's -b-1
-                         vout [1]float4 triIntersect<>//index into triangle list
-                         ) {     
-  if (collisions.x) {
-    if (collisions.x>0) {
-      nextNode=collisions;
-      push(nextNode);
+  float4 sentinel={1,0,1,0};
+  if (!obb_disjoint(currentNode.Rotationx,
+                    currentNode.Rotationy,
+                    currentNode.Rotationz,
+                    currentNode.Translation,
+                    b1.Radius.xyz,
+                    b2.Radius.xyz)) {
+    if (b1.Radius.w!=0 && b2.Radius.w!=0) {
+      // it's a leaf node yo
+      // check ye olde triangles
+      collisions.xy = b1.Children;
+      collisions.zw = b2.Children;
+      nextNode=sentinel;
     }else {
-      triIntersect= -collisions-1;
-      push(triIntersect);
+      nextNode.xy = (indexof currentNode).xy;
+      if (b2.Radius.w!=0 
+          || (b1.Radius.w==0 && (GetBBSize(b1.Radius.xyz)
+                                 >
+                                 GetBBSize(b2.Radius.xyz)))) {
+        nextNode.zw = b1.Children;       
+      }else {
+        nextNode.zw = -b2.Children-1;
+      }
+      collisions=sentinel;
     }
   }
-}             
-kernel void CollideHack (Traverser currentNode<>,
-                         TransposedBBox b1Tree[][], 
-                         BBox b2Tree[][], 
-                         vout [1]float4 nextNode<>,//xy is parent yz is first of two childs
-                         //additionally if it's <0 then it's -b-1
-                         vout [1]float4 triIntersect<>//index into triangle list
-                          ) {
-  //push nextNode if currentNode has collision
-  TransposedBBox b1=b1Tree[currentNode.index.xy];
-  BBox b2=b2Tree[currentNode.index.zw];
-  float b1Greaterb2 = GetBBSize(b1.Radius.xyz)>GetBBSize(b2.Radius.xyz)?1:0;
-  float4 temp;
-  float collide = obb_disjoint(currentNode.Rotationx.xyz,
-                               currentNode.Rotationy,
-                               cross (currentNode.Rotationx.xyz,
-                                      currentNode.Rotationy)*currentNode.Rotationx.w,
-                               currentNode.Translation,
-                               b1.Radius.xyz,
-                               b2.Radius.xyz)?0:1;
-  temp = float4(b1.Children.x,b1.Children.y,b2.Children.x,b2.Children.y);
-  __triIntersect_stream = 
-    triIntersect = 
-    collide!=0&&b1.Radius.w!=0&&b2.Radius.w!=0?temp:__triIntersect_stream;
-  temp = float4((indexof currentNode).x,
-                (indexof currentNode).y,
-                b1.Children.x,
-                b1.Children.y);                
-  __nextNode_stream = 
-    nextNode = 
-    (collide!=0&&b1.Radius.w==0&&(b2.Radius.w!=0||b1Greaterb2!=0))
-    ?temp:__nextNode_stream;
-  temp = float4((indexof currentNode).x,
-                (indexof currentNode).y,
-                -b2.Children.x-1,
-                -b2.Children.y-1);                
-  __nextNode_stream = 
-    nextNode = 
-    (collide!=0&&b2.Radius.w==0&&(b1.Radius.w!=0||b1Greaterb2==0))
-    ? temp:__nextNode_stream;
-
 }
-*/               
+
+
 kernel void updateCurrentNode(float stretchX,
                               float4 curNodeIndices<>,
                               TransposedBBox aTree[][],
