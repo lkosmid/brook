@@ -26,6 +26,7 @@ void LoadPly (const char * file,vector<STri> &ret) {
   for (i=0;i<numvertex;++i) {
     tri_vertex_t in;
     fscanf(fp,"%f %f %f",&in.x,&in.y,&in.z);
+    in.z+=100;
     for (int i=3;i<propertycount;++i) {
       fscanf(fp,"%*f");
     }

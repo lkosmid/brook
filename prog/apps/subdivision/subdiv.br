@@ -79,7 +79,7 @@ kernel float uoDistance (float3 a<>, float3 b<>){
    float3 bigger = a>b?a:b;
    float3 smaller = (a>b)?b:a;
    float3 bs = bigger-smaller;
-   return dot(bs,bs);
+   return dot(bs,bs)/(bigger.z+smaller.z);
 }
 kernel float3 avg (float3 a<>,float3 b<>) {
    float3 bigger = a>b?a:b;
