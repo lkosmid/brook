@@ -248,9 +248,6 @@ void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&
             out<< ");";
             break;
         }
-        case USE:
-            out << "arg"<<index;
-            break;
         case CLEANUP:
            break;
         default:
@@ -377,10 +374,30 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
            out << "dim, extents["<<ref<<"]);"<<std::endl;
 	}
 }
+
+void BRTCPUKernelCode::PrintCPUArg::Use(std::ostream &out, 
+                                        bool nDcube,
+                                        unsigned int ref) {
+   bool isOut = (a->form->getQualifiers()&TQ_Out)!=0;
+   bool isReduceArg=(a->form->getQualifiers()&TQ_Reduce)!=0;
+   if (useShadowOutput()||isGather()) {
+      out << "arg"<<index;
+   }else {
+      if (isStream()&&(reduceFunc||isOut)&&!nDcube) {
+         out <<"*arg"<<index;
+      }else if (isReduceArg||!isStream()) {
+         out << "*arg"<<index;
+      }else {
+         out << "*(arg"<<index<<" + iter"<<index<<")";
+      }			
+   }
+}
+
 void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, 
                                                      STAGE s) {
         Type * t=a->form;
         bool isOut = (t->getQualifiers()&TQ_Out)!=0;
+        bool isReduceArg = (t->getQualifiers()&TQ_Reduce)!=0;
 	//temporarily dissect type.
         assert (t->type==TT_Stream||t->type==TT_Array);
         bool isStream=false;
@@ -419,16 +436,6 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out,
             }
             break;
         }
-        case USE:{
-			if (isStream&&(reduceFunc||isOut)) {
-				out <<"*arg"<<index;
-			}else if (!isStream) {
-                           out << "*arg"<<index;
-                        }else {
-				out << "*(arg"<<index<<" + iter"<<index<<")";
-			}
-			break;
-        }
 	case CLEANUP:
            break;
         default:
@@ -455,9 +462,6 @@ void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
           printType(out,t,false,"arg"+tostring(index));
           out << ";";
           break;
-       case USE:
-          out << "arg"<<index;
-          break;
        case CLEANUP:
          break;
        }
@@ -466,6 +470,7 @@ void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
 void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
         TypeQual tq= t->getQualifiers();
+        bool isReduceArg = (tq&TQ_Reduce)!=0;
         bool isOut = (tq&TQ_Out)!=0;
         bool isStream = (t->type==TT_Stream);        
         switch(s) {
@@ -497,15 +502,6 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
                out << "args["<<index<<"];";
             }
             break;
-        case USE:
-			if (isStream&&(reduceFunc||isOut)) {
-				out <<"*arg"<<index;
-			}else if (!isStream) {
-                           out << "*arg"<<index;
-                        }else{
-                           out << "*(arg"<<index<<" + iter"<<index<<")";
-			}
-			break;
 	case CLEANUP:
            break;
         default:
@@ -530,10 +526,13 @@ void BRTCPUKernelCode::PrintCPUArg::printCPUVanilla(std::ostream & out,
         else
 	  printNormalArg(out,s);
 }
+bool BRTCPUKernelCode::PrintCPUArg::useShadowOutput()const {
+   return shadowOutput&&(a->form->getQualifiers()&TQ_Out)!=0;
+}
 void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out, 
                                              STAGE s) {
       Type * t = a->form;
-      if (shadowOutput&&(t->getQualifiers()&TQ_Out)!=0) {
+      if (useShadowOutput()) {
          printShadowArg(out,s);
       }else {
          printCPUVanilla(out,s);
@@ -628,12 +627,12 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
     indent(out,1);
     out << "unsigned int i= 0;"<<std::endl;
     initializeIndexOf(out);
+    unsigned int reference_stream = getReferenceStream(this->fDef);
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
     }}
-    unsigned int reference_stream = getReferenceStream(this->fDef);
     indent(out,1);
     out << "unsigned int dim=dims["<<reference_stream<<"];"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
@@ -645,7 +644,7 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
         if (i!=0)
             out <<","<<std::endl;
         indent(out,3);
-        myArgs[i].printCPU(out,PrintCPUArg::USE);
+        myArgs[i].Use(out,false,reference_stream);
     }}
     printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;
@@ -763,7 +762,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
           if (i!=0)
              out <<","<<std::endl;
           indent(out,3);
-          myArgs[i].printCPU(out,PrintCPUArg::USE);
+          myArgs[i].Use(out,false,reference_stream);
        }}
        printIndexOfCallingArgs(out);
        out << ");"<<std::endl;
@@ -779,7 +778,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
         if (i!=0)
             out <<","<<std::endl;
         indent(out,3);
-        myArgs[i].printCPU(out,PrintCPUArg::USE);
+        myArgs[i].Use(out,false,reference_stream);
     }}
     printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;
@@ -841,7 +840,7 @@ void BRTCPUKernelCode::printNdTightLoop(std::ostream&out,
           if (i!=0)
              out <<","<<std::endl;
           indent(out,3);
-          myArgs[i].printCPU(out,PrintCPUArg::USE);
+          myArgs[i].Use(out,true,reference_stream);
        }}
        printIndexOfCallingArgs(out);
        out << ");"<<std::endl;
@@ -857,7 +856,7 @@ void BRTCPUKernelCode::printNdTightLoop(std::ostream&out,
         if (i!=0)
             out <<","<<std::endl;
         indent(out,3);
-        myArgs[i].printCPU(out,PrintCPUArg::USE);
+        myArgs[i].Use(out,true,reference_stream);
     }}
     printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;

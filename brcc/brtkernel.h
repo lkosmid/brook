@@ -81,8 +81,10 @@ class BRTCPUKernelCode : public BRTKernelCode
 			this->reduceFunc=reduceFunc;
 			shadowOutput=shadow;
 		}
-		enum STAGE {HEADER,DEF,USE,CLEANUP};
+		enum STAGE {HEADER,DEF,CLEANUP};
+		bool useShadowOutput()const ;
 		void Increment(std::ostream&out, bool nDcube, unsigned int ref);
+                void Use (std::ostream&out, bool nDcube, unsigned int ref);
 		void ResetNewLine(std::ostream&out,bool nDcube,unsigned int ref);
 		void InitialSet(std::ostream&out, bool nDcube, unsigned int ref);
 		void printDimensionlessGatherStream(std::ostream&out,STAGE s);

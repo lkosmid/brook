@@ -36,8 +36,13 @@ int bane () {
   
   SUM(a,result);
   streamWrite(result,rez);
-  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", rez[0][0].x,rez[0][0].y,
-          rez[0][0].z,rez[0][0].w);
+  for (i=0;i<2;++i) {
+     for (j=0;j<5;++j) {
+        printf ("{%3.2f %3.2f %3.2f %3.2f}\n", rez[i][j].x,rez[i][j].y,
+                rez[i][j].z,rez[i][j].w);
+     }
+     printf ("\n");
+  }
   return 0;
 }
 
