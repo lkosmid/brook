@@ -31,6 +31,11 @@
 #define   alloca  __builtin_alloca
 #endif
 
+#ifdef WIN32
+/* Don't complain about switch() statements that only have a 'default' */
+#pragma warning( disable : 4065 )
+#endif
+
 #include <stdio.h>
 #include <errno.h>
 #include <setjmp.h>
@@ -42,7 +47,6 @@
 #include "location.h"
 #include "project.h"
 
-extern int errno;
 extern int err_cnt;
 int yylex(YYSTYPE *lvalp);
 

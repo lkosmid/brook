@@ -89,8 +89,8 @@ parse_args (int argc, char *argv[]) {
 
   argv += optind;
   argc -= optind;
-  if (argc < 1) usage();
-  globals.sourcename = argv[0];
+  /* if (argc < 1) usage(); */
+  globals.sourcename = argc < 1 ? "toy.br" : argv[0];
 
   n = strlen(globals.sourcename);
   if (n < 4 || strcmp (globals.sourcename + n - 3, ".br"))
@@ -159,17 +159,16 @@ main(int argc, char *argv[])
    Project *proj;
    TransUnit *tu;
 
-   //parse_args(argc, argv);
-   globals.sourcename = strdup ("toy.br");
+   parse_args(argc, argv);
    fprintf(stderr, "Compiling %s\n", globals.sourcename);
 
    proj = new Project();
    tu = proj->parse(globals.sourcename, false, NULL, false, NULL, NULL, NULL);
    if (tu) {
-     
+
      // Convert Stream Declarations into brt decls
      tu->findStemnt (ConvertToBrtStream);
-    
+
      std::cout << *tu << std::endl;
    } else {
       std::cout << "Unable to parse " << globals.sourcename << std::endl;
@@ -178,4 +177,5 @@ main(int argc, char *argv[])
 
    delete proj;
    exit(0);
+   return 0;    /* Appease CL */
 }
