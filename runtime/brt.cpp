@@ -109,11 +109,11 @@ namespace brook {
 #else
       fprintf (stderr,"* Not supported on this platform *\n");
 #endif
-      fprintf (stderr,"*                               *\n");
-      fprintf (stderr,"*********************************\n");
-      fprintf (stderr,"*****WARNING*****WARNING*********\n");
-      fprintf (stderr,"*****WARNING*****WARNING*********\n");
-      fprintf (stderr,"*****WARNING*****WARNING*********\n\n");
+      fprintf (stderr,"*                                *\n");
+      fprintf (stderr,"**********************************\n");
+      fprintf (stderr,"******WARNING*****WARNING*********\n");
+      fprintf (stderr,"******WARNING*****WARNING*********\n");
+      fprintf (stderr,"******WARNING*****WARNING*********\n\n");
       fflush  (stderr);
       return new CPURunTime(false);
     }
@@ -147,8 +147,29 @@ namespace brook {
 
     if (strcmp(env,CPU_RUNTIME_STRING) && 
         strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)) {
-      fprintf (stderr, 
-	       "Unknown runtime requested: %s falling back to CPU\n", env);
+      fprintf (stderr, "Unknown runtime requested: %s\n", env);
+      fprintf (stderr, "Runtimes:\n\n");
+      fprintf (stderr, "  CPU Backend:                   \n");
+      fprintf (stderr, "  BRT_RUNTIME = cpu              \n");
+      fprintf (stderr, "                                 \n");
+      fprintf (stderr, "  CPU Multithreaded Backend:     \n");
+      fprintf (stderr, "  BRT_RUNTIME = cpumt            \n");
+      fprintf (stderr, "                                 \n");
+      fprintf (stderr, "  OpenGL Backend:                \n");
+#ifdef BUILD_OGL       
+      fprintf (stderr, "  BRT_RUNTIME = %s              \n", OGL_RUNTIME_STRING);
+#else                  
+      fprintf (stderr, "  Not supported on this platform \n");
+#endif                 
+      fprintf (stderr, "                                 \n");
+      fprintf (stderr, "  DirectX9 Backend:              \n");
+#ifdef BUILD_DX9                                        
+      fprintf (stderr, "  BRT_RUNTIME = %s              \n", DX9_RUNTIME_STRING);
+#else                  
+      fprintf (stderr, "  Not supported on this platform \n");
+#endif                 
+      fprintf (stderr, "                                \n");
+      fprintf (stderr, "Falling back to CPU...\n");
       fflush(stderr);
     }
     return new CPURunTime(strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)==0);
