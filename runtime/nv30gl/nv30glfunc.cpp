@@ -13,6 +13,7 @@ PFNGLLOADPROGRAMNVPROC          brook::glLoadProgramNV;
 PFNGLBINDPROGRAMNVPROC          brook::glBindProgramNV;
 PFNGLPROGRAMNAMEDPARAMETER4FNVPROC  brook::glProgramNamedParameter4fNV;
 PFNGLMULTITEXCOORD2FARBPROC     brook::glMultiTexCoord2fARB;
+PFNGLMULTITEXCOORD4FARBPROC     brook::glMultiTexCoord4fARB;
 
 #define   XXX(B,A) A = (B) wglGetProcAddress(#A); assert(A);
 
@@ -28,5 +29,6 @@ void brook::initglfunc(void) {
    XXX(PFNGLBINDPROGRAMNVPROC,         glBindProgramNV);
    XXX(PFNGLPROGRAMNAMEDPARAMETER4FNVPROC, glProgramNamedParameter4fNV);
    XXX(PFNGLMULTITEXCOORD2FARBPROC,    glMultiTexCoord2fARB);
+   XXX(PFNGLMULTITEXCOORD4FARBPROC,    glMultiTexCoord4fARB);
 }
 

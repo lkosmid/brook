@@ -23,6 +23,14 @@ NV30GLRunTime::NV30GLRunTime() {
   // Create our floating point workspace
   createPBuffer();
 
+
+  // Initial GL State
+  glDrawBuffer(GL_FRONT);
+  glReadBuffer(GL_FRONT);
+  glEnable(GL_FRAGMENT_PROGRAM_NV);
+
+  CHECK_GL();
+
 }
 
 Kernel * 
@@ -39,12 +47,7 @@ NV30GLRunTime::CreateStream(__BRTStreamType type,
 Iter * 
 NV30GLRunTime::CreateIter(__BRTStreamType type, 
                           int dims, int extents[],float r[]) {
-  // XXX: TO DO
-
-   fprintf (stderr, "NV30GL: Iter creation not supported yet.\n");
-   exit(1);
-
-  return (Iter *) 0;
+   return new NV30GLIter(this, type, dims, extents, r);
 }
 
 NV30GLRunTime::~NV30GLRunTime() {

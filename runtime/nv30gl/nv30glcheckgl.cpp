@@ -1,5 +1,8 @@
 
-#include <stdio.h>
+#include <ios>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
 
 #include "nv30gl.hpp"
 
@@ -18,12 +21,13 @@ void brook::__check_gl(int line, char *file) {
    GLenum r = glGetError();
    if (r != GL_NO_ERROR) {
       if (r - GL_INVALID_ENUM >= nerrors)
-         fprintf (stderr, "NV30GL: Unknown GL error on line %d of %s\n", 
-                  line, file);
+         std::cerr << "NV30GL: Unknown GL error on line "
+                   << line << " of " << "%s\n"; 
       else
-         fprintf (stderr, "NV30GL: glGetError returned %s on line %d of %s\n", 
-                  error_txt[r - GL_INVALID_ENUM], line, file);
-      abort();
+         std::cerr << "NV30GL: glGetError returned " 
+                   << error_txt[r - GL_INVALID_ENUM] 
+                   << " on line "<< line << " of " << file << "\n";
+      assert (r==GL_NO_ERROR);
   }
   return;
 }

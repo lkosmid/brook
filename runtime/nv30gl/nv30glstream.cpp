@@ -7,38 +7,28 @@ using namespace brook;
 NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
                             __BRTStreamType type, int dims, int extents[])
   : Stream(type), runtime(rt) { 
-  
-  int i;
 
+   int i;
+  
   // Initialize width and height
   height  = 1;
   switch (dims) {
   case 2:
-    height = extents[1];
+     width = extents[1];
+     height = extents[0];
+     break;
   case 1:
-    width = extents[0];
-    break;
+     width = extents[0];
+     break;
   default:
-    fprintf (stderr, 
-             "NV30GL Backend only supports 1D and 2D streams");
-    exit(1);
+     fprintf (stderr, 
+              "NV30GL Backend only supports 1D and 2D streams");
+     exit(1);
   }
   
   // Initialize ncomp
-  switch (type) {
-  case __BRTFLOAT:
-    ncomp = 1;
-    break;
-  case __BRTFLOAT2:
-    ncomp = 2;
-    break;
-  case __BRTFLOAT3:
-    ncomp = 3;
-    break;
-  case __BRTFLOAT4:
-    ncomp = 4;
-    break;
-  default:
+  ncomp = type;
+  if (ncomp < 1 || ncomp > 4) {
     fprintf (stderr, "NV30GL: Unsupported stream type created\n");
     exit(1);
   }
@@ -54,7 +44,7 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
   CHECK_GL();
   
   // Initialize the cacheptr
-  cacheptr = malloc (sizeof(float)*ncomp*width*height);
+  cacheptr = malloc (sizeof(float)*4*width*height);
   
   // Initialize extents
   for (i=0; i<dims; i++)
@@ -63,19 +53,66 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
 }
 
 
+void
+NV30GLStream::GLReadData (void *data) {
+
+   glActiveTextureARB(GL_TEXTURE0_ARB+15);
+   glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
+   
+   if (ncomp == 2) {
+      float4 *p = (float4 *) malloc (sizeof(float)*4*width*height);
+      glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GL_RGBA,
+                    GL_FLOAT, p);
+       
+       for (unsigned int i=0; i<width*height; i++) {
+          ((float2 *) data)[i].x = p[i].x;
+          ((float2 *) data)[i].y = p[i].y;
+       }
+       
+       free (p);
+    } else {    
+       glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp],
+                     GL_FLOAT, data);
+    }
+    CHECK_GL();
+}
+
+void
+NV30GLStream::GLWriteData (const void *data) {
+   
+   glActiveTextureARB(GL_TEXTURE0_ARB+15);
+   glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
+   
+    if (ncomp == 2) {
+       float4 *p = (float4 *) malloc (sizeof(float)*4*width*height);
+       for (unsigned int i=0; i<width*height; i++) {
+          p[i].x = ((float2 *) data)[i].x;
+          p[i].y = ((float2 *) data)[i].y;
+          p[i].z = 0.0f;
+          p[i].w = 0.0f;
+       }
+       
+       glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                       0, 0, width, height, GL_RGBA,
+                       GL_FLOAT, p);
+       
+       free (p);
+    } else {    
+       glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                       0, 0, width, height, GLformat[ncomp],
+                       GL_FLOAT, data);
+    }
+    
+    CHECK_GL();
+}
+
 void * 
 NV30GLStream::getData (unsigned int flags) {
 
   if (flags == StreamInterface::READ ||
-      flags == StreamInterface::READWRITE) {
-    
-    glActiveTextureARB(GL_TEXTURE0_ARB+15);
-    glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
-    glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp],
-                  GL_FLOAT, cacheptr);
-    
-    CHECK_GL();
-  }
+      flags == StreamInterface::READWRITE) {    
+     GLReadData(cacheptr);
+   }
 
   return cacheptr;
 }
@@ -85,14 +122,7 @@ NV30GLStream::releaseData (unsigned int flags) {
   
   if (flags == StreamInterface::WRITE ||
       flags == StreamInterface::READWRITE) {
-  
-    glActiveTextureARB(GL_TEXTURE0_ARB+15);
-    glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
-
-    glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                    0, 0, width, height, GLformat[ncomp],
-                    GL_FLOAT, cacheptr);
-    CHECK_GL();
+     GLWriteData(cacheptr);
   }
 }
 
@@ -100,26 +130,13 @@ NV30GLStream::releaseData (unsigned int flags) {
 void NV30GLStream::Read(const void *p) {
     
   assert (p);
-  
-  glActiveTextureARB(GL_TEXTURE0_ARB+15);
-  glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
-  glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                  0, 0, width, height, GLformat[ncomp],
-                  GL_FLOAT, p);
-  CHECK_GL();
+  GLWriteData(p);
 }
 
 void NV30GLStream::Write(void *p) {
   
   assert (p);
-  
-  glActiveTextureARB(GL_TEXTURE0_ARB+15);
-  glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
-  
-  glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp],
-                GL_FLOAT, p);
-  
-  CHECK_GL();
+  GLReadData(p);
 }
 
 NV30GLStream::~NV30GLStream () {

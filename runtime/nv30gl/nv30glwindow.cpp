@@ -124,7 +124,9 @@ NV30GLRunTime::createWindowGLContext(void) {
   assert(bSetupPixelFormat( hdc ) );
   
   hglrc_window = wglCreateContext( hdc );
-  wglMakeCurrent( hdc, hglrc_window );
+  assert(hglrc_window);
+ 
+  assert(wglMakeCurrent( hdc, hglrc_window ));
 }
 
 
@@ -132,33 +134,35 @@ void
 NV30GLRunTime::createPBuffer (void) {
 
   int pixelformat;
-  int piAttribList[] = {WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGBA_NV,
-			WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
-			0,0};
+  int piAttribList[] = {0,0};
   float fAttributes[] = {0, 0};
   int iAttributes[30] = { WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE,
 			  WGL_FLOAT_COMPONENTS_NV, GL_TRUE,
-			  WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGBA_NV, GL_TRUE,
-			  WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB,
+                          WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB,
 			  WGL_COLOR_BITS_ARB,      128,
 			  WGL_ALPHA_BITS_ARB,      32,
 			  WGL_DEPTH_BITS_ARB,      0,
 			  WGL_STENCIL_BITS_ARB,    0, 
 			  WGL_DOUBLE_BUFFER_ARB,   GL_FALSE,
+                          WGL_SUPPORT_OPENGL_ARB,  GL_TRUE,
 			  0,                       0};
   unsigned int numFormats;
   BOOL status;
 
-  assert (hwnd);
-  assert (hglrc_window);
-
-  HDC hdc = GetDC(hwnd);
+  HDC hdc = wglGetCurrentDC();
   HDC hpbufferdc;
   
   status = wglChoosePixelFormatARB(hdc, iAttributes, fAttributes, 1,
 				   &pixelformat, &numFormats);
   
-  if ( numFormats && !status ) 
+  if ( numFormats == 0 ) {
+     MessageBox( NULL, 
+                 "ChoosePixelFormat failed to find a format", 
+                 "Error", MB_OK ); 
+     exit(1);
+  }
+
+  if ( !status ) 
     {
       MessageBox( NULL, "wglChoosePixelFormatARB failed", "Error", MB_OK ); 
       exit(1);
@@ -172,7 +176,8 @@ NV30GLRunTime::createPBuffer (void) {
   if ( !hpbuffer ) 
     {
       fprintf (stderr, "GetLastError: 0x%x\n", GetLastError());
-      MessageBox( NULL, "FAILED!!", "wglCreatePbufferARB Error",
+      MessageBox( NULL, "Failed to create pbuffer",
+                  "wglCreatePbufferARB Error",
 		  MB_OK | MB_ICONINFORMATION );
       exit(1);
     }
@@ -183,11 +188,11 @@ NV30GLRunTime::createPBuffer (void) {
   hpbufferglrc = wglCreateContext( hpbufferdc );
   assert (hpbufferglrc);
 
-  assert (wglMakeCurrent( hpbufferdc, hpbufferglrc ));
+  if (!wglMakeCurrent( hpbufferdc, hpbufferglrc )) {
+     fprintf (stderr, "GetLastError: 0x%x\n", GetLastError());
+     assert(0);
+  }
 
-  glDrawBuffer(GL_FRONT);
-  glReadBuffer(GL_FRONT);
-  
   CHECK_GL();
 }
 

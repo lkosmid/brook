@@ -63,6 +63,11 @@ ifdef BINARY
 all: arch
 endif
 
+ifdef EXECUTABLE
+run:
+	 $(BINDIR)/$(BINARY)
+endif
+
 $(SUBDIRS):
 	$(MAKE) -C $@ --no-print-directory
 
@@ -70,6 +75,7 @@ $(SUBDIRS):
 arch: $(PRECOMP) makedirs dep
 
 recurse: $(BINDIR)/$(BINARY)
+
 
 dep: $(DEPS)
 	@$(MAKE) --no-print-directory recurse INCLUDEDEPS=1
