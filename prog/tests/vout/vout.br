@@ -250,6 +250,7 @@ float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightBRT_TYPE (*list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)

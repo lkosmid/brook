@@ -1,13 +1,25 @@
+#line 1 "brtvector.hpp"
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 #pragma warning(disable:4244)
 #include "streamholder.h"
 #include <stdio.h>
@@ -83,6 +95,7 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
+#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -260,6 +273,7 @@ float shiftValuesfloat(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightfloat (*list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
@@ -1109,6 +1123,7 @@ unsigned int totalCombineVoutfloat (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -1286,6 +1301,7 @@ float shiftValuesfloat2(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightfloat2 (*list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
@@ -2135,6 +2151,7 @@ unsigned int totalCombineVoutfloat2 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -2312,6 +2329,7 @@ float shiftValuesfloat3(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightfloat3 (*list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
@@ -3161,6 +3179,7 @@ unsigned int totalCombineVoutfloat3 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -3338,6 +3357,7 @@ float shiftValuesfloat4(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   debugStreamPrint(list_stream,"Combined...");
    NanToBoolRightfloat4 (*list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
@@ -4187,10 +4207,16 @@ unsigned int totalCombineVoutfloat4 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 1102 "brtvector.hpp"
+#line 1102 "brtvector.hpp"
 
+#line 1102 "brtvector.hpp"
 
+#line 1102 "brtvector.hpp"
 
+#line 1102 "brtvector.hpp"
 
+#line 1102 "brtvector.hpp"
 
 
 
