@@ -3,13 +3,33 @@
 
 #include <dx9.hpp>
 
-DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight )
-	: width(inWidth), height(inHeight)
+DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents )
+	: width(inWidth), height(inHeight), components(inComponents), internalComponents(inComponents)
 {
 	device = inContext->getDevice();
 	HRESULT result;
 
-  D3DFORMAT dxFormat = D3DFMT_A32B32G32R32F;
+  D3DFORMAT dxFormat;
+  switch( inComponents )
+  {
+  case 1:
+    dxFormat = D3DFMT_R32F;
+    break;
+  case 2:
+    dxFormat = D3DFMT_G32R32F;
+    break;
+  case 3:
+    // TIM: special case - no RGB float textures...
+    dxFormat = D3DFMT_A32B32G32R32F;
+    internalComponents = 4;
+    break;
+  case 4:
+    dxFormat = D3DFMT_A32B32G32R32F;
+    break;
+  default:
+    DX9Trace("Invalid component count in DX9Texture - %d", inComponents);
+    assert(false);
+  }
 
 	result = device->CreateTexture( width, height, 1, D3DUSAGE_RENDERTARGET, dxFormat, D3DPOOL_DEFAULT, &textureHandle, NULL );
 	DX9CheckResult( result );
@@ -32,9 +52,9 @@ DX9Texture::~DX9Texture()
 	// TIM: TODO: cleanup
 }
 
-DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight )
+DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents  )
 {
-	return new DX9Texture( inContext, inWidth, inHeight );
+	return new DX9Texture( inContext, inWidth, inHeight, inComponents );
 }
 
 void DX9Texture::setData( const float* inData )
@@ -54,16 +74,17 @@ void DX9Texture::setData( const float* inData )
 
 	const float* input = inData;
 
-	static const int components = 4;
 	for( int y = 0; y < height; y++ )
 	{
-		float* output = outputLine;
+		float* outputPixel = outputLine;
 		for( int x = 0; x < width; x++ )
 		{
+      float* output = outputPixel;
 			for( int c = 0; c < components; c++ )
 			{
 				*output++ = *input++;
 			}
+      outputPixel += internalComponents;
 		}
 		outputLine += pitchFloats;
 	}
@@ -101,16 +122,17 @@ void DX9Texture::getData( float* outData )
 
 	float* output = outData;
 
-	static const int components = 4;
 	for( int y = 0; y < height; y++ )
 	{
-		const float* input = inputLine;
+		const float* inputPixel = inputLine;
 		for( int x = 0; x < width; x++ )
 		{
+      const float* input = inputPixel;
 			for( int c = 0; c < components; c++ )
 			{
 				*output++ = *input++;
 			}
+      inputPixel += internalComponents;
 		}
 		inputLine += pitchFloats;
 	}

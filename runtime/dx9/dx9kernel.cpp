@@ -1,5 +1,8 @@
 #include <dx9.hpp>
 
+#include "dx9pixelshader.hpp"
+#include "dx9vertexshader.hpp"
+
 static const char* PIXEL_SHADER_NAME_STRING = "ps2.0";
 
 DX9Kernel::DX9Kernel(DX9RunTime* runtime, const char* source[])
@@ -22,64 +25,104 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const char* source[])
     i += 2;
   }
 
-  // TODO: handle error - no such program string
-  throw 1;
+  DX9Fail("DXKernel failure - no DX9 program string found");
 }
 
 void DX9Kernel::SetInput(const int arg, const __BrookStream *s) {
   DX9Trace("SetInput");
-  // XXX: TODO
-  // decodes texture and range of coords (for subtexture)
-  // from stream and stores for execute stage
-  // getDevice()->SetTexture( arg, s->getTextureHandle() );
-  // textureRect[arg] = s->getTextureRect();
+
+  DX9Stream* stream = (DX9Stream*)s;
+  IDirect3DTexture9* textureHandle = stream->getTextureHandle();
+
+  int textureUnit = mapArgumentToTextureUnit( arg );
+  getDevice()->SetTexture( textureUnit, textureHandle );
+
+  // TIM: TODO:
+  // setup rectangle to be rendered from...
 }
 
 void DX9Kernel::SetConstantFloat(const int arg, const float &val) {
   DX9Trace("SetConstantFloat");
-  // XXX: TODO
-  // directly set PS constant
-  // float4 value;
-  // value.x = val;
-  // value.y = 0;
-  // value.z = 0;
-  // value.w = 1;
-  // getDevice()->SetPixelShaderConstantF( arg, &value, 1 );
+
+  float4 value;
+  value.x = val;
+  value.y = 0;
+  value.z = 0;
+  value.w = 1;
+
+  int constantIndex = mapArgumentToConstantIndex( arg );
+  getDevice()->SetPixelShaderConstantF( constantIndex, (float*)&value, 1 );
 }
 
 void DX9Kernel::SetConstantFloat2(const int arg, const float2 &val) {
   DX9Trace("SetConstantFloat2");
-  // XXX: TODO
+
+  float4 value;
+  value.x = val.x;
+  value.y = val.y;
+  value.z = 0;
+  value.w = 1;
+
+  int constantIndex = mapArgumentToConstantIndex( arg );
+  getDevice()->SetPixelShaderConstantF( constantIndex, (float*)&value, 1 );
 }
 
 void DX9Kernel::SetConstantFloat3(const int arg, const float3 &val) {
   DX9Trace("SetConstantFloat3");
-  // XXX: TODO
+
+  float4 value;
+  value.x = val.x;
+  value.y = val.y;
+  value.z = val.z;
+  value.w = 1;
+
+  int constantIndex = mapArgumentToConstantIndex( arg );
+  getDevice()->SetPixelShaderConstantF( constantIndex, (float*)&value, 1 );
 }
 
 void DX9Kernel::SetConstantFloat4(const int arg, const float4 &val) {
   DX9Trace("SetConstantFloat4");
-  // XXX: TODO
+
+  float4 value;
+  value.x = val.x;
+  value.y = val.y;
+  value.z = val.z;
+  value.w = val.w;
+
+  int constantIndex = mapArgumentToConstantIndex( arg );
+  getDevice()->SetPixelShaderConstantF( constantIndex, (float*)&value, 1 );
 }
 
 void DX9Kernel::SetGatherInput(const int arg, const __BrookStream *s) {
   DX9Trace("SetGatherInput");
-  // XXX: TODO
-  // sets up texture for read, but doesn't worry about setting up
-  // texcoords for it...
-  // getDevice()->SetTexture( arg, s->getTextureHandle() );
+  
+  DX9Stream* stream = (DX9Stream*)s;
+  IDirect3DTexture9* textureHandle = stream->getTextureHandle();
+
+  int textureUnit = mapArgumentToTextureUnit( arg );
+  getDevice()->SetTexture( textureUnit, textureHandle );
 }
 
 void DX9Kernel::SetOutput(const __BrookStream *s) {
   DX9Trace("SetOutput");
-  // XXX: TODO
-  // sets render target, and decodes destination vertex rect
-  // getDevice()->SetRenderTarget( 0, s->getRenderTargetHandle() );
-  // vertexRect = s->getVertexRect();
+
+  DX9Stream* stream = (DX9Stream*)s;
+  IDirect3DSurface9* surfaceHandle = stream->getSurfaceHandle();
+
+  getDevice()->SetRenderTarget( 0, surfaceHandle );
+
+  // TIM: TODO:
+  // set up the vertex rect to be rendered to...
 }
 
 void DX9Kernel::Exec(void) {
   DX9Trace("Exec");
+
+  DX9VertexShader* vertexShader = runtime->getPassthroughVertexShader();
+
+  getDevice()->SetPixelShader( pixelShader->getHandle() );
+  getDevice()->SetVertexShader( vertexShader->getHandle() );
+
   // XXX: TODO
   // render with pre-determined rects...
 }
@@ -93,5 +136,15 @@ IDirect3DDevice9* DX9Kernel::getDevice() {
 }
 
 void DX9Kernel::initialize( const char* source ) {
-  DX9Trace("initialize"); 
+  pixelShader = DX9PixelShader::create( runtime, source );
+}
+
+int DX9Kernel::mapArgumentToTextureUnit( int arg ) {
+  // TIM: totally hacked for now
+  return arg;
+}
+
+int DX9Kernel::mapArgumentToConstantIndex( int arg ) {
+  // TIM: totally hacked for now
+  return arg;
 }

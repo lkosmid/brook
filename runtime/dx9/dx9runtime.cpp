@@ -2,6 +2,16 @@
 #include <dx9base.hpp>
 
 #include "dx9window.hpp"
+#include "dx9vertexshader.hpp"
+
+static const char* kPassthroughVertexShaderSource =
+"vs.1.1\n"
+"dcl_position v0\n"
+"dcl_texcoord0 v1\n"
+"dcl_texcoord1 v2\n"
+"mov oPos, v0\n"
+"mov oT0, v1\n"
+"mov oT1, v2\n";
 
 DX9RunTime::DX9RunTime() {
   // XXX: TO DO
@@ -24,13 +34,15 @@ DX9RunTime::DX9RunTime() {
 	deviceDesc.EnableAutoDepthStencil = TRUE;
 	deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
 
-	HRESULT result = direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_REF/*D3DDEVTYPE_HAL*/, windowHandle,
+	HRESULT result = direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
 		D3DCREATE_SOFTWARE_VERTEXPROCESSING, &deviceDesc, &device );
 	DX9CheckResult( result );
 
 	// TIM: set up initial state
 	device->SetRenderState( D3DRS_ZENABLE, D3DZB_FALSE );
 //	device->SetRenderState( D3DRS_AMBIENT, 0xFFFFFFFF );
+
+  passthroughVertexShader = DX9VertexShader::create( this, kPassthroughVertexShaderSource );
 }
 
 __BrookKernel * DX9RunTime::LoadKernel(const char* source[]) {

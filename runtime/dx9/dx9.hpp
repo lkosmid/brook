@@ -22,9 +22,11 @@ public:
 private:
   IDirect3DDevice9* getDevice();
   void initialize( const char* source );
+  int mapArgumentToTextureUnit( int arg );
+  int mapArgumentToConstantIndex( int arg );
 
   DX9RunTime* runtime;
-  IDirect3DPixelShader9* pixelShader;
+  DX9PixelShader* pixelShader;
 };
 
 class DX9Stream : public __BrookStream {
@@ -52,9 +54,13 @@ public:
   virtual ~DX9RunTime();
 
   IDirect3DDevice9* getDevice() { return device; }
+  DX9VertexShader* getPassthroughVertexShader() {
+    return passthroughVertexShader;
+  }
 
 private:
   DX9Window* window;
+  DX9VertexShader* passthroughVertexShader;
   IDirect3D9* direct3D;
   IDirect3DDevice9* device;
 };

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <windows.h>
 #include <d3d9.h>
+#include <d3dx9.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -13,15 +14,27 @@ class DX9Stream;
 class DX9Kernel;
 class DX9Texture;
 class DX9Window;
+class DX9VertexShader;
+class DX9PixelShader;
 
 inline void DX9Trace( const char* inFormat, ... )
 {
   va_list args;
   va_start( args, inFormat );
-  vfprintf( stdout, inFormat, args );
-  fprintf( stdout, "\n" );
+  vfprintf( stderr, inFormat, args );
+  fprintf( stderr, "\n" );
+  fflush( stderr );
   va_end(args);
-  fflush( stdout );
+}
+
+inline void DX9Fail( const char* inFormat, ... )
+{
+  va_list args;
+  va_start( args, inFormat );
+  vfprintf( stderr, inFormat, args );
+  fflush( stderr );
+  va_end(args);
+  exit(-1);
 }
 
 inline void DX9CheckResultImpl( HRESULT result, const char* fileName, int lineNumber )
