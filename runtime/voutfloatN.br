@@ -1,25 +1,4 @@
-#line 1 "brtvector.hpp"
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
+#pragma warning(disable:4244)
 #include <stdio.h>
 #include <stdlib.h>
 
