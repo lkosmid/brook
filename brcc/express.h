@@ -335,7 +335,7 @@ class FunctionCall : public Expression
     
     int  nArgs() const { return (int)args.size(); }
 
-    bool checkKernelCall(Type *argType, unsigned int n);
+    bool checkKernelCallArg(Type *argType, unsigned int n);
     bool checkKernelCall();
     void addArg( Expression *arg );
     void addArgs( Expression *argList );

@@ -780,7 +780,7 @@ FunctionCall::~FunctionCall()
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool
-FunctionCall::checkKernelCall(Type *argType, unsigned int n)
+FunctionCall::checkKernelCallArg(Type *argType, unsigned int n)
 {
     Variable *var = (Variable *) function;
     FunctionType *k;
@@ -884,7 +884,11 @@ bool FunctionCall::checkKernelCall() {
   bool ret=true;
   if (function->type&&function->type->isKernel()) {
     for (unsigned int i=0;i<args.size();++i) {
-      if (!checkKernelCall(args[i]->type,i))
+    /*
+     * Type-check arguments to kernels (the C++ compiler will do type
+     * checking for the rest of the function calls).
+     */
+      if (!checkKernelCallArg(args[i]->type,i))
         ret=false;
     }
   }
@@ -894,10 +898,6 @@ bool FunctionCall::checkKernelCall() {
 void
 FunctionCall::addArg( Expression *arg )
 {
-    /*
-     * Type-check arguments to kernels (the C++ compiler will do type
-     * checking for the rest of the function calls).
-     */
 
     args.push_back(arg);
 }

@@ -283,21 +283,33 @@ ConvertToBrtFunctions(FunctionDef *fDef)
    }
 
 }
+/*
+ * TypeCheckFunctionCallsExprFinder --
+ *
+ *     This is the callback that actually checks if the type of an expr
+ *     is a function call ... and if so then it calls checkKernelCall() member
+ *     on that function call
+ */
 
-Expression * TypeCheckFunctionCalls (Expression * e) {
+static Expression * TypeCheckFunctionCallsExprFinder (Expression * e) {
    bool ret=true;
    if (e->etype==ET_FunctionCall) {
       FunctionCall * fc = static_cast<FunctionCall*>(e);
       ret=fc->checkKernelCall()&&ret;//print out type errors
    }
+   /* 
+    * Only assert after all functions are checked
+    */
    assert(ret);
    return e;
 }
-void TypecheckFunctionCallStatementFinder(Statement * ste) {
-   ste->findExpr(&TypeCheckFunctionCalls);
+
+static void TypeCheckFunctionCallsStatementFinder(Statement * ste) {
+   ste->findExpr(&TypeCheckFunctionCallsExprFinder);
 }
-void TypecheckFunctionCalls(TransUnit * tu) {
-   tu->findStemnt (&TypecheckFunctionCallStatementFinder);
+
+static void TypeCheckFunctionCalls(TransUnit * tu) {
+   tu->findStemnt (&TypeCheckFunctionCallsStatementFinder);
 }
 
 /*
@@ -322,7 +334,7 @@ main(int argc, char *argv[])
    tu = proj->parse(globals.sourcename, false, NULL, false, NULL, NULL, NULL);
    if (tu) {
       std::ofstream out;
-      TypecheckFunctionCalls(tu);
+      TypeCheckFunctionCalls(tu);
       if (!globals.parseOnly) {
          /*
           * If I didn't mind violating some abstractions, I'd roll my own loop
