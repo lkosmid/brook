@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include "streamholder.h"
 /* vc7 floating point paranoia.  This program is in serious violation. */
+#ifdef _WIN32
 #pragma warning(disable:4244)
+#endif
 extern unsigned int debug_vout;
 static unsigned int myglobalnum=16;
 const unsigned int MAX_VOUT_STREAMS=31;//if you change this, change one 5 lines
@@ -51,7 +53,7 @@ float myrand (unsigned int *seed) {
 #define LENGTH 2
 int main (int argc,char ** argv) {
    unsigned int i;
-   unsigned int seed=1043210498210;
+   unsigned int seed;
    float maxshiftleft=0,maxshiftright=0;
    float list_stream <WIDTH,LENGTH>;
    float list2_stream<WIDTH2,LENGTH>;
@@ -59,6 +61,7 @@ int main (int argc,char ** argv) {
    float outright_stream<WIDTH2,LENGTH>;
    float output_stream <1,1>;
    float list[WIDTH*LENGTH+WIDTH2*LENGTH];
+   seed =((unsigned int)2147483647)*2+1;
    if (argc>1) {
       unsigned int num=atoi(argv[1]);
       if (num<=0)
@@ -81,8 +84,8 @@ int main (int argc,char ** argv) {
    }   
    streamRead(list2_stream,list);
    if (debug_vout)
-      printf("\nFINITE %g %g\n",finiteValueProduced(&list_stream),
-             finiteValueProduced(&list2_stream));
+      printf("\nFINITE %g %g\n",(double)finiteValueProduced(&list_stream),
+             (double)finiteValueProduced(&list2_stream));
    printf ("\n\nSecond Stream\n");
    streamPrint(list2_stream,1);
    printf ("\n\n");
