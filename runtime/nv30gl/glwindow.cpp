@@ -137,8 +137,20 @@ GLRunTime::createPBufferWGL(int ncomponents)
 {
    static int pixelformat[4];
    static bool runOnce;
-   static const int piAttribList[] = {0,0};
-   static const float fAttributes[] = {0,0};
+
+   static const int piAttribList[] = {0,0,
+			 WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_R_NV,
+			 WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
+			 0,0,
+			 WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RG_NV,
+			 WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
+			 0,0,
+			 WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGB_NV,
+			 WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
+			 0,0,
+			 WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGBA_NV,
+			 WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
+			 0,0};
 
    static bool ati_not_nv;
 
@@ -146,6 +158,8 @@ GLRunTime::createPBufferWGL(int ncomponents)
       BOOL status;
       int iAttributes[30];
       int nAttrib = 0;
+      static const float fAttributes[] = {0,0};
+
       unsigned int numFormats;
       
       const char *(*wglGetExtensionsString)(void) = 
@@ -174,33 +188,38 @@ GLRunTime::createPBufferWGL(int ncomponents)
         }
       }   
 
-#define PUSH_ATTRIB(a, b) \
-iAttributes[nAttrib++] = a; iAttributes[nAttrib++] = b; 
-
-      PUSH_ATTRIB (WGL_RED_BITS_ARB,        32);
-      PUSH_ATTRIB (WGL_GREEN_BITS_ARB,      32);
-      PUSH_ATTRIB (WGL_BLUE_BITS_ARB,       32);
-      PUSH_ATTRIB (WGL_ALPHA_BITS_ARB,      32);
-      PUSH_ATTRIB (WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE);
-      PUSH_ATTRIB (WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB);
-      PUSH_ATTRIB (WGL_DEPTH_BITS_ARB,      0);
-      PUSH_ATTRIB (WGL_STENCIL_BITS_ARB,    0);
-      PUSH_ATTRIB (WGL_DOUBLE_BUFFER_ARB,   GL_FALSE);
-      PUSH_ATTRIB (WGL_SUPPORT_OPENGL_ARB,  GL_TRUE);
-      PUSH_ATTRIB (WGL_AUX_BUFFERS_ARB,     0);
-
-      if (ati_not_nv) {
-        PUSH_ATTRIB (WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI);
-      } else {
-        PUSH_ATTRIB (WGL_FLOAT_COMPONENTS_NV, GL_TRUE);
-      }
-        
-      PUSH_ATTRIB (0, 0);
-
 
       for (int i=0; i<4; i++) {
-         for (int j=0; j<4; j++)
-            iAttributes[1+j*2] = (j<=i)?32:0;
+
+#define PUSH_ATTRIB(a, b) \
+iAttributes[nAttrib++] = a; iAttributes[nAttrib++] = b; 
+	 
+	 nAttrib = 0;
+	 PUSH_ATTRIB (WGL_RED_BITS_ARB,        32);
+	 PUSH_ATTRIB (WGL_GREEN_BITS_ARB,      i>0?32:0);
+	 PUSH_ATTRIB (WGL_BLUE_BITS_ARB,       i>1?32:0);
+	 PUSH_ATTRIB (WGL_ALPHA_BITS_ARB,      i>3?32:0);
+	 PUSH_ATTRIB (WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE);
+	 PUSH_ATTRIB (WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB);
+	 PUSH_ATTRIB (WGL_DEPTH_BITS_ARB,      0);
+	 PUSH_ATTRIB (WGL_STENCIL_BITS_ARB,    0);
+	 PUSH_ATTRIB (WGL_DOUBLE_BUFFER_ARB,   GL_FALSE);
+	 PUSH_ATTRIB (WGL_SUPPORT_OPENGL_ARB,  GL_TRUE);
+	 PUSH_ATTRIB (WGL_AUX_BUFFERS_ARB,     0);
+
+	 if (ati_not_nv) {
+	   PUSH_ATTRIB (WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI);
+	 } else {
+	   int mode[] = { WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_R_NV,
+			  WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RG_NV,
+			  WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGB_NV,
+			  WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGBA_NV
+	   };			  
+	   PUSH_ATTRIB (WGL_FLOAT_COMPONENTS_NV, GL_TRUE);
+	   PUSH_ATTRIB (mode[i], GL_TRUE);
+        
+	   PUSH_ATTRIB (0, 0);
+	 }
 
          status = wglChoosePixelFormatARB(hdc_window, iAttributes,
                                           fAttributes, 1,
@@ -222,7 +241,10 @@ iAttributes[nAttrib++] = a; iAttributes[nAttrib++] = b;
    hpbuffer = wglCreatePbufferARB(hdc_window,
                                   pixelformat[ncomponents-1],
                                   workspace, workspace,
-                                  piAttribList);
+                                  ati_not_nv?
+				    piAttribList:
+				  (piAttribList+(ncomponents-1)*6+1)
+				  );
 
    if (!hpbuffer) {
       unsigned int gl_err = GetLastError();
