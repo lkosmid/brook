@@ -66,7 +66,7 @@ kernel void denseMatVecKernel(iter float2 it1<>, iter float2 it2<>,
 ///////////////////////////////////////////////////////////////////////////////////
 
 
-void fillArray(float *a, int n, float val) {
+static void fillArray(float *a, int n, float val) {
 	int i;
 	for (i=0;i<n;i++)
 		a[i] = val;
@@ -92,7 +92,7 @@ void convert1d_to_2d(int length, int* dim1, int* dim2) {
 }
 
 
-void printArray(float* a, int n) {
+static void printArray(float* a, int n) {
   int i;
   for (i=0;i<n;i++)
     printf("%.2f ", a[i]);
@@ -100,7 +100,7 @@ void printArray(float* a, int n) {
 }
 
 
-int fequals(float a, float b, float tol) {
+static int fequals(float a, float b, float tol) {
   return (fabs(a - b) < tol);
 }
 

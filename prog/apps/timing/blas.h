@@ -4,6 +4,4 @@
 
 extern void Blas_Time(int streamLength);
 
-extern int64 start, mid, stop;
-
 #endif

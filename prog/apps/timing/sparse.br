@@ -1,0 +1,321 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#include "main.h"
+#include "sparse.h"
+
+
+#define MAX_DIM     2048
+
+#define DO_VERIFY   1 
+
+#define EPS 1e-3f
+
+#define MAX_NZ_PER_ROW  7
+
+
+/*** Kernels needed for Sparse Matrix-Dense Vector multiplication ****/
+
+kernel void sparse_matmult_product( float index<>, float x[][], float A<>, out float result<> )
+{
+  // if we wanted to go 4-wide here, we'd have to fetch 4 different x elements.  We also must
+  // then do math to determine the component in the float4 that is desired.  The float4 packing
+  // in the case of general-sparse matrices doesn't seem provide any computation speedup, just
+  // mem savings.
+  result = x[index][0] * A;
+}
+
+
+reduce void sum(float a<>, reduce float result) {
+  result += a;
+}
+
+/*** Kernels called in the CG iterations ******************************/
+
+
+kernel void square(float a<>, out float b<>) {
+  b = a*a;
+}
+
+kernel void scaleAdd(float a<>, float b<>, float scale, out float c<>) {
+  c = a + (scale*b);
+}
+
+void kernel subtract(float a<>, float b<>, out float c<>) {
+  c = a - b;
+}
+
+void kernel copy(float a<>, out float b<>) {
+  b = a;
+}
+
+kernel void mult(float a<>, float b<>, out float c<>) {
+  c = a*b;
+}
+
+
+
+
+/**********************************************************************/
+
+
+static void fillArray(float *a, int n, float val) {
+	int i;
+	for (i=0;i<n;i++)
+		a[i] = val;
+}
+
+static int fequals(float a, float b, float tol) {
+  return (fabs(a - b) < tol);
+}
+
+
+static void printArray(float* a, int n) {
+  int i;
+  for (i=0;i<n;i++)
+    printf("%.2f ", a[i]);
+  printf("\n");
+}
+
+
+// hackish cube root function
+int intCubeRoot(int x) {
+
+  int i = 0;
+
+  assert(x >= 0 && x < 100*100*100);
+
+  while (i*i*i <= x)
+    i++;
+
+  return i-1;
+  
+}
+
+
+void createMatrix(int length, float* A, float* Aind) {
+
+  int i,j, colIdx, nnz;
+  int offset = intCubeRoot(length);
+  int offsets[MAX_NZ_PER_ROW];
+
+  offsets[0] = -1 * offset * offset;
+  offsets[1] = -1 * offset;
+  offsets[2] = -1;
+  offsets[3] =  0;
+  offsets[4] =  1;
+  offsets[5] =  offset;
+  offsets[6] =  offset * offset;
+
+
+  for (i=0;i<length;i++) {
+    nnz = 0;
+
+    for (j=0; j<MAX_NZ_PER_ROW; j++) {
+        colIdx = i + offsets[j];
+        if (colIdx >= 0 && colIdx < length) {
+          A[i*MAX_NZ_PER_ROW + nnz] = (j == 3) ? 6.0f : -1.0f;
+          Aind[i*MAX_NZ_PER_ROW + nnz] = (float)colIdx;
+          nnz++;
+        }
+    }
+     
+    while (nnz < MAX_NZ_PER_ROW) {
+        A[i*MAX_NZ_PER_ROW + nnz] = 0.0f;
+        Aind[i*MAX_NZ_PER_ROW + nnz] = 0.0f;
+        nnz++;
+    }
+  }
+}
+
+
+
+void spMatVec(int strmDim, float* A, float* Aind, float* x, float* y) {
+
+  float AStrm<strmDim, MAX_NZ_PER_ROW>;
+  float AindStrm<strmDim, MAX_NZ_PER_ROW>;
+  float productsStrm<strmDim, MAX_NZ_PER_ROW>;
+  float xStrm<strmDim, 1>;
+  float yStrm<strmDim, 1>;
+
+
+  streamRead(AStrm, A);
+  streamRead(AindStrm, Aind);
+  streamRead(xStrm, x);
+
+  sparse_matmult_product( AindStrm, xStrm, AStrm, productsStrm );
+  sum( productsStrm, yStrm );
+
+  streamWrite(yStrm, y);
+}
+
+
+
+
+void SpMatVec_Time(int length) {
+
+  int i,j, base;
+  float val;
+  float *x, *y, *A, *Aind;
+
+  assert(length <= MAX_DIM);
+
+  x = (float*)malloc(sizeof(float)*length);
+  y = (float*)malloc(sizeof(float)*length);
+  A = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
+  Aind = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
+
+  createMatrix(length, A, Aind);
+
+
+  for (i=0;i<length;i++)
+    x[i] = 1.0f;
+
+  start = GetTime();
+  spMatVec(length, A, Aind, x, y);
+  stop = GetTime();
+
+  printf("Time_spMatVec: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (13.0f*length)/(float)(stop-start) );
+
+
+  if (DO_VERIFY) {
+
+    //printArray(y, length);
+
+    for (i=0;i<length;i++) {
+      val = 0.0f;
+      base = i*MAX_NZ_PER_ROW;
+      for (j=0;j<MAX_NZ_PER_ROW;j++)
+        val += A[base + j] * x[(int)Aind[base+j]];
+      
+      //printf("%.2f ", val);
+      assert(fequals(val, y[i], EPS));
+    }
+  }
+
+  free(x);
+  free(y);
+  free(A);
+  free(Aind);
+
+}
+
+void conjGrad(int strmDim, float* A, float* Aind, float* x, float* b, int* max_iter, float* eps) {
+
+  float AStrm<strmDim, MAX_NZ_PER_ROW>;
+  float AindStrm<strmDim, MAX_NZ_PER_ROW>;
+  float productsStrm<strmDim, MAX_NZ_PER_ROW>;
+  float xStrm<strmDim, 1>;
+  float bStrm<strmDim, 1>;
+  float tmpStrm<strmDim, 1>;
+
+  float rStrm<strmDim, 1>;
+  float dStrm<strmDim, 1>;
+  float qStrm<strmDim, 1>;
+
+
+  float alpha, resNew, resOld, convergeThresh;
+  int   i;
+
+  streamRead(AStrm, A);
+  streamRead(AindStrm, Aind);
+  streamRead(xStrm, x);
+  streamRead(bStrm, b);
+
+  // Ax
+  // these two lines constitute a sparse matrix-vector multiply
+  sparse_matmult_product( AindStrm, xStrm, AStrm, productsStrm );
+  sum( productsStrm, rStrm );
+
+  // r = b - Ax
+  subtract(bStrm, rStrm, rStrm);
+
+  // d = r
+  copy(rStrm, dStrm);
+
+  // resNormNew = dot(r,r)
+  resNew = 0.0f;
+  square(rStrm, tmpStrm);
+  sum(tmpStrm, resNew);   // REDUCE
+  convergeThresh = (*eps) * (*eps) * resNew;
+  
+  i=0;
+
+  while (i < (*max_iter) && resNew > convergeThresh ) {
+
+    if (i > 0)
+	    scaleAdd(rStrm, dStrm, resNew / resOld, dStrm);
+
+	  // q = Ad
+    // these two lines constitute a sparse matrix-vector multiply
+    sparse_matmult_product( AindStrm, dStrm, AStrm, productsStrm );
+    sum( productsStrm, qStrm );
+
+    // alpha = dot(d,q)
+	  mult(dStrm, qStrm, tmpStrm);
+    sum(tmpStrm, alpha);    // REDUCE
+	  alpha = resNew / alpha;
+
+	  // x = x + alpha * d 
+	  scaleAdd(xStrm, dStrm, alpha, xStrm);
+
+	  // r = r - alpha * q
+	  scaleAdd(rStrm, qStrm, -1.0f * alpha, rStrm);
+
+    // resNew = dot(r,r)
+    resOld = resNew;
+	  square(rStrm, tmpStrm);
+    sum(tmpStrm, resNew);   // REDUCE
+
+	  i++;
+    
+    // printf("iteration %d.  Current residual norm: %f\n", i, resNew);
+  }      
+
+
+  streamWrite(xStrm, x);
+
+  *eps = resNew;
+  *max_iter = i;
+
+
+}
+
+
+void ConjGrad_Time(int length) {
+
+  float *x, *b, *A, *Aind;
+  float eps = 1e-4f;
+  int max_iter = 100;
+
+  assert(length <= MAX_DIM);
+
+  x = (float*)malloc(sizeof(float)*length);
+  b = (float*)malloc(sizeof(float)*length);
+  A = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
+  Aind = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
+
+  createMatrix(length, A, Aind);
+  fillArray(x, length, 0.0f);
+  fillArray(b, length, 10.0f);
+
+  start = GetTime();
+  conjGrad(length, A, Aind, x, b, &max_iter, &eps);
+  stop = GetTime();
+
+  if (DO_VERIFY) {
+    printf("Stopped in %d iterations with res=%f\n", max_iter, eps);
+  }
+
+  printf("Time_conjGrad: computation took %.5f secs.\n", (float)(stop-start) / 10e6f);
+
+  free(x);
+  free(b);
+  free(A);
+  free(Aind);
+
+}
+
+
+
