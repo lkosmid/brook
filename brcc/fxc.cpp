@@ -48,6 +48,7 @@ compile_fxc (const char *name,
   char nothin[]=""; //gcc does not like ?: with ""
 
   char* targetstring = "";
+  bool targetUsesRect = false;
   switch (target) {
   case CODEGEN_PS2B:
     targetstring = ps2b;
@@ -56,6 +57,7 @@ compile_fxc (const char *name,
     targetstring = ps2a;
     break;
   case CODEGEN_ARB:
+    targetUsesRect = true;
     switch (globals.arch) {
     case GPU_ARCH_X800:
       targetstring = ps2b;
@@ -80,7 +82,7 @@ compile_fxc (const char *name,
 
   char *argv[] = { "fxc", targetstring,
                    inValidate ? nothin : validate, "/nologo", 0, 0, 
-                   "/DFXC=1", NULL };
+                   "/DFXC=1", targetUsesRect ? "/DUSERECT=1" : 0, NULL };
   char *fpcode,  *errcode;
 
   std::string inputfname  = std::string(name) + ".cg";

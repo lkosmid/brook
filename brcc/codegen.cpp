@@ -808,19 +808,22 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
 static void
 generate_shader_support(std::ostream& shader)
 {
-  shader << "#ifdef USERECT\n";
-  shader << "#define _stype  samplerRECT\n";
-  shader << "#define _sfetch  texRECT\n";
-  shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
-  shader << "#define __sample2(s,i) texRECT((s),(i))\n";
-  shader << "#define __FRAGMENTKILL discard\n";
-  shader << "#define SKIPSCALEBIAS\n";
-  shader << "#else\n";
+  shader << "#ifdef FXC\n";
   shader << "#define _stype   sampler2D\n";
   shader << "#define _sfetch  tex2D\n";
   shader << "#define __sample1(s,i) tex2D((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) tex2D((s),(i))\n";
   shader << "#define __FRAGMENTKILL discard\n";
+  shader << "#else\n";
+  shader << "#define _stype  samplerRECT\n";
+  shader << "#define _sfetch  texRECT\n";
+  shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
+  shader << "#define __sample2(s,i) texRECT((s),(i))\n";
+  shader << "#define __FRAGMENTKILL discard\n";
+  shader << "#endif\n\n";
+
+  shader << "#ifdef USERECT\n";
+  shader << "#define SKIPSCALEBIAS\n";
   shader << "#endif\n\n";
 
   if( !globals.enableGPUAddressTranslation ) {
