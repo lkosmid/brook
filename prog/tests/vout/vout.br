@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static unsigned int debug_vout = 0;
+unsigned int debug_vout = 1;
 
 void debugStreamPrint (struct __BRTStream *stream,char * title) {
    if (debug_vout) {
@@ -61,9 +61,9 @@ kernel void calculateIndexModulus (float4 index,
                                    float offset,
                                    float lengthmodmodulus, 
                                    out float which <>) {
-   which= fmod(fmod(index.y,modulus)*lengthmodmodulus 
+   which= floor(fmod(index.y*lengthmodmodulus 
                 + fmod(index.x,modulus),
-               modulus)-offset;
+                modulus)-offset);
 }
 
 #define finite_float2(output) finite_float(output.x)
@@ -73,12 +73,25 @@ kernel void calculateIndexModulus (float4 index,
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedBRT_TYPE (BRT_TYPE input <>, 
                                    reduce BRT_TYPE output<>) {
-   output=isfinite(input.x)?input:output;
+   output=isinf(input.x)?output:input;
 }
+kernel void isFiniteKernelBRT_TYPE(BRT_TYPE inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
+}
+
 int finiteValueProducedBRT_TYPE (struct __BRTStream * input) {
-   BRT_TYPE output;
+   BRT_TYPE output<1,1>;
+   float finiteout<1,1>;
+   float ret;
+  
+   streamPrint (*input);
    valueProducedBRT_TYPE(*input,output);
-   return (int)finite_BRT_TYPE(output);
+   streamWrite(output,&ret);
+   printf ("\n4RRGH %f\n",ret);
+   isFiniteKernelBRT_TYPE(output,finiteout);
+   streamWrite(finiteout,&ret);
+   printf ("\nARRGH %f\n",ret);
+   return (int)ret;
 }
 
 kernel void valueAtBRT_TYPE (BRT_TYPE value[][],
@@ -99,8 +112,8 @@ kernel void NanToBoolRightBRT_TYPE (BRT_TYPE value[][],
    BRT_TYPE neighbor;
    getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtBRT_TYPE(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isfinite(value[indexof(output)].x)?0:1) 
-      + (isfinite(neighbor.x)?0:1);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightBRT_TYPE (float value [][],
                                 out float output<>,
@@ -129,7 +142,7 @@ kernel void GatherGuessBRT_TYPE(float scatterindex[][],
       }else {
          BRT_TYPE actualValue;
          valueAtBRT_TYPE(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&isfinite(actualValue.x)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -288,7 +301,7 @@ kernel void BRT_TYPEstreamCombine1(BRT_TYPE input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=oldoutput;
@@ -306,10 +319,10 @@ kernel void BRT_TYPEstreamCombine2f(BRT_TYPE input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=input1[newindex];
@@ -332,7 +345,7 @@ kernel void BRT_TYPEstreamCombine2(BRT_TYPE input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -353,10 +366,10 @@ kernel void BRT_TYPEstreamCombine3f(BRT_TYPE input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -382,7 +395,7 @@ kernel void BRT_TYPEstreamCombine3(BRT_TYPE input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -406,10 +419,10 @@ kernel void BRT_TYPEstreamCombine4f(BRT_TYPE input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -438,7 +451,7 @@ kernel void BRT_TYPEstreamCombine4(BRT_TYPE input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -465,10 +478,10 @@ kernel void BRT_TYPEstreamCombine5f(BRT_TYPE input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -500,7 +513,7 @@ kernel void BRT_TYPEstreamCombine5(BRT_TYPE input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -531,10 +544,10 @@ kernel void BRT_TYPEstreamCombine6f(BRT_TYPE input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -602,10 +615,10 @@ kernel void BRT_TYPEstreamCombine7f(BRT_TYPE input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -643,7 +656,7 @@ kernel void BRT_TYPEstreamCombine7(BRT_TYPE input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -679,10 +692,10 @@ kernel void BRT_TYPEstreamCombine8f(BRT_TYPE input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -876,7 +889,7 @@ void combineStreamsBRT_TYPE (struct __BRTStream **streams,
                                       num-5,
                                       output,
                                       num,
-                                      5,
+                                      5-.5,
                                       length,
                                       lengthmodmodulus);
       }

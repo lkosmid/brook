@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static unsigned int debug_vout = 0;
+unsigned int debug_vout = 1;
 
 void debugStreamPrint (struct __BRTStream *stream,char * title) {
    if (debug_vout) {
@@ -71,9 +71,9 @@ kernel void calculateIndexModulus (float4 index,
                                    float offset,
                                    float lengthmodmodulus, 
                                    out float which <>) {
-   which= fmod(fmod(index.y,modulus)*lengthmodmodulus 
+   which= floor(fmod(index.y*lengthmodmodulus 
                 + fmod(index.x,modulus),
-               modulus)-offset;
+                modulus)-offset);
 }
 
 #define finite_float2(output) finite_float(output.x)
@@ -83,12 +83,25 @@ kernel void calculateIndexModulus (float4 index,
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
-   output=isfinite(input.x)?input:output;
+   output=isinf(input.x)?output:input;
 }
+kernel void isFiniteKernelfloat(float inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
+}
+
 int finiteValueProducedfloat (struct __BRTStream * input) {
-   float output;
+   float output<1,1>;
+   float finiteout<1,1>;
+   float ret;
+  
+   streamPrint (*input);
    valueProducedfloat(*input,output);
-   return (int)finite_float(output);
+   streamWrite(output,&ret);
+   printf ("\n4RRGH %f\n",ret);
+   isFiniteKernelfloat(output,finiteout);
+   streamWrite(finiteout,&ret);
+   printf ("\nARRGH %f\n",ret);
+   return (int)ret;
 }
 
 kernel void valueAtfloat (float value[][],
@@ -109,8 +122,8 @@ kernel void NanToBoolRightfloat (float value[][],
    float neighbor;
    getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isfinite(value[indexof(output)].x)?0:1) 
-      + (isfinite(neighbor.x)?0:1);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightfloat (float value [][],
                                 out float output<>,
@@ -139,7 +152,7 @@ kernel void GatherGuessfloat(float scatterindex[][],
       }else {
          float actualValue;
          valueAtfloat(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&isfinite(actualValue.x)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -298,7 +311,7 @@ kernel void floatstreamCombine1(float input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=oldoutput;
@@ -316,10 +329,10 @@ kernel void floatstreamCombine2f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=input1[newindex];
@@ -342,7 +355,7 @@ kernel void floatstreamCombine2(float input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -363,10 +376,10 @@ kernel void floatstreamCombine3f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -392,7 +405,7 @@ kernel void floatstreamCombine3(float input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -416,10 +429,10 @@ kernel void floatstreamCombine4f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -448,7 +461,7 @@ kernel void floatstreamCombine4(float input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -475,10 +488,10 @@ kernel void floatstreamCombine5f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -510,7 +523,7 @@ kernel void floatstreamCombine5(float input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -541,10 +554,10 @@ kernel void floatstreamCombine6f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -612,10 +625,10 @@ kernel void floatstreamCombine7f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -653,7 +666,7 @@ kernel void floatstreamCombine7(float input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -689,10 +702,10 @@ kernel void floatstreamCombine8f(float input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -886,7 +899,7 @@ void combineStreamsfloat (struct __BRTStream **streams,
                                       num-5,
                                       output,
                                       num,
-                                      5,
+                                      5-.5,
                                       length,
                                       lengthmodmodulus);
       }
@@ -1061,12 +1074,25 @@ unsigned int totalCombineVoutfloat (struct __BRTStream *list_stream,
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
-   output=isfinite(input.x)?input:output;
+   output=isinf(input.x)?output:input;
 }
+kernel void isFiniteKernelfloat2(float2 inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
+}
+
 int finiteValueProducedfloat2 (struct __BRTStream * input) {
-   float2 output;
+   float2 output<1,1>;
+   float finiteout<1,1>;
+   float ret;
+  
+   streamPrint (*input);
    valueProducedfloat2(*input,output);
-   return (int)finite_float2(output);
+   streamWrite(output,&ret);
+   printf ("\n4RRGH %f\n",ret);
+   isFiniteKernelfloat2(output,finiteout);
+   streamWrite(finiteout,&ret);
+   printf ("\nARRGH %f\n",ret);
+   return (int)ret;
 }
 
 kernel void valueAtfloat2 (float2 value[][],
@@ -1087,8 +1113,8 @@ kernel void NanToBoolRightfloat2 (float2 value[][],
    float2 neighbor;
    getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtfloat2(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isfinite(value[indexof(output)].x)?0:1) 
-      + (isfinite(neighbor.x)?0:1);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightfloat2 (float value [][],
                                 out float output<>,
@@ -1117,7 +1143,7 @@ kernel void GatherGuessfloat2(float scatterindex[][],
       }else {
          float2 actualValue;
          valueAtfloat2(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&isfinite(actualValue.x)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -1276,7 +1302,7 @@ kernel void float2streamCombine1(float2 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=oldoutput;
@@ -1294,10 +1320,10 @@ kernel void float2streamCombine2f(float2 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=input1[newindex];
@@ -1320,7 +1346,7 @@ kernel void float2streamCombine2(float2 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1341,10 +1367,10 @@ kernel void float2streamCombine3f(float2 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1370,7 +1396,7 @@ kernel void float2streamCombine3(float2 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1394,10 +1420,10 @@ kernel void float2streamCombine4f(float2 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1426,7 +1452,7 @@ kernel void float2streamCombine4(float2 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1453,10 +1479,10 @@ kernel void float2streamCombine5f(float2 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1488,7 +1514,7 @@ kernel void float2streamCombine5(float2 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1519,10 +1545,10 @@ kernel void float2streamCombine6f(float2 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1590,10 +1616,10 @@ kernel void float2streamCombine7f(float2 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1631,7 +1657,7 @@ kernel void float2streamCombine7(float2 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1667,10 +1693,10 @@ kernel void float2streamCombine8f(float2 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -1864,7 +1890,7 @@ void combineStreamsfloat2 (struct __BRTStream **streams,
                                       num-5,
                                       output,
                                       num,
-                                      5,
+                                      5-.5,
                                       length,
                                       lengthmodmodulus);
       }
@@ -2039,12 +2065,25 @@ unsigned int totalCombineVoutfloat2 (struct __BRTStream *list_stream,
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
-   output=isfinite(input.x)?input:output;
+   output=isinf(input.x)?output:input;
 }
+kernel void isFiniteKernelfloat3(float3 inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
+}
+
 int finiteValueProducedfloat3 (struct __BRTStream * input) {
-   float3 output;
+   float3 output<1,1>;
+   float finiteout<1,1>;
+   float ret;
+  
+   streamPrint (*input);
    valueProducedfloat3(*input,output);
-   return (int)finite_float3(output);
+   streamWrite(output,&ret);
+   printf ("\n4RRGH %f\n",ret);
+   isFiniteKernelfloat3(output,finiteout);
+   streamWrite(finiteout,&ret);
+   printf ("\nARRGH %f\n",ret);
+   return (int)ret;
 }
 
 kernel void valueAtfloat3 (float3 value[][],
@@ -2065,8 +2104,8 @@ kernel void NanToBoolRightfloat3 (float3 value[][],
    float3 neighbor;
    getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtfloat3(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isfinite(value[indexof(output)].x)?0:1) 
-      + (isfinite(neighbor.x)?0:1);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightfloat3 (float value [][],
                                 out float output<>,
@@ -2095,7 +2134,7 @@ kernel void GatherGuessfloat3(float scatterindex[][],
       }else {
          float3 actualValue;
          valueAtfloat3(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&isfinite(actualValue.x)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -2254,7 +2293,7 @@ kernel void float3streamCombine1(float3 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=oldoutput;
@@ -2272,10 +2311,10 @@ kernel void float3streamCombine2f(float3 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=input1[newindex];
@@ -2298,7 +2337,7 @@ kernel void float3streamCombine2(float3 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2319,10 +2358,10 @@ kernel void float3streamCombine3f(float3 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2348,7 +2387,7 @@ kernel void float3streamCombine3(float3 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2372,10 +2411,10 @@ kernel void float3streamCombine4f(float3 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2404,7 +2443,7 @@ kernel void float3streamCombine4(float3 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2431,10 +2470,10 @@ kernel void float3streamCombine5f(float3 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2466,7 +2505,7 @@ kernel void float3streamCombine5(float3 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2497,10 +2536,10 @@ kernel void float3streamCombine6f(float3 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2568,10 +2607,10 @@ kernel void float3streamCombine7f(float3 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2609,7 +2648,7 @@ kernel void float3streamCombine7(float3 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2645,10 +2684,10 @@ kernel void float3streamCombine8f(float3 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -2842,7 +2881,7 @@ void combineStreamsfloat3 (struct __BRTStream **streams,
                                       num-5,
                                       output,
                                       num,
-                                      5,
+                                      5-.5,
                                       length,
                                       lengthmodmodulus);
       }
@@ -3017,12 +3056,25 @@ unsigned int totalCombineVoutfloat3 (struct __BRTStream *list_stream,
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
-   output=isfinite(input.x)?input:output;
+   output=isinf(input.x)?output:input;
 }
+kernel void isFiniteKernelfloat4(float4 inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
+}
+
 int finiteValueProducedfloat4 (struct __BRTStream * input) {
-   float4 output;
+   float4 output<1,1>;
+   float finiteout<1,1>;
+   float ret;
+  
+   streamPrint (*input);
    valueProducedfloat4(*input,output);
-   return (int)finite_float4(output);
+   streamWrite(output,&ret);
+   printf ("\n4RRGH %f\n",ret);
+   isFiniteKernelfloat4(output,finiteout);
+   streamWrite(finiteout,&ret);
+   printf ("\nARRGH %f\n",ret);
+   return (int)ret;
 }
 
 kernel void valueAtfloat4 (float4 value[][],
@@ -3043,8 +3095,8 @@ kernel void NanToBoolRightfloat4 (float4 value[][],
    float4 neighbor;
    getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtfloat4(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isfinite(value[indexof(output)].x)?0:1) 
-      + (isfinite(neighbor.x)?0:1);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightfloat4 (float value [][],
                                 out float output<>,
@@ -3073,7 +3125,7 @@ kernel void GatherGuessfloat4(float scatterindex[][],
       }else {
          float4 actualValue;
          valueAtfloat4(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&isfinite(actualValue.x)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -3232,7 +3284,7 @@ kernel void float4streamCombine1(float4 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=oldoutput;
@@ -3250,10 +3302,10 @@ kernel void float4streamCombine2f(float4 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else {
       output=input1[newindex];
@@ -3276,7 +3328,7 @@ kernel void float4streamCombine2(float4 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3297,10 +3349,10 @@ kernel void float4streamCombine3f(float4 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3326,7 +3378,7 @@ kernel void float4streamCombine3(float4 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3350,10 +3402,10 @@ kernel void float4streamCombine4f(float4 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3382,7 +3434,7 @@ kernel void float4streamCombine4(float4 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3409,10 +3461,10 @@ kernel void float4streamCombine5f(float4 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3444,7 +3496,7 @@ kernel void float4streamCombine5(float4 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3475,10 +3527,10 @@ kernel void float4streamCombine6f(float4 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3546,10 +3598,10 @@ kernel void float4streamCombine7f(float4 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3587,7 +3639,7 @@ kernel void float4streamCombine7(float4 input0[][],
                          offset,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3623,10 +3675,10 @@ kernel void float4streamCombine8f(float4 input0[][],
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
-                         0.0f,
+                         -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0) {
+   if (whichmod==0||whichmod==modulus) {
       output=input0[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
@@ -3820,7 +3872,7 @@ void combineStreamsfloat4 (struct __BRTStream **streams,
                                       num-5,
                                       output,
                                       num,
-                                      5,
+                                      5-.5,
                                       length,
                                       lengthmodmodulus);
       }
