@@ -204,78 +204,80 @@ kernel void setZero(float4 indata<>,
   outdata=indata*(exp (-7.2*(2-dot(negtopos,negtopos))))/scale;
   
 }
-
-
-void computeFFT2d(float2 *input,
-                  float2 *output,
+void generatePlan(float4 bitreversal<>,
+                  int logN,
+                  int logM) {
+   float4 * rawindices=bitReversedIndices(logN,logM);
+   streamRead(bitreversal,rawindices);
+   free(rawindices);
+}
+                  
+void computeFFT2d(float4 input<>,
+                  float4 output<>,
                   int logN,
                   int logM,
                   int N,
                   int M,
-                  int twod){
-   float4 s<N,(M/2)>;
-   float4 s_out<N,(M/2)>;
-   float4 s_out_final<N,M>;
-   float4 * rawindices=0;
-   float4 indicesXo2YXp1o2Xm2<(M/2>N?M/2:N)>;
+                  float4 indicesXo2YXp1o2Xm2<>) {
    iter float2 iter1 <N,(M/2)> =iter(float2(0,0),float2(tof(M/4),tof(N)));
    iter float2 iter2 <N,(M/2)> =iter(float2(tof(M/4),0),float2(tof(M/2),tof(N)));
    iter float2 iter3 <N,(M/2)> =iter(float2(0,0),float2(tof(M/2),tof(N/2)));
    iter float2 iter4 <N,(M/2)> =iter(float2(0,tof(N/2)),float2(tof(M/2),tof(N)));
    iter float2 s_iter <N,(M/2)> =iter(float2(0,0),float2(tof(M/2),tof(N)));
-   float indicesY<N>;
-   int nPass,nBits,nPassCounter, thereAndBack;
-   rawindices=bitReversedIndices(logN,logM);
-   streamRead(indicesXo2YXp1o2Xm2,rawindices);
-
-   streamRead(s,input);
+   int nPass,nBits,nPassCounter;
    
    if (debug_fft) {
       printf("FFT Input:\n");
-      streamPrint(s);
+      streamPrint(input);
    }
-   for (thereAndBack=0;thereAndBack<2;++thereAndBack) {	
-   if (1==N*M) streamSwap(s_out,s);
+   if (1==N*M) streamSwap(output,input);
    else {
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTY(s,getW(nPassCounter,N,0),s_out,iter3,iter4,s_iter);
+            DFTY(input,getW(nPassCounter,N,0),output,iter3,iter4,s_iter);
             if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
-               streamPrint(s_out);
+               streamPrint(output);
             }
 
-            streamSwap(s,s_out);
+            streamSwap(input,output);
          }
 	 if (split_bit_reverse) {
-	   optBitReverseY(s_out,indicesXo2YXp1o2Xm2,s);      
-	   if (do_untangle) {
-	     UntangleFrag(s_out,s,float2((float)N,(float)(N/2)));
-	   }else {
-	     streamSwap(s,s_out);
-	   }
+	   optBitReverseY(output,indicesXo2YXp1o2Xm2,input);      
+           streamSwap(input,output);
 	 }
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTX(s,getW(nPassCounter,M,1),s_out,iter1,iter2,s_iter);
+            DFTX(input,getW(nPassCounter,M,1),output,iter1,iter2,s_iter);
             if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
-               streamPrint(s_out);
+               streamPrint(output);
             }
-            streamSwap(s,s_out);
+            streamSwap(input,output);
          }
 	 if (split_bit_reverse) {
-	   bitReverseXo2(s_out,indicesXo2YXp1o2Xm2,s);
-	   if (do_untangle){
-	     DoubleFrag(s_out,s_out_final,float2((float)N,(float)(N/2)),iter1);
-	   }	   
+	   bitReverseXo2(output,indicesXo2YXp1o2Xm2,input);
 	 }
    }
    if (!split_bit_reverse) {//now do it separately
-     bitReverseXo2Y(s_out,indicesXo2YXp1o2Xm2,s);      
+     bitReverseXo2Y(output,indicesXo2YXp1o2Xm2,input);      
             
    }
-	if (thereAndBack==0) { 
+
+}
+void blur2d(float2 *input,
+            float2 *output,
+            int logN,
+            int logM,
+            int N,
+            int M){
+   float4 s<N,(M/2)>;
+   float4 s_out<N,(M/2)>;
+   float4 bitreversal<(M/2>N?M/2:N)>;
+   streamRead(s,input);   
+   generatePlan(bitreversal,logN,logM);
+   computeFFT2d(s,s_out,logN,logM,N,M,bitreversal);
+   {//perform the blur
            iter float2 negtopos <N,(M/2)> = iter (float2(-1,-1),float2(1,1));
            iter float2 normalized <N,(M/2)> = iter (float2(0,0),float2(1,1));
 
@@ -284,9 +286,8 @@ void computeFFT2d(float2 *input,
            clampsize.y = (float)(N/2);
            setZero(s_out,s_out,normalized,negtopos,clampsize,(float)(M*N));
            streamSwap(s,s_out);
-        }
    }
-   free(rawindices);
+   computeFFT2d(s,s_out,logN,logM,N,M,bitreversal);
    if (output)
       streamWrite(s_out,output); 
    if (debug_fft) {
@@ -303,7 +304,7 @@ void doOptFFT(int logN, int logM, float2 * data) {
    int N = (1<<logN);
    int M = (1<<logM);
    start = GetTimeMillis();
-   computeFFT2d(data,data,logM,logN,M,N,FFT_2D); 
+   blur2d(data,data,logM,logN,M,N); 
    stop = GetTimeMillis();
    //FftwTransform2d(data,N,M,1,1);
 }
