@@ -44,7 +44,7 @@ typedef struct Neighbor_t {
 }Neighbor;
 
 unsigned char debugLoop=0;
-int counterMax = 2;
+int counterMax = 100000;
 extern float neighboreps;
 int low_texture_ram=0;
 int subdivisiondepth=0;

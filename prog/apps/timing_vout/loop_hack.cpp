@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include <stdlib.h>
+extern ::brook::stream &quickAllocStream(const __BRTStreamType *t, int wid, int len, int garbage);
 
 typedef struct STri_t {
   float4  A;
@@ -82,7 +83,7 @@ namespace brook {
 }
 #endif
 unsigned char  debugLoop = 0;
-int  counterMax = 2;
+int  counterMax = 10000;
 extern float  neighboreps;
 int  low_texture_ram = 0;
 int  subdivisiondepth = 0;
@@ -3243,9 +3244,9 @@ void  produceTriP (::brook::stream t,
   bool __shouldNotProduce_values = true;
   while (__shouldProduce_values || __shouldNotProduce_values) {
     if (__shouldProduce_values)
-      __shouldProduce_outputs.push_back (new ::brook::stream (maxextents, __dimension, &__shouldProduce_types[0]));
+       __shouldProduce_outputs.push_back (new ::brook::stream (quickAllocStream(&__shouldProduce_types[0], maxextents[0],maxextents[1],-1 )));
     if (__shouldNotProduce_values)
-      __shouldNotProduce_outputs.push_back (new ::brook::stream (maxextents, __dimension, &__shouldNotProduce_types[0]));
+       __shouldNotProduce_outputs.push_back (new ::brook::stream (quickAllocStream(&__shouldNotProduce_types[0],maxextents[0], maxextents[1],-1 )));
     k->PushStream(t);
     k->PushOutput(*__shouldProduce_outputs.back());
     k->PushOutput(*__shouldNotProduce_outputs.back());

@@ -5,6 +5,7 @@
 ////////////////////////////////////////////
 
 #include <brook.hpp>
+#include "timing.h"
 #include <stdio.h>
 
 #include <stdlib.h>
@@ -205,6 +206,9 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
     if (rr==0) spvec[counter]=brook::stream(::brook::getStreamType(( float2  *)0), streamY , 0,-1);
     if (rr==0) snpvec[counter]=brook::stream(::brook::getStreamType(( float2  *)0), streamY , 0,-1);
     if (rr<2) {
+       if (rr==0) {
+          TallyKernel("produceTriP",*triangles);
+       }
        produceTriP(*triangles,spvec[counter],snpvec[counter]);
     }else {
        produceTriPNoCompact(*triangles,vospvec[counter],vospvec[counter])
@@ -220,8 +224,12 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
       if (rr==0) otvec[counter]=brook::stream(::brook::getStreamType(( float3  *)0), wosizey , wosizex,-1);
       ::brook::stream outputTri=otvec[counter];
 
-      if (wosizex && wosizey)
+      if (wosizex && wosizey) {
+        if (rr==0) {
+           TallyKernel("writeFinalTriangles",outputTri);
+        }
         writeFinalTriangles(*triangles,shouldNotProduce,outputTri);
+      }
       streamY = toi(streamSize(shouldProduce).y);
       if (streamY && streamX)
       {
@@ -234,7 +242,11 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
         ::brook::stream newNeighbors=nnvec[counter];
         if (rr==0) ntvec[counter]=brook::stream(::brook::getStreamType(( STri  *)0), (stretchX) ? (streamY) : (streamY * 4) , (stretchX) ? (streamX * 4) : (streamX),-1);
         ::brook::stream newTriangles=ntvec[counter];
-
+        if (rr==0) {
+           TallyKernel("computeNeighbors",sharedNeighbors);
+           TallyKernel("splitTriangles",sharedTriangles);
+           TallyKernel("linearReorgSplitTriangles",newTriangles);
+        }
         computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
         splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
         linearReorgSplitTriangles(sharedTriangles,sharedNeighbors,newTriangles,newNeighbors,epsilon,stretchX);
@@ -265,7 +277,9 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
        if (rr==0) fotvec[counter]=brook::stream(::brook::getStreamType(( float3  *)0), toi(streamSize(*triangles).y) , toi(streamSize(*triangles).x * 3),-1);
        ::brook::stream outputTri=fotvec[counter];
       int  sizey = output->size;
-
+      if (rr==0) {
+         TallyKernel("copyFinalTriangles",outputTri);
+      }
       copyFinalTriangles(*triangles,outputTri);
       if (debugLoop) {
          expandVertexArray(output,3 * toi(streamSize(*triangles).y) * toi(streamSize(*triangles).x));
@@ -418,10 +432,19 @@ int  subdivision(int  argc, char  **argv)
        streamRead(neighbors,neighbordata);
        struct VertexArray  v;
        initVertexArray(&v);
+       if (rr==0) {
+          TallyKernel("smallEnough",triangles);
+       }
+       start = GetTimeMillis();
        smallEnough(triangles,neighbors,triangles,neighbors,epsilon);
        subdivide(&neighbors,&triangles,&v,epsilon,0);
-
-       if (debugLoop&&rr==4) {
+       stop = GetTimeMillis();
+       if (debugLoop) {
+          fprintf (stderr,"Time %f\n",(float)(stop-start));
+       }else {
+          printf ("Time %f\n",(float)(stop-start));
+       }
+       if (debugLoop&&rr==2) {
           printf("%d\n",v.size);
           for (i = 0; i < v.size; i++)
              {
@@ -434,8 +457,11 @@ int  subdivision(int  argc, char  **argv)
           {
              vcount *= 4;
           }
-       
-       fprintf(stderr,"Num Rounds %d Adaptive Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,vcount);
+       if (debugLoop) {
+          fprintf(stderr,"Num Rounds %d Adaptive Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,vcount);
+       }else {
+          printf("Num Rounds %d Adaptive Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,vcount);
+       }
     }
     return 0;
   }
