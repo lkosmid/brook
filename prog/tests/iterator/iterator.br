@@ -21,6 +21,7 @@ main (int argc, char *argv[]) {
 //   iter float2 ian<20, 10> = BRTIter( (float2(0.0f, 0.0f)), (float2(200.0f, 100.0f)) );
 // TIM: not this:
    iter float2 ian<20, 10> = BRTIter(0.0f, 0.0f, 200.0f, 100.0f);
+   iter float2 indexstream<20, 10> = BRTIter(9.0f, 19.0f, -1.0f, -1.0f);
    iter float tim<10> = BRTIter(0.0f, 200.0f);
    float2 d<20, 10>;
    float2 e<20, 10>;
@@ -37,6 +38,16 @@ main (int argc, char *argv[]) {
    }
 
    streamRead(d, data_d);
+   streamGatherOp(e,indexstream,d,STREAM_GATHER_FETCH);
+   streamWrite(e, data_e);
+
+   for (i=0; i<20; i++) {
+      for (j=0; j<10; j++) {
+         printf("{%3.2f,%3.2f} ", data_e[i][j].x,data_e[i][j].y);
+      }
+      printf("\n");
+   }
+
    iterator_test(d,ian,e);
    streamWrite(e, data_e);
 
