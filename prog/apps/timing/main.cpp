@@ -34,6 +34,7 @@ static const struct timingEntry tests[] = {
    { "mm4_4w",  Matmult4x4_4way_Time },
    { "mm4_4w_t",Matmult4x4_4wayPretransposed_Time },
    { "fft",     doFFT },
+   { "fftopt",     doOptFFT },
 };
 static const int numTests = sizeof tests / sizeof tests[0];
 

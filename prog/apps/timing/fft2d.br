@@ -159,12 +159,11 @@ void compute2dFFT(float2 *input,
 
    if (output)
       streamWrite(s_out,output);
-   else {
-      if (debug_fft) {
-        printf("\nStream Output\n");
-        streamPrint(s_out);
-      }
+   if (debug_fft) {
+      printf("\nStream Output\n");
+      streamPrint(s_out);
    }
+   
 
 
 }

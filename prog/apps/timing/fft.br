@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-int debug_fft=0;
+int debug_fft=1;
 #ifdef USE_FFTW
 #include <fftw3.h>
 #endif
