@@ -13,7 +13,11 @@ all: makedirs ../bin/brcc.exe
 makedirs:
 	@if test ! -d ../bin; then mkdir ../bin; fi
 
-../bin/brcc.exe: brook.tab.c lex.yy.c brcc.c parser.c codegen.c
+fp30_assist.cg.bin: fp30_assist.cg
+	cpp -P < fp30_assist.cg | perl makestring.pl > fp30_assist.cg.bin
+
+../bin/brcc.exe: brook.tab.c lex.yy.c brcc.c parser.c codegen.c \
+		 fp30_assist.cg.bin
 	cl -nologo -W3 -Zi -MLd -o ../bin/brcc.exe brook.tab.c \
 		lex.yy.c parser.c brcc.c codegen.c
 
