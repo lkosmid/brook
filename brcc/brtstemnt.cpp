@@ -206,6 +206,170 @@ static std::string tostring(unsigned int i) {
 	sprintf(c,"%d",i);
 	return std::string(c);
 }
+
+static Symbol getSymbol(std::string in) {
+    Symbol name;
+    name.name =in;
+    return name;
+}
+class PrintCPUArg {
+    Decl * a;
+    unsigned int index;
+public:
+    PrintCPUArg(Decl * arg,unsigned int index):a(arg),index(index){}
+    enum STAGE {HEADER,DEF,USE};
+    bool isDimensionlessHelper(Type * t) {
+	if (t->type==TT_Array) {
+	    ArrayType* a = static_cast<ArrayType*>(t);
+	    Expression * size=  a->size;
+	    if (size->etype==ET_VoidExpr)
+		return true;
+	    return isDimensionlessHelper (a->subType);
+	}
+	return false; 
+    }
+    bool isDimensionless() {
+	if (a->form->type==TT_Array) {
+	    return isDimensionlessHelper(static_cast<ArrayType*>(a->form)->subType);
+	}
+	return false;
+    }
+    void printDimensionlessGatherStream(std::ostream&out,STAGE s){
+	ArrayType * t = static_cast<ArrayType*>(a->form);
+	switch (s) {
+	case HEADER:{
+	    Symbol name=getSymbol("&"+a->name->name);
+	    out << "const ";
+	    CPUGatherType(*t,false).printType(out,&name,true,false);
+	    break;
+	}
+	case DEF:{
+	    CPUGatherType cgt (*t,false);	
+	    Symbol arg1;arg1.name="arg"+tostring(index)		;
+	    
+	    cgt.printType(out,&arg1,false,0);
+	    out << "("<<std::endl;
+	    indent(out,2);
+	    out << "(";
+	    Symbol nothing;
+	    nothing.name="";
+	    cgt.printSubtype(out,&nothing,true,0);
+	    out<<"*)reinterpret_cast<CPUStream*>(args["<<index<<"])->getData(), "<<std::endl;
+	    indent(out,2);
+	    out<<"reinterpret_cast<CPUStream*>(args["<<index<<"])->getIndices());"<<std::endl;
+	    break;
+	}
+	case USE:
+	    out << "arg"<<index;
+	    break;
+	
+	}
+    }
+    void printDimensionalGatherArg(std::ostream &out, STAGE s) {
+	Type * t=a->form;
+	switch (s) {
+	case HEADER:{
+	    TypeQual tq= t->getQualifiers();	    
+	    if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
+		out << "const ";//kernels are only allowed to touch out params
+	    }
+	    a->print(out,0);
+	    break;
+	}
+	case DEF:{
+	    t=static_cast<ArrayType*>(t)->subType;
+	    Symbol s;
+	    if (t->type==TT_Base)
+		s=getSymbol(std::string("*arg")+tostring(index));
+	    else
+		getSymbol(std::string("(*arg")+tostring(index)+")");
+	    t->printType(out,&s,true,0);
+	    out << " = (";
+	    s=(t->type==TT_Base)?getSymbol("*"):getSymbol("(*)");
+	    t->printType(out,&s,true,0);
+	    out << ")reinterpret_cast<CPUStream *>(args["<<index<<"])->getData();";	    
+	}
+	case USE:{
+	    indent(out,3);
+	    out <<"arg"<<index;
+	    break;
+	}
+	}
+    }
+    void printNormalArg(std::ostream&out,STAGE s){
+	Type * t = a->form;
+	TypeQual tq= t->getQualifiers();
+	bool isArray = (t->type==TT_Array);
+	bool isStream = (t->type==TT_Stream);	
+	switch(s) {
+	case HEADER:{
+	    if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
+		out << "const ";//kernels are only allowed to touch out params
+	    }
+	    Symbol name=getSymbol(a->name->name);
+	    if (!isArray) {
+		name=getSymbol("&"+a->name->name);
+	    }
+	    if (isStream)
+		t = static_cast<ArrayType*>(t)->subType;
+	    t->printType(out,&name,true,0);
+	    break;
+	}
+	case DEF:
+	    if (t->type!=TT_Array) {
+		if (isStream) {
+		    t=static_cast<ArrayType*>(t)->subType;
+		}
+		printType(out,t,true,"arg"+tostring(index));
+		out << " = (";
+		printType(out,t,true);
+		out << ")args["<<index<<"];";
+		if (isStream)
+		    out<<" arg"<<index<<+"+=mapbegin;";
+		out<<std::endl;
+	    }
+	    break;
+	case USE:{
+		indent(out,3);
+		if (!isArray) {
+		    out <<"*arg"<<index;
+		    if (isStream)
+			out <<"++";
+		}else {
+		    out << "(";
+		    t=static_cast<ArrayType*>(t)->subType;
+		    Symbol s=(t->type==TT_Base)?getSymbol("*"):getSymbol("(*)");
+		    t->printType(out,&s,true,0);
+		    out << ")reinterpret_cast<CPUStream *>(args["<<index<<"])->getData()";
+		}
+	    break;
+	}
+	}
+    }
+    
+    void printCPUFunctionArg(std::ostream & out){
+	if(isDimensionless())
+	    printDimensionlessGatherStream(out,HEADER);
+	else
+	    printNormalArg(out,HEADER);
+    }
+    void printInternalDef(std::ostream &out){
+	if(isDimensionless())
+	    printDimensionlessGatherStream(out,DEF);
+	else
+	    printNormalArg(out,DEF);
+    }
+    void printInternalUse(std::ostream &out){
+	if(isDimensionless())
+	    printDimensionlessGatherStream(out,USE);
+	else
+	    printNormalArg(out,USE);
+    }
+};
+
+
+
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTCPUKernelDef::printCode(std::ostream& out) const
@@ -218,108 +382,35 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
   FunctionType* func = static_cast<FunctionType *>(form->dup());
     
     out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
-	Symbol enhanced_name;
-	enhanced_name.name = "_cpu_"+decl->name->name;
+    Symbol enhanced_name;
+    enhanced_name.name = "_cpu_"+decl->name->name;
     func->printBefore(out,&enhanced_name,0);
-    
     out << "(";
-    for (int j=0; j < func->nArgs; j++) {
-	if (j!=0)
+    std::vector<PrintCPUArg> myArgs;
+    {for (int i=0;i<func->nArgs;++i) {
+	myArgs.push_back(PrintCPUArg(func->args[i],i));
+    }}
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+	if (i!=0)
 	    out << ", ";
-	Type * form = func->args[j]->form;
-	if (form->type==TT_Stream||form->type==TT_Array) {
-	    if ((copy_on_write==true||dims_specified==false)&&form->type==TT_Array) {
-			form = new CPUGatherType(*static_cast<ArrayType *>(form),copy_on_write);
-	    }
-	}
-	
-	TypeQual tq= form->getQualifiers();
-	if (!copy_on_write) {
-		if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
-			out << "const ";//kernels are only allowed to touch out params
-		}
-		if (form->type!=TT_Array||dims_specified==false) {
-			func->args[j]->name->name=std::string("&")+func->args[j]->name->name;
-		}
-	}
-	if (form->type==TT_Stream){
-	    Type * nostream = static_cast<ArrayType *>(form)->subType;
-	    
-	    func->args[j]->form=nostream;
-	    func->args[j]->print(out,true);
-	    func->args[j]->form = form;	    
-	}else {
-	    func->args[j]->form = form;
-	
-	    func->args[j]->print(out,true);
-	}
-	
-	
-    }
-    
-    out << ")";
-    //delete func;
-	//func = static_cast<FunctionType *>(form);
+	myArgs[i].printCPUFunctionArg(out);
+    }}
+    out << ")";    
     Block::print(out,0);
-	//now it's time to print the automated wrapper function.
 	out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
 	enhanced_name.name = "_cpu_loop_"+decl->name->name;
 	func->printBefore(out,&enhanced_name,0);
 	out << "(const std::vector<void *>&args, unsigned int mapbegin, unsigned int mapend) {"<<std::endl;
-	{for (unsigned int i=0;i<func->nArgs;++i) {
-		indent(out,1);//setup args;
-		Type * t = func->args[i]->form;
-		if (t->type==TT_Array&&dims_specified==false) {//gather
-			CPUGatherType * cgt = static_cast< CPUGatherType*>(t);	
-			Symbol arg1;arg1.name="arg"+tostring(i)		;
-			
-			cgt->printType(out,&arg1,false,0);
-			out << "("<<std::endl;
-			indent(out,2);
-			out << "(";
-			Symbol nothing;
-			nothing.name="";
-			cgt->printSubtype(out,&nothing,true,0);
-			out<<"*)reinterpret_cast<CPUStream*>(args["<<i<<"])->getData(), "<<std::endl;
-			indent(out,2);
-			out<<"reinterpret_cast<CPUStream*>(args["<<i<<"])->getIndices());"<<std::endl;
-		}
-		if (t->type!=TT_Array) {
-		    bool isStream = (t->type==TT_Stream);
-		    if (isStream) {
-			t=static_cast<ArrayType*>(t)->subType;
-		    }
-		    printType(out,t,true,"arg"+tostring(i));
-		    out << " = (";
-		    printType(out,t,true);
-		    out << ")args["<<i<<"];";
-		    if (isStream)
-			out<<" arg"<<i<<+"+=mapbegin;";
-		    out<<std::endl;
-		}
+	{for (unsigned int i=0;i<myArgs.size();++i) {
+	    myArgs[i].printInternalDef(out);
 	}}
 	indent(out,1);
 	out << "for (unsigned int i=mapbegin;i<mapend;++i) {"<<std::endl;
 	indent(out,2);out << "_cpu_" <<decl->name->name<<" ("<<std::endl;
-	{for (unsigned int i=0;i<func->nArgs;++i) {
-		bool isArray = (func->args[i]->form->type==TT_Array);
-		bool isStream = (func->args[i]->form->type==TT_Stream);
-		
-		if (i!=0)
-			out <<","<<std::endl;
-		indent(out,3);
-		if (isArray==false||dims_specified==false) {
-		    if (!isArray)
-			out << "*";
-		    out <<"arg"<<i;
-		    if (isStream)
-			out <<"++";
-		}else {
-		    out << "(";
-		    printType(out,func->args[i]->form,false);
-		    out << ")reinterpret_cast<CPUStream *>(args["<<i<<"])->getData()";
-		}
-		
+	{for (unsigned int i=0;i<myArgs.size();++i) {
+	    if (i!=0)
+		out <<","<<std::endl;
+	    myArgs[i].printInternalUse(out);
 	}}
 	out<< ");"<<std::endl;
 	indent(out,1);out <<"}"<<std::endl;
