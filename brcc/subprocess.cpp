@@ -18,6 +18,8 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <signal.h>
+#include <errno.h>
 #endif
 }
 
@@ -170,13 +172,31 @@ Subprocess_Run(char *argv[], char *input)
 #else
      {
         char eof_holder = EOF;
-        
+        int retval;
+        void (*oldPipe)(int);
+
+        oldPipe = signal(SIGPIPE, SIG_IGN);
         /* fprintf(stderr, "Writing\n[35;1m%s[0m\n", input); */
-        if(write (hStdInPipe[WRITE_HANDLE], input, strlen(input))
-           != (int)strlen(input)){
-           perror("Write problem: ");
+
+        retval = write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
+        if (retval == -1 && errno == EPIPE) {
+           if (debug) {
+              fprintf(stderr, "Pipe vanished writing input to %s!\n", argv[0]);
+           }
+           oldPipe = signal(SIGPIPE, oldPipe);
+           return NULL;
+        } else if (retval != (int) strlen(input)) {
+           perror("Write problem");
         }
+
+        /*
+         * We're sloppy with EPIPE on the EOF because we don't really care.
+         * We already got the input off and if the child died, we'll notice
+         * either when we call waitpid() or read the result so we just want
+         * to not die with SIGPIPE here.  --Jeremy.
+         */
         write(hStdInPipe[WRITE_HANDLE], &eof_holder, 1);
+        oldPipe = signal(SIGPIPE, oldPipe);
      }
 #endif
   }
