@@ -266,7 +266,7 @@ inline float isinf_float (float x) {
   //UNINTRINSIC(sincos)
   UNINTRINSIC(sinh,sinh)
   UNINTRINSIC(sqrt,sqrt)
-  BININTRINSIC(step,step)
+  BININTRINSIC(step,step_float)
   UNINTRINSIC(tan,tan)
   UNINTRINSIC(tanh,tanh)
      //  TRIINTRINSIC(smoothstep)
