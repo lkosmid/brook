@@ -66,6 +66,7 @@ bool DX9Texture::initialize()
 
 DX9Texture::~DX9Texture()
 {
+  DX9Trace("~DX9Texture");
   if( shadowSurface != NULL )
     shadowSurface->Release();
   if( surfaceHandle != NULL )

@@ -117,6 +117,7 @@ bool DX9Stream::initialize(
 }
 
 DX9Stream::~DX9Stream () {
+  DX9Trace("~DX9Stream");
   int fieldCount = (int)fields.size();
   for( int f = 0; f < fieldCount; f++ )
   {

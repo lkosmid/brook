@@ -59,7 +59,7 @@ namespace brook {
     virtual void PushOutput(Stream *s) = 0;
     virtual void Map() = 0;
     virtual void Reduce() {Map();}
-    virtual void Release() = 0;
+    virtual void Release() {delete this;}
 
   protected:
     virtual ~Kernel() {}

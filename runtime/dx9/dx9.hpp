@@ -33,7 +33,6 @@ namespace brook {
     virtual void PushOutput(Stream *s);
     virtual void Map();
     virtual void Reduce();
-    virtual void Release() {}
 
   private:
     enum {
@@ -137,7 +136,6 @@ namespace brook {
       int inDimensionCount, const int* inExtents );
     virtual void Read(const void* inData);
     virtual void Write(void* outData);
-    virtual void Release() {}
 
 //    DX9Texture* getTexture() { return texture; }
 //    IDirect3DTexture9* getTextureHandle();
