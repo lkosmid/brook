@@ -64,11 +64,11 @@ kernel void calculateWindForces(
 	inRange2 = (index2 >= minIndex) && (index2 < maxIndex);
 	inRange = inRange && inRange2.x && inRange2.y;
 	
-	p0 = particle.position;
+	p0 = (float3)particle.position;
 	d1 = particles[index1];
 	d2 = particles[index2];
-	v1 = d1.position - p0;
-	v2 = d2.position - p0;
+	v1 = (float3)d1.position - p0;
+	v2 = (float3)d2.position - p0;
 	normalTimesHalfArea = cross( v1, v2 );
 	
 	force.xyz = inRange ? dot( normalTimesHalfArea, windDirection ) * windVelocity : zero;
@@ -125,8 +125,8 @@ kernel void calculateSpringForces(
 	
 	p2 = particles[otherIndex];
 
-	relativePosition = p1.position - p2.position;
-	relativeVelocity = p1.velocity - p2.velocity;
+	relativePosition = (float3)(p1.position - p2.position);
+	relativeVelocity = (float3)(p1.velocity - p2.velocity);
 
 	length = sqrt( dot( relativePosition, relativePosition ) );
 
