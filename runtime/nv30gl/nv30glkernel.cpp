@@ -126,7 +126,7 @@ void NV30GLKernel::Map() {
                       (float) sargs[i]->height, 0.0f, 1.0f,
                       f1[i], f2[i]);
          else if (iargs[i]) {
-           NV30GLIter *itr = (NV30GLIter *) iargs[i];
+           GLIter *itr = (GLIter *) iargs[i];
            compute_st(w, h, (itr->dims==1),
                       itr->min.x, itr->min.y,
                       itr->min.z, itr->min.w,
@@ -152,12 +152,12 @@ void NV30GLKernel::Map() {
      }
 
      unsigned int nfields = outstream[scount]->getFieldCount();
-     NV30GLStream *outp = (NV30GLStream *) outstream[scount];
+     GLStream *outp = outstream[scount];
      for (unsigned int k=0; k < (unsigned int) nfields; k++) {
         if (runtime->pbuffer_ncomp != outp->ncomp[k])
            runtime->createPBuffer(outp->ncomp[k]);
 
-        glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[j]);
+        glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[j]);
 
         /* Issue the poly */
         glBegin(GL_TRIANGLES);
@@ -196,10 +196,10 @@ void NV30GLKernel::Map() {
         CHECK_GL();
 
         glActiveTextureARB(GL_TEXTURE0_ARB);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, outp->id[k]);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0, w, h);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, outp->id[k]);
+        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0, 0, 0, 0, 0, w, h);
         if (sreg0)
-           glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
         CHECK_GL();
 
         j++;
@@ -274,14 +274,14 @@ NV30GLKernel::ReduceScalar() {
    int h = inputReduceStream->height;
    int ncomp = inputReduceStream->ncomp[0];
    glfloat4 readback;
-   NV30GLStream *t;
+   GLStream *t;
    bool first = true;
 
    assert(npasses == 1);
 
    // Don't attempt reduce on 1x1
    if (w == 1 && h == 1) {
-      inputReduceStream->GLReadData(reduceVal);
+      inputReduceStream->Write(reduceVal);
       return;
    }
 
@@ -297,10 +297,10 @@ NV30GLKernel::ReduceScalar() {
      int extents[2] = {h,w};
      __BRTStreamType t = (__BRTStreamType) ncomp;
       tmpReduceStream[ncomp] =
-         new NV30GLStream((NV30GLRunTime *) runtime, 1, &t, 2, extents);
+         new GLStream((NV30GLRunTime *) runtime, 1, &t, 2, extents);
    }
 
-   t = (NV30GLStream *) tmpReduceStream[ncomp];
+   t = tmpReduceStream[ncomp];
 
    assert (inputReduceStreamTreg == 0 ||
            inputReduceStreamTreg == 1);
@@ -327,18 +327,18 @@ NV30GLKernel::ReduceScalar() {
 
       if (first) {
         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
       } else {
         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
       }
       CHECK_GL();
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
+      glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
       issue_reduce_poly(0, 0, half, h, 2, f1, f2);
 
       if (remainder) {
@@ -349,24 +349,24 @@ NV30GLKernel::ReduceScalar() {
 
          glActiveTextureARB(GL_TEXTURE0_ARB);
          if (first)
-           glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
          else
-           glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
+           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
          issue_reduce_poly(half, 0, 1, h, 1, f1, f2);
          if (sreg0)
-           glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
       }
 
       first = false;
 
       glActiveTextureARB(GL_TEXTURE0_ARB);
-      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+      glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                        0, 0, 0, 0,
                        half+remainder, h);
       if (sreg0)
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
 
       w = half+remainder;
    }
@@ -390,18 +390,18 @@ NV30GLKernel::ReduceScalar() {
 
       if (first) {
         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
       } else {
         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
       }
       CHECK_GL();
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
+      glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
       issue_reduce_poly(0, 0, 1, half, 2, f1, f2);
 
       if (remainder) {
@@ -412,27 +412,27 @@ NV30GLKernel::ReduceScalar() {
 
          glActiveTextureARB(GL_TEXTURE0_ARB);
          if (first)
-           glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
          else
-           glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
+           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
 
          issue_reduce_poly(0, half, 1, 1, 1, f1, f2);
          if (sreg0)
-           glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
       }
 
       first = false;
 
       if (half + remainder > 1) {
         glActiveTextureARB(GL_TEXTURE0_ARB);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-        glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+        glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
+        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                          0, 0, 0, 0,
                          1, half+remainder);
         if (sreg0)
-          glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+          glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
       }
       h = half+remainder;
    }
@@ -462,8 +462,8 @@ NV30GLKernel::ReduceStream() {
    int leftSreg, rightSreg;
 
    Stream* outputStreamBase = *((const ::brook::stream*) reduceVal);
-   NV30GLStream *r = (NV30GLStream *)outputStreamBase;
-   NV30GLStream *t;
+   GLStream *r = (GLStream *)outputStreamBase;
+   GLStream *t;
 
    bool first = true;
    bool have_remainder = false;
@@ -482,8 +482,8 @@ NV30GLKernel::ReduceStream() {
    // Don't attempt reduce on 1x1
    if (w == 1 && h == 1) {
       glfloat4 data;
-      inputReduceStream->GLReadData((void *)&data);
-      r->GLWriteData((void *)&data);
+      inputReduceStream->Write((void *)&data);
+      r->Read((void *)&data);
       return;
    }
 
@@ -500,9 +500,9 @@ NV30GLKernel::ReduceStream() {
      __BRTStreamType t = (__BRTStreamType) ncomp;
 
      tmpReduceStream[ncomp] =
-         new NV30GLStream((NV30GLRunTime *) runtime, 1, &t, 2, extents);
+         new GLStream((NV30GLRunTime *) runtime, 1, &t, 2, extents);
    }
-   t = (NV30GLStream *) tmpReduceStream[ncomp];
+   t = tmpReduceStream[ncomp];
 
    remainder_x = w/2;
    remainder_y = 0;
@@ -542,17 +542,17 @@ NV30GLKernel::ReduceStream() {
 
       if (first) {
         glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
         glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
       } else {
         glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
         glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
       }
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
+      glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
 
       issue_reduce_poly(0, 0, half*nx, h, 2, f1, f2);
 
@@ -572,17 +572,17 @@ NV30GLKernel::ReduceStream() {
 
           if (first) {
             glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-            glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
             glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-            glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
           } else {
             glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-            glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
             glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-            glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
           }
 
-          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
+          glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
 
           issue_reduce_poly(remainder_x, remainder_y, nx, h, 2, f1, f2);
 
@@ -595,26 +595,26 @@ NV30GLKernel::ReduceStream() {
 
           glActiveTextureARB(GL_TEXTURE0_ARB);
           if (first)
-            glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
           else
-            glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+          glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
           issue_reduce_poly(remainder_x, remainder_y, nx, h, 1, f1, f2);
           if (sreg0)
-            glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
           CHECK_GL();
         }
 
         CHECK_GL();
 
         glActiveTextureARB(GL_TEXTURE0_ARB);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                             remainder_x, remainder_y,
                             remainder_x, remainder_y,
                             nx, h);
         if (sreg0)
-          glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+          glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
 
         CHECK_GL();
 
@@ -622,12 +622,12 @@ NV30GLKernel::ReduceStream() {
       }
 
       glActiveTextureARB(GL_TEXTURE0_ARB);
-      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+      glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                           0, 0, 0, 0,
                           half*nx, h);
       if (sreg0)
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
 
       CHECK_GL();
 
@@ -652,15 +652,15 @@ NV30GLKernel::ReduceStream() {
                 f1[1], f2[1]);
 
      glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-     glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+     glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
      glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-     glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
+     glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+     glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
      issue_reduce_poly(0, 0, nx, h, 2, f1, f2);
 
      dumpframebuffer(10,10);
 
-     glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+     glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                          0, 0, 0, 0,
                          nx, h);
 
@@ -686,26 +686,26 @@ NV30GLKernel::ReduceStream() {
 
       if (first) {
         glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
         glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
       } else {
         glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
         glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
       }
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
+      glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
       issue_reduce_poly(0, 0, nx, ny*half, 2, f1, f2);
 
       glActiveTextureARB(GL_TEXTURE0_ARB);
-      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+      glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                           0, 0, 0, 0,
                           nx, half*ny);
       if (sreg0)
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
 
       CHECK_GL();
 
@@ -722,10 +722,10 @@ NV30GLKernel::ReduceStream() {
                      f1[1], f2[1]);
 
           glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-          glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+          glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
           glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-          glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id[0]);
-          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
+          glBindTexture (GL_TEXTURE_RECTANGLE_EXT, r->id[0]);
+          glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
           issue_reduce_poly(0, 0, nx, ny, 2, f1, f2);
         } else {
           //  Copy the remainder values over
@@ -734,19 +734,19 @@ NV30GLKernel::ReduceStream() {
                      (float) nx,   (float) h+ratioy, 0.0f, 1.0f,
                      f1[0], f2[0]);
           glActiveTextureARB(GL_TEXTURE0_ARB);
-          glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
+          glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+          glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
           issue_reduce_poly(0, 0, nx, ny, 1, f1, f2);
           if (sreg0)
-            glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
         }
 
         glActiveTextureARB(GL_TEXTURE0_ARB);
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id[0]);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, r->id[0]);
+        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                             0, 0, 0, 0, nx, ny);
         if (sreg0)
-          glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+          glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
 
         CHECK_GL();
 
@@ -776,14 +776,14 @@ NV30GLKernel::ReduceStream() {
                 f1[1], f2[1]);
 
      glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-     glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
+     glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
      glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-     glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id[0]);
-     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
+     glBindTexture (GL_TEXTURE_RECTANGLE_EXT, r->id[0]);
+     glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
 
      issue_reduce_poly(0, 0, nx, ny, 2, f1, f2);
 
-     glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+     glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                          0, 0, 0, 0,
                          nx, h);
    } else {
@@ -795,17 +795,17 @@ NV30GLKernel::ReduceStream() {
                 f1[0], f2[0]);
 
      glActiveTextureARB(GL_TEXTURE0_ARB);
-     glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id[0]);
-     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
+     glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+     glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
 
      issue_reduce_poly(0, 0, nx, ny, 1, f1, f2);
 
-     glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id[0]);
-     glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0,
+     glBindTexture (GL_TEXTURE_RECTANGLE_EXT, r->id[0]);
+     glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                          0, 0, 0, 0,
                          nx, ny);
      if (sreg0)
-       glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id[0]);
+       glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
    }
 
    dumpframebuffer(10,10);

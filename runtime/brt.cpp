@@ -93,6 +93,9 @@ namespace brook {
       fprintf (stderr,"* NVIDIA NV30 Backend:        *\n");
       fprintf (stderr,"* BRT_RUNTIME = nv30gl        *\n");
       fprintf (stderr,"*                             *\n");
+      fprintf (stderr,"* OpenGL ARB Backend:         *\n");
+      fprintf (stderr,"* BRT_RUNTIME = arb           *\n");
+      fprintf (stderr,"*                             *\n");
       fprintf (stderr,"* DirectX9 Backend:           *\n");
       fprintf (stderr,"* BRT_RUNTIME = dx9           *\n");
       fprintf (stderr,"*                             *\n");
@@ -119,7 +122,13 @@ namespace brook {
     if (!strcmp(env, NV30GL_RUNTIME_STRING))
       return new NV30GLRunTime();
 #endif
-    
+
+#ifdef BUILD_ARB
+    if (!strcmp(env, ARB_RUNTIME_STRING))
+       /* ARB and NV30 turn out to be identical... */
+       return new NV30GLRunTime();
+#endif
+
     if (strcmp(env,CPU_RUNTIME_STRING)&&strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)){
       fprintf (stderr, 
 	       "Unknown runtime requested: %s falling back to CPU\n", env);

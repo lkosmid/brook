@@ -19,16 +19,15 @@ GLKernel::GLKernel(GLRunTime * runtime,
 
    assert (sourcelist);
 
-   for( i=0; sourcelist[i] != NULL; i+=2 ) {
+   for (i=0; sourcelist[i] != NULL; i+=2) {
 
       const char* nameString = (const char*) sourcelist[i];
       assert (nameString);
 
       sources = (const char**)sourcelist[i+1];
 
-      if( strncmp( nameString,
-                   "fp30", strlen("fp30"))  == 0 )
-         break;
+      if (strncmp(nameString, "fp30", strlen("fp30")) == 0) break;
+      if (strncmp(nameString, "arb", strlen("arb")) == 0) break;
    }
 
    if (sourcelist[i] == NULL ||
@@ -46,7 +45,7 @@ GLKernel::GLKernel(GLRunTime * runtime,
    outstream = (GLStream **) malloc (npasses * sizeof(GLStream *));
 
    // Allocate ids
-   glGenProgramsNV (npasses, pass_id);
+   glGenProgramsARB(npasses, pass_id);
    CHECK_GL();
 
    // look for our annotations...
@@ -162,8 +161,9 @@ GLKernel::GLKernel(GLRunTime * runtime,
      /* Load the program code */
      CHECK_GL();
 
-     glLoadProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[j], strlen(src),
-                      (const GLubyte*) src);
+     glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[j]);
+     glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+                        strlen(src), (GLubyte *) src);
 
      /* Check for program errors */
      if (glGetError() == GL_INVALID_OPERATION) {
@@ -172,7 +172,7 @@ GLKernel::GLKernel(GLRunTime * runtime,
        int line, linestart;
 
        progcopy = strdup (src);
-       glGetIntegerv(GL_PROGRAM_ERROR_POSITION_NV, &pos);
+       glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &pos);
 
        line = 1;
        linestart = 0;
@@ -218,7 +218,7 @@ void GLKernel::PushStream(Stream *s) {
 
    for (unsigned int i=0; i<glstream->getNumFields(); i++) {
       glActiveTextureARB(GL_TEXTURE0_ARB+sreg);
-      glBindTexture (GL_TEXTURE_RECTANGLE_NV, glstream->id[i]);
+      glBindTexture(GL_TEXTURE_RECTANGLE_EXT, glstream->id[i]);
       CHECK_GL();
       sreg++;
    }
@@ -244,9 +244,14 @@ void GLKernel::PushIter(Iter *s) {
 
 void GLKernel::PushConstant(const float &val) {
    for (unsigned int i=0; i<npasses; i++)
-     glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
+#if 1
+      glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
                                  (const GLubyte *) constnames[creg],
                                  val, 0.0f, 0.0f, 0.0f);
+#else
+      glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
+                                   val, 0.0f, 0.0f, 0.0f);
+#endif
    creg++;
    argcount++;
    CHECK_GL();
@@ -254,9 +259,14 @@ void GLKernel::PushConstant(const float &val) {
 
 void GLKernel::PushConstant(const float2 &val) {
    for (unsigned int i=0; i<npasses; i++)
-     glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
+#if 1
+      glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
                                  (const GLubyte *) constnames[creg],
                                  val.x, val.y, 0.0f, 0.0f);
+#else
+      glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
+                                   val.x, val.y, 0.0f, 0.0f);
+#endif
    creg++;
    argcount++;
    CHECK_GL();
@@ -264,9 +274,14 @@ void GLKernel::PushConstant(const float2 &val) {
 
 void GLKernel::PushConstant(const float3 &val) {
    for (unsigned int i=0; i<npasses; i++)
-     glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
+#if 1
+      glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
                                  (const GLubyte *) constnames[creg],
                                  val.x, val.y, val.z, 0.0f);
+#else
+      glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
+                                   val.x, val.y, val.z, 0.0f);
+#endif
    creg++;
    argcount++;
    CHECK_GL();
@@ -274,9 +289,14 @@ void GLKernel::PushConstant(const float3 &val) {
 
 void GLKernel::PushConstant(const float4 &val) {
    for (unsigned int i=0; i<npasses; i++)
-     glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
+#if 1
+      glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
                                  (const GLubyte *) constnames[creg],
                                  val.x, val.y, val.z, val.w);
+#else
+      glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
+                                   val.x, val.y, val.z, val.w);
+#endif
    creg++;
    argcount++;
    CHECK_GL();
@@ -304,7 +324,7 @@ void GLKernel::PushGatherStream(Stream *s) {
 
    for (unsigned int i=0; i<glstream->getNumFields(); i++) {
       glActiveTextureARB(GL_TEXTURE0_ARB+sreg);
-      glBindTexture (GL_TEXTURE_RECTANGLE_NV, glstream->id[i]);
+      glBindTexture(GL_TEXTURE_RECTANGLE_EXT, glstream->id[i]);
       CHECK_GL();
 
       sreg++;

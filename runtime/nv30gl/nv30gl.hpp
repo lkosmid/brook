@@ -18,10 +18,9 @@ namespace brook {
 
    class NV30GLRunTime;
    class NV30GLKernel;
-   class NV30GLStream;
-   class NV30GLIter;
 
-   extern const char* NV30GL_RUNTIME_STRING;
+   extern const char *NV30GL_RUNTIME_STRING;
+   extern const char *ARB_RUNTIME_STRING;
 
    class NV30GLRunTime : public GLRunTime {
    public:
@@ -31,15 +30,6 @@ namespace brook {
       Stream *CreateStream(int fieldCount, const __BRTStreamType fieldTypes[],
                            int dims, const int extents[]);
       Iter *CreateIter(__BRTStreamType type, int dims, int e[],float r[]);
-
-     void createPBuffer(int ncomponents);
-
-   protected:
-#ifdef WIN32
-     void createPBufferWGL(int ncomponents);
-#else
-     void createPBufferGLX(int ncomponents);
-#endif
    };
 
    class NV30GLKernel : public GLKernel {
@@ -52,25 +42,6 @@ namespace brook {
    protected:
       void ReduceScalar();
       void ReduceStream();
-  };
-
-  class NV30GLStream : public GLStream {
-  public:
-     NV30GLStream (NV30GLRunTime * runtime, int fieldCount,
-                   const __BRTStreamType type[],
-                   int dims, const int extents[]);
-     virtual ~NV30GLStream() { /* Everything is done in ~GLStream() */ };
-
-     void GLReadData(void *src);
-     void GLWriteData(const void *dst);
-  };
-
-  class NV30GLIter : public GLIter {
-  public:
-     NV30GLIter(NV30GLRunTime *runtime, __BRTStreamType type,
-                 int dims, int extents[], float ranges[])
-        : GLIter(runtime, type, dims, extents, ranges) {};
-     virtual ~NV30GLIter() { /* GLIter::GLIter() does all the work */ };
   };
 }
 #endif

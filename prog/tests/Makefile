@@ -6,7 +6,7 @@ REGRESSIONDIRS := accumulate convert_iter_to_stream gather_dependent \
 		  replication_stride struct_gather struct_input \
 		  struct_output sum toy pack_vout scan vout
 
-SUBDIRS := $(REGRESSIONDIRS) fft infinite  scatter tessellate
+SUBDIRS := $(REGRESSIONDIRS) fft infinite scatter tessellate
 # big
 
 include $(ROOTDIR)/common.mk

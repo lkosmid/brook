@@ -32,26 +32,49 @@
  */
 #include "nv30glext.h"
 
+/*
+ * Plug some gaps.  The EXT_texture_rectangle extension hasn't made it into
+ * the header files we use yet.
+ */
+#define GL_TEXTURE_RECTANGLE_EXT   GL_TEXTURE_RECTANGLE_NV
+
 #ifdef WIN32
 /*
- * On Windows we have to dynamically resolve these at runtime.  See
- * glfunc.cpp for the excitement.
+ * For some inexplicable reason, on Windows hosts, the OpenGL libraries
+ * don't actually export some of their symbols.  Instead, you have to use
+ * wglGetProcAddress() to pry them out.  This doesn't stop their header
+ * files from defining said symbols, but you get awkward compiler complaints
+ * if you actually allow them to be defined.  So, we fake it all here
+ * instead of defining either WGL_WGLEXT_PROTOTYPES or GL_GLEXT_PROTOTYPES.
  */
-extern PFNWGLCREATEPBUFFERARBPROC      wglCreatePbufferARB;
-extern PFNWGLGETPBUFFERDCARBPROC       wglGetPbufferDCARB;
-extern PFNWGLCHOOSEPIXELFORMATARBPROC  wglChoosePixelFormatARB;
-extern PFNWGLBINDTEXIMAGEARBPROC       wglBindTexImageARB;
-extern PFNWGLRELEASETEXIMAGEARBPROC    wglReleaseTexImageARB;
-extern PFNWGLRELEASEPBUFFERDCARBPROC   wglReleasePbufferDCARB;
-extern PFNWGLDESTROYPBUFFERARBPROC     wglDestroyPbufferARB;
-extern PFNGLMULTITEXCOORD2FARBPROC     glMultiTexCoord2fARB;
-extern PFNGLMULTITEXCOORD4FARBPROC     glMultiTexCoord4fARB;
-extern PFNGLACTIVETEXTUREARBPROC       glActiveTextureARB;
-extern PFNGLGENPROGRAMSNVPROC          glGenProgramsNV;
-extern PFNGLLOADPROGRAMNVPROC          glLoadProgramNV;
-extern PFNGLBINDPROGRAMNVPROC          glBindProgramNV;
-extern PFNGLPROGRAMNAMEDPARAMETER4FNVPROC
-                            glProgramNamedParameter4fNV;
+
+#define RUNTIME_BONUS_GL_FNS \
+   XXX(PFNWGLCREATEPBUFFERARBPROC,     wglCreatePbufferARB)            \
+   XXX(PFNWGLGETPBUFFERDCARBPROC,      wglGetPbufferDCARB)             \
+   XXX(PFNWGLRELEASEPBUFFERDCARBPROC,  wglReleasePbufferDCARB)         \
+   XXX(PFNWGLDESTROYPBUFFERARBPROC,    wglDestroyPbufferARB)           \
+   XXX(PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB)        \
+   XXX(PFNWGLBINDTEXIMAGEARBPROC,      wglBindTexImageARB)             \
+   XXX(PFNWGLRELEASETEXIMAGEARBPROC,   wglReleaseTexImageARB)          \
+   XXX(PFNGLMULTITEXCOORD2FARBPROC,    glMultiTexCoord2fARB)           \
+   XXX(PFNGLMULTITEXCOORD4FARBPROC,    glMultiTexCoord4fARB)           \
+   XXX(PFNGLACTIVETEXTUREARBPROC,      glActiveTextureARB)             \
+                                                                       \
+   XXX(PFNGLGENPROGRAMSARBPROC,        glGenProgramsARB)               \
+   XXX(PFNGLBINDPROGRAMARBPROC,        glBindProgramARB)               \
+   XXX(PFNGLPROGRAMSTRINGARBPROC,      glProgramStringARB)             \
+   XXX(PFNGLPROGRAMLOCALPARAMETER4FARBPROC, glProgramLocalParameter4fARB) \
+                                                                       \
+   XXX(PFNGLGENPROGRAMSNVPROC,         glGenProgramsNV)                \
+   XXX(PFNGLLOADPROGRAMNVPROC,         glLoadProgramNV)                \
+   XXX(PFNGLBINDPROGRAMNVPROC,         glBindProgramNV)                \
+   XXX(PFNGLPROGRAMNAMEDPARAMETER4FNVPROC, glProgramNamedParameter4fNV)\
+
+#define XXX(type, fn) \
+   extern type fn;
+
+RUNTIME_BONUS_GL_FNS
+#undef XXX
 #endif
 
 namespace brook {
@@ -79,7 +102,9 @@ namespace brook {
    void __check_gl(int line, char *file);
 #define CHECK_GL() __check_gl(__LINE__, __FILE__);
 
+#ifdef WIN32
    void initglfunc(void);
+#endif
 
    class GLKernel : public Kernel {
    public:
@@ -139,8 +164,8 @@ namespace brook {
                const __BRTStreamType type[],
                int dims, const int extents[]);
      virtual ~GLStream ();
-     void Read(const void* inData);
-     void Write(void* outData);
+     void Read(const void *inData);
+     void Write(void *outData);
 
      void *getData (unsigned int flags);
      void releaseData(unsigned int flags);
@@ -152,9 +177,6 @@ namespace brook {
      virtual __BRTStreamType getIndexedFieldType(int i) const {
        return (__BRTStreamType) ncomp[i];
      }
-
-     virtual void GLReadData (void *p) = 0;
-     virtual void GLWriteData (const void *p) = 0;
 
      GLStream *getNext(void) const { return next; }
      unsigned int getNumFields(void) const { return nfields; }
@@ -209,7 +231,7 @@ namespace brook {
   public:
      GLRunTime();
 
-     virtual void createPBuffer(int ncomponents) = 0;
+     void createPBuffer(int ncomponents);
      void printMemUsage(void);
 
      enum WORKSPACESIZE {
@@ -229,6 +251,10 @@ namespace brook {
   protected:
 
 #ifdef _WIN32
+     void createPBufferWGL(int ncomponents);
+     void createWindow(void);
+     void createWindowGLContext(void);
+
      HWND hwnd;
      HDC  hdc_window;
      HGLRC hglrc_window;
@@ -236,13 +262,11 @@ namespace brook {
      HPBUFFERARB hpbuffer;
      HDC hpbufferdc;
 #else
+     void createPBufferGLX(int ncomponents);
      Display    *pDisplay;
      GLXPbuffer  glxPbuffer;
      GLXContext  glxContext;
 #endif
-
-     void createWindow(void);
-     void createWindowGLContext(void);
   };
 }
 

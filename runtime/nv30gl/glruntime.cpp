@@ -9,9 +9,16 @@ using namespace brook;
 
 GLRunTime::GLRunTime()
 {
+#ifdef WIN32
    createWindow();
    createWindowGLContext();
    initglfunc();
+#endif
+
+   createPBuffer(4);
+   glDrawBuffer(GL_FRONT);
+   glReadBuffer(GL_FRONT);
+   CHECK_GL();
 
    streamlist = NULL;
 }
