@@ -12,6 +12,8 @@ SHARED_LIBSUFFIX := .dll
 STATIC_LIBSUFFIX := .lib
 BINSUFFIX        := .exe
 
+SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32
+
 #CFLAGS           += /nologo /MDd /W1 /O2 /DWIN32
 CFLAGS           += /nologo /MDd /W3 /DWIN32 /DWINDOWS /EHsc
 C_INCLUDE_FLAG   := /I
@@ -28,10 +30,11 @@ LD_LIBLINK_PREFIX :=
 LD_LIBLINK_SUFFIX := .lib 
 LD_DEBUG_FLAG     := /debug
 LD_DEF_FLAG       := /def:
-LIBRARIES         += kernel32 gdi32 user32 opengl32
 
-ARFLAGS		 := /nologo
-AR_OUTPUT_FLAG	 := /out:
-
+ARFLAGS		  := /nologo
+AR_OUTPUT_FLAG	  := /out:
+AR_LIBDIR_FLAG    := /libpath:
+AR_LIBLINK_PREFIX :=  
+AR_LIBLINK_SUFFIX := .lib 
 
 

@@ -24,8 +24,12 @@ include $(ROOTDIR)/config/$(OS).mk
 CFLAGS    += $(C_INCLUDE_FLAG). $(C_INCLUDE_FLAG)$(INCLUDEDIR) $(C_DEBUG_FLAG)
 LDFLAGS   += $(LD_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)
 
-TEMP      := $(addprefix $(LD_LIBLINK_PREFIX), $(LIBRARIES))
-LDFLAGS   += $(addsuffix $(LD_LIBLINK_SUFFIX), $(TEMP))
+TEMP1     := $(addprefix $(LD_LIBLINK_PREFIX), $(LIBRARIES))
+LDFLAGS   += $(addsuffix $(LD_LIBLINK_SUFFIX), $(TEMP1))
+
+ARFLAGS   += $(AR_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)
+TEMP2     := $(addprefix $(AR_LIBLINK_PREFIX), $(LIBRARIES))
+ARFLAGS   += $(addsuffix $(AR_LIBLINK_SUFFIX), $(TEMP2))
 
 LDFLAGS   += $(LD_DEBUG_FLAG)
 
@@ -41,7 +45,6 @@ BINARY_NAME := $(STATIC_LIBRARY)
 BINARY   := $(addprefix $(LIBPREFIX), $(STATIC_LIBRARY))
 BINARY   := $(addsuffix $(STATIC_LIBSUFFIX), $(BINARY))
 CFLAGS   := $(C_STATIC_FLAG) $(CFLAGS)
-LDFLAGS  := $(LD_STATIC_FLAG) $(LDFLAGS)
 else
 ifdef SHARED_LIBRARY
 BINARY_NAME := $(SHARED_LIBRARY)
@@ -52,7 +55,9 @@ LDFLAGS  := $(LD_SHARED_FLAG) $(LDFLAGS)
 else
 ifdef EXECUTABLE
 BINARY_NAME := $(EXECUTABLE)
-BINARY   := $(addsuffix $(BINSUFFIX), $(EXECUTABLE))
+BINARY      := $(addsuffix $(BINSUFFIX), $(EXECUTABLE))
+TEMP3       := $(addprefix $(LD_LIBLINK_PREFIX), $(SYSTEM_LIBS))
+LDFLAGS     += $(addsuffix $(LD_LIBLINK_SUFFIX), $(TEMP3))
 endif
 endif
 endif
@@ -76,7 +81,9 @@ arch: $(PRECOMP) makedirs dep
 
 recurse: $(BINDIR)/$(BINARY)
 
-dep: $(DEPS)
+builddeps: $(DEPS)
+
+dep: builddeps
 	@$(MAKE) --no-print-directory recurse INCLUDEDEPS=1
 
 ##  Make directories for build files ##
@@ -131,7 +138,7 @@ $(BINDIR)/$(BINARY):  $(ADDITIONAL_DEPENDANCIES) $(OBJS)
 ifdef STATIC_LIBRARY
 	$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)
 else
-	$(LD) $(LDFLAGS) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LD_LIBRARIES_LINK)
+	$(LD) $(LDFLAGS) $(LD_OUTPUT_FLAG)$@ $(OBJS)
 endif
 
 
