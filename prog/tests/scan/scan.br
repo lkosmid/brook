@@ -18,7 +18,7 @@ kernel void getIndexAt(float4 inputindex<>,
                        out float2 outputindex<>) {
    float2 index;
    index.x=inputindex.x+shiftRight;
-   index.y=inputindex.y+floor(index.x/maxvalue.x);
+   index.y=inputindex.y+floor((.5+index.x)/maxvalue.x);
    index.x=round(fmod(round(index.x),maxvalue.x));
    if (index.x<=-.50)
       index.x+=maxvalue.x;//only necessary if shiftRight<0
@@ -29,13 +29,18 @@ kernel void getIndexAt(float4 inputindex<>,
 }
 kernel void CountToRight (float value [][],
                           out float output<>,
+                          out float neighbor<>,
+                          out float nextplacetolookx<>,
+                          out float nextplacetolooky<>,
                           float twotoi,
                           float2 maxvalue) {
    float2 nextPlaceToLook;
-   float neighbor;
+//   float neighbor;
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAt(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = value[indexof(output)]+neighbor;
+   nextplacetolookx=nextPlaceToLook.x;
+   nextplacetolooky=nextPlaceToLook.y;
 }
 
 void CountValues(struct StreamHolder list_stream,
@@ -48,17 +53,26 @@ void CountValues(struct StreamHolder list_stream,
    float2 maxvalue;
    unsigned int logN;
    float maxshift=999;
-
+   float neighbor<4,3>;
+   float nextplacetolookx<4,3>;
+   float nextplacetolooky<4,3>;
+   
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   CountToRight (*list_stream,output_stream,sign,maxvalue);   
+   CountToRight (*list_stream,output_stream,neighbor,nextplacetolookx,nextplacetolooky,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       printf ("\nStage %d\n",i);
       streamPrint(i%2?output_stream:tmp_stream);
+      printf ("\nNeighbor %d\n",i);
+      streamPrint(neighbor);
+      printf ("\nNextAddy X %d\n",i);
+      streamPrint(nextplacetolookx);
+      printf ("\nNextAddy Y %d\n",i);
+      streamPrint(nextplacetolooky);
       if (i%2)
-         CountToRight (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
+         CountToRight (output_stream,tmp_stream,neighbor,nextplacetolookx,nextplacetolooky,sign*(1<<i),maxvalue);      
       else
-         CountToRight (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+         CountToRight (tmp_stream,output_stream,neighbor,nextplacetolookx,nextplacetolooky,sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
      streamSwap(tmp_stream,*output_stream);
