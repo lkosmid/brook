@@ -31,6 +31,7 @@ void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
   float sum;
   float4 xStrm<dim,dim>;
   float4 yStrm<dim,dim>;
+  float4 resultStrm<1>;
 
   float4 flush[1];
   float4 flushStrm<1>;
@@ -54,7 +55,7 @@ void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
   
     start = GetTimeTSC();        
 	for (i=0;i<iterations;i++) {    
-		reductionKernel(xStrm, result);
+		reductionKernel(xStrm, resultStrm);
 		sum = result.x + result.y + result.z + result.w;
     }    
     stop = GetTimeTSC();
@@ -68,11 +69,11 @@ void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
 	
     start = GetTimeTSC();
     for (i=0;i<iterations;i++) {
-		reductionRegKernel(xStrm, constant, yStrm);
-		forceGPUFlush(yStrm, flushStrm);
-		streamWrite(flushStrm, flush);
+		reductionRegKernel(xStrm, constant, yStrm);		
     }     	
-	   	
+    
+	forceGPUFlush(yStrm, flushStrm);
+	streamWrite(flushStrm, flush);	   	
     stop = GetTimeTSC();              
    
   }
