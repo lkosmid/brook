@@ -7,10 +7,14 @@
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
 
-struct arglisttype;
-
 extern void
-CodeGen_Kernel(Type *retType, const char *name,
-               Decl **args, int nArgs, const char *body);
+CodeGen_CheckSemantics (Type *retType, Decl **args, int nArgs);
+
+extern char *
+CodeGen_GenerateCode(Type *retType, const char *name,
+                     Decl **args, int nArgs, const char *body);
+
+extern char *
+CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs);
 
 #endif

@@ -1463,28 +1463,10 @@ FunctionDef::print(std::ostream& out, int) const
         out << " */" << std::endl;
     }
 
-    if (decl->isKernel()) {
-       FunctionType *fType;
-       std::ostringstream wrapOut;
+    decl->print(out,true);
+    out << std::endl;
 
-       Block::print(wrapOut, 0);
-       if (Project::gDebug) {
-          out << "***Wrapping\n";
-          decl->print(out, true);
-          out << std::endl << wrapOut.str() << "\n***\n";
-       }
-
-       assert (decl->form->type == TT_Function);
-       fType = (FunctionType *) decl->form;
-
-       CodeGen_Kernel(fType->subType, FunctionName()->name.c_str(),
-                      fType->args, fType->nArgs, wrapOut.str().c_str());
-    } else {
-       decl->print(out,true);
-       out << std::endl;
-
-       Block::print(out, 0);
-    }
+    Block::print(out, 0);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

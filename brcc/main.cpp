@@ -5,12 +5,16 @@
  *      should happen here.
  */
 
+#include <fstream>
+
+extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
 #include "getopt.h"
+}
 
 #include "main.h"
 #include "ctool.h"
@@ -131,30 +135,48 @@ parse_args (int argc, char *argv[]) {
 
 
 /*
- * ConvertToBrtStream --
+ * ConvertToBrtStreams --
  *
  *      Converts stream declaration statement objects into BrtStreams.
  */
 
-void ConvertToBrtStream (Statement *stemnt) {
-  if (!stemnt->isDeclaration())
-    return;
-  DeclStemnt *declstemnt = (DeclStemnt *)stemnt;
+static void
+ConvertToBrtStreams(Statement *s)
+{
+   DeclStemnt *declStemnt;
 
-  for (unsigned int i=0; i<declstemnt->decls.size(); i++) {
-    Decl *decl = declstemnt->decls[i];
-    if (!decl->form) continue;
-    Type *form = decl->form;
-    if (form->type != TT_Stream) continue;
-    ArrayType *tarray = (ArrayType *) form;
+   if (!s->isDeclaration()) { return; }
+   declStemnt = (DeclStemnt *) s;
 
-    BrtStreamType *brtStream = new BrtStreamType (tarray);
-    decl->form = brtStream;
-    assert (decl->initializer == NULL);
+   for (unsigned int i=0; i<declStemnt->decls.size(); i++) {
+      Decl *decl = declStemnt->decls[i];
+      if (!decl->form) continue;
+      Type *form = decl->form;
+      if (form->type != TT_Stream) continue;
+      ArrayType *tarray = (ArrayType *) form;
 
-    decl->initializer = new BrtStreamInitializer(brtStream,
-						 stemnt->location);
+      BrtStreamType *brtStream = new BrtStreamType (tarray);
+      decl->form = brtStream;
+      assert (decl->initializer == NULL);
+
+      decl->initializer = new BrtStreamInitializer(brtStream,
+						   declStemnt->location);
   }
+}
+
+
+/*
+ * ConvertToBrtKernels --
+ *
+ *      Converts FunctionDef *'s for kernel definitions into BRTKernelDef *'s.
+ */
+
+static FunctionDef *
+ConvertToBrtKernels(FunctionDef *fDef)
+{
+   if (!fDef->decl->isKernel()) { return NULL; }
+
+   return new BRTKernelDef(*fDef);
 }
 
 
@@ -177,16 +199,29 @@ main(int argc, char *argv[])
    proj = new Project();
    tu = proj->parse(globals.sourcename, false, NULL, false, NULL, NULL, NULL);
    if (tu) {
+      std::ofstream out;
 
-     // Convert Stream Declarations into brt decls
-     tu->findStemnt (ConvertToBrtStream);
+      /*
+       * If I didn't mind violating some abstractions, I'd roll my own loop
+       * here instead of using the Translation Unit methods.
+       */
+     tu->findStemnt(ConvertToBrtStreams);
+     tu->findFunctionDef(ConvertToBrtKernels);
 
-     std::cout << *tu << std::endl;
+     out.open(globals.coutputname);
+     if (out.fail()) {
+        std::cerr << "***Unable to open " << globals.coutputname << "\n";
+        exit(1);
+     }
+
+     out << *tu << std::endl;
+     out.close();
    } else {
-      std::cout << "Unable to parse " << globals.sourcename << std::endl;
+      std::cerr << "***Unable to parse " << globals.sourcename << std::endl;
       exit(1);
    }
 
+   std::cerr << "***Successfully compiled " << globals.sourcename << "\n";
    delete proj;
    exit(0);
    return 0;    /* Appease CL */

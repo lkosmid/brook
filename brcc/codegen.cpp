@@ -24,13 +24,13 @@ static const char fp30_assist[] =
 ;
 
 /*
- * check_semantics --
+ * CodeGen_CheckSemantics --
  *
  *      Takes a kernel function and does semantic checking.
  */
 
-static void
-check_semantics (Type *retType, Decl **args, int nArgs) {
+void
+CodeGen_CheckSemantics (Type *retType, Decl **args, int nArgs) {
   Decl *outArg = NULL;
 
   for (int i = 0; i < nArgs; i++) {
@@ -277,9 +277,7 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
   assert (name);
   assert (args);
 
-  fp << "#include<brook.h>\n\n";
-
-  fp << "static const char " << name << "_fp[] = " << std::endl;
+  fp << "\nstatic const char " << name << "_fp[] =" << std::endl;
 
   fp << "\"";
   while ((i = *fpcode++) != '\0') {
@@ -290,7 +288,7 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
   }
   fp << "\";\n\n";
 
-  fp << "static int p = 0;\n\n";
+  fp << "static int __" << name << "_p = 0;\n\n";
 
   retType->printType(fp, NULL, true, 0);
   fp << " " << name << " (";
@@ -308,7 +306,8 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
   }
   fp << ") {\n";
 
-  fp << "  if (!p) p = LoadKernelText(" << name << "_fp);\n";
+  fp << "  if (!__" << name << "_p) __" << name << "_p = LoadKernelText("
+     << name << "_fp);\n";
   fp << "  KernelMap (p, ";
   for (i=0; i < nArgs; i++) {
     if (i) fp << ", ";
@@ -358,14 +357,14 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
 
 
 /*
- * generate_header_file --
+ * CodeGen_GenerateHeader --
  *
- *      Takes a kernel functions prototype and emits the C header
+ *      Takes a kernel function's prototype and emits the C header
  *      information to call it.
  */
 
-static char *
-generate_header_file (Type *retType, const char *name, Decl **args, int nArgs)
+char *
+CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs)
 {
   std::ostringstream fp;
 
@@ -446,55 +445,49 @@ dump_to_file (char *fname, char *s) {
 
 
 /*
- * newkernel --
+ * CodeGen_GenerateCode --
  *
- *      Entry point to codegen.  This function takes the prototype and
- *      kernel body and drives the whole process through to dumping a .c and
- *      .h file to be linked and included to invoke the kernel.
+ *      Takes a parsed kernel and crunches it down to C code:
+ *              . Creates and annotates equivalent CG
+ *              . Compiles the CG
+ *              . Spits out the fragment program as a C string
+ *
+ *      Note: The caller is responsible for free()ing the returned string.
  */
 
-void
-CodeGen_Kernel(Type *retType, const char *name,
-               Decl **args, int nArgs, const char *body)
+char *
+CodeGen_GenerateCode(Type *retType, const char *name,
+                     Decl **args, int nArgs, const char *body)
 {
-  char *cgcode, *fpcode, *fpcode_with_brccinfo, *c_code, *h_code;
-
-  check_semantics(retType, args, nArgs);
+  char *cgcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   cgcode = generate_cg_code(args, nArgs, body);
-  std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
+  //std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
   if (globals.cgonly) {
     dump_to_file(globals.cgoutputname, cgcode);
     free(cgcode);
-    return;
+    return NULL;
   }
 
   fpcode = compile_cg_code(cgcode);
   free(cgcode);
-  std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
+  //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
   fpcode_with_brccinfo = append_argument_information(fpcode, args, nArgs, body);
   free(fpcode);
-  std::cerr << "***Produced this instrumented fpcode:\n"
-            << fpcode_with_brccinfo << "\n";
+  //std::cerr << "***Produced this instrumented fpcode:\n"
+  //          << fpcode_with_brccinfo << "\n";
 
   if (globals.fponly) {
     dump_to_file(globals.fpoutputname, fpcode_with_brccinfo);
     free (fpcode_with_brccinfo);
-    return;
+    return NULL;
   }
 
   c_code = generate_c_code(fpcode_with_brccinfo, retType, name, args, nArgs);
   free(fpcode_with_brccinfo);
-  std::cerr << "***Produced this C code:\n" << c_code;
-  //dump_to_file(globals.coutputname, c_code);
-  free(c_code);
+  //std::cerr << "***Produced this C code:\n" << c_code;
 
-  h_code = generate_header_file(retType, name, args, nArgs);
-  std::cerr << "***Produced this header code:\n" << h_code;
-  //dump_to_file(globals.houtputname, h_code);
-  free(h_code);
-
-  std::cerr << "***\n";
+  return c_code;
 }
 

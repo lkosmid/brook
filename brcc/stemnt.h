@@ -68,6 +68,7 @@ enum StatementType
     ST_ReturnStemnt,
 
     ST_Block,
+    ST_BRTKernel,
 
     ST_FileLineStemnt,       // #line #file
     ST_InclStemnt,           // #include

@@ -183,13 +183,22 @@ TransUnit::findStemnt( fnStemntCallback cb )
 void
 TransUnit::findFunctionDef( fnFunctionCallback cb )
 {
-    Statement *ste;
+    Statement *ste, *prev;
 
-    for (ste=head; ste; ste=ste->next)
-    {
+    for (ste=head, prev=NULL; ste; prev = ste, ste=ste->next) {
         // Function definition can only occur at the top level.
-        if (ste->isFuncDef())
-            (cb)((FunctionDef*) ste);
+        if (ste->isFuncDef()) {
+           FunctionDef *newDef;
+
+           newDef = (cb)((FunctionDef*) ste);
+           if (newDef == NULL) { continue; }
+
+           (prev ? prev->next : head) = newDef;
+           newDef->next = ste->next;
+           ste->next = NULL;
+           delete ste;
+           ste = newDef;
+        }
     }
 }
 
