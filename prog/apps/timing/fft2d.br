@@ -7,7 +7,7 @@ kernel void mult_complex(float2 a <>, float2 b <>, out float2 c <>)
   c.y = a.x*b.y + a.y*b.x;
 
 }
-
+#define DOTIMES 2
 kernel void DoDFTHelper (float2 r<>, 
                          float2 t<>, 
                          float2 W <>, 
@@ -82,6 +82,7 @@ extern float2 *getTwiddleFactor(int N);
 #define FFT_HORIZONTAL 0
 #define FFT_VERTICAL 1
 #define FFT_2D 2
+
 void FftwTransform2d(float2 *data, unsigned long N, unsigned long M,
                      int isign, char cast);
 void compute2dFFT(float2 *input,
@@ -98,7 +99,19 @@ void compute2dFFT(float2 *input,
    float2 W_horiz<M>;
    float2 W_vert<M>;
    float2 * dat;
-   int nPass,nBits,nPassCounter;
+   float * rawindices=0;
+   float indicesX<M>;
+   float *rindices=0;
+   float indicesY<N>;
+   int nPass,nBits,nPassCounter,thereAndBack;
+   rindices=bitReversedIndices(logN);
+   streamRead(indicesY,rindices);
+   free(rindices);
+   rawindices =bitReversedIndices(logM);
+   streamRead(indicesX,rawindices);
+   free(rawindices);
+   rawindices=(float*)1;
+
    streamRead(s,input);
    dat = getTwiddleFactor(N);
    streamRead(W_vert,dat);
@@ -111,6 +124,7 @@ void compute2dFFT(float2 *input,
       printf("FFT Input:\n");
       streamPrint(s);
    }
+   for (thereAndBack=0;thereAndBack<DOTIMES;++thereAndBack) {
    if (1==N*M) streamSwap(s_out,s);
    else {
       if (twod==FFT_2D||twod==FFT_HORIZONTAL) {
@@ -131,15 +145,7 @@ void compute2dFFT(float2 *input,
       }
    }
    if (1) {
-      float * rawindices=bitReversedIndices(logM);
-      float indicesX<M>;
-      streamRead(indicesX,rawindices);
-      free(rawindices);
       if (twod) {
-         float indicesY<N>;
-         rawindices=bitReversedIndices(logN);
-         streamRead(indicesY,rawindices);
-         free(rawindices);
          if (twod==FFT_2D) {
             bitReverseXY(s_out,indicesX,indicesY,s);      
          }else if (twod==FFT_VERTICAL) {
@@ -149,7 +155,7 @@ void compute2dFFT(float2 *input,
          bitReverseX(s_out,indicesX,s);      
       }
    }
-
+   }
 
    if (output)
       streamWrite(s_out,output);
@@ -159,6 +165,8 @@ void compute2dFFT(float2 *input,
         streamPrint(s_out);
       }
    }
+
+
 }
 float2 * getData(int N, int M) {
    int seed = 214098127;
@@ -175,6 +183,10 @@ float2 * getData(int N, int M) {
    return ret;
 }
 float2 * data = getData(4096,4096);
+#define PrintResults(sstart, sstop, name) \
+     printf("%9d    %6d        %6.2f        (* %s *)\\n", \
+          M, (int) (sstop - sstart), \
+          (float)(DOTIMES*10.*(logN+logM)*M*N) / (float) (sstop - sstart), name);
 
 void doFFT(int logN) {
    int logM = logN; 
@@ -184,14 +196,10 @@ void doFFT(int logN) {
    float2 * output;
    output = (float2*)malloc(sizeof(float2)*M*N);
    start = GetTime();
-   compute2dFFT(data,output,logN,logM,N,M,FFT_2D);
-   stop=GetTime();
+   compute2dFFT(data,output,logN,logM,N,M,FFT_2D); 
+   stop = GetTime();
    {
-     int numBytes = M*N * sizeof (float2);
-
-     printf("%9d\t%6d\t\t%6.2f\t\t(* %s *)\n",
-          M, (int) (stop - start),
-          numBytes / (float) (stop - start), "FFT");
+      PrintResults(start,stop,"FFT");
    }
 //   ReadWriteProcessTiming("FFT",data,output,1<<MPlusN,1<<MPlusN);
    //FftwTransform2d(data,N,M,1,1);
