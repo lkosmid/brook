@@ -20,7 +20,7 @@ extern "C" {
 #include "subprocess.h"
 
 static const char fp30_assist[] =
-#include "v01/fp30_assist.cg.bin"
+#include "fp30_assist.cg.bin"
 ;
 
 
