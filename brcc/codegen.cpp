@@ -8,8 +8,11 @@
 
 #include <sstream>
 #include <iomanip>
+#ifdef _WIN32
 #include <ios>
-
+#else
+#include <iostream>
+#endif
 extern "C" {
 #include <stdio.h>
 #include <string.h>

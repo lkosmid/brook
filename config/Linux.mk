@@ -26,8 +26,8 @@ LD_LIBLINK_PREFIX := -l
 LD_LIBLINK_SUFFIX :=  
 LD_DEBUG_FLAG     := 
 
-LIBRARIES         += m c 
-#GL
+LIBRARIES         +=
+#GL m c
 ARFLAGS		 := -rc 
 AR_OUTPUT_FLAG	 := 
 RUNTIME_LIBS     := brook cpu
