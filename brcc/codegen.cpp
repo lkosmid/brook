@@ -144,10 +144,10 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
   //       <<  1.0 / globals.workspace << std::endl;
 
   constreg = 0;
-  hlsl << "float2 _workspace    : register (c" 
+  hlsl << "float4 _workspace    : register (c" 
        << constreg++ << ");\n";
-  hlsl << "float2 _workspaceinv : register (c"
-       << constreg++ << ");\n";
+//  hlsl << "float2 _workspaceinv : register (c"
+//       << constreg++ << ");\n";
   
   /* Print out the texture stream */
   texcoord = 0;
@@ -164,7 +164,7 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
     } else if (args[i]->isArray()) {
        hlsl << "sampler " << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
-       hlsl << "float2 " << *args[i]->name << "_scale" 
+       hlsl << "float4 " << *args[i]->name << "_scalebias" 
             << " : register (c" << constreg++ << ");\n";
     } else {
        args[i]->print(hlsl, true);

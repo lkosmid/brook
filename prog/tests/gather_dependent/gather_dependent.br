@@ -40,7 +40,7 @@ int main() {
 	streamRead( index1, input_index1 );
 	streamRead( a1, input_a1 );
 	streamRead( index2, input_index2 );
-	streamRead( a2, input_a1 );
+	streamRead( a2, input_a2 );
 	
 	gather1( index1, a1, b1 );
 	gather2( index2, a2, b2 );

@@ -41,11 +41,19 @@ namespace brook {
     virtual void Release() {}
 
   private:
+    enum {
+      kBaseConstantIndex = 1
+    };
+
     virtual ~DX9Kernel();
     IDirect3DDevice9* getDevice();
     void initialize( const char* source );
 
-    int argumentStreamIndex;
+    void PushSampler( DX9Stream* s );
+    void PushTexCoord( const DX9Rect& r );
+
+    int argumentSamplerIndex;
+    int argumentTexCoordIndex;
     int argumentConstantIndex;
     int argumentOutputIndex;
 
@@ -69,6 +77,7 @@ namespace brook {
     IDirect3DSurface9* getSurfaceHandle();
     const DX9Rect& getInputRect() { return inputRect; }
     const DX9Rect& getOutputRect() { return outputRect; }
+    const float4& getGatherConstant() { return gatherConstant; }
 
   private:
     virtual ~DX9Stream ();
@@ -78,6 +87,7 @@ namespace brook {
     DX9Texture* texture;
     DX9Rect inputRect;
     DX9Rect outputRect;
+    float4 gatherConstant;
   };
 
   class DX9RunTime : public RunTime {

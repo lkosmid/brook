@@ -37,6 +37,13 @@ DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int in
 	result = textureHandle->GetSurfaceLevel( 0, &surfaceHandle );
 	DX9CheckResult( result );
 
+  D3DSURFACE_DESC descriptor;
+  result = surfaceHandle->GetDesc( &descriptor );
+  DX9CheckResult( result );
+  D3DFORMAT internalFormat = descriptor.Format;
+  DX9Trace("components=%d internalComponents=%d dxFormat=%x, internalFormat=%x, width=%d, height=%d",
+    components, internalComponents, dxFormat, internalFormat, descriptor.Width, descriptor.Height);
+
 	result = device->CreateOffscreenPlainSurface( width, height, dxFormat, D3DPOOL_SYSTEMMEM, &shadowSurface, NULL );
 	DX9CheckResult( result );
 }

@@ -6,10 +6,10 @@ using namespace brook;
 
 static const char* kKnownTypeNames[] =
 {
-  "float",
-  "float2",
-  "float3",
-  "float4",
+  "float ",
+  "float2 ",
+  "float3 ",
+  "float4 ",
   NULL
 };
 
@@ -56,7 +56,7 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, const char type[], int dims, int exte
   while( kKnownTypeNames[i] != NULL )
   {
     const char* name = kKnownTypeNames[i];
-    if( strncmp(type, name, strlen(name)) == 0 )
+    if( strcmp(type, name) == 0 )
     {
       components = kKnownTypeComponentCounts[i];
       break;
@@ -73,6 +73,15 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, const char type[], int dims, int exte
 
   inputRect = DX9Rect( 0, 1, 1, 0 );
   outputRect = DX9Rect( -1, -1, 1, 1 );
+
+  float scaleX = 1.0f / width;
+  float scaleY = 1.0f / height;
+  float offsetX = 0.5f / width;
+  float offsetY = 0.5f / height;
+  gatherConstant.x = scaleX;
+  gatherConstant.y = scaleY;
+  gatherConstant.z = offsetX;
+  gatherConstant.w = offsetY;
 }
 
 void DX9Stream::Read(const void *p) {

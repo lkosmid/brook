@@ -8,7 +8,7 @@ using namespace brook;
 static const char* PIXEL_SHADER_NAME_STRING = "ps20";
 
 DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
-  : runtime(runtime), argumentStreamIndex(0), argumentConstantIndex(0), argumentOutputIndex(0)
+  : runtime(runtime), argumentSamplerIndex(0), argumentTexCoordIndex(0), argumentConstantIndex(0), argumentOutputIndex(0)
 {
   DX9Trace("DX9Kernel::DX9Kernel");
   
@@ -20,6 +20,9 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
 
     if( strncmp( nameString, PIXEL_SHADER_NAME_STRING, strlen(PIXEL_SHADER_NAME_STRING) ) == 0 )
     {
+      if( programString == NULL )
+        DX9Fail("Pixel shader 2.0 failed to compile.");
+
       initialize( programString );
       return;
     }
@@ -31,17 +34,11 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
 }
 
 void DX9Kernel::PushStream(Stream *s) {
-  DX9Trace("PushInput");
-  int arg = argumentStreamIndex++;
-
   DX9Stream* stream = (DX9Stream*)s;
-  IDirect3DTexture9* textureHandle = stream->getTextureHandle();
-
-  int textureUnit = arg;
-  inputTextures[textureUnit] = textureHandle;
-  inputRects[textureUnit] = stream->getInputRect();
-  DX9Trace("PushInput - end");
+  PushSampler( stream );
+  PushTexCoord( stream->getInputRect() );
 }
+
 void DX9Kernel::PushReduce(void * val, unsigned int size) {
    //XXX Add Reduce functionality
    fprintf (stderr,"Reduce inoperative in DirectX\n");
@@ -59,6 +56,7 @@ void DX9Kernel::PushReduce(void * val, unsigned int size) {
       PushConstant(*(float*)val);
    }  
 }
+
 void DX9Kernel::PushConstant(const float &val) {
   float4 value;
   value.x = val;
@@ -87,21 +85,17 @@ void DX9Kernel::PushConstant(const float3 &val) {
 }
 
 void DX9Kernel::PushConstant(const float4 &val) {
-  DX9Trace("PushConstant");
   int arg = argumentConstantIndex++;
   int constantIndex = arg;
+  DX9Trace("PushConstant[%d] < %3.2f, %3.2f, %3.2f, %3.2f >",
+    constantIndex+kBaseConstantIndex, val.x, val.y, val.z, val.w );
   inputConstants[constantIndex] = val;
 }
 
 void DX9Kernel::PushGatherStream(Stream *s) {
-  DX9Trace("PushGatherStream");
-  int arg = argumentStreamIndex++;
-  
   DX9Stream* stream = (DX9Stream*)s;
-  IDirect3DTexture9* textureHandle = stream->getTextureHandle();
-
-  int textureUnit = arg;
-  inputTextures[textureUnit] = textureHandle;
+  PushConstant( stream->getGatherConstant() );
+  PushSampler( stream );
 }
 
 void DX9Kernel::PushOutput(Stream *s) {
@@ -119,10 +113,12 @@ void DX9Kernel::Map() {
   DX9Trace("Map");
   HRESULT result;
 
-  int streamCount = argumentStreamIndex;
+  int samplerCount = argumentSamplerIndex;
+  int texCoordCount = argumentTexCoordIndex;
   int constantCount = argumentConstantIndex;
   int outputCount = argumentOutputIndex;
-  argumentStreamIndex = 0;
+  argumentSamplerIndex = 0;
+  argumentTexCoordIndex = 0;
   argumentConstantIndex = 0;
   argumentOutputIndex = 0;
 
@@ -142,15 +138,17 @@ void DX9Kernel::Map() {
   result = getDevice()->SetVertexShader( vertexShader->getHandle() );
   DX9CheckResult( result );
   int i;
-  for( i = 0; i < streamCount; i++ )
+  for( i = 0; i < samplerCount; i++ )
   {
     result = getDevice()->SetTexture( i, inputTextures[i] );
     DX9CheckResult( result );
   }
 
+  // TIM: TODO: set up workspace constant
+
   for( i = 0; i < constantCount; i++ )
   {
-    result = getDevice()->SetPixelShaderConstantF( i, (float*)&(inputConstants[i]), 1 );
+    result = getDevice()->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
     DX9CheckResult( result );
   }
 
@@ -180,4 +178,19 @@ void DX9Kernel::initialize( const char* source ) {
     inputRects[i] = DX9Rect(0,0,0,0);
     inputTextures[i] = NULL;
   }
+}
+
+void DX9Kernel::PushSampler( DX9Stream* s )
+{
+  int samplerIndex = argumentSamplerIndex++;
+  DX9Trace("PushSampler[%d]",samplerIndex);
+  IDirect3DTexture9* texture = s->getTextureHandle();
+  inputTextures[samplerIndex] = texture;
+}
+
+void DX9Kernel::PushTexCoord( const DX9Rect& r )
+{
+  int textureUnit = argumentTexCoordIndex++;
+  DX9Trace("PushTexCoord[%d]",textureUnit);
+  inputRects[textureUnit] = r;
 }

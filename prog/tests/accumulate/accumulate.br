@@ -24,9 +24,9 @@ int main() {
 	{
 		for( j = 0; j < 10; j++ )
 		{
-			input_a1[10*i+j] = 0.1f*(float)(10*i+j);
+			input_a1[10*i+j] = 0.125f*(float)(10*i+j);
 			input_b1[10*i+j] = (float)0;
-			input_a2[i][j] = 0.1f*(float)(10*i+j);
+			input_a2[i][j] = 0.125f*(float)(10*i+j);
 			input_b2[i][j] = (float)0;
 		}
 	}
@@ -35,7 +35,7 @@ int main() {
 	streamRead( a2, input_a1 );
 	streamRead( b2, input_b2 );
 	
-	for( i = 0; i < 15; i++ )
+	for( i = 0; i < 12; i++ )
 	{
 		sum( a1, b1, b1 );
 		sum( a2, b2, b2 );
