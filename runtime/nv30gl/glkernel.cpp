@@ -1,8 +1,10 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <string>
+#include <iostream>
+
 #include "glruntime.hpp"
 
 using namespace brook;
@@ -243,6 +245,11 @@ void GLKernel::PushIter(Iter *s) {
 }
 
 void GLKernel::PushConstant(const float &val) {
+#ifdef DEBUG
+   std::cerr << "GL: Binding creg " << creg << " to float constant "
+             << constnames[creg] << "\n";
+#endif
+
    for (unsigned int i=0; i<npasses; i++)
 #if 1
       glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
@@ -258,6 +265,11 @@ void GLKernel::PushConstant(const float &val) {
 }
 
 void GLKernel::PushConstant(const float2 &val) {
+#ifdef DEBUG
+   std::cerr << "GL: Binding creg " << creg << " to float2 constant "
+             << constnames[creg] << "\n";
+#endif
+
    for (unsigned int i=0; i<npasses; i++)
 #if 1
       glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
@@ -273,6 +285,11 @@ void GLKernel::PushConstant(const float2 &val) {
 }
 
 void GLKernel::PushConstant(const float3 &val) {
+#ifdef DEBUG
+   std::cerr << "GL: Binding creg " << creg << " to float3 constant "
+             << constnames[creg] << "\n";
+#endif
+
    for (unsigned int i=0; i<npasses; i++)
 #if 1
       glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
@@ -288,6 +305,11 @@ void GLKernel::PushConstant(const float3 &val) {
 }
 
 void GLKernel::PushConstant(const float4 &val) {
+#ifdef DEBUG
+   std::cerr << "GL: Binding creg " << creg << " to float4 constant "
+             << constnames[creg] << "\n";
+#endif
+
    for (unsigned int i=0; i<npasses; i++)
 #if 1
       glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
@@ -358,7 +380,7 @@ void GLKernel::ResetStateMachine() {
    int i;
 
    nout = 0;
-   creg = 1;
+   creg = 0;
    sreg = 0;
    treg = 0;
    argcount = 0;

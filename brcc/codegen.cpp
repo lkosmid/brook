@@ -263,9 +263,9 @@ static bool expandOutputArgumentStructureDecl(
       {
         used = true;
 		    // it had better be just a floatN
-        shader << ",\n\t\t";
         shader << "out float4 __output_" << outr;
         shader << " : COLOR" << (outr - inFirstOutput);
+        shader << ",\n\t\t";
       }
 		}
 	}
@@ -303,9 +303,9 @@ static bool expandOutputArgumentDecl(
     if( outr >= inFirstOutput+inOutputCount ) return false;
 
 		// it had better be just a floatN
-    shader << ",\n\t\t";
     shader << "out float4 __output_" << outr;
     shader << " : COLOR" << (outr - inFirstOutput);
+    shader << ",\n\t\t";
 
     return true;
 	}
@@ -402,209 +402,182 @@ static void expandOutputArgumentWrite(
 	}
 }
 
-static void expandStreamStructureSamplerDecls( std::ostream& shader, const std::string& argumentName, StructDef* structure, int& ioIndex, int& ioSamplerReg )
+
+static void
+expandStreamStructureSamplerDecls(std::ostream& shader,
+                                  const std::string& argumentName,
+                                  StructDef* structure,
+                                  int& ioIndex, int& ioSamplerReg)
 {
-	assert( !structure->isUnion() );
+   assert(!structure->isUnion());
 
-	int elementCount = structure->nComponents;
-	for( int i = 0; i < elementCount; i++ )
-	{
-		Decl* elementDecl = structure->components[i];
-		if( elementDecl->storage & ST_Static ) continue;
-		Type* form = elementDecl->form;
+   int elementCount = structure->nComponents;
+   for (int i = 0; i < elementCount; i++ ) {
+      Decl* elementDecl = structure->components[i];
+      if (elementDecl->storage & ST_Static ) continue;
+      Type* form = elementDecl->form;
 
-		// TIM: for now
-		assert( form->isBaseType() );
-		BaseType* base = form->getBase();
-		StructDef* structure = findStructureDef( base );
-		if( structure )
-			expandStreamStructureSamplerDecls( shader, argumentName, structure, ioIndex, ioSamplerReg );
-		else
-		{
-      shader <<  ",\n\t\t";
-			shader << "uniform _stype __structsampler" << ioIndex++ <<"_" << argumentName;
-			shader << " : register (s" << ioSamplerReg++ << ")";
-		}
-	}
+      // TIM: for now
+      assert( form->isBaseType() );
+      BaseType* base = form->getBase();
+      StructDef* structure = findStructureDef( base );
+      if (structure)
+         expandStreamStructureSamplerDecls(shader, argumentName,
+                                           structure, ioIndex, ioSamplerReg);
+      else {
+         shader << "uniform _stype __structsampler" << ioIndex++
+                << "_" << argumentName;
+         shader << " : register (s" << ioSamplerReg++ << ")";
+         shader <<  ",\n\t\t";
+      }
+   }
 }
 
-static void exandStreamSamplerDecls( std::ostream& shader, const std::string& inArgumentName, Type* inForm, int& samplerreg )
+
+static void
+expandStreamSamplerDecls(std::ostream& shader,
+                         const std::string& inArgumentName,
+                         Type* inForm, int& samplerreg)
 {
   StructDef* structure = NULL;
 
-  if( inForm->isStream() )
-  {
+  if (inForm->isStream()) {
 	  BrtStreamType* streamType = (BrtStreamType*)(inForm);
 
 	  // TIM: can't handle arrays with a BaseType
 	  BaseType* elementType = streamType->getBase();
 	  structure = findStructureDef( elementType );
-  }
-  else
-  {
+  } else {
     assert( (inForm->getQualifiers() & TQ_Reduce) != 0 );
     structure = findStructureDef( inForm );
   }
 
-  if( structure )
-	{
-		int index = 0;
-		expandStreamStructureSamplerDecls( shader, inArgumentName, structure, index, samplerreg );
-	}
-	else
-	{
-		// it had better be just a floatN
-		// Output a sampler, texcoord, and scale_bias for 
-		// a stream
-    shader <<  ",\n\t\t";
-		shader << "uniform _stype _tex_" << inArgumentName;
-		shader << " : register (s" << samplerreg++ << ")";
-	}
+  if (structure) {
+     int index = 0;
+
+     expandStreamStructureSamplerDecls(shader, inArgumentName,
+                                       structure, index, samplerreg);
+  } else {
+     // it had better be just a floatN
+     // Output a sampler, texcoord, and scale_bias for
+     // a stream
+     shader << "uniform _stype _tex_" << inArgumentName;
+     shader << " : register (s" << samplerreg++ << ")";
+     shader <<  ",\n\t\t";
+  }
 }
 
-#if 0
-static void printSwizzle( std::ostream& shader, Type* inForm )
+static void
+expandStreamStructureFetches(std::ostream& shader,
+                             const std::string& argumentName,
+                             const std::string& fieldName,
+                             StructDef* structure, int& ioIndex,
+                             const std::string& positionName)
 {
-	assert( inForm );
-	BaseType* base = inForm->getBase();
-	assert( base );
+   assert(!structure->isUnion());
 
-	switch(base->typemask) {
-		case BT_Float:
-			shader << "x";
-			break;
-		case BT_Float2:
-			shader << "xy";
-			break;
-		case BT_Float3:
-			shader << "xyz";
-			break;
-		case BT_Float4:
-			shader << "xyzw";
-			break;
-		default:
-			fprintf(stderr, "Strange stream base type:");
-			base->printBase(std::cerr, 0);
-			abort();
-	}
-}
-#endif
+   int elementCount = structure->nComponents;
+   for (int i = 0; i < elementCount; i++) {
+      Decl* elementDecl = structure->components[i];
+      if (elementDecl->storage & ST_Static) continue;
+      Type* form = elementDecl->form;
 
-static void expandStreamStructureFetches( std::ostream& shader, const std::string& argumentName, const std::string& fieldName, StructDef* structure, int& ioIndex,
-                                         const std::string& positionName )
-{
-	assert( !structure->isUnion() );
+      std::string subFieldName = fieldName + "." + elementDecl->name->name;
 
-	int elementCount = structure->nComponents;
-	for( int i = 0; i < elementCount; i++ )
-	{
-		Decl* elementDecl = structure->components[i];
-		if( elementDecl->storage & ST_Static ) continue;
-		Type* form = elementDecl->form;
+      // TIM: for now
+      assert(form->isBaseType());
+      BaseType* base = form->getBase();
+      StructDef* structure = findStructureDef(base);
 
-		std::string subFieldName = fieldName + "." + elementDecl->name->name;
+      if (structure) {
+         expandStreamStructureFetches(shader, argumentName, subFieldName,
+                                      structure, ioIndex, positionName);
+      } else {
+         shader << subFieldName << " = ";
 
-		// TIM: for now
-		assert( form->isBaseType() );
-		BaseType* base = form->getBase();
-		StructDef* structure = findStructureDef( base );
-		if( structure )
-		{
-			expandStreamStructureFetches( shader, argumentName, subFieldName, structure, ioIndex, positionName );
-		}
-		else
-		{
-      shader << subFieldName << " = ";
+         switch(base->typemask) {
+         case BT_Float:
+            shader << "__fetch_float";
+            break;
+         case BT_Float2:
+            shader << "__fetch_float2";
+            break;
+         case BT_Float3:
+            shader << "__fetch_float3";
+            break;
+         case BT_Float4:
+            shader << "__fetch_float4";
+            break;
+         default:
+            shader << "__gatherunknown";
+            break;
+         }
 
-      switch(base->typemask) {
-      case BT_Float:
-        shader << "__fetch_float";
-        break;
-      case BT_Float2:
-        shader << "__fetch_float2";
-       break;
-      case BT_Float3:
-        shader << "__fetch_float3";
-       break;
-      case BT_Float4:
-        shader << "__fetch_float4";
-       break;
-      default:
-        shader << "__gatherunknown";
-        break;
+         shader << "( __structsampler" << ioIndex++
+                << "_" << argumentName << ", _tex_"
+                << positionName << "_pos );\n";
       }
-
-      shader << "( __structsampler" << ioIndex++ << "_" << argumentName
-        << ", _tex_" << positionName << "_pos );\n";
-		}
-	}
+   }
 }
 
-static void expandStreamFetches( std::ostream& shader, const std::string& argumentName, Type* inForm,
-  const char* inPositionName = NULL )
+
+static void
+expandStreamFetches(std::ostream& shader, const std::string& argumentName,
+                    Type* inForm, const char* inPositionName = NULL)
 {
   StructDef* structure = NULL;
   Type* elementType = NULL;
 
-  std::string positionName = (inPositionName != NULL) ? inPositionName : argumentName;
+  std::string positionName =
+     (inPositionName != NULL) ? inPositionName : argumentName;
 
-  if( inForm->isStream() )
-  {
-	  BrtStreamType* streamType = (BrtStreamType*)(inForm);
+  if (inForm->isStream()) {
+     BrtStreamType* streamType = (BrtStreamType*)(inForm);
 
-	  // TIM: can't handle arrays with a BaseType
-	  elementType = streamType->getBase();
-	  structure = findStructureDef( elementType );
-  }
-  else
-  {
-    assert( (inForm->getQualifiers() & TQ_Reduce) != 0 );
-    elementType = inForm;
-    structure = findStructureDef( inForm );
+     // TIM: can't handle arrays with a BaseType
+     elementType = streamType->getBase();
+     structure = findStructureDef(elementType);
+  } else {
+     assert((inForm->getQualifiers() & TQ_Reduce) != 0);
+     elementType = inForm;
+     structure = findStructureDef(inForm);
   }
 
-	if( structure )
-	{
-		int index = 0;
-		expandStreamStructureFetches( shader, positionName, argumentName, structure, index, positionName );
-	}
-	else
-	{
-    shader << positionName << " = ";
+  if (structure) {
+     int index = 0;
+     expandStreamStructureFetches(shader, positionName, argumentName,
+                                  structure, index, positionName);
+  } else {
+     shader << positionName << " = ";
 
-    BaseType* base = inForm->getBase();
-    switch(base->typemask) {
-    case BT_Float:
-      shader << "__fetch_float";
-      break;
-    case BT_Float2:
-      shader << "__fetch_float2";
-      break;
-    case BT_Float3:
-      shader << "__fetch_float3";
-      break;
-    case BT_Float4:
-      shader << "__fetch_float4";
-      break;
-    default:
-      shader << "__fetchunknown";
-      break;
-    }
+     BaseType* base = inForm->getBase();
+     switch(base->typemask) {
+     case BT_Float:
+        shader << "__fetch_float";
+        break;
+     case BT_Float2:
+        shader << "__fetch_float2";
+        break;
+     case BT_Float3:
+        shader << "__fetch_float3";
+        break;
+     case BT_Float4:
+        shader << "__fetch_float4";
+        break;
+     default:
+        shader << "__fetchunknown";
+        break;
+     }
 
-    shader << "(_tex_" << argumentName
-      << ", _tex_" << positionName << "_pos );\n";
-	}
+     shader << "(_tex_" << argumentName << ", _tex_"
+            << positionName << "_pos );\n";
+  }
 }
 
-static char *
-generate_shader_code (Decl **args, int nArgs, const char* functionName,
-                      int inFirstOutput, int inOutputCount, bool fullAddressTrans, int reductionFactor ) {
-  std::ostringstream shader;
-  bool isReduction = false;
-  bool reductionArgumentComesBeforeStreamArgument = false;
-  std::vector<int> reductionStreamArguments;
-  int texcoord, constreg, samplerreg, i;
 
+static void
+generate_shader_support(std::ostream& shader)
+{
   shader << "#ifdef USERECT\n";
   shader << "#define _stype   samplerRECT\n";
   shader << "#define _sfetch  texRECT\n";
@@ -652,8 +625,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
   shader << "float4 __gather_float4( _stype s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
   shader << "float4 __gather_float4( _stype s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
 
-  if( globals.enableGPUAddressTranslation )
-  {
+  if (globals.enableGPUAddressTranslation) {
     shader << "\n\n";
 
     shader << "float4 __calculateindexof( float4 indexofoutput, float4 shape ) {\n";
@@ -693,206 +665,255 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
   }
 
   shader << "\n\n";
+}
 
+static void
+generate_shader_iter_arg(std::ostream& shader, Decl *arg, int& texcoord)
+{
+   std::string argName = arg->name->name;
+   TypeQual qual = arg->form->getQualifiers();
+
+   if (globals.enableGPUAddressTranslation) {
+      shader << "float2 __itershape_" << argName;
+      shader << ",\n\t\t";
+      shader << "float4 __itermin_" << argName;
+      shader << ",\n\t\t";
+      shader << "float4 __iterstep_" << argName;
+      shader << ",\n\t\t";
+   } else {
+      // Just output a texcoord for an iterator
+      arg->form->getBase()->qualifier &= ~TQ_Iter;
+      arg->form->printBase(shader, 0);
+      arg->form->getBase()->qualifier = qual;
+      shader << argName << " : TEXCOORD" << texcoord++;
+      shader <<  ",\n\t\t";
+   }
+}
+
+
+static void
+generate_shader_out_arg(std::ostream& shader, Decl *arg,
+                        bool& hasDoneIndexofOutput, bool needIndexOfArg,
+                        int i, int& texcoord, int &constreg)
+{
+   std::string argName = arg->name->name;
+   TypeQual qual = arg->form->getQualifiers();
+
+   if (globals.enableGPUAddressTranslation) {
+      // index of output should already be available...
+   } else if (!hasDoneIndexofOutput && needIndexOfArg) {
+      hasDoneIndexofOutput = true;
+      shader << "uniform float4 _const_" << argName
+             << "_invscalebias" << " : register (c" << constreg++ << ")";
+      shader <<  ",\n\t\t";
+      shader << "float2 _tex_" << argName << "_pos : TEXCOORD"
+             << texcoord++;
+      shader <<  ",\n\t\t";
+   }
+}
+
+
+static void
+generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
+                              bool& reductionArgumentComesBeforeStreamArgument,
+                              std::vector<int>& reductionStreamArguments,
+                              int reductionFactor, int i,
+                              int& texcoord, int& samplerreg)
+{
+   std::string argName = arg->name->name;
+   TypeQual qual = arg->form->getQualifiers();
+
+   if ((qual & TQ_Reduce) != 0 && reductionStreamArguments.size() == 0)
+      reductionArgumentComesBeforeStreamArgument = true;
+
+   reductionStreamArguments.push_back(i);
+   expandStreamSamplerDecls(shader, argName, arg->form, samplerreg);
+
+   if (reductionStreamArguments.size() == 2) {
+      for (int r = 2; r < reductionFactor; r++) {
+         std::stringstream s;
+         s << "__reduce" << r;
+         std::string adjustedArgName = s.str();
+
+         shader << "float2 _tex_" << adjustedArgName << "_pos : TEXCOORD"
+                << texcoord++;
+         shader <<  ",\n\t\t";
+      }
+   }
+
+   shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << texcoord++;
+   shader <<  ",\n\t\t";
+}
+
+
+static void
+generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg,
+                        int& texcoord, int& constreg, int& samplerreg)
+{
+   std::string argName = arg->name->name;
+   TypeQual qual = arg->form->getQualifiers();
+
+   expandStreamSamplerDecls(shader, argName, arg->form, samplerreg);
+
+   if (globals.enableGPUAddressTranslation) {
+      shader << "uniform float4 __streamshape_" << argName;
+      shader << " : register(c" << constreg++ << ")";
+      shader << ",\n\t\t";
+      shader << "uniform float4 __streamlinearize_" << argName;
+      shader << " : register(c" << constreg++ << ")";
+      shader << ",\n\t\t";
+      shader << "uniform float2 __streamreshape_" << argName;
+      shader << " : register(c" << constreg++ << ")";
+      shader << ",\n\t\t";
+   } else {
+      // Output a texcoord, and optional scale/bias
+      if (needIndexOfArg) {
+         shader << "uniform float4 _const_" << argName << "_invscalebias"
+                << " : register (c" << constreg++ << ")";
+         shader <<  ",\n\t\t";
+      }
+      shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << texcoord++;
+      shader <<  ",\n\t\t";
+   }
+}
+
+
+static void
+generate_shader_gather_arg(std::ostream& shader, Decl *arg,
+                           int& constreg, int& samplerreg)
+{
+   std::string argName = arg->name->name;
+   TypeQual qual = arg->form->getQualifiers();
+   int samplerCount = getGatherStructureSamplerCount(arg->form);
+
+   if (globals.enableGPUAddressTranslation) {
+      shader << "uniform _stype " << argName;
+      shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
+      samplerreg += samplerCount;
+
+      shader << ",\n\t\t";
+      shader << "uniform float4 __gatherlinearize_" << argName;
+      shader << " : register(c" << constreg++ << ")";
+      shader << ",\n\t\t";
+      shader << "uniform float2 __gatherreshape_" << argName;
+      shader << " : register(c" << constreg++ << ")";
+      shader <<  ",\n\t\t";
+   } else {
+      // TIM: TODO: handle multi-sampler array for gathers...
+      shader << "uniform _stype " << argName;
+      shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
+      samplerreg += samplerCount;
+      shader <<  ",\n\t\t";
+      shader << "uniform float4 __gatherconst_" << argName
+             << " : register (c" << constreg++ << ")";
+      shader <<  ",\n\t\t";
+   }
+}
+
+
+static char *
+generate_shader_code (Decl **args, int nArgs, const char* functionName,
+                      int inFirstOutput, int inOutputCount,
+                      bool fullAddressTrans, int reductionFactor)
+{
+  std::ostringstream shader;
+  std::vector<int> reductionStreamArguments;
+  int texcoord, constreg, samplerreg, outputReg, i;
+  bool reductionArgumentComesBeforeStreamArgument = false;
+  bool isReduction, hasDoneIndexofOutput;
+
+  isReduction = false;
+  for (i=0; i < nArgs; i++) {
+    if ((args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
+       isReduction = true;
+       break;
+    }
+  }
+
+  /*
+   * Print a whole bunch of boiler-plate stuff at the top
+   */
+
+  generate_shader_support(shader);
   generate_shader_structure_definitions(shader);
   generate_shader_subroutines(shader,functionName);
 
-  // Find if it is a reduction
+  shader << "void main (\n\t\t";
+
+  /*
+   * Print the argument list
+   */
+
+  hasDoneIndexofOutput = false;
+  constreg = texcoord = samplerreg = outputReg = 0;
   for (i=0; i < nArgs; i++) {
-    TypeQual qual = args[i]->form->getQualifiers();
-    
-    if ((qual & TQ_Reduce) != 0) {
-      isReduction = true;
-    }
+     std::string argName = args[i]->name->name;
+     TypeQual qual = args[i]->form->getQualifiers();
+     bool needIndexOfArg = FunctionProp[functionName].contains(i);
+
+     /* put the output in the argument list */
+     if ((qual & TQ_Out) != 0 || (qual & TQ_Reduce) != 0) {
+        expandOutputArgumentDecl(shader, argName, args[i]->form,
+                                 outputReg, inFirstOutput, inOutputCount);
+     }
+
+     if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
+        if ((qual & TQ_Iter) != 0) {
+           generate_shader_iter_arg(shader, args[i], texcoord);
+        } else if ((qual & TQ_Out) != 0) {
+           generate_shader_out_arg(shader, args[i], hasDoneIndexofOutput,
+                                   needIndexOfArg, i, texcoord, constreg);
+        } else {
+           if (isReduction) {
+              assert(!needIndexOfArg && "can't use indexof in a reduction" );
+              generate_reduction_stream_arg(shader, args[i],
+                                            reductionArgumentComesBeforeStreamArgument,
+                                            reductionStreamArguments,
+                                            reductionFactor, i, texcoord,
+                                            samplerreg);
+           } else {
+              generate_map_stream_arg(shader, args[i], needIndexOfArg,
+                                      texcoord, constreg, samplerreg);
+           }
+        }
+     } else if (args[i]->isArray()) {
+        generate_shader_gather_arg(shader, args[i], constreg, samplerreg);
+     } else {
+        shader << "uniform ";
+        args[i]->print(shader, true);
+        shader << " : register (c" << constreg++ << ")";
+        shader <<  ",\n\t\t";
+     }
   }
 
-  shader << "void main (";
+  /*
+   * Output the bonus arguments.
+   *
+   * Put them at the end so that the parameter numbering isn't perturbed
+   * (especially since there's a different number of bonus arguments with
+   * and without address translation).
+   */
 
-  constreg = 0;
-  texcoord = 0;
-  samplerreg = 0;
-  int outputReg = 0;
-
-
-  if( !globals.enableGPUAddressTranslation )
-  {
+  if (!globals.enableGPUAddressTranslation) {
     // Add the workspace variable
-    shader << "\n\t\tuniform float4 __workspace    : register (c"
-        << constreg++ << ")";
-  }
-  else
-  {
-    shader << "\n\t\t";
-    shader << "float2 __outputtexcoord : TEXCOORD"
-      << texcoord++;
+    shader << "uniform float4 __workspace    : register (c"
+           << constreg++ << ")";
+  } else {
+    shader << "float2 __outputtexcoord : TEXCOORD" << texcoord++;
     shader << ",\n\t\t";
-    shader << "float2 __outputaddrinterpolant : TEXCOORD"
-      << texcoord++;
+    shader << "float2 __outputaddrinterpolant : TEXCOORD" << texcoord++;
     shader << ",\n\t\t";
-    shader << "uniform float4 __outputconst : register(c"
-      << constreg++ << ")";
+    shader << "uniform float4 __outputconst : register(c" << constreg++ << ")";
     shader << ",\n\t\t";
-    shader << "uniform float __hackconst : register(c"
-      << constreg++ << ")";
-
+    shader << "uniform float __hackconst : register(c" << constreg++ << ")";
   }
 
-  /* Print the argument list */
-
-  bool hasDoneIndexofOutput = false;
-
-  for (i=0; i < nArgs; i++) {
-    std::string argName = args[i]->name->name;
-    TypeQual qual = args[i]->form->getQualifiers();
-    
-    /* put the output in the argument list */
-    if ((qual & TQ_Out) != 0 || (qual & TQ_Reduce) != 0) {
-      expandOutputArgumentDecl( shader, (args[i]->name)->name, args[i]->form, outputReg, inFirstOutput, inOutputCount );      
-    }
-    
-    if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
-
-      if ((qual & TQ_Iter) != 0) {
-
-        if( globals.enableGPUAddressTranslation )
-        {
-          shader << ",\n\t\t";
-          shader << "float2 __itershape_" << argName;
-          shader << ",\n\t\t";
-          shader << "float4 __itermin_" << argName;
-          shader << ",\n\t\t";
-          shader << "float4 __iterstep_" << argName;
-        }
-        else
-        {
-          // Just output a texcoord for an iterator
-          shader <<  ",\n\t\t";
-          args[i]->form->getBase()->qualifier &= ~TQ_Iter;
-          args[i]->form->printBase(shader, 0);
-          args[i]->form->getBase()->qualifier = qual;
-          
-          shader << *args[i]->name << " : TEXCOORD" << texcoord++; 
-        }
-      } else if((qual & TQ_Out) != 0) {
-
-        if( globals.enableGPUAddressTranslation )
-        {
-          // index of output should already be available...
-        }
-        else if( !hasDoneIndexofOutput && FunctionProp[functionName].contains(i) ) {
-          hasDoneIndexofOutput = true;
-          shader <<  ",\n\t\t";
-          shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
-                << " : register (c" << constreg++ << ")";
-          shader <<  ",\n\t\t";
-          shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
-              << texcoord++;
-        }
-      } else
-      {
-        if( isReduction )
-        {
-          if( (qual & TQ_Reduce) != 0 && reductionStreamArguments.size() == 0 )
-            reductionArgumentComesBeforeStreamArgument = true;
-
-          // indexof is not allowed!!!
-          assert( !FunctionProp[functionName].contains(i) && "can't use indexof in a reduction" );
-
-          reductionStreamArguments.push_back( i );
-          exandStreamSamplerDecls( shader, args[i]->name->name, args[i]->form, samplerreg );
-
-          if( reductionStreamArguments.size() == 2 )
-          {
-            for( int r = 2; r < reductionFactor; r++ )
-            {
-              std::stringstream s;
-              s << "__reduce" << r;
-              std::string argName = s.str();
-
-              shader <<  ",\n\t\t";
-              shader << "float2 _tex_" << argName << "_pos : TEXCOORD"
-                  << texcoord++;
-            }
-          }
-
-          shader <<  ",\n\t\t";
-          shader << "float2 _tex_" << args[i]->name->name << "_pos : TEXCOORD"
-              << texcoord++;
-        }
-        else
-        {
-
-    		  exandStreamSamplerDecls( shader, (args[i]->name)->name, args[i]->form, samplerreg );
-
-          if( globals.enableGPUAddressTranslation )
-          {
-            shader << ",\n\t\t";
-            shader << "uniform float4 __streamshape_" << argName;
-            shader << " : register(c" << constreg++ << ")";
-            shader << ",\n\t\t";
-            shader << "uniform float4 __streamlinearize_" << argName;
-            shader << " : register(c" << constreg++ << ")";
-            shader << ",\n\t\t";
-            shader << "uniform float2 __streamreshape_" << argName;
-            shader << " : register(c" << constreg++ << ")";
-          }
-          else
-          {
-            // Output a texcoord, and optional scale/bias
-            if( FunctionProp[functionName].contains(i) ) {
-              shader <<  ",\n\t\t";
-              shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
-                    << " : register (c" << constreg++ << ")";
-            }
-            shader <<  ",\n\t\t";
-            shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
-                << texcoord++;
-          }
-        }
-      }
-    } else if (args[i]->isArray()) {
-
-      int samplerCount = getGatherStructureSamplerCount( args[i]->form );
-      
-      if( globals.enableGPUAddressTranslation )
-      {
-        shader <<  ",\n\t\t";
-        shader << "uniform _stype " << *args[i]->name;
-        shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
-        samplerreg += samplerCount;
-
-        shader << ",\n\t\t";
-        shader << "uniform float4 __gatherlinearize_" << argName;
-        shader << " : register(c" << constreg++ << ")";
-        shader << ",\n\t\t";
-        shader << "uniform float2 __gatherreshape_" << argName;
-        shader << " : register(c" << constreg++ << ")";
-      }
-      else
-      {
-        // TIM: TODO: handle multi-sampler array for gathers...
-        shader <<  ",\n\t\t";
-        shader << "uniform _stype " << *args[i]->name;
-        shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
-        samplerreg += samplerCount;
-        shader <<  ",\n\t\t";
-        shader << "uniform float4 __gatherconst_" << *args[i]->name
-                  << " : register (c" << constreg++ << ")";
-      }
-    } else {
-      shader <<  ",\n\t\t";
-      shader << "uniform ";
-      args[i]->print(shader, true);
-      shader << " : register (c" << constreg++ << ")";
-    }
-  }
   shader << ") {\n";
 
+  /*
+   * Declare the stream variables
+   */
 
-  /* Declare the output variable */
-//  shader << "float4 _OUT;\n\t\t";
-
-  /* Declare the stream variables */
   for (i=0; i < nArgs; i++) {
      TypeQual qual = args[i]->form->getQualifiers();
 
@@ -912,14 +933,17 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
      }
   }
 
-  if( globals.enableGPUAddressTranslation )
-  {
-    // set up output position values
-    shader << "\tfloat4 __indexofoutput;\n";
-    shader << "\t__calculateoutputpos( __outputaddrinterpolant, __outputconst, __indexofoutput );\n";
+  if (globals.enableGPUAddressTranslation) {
+     // set up output position values
+     shader << "\tfloat4 __indexofoutput;\n";
+     shader << "\t__calculateoutputpos( __outputaddrinterpolant, "
+            << "__outputconst, __indexofoutput );\n";
   }
 
-  /* Perform stream fetches */
+  /*
+   * Perform stream fetches
+   */
+
   hasDoneIndexofOutput = false;
   for (i=0; i < nArgs; i++) {
      TypeQual qual = args[i]->form->getQualifiers();
@@ -927,59 +951,54 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
 
      if ((qual & TQ_Iter) != 0) continue; /* No texture fetch for iterators */
 
-     if (args[i]->isStream() || 
-         (qual & TQ_Reduce) != 0) {
-
+     if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
         if ((qual & TQ_Out) != 0 ) {
-          if( globals.enableGPUAddressTranslation )
-          {
+          if (globals.enableGPUAddressTranslation) {
             // should be calculated elsewhere
+          } else if (!hasDoneIndexofOutput &&
+                     FunctionProp[functionName].contains(i)) {
+             hasDoneIndexofOutput= true;
+             shader << "\t" << "float4 __indexofoutput = "
+                    << "_computeindexof( "
+                    << "_tex_" << *args[i]->name << "_pos, "
+                    << "float4( _tex_" << *args[i]->name << "_pos*"
+                    << "_const_" << *args[i]->name << "_invscalebias.xy + "
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0));\n";
           }
-          else if( !hasDoneIndexofOutput && FunctionProp[functionName].contains(i) )
-            {
-              hasDoneIndexofOutput= true;
-              shader << "\t" << "float4 __indexofoutput = "
-                      << "_computeindexof( "
-                      << "_tex_" << *args[i]->name << "_pos, "
-                      << "float4( _tex_" << *args[i]->name << "_pos*"
-                      << "_const_" << *args[i]->name << "_invscalebias.xy + "
-                      << "_const_" << *args[i]->name << "_invscalebias.zw,0,0));\n";
-            }
-        }
-        else {
-          if( globals.enableGPUAddressTranslation )
-          {
-            if( !fullAddressTrans )
-            {
-              shader << "\tfloat4 __indexof_" << argName << " = __indexofoutput;\n";
-              shader << "\tfloat2 _tex_" << argName << "_pos = __outputtexcoord;\n";
-            }
-            else
-            {
-              shader << "\tfloat4 __indexof_" << argName << " = ";
-              shader << "__calculateindexof( __indexofoutput, __streamshape_" << argName;
-              shader << " );\n";
-              shader << "\tfloat2 _tex_" << argName << "_pos = ";
-              shader << "__calculatetexpos( __indexof_" << argName << ", ";
-              shader << "__streamlinearize_" << argName << ", ";
-              shader << "__streamreshape_" << argName << ", __hackconst );\n";
+        } else {
+          if (globals.enableGPUAddressTranslation) {
+            if (!fullAddressTrans) {
+               shader << "\tfloat4 __indexof_" << argName << " = __indexofoutput;\n";
+               shader << "\tfloat2 _tex_" << argName << "_pos = __outputtexcoord;\n";
+            } else {
+               shader << "\tfloat4 __indexof_" << argName << " = ";
+               shader << "__calculateindexof( __indexofoutput, __streamshape_" << argName;
+               shader << " );\n";
+               shader << "\tfloat2 _tex_" << argName << "_pos = ";
+               shader << "__calculatetexpos( __indexof_" << argName << ", ";
+               shader << "__streamlinearize_" << argName << ", ";
+               shader << "__streamreshape_" << argName << ", __hackconst );\n";
             }
           }
-	        expandStreamFetches( shader, args[i]->name->name, args[i]->form );
-          if( !globals.enableGPUAddressTranslation && FunctionProp[functionName].contains(i) )
-            {
-              shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "
-                      << "_computeindexof( "
-                      << "_tex_" << *args[i]->name << "_pos, "
-                      << "float4( _tex_" << *args[i]->name << "_pos*"
-                      << "_const_" << *args[i]->name << "_invscalebias.xy + "
-                      << "_const_" << *args[i]->name << "_invscalebias.zw,0,0));\n";
-            }
+
+          expandStreamFetches(shader, args[i]->name->name, args[i]->form);
+          if (!globals.enableGPUAddressTranslation &&
+              FunctionProp[functionName].contains(i)) {
+             shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "
+                    << "_computeindexof( "
+                    << "_tex_" << *args[i]->name << "_pos, "
+                    << "float4( _tex_" << *args[i]->name << "_pos*"
+                    << "_const_" << *args[i]->name << "_invscalebias.xy + "
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0));\n";
+          }
         }
      }
   }
 
-  /* Include the body of the kernel */
+  /*
+   * Print the body of the kernel
+   */
+
 //  shader << body << std::endl;
   // TIM: just call the body as a subroutine
   shader << std::endl;
@@ -1026,58 +1045,58 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
 
   // if we are doing a reduction, we may want to run the kernel
   // body multiple times to reduce n values...
-  if( isReduction )
-  {
-    assert( reductionStreamArguments.size() == 2 );
-    int leftArgumentIndex = reductionStreamArguments[0];
-    std::string leftArgumentName = args[leftArgumentIndex]->name->name;
-    int rightArgumentIndex = reductionStreamArguments[1];
-    std::string rightArgumentName = args[rightArgumentIndex]->name->name;
-    Type* leftArgumentForm = args[leftArgumentIndex]->form;
+  if (isReduction) {
+     assert( reductionStreamArguments.size() == 2 );
+     int leftArgumentIndex = reductionStreamArguments[0];
+     std::string leftArgumentName = args[leftArgumentIndex]->name->name;
+     int rightArgumentIndex = reductionStreamArguments[1];
+     std::string rightArgumentName = args[rightArgumentIndex]->name->name;
+     Type* leftArgumentForm = args[leftArgumentIndex]->form;
 
-    // do additional fetches...
-    for( int r = 2; r < reductionFactor; r++ )
-    {
-      std::stringstream s;
-      s << "__reduce" << r;
-      std::string argName = s.str();
+     // do additional fetches...
+     for (int r = 2; r < reductionFactor; r++ ) {
+        std::stringstream s;
+        s << "__reduce" << r;
+        std::string argName = s.str();
 
-      shader << "\t";
-      leftArgumentForm->printBase( shader, 0);
-      shader << " " << argName << ";\n";
+        shader << "\t";
+        leftArgumentForm->printBase( shader, 0);
+        shader << " " << argName << ";\n";
 
-      // do a new fetch for the reduction arg
-      expandStreamFetches( shader, leftArgumentName, leftArgumentForm, argName.c_str() );
-    }
+        // do a new fetch for the reduction arg
+        expandStreamFetches(shader, leftArgumentName,
+                            leftArgumentForm, argName.c_str());
+     }
 
-    // save off the right arg...
-    shader << "\t";
-    leftArgumentForm->printBase(shader,0);
-    shader << " __saved = " << rightArgumentName << ";\n";
+     // save off the right arg...
+     shader << "\t";
+     leftArgumentForm->printBase(shader,0);
+     shader << " __saved = " << rightArgumentName << ";\n";
 
-    // do additional reduction ops
-    {for( int r = 2; r < reductionFactor; r++ )
-    {
-      std::stringstream s;
-      s << "__reduce" << r;
-      std::string argName = s.str();
+     // do additional reduction ops
+     for( int r = 2; r < reductionFactor; r++ ) {
+        std::stringstream s;
+        s << "__reduce" << r;
+        std::string argName = s.str();
 
-      // shuffle stuff around... :)
-      shader << "\t" << rightArgumentName << " = " << argName << ";\n";
-      shader << kernelBody;
-      if( !reductionArgumentComesBeforeStreamArgument )
-        shader << "\t" << leftArgumentName << " = " << rightArgumentName << ";\n";
-    }}
+        // shuffle stuff around... :)
+        shader << "\t" << rightArgumentName << " = " << argName << ";\n";
+        shader << kernelBody;
+        if (!reductionArgumentComesBeforeStreamArgument)
+           shader << "\t" << leftArgumentName << " = "
+                  << rightArgumentName << ";\n";
+     }
 
-    shader << "\t" << rightArgumentName << " = __saved;\n";
-    shader << kernelBody;
-  }
-  else
-  {
-    shader << kernelBody;
+     shader << "\t" << rightArgumentName << " = __saved;\n";
+     shader << kernelBody;
+  } else {
+     shader << kernelBody;
   }
 
-  /* do any output unpacking */
+  /*
+   * Do any output unpacking
+   */
+
   outputReg = 0;
   for (i=0; i < nArgs; i++) {
     TypeQual qual = args[i]->form->getQualifiers();
@@ -1102,7 +1121,7 @@ static std::set<std::string> cg_warnings;
 static char *
 compile_cg_code (const char *cgcode) {
 
-  char *argv[16] = { "cgc", "-profile", "fp30", 
+  char *argv[16] = { "cgc", "-profile", "fp30",
                      "-DUSERECT", "-quiet", NULL };
   char *fpcode, *endline;
 
