@@ -207,8 +207,8 @@ int volume_division (int argc, char ** argv) {
       dat = randomPPM(atoi(argv[1]),atoi(argv[1]),atoi(argv[1]));
    }
    slice = mallocSlice(dat);
-   std::vector<::brook::stream> volumeData;
-   std::vector<::brook::stream> vertexData;
+   std::vector<brook::stream> volumeData;
+   std::vector<brook::stream> vertexData;
    float toagg[4]={0,0,0,0};
    ::brook::stream agg(::brook::getStreamType(( float  *)0), 2 , 2,-1);
    streamRead(agg,toagg);
