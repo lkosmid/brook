@@ -35,9 +35,11 @@ kernel void getIndexAt(float4 inputindex,
    float2 index;
    index.x=inputindex.x+shiftRight;
    index.y=inputindex.y+floor(index.x/maxvalue.x);
-   index.x=fmod(index.x,maxvalue.x);
-   if (index.x<0)
+   index.x=round(fmod(round(index.x),maxvalue.x));
+   if (index.x<-.50)
       index.x+=maxvalue.x;//only necessary if shiftRight<0
+   if (index.x+.25 >= maxvalue.x)
+      index.x = maxvalue.x-1.0;
    outputindex=index;
    //   printf(maxvalue.x,maxvalue.y,outputindex.x,outputindex.y);
 }
@@ -53,8 +55,8 @@ kernel void calculateDividedIndex(float4 index,
    // 1/32 precision
    newindex=float2(index.x,index.y);
    newindex/=modulus;
-   newindex.x += frac(newindex.y)*length;
-   newindex=floor(newindex+epsilon);
+   newindex.x=floor(fmod(newindex.x+frac(newindex.y)*length+epsilon,length));
+   newindex.y=floor(newindex.y+epsilon);
 }
 
 kernel void calculateIndexModulus (float4 index, 
