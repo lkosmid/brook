@@ -2,6 +2,7 @@
 #include "oglfunc.hpp"
 #include "oglcontext.hpp"
 #include "oglwindow.hpp"
+#include "ogltexture.hpp"
 
 using namespace brook;
 
@@ -66,3 +67,18 @@ OGLContext::~OGLContext() {
     delete _wnd;
 }
 
+void* OGLContext::getTextureRenderData( OGLContext::TextureHandle inTexture )
+{
+  OGLTexture* texture = (OGLTexture*) inTexture;
+  return (void*) texture->id();
+}
+
+void OGLContext::hackRestoreContext()
+{
+  _wnd->makeCurrent();
+}
+
+void OGLContext::shareLists( HGLRC inContext )
+{
+  _wnd->shareLists( inContext );
+}

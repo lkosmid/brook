@@ -139,6 +139,10 @@ namespace brook
   int GPURuntime::hackEndWriteQuery() {
     return _context->hackEndWriteQuery();
   }
+
+  void GPURuntime::hackRestoreContext() {
+    _context->hackRestoreContext();
+  }
 }
 
 

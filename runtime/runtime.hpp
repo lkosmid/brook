@@ -34,6 +34,10 @@ namespace brook {
                                  void* inContextValue = 0, 
                                  bool addressTranslation = false );
 
+    // TIM: magick to allow re-setting the context after
+    // rendering operations
+    virtual void hackRestoreContext() { assert(false); throw 1; }
+
   private:
     static Runtime* CreateInstance( const char* inRuntimeName, 
                                     void* inContextValue, 

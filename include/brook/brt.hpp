@@ -589,5 +589,7 @@ void streamSetWriteMask( ::brook::stream& );
 void streamBeginWriteQuery();
 int streamEndWriteQuery();
 
+void hackStreamRestoreContext();
+
 #endif
 

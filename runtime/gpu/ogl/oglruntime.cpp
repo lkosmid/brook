@@ -6,16 +6,16 @@
 
 using namespace brook;
 
-OGLRuntime* OGLRuntime::create(void)
+OGLRuntime* OGLRuntime::create( void* inContextValue )
 {
     OGLRuntime* result = new OGLRuntime();
-    if( result && result->initialize() )
+    if( result && result->initialize( inContextValue ) )
         return result;
     delete result;
     return NULL;
 }
 
-bool OGLRuntime::initialize(void)
+bool OGLRuntime::initialize( void* inContextValue )
 {
   // Detect platform
   OGLWindow* wnd = new OGLWindow();
@@ -45,6 +45,9 @@ bool OGLRuntime::initialize(void)
             glGetString(GL_RENDERER));
     ctx = ATIContext::create();
   }
+
+  if( inContextValue )
+    ctx->shareLists( (HGLRC) inContextValue );
 
   if( !GPURuntime::initialize( ctx ) )
   {

@@ -37,6 +37,8 @@ namespace brook
     virtual void hackBeginWriteQuery();
     virtual int hackEndWriteQuery();
 
+    virtual void hackRestoreContext();
+
     // internal GPURuntime methods (not in Runtime interface)
     GPUContext* getContext() { return _context; }
     GPUContext::TextureHandle getReductionTempBuffer(

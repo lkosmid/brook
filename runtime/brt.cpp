@@ -131,7 +131,7 @@ namespace brook {
 
 #ifdef BUILD_OGL
     if (!strcmp(env, OGL_RUNTIME_STRING)) {
-      Runtime* result = OGLRuntime::create();
+      Runtime* result = OGLRuntime::create( inContextValue );
       if( result )
         return result;
 
@@ -696,4 +696,11 @@ int streamEndWriteQuery()
   using namespace brook;
   Runtime* runtime = Runtime::GetInstance();
   return runtime->hackEndWriteQuery();
+}
+
+void hackStreamRestoreContext()
+{
+  using namespace brook;
+  Runtime* runtime = Runtime::GetInstance();
+  runtime->hackRestoreContext();
 }

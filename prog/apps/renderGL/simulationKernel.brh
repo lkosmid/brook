@@ -1,0 +1,9 @@
+// simulationKernel.brh
+
+kernel void clearKernel( out float4 result<> );
+
+kernel void simulationKernel( float4 input<>, float4 inputs[][], float4 control, out float4 result<> );
+
+kernel void smoothKernel( float4 input<>, float4 inputs[][], out float4 result<> );
+
+kernel void normalGenerationKernel( float4 inputs[][], out float3 result<> );

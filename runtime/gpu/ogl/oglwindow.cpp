@@ -467,6 +467,16 @@ OGLWindow::bindPbuffer(unsigned int width,
   return switched_contexts;
 }
 
+void OGLWindow::makeCurrent()
+{
+  wglMakeCurrent( hpbufferdc, hglrc );
+}
+
+void OGLWindow::shareLists( HGLRC inContext )
+{
+  wglShareLists( hglrc, inContext );
+}
+
 #else
 
 /* Linux version */
@@ -751,6 +761,16 @@ OGLWindow::bindPbuffer(unsigned int width,
   currentPbufferComponents = ncomponents;
 #endif
 
+}
+
+void OGLWindow::makeCurrent()
+{
+  glXMakeCurrent(pDisplay, glxPbuffer, glxContext);
+}
+
+void shareLists( HGLRC inContext )
+{
+  GPUAssert( false, "Haven't implemented share lists under glX..." );
 }
 
 OGLWindow::~OGLWindow() 

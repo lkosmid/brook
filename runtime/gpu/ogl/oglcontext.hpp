@@ -172,12 +172,13 @@ namespace brook {
                                 unsigned int numInterpolants );
 
     /* hacky functions for rendering - will be deprecated soon */
-    virtual void* getTextureRenderData( TextureHandle inTexture ) {
-      return 0;
-    }
+    virtual void* getTextureRenderData( TextureHandle inTexture );
 
     virtual void synchronizeTextureRenderData( TextureHandle inTexture ) {
     }
+
+    virtual void hackRestoreContext();
+    void shareLists( HGLRC inContext );
 
     virtual ~OGLContext();
 

@@ -27,6 +27,9 @@ namespace brook {
                      unsigned int height,
                      unsigned int numOutputs, 
                      unsigned int numComponents);
+
+    void makeCurrent();
+    void shareLists( HGLRC inContext );
     
   private:
     

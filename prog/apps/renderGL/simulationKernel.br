@@ -1,0 +1,67 @@
+// simulationKernel.br
+
+kernel void clearKernel( out float4 result<> ) {
+	result = 0;
+}
+
+kernel void simulationKernel( float4 input<>, float4 inputs[][], float4 control, out float4 result<> ) {
+	float2 index = (indexof input).xy;
+	
+	float position = input.x;
+	float velocity = input.y;
+	
+	float left = inputs[ index.y ][ index.x-1 ].x;
+	float top = inputs[ index.y-1 ][ index.x ].x;
+	float right = inputs[ index.y ][ index.x+1 ].x;
+	float bottom = inputs[ index.y+1 ][ index.x ].x;
+	
+	float2 controlDelta = control.xy - index;
+	float controlDistanceSquared = dot( controlDelta, controlDelta );
+	
+	float neighborForce = 0.5 * ((left + top + right + bottom) - 4*position);
+	float restForce = -0.1 * position;
+	float dragForce = -0.1 * velocity;
+	
+	float force = neighborForce + restForce + dragForce;
+	
+	float timeDelta = 0.1;
+	float newVelocity = velocity + timeDelta*force;
+	float newPosition = position + timeDelta*( velocity + newVelocity )/2;
+	
+	result.x = (controlDistanceSquared < control.w) ? control.z : newPosition;
+	result.y = newVelocity;
+	result.z = 0;
+	result.w = 0;
+}
+
+kernel void smoothKernel( float4 input<>, float4 inputs[][], out float4 result<> ) {
+	float2 index = (indexof input).xy;
+	
+	float4 center = input;
+	
+	float4 left = inputs[ index.y ][ index.x-1 ];
+	float4 top = inputs[ index.y-1 ][ index.x ];
+	float4 right = inputs[ index.y ][ index.x+1 ];
+	float4 bottom = inputs[ index.y+1 ][ index.x ];
+	
+	float4 offCenter = (left + top + right + bottom)/4;
+	
+	float factor = 0.95;
+	
+	result = center*factor + offCenter*(1-factor);
+}
+
+kernel void normalGenerationKernel( float4 inputs[][], out float3 result<> ) {
+	float2 index = (indexof result).xy;
+	
+	float x0 = inputs[ index.y ][ index.x-1 ].x;
+	float y0 = inputs[ index.y-1 ][ index.x ].x;
+	float x1 = inputs[ index.y ][ index.x+1 ].x;
+	float y1 = inputs[ index.y+1 ][ index.x ].x;
+
+	float3 normal;
+	normal.x = x0 - x1;
+	normal.y = y0 - y1;
+	normal.z = 2;
+	result = normalize( normal );
+}

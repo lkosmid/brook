@@ -232,6 +232,8 @@ namespace brook {
     virtual void hackSetWriteMask( TextureHandle ) { GPUError("unimplemented"); throw 1; }
     virtual void hackBeginWriteQuery() { GPUError("unimplemented"); throw 1; }
     virtual int hackEndWriteQuery() { GPUError("unimplemented"); throw 1; }
+
+    virtual void hackRestoreContext() { GPUError("unimplemented"); throw 1; }
   };
 }
 
