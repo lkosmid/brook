@@ -172,6 +172,176 @@ template <> class LCM<char,vec<float,1> > {public:
     typedef float type;
 };
 
+template <> class LCM<vec<int,2>,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,vec<int,2> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<int,2>,float> {public:
+    typedef float type;
+};
+template <> class LCM<int,vec<float,2> > {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<int,2> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,2>,int > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,2>,float> {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<float,2> > {public:
+    typedef float type;
+};
+
+template <> class LCM<char,vec<int,2> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<char,2>,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,vec<char,2> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<int,2>,char> {public:
+    typedef int type;
+};
+template <> class LCM<char,vec<char,2> > {public:
+    typedef char type;
+};
+template <> class LCM<vec<char,2>,char> {public:
+    typedef char type;
+};
+template <> class LCM<float,vec<char,2> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,2>,char> {public:
+    typedef float type;
+};
+template <> class LCM<vec<char,2>,float> {public:
+    typedef float type;
+};
+template <> class LCM<char,vec<float,2> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<int,3>,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,vec<int,3> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<int,3>,float> {public:
+    typedef float type;
+};
+template <> class LCM<int,vec<float,3> > {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<int,3> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,3>,int > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,3>,float> {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<float,3> > {public:
+    typedef float type;
+};
+
+template <> class LCM<char,vec<int,3> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<char,3>,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,vec<char,3> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<int,3>,char> {public:
+    typedef int type;
+};
+template <> class LCM<char,vec<char,3> > {public:
+    typedef char type;
+};
+template <> class LCM<vec<char,3>,char> {public:
+    typedef char type;
+};
+template <> class LCM<float,vec<char,3> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,3>,char> {public:
+    typedef float type;
+};
+template <> class LCM<vec<char,3>,float> {public:
+    typedef float type;
+};
+template <> class LCM<char,vec<float,3> > {public:
+    typedef float type;
+};
+
+
+template <> class LCM<vec<int,4>,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,vec<int,4> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<int,4>,float> {public:
+    typedef float type;
+};
+template <> class LCM<int,vec<float,4> > {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<int,4> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,4>,int > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,4>,float> {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<float,4> > {public:
+    typedef float type;
+};
+
+template <> class LCM<char,vec<int,4> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<char,4>,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,vec<char,4> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<int,4>,char> {public:
+    typedef int type;
+};
+template <> class LCM<char,vec<char,4> > {public:
+    typedef char type;
+};
+template <> class LCM<vec<char,4>,char> {public:
+    typedef char type;
+};
+template <> class LCM<float,vec<char,4> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,4>,char> {public:
+    typedef float type;
+};
+template <> class LCM<vec<char,4>,float> {public:
+    typedef float type;
+};
+template <> class LCM<char,vec<float,4> > {public:
+    typedef float type;
+};
+
+
+
 
 
 
@@ -268,6 +438,174 @@ template <> class COMMON_CHAR<char,vec<float,1> > {public:
 };
 
 
+template <> class COMMON_CHAR<vec<int,2>,int> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<int,2> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,2>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<float,2> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<int,2> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,2>,int > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,2>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<float,2> > {public:
+    typedef char type;
+};
+
+template <> class COMMON_CHAR<char,vec<int,2> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,2>,int> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<char,2> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,2>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,vec<char,2> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,2>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<char,2> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,2>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,2>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,vec<float,2> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,3>,int> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<int,3> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,3>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<float,3> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<int,3> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,3>,int > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,3>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<float,3> > {public:
+    typedef char type;
+};
+
+template <> class COMMON_CHAR<char,vec<int,3> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,3>,int> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<char,3> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,3>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,vec<char,3> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,3>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<char,3> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,3>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,3>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,vec<float,3> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,4>,int> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<int,4> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,4>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<float,4> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<int,4> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,4>,int > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,4>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<float,4> > {public:
+    typedef char type;
+};
+
+template <> class COMMON_CHAR<char,vec<int,4> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,4>,int> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<char,4> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,4>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,vec<char,4> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,4>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<char,4> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,4>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,4>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,vec<float,4> > {public:
+    typedef char type;
+};
+
+
+
 template <class T> class GetValueOf {public:
     typedef typename T::TYPE type;
 };
@@ -324,6 +662,7 @@ public:
         return t;
     }
 };
+
 
 template <class T> class BracketType {public:
   typedef T type;
