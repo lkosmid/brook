@@ -34,21 +34,26 @@ namespace brook {
     HWND hwnd;
     HDC hwindowdc;
     HDC hpbufferdc;
-#else
 
-     Display   *pDisplay;
-     int iScreen;
-     Window     glxWindow;
-     Colormap cmap;
-     XVisualInfo *visual;
-
-     GLXFBConfig *glxConfig[4];
-     GLXPbuffer  glxPbuffer;
-     GLXContext  glxContext;
-#endif
-    
     int pixelformat[4];
     int piAttribList[4][16];
+
+#else
+     /* See note in oglwindow.cpp for why things are static */ 
+     static Display   *pDisplay;
+     static int iScreen;
+     static Window     glxWindow;
+     static Colormap cmap;
+     static XVisualInfo *visual;
+     static GLXFBConfig *glxConfig[4];
+     static GLXPbuffer  glxPbuffer;
+     static GLXContext  glxContext;
+     static int piAttribList[4][16];
+
+     static bool static_window_created;
+     static bool static_pbuffers_initialized;
+#endif
+    
     unsigned int currentPbufferComponents;
 
 

@@ -13,6 +13,84 @@ using namespace brook;
 
 static const char window_name[] = "Brook GL Render Window";
 
+
+static void 
+appendVendorAttribs( int   iAttribList[4][64],
+                     float fAttribList[4][16],
+                     int   piAttribList[4][16],
+                     const int   (*viAttribList)[4][64],
+                     const float (*vfAttribList)[4][16],
+                     const int   (*vpiAttribList)[4][16]) {
+
+  int i,j,k;
+
+  for (i=0; i<4; i++) {
+    for (j=0; j<63; j+=2) {
+      GPUAssert(j<64, "Error: no room for base attribs");
+      if (iAttribList[i][j]   == 0 && 
+          iAttribList[i][j+1] == 0)
+        break;
+    }
+
+    if (viAttribList) {
+      for (k=0; k<63; k+=2) { 
+        GPUAssert(j<64, "Error: no room for vendor attribs");
+        
+        iAttribList[i][j++]  = (*viAttribList)[i][k];
+        iAttribList[i][j++]  = (*viAttribList)[i][k+1];
+        
+      if ((*viAttribList)[i][k]   == 0 && 
+          (*viAttribList)[i][k+1] == 0)
+        break;
+      }
+    }
+
+
+    for (j=0; j<16; j+=2) {
+      GPUAssert(j<16, "Error: no room for base attribs");
+      if (fAttribList[i][j]   == 0.0f && 
+          fAttribList[i][j+1] == 0.0f)
+        break;
+    }
+    
+
+    if (vfAttribList) {
+      for (k=0; k<16; k+=2) { 
+        GPUAssert(j<16, "Error: no room for vendor attribs");
+        
+        fAttribList[i][j++]  = (*vfAttribList)[i][k];
+        fAttribList[i][j++]  = (*vfAttribList)[i][k+1];
+        
+        if ((*vfAttribList)[i][k]   == 0.0f && 
+            (*vfAttribList)[i][k+1] == 0.0f)
+          break;
+      }
+    }
+
+
+    for (j=0; j<16; j+=2) {
+      GPUAssert(j<16, "Error: no room for base attribs");
+      if (piAttribList[i][j]   == 0 && 
+          piAttribList[i][j+1] == 0)
+        break;
+    }
+
+    if (vpiAttribList) {
+      for (k=0; k<16; k+=2) { 
+        GPUAssert(j<16, "Error: no room for vendor attribs");
+        
+        piAttribList[i][j++]  = (*vpiAttribList)[i][k];
+        piAttribList[i][j++]  = (*vpiAttribList)[i][k+1];
+        
+        if ((*vpiAttribList)[i][k]   == 0 && 
+            (*vpiAttribList)[i][k+1] == 0)
+          break;
+      }
+    }
+  }
+}
+
+
 #ifdef WIN32
 
 #ifndef WGL_ARB_pixel_format
@@ -209,83 +287,6 @@ OGLWindow::~OGLWindow() {
 }
 
 
-static void 
-appendVendorAttribs( int   iAttribList[4][64],
-                     float fAttribList[4][16],
-                     int   piAttribList[4][16],
-                     const int   (*viAttribList)[4][64],
-                     const float (*vfAttribList)[4][16],
-                     const int   (*vpiAttribList)[4][16]) {
-
-  int i,j,k;
-  int nattrib = 0;
-
-  for (i=0; i<4; i++) {
-    for (j=0; j<63; j+=2) {
-      GPUAssert(j<64, "Error: no room for base attribs");
-      if (iAttribList[i][j]   == 0 && 
-          iAttribList[i][j+1] == 0)
-        break;
-    }
-
-    if (viAttribList) {
-      for (k=0; k<63; k+=2) { 
-        GPUAssert(j<64, "Error: no room for vendor attribs");
-        
-        iAttribList[i][j++]  = (*viAttribList)[i][k];
-        iAttribList[i][j++]  = (*viAttribList)[i][k+1];
-        
-      if ((*viAttribList)[i][k]   == 0 && 
-          (*viAttribList)[i][k+1] == 0)
-        break;
-      }
-    }
-
-
-    for (j=0; j<16; j+=2) {
-      GPUAssert(j<16, "Error: no room for base attribs");
-      if (fAttribList[i][j]   == 0.0f && 
-          fAttribList[i][j+1] == 0.0f)
-        break;
-    }
-    
-
-    if (vfAttribList) {
-      for (k=0; k<16; k+=2) { 
-        GPUAssert(j<16, "Error: no room for vendor attribs");
-        
-        fAttribList[i][j++]  = (*vfAttribList)[i][k];
-        fAttribList[i][j++]  = (*vfAttribList)[i][k+1];
-        
-        if ((*vfAttribList)[i][k]   == 0.0f && 
-            (*vfAttribList)[i][k+1] == 0.0f)
-          break;
-      }
-    }
-
-
-    for (j=0; j<16; j+=2) {
-      GPUAssert(j<16, "Error: no room for base attribs");
-      if (piAttribList[i][j]   == 0 && 
-          piAttribList[i][j+1] == 0)
-        break;
-    }
-
-    if (vpiAttribList) {
-      for (k=0; k<16; k+=2) { 
-        GPUAssert(j<16, "Error: no room for vendor attribs");
-        
-        piAttribList[i][j++]  = (*vpiAttribList)[i][k];
-        piAttribList[i][j++]  = (*vpiAttribList)[i][k+1];
-        
-        if ((*vpiAttribList)[i][k]   == 0 && 
-            (*vpiAttribList)[i][k+1] == 0)
-          break;
-      }
-    }
-  }
-}
-
 void 
 OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
                         const float (*vfAttribList)[4][16],
@@ -405,15 +406,75 @@ OGLWindow::bindPbuffer(unsigned int numComponents) {
 #include <X11/Xlib.h>
 #include <GL/gl.h>
 #include <GL/glx.h>
-#define GLX_FLOAT_COMPONENTS_NV         0x20B0
+
+#define CRGBA(c, r,g,b,a) \
+        GLX_RED_SIZE,               r, \
+        GLX_GREEN_SIZE,             g, \
+        GLX_BLUE_SIZE,              b, \
+        GLX_ALPHA_SIZE,             a, \
+        GLX_STENCIL_SIZE,           0, \
+        GLX_DEPTH_SIZE,             0, \
+        GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT
+
+static const int 
+baseiAttribList[4][64] = { {CRGBA(32,32,0,0,0), 0, 0},
+                           {CRGBA(64,32,32,0,0), 0, 0},
+                           {CRGBA(96,32,32,32,0), 0, 0},
+                           {CRGBA(128,32,32,32,32), 0, 0} };
+
+static const float
+basefAttribList[4][16] = { {0.0f,0.0f}, 
+                           {0.0f,0.0f}, 
+                           {0.0f,0.0f},
+                           {0.0f,0.0f}};
+
+#define PBATTRIB \
+    GLX_PRESERVED_CONTENTS, GL_TRUE, \
+    GLX_PBUFFER_WIDTH, 2048,      \
+    GLX_PBUFFER_HEIGHT, 2048
+
+
+/*
+** Static OGLWindow members:
+**
+** For some reason, NVIDIA drivers don't seem to 
+** like me creating a window, then destroying it, 
+** then creating a new window and pbuffer.
+** The driver hangs inside of gl calls.
+** However if I just create a window and pbuffer
+** it is fine.  So we switched to using a static 
+** window and pbuffer.  Lame but it works.
+*/
+
+Display     *OGLWindow::pDisplay;
+int          OGLWindow::iScreen;
+Window       OGLWindow::glxWindow;
+Colormap     OGLWindow::cmap;
+XVisualInfo *OGLWindow::visual;
+GLXFBConfig *OGLWindow::glxConfig[4];
+GLXPbuffer   OGLWindow::glxPbuffer;
+GLXContext   OGLWindow::glxContext;
+int          OGLWindow::piAttribList[4][16];
+
+bool         OGLWindow::static_window_created = false;
+bool         OGLWindow::static_pbuffers_initialized = false;
+
+
+static int
+basepiAttribList[4][16] = { {PBATTRIB, 0, 0},
+                            {PBATTRIB, 0, 0},
+                            {PBATTRIB, 0, 0},
+                            {PBATTRIB, 0, 0}};
 
 OGLWindow::OGLWindow() {
-#if 0
   int attrib[] = { GLX_RGBA, None };
   XSetWindowAttributes swa;
 
+  /* Bail if the window is already created */
+  if (static_window_created)
+    return;
+  
   pDisplay = XOpenDisplay(NULL);
-
   if (pDisplay == NULL) {
     fprintf (stderr, "Could not connect to X Server.\n");
     exit(1);
@@ -429,8 +490,7 @@ OGLWindow::OGLWindow() {
 
   glxContext = glXCreateContext(pDisplay, 
                                 visual, 
-                                0, true);  
-  
+                                0, GL_TRUE);  
   if (glxContext == NULL) {
     fprintf (stderr, "Could not create GL Context.\n");
     exit(1);
@@ -439,7 +499,6 @@ OGLWindow::OGLWindow() {
   cmap = XCreateColormap (pDisplay, 
                           RootWindow(pDisplay, iScreen),
                           visual->visual, AllocNone);
-
   swa.border_pixel = 0;
   swa.colormap = cmap;
 
@@ -448,69 +507,57 @@ OGLWindow::OGLWindow() {
                             0, 0, 1, 1, 0, visual->depth, InputOutput,
                             visual->visual, CWBorderPixel | CWColormap,
                             &swa);
-
-
   if (!glXMakeCurrent(pDisplay, glxWindow, glxContext)) {
     fprintf (stderr, "OGLWindow: Could not make current.\n");
     exit(1);
   }
 
   glFinish();
-
-#endif
-
-  initPbuffer(NULL, NULL, NULL);
   
+  static_window_created = true;
 }
 
 
-void
-OGLWindow::initPbuffer(const int   (*/*unused*/)[4][64],
-                       const float (*/*unused*/)[4][16],
-                       const int   (*/*unused*/)[4][16]) {
+void 
+OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
+                        const float (*vfAttribList)[4][16],
+                        const int   (*vpiAttribList)[4][16]) {
+
   int iConfigCount;   
   int i;
 
-  static const int pbAttribList[] =
-    {
-      GLX_PRESERVED_CONTENTS, true,
-      GLX_PBUFFER_WIDTH, 2048,
-      GLX_PBUFFER_HEIGHT, 2048,
-      0
-    };
+  /* Bail if the pbuffers are already initialized */
+  if (static_pbuffers_initialized)
+    return;
+  
+  int   (*iAttribList)[64]  = (int (*)[64]) malloc (sizeof(baseiAttribList)); 
+  float fAttribList[4][16]  = {{0.0f, 0.0f}, {0.0f, 0.0f}, 
+                               {0.0f, 0.0f}, {0.0f, 0.0f}};
 
-  static bool initialized = false;
+  memcpy(iAttribList,  baseiAttribList,  sizeof(baseiAttribList));
+  memcpy(piAttribList, basepiAttribList, sizeof(basepiAttribList));
 
-  // Sadly everything is static
-  if (initialized)
-     return;
-
-  pDisplay = XOpenDisplay(NULL);
+  /* Append vendor specific attribs */
+  appendVendorAttribs( iAttribList, fAttribList, piAttribList,
+                       viAttribList, vfAttribList, vpiAttribList);
 
   if (pDisplay == NULL) {
     fprintf (stderr, "Could not connect to X Server.\n");
     exit(1);
   }
-    
-  iScreen  = DefaultScreen(pDisplay);
+
+  // Destroy Window 
+  glXMakeCurrent(pDisplay, None, NULL);
+  glXDestroyContext(pDisplay, glxContext);
+  XDestroyWindow(pDisplay, glxWindow);
+  XFreeColormap(pDisplay, cmap);
+  XFree(visual);
 
   for (i=0; i<4; i++) {
-    int pfAttribList[] = 
-      {
-        GLX_RED_SIZE,               32,
-        GLX_GREEN_SIZE,             (i>0)?32:0,
-        GLX_BLUE_SIZE,              (i>1)?32:0,
-        GLX_ALPHA_SIZE,             (i>2)?32:0,
-        GLX_STENCIL_SIZE,           0,
-        GLX_DEPTH_SIZE,             0,
-        GLX_FLOAT_COMPONENTS_NV,    1,
-        GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT,
-        0,
-      };
 
     glxConfig[i] = glXChooseFBConfig(pDisplay, 
                                      iScreen, 
-                                     pfAttribList, 
+                                     iAttribList[i], 
                                      &iConfigCount);
     
     if (iConfigCount == 0) {
@@ -528,7 +575,7 @@ OGLWindow::initPbuffer(const int   (*/*unused*/)[4][64],
   
   glxPbuffer = glXCreatePbuffer(pDisplay, 
 				glxConfig[3][0], 
-				pbAttribList);
+				piAttribList[3]);
   
   if (!glxPbuffer) {
     fprintf(stderr, "OGL Window: glXCreatePbuffer() failed\n");
@@ -539,8 +586,8 @@ OGLWindow::initPbuffer(const int   (*/*unused*/)[4][64],
   glxContext = glXCreateNewContext(pDisplay, 
                                    glxConfig[3][0], 
                                    GLX_RGBA_TYPE, 
-                                   0, true);
-  if (!glxConfig) {
+                                   0, GL_TRUE);
+  if (!glxContext) {
     fprintf(stderr, "OGL Window: glXCreateContextWithConfig() failed\n");
     exit (1);
   }
@@ -553,8 +600,10 @@ OGLWindow::initPbuffer(const int   (*/*unused*/)[4][64],
   glFinish();
 
   currentPbufferComponents = 4;
-  initialized = true;
-  
+
+  free (iAttribList);
+
+  static_pbuffers_initialized = true;
 }
 
 
@@ -570,7 +619,7 @@ OGLWindow::bindPbuffer(unsigned int ncomponents)
 #if 0
   static const int pbAttribList[] =
     {
-      GLX_PRESERVED_CONTENTS, true,
+      GLX_PRESERVED_CONTENTS, GL_TRUE,
       GLX_PBUFFER_WIDTH, 2048,
       GLX_PBUFFER_HEIGHT, 2048,
       0
@@ -582,12 +631,9 @@ OGLWindow::bindPbuffer(unsigned int ncomponents)
   assert (ncomponents > 0 &&
           ncomponents <= 4);
 
-  glXMakeCurrent(pDisplay, None, NULL);
-  glXDestroyPbuffer(pDisplay, glxPbuffer);
-
   glxPbuffer = glXCreatePbuffer(pDisplay, 
 				glxConfig[ncomponents-1][0], 
-				pbAttribList);
+				piAttribList[ncomponents-1]);
   
   if (glxPbuffer == 0) {
     fprintf (stderr, "Error: Could not create float%d pbuffer.\n",
@@ -608,6 +654,7 @@ OGLWindow::bindPbuffer(unsigned int ncomponents)
 
 OGLWindow::~OGLWindow() 
 {
+  // Switched everything to static
 #if 0
   glXDestroyContext(pDisplay, glxContext);
   if (glxPbuffer)

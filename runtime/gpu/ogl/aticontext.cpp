@@ -14,6 +14,12 @@
 #define WGL_PIXEL_TYPE_ARB             0x2013
 #endif
 
+#else
+
+#ifndef GLX_RGBA_FLOAT_ATI_BIT
+#define GLX_RGBA_FLOAT_ATI_BIT          0x0100
+#endif
+
 #endif
 
 
@@ -58,6 +64,11 @@ static const int atiiAttribList[4][64] = {
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 },
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 },
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 }
+#else
+  {  GLX_RGBA_FLOAT_ATI_BIT, GL_TRUE,  0,0},
+  {  GLX_RGBA_FLOAT_ATI_BIT, GL_TRUE,  0,0},
+  {  GLX_RGBA_FLOAT_ATI_BIT, GL_TRUE,  0,0},
+  {  GLX_RGBA_FLOAT_ATI_BIT, GL_TRUE,  0,0}
 #endif
 };
 

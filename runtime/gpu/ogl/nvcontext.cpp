@@ -27,6 +27,12 @@
 #define WGL_TEXTURE_TARGET_ARB  0x2073
 #endif
 
+#else
+
+#ifndef GLX_FLOAT_COMPONENTS_NV
+#define GLX_FLOAT_COMPONENTS_NV         0x20B0
+#endif
+
 #endif
 
 #ifndef GL_NV_float_buffer
@@ -81,6 +87,15 @@ static const int nviAttribList[4][64] = {
   {  WGL_FLOAT_COMPONENTS_NV,                     GL_TRUE, 
      WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGBA_NV, GL_TRUE,
      0,0}
+#else
+  {  GLX_FLOAT_COMPONENTS_NV, GL_TRUE,
+     0,0},
+  {  GLX_FLOAT_COMPONENTS_NV, GL_TRUE,
+     0,0},
+  {  GLX_FLOAT_COMPONENTS_NV, GL_TRUE,
+     0,0},
+  {  GLX_FLOAT_COMPONENTS_NV, GL_TRUE,
+     0,0}
 #endif
 };
 
@@ -99,6 +114,11 @@ static const int nvpiAttribList[4][16] = {
   {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGBA_NV,
      WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
      0,0}
+#else
+  {  0,0},
+  {  0,0},
+  {  0,0},
+  {  0,0}
 #endif
 };
 
