@@ -1,3 +1,3 @@
 ROOTDIR := ..
-SUBDIRS := gputest 
+SUBDIRS := gputest sparsematrix
 include ../common.mk
