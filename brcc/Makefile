@@ -8,7 +8,11 @@
 ## XXX: This really is only a placeholder Makefile until a 
 ## real cross platform one can be built.
 
-all: makedirs ../bin/brcc.exe
+
+
+include ../config/$(OS).mk
+
+all: makedirs ../bin/brcc${BINSUFFIX}
 
 makedirs:
 	@if test ! -d ../bin; then mkdir ../bin; fi
@@ -16,9 +20,10 @@ makedirs:
 fp30_assist.cg.bin: fp30_assist.cg
 	cpp -P < fp30_assist.cg | perl makestring.pl > fp30_assist.cg.bin
 
-../bin/brcc.exe: brook.tab.c lex.yy.c brcc.c parser.c heapstring.c codegen.c \
+../bin/brcc${BINSUFFIX}: brook.tab.c lex.yy.c brcc.c parser.c heapstring.c codegen.c \
 		 fp30_assist.cg.bin
-	cl -nologo -W3 -Zi -MLd -o ../bin/brcc.exe brook.tab.c \
+	${CC} ${CFLAGS} ${C_DEBUG_FLAG} ${C_OUTPUT_FLAG} \
+		../bin/brcc${BINSUFFIX} brook.tab.c \
 		lex.yy.c parser.c brcc.c codegen.c heapstring.c
 
 brook.tab.c: brook.y
@@ -30,5 +35,5 @@ lex.yy.c: brook.l
 
 clean:
 	rm -rf lex.yy.c brook.tab.c brook.tab.h fp30_assist.cg.bin \
-		*~ *.obj *.exe _kernel.cg *.ilk *.opt *.pdb
+		*~ *${OBJSUFFIX} brcc${BINSUFFIX} _kernel.cg *.ilk *.opt *.pdb
 
