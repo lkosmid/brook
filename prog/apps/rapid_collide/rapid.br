@@ -504,12 +504,13 @@ kernel void CollideHack (Traverser currentNode<>,
 
 }
 */               
-kernel void updateCurrentNode(float4 curNodeIndices<>,
+kernel void updateCurrentNode(float stretchX,
+                              float4 curNodeIndices<>,
                               TransposedBBox aTree[][],
                               BBox bTree[][],
                               Traverser nodes[][],
                               out Traverser nextNode<>) {
-  float leftOrRightChild = modTwo((indexof nextNode).x);
+  float leftOrRightChild = modTwo(stretchX?(indexof nextNode).x:(indexof nextNode).y);
   Traverser lastNode = nodes[curNodeIndices.xy];
   float2 aTreeIndex = (curNodeIndices.z>=0)
                         ?curNodeIndices.zw+leftOrRightChild
@@ -608,6 +609,7 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
   unsigned int num_intersections=0;
   unsigned int temp;
   int xsize,ysize;
+  float stretchX;
   unsigned int alloc_intersections=16;
   TransposedBBox m1<bboxwidt1,bboxheit1>;
   BBox m2<bboxwidt2,bboxheit2>;
@@ -619,8 +621,8 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
   float3 t2C <widt2,heit2>;*/
   Tri t1List<widt1,heit1>;
   Tri t2List<widt2,heit2>;
-  float4 hits<0,2048>;
-  float4 nextNode<0,2048>;
+  float4 hits<1,1>;
+  float4 nextNode<1,1>;
   Traverser baseTraverser;
   Traverser trav<1,1>;
   baseTraverser.index=float4(0,0,0,0);
@@ -636,14 +638,18 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
   TransposeBBoxes(bboxwidt1*bboxheit1,bboxest1);
   streamRead(m1,bboxest1);
   streamRead(m2,bboxest2);
+  
   do {
      Collide(trav,m1,m2,nextNode,hits);
      xsize = (int)streamSize(nextNode).x;
-     ysize = ((int)streamSize(nextNode).y)*2;     
+     ysize = (int)streamSize(nextNode).y;     
+     stretchX= (ysize*2>2048)?1.0:0.0;
+     if (stretchX) xsize*=2; else ysize*=2;
      {
         Traverser temp<ysize,xsize>;
         streamSwap(temp,trav);
-        updateCurrentNode(nextNode,
+        updateCurrentNode(stretchX,
+                          nextNode,
                           m1,
                           m2,
                           temp,
