@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _BROOK_CPU_HPP
+#define _BROOK_CPU_HPP
 #include <vector>
 #include "../brt.hpp"
 
@@ -14,12 +15,13 @@ namespace brook {
 	virtual void PushGatherStream(const Stream *s);
 	virtual void PushOutput(const Stream *s);
 	virtual void Map();
-	virtual void Release();
+	virtual void Release(){}
     protected:
-	virtual ~CPUKernel();
-	typedef void callable(void *args,unsigned int start, unsigned int end);
+	virtual ~CPUKernel(){}
+	typedef void callable(const std::vector<void *>&args,unsigned int start, unsigned int end);
 	callable * func;
 	std::vector<void *> args;
+	unsigned int extent;
     };
     class CPUStream: public Stream {
     public:
@@ -31,6 +33,7 @@ namespace brook {
 	virtual void *getData()const{return data;}	
 	virtual const unsigned int * getExtents() const{return extents;}
 	virtual unsigned int getDimension() const{return dims;}
+	virtual unsigned int getTotalSize()const{return totalsize;}
     protected:
 	void * data;
 	unsigned int * extents;
@@ -47,3 +50,4 @@ namespace brook {
 	virtual ~CPURunTime(){}
     };
 }
+#endif
