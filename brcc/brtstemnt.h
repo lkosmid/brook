@@ -22,6 +22,9 @@ class BRTKernelDef : public FunctionDef
 
     void printStub(std::ostream& out) const;
     virtual void PrintVoutPrefix(std::ostream & out)const;
+    virtual void PrintVoutDimensionalShift(std::ostream & out,
+                                           Decl * decl, 
+                                           unsigned int dim)const;
     virtual void PrintVoutPostfix(std::ostream & out)const;
     virtual bool CheckSemantics(void) const;
 };

@@ -142,7 +142,7 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
             out << "  unsigned int __dimension = "<<name<<"->getDimension();";
             out << std::endl;
          }
-         out << "  assert ("<<name<<"->getDimension()==2);" << std::endl;
+         out << "  assert ("<<name<<"->getDimension()<=2);" << std::endl;
          out << "  maxDimension(maxextents,"<<name<<"->getExtents(),";
          out << name << "->getDimension());" << std::endl;
          found=true;
@@ -195,6 +195,52 @@ std::string undecoratedBase(Decl * decl) {
    return "float";
          
 }
+std::string getDimensionString (int dim) {
+      std::string dimensionstring;
+      if (dim!=2) {
+         dimensionstring +=dim+'0';
+         dimensionstring+='d';
+      }
+
+      return dimensionstring;
+}
+void BRTKernelDef::PrintVoutDimensionalShift(std::ostream &out, 
+                                             Decl* decl,
+                                             unsigned int dim) const {
+   
+      std::string type = undecoratedBase(decl);
+      std::string dimensionstring = getDimensionString(dim);
+      out<< "    ::brook::stream "<<getDeclStream(decl,"_temp")<<"(&";
+      std::string typevector = getDeclStream(decl,"_types");
+      out<< typevector<<"[0],";
+      for (unsigned int i=0;i<dim;++i) {
+         out << "1, ";
+      }
+      out << "-1);"<<std::endl;
+      out<< "    combineStreams"<<dimensionstring;
+      out << type <<" (&"<<getDeclStream(decl,"_outputs")<<"[0],";
+      out<< std::endl;
+      out<< "                   "<<getDeclStream(decl,"_outputs")<<".size()-1,";
+      out<< std::endl;
+      out<< "                   maxextents[0],";
+      out<< std::endl;
+      out<< "                   maxextents[1],";
+      out<< std::endl;
+      out<< "                   "<<getDeclStream(decl,"_temp")<<");";
+      out<< std::endl;
+      out<< "    shiftValues"<<dimensionstring;
+      out << type << "("<<getDeclStream(decl,"_temp")<<",";
+      out<< std::endl;
+      out<< "                "<< decl->name->name<<",";
+      out<< std::endl;
+      out<< "                "<<getDeclStream (decl,"_temp");
+      out<< "->getExtents()[0],";
+      out<<std::endl;
+      out<< "                "<<getDeclStream (decl,"_temp");
+      out<< "->getExtents()[1],";
+      out <<std::endl;
+      out<< "                -1);"<<std::endl; 
+}
 void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    out << "    __vout_counter+=1.0f;"<<std::endl;
    FunctionType* ft = static_cast<FunctionType*>(decl->form);
@@ -213,54 +259,37 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    }
    out << "  }"<<std::endl;
    for (iter = beginvout;iter!=endvout;++iter) {
+      
       Decl * decl = ft->args[*iter];
-      std::string type = undecoratedBase(decl);
-      out<< "  ::brook::stream "<<getDeclStream(decl,"_temp")<<"(&";
-      std::string typevector = getDeclStream(ft->args[*iter],"_types");
-      out<< typevector<<"[0],1,1,-1);"<<std::endl;
-      out<< "  combineStreams";
-      out << type <<" (&"<<getDeclStream(decl,"_outputs")<<"[0],";
-      out<< std::endl;
-      out<< "                 "<<getDeclStream(decl,"_outputs")<<".size()-1,";
-      out<< std::endl;
-      out<< "                 maxextents[0],";
-      out<< std::endl;
-      out<< "                 maxextents[1],";
-      out<< std::endl;
-      out<< "                 "<<getDeclStream(decl,"_temp")<<");";
-      out<< std::endl;
-      out<< "  shiftValues";
-      out << type << "("<<getDeclStream(decl,"_temp")<<",";
-      out<< std::endl;
-      out<< "              "<< decl->name->name<<",";
-      out<< std::endl;
-      out<< "              "<<getDeclStream (decl,"_temp");
-      out<< "->getExtents()[0],";
-      out<<std::endl;
-      out<< "              "<<getDeclStream (decl,"_temp");
-      out<< "->getExtents()[1],";
-      out <<std::endl;
-      out<< "              -1);"<<std::endl; 
+      out << "  if ("<<decl->name->name<<"->getDimension()==2) {"<<std::endl;
+      PrintVoutDimensionalShift(out,decl,2);
+      out << "  }else {"<<std::endl;
+      PrintVoutDimensionalShift(out,decl,1);
+      out << "  };"<<std::endl;
       
    }
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static void printPrototypes(std::ostream & out, std::string type) {
+   int i;
    out << "extern int finiteValueProduced" ;
-   out << type << " (brook::stream &input);\n"
-      "extern float shiftValues";
-   out << type << "(brook::stream &list_stream,\n"
-      "                         brook::stream& output_stream,\n"
-      "                         int WIDTH, \n"
-      "                         int LENGTH, \n"
-      "                         int sign);\n"
-      "void combineStreams";
-   out << type << "(brook::stream **streams,\n"
-      "                     unsigned int num,\n"
-      "                     unsigned int width, \n"
-      "                     unsigned int length,\n"
-      "                     brook::stream &output) ;\n";
-   
+   out << type << " (brook::stream &input);\n"      ;
+   for (i=1;i<=2;++i) {
+      std::string dimensionstring = getDimensionString (i);
+      out <<"extern float shiftValues"<<dimensionstring;
+      out << type << "(brook::stream &list_stream,\n"
+         "                         brook::stream& output_stream,\n"
+         "                         int WIDTH, \n"
+         "                         int LENGTH, \n"
+         "                         int sign);\n"
+         "void combineStreams"<<dimensionstring;
+      out << type << "(brook::stream **streams,\n"
+         "                     unsigned int num,\n"
+         "                     unsigned int width, \n"
+         "                     unsigned int length,\n"
+         "                     brook::stream &output) ;\n";
+      
+   }
 }
 void
 BRTKernelDef::printStub(std::ostream& out) const
