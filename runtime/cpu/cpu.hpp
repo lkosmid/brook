@@ -64,6 +64,28 @@ namespace brook {
        bool multiThread;
        void Cleanup();
        void ThreadMap(unsigned int numThreads);
+       void ReduceToStream(unsigned int cur,
+                           unsigned int curfinal,
+                           const unsigned int * extent,
+                           unsigned int rdim,
+                           unsigned int *mapbegin,
+                           const unsigned int * mag)const;
+       struct reduceToStreamInput{
+          const CPUKernel * thus;
+          unsigned int cur,curfinal;
+          const unsigned int *extent;
+          unsigned int rdim;
+          unsigned int * mapbegin;
+          const unsigned int * mag;             
+       };
+       //frees reduceToStreamInput, input
+       static void * staticReduceToStream(void * inp);
+       struct subMapInput {
+          const CPUKernel * thus;
+          unsigned int mapbegin;
+          unsigned int mapend;             
+       };
+       static void * staticSubMap(void * inp);
     };
     class CPUStream: public Stream {
     public:

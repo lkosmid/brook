@@ -156,15 +156,27 @@ namespace brook{
                begin,
                end);
     }
+  void* CPUKernel::staticSubMap (void * inp) {
+    subMapInput * submap = (subMapInput*)inp;
+    (*submap->thus->func)(submap->thus->args,
+                          submap->thus->extents,
+                          submap->thus->dims,
+                          submap->mapbegin,
+                          submap->mapend);
+    free (submap);
+    return 0;
+  }
     void CPUKernel::ThreadMap(unsigned int numThreads) {
        unsigned int i;
        std::vector<ReductionArg>::iterator j;
        unsigned int cur=0;
        unsigned int step = totalsize/numThreads;
        unsigned int remainder = totalsize%numThreads;
-
-       //fork!
-       subMap(cur,step);
+       subMapInput * subMapRange = (subMapInput*)malloc(sizeof(subMapInput));
+       subMapRange->thus=this;
+       subMapRange->mapbegin=cur;
+       subMapRange->mapend=step;
+       staticSubMap(subMapRange);
        cur+=step;
        std::vector<void *>reductionbackup;
        for (j=reductions.begin();
@@ -179,6 +191,7 @@ namespace brook{
           if (i<remainder)
              thisstep++;//leap year
           //fork!
+          
           subMap(cur,thisstep);
           cur+=thisstep;
           for (j=reductions.begin();j!=reductions.end();++j) {
@@ -215,6 +228,47 @@ namespace brook{
           }
        }
     }
+  void CPUKernel::ReduceToStream (unsigned int cur, 
+                                  unsigned int curfinal,
+                                  const unsigned int *extent,
+                                  unsigned int rdim,
+                                  unsigned int *mapbegin,
+                                  const unsigned int *mag)const{
+    vector<void *> myargs(args);
+    std::vector<ReductionArg>::const_iterator j;
+    for (j=reductions.begin();j!=reductions.end();++j) {
+      myargs[(*j).which]=(char*)args[(*j).which]+
+        cur*(*j).stream->getStride();
+    }
+    for (;cur<curfinal;++cur) {
+      //bork bork bork!!
+      (*nDfunc)(myargs,extents,dims,mapbegin,mag);
+      for (j=reductions.begin();j!=reductions.end();++j) {
+        myargs[(*j).which]=(char*)myargs[(*j).which]+
+          (*j).stream->getStride();
+      }
+
+      mapbegin[rdim-1]+=mag[rdim-1];
+      unsigned int k;
+      for (k=rdim-1;k>=1;--k) {
+        if (mapbegin[k]>=extent[k]){
+          mapbegin[k]=0;
+          mapbegin[k-1]+=mag[k-1];                   
+        }else break;
+      }
+    }
+  }
+  void * CPUKernel::staticReduceToStream(void * inp) {
+    reduceToStreamInput * red = (reduceToStreamInput*)inp;
+    red->thus->ReduceToStream(red->cur,
+                              red->curfinal,
+                              red->extent,
+                              red->rdim,
+                              red->mapbegin,
+                              red->mag);
+    free(red);
+    return 0;
+  }
   static void calcLocation(unsigned int * rez, 
                            unsigned int cur, 
                            unsigned int dim,
@@ -280,24 +334,18 @@ namespace brook{
           for (unsigned int threads=0;threads<numThreads;++threads) {
             unsigned int curfinal=cur+step;
             if (threads<remainder) curfinal++;
-            //fork
-            for (;cur<curfinal;++cur) {
-            //bork bork bork!!
-              unsigned int * mapbegin=e+threads*dim;
-              (*nDfunc)(args,extents,dims,mapbegin,mag);
-              for (j=reductions.begin();j!=reductions.end();++j) {
-                args[(*j).which]=(char*)args[(*j).which]+
-                  (*j).stream->getStride();
-              }
-              mapbegin[rdim-1]+=mag[rdim-1];
-              unsigned int k;
-              for (k=rdim-1;k>=1;--k) {
-                if (mapbegin[k]>=extent[k]){
-                  mapbegin[k]=0;
-                  mapbegin[k-1]+=mag[k-1];                   
-                }else break;
-              }
-            }
+            unsigned int * mapbegin=e+threads*dim;
+            reduceToStreamInput * red;
+            red=(reduceToStreamInput* )malloc(sizeof(reduceToStreamInput));
+            red->thus=this;
+            red->cur=cur;red->curfinal=curfinal;
+            red->extent=extent;
+            red->rdim=rdim;red->mapbegin=mapbegin;red->mag=mag;
+            CPUKernel::staticReduceToStream(red);
+            
+            cur=curfinal;
+            //forkborkborkbork
+            
           }
           free (buffer);
           for (j=reductions.begin();j!=reductions.end();++j) {
@@ -306,6 +354,7 @@ namespace brook{
        }
        Cleanup();
     }
+
     void CPUKernel::Release() {
 	delete this;
     }
