@@ -7,8 +7,9 @@
 
 
 
-
+#ifdef _WIN32
 #pragma warning(disable:4244)
+#endif
 #include "streamholder.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -266,13 +267,7 @@ float shiftValuesfloat(struct StreamHolder list_stream,
          NanToRightfloat (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
    }
    debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
-   if (0) {
-     if (sign==-1) {
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,WIDTH-1,LENGTH-1);
-     }else {      
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,0,0);
-     }
-   }else {
+   {
      float item<1>;
      float2 index;
      if (sign==-1) {
