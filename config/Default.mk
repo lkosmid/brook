@@ -21,7 +21,7 @@ C_STATIC_FLAG    :=
 C_OUTPUT_FLAG    := -o 
 C_COMPILE_FLAG   := -c 
 
-LDFLAGS           += -lpthread -L/usr/X11R6/lib 
+LDFLAGS           += -lpthread  
 LD_LIBDIR_FLAG    := -L
 LD_SHARED_FLAG    := -shared   
 LD_OUTPUT_FLAG    := -o 
@@ -33,6 +33,6 @@ LIBRARIES        +=
 ARFLAGS		 := -rc 
 AR_OUTPUT_FLAG	 := 
 
-RUNTIME_LIBS     := brook cpu nv30gl X11 Xmu Xt GL GLU
+RUNTIME_LIBS     := brook cpu 
 
 RANLIB           := ranlib
