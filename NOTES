@@ -1,6 +1,24 @@
 			    Brook GPU Release Notes
 
-Fixed In This Release (12/19/03)
+Release v0.3 (1/29/04)
+
+   * Support typedef structures for stream types.
+
+   * Variable output streams supported.
+
+   * Kernels can now have more than one output stream per kernel.  
+   
+   * Fixed major NVIDIA memory leak bug.  Also fixed pbuffer copyteximage
+     slowdown.
+   
+   * Added warning messages when BRT_RUNTIME env not set.
+
+   * Added much more type checking
+
+   * Preliminary support for streams which are larger than dimensions
+     of a texture
+
+Release v0.2 (12/19/03)
 
    * nv30gl backend compiles and runs on Linux.  Requires Linux cgc compiler
      from NVIDIA and the latest drivers.
