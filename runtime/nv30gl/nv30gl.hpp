@@ -41,6 +41,18 @@ namespace brook {
    class NV30GLStream;
    class NV30GLIter;
 
+   typedef struct{
+      float x, y;
+   } nvfloat2;
+
+   typedef struct{
+      float x, y, z;
+   } nvfloat3;
+
+   typedef struct{
+      float x, y, z, w;
+   } nvfloat4;
+
    const GLenum GLtype[] =   {0, GL_FLOAT_R32_NV, GL_FLOAT_RG32_NV, 
                               GL_FLOAT_RGB32_NV, GL_FLOAT_RGBA32_NV};
    
