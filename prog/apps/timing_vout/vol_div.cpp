@@ -14,6 +14,20 @@ bool debug_model=false;
 static std::vector<brook::stream> savedStreams;
 ::brook::stream & quickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
 
+   if (1||vanilla) {
+      static brook::stream s;
+      s= brook::stream(t,wid,len,gar);
+      return s;
+   }
+   if (firstRound) {
+      savedStreams.push_back(brook::stream(t,wid,len,gar));
+      return savedStreams.back();
+   }else {
+      return savedStreams[count++%savedStreams.size()];
+   }
+}
+::brook::stream & hpquickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
+
    if (vanilla) {
       static brook::stream s;
       s= brook::stream(t,wid,len,gar);
@@ -308,14 +322,14 @@ int volume_division (int argc, char ** argv) {
                 // vout[3] outputs there will be (0 or 3 for each tri)
             ::brook::stream trianglesB;
             if (!debug_model)
-               trianglesB=quickAllocStream(::brook::getStreamType(( float3  *)0), (rr==2?sizesy[i]:toi(streamSize(v).y))*15 , (rr==2?sizesx[i]:toi(streamSize(v).x)) ,-1);
+               trianglesB=hpquickAllocStream(::brook::getStreamType(( float3  *)0), (rr==2?sizesy[i]:toi(streamSize(v).y))*15 , (rr==2?sizesx[i]:toi(streamSize(v).x)) ,-1);
             else if (!use_vout_amplify)
                trianglesB=brook::stream(::brook::getStreamType(( float3  *)0), (rr==2?sizesy[i]:toi(streamSize(v).y))*15 , (rr==2?sizesx[i]:toi(streamSize(v).x)) ,-1);
             if (streamSize(v).y){
 
               if (use_vout_amplify) {
-                 ::brook::stream triangles=quickAllocStream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
-                 ::brook::stream trianglesFirst=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+                 ::brook::stream triangles=hpquickAllocStream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
+                 ::brook::stream trianglesFirst=hpquickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
 
                 // multiply our width by 4x since we could output up to 4x
                 // of our original values
