@@ -114,22 +114,34 @@ std::string translateMask (int swizzle) {
 class MaskExpr : public BinaryExpr {
   public:
     std::string mask;
-    MaskExpr( Expression *lExpr, Expression *rExpr, std::string mask, const Location& l ):
+	Expression * emask;
+    MaskExpr( Expression *lExpr, Expression *rExpr, std::string mask, const Location& l, Expression *emask=NULL ):
         BinaryExpr(BO_Member,lExpr,rExpr,l) {
         this->mask=mask;
+		this->emask=emask;
     }
-    ~MaskExpr(){}
-    
+    ~MaskExpr(){
+		if (emask)
+			delete emask;
+	}
+    void findExpr(fnExprCallback cb) {
+		this->BinaryExpr::findExpr(cb);
+		if (emask){
+			emask= (cb)(emask);
+			emask->findExpr(cb);
+		}			
+	}
     Expression *lValue() const { return leftExpr(); }
     Expression *rValue() const { return rightExpr(); }
 
-    int precedence() const { return 16;/*maybe left expr's prec*/ }
+    int precedence() const { return emask?16:16;/*maybe left expr's prec*/ }
 
     Expression *dup0()  const {
         MaskExpr *ret = new MaskExpr(_leftExpr->dup(),
                                      _rightExpr->dup(),
                                      mask, 
-                                     location);
+                                     location,
+									 emask?emask->dup():NULL);
         ret->type = type;  
         return ret;
     }
@@ -139,15 +151,22 @@ class MaskExpr : public BinaryExpr {
             out << "(" << *lValue() << ")";
         else
             out << *lValue();
-        out << ".mask"<< mask.length()<<"(";
+		unsigned int length=1;
+		if (!emask)
+			length = mask.length();
+        out << ".mask"<< length<<"(";
         int commaprecedence = BinaryExpr(BO_Comma,0,0,location).precedence(); 
         if (rValue()->precedence()<commaprecedence/*comma*/)
             out << "(" <<*rValue() <<")";
         else
             out << *rValue();
-        for (unsigned int i=0;i<4&&i<mask.length();++i) {
+        for (unsigned int i=0;i<4&&i<length;++i) {
             out << ",";
-            out << translateMask(translateSwizzle(mask[i]));
+			if (emask) {
+				out << *emask;
+			}else{
+				out << translateMask(translateSwizzle(mask[i]));
+			}
         }
         out << ")";
     }
@@ -329,12 +348,20 @@ void BlacklistType (Type **t) {
     
     
 }
-
+Expression *ModifyConstructorType (Expression *e) {
+	if (e->etype==ET_ConstructorExpr) {
+		ConstructorExpr * ce= static_cast<ConstructorExpr*>(e);
+		if (ce) {
+			BlacklistBaseType(&ce->_bType);
+		}
+	}
+	return e;
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //This finds all types so that sizes may not be altered
 void FindTypesDecl (Statement * s) {
     DeclStemnt * ds;
-
+	s->findExpr(&ModifyConstructorType);
     if (s->isDeclaration()&&(ds=static_cast<DeclStemnt*>(s))) {
         for (unsigned int i=0;i<ds->decls.size();++i) {
             BlacklistType(&ds->decls[i]->form);
@@ -344,8 +371,8 @@ void FindTypesDecl (Statement * s) {
     FunctionDef * fd;
     if (s->isFuncDef() && (fd = static_cast<FunctionDef *>(s))) {
         BlacklistType(&fd->decl->form);
-      }
-    
+	}
+   
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -555,6 +582,17 @@ class SwizzleConverter{public:
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class MaskConverter{public:
+	void PropogatePlusGets (AssignExpr * ae) {
+		BinaryOp bo =TranslatePlusGets (ae->op());
+		if (bo!=BO_Assign) {
+			//now we need to move the lval to the right
+			ae->_rightExpr = new BinaryExpr(bo,
+											ae->lValue()->dup(),
+											ae->_rightExpr,
+											ae->location);
+			ae->aOp=AO_Equal;
+		}
+	}
 Expression * operator () (Expression * e) {
     AssignExpr * ae;
     BinaryExpr * ret =NULL;
@@ -566,27 +604,30 @@ Expression * operator () (Expression * e) {
        (ae= static_cast<AssignExpr *> (e))) {
         //now lets identify what expression is to the left... 
         //if it's a dot then we go!
-        BinaryExpr * lval;
+
+		if (ae->lValue()->etype==ET_IndexExpr) {
+			IndexExpr * lval= static_cast<IndexExpr*>(ae->lValue());
+			//FIXME: what if it's an array lookup, rather than an assignment to a vec*
+			PropogatePlusGets(ae);
+			ret = new MaskExpr (lval->array->dup(),
+								ae->rValue()->dup(),
+								"x",
+								lval->location,
+								lval->_subscript->dup());
+			ret->findExpr(&ConvertToTMaskConverter);			
+		}
+		BinaryExpr * lval;				
         if (ae->lValue()->etype==ET_BinaryExpr&& (lval = static_cast<BinaryExpr*>(ae->lValue()))) {
             if (lval->op()==BO_Member) {
                 if (lval->rightExpr()->etype==ET_Variable&&(vmask = static_cast<Variable*>(lval->rightExpr()))) {
                     if (looksLikeMask(vmask->name->name)) {
-                        BinaryOp bo =TranslatePlusGets (ae->op());
-                        if (bo!=BO_Assign) {
-
-                            //now we need to move the lval to the right
-                            ae->_rightExpr = new BinaryExpr(bo,
-                                                            ae->lValue()->dup(),
-                                                            ae->_rightExpr,
-                                                            ae->location);
-                            ae->aOp=AO_Equal;
-                        }
+						PropogatePlusGets(ae);
                         ret = new MaskExpr (lval->leftExpr()->dup(),
                                             ae->rValue()->dup(),
                                             vmask->name->name,
                                             lval->location);
 
-			ret->findExpr(&ConvertToTMaskConverter);
+						ret->findExpr(&ConvertToTMaskConverter);
                     }
                 }
             }
