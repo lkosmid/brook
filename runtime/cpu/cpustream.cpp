@@ -41,7 +41,7 @@ std::string noWhiteSpace (std::string in) {
 	}
 	return in.substr(0,j);												
 }
-int knownTypeSize (__BRTStreamType type) {
+unsigned int knownTypeSize (__BRTStreamType type) {
    switch (type) {
    case __BRTFLOAT2:
       return sizeof(float2);
