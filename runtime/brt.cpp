@@ -190,6 +190,16 @@ namespace brook {
 
       case __BRTFIXED4:
          return sizeof(fixed4);
+      case __BRTSHORTFIXED:
+         return sizeof(shortfixed);
+      case __BRTSHORTFIXED2:
+         return sizeof(shortfixed2);
+
+      case __BRTSHORTFIXED3:
+         return sizeof(shortfixed3);
+
+      case __BRTSHORTFIXED4:
+         return sizeof(shortfixed4);
 
       case __BRTFLOAT:
         return sizeof(float);

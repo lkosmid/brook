@@ -46,16 +46,16 @@ static D3DFORMAT getFormatForComponentCount( int inComponentCount, DX9Texture::C
       return D3DFMT_UNKNOWN;
     }
   }
-  else if( inType == DX9Texture::kComponentType_Half )
+  else if( inType == DX9Texture::kComponentType_ShortFixed )
   {
     switch( inComponentCount )
     {
     case 1:
-      return D3DFMT_R16F;
+      return D3DFMT_L16;
     case 2:
-      return D3DFMT_G16R16F;
+      return D3DFMT_G16R16;
     case 4:
-      return D3DFMT_A16B16G16R16F;
+      return D3DFMT_A16B16G16R16;
     default:
       return D3DFMT_UNKNOWN;
     }

@@ -98,7 +98,7 @@ OGLContext::setTextureData(TextureHandle inTexture,
                     rectW, //oglTexture->width(), 
                     rectH, //oglTexture->height(), 
                     oglTexture->nativeFormat(),
-                    oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, inData);
+                    oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:(oglTexture->elementType()==OGLTexture::OGL_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), inData);
     return;
   }
   
@@ -124,7 +124,7 @@ OGLContext::setTextureData(TextureHandle inTexture,
       texW, //oglTexture->width(), 
       texH, //oglTexture->height(),  
       oglTexture->nativeFormat(),
-      oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, t);
+                    oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:(oglTexture->elementType()==OGLTexture::OGL_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), t);
 
   }
   else
@@ -138,7 +138,7 @@ OGLContext::setTextureData(TextureHandle inTexture,
                     maxX - minX, //oglTexture->width(), 
                     maxY - minY, //oglTexture->height(),  
                     oglTexture->nativeFormat(),
-                    oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, t);
+                    oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:(oglTexture->elementType()==OGLTexture::OGL_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), t);
   }
   
   free(t);
@@ -182,7 +182,7 @@ OGLContext::getTextureData( TextureHandle inTexture,
               rectW,
               rectH, 
               elemsize==1?GL_RED:(elemsize==3?GL_RGB:GL_RGBA),
-              oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, t);
+                 oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:(oglTexture->elementType()==OGLTexture::OGL_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), t);
    CHECK_GL();
 
    if (!fastPath) {

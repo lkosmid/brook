@@ -287,10 +287,10 @@ class BaseType1:public BaseType {public:
       BT_Fixed2   |
       BT_Fixed3   |
       BT_Fixed4   |
-      BT_Half     |
-      BT_Half2    |
-      BT_Half3    |
-      BT_Half4    |
+      BT_ShortFixed     |
+      BT_ShortFixed2    |
+      BT_ShortFixed3    |
+      BT_ShortFixed4    |
       BT_Long     |
       BT_UserType |
       BT_Struct;
@@ -303,13 +303,13 @@ class BaseType1:public BaseType {public:
       
       if (typemask & BT_Char)
          out << "__BrtChar1 ";
-      else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_Half)))){
+      else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_ShortFixed)))){
          out << "__BrtFloat1 ";
-      }else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
+      }else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_ShortFixed2))))
          out << "__BrtFloat2 ";
-      else if ((typemask & BT_Float3)||(raw==false&&((typemask &BT_Fixed3)||(typemask&BT_Half3))))
+      else if ((typemask & BT_Float3)||(raw==false&&((typemask &BT_Fixed3)||(typemask&BT_ShortFixed3))))
          out << "__BrtFloat3 ";
-      else if ((typemask & BT_Float4)||(raw==false&&((typemask &BT_Fixed4)||(typemask&BT_Half4))))
+      else if ((typemask & BT_Float4)||(raw==false&&((typemask &BT_Fixed4)||(typemask&BT_ShortFixed4))))
         out << "__BrtFloat4 ";
       else if (typemask &BT_Double)
          out << "__BrtDouble1 ";
@@ -323,14 +323,14 @@ class BaseType1:public BaseType {public:
          out << "fixed3 ";
       else if (typemask &BT_Fixed4)
          out << "fixed4 ";
-      else if (typemask &BT_Half)
-         out << "half ";
-      else if (typemask &BT_Half2)
-         out << "half2 ";
-      else if (typemask &BT_Half3)
-         out << "half3 ";
-      else if (typemask &BT_Half4)
-         out << "half4 ";      
+      else if (typemask &BT_ShortFixed)
+         out << "shortfixed ";
+      else if (typemask &BT_ShortFixed2)
+         out << "shortfixed2 ";
+      else if (typemask &BT_ShortFixed3)
+         out << "shortfixed3 ";
+      else if (typemask &BT_ShortFixed4)
+         out << "shortfixed4 ";      
       else if (typemask & BT_UserType)
         {
            if (raw) {

@@ -280,22 +280,22 @@ static bool printGatherStructureFunctionBody( std::ostream& out, const std::stri
            break;
          case BT_Float:
          case BT_Fixed:
-         case BT_Half:
+         case BT_ShortFixed:
             out << "__fetch_float";
             break;
          case BT_Float2:
          case BT_Fixed2:
-         case BT_Half2:
+         case BT_ShortFixed2:
             out << "__fetch_float2";
             break;
          case BT_Float3:
          case BT_Fixed3:
-         case BT_Half3:
+         case BT_ShortFixed3:
             out << "__fetch_float3";
             break;
          case BT_Float4:
          case BT_Fixed4:
-         case BT_Half4:
+         case BT_ShortFixed4:
             out << "__fetch_float4";
             break;
          default:
@@ -424,23 +424,23 @@ static bool expandOutputArgumentStructureDecl(std::ostream& shader,
               switch(base->typemask) {
               case BT_Float:
               case BT_Fixed:
-              case BT_Half:
+              case BT_ShortFixed:
                 break;
               case BT_Float2:
               case BT_Double:
               case BT_Fixed2:
-              case BT_Half2:
+              case BT_ShortFixed2:
                 shader << "2";
                 break;
               case BT_Float3:
               case BT_Fixed3:
-              case BT_Half3:
+              case BT_ShortFixed3:
                 shader << "3";
                 break;
               case BT_Float4:
               case BT_Double2:
               case BT_Fixed4:
-              case BT_Half4:
+              case BT_ShortFixed4:
                 shader << "4";
                 break;
               default:
@@ -516,21 +516,21 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       switch(mask) {
       case BT_Float:
       case BT_Fixed:
-      case BT_Half:
+      case BT_ShortFixed:
         break;
       case BT_Float2:
       case BT_Fixed2:
-      case BT_Half2:
+      case BT_ShortFixed2:
       case BT_Double:
         shader << "2";
         break;
       case BT_Fixed3:
-      case BT_Half3:
+      case BT_ShortFixed3:
       case BT_Float3:
         shader << "3";
         break;
       case BT_Fixed4:
-      case BT_Half4:
+      case BT_ShortFixed4:
       case BT_Float4:
       case BT_Double2:
         shader << "4";
@@ -576,22 +576,22 @@ static void expandSimpleOutputArgumentWrite(
   switch(base->typemask) {
   case BT_Float:
   case BT_Fixed:
-  case BT_Half:
+  case BT_ShortFixed:
     shader << "float4( " << argumentName << ", 0, 0, 0);\n";
     break;
   case BT_Float2:
   case BT_Fixed2:
-  case BT_Half2:
+  case BT_ShortFixed2:
     shader << "float4( " << argumentName << ", 0, 0);\n";
     break;
   case BT_Float3:
   case BT_Fixed3:
-  case BT_Half3:
+  case BT_ShortFixed3:
     shader << "float4( " << argumentName << ", 0);\n";
     break;
   case BT_Float4:
   case BT_Fixed4:
-  case BT_Half4:
+  case BT_ShortFixed4:
     shader << argumentName << ";\n";
     break;
   case BT_Double:
@@ -791,23 +791,23 @@ expandStreamStructureFetches(std::ostream& shader,
 
          switch(base->typemask) {
          case BT_Float:
-         case BT_Half:
          case BT_Fixed:
+         case BT_ShortFixed:
             shader << "__fetch_float";
             break;
          case BT_Float2:
-         case BT_Half2:
          case BT_Fixed2:
+         case BT_ShortFixed2:
             shader << "__fetch_float2";
             break;
          case BT_Float3:
+         case BT_ShortFixed3:
          case BT_Fixed3:
-         case BT_Half3:
             shader << "__fetch_float3";
             break;
          case BT_Float4:
          case BT_Fixed4:
-         case BT_Half4:
+         case BT_ShortFixed4:
             shader << "__fetch_float4";
             break;
          case BT_Double:
@@ -874,22 +874,22 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
        shader <<"__fetch_double2";
        break;
      case BT_Float:
-     case BT_Half:
+     case BT_ShortFixed:
      case BT_Fixed:
         shader << "__fetch_float";
         break;
      case BT_Float2:
-     case BT_Half2:
+     case BT_ShortFixed2:
      case BT_Fixed2:
         shader << "__fetch_float2";
         break;
      case BT_Float3:
-     case BT_Half3:
+     case BT_ShortFixed3:
      case BT_Fixed3:
         shader << "__fetch_float3";
         break;
      case BT_Float4:
-     case BT_Half4:
+     case BT_ShortFixed4:
      case BT_Fixed4:
         shader << "__fetch_float4";
         break;
@@ -913,14 +913,14 @@ generate_shader_support(std::ostream& shader)
 
   shader << "#if defined(DXPIXELSHADER)\n";
   shader << "#define fixed float\n";
-  shader << "#define half float\n";
   shader << "#define fixed2 float2\n";
-  shader << "#define half2 float2\n";
   shader << "#define fixed3 float3\n";
-  shader << "#define half3 float3\n";
   shader << "#define fixed4 float4\n";
-  shader << "#define half4 float4\n";
   shader << "#endif\n";
+  shader << "#define shortfixed float\n";
+  shader << "#define shortfixed2 float2\n";
+  shader << "#define shortfixed3 float3\n";
+  shader << "#define shortfixed4 float4\n";
   shader << "#define double real\n";
   shader << "#define double2 real2\n";
   shader << "typedef struct double_struct {float2 x;} real;\n";

@@ -30,31 +30,31 @@ OGLTexture::OGLTexture (unsigned int width,
    case GPUContext::kTextureFormat_Fixed4:
        _elementType=OGL_FIXED;
        break;
-   case GPUContext::kTextureFormat_Half1:
-   case GPUContext::kTextureFormat_Half2:
-   case GPUContext::kTextureFormat_Half3:
-   case GPUContext::kTextureFormat_Half4:
-       _elementType=OGL_HALF;
+   case GPUContext::kTextureFormat_ShortFixed1:
+   case GPUContext::kTextureFormat_ShortFixed2:
+   case GPUContext::kTextureFormat_ShortFixed3:
+   case GPUContext::kTextureFormat_ShortFixed4:
+       _elementType=OGL_SHORTFIXED;
        break;
    }
    switch (_format) {
    case GPUContext::kTextureFormat_Float1:
    case GPUContext::kTextureFormat_Fixed1:
-   case GPUContext::kTextureFormat_Half1:
+   case GPUContext::kTextureFormat_ShortFixed1:
       _components = 1;
       break;
    case GPUContext::kTextureFormat_Float2:
    case GPUContext::kTextureFormat_Fixed2:
-   case GPUContext::kTextureFormat_Half2:
+   case GPUContext::kTextureFormat_ShortFixed2:
       _components = 2;
       break;
    case GPUContext::kTextureFormat_Float3:
-   case GPUContext::kTextureFormat_Half3:
+   case GPUContext::kTextureFormat_ShortFixed3:
    case GPUContext::kTextureFormat_Fixed3:
       _components = 3;
       break;
    case GPUContext::kTextureFormat_Float4:
-   case GPUContext::kTextureFormat_Half4:
+   case GPUContext::kTextureFormat_ShortFixed4:
    case GPUContext::kTextureFormat_Fixed4:
       _components = 4;
       break;
@@ -77,7 +77,7 @@ OGLTexture::OGLTexture (unsigned int width,
                  glType[_components-1][_elementType],
                  width, height, 0,
                  glFormat[_components-1][_elementType],
-                 _elementType==OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, NULL);
+                 _elementType==OGL_FIXED?GL_UNSIGNED_BYTE:(_elementType==OGL_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), NULL);
    CHECK_GL();
    
    glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_S, GL_CLAMP);

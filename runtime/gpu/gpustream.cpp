@@ -187,21 +187,21 @@ namespace brook
           fieldComponentCount=4;
           fieldTextureFormat = GPUContext::kTextureFormat_Fixed4;
           break;
-        case __BRTHALF:
+        case __BRTSHORTFIXED:
           fieldComponentCount=1;
-          fieldTextureFormat = GPUContext::kTextureFormat_Half1;
+          fieldTextureFormat = GPUContext::kTextureFormat_ShortFixed1;
           break;
-        case __BRTHALF2:
+        case __BRTSHORTFIXED2:
           fieldComponentCount=2;
-          fieldTextureFormat = GPUContext::kTextureFormat_Half2;
+          fieldTextureFormat = GPUContext::kTextureFormat_ShortFixed2;
           break;
-        case __BRTHALF3:
+        case __BRTSHORTFIXED3:
           fieldComponentCount=3;
-          fieldTextureFormat = GPUContext::kTextureFormat_Half3;
+          fieldTextureFormat = GPUContext::kTextureFormat_ShortFixed3;
           break;
-        case __BRTHALF4:
+        case __BRTSHORTFIXED4:
           fieldComponentCount=4;
-          fieldTextureFormat = GPUContext::kTextureFormat_Half4;
+          fieldTextureFormat = GPUContext::kTextureFormat_ShortFixed4;
           break;
         default:
           GPUWARN << "Invalid element type for stream.\n"

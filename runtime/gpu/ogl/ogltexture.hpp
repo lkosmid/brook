@@ -13,7 +13,7 @@ namespace brook {
   public:
     enum OGLElementFormats{
        OGL_FLOAT,
-       OGL_HALF,
+       OGL_SHORTFIXED,
        OGL_FIXED,
        OGL_NUMFORMATS
     };

@@ -229,13 +229,13 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
         out << "char ";
     else if (typemask & BT_Short)
         out << "short ";
-    else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_Half))))
+    else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_ShortFixed))))
        out << "__BrtFloat1 ";
-    else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
+    else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_ShortFixed2))))
        out << "__BrtFloat2 ";
-    else if ((typemask & BT_Float3)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
+    else if ((typemask & BT_Float3)||(raw==false&&((typemask &BT_Fixed3)||(typemask&BT_ShortFixed3))))
        out << "__BrtFloat3 ";
-    else if ((typemask & BT_Float4)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
+    else if ((typemask & BT_Float4)||(raw==false&&((typemask &BT_Fixed4)||(typemask&BT_ShortFixed4))))
        out << "__BrtFloat4 ";
     else if (typemask & BT_Fixed)
         out << "fixed ";
@@ -245,14 +245,14 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
         out << "fixed3 ";
     else if (typemask & BT_Fixed4)
         out << "fixed4 ";
-    else if (typemask & BT_Half)
-        out << "half ";
-    else if (typemask & BT_Half2)
-        out << "half2 ";
-    else if (typemask & BT_Half3)
-        out << "half3 ";
-    else if (typemask & BT_Half4)
-        out << "half4 ";
+    else if (typemask & BT_ShortFixed)
+        out << "shortfixed ";
+    else if (typemask & BT_ShortFixed2)
+        out << "shortfixed2 ";
+    else if (typemask & BT_ShortFixed3)
+        out << "shortfixed3 ";
+    else if (typemask & BT_ShortFixed4)
+        out << "shortfixed4 ";
     else if ((typemask & BT_Double) && (typemask & BT_Long))
         out << "long double ";
     else if (typemask & BT_Double)
@@ -347,14 +347,14 @@ bool BaseType::printStructureStreamShape( std::ostream& out )
         out << "__BRTFIXED3, ";
     else if (typemask & BT_Fixed4)
         out << "__BRTFIXED4, ";
-    else if (typemask & BT_Half)
-        out << "__BRTHALF, ";
-    else if (typemask & BT_Half2)
-        out << "__BRTHALF2, ";
-    else if (typemask & BT_Half3)
-        out << "__BRTHALF3, ";
-    else if (typemask & BT_Half4)
-        out << "__BRTHALF4, ";
+    else if (typemask & BT_ShortFixed)
+        out << "__BRTSHORTFIXED, ";
+    else if (typemask & BT_ShortFixed2)
+        out << "__BRTSHORTFIXED2, ";
+    else if (typemask & BT_ShortFixed3)
+        out << "__BRTSHORTFIXED3, ";
+    else if (typemask & BT_ShortFixed4)
+        out << "__BRTSHORTFIXED4, ";
     else
     {
       StructDef* s = findStructureDef(this);
@@ -380,13 +380,13 @@ BaseType::printBase(std::ostream& out, int level) const
         out << "char ";
     else if (typemask & BT_Short)
         out << "short ";
-    else if ((typemask & BT_Float)||(0&typemask & BT_Fixed)||(0&typemask & BT_Half))
+    else if ((typemask & BT_Float)||(0&typemask & BT_Fixed)||(0&typemask & BT_ShortFixed))
         out << "float ";
-    else if ((typemask & BT_Float2)||(0&typemask & BT_Fixed2)||(0&typemask & BT_Half2))
+    else if ((typemask & BT_Float2)||(0&typemask & BT_Fixed2)||(0&typemask & BT_ShortFixed2))
         out << "float2 ";
-    else if ((typemask & BT_Float3)||(0&typemask & BT_Fixed3)||(0&typemask & BT_Half3))
+    else if ((typemask & BT_Float3)||(0&typemask & BT_Fixed3)||(0&typemask & BT_ShortFixed3))
         out << "float3 ";
-    else if ((typemask & BT_Float4)||(0&typemask & BT_Fixed4)||(0&typemask & BT_Half4))
+    else if ((typemask & BT_Float4)||(0&typemask & BT_Fixed4)||(0&typemask & BT_ShortFixed4))
         out << "float4 ";
     else if (typemask & BT_Fixed)
         out << "fixed ";
@@ -396,14 +396,14 @@ BaseType::printBase(std::ostream& out, int level) const
         out << "fixed3 ";
     else if (typemask & BT_Fixed4)
         out << "fixed4 ";
-    else if (typemask & BT_Half)
-        out << "half ";
-    else if (typemask & BT_Half2)
-        out << "half2 ";
-    else if (typemask & BT_Half3)
-        out << "half3 ";
-    else if (typemask & BT_Half4)
-        out << "half4 ";
+    else if (typemask & BT_ShortFixed)
+        out << "shortfixed ";
+    else if (typemask & BT_ShortFixed2)
+        out << "shortfixed2 ";
+    else if (typemask & BT_ShortFixed3)
+        out << "shortfixed3 ";
+    else if (typemask & BT_ShortFixed4)
+        out << "shortfixed4 ";
     else if ((typemask & BT_Double) && (typemask & BT_Long))
         out << "long double ";
     else if (typemask & BT_Double)

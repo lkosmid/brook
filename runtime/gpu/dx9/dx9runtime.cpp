@@ -705,22 +705,22 @@ namespace brook
     switch( inFormat )
     {
     case kTextureFormat_Float1:
-    case kTextureFormat_Half1:
+    case kTextureFormat_ShortFixed1:
     case kTextureFormat_Fixed1:
       components = 1;
       break;
     case kTextureFormat_Float2:
-    case kTextureFormat_Half2:
+    case kTextureFormat_ShortFixed2:
     case kTextureFormat_Fixed2:
       components = 2;
       break;
     case kTextureFormat_Float3:
-    case kTextureFormat_Half3:
+    case kTextureFormat_ShortFixed3:
     case kTextureFormat_Fixed3:
       components = 3;
       break;
     case kTextureFormat_Float4:
-    case kTextureFormat_Half4:
+    case kTextureFormat_ShortFixed4:
     case kTextureFormat_Fixed4:
       components = 4;
       break;
@@ -743,11 +743,11 @@ namespace brook
     case kTextureFormat_Fixed4:
       componentType = DX9Texture::kComponentType_Fixed;
       break;
-    case kTextureFormat_Half1:
-    case kTextureFormat_Half2:
-    case kTextureFormat_Half3:
-    case kTextureFormat_Half4:
-      componentType = DX9Texture::kComponentType_Half;
+    case kTextureFormat_ShortFixed1:
+    case kTextureFormat_ShortFixed2:
+    case kTextureFormat_ShortFixed3:
+    case kTextureFormat_ShortFixed4:
+      componentType = DX9Texture::kComponentType_ShortFixed;
       break;
     default:
       GPUError("Unknown format for DX9 Texture");
@@ -1022,7 +1022,7 @@ namespace brook
       _depthStencilOutput = createTexture2D(
         _depthStencilWidth,
         _depthStencilHeight,
-        kTextureFormat_Half1 );
+        kTextureFormat_Fixed1 );
 
       needToClear = true;
     }

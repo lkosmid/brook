@@ -52,6 +52,51 @@ typedef struct fixed4 {
 
 } fixed4;
 
+
+typedef struct shortfixed {
+  shortfixed(unsigned short _x) { x =_x;}
+  shortfixed(float _x) {if (_x>1) _x=1; if (_x<0)_x=0; x = (unsigned short)(_x*65535);}
+   shortfixed(float _x,float _y,float _z,float _w) {if (_x>1) _x=1; if (_x<0)_x=0; x = (unsigned short)(.5+_x*65535);}
+  shortfixed(void) {}
+  operator __BrtFloat1()const {return __BrtFloat1(((float)x)/65535.0f);}
+  template <class T> T castToArg(const T&dummy)const{return T(((float)x)/65535.0f);}
+  shortfixed& operator = (const __BrtFloat1&input){
+    return (*this=shortfixed(input.unsafeGetAt(0)));
+  }
+      unsigned short x;//unsigned short pad1,pad2,pad3;
+} shortfixed;
+
+typedef struct shortfixed2 {
+  shortfixed2(float _x, float _y) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); }
+   shortfixed2(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); }
+  shortfixed2(unsigned short _x, unsigned short _y) { x = _x;y=_y;}
+  shortfixed2(void) {}
+  unsigned short x,y,pad2,pad3;
+  operator __BrtFloat2() const{return __BrtFloat2(((float)x)/65535.0f,((float)y)/65535.0f);}
+  template <class T> T castToArg(const T &dummy) const{return T(((float)x)/65535.0f,((float)y)/65535.0f);}
+} shortfixed2;
+
+typedef struct shortfixed3 {
+  shortfixed3(float _x, float _y, float _z) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); z=(unsigned short)(.5+_z*65535);}
+   shortfixed3(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); z=(unsigned short)(.5+_z*65535);}
+  shortfixed3(unsigned short _x, unsigned short _y, unsigned short _z) { x = _x;y=_y;z=_z;}
+  shortfixed3(void) {}
+  operator __BrtFloat3() const{return __BrtFloat3(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f);}
+  template <class T> T castToArg(const T&dummy) const {return T(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f);}
+  unsigned short x,y,z,pad3;
+} shortfixed3;
+
+typedef struct shortfixed4 {
+  shortfixed4(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); z=(unsigned short)(.5+_z*65535); w=(unsigned short)(.5+_w*65535);}
+  shortfixed4(unsigned short _x, unsigned short _y, unsigned short _z, unsigned short _w) { x = _x;y=_y;z=_z;w=_w;}
+  shortfixed4(void) {}
+  unsigned short x,y,z,w;
+   operator __BrtFloat4() const{return __BrtFloat4(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f,((float)w)/65535.0f);}
+  template <class T> T castToArg(const T&dummy)const{return T(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f,((float)w)/65535.0f);}
+
+} shortfixed4;
+
+
 typedef struct float2 {
   float2(float _x, float _y) { x = _x; y = _y; }
   float2(void) {}
@@ -125,10 +170,10 @@ enum __BRTStreamType {
     __BRTFIXED2=6,
     __BRTFIXED3=7,
     __BRTFIXED4=8,
-    __BRTHALF=9,
-    __BRTHALF2=10,
-    __BRTHALF3=11,
-    __BRTHALF4=12,
+    __BRTSHORTFIXED=9,
+    __BRTSHORTFIXED2=10,
+    __BRTSHORTFIXED3=11,
+    __BRTSHORTFIXED4=12,
     __BRTDOUBLE=13,
     __BRTDOUBLE2=14,
 };
@@ -159,10 +204,10 @@ namespace brook {
     __BRTFIXED2=6,
     __BRTFIXED3=7,
     __BRTFIXED4=8,
-    __BRTHALF=9,
-    __BRTHALF2=10,
-    __BRTHALF3=11,
-    __BRTHALF4=12,
+    __BRTSHORTFIXED=9,
+    __BRTSHORTFIXED2=10,
+    __BRTSHORTFIXED3=11,
+    __BRTSHORTFIXED4=12,
     __BRTDOUBLE=13,
     __BRTDOUBLE2=14,
   };
@@ -216,6 +261,33 @@ namespace brook {
      static const ::brook::StreamType result[] = {__BRTFIXED4,__BRTNONE};
      return result;
   }
+
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(shortfixed*) {
+     static const ::brook::StreamType result[] = {__BRTSHORTFIXED,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(shortfixed2*) {
+     static const ::brook::StreamType result[] = {__BRTSHORTFIXED2,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(shortfixed3*) {
+     static const ::brook::StreamType result[] = {__BRTSHORTFIXED3,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(shortfixed4*) {
+     static const ::brook::StreamType result[] = {__BRTSHORTFIXED4,__BRTNONE};
+     return result;
+  }
+
+
   template<>
   inline const ::brook::StreamType* getStreamType(double*) {
      static const ::brook::StreamType result[] = {__BRTDOUBLE,__BRTNONE};

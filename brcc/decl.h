@@ -83,10 +83,10 @@ const BaseTypeSpec BT_Fixed2       = 0x00020000;
 const BaseTypeSpec BT_Fixed3       = 0x00040000;
 const BaseTypeSpec BT_Fixed4       = 0x00080000;
 
-const BaseTypeSpec BT_Half        = 0x00100000;
-const BaseTypeSpec BT_Half2       = 0x00200000;
-const BaseTypeSpec BT_Half3       = 0x00400000;
-const BaseTypeSpec BT_Half4       = 0x00800000;
+const BaseTypeSpec BT_ShortFixed        = 0x00100000;
+const BaseTypeSpec BT_ShortFixed2       = 0x00200000;
+const BaseTypeSpec BT_ShortFixed3       = 0x00400000;
+const BaseTypeSpec BT_ShortFixed4       = 0x00800000;
 
 const BaseTypeSpec BT_BaseMask     = 0x00FFFFFF;
 
@@ -663,10 +663,10 @@ Decl*	ReverseList( Decl* dList );
 static inline int
 FloatDimension(BaseTypeSpec bt)
 {
-   if ((bt & BT_Float)||(bt&BT_Fixed)||(bt&BT_Half)||(bt&BT_Double)) return 1;
-   else if ((bt & BT_Float2)||(bt&BT_Fixed2)||(bt&BT_Half2)||(bt&BT_Double2)) return 2;
-   else if ((bt & BT_Float3)||(bt&BT_Fixed3)||(bt&BT_Half3)) return 3;
-   else if ((bt & BT_Float4)||(bt&BT_Fixed4)||(bt&BT_Half4)) return 4;
+   if ((bt & BT_Float)||(bt&BT_Fixed)||(bt&BT_ShortFixed)||(bt&BT_Double)) return 1;
+   else if ((bt & BT_Float2)||(bt&BT_Fixed2)||(bt&BT_ShortFixed2)||(bt&BT_Double2)) return 2;
+   else if ((bt & BT_Float3)||(bt&BT_Fixed3)||(bt&BT_ShortFixed3)) return 3;
+   else if ((bt & BT_Float4)||(bt&BT_Fixed4)||(bt&BT_ShortFixed4)) return 4;
    else return 0;
 }
 static inline int FloatGPUDimension(BaseTypeSpec bt)

@@ -289,15 +289,15 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->base = new BaseType(BT_Fixed * (1<<n));
                       return(err_tok = FIXED + n);
                     }
-<INITIAL>"half"    {
-                      lvalp->base = new BaseType(BT_Half);
-                      return(err_tok = HALF);
+<INITIAL>"shortfixed"    {
+                      lvalp->base = new BaseType(BT_ShortFixed);
+                      return(err_tok = SHORTFIXED);
                     }
-<INITIAL>"half"[2-4] {
+<INITIAL>"shortfixed"[2-4] {
 		      int n = yytext[yyleng -1] - '1'; /* There is no float1 */
 
-                      lvalp->base = new BaseType(BT_Half * (1<<n));
-                      return(err_tok = HALF + n);
+                      lvalp->base = new BaseType(BT_ShortFixed * (1<<n));
+                      return(err_tok = SHORTFIXED + n);
                     }
 <INITIAL>"double"   {
                       lvalp->base = new BaseType(BT_Double);

@@ -13,7 +13,7 @@ namespace brook
         {
           kComponentType_Float = 0,
           kComponentType_Fixed = 1,
-          kComponentType_Half = 2
+          kComponentType_ShortFixed = 2
         };
 
         static DX9Texture* create(
