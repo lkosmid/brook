@@ -29,7 +29,7 @@ typedef struct Neighbor_t {
   float4 AAC;// w = AC->A.z
 }Neighbor;
 
-unsigned int streamWidth=2048;
+
 int counterMax = 3;
 int low_texture_ram=0;
 kernel float triCombine(float b1<>, float b2<>) {
@@ -290,8 +290,10 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
                                        Neighbor newnei<>,
                                        out Tri tri<>,
                                        out Neighbor neighbor<>,
-                                       float epsilon) {
-  float unclampedwhich = round(fmod((indexof tri).x,4));
+                                       float epsilon,
+                                       float stretchX) {
+  float sindex = stretchX?(indexof tri).x:(indexof tri).y;
+  float unclampedwhich = round(fmod(sindex,4));
   float which = unclampedwhich>3.5?0:unclampedwhich;
   float4 ac = splittri.AC;
   float4 ab = splittri.AB;
@@ -400,36 +402,44 @@ void pushBackVertexArray(struct VertexArray * v,
   }
   v->v[v->size-1]=f;
 }                   
-int toi(float f) {return (int)f;}
+static int toi(float f) {return (int)f;}
 void subdivide (Neighbor (*neighbors)<>,
                 Tri (*triangles)<>,
                 struct VertexArray *output,
                 float epsilon,
                 int counter) {
   {
+    unsigned int streamWidth=toi(streamSize(*triangles).y);
     float2 shouldProduce<streamWidth,0>;
     float2 shouldNotProduce<streamWidth,0>;
     produceTriP(*triangles,shouldProduce,shouldNotProduce);
     {
       int sizeDivide=toi(streamSize(shouldProduce).x);
+      float stretchX = streamWidth*4>2048?1:0;
+      
       {
         Neighbor sharedNeighbors<streamWidth,sizeDivide>;
-        Neighbor newNeighbors<streamWidth,(sizeDivide*4)>;
         SplitTri sharedTriangles <streamWidth,sizeDivide>;
-        Tri newTriangles<streamWidth,(sizeDivide*4)>;
+        Neighbor newNeighbors<(stretchX?streamWidth:streamWidth*4),
+                              (stretchX?sizeDivide*4:sizeDivide)>;
+        Tri newTriangles<(stretchX?streamWidth:streamWidth*4),
+                         (stretchX?sizeDivide*4:sizeDivide)>;
+        if (!stretchX) streamWidth*=4;
         computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
         splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
         linearReorgSplitTriangles(sharedTriangles,
                                   sharedNeighbors,
                                   newTriangles,
                                   newNeighbors,
-                                  epsilon);
+                                  epsilon,
+                                  stretchX);
         streamSwap(*triangles,newTriangles);
         streamSwap(*neighbors,newNeighbors);
       }
       {
-        int sizey=3*toi(streamSize(shouldNotProduce).x);
-        float3 outputTri<streamWidth,sizey>;
+        int sizex=3*toi(streamSize(shouldNotProduce).x);
+        int sizey=toi(streamSize(shouldNotProduce).y);
+        float3 outputTri<sizey,sizex>;
 
         writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
         if ((!low_texture_ram)&&
@@ -444,7 +454,8 @@ void subdivide (Neighbor (*neighbors)<>,
         streamWrite(outputTri,output->v+sizey);   
       }       
       if (counter>=counterMax) {
-        float3 outputTri<streamWidth,toi(streamSize(*triangles).x*3)>;
+        float3 outputTri<toi(streamSize(*triangles).x),
+                         toi(streamSize(*triangles).x*3)>;
         int sizey = output->size;
         copyFinalTriangles(*triangles,outputTri);
         expandVertexArray(output,
@@ -480,7 +491,7 @@ void bestHeiWid(unsigned int totalSize,
                 unsigned int *hei,
                 unsigned int *wid) {
    int slop=totalSize*2;
-   int maxx = 0;
+   int maxy = 0;
    int best = 11;
    unsigned int i;
    for (i=0;i<12;++i) {
@@ -492,11 +503,11 @@ void bestHeiWid(unsigned int totalSize,
       tslop = x*y - totalSize;
       if (tslop<0)
          continue;
-      if ((tslop<slop&&x>maxx)||
-          (x>maxx&&tslop<2*x/3)) {
+      if ((tslop<slop&&y>maxy)||
+          (y>maxy&&tslop<2*y/3)) {
          *hei=y;
          *wid=x;
-         maxx = x;
+         maxy = y;
          slop = tslop;
          best = i;
       }
