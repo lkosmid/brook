@@ -101,7 +101,7 @@ void* DX9Iter::getData (unsigned int flags)
     for( unsigned int i = 0; i < extents[0]; i++ )
     {
       for( int j = 0; j < componentCount; j++ )
-        *data++ = lerp( i, extents[0], ranges[0], ranges[2] );
+        *data++ = lerp( i, extents[0], ranges[j], ranges[j+componentCount] );
     }
   }
   else if( dimensionCount == 2 )

@@ -12,8 +12,8 @@ namespace brook {
   extern const char* DX9_RUNTIME_STRING;
 
   enum {
-    kDX9ReductionBufferWidth = 1024,
-    kDX9ReductionBufferHeight = 1024
+    kDX9ReductionBufferWidth = 2048,
+    kDX9ReductionBufferHeight = 2048
   };
 
   class DX9Kernel : public Kernel {

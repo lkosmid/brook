@@ -28,6 +28,7 @@ enum __BRTStreamType {
 namespace brook {
   class Kernel;
   class Stream;
+  class Iter;
 
   static const unsigned int MAXPROGLENGTH = 1024*32;
   static const unsigned int MAXSTREAMDIMS = 8;
@@ -96,10 +97,13 @@ namespace brook {
 
 }
 
+class __BRTStream;
+class __BRTIter;
 
 class __BRTStream {
 public:
   __BRTStream(__BRTStreamType , ...);
+  __BRTStream( const __BRTIter& );
   ~__BRTStream()
   {
     if( stream != 0 )

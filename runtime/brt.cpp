@@ -75,6 +75,20 @@ __BRTStream::__BRTStream(__BRTStreamType type, ...)
   stream = brook::RunTime::GetInstance()->CreateStream( type, extents.size(), &extents[0] );
 }
 
+__BRTStream::__BRTStream( const __BRTIter& i )
+  : stream(0)
+{
+  brook::Iter* iterator = i;
+
+  __BRTStreamType elementType = iterator->getStreamType();
+  int dimensionCount = iterator->getDimension();
+  int* extents = (int*)(iterator->getExtents());
+
+  stream = brook::RunTime::GetInstance()->CreateStream( elementType, dimensionCount, extents );
+  stream->Read( iterator->getData( brook::Stream::READ ) );
+  iterator->releaseData( brook::Stream::READ );
+}
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 __BRTIter::__BRTIter(__BRTStreamType type, ...)
   : iter(NULL)

@@ -1,0 +1,28 @@
+// convert_iter_to_stream.br
+// Tests automatic conversion of iterators to streams
+
+#include <stdio.h>
+
+kernel void copy( float input<>, out float output<> ) {
+	output = input;
+}
+
+int main()
+{
+	iter float iterator< 100 > = BRTIter( 0.0f, 25.0f );
+	float stream< 100 >;
+	float stream_data[100];
+	int i, j;
+	
+	copy( iterator, stream );
+	streamWrite( stream, stream_data );
+	
+	for( i = 0; i < 10; i++ ) {
+		for( j = 0; j < 10; j++ ) {
+			printf( "%6.3f ", stream_data[10*i+j] );
+		}
+		printf( "\n" );
+	}
+	
+	return 0;
+}
