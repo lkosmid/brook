@@ -27,10 +27,6 @@ LDFLAGS   += $(LD_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)
 TEMP1     := $(addprefix $(LD_LIBLINK_PREFIX), $(LIBRARIES))
 LDFLAGS   += $(addsuffix $(LD_LIBLINK_SUFFIX), $(TEMP1))
 
-ARFLAGS   += $(AR_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)
-TEMP2     := $(addprefix $(AR_LIBLINK_PREFIX), $(LIBRARIES))
-ARFLAGS   += $(addsuffix $(AR_LIBLINK_SUFFIX), $(TEMP2))
-
 LDFLAGS   += $(LD_DEBUG_FLAG)
 
 OBJS      := $(addprefix $(OBJDIR)/, $(FILES))
@@ -138,6 +134,7 @@ endif
 $(BINDIR)/$(BINARY):  $(ADDITIONAL_DEPENDANCIES) $(OBJS)
 	@$(ECHO) Building $@
 ifdef STATIC_LIBRARY
+	@echo "AR: '$(AR)', Flags: '$(ARFLAGS)', Output: '$(AR_OUTPUT_FLAG)'"
 	$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)
 else
 	$(LD) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LDFLAGS)

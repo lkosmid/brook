@@ -38,3 +38,8 @@ AR_LIBLINK_PREFIX :=
 AR_LIBLINK_SUFFIX := .lib 
 
 
+ARFLAGS   += $(AR_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)
+TEMP2     := $(addprefix $(AR_LIBLINK_PREFIX), $(LIBRARIES))
+ARFLAGS   += $(addsuffix $(AR_LIBLINK_SUFFIX), $(TEMP2))
+
+
