@@ -1,7 +1,7 @@
 // dx9.hpp
 #pragma once
 
-#include "../brt.hpp"
+#include "../runtime.hpp"
 #include "dx9base.hpp"
 
 #pragma comment(lib,"d3d9")

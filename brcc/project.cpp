@@ -262,8 +262,7 @@ operator<<(std::ostream& out, const TransUnit& tu)
        << " " << __TIME__                                << std::endl
        << "////////////////////////////////////////////" << std::endl
        << std::endl;
-   out << "#include <../runtime/cpu/cpu.hpp>"<<std::endl;
-
+   out << "#include <brook.hpp>" << std::endl;
     for (stemnt=tu.head; stemnt; stemnt=stemnt->next)
 	{
 		if (inInclude > 0)

@@ -141,7 +141,6 @@ else
 	$(LD) $(LDFLAGS) $(LD_OUTPUT_FLAG)$@ $(OBJS)
 endif
 
-
 ## Clean BRCC generated .cpp files ##
 BR_FILES_CLEAN   = $(addsuffix .br-clean, $(FILES))
 %.br-clean:
@@ -156,6 +155,30 @@ ifdef BINARY
 	@rm -rf $(OBJDIR) $(BINDIR)/$(BINARY) $(SLOP) 
 	@rm -rf $(BINDIR)/$(BINARY_NAME).pdb *~ $(DEPDIR)
 endif
+
+## Regression testing ##
+
+#ifdef REGRESSIONDIRS
+
+REGRESS_ALL = $(foreach dir, $(REGRESSIONDIRS), $(dir).regress)
+regression: $(REGRESS_ALL)
+$(REGRESS_ALL):
+	@$(MAKE) -C $(basename $@) --no-print-directory regression
+
+#else
+
+regression: arch
+	@echo  "Running $(BINARY_NAME)"
+	@$(BINDIR)/$(BINARY) > $(BINARY_NAME).output
+	@diff -q -w $(BINARAY_NAME).output $(BINARAY_NAME).gold
+	@rm $(BINARAY_NAME).output
+	@echo
+	@echo  "****************************"
+	@echo  "$(BINARAY) Test Passed"
+	@echo  "****************************"
+	@echo
+
+#endif
 
 ifndef VERBOSE
 .SILENT:

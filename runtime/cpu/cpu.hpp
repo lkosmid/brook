@@ -1,7 +1,7 @@
 #ifndef _BROOK_CPU_HPP
 #define _BROOK_CPU_HPP
 #include <vector>
-#include "../brt.hpp"
+#include "../runtime.hpp"
 
 namespace brook {
 	extern const char* CPU_RUNTIME_STRING;	

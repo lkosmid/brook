@@ -2,7 +2,7 @@
 #define NV30GL_H
 
 #include <windows.h>
-#include "../brt.hpp"
+#include "../runtime.hpp"
 
 namespace brook {
 

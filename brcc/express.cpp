@@ -408,7 +408,7 @@ IntConstant::print(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-UIntConstant::UIntConstant(ulong val, const Location& l )
+UIntConstant::UIntConstant(unsigned long val, const Location& l )
             : Constant (CT_UInt, l)
 {
     ulng = val;

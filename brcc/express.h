@@ -228,13 +228,13 @@ class IntConstant : public Constant
 class UIntConstant : public Constant
 {
   public:
-    UIntConstant( ulong val, const Location& l );
+    UIntConstant( unsigned long val, const Location& l );
     virtual ~UIntConstant();
  
     Expression *dup0() const;
     void print(std::ostream& out) const;
 
-    ulong    ulng;
+    unsigned long    ulng;
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

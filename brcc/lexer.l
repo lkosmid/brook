@@ -580,7 +580,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 
                          if (errno == ERANGE)
                          {
-                            ulong ui;
+                            unsigned long ui;
                             ui = strtoul(yytext, (char**) NULL, 0);
                             lvalp->consValue = new UIntConstant(ui,HERE);
                          }
