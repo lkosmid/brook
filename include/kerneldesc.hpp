@@ -37,7 +37,7 @@ namespace brook
       kStreamConstant_ATIndexofNumer,
       kStreamConstant_ATIndexofDenom,
       kStreamConstant_ATLinearize,
-      kStreamConstant_ATInvTextureShape
+      kStreamConstant_ATTextureShape
     };
     enum
     {

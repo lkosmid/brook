@@ -1280,13 +1280,15 @@ namespace brook
             return result;
         }
         break;
-    case kStreamConstant_ATInvTextureShape:
+    case kStreamConstant_ATTextureShape:
         {
             float4 result(0,0,0,0);
             unsigned int textureWidth = stream->getTextureWidth();
             unsigned int textureHeight = stream->getTextureHeight();
             result.x = 1.0f / (float)textureWidth;
             result.y = 1.0f / (float)textureHeight;
+            result.z = (float)textureWidth;
+            result.w = (float)textureHeight;
             return result;
         }
         break;

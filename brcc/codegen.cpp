@@ -863,19 +863,19 @@ generate_shader_support(std::ostream& shader)
     shader << "\treturn floor( (indexofoutput*streamIndexofNumer + 0.5)*streamIndexofInvDenom ); }\n";
 
     shader << "float2 __calculatetexpos( float4 streamIndex,\n";
-    shader << "float4 linearizeConst, float2 invTextureShapeConst, float hackConst ) {\n";
+    shader << "float4 linearizeConst, float4 textureShapeConst, float hackConst ) {\n";
     shader << "float linearIndex = dot( streamIndex, linearizeConst ) + 0.5;\n";
 //    shader << "#ifndef USERECT\n";
 //    shader << "//HLSL codegen bug workaround\n";
 //    shader << "\tlinearIndex *= hackConst;\n";
 //    shader << "#endif\n";
     shader << "float2 texIndex;\n";
-    shader << "texIndex.y = floor( linearIndex * invTextureShapeConst.x );\n";
-    shader << "texIndex.x = floor( linearIndex - texIndex.y );\n";
+    shader << "texIndex.y = floor( linearIndex * textureShapeConst.x );\n";
+    shader << "texIndex.x = floor( linearIndex - texIndex.y * textureShapeConst.z );\n";
     shader << "float2 texCoord = texIndex + 0.5;\n";
     shader << "#ifndef USERECT\n";
     shader << "// convert to 0-to-1 texture space\n";
-    shader << "texCoord *= invTextureShapeConst;\n";
+    shader << "texCoord *= textureShapeConst.xy;\n";
     shader << "#endif\n";
     shader << "return texCoord;\n}\n\n";
 
@@ -904,13 +904,13 @@ generate_shader_support(std::ostream& shader)
     shader << "}\n\n";
 #endif
 
-    shader << "float2 __gatherindex1( float1 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "float2 __gatherindex1( float1 index, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
     shader << "\treturn __calculatetexpos( float4(index,0,0,0), linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex2( float2 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "float2 __gatherindex2( float2 index, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
     shader << "\treturn __calculatetexpos( float4(index,0,0), linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex3( float3 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "float2 __gatherindex3( float3 index, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
     shader << "\treturn __calculatetexpos( float4(index,0), linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex4( float4 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "float2 __gatherindex4( float4 index, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
     shader << "\treturn __calculatetexpos( index, linearizeConst, reshapeConst, hackConst ); }\n";
   }
 
@@ -1028,14 +1028,14 @@ generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg, in
       shader << "uniform float4 __streamlinearize_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader << ",\n\t\t";
-      shader << "uniform float2 __streaminvtextureshape_" << argName;
+      shader << "uniform float4 __streamtextureshape_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader << ",\n\t\t";
 
       outPass.addConstant( (i+1), "kStreamConstant_ATIndexofNumer" );
       outPass.addConstant( (i+1), "kStreamConstant_ATIndexofDenom" );
       outPass.addConstant( (i+1), "kStreamConstant_ATLinearize" );
-      outPass.addConstant( (i+1), "kStreamConstant_ATInvTextureShape" );
+      outPass.addConstant( (i+1), "kStreamConstant_ATTextureShape" );
    } else {
       // Output a texcoord, and optional scale/bias
       if (needIndexOfArg) {
@@ -1290,7 +1290,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
                shader << "\tfloat2 _tex_" << argName << "_pos = ";
                shader << "__calculatetexpos( __indexof_" << argName << ", ";
                shader << "__streamlinearize_" << argName << ", ";
-               shader << "__streaminvtextureshape_" << argName << ", __hackconst );\n";
+               shader << "__streamtextureshape_" << argName << ", __hackconst );\n";
             }
           }
 
