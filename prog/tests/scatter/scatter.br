@@ -27,7 +27,6 @@ int main () {
   float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
   float data_d[10][10];
   float data_e[10][10];
-  float d_broken = 0.0f;
   float4 data_f[2][2]= { { float4(0,0,0,0), float4(1,-1,1,-1)},
                          { float4(2,-2,2,-2), float4(3,-3,3,-3) } };
   float4 data_g[2][2];
@@ -50,7 +49,6 @@ int main () {
   streamRead(index, data_i); 
   streamScatterOp(a,b,e,mygets(1));
   streamScatterOp(a,b,e,mymult);
-  //foo(a,b,c,d_broken,e);
   streamScatterOp(f,index,g,STREAM_SCATTER_ASSIGN);
   //  streamScatterOp(f,i,g,STREAM_SCATTER_FLOAT_MUL);
   streamWrite(g,data_g);

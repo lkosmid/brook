@@ -65,7 +65,6 @@ int main () {
   float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
   float data_d[10][10];
 //  float data_e[10][10];
-  float d_broken = 0.0f;
   float4 output<2,5>;
   float4 rez[2][5];
 
@@ -84,7 +83,6 @@ int main () {
   streamRead(d, data_d);
 
   foo(a,c,d,output);
-  //foo(a,b,c,d_broken,e);
   streamWrite(output,rez);
   printf ("{%3.2f %3.2f %3.2f %3.2f}\n", rez[0][0].x,rez[0][0].y,
           rez[0][0].z,rez[0][0].w);

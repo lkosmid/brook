@@ -39,7 +39,6 @@ int main () {
   float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
   float data_d[10][10];
   float data_e[10][10];
-  float d_broken = 0.0f;
 
   int i,j;
 
@@ -55,7 +54,6 @@ int main () {
   streamRead(d, data_d);
 
   foo(b,d,c,d,e);
-  //foo(a,b,c,d_broken,e);
 
   streamWrite(e, data_e);
   
