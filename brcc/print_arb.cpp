@@ -1,12 +1,14 @@
 #ifndef _WIN32
 #include <ctype.h>
+#else
+#pragma warning(disable:4786)
 #endif
 #include "ps2arb_intermediate.h"
 
 
 using std::string;
 using std::map;
-
+using namespace std; // otherwise VC6 does not understand map::pair
 using namespace ps2arb;
 
 static string strtoupper (string input) {
@@ -289,9 +291,9 @@ std::ostream & IntermediateLanguage::print_arbfp (std::ostream & s) {
          }
       }
    }
-   for (unsigned int i=0;i<stmt.size();++i) {
+   {for (unsigned int i=0;i<stmt.size();++i) {
       stmt[i]->print_arbfp(s);
-   }
+   }}
    s << "END\n";
    return s;
 }

@@ -54,7 +54,7 @@ void SplitTree::buildDominatorTree()
   dominatorDFS( _outputList );
 
   // step 2 and 3, build semidominators
-  for( size_t i = _rdsNodeList.size(); i > 1; i-- )
+  {for( size_t i = _rdsNodeList.size(); i > 1; i-- )
   {
     SplitNode* w = _rdsNodeList[i-1];
     // step 2
@@ -76,22 +76,22 @@ void SplitTree::buildDominatorTree()
       v->_pdtDominator = (u->_spanningSemidominatorID < v->_spanningSemidominatorID) ? u : w->_spanningParent;
     }
     parent->_spanningBucket.clear();
-  }
+  }}
 
   // step 4
-  for( size_t i = 2; i < _rdsNodeList.size(); i++ )
+  {for( size_t i = 2; i < _rdsNodeList.size(); i++ )
   {
     SplitNode* w = _rdsNodeList[i];
     if( w->_pdtDominator != _rdsNodeList[w->_spanningSemidominatorID-1])
       w->_pdtDominator = w->_pdtDominator->_pdtDominator;
-  }
-  for( size_t i = 0; i < _outputList.size(); i++ )
+  }}
+  {for( size_t i = 0; i < _outputList.size(); i++ ){
     _outputList[i]->_pdtDominator = 0;
-
+  }}
   // we have dominator info... 
   // now we need to prune it to the Partial Dominator Tree,
   // and the list of MR nodes...
-  for( size_t i = 0; i < _rdsNodeList.size(); i++ )
+  {for( size_t i = 0; i < _rdsNodeList.size(); i++ )
   {
     SplitNode* n = _rdsNodeList[i];
 
@@ -107,5 +107,5 @@ void SplitTree::buildDominatorTree()
     {
       n->_pdtDominator->_pdtChildren.push_back( n );
     }
-  }
+  }}
 }

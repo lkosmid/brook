@@ -1,19 +1,20 @@
 %{
 //#define YYDEBUG 1
+#ifdef _WIN32
+#pragma warning(disable:4786)
+#pragma warning(disable:4065)
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 
 #include <sstream>
-
-#pragma warning(disable:4065)
-
 #include "ps2arb.h"
 #include "ps2arb_intermediate.h"
 
 using std::map;
 using std::string;
-
+using namespace std;//otherwise VC6 dies
 extern int ps_lineno;
 
 using namespace ps2arb;
@@ -91,7 +92,7 @@ static map<string,BinaryFactory*> createBinaryFactory() {
 }
 static map<string,TrinaryFactory*> createTrinaryFactory() {
 	map<string,TrinaryFactory*> ret;
-	ret.insert(map<string,TrinaryFactory*>::value_type("cmp",ReverseCmpFactory));
+	ret.insert(map<string,TrinaryFactory*>::value_type("cmp",&ReverseCmpFactory));
 	ret.insert(map<string,TrinaryFactory*>::value_type("lrp",&LrpOp::factory));
 	ret.insert(map<string,TrinaryFactory*>::value_type("mad",&MadOp::factory));
 	ret.insert(map<string,TrinaryFactory*>::value_type("dp2add",&Dp2addOp::factory));

@@ -29,7 +29,9 @@
     o+     A high-level view of declarations.
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-
+#ifdef _WIN32
+#pragma warning(disable:4786)
+#endif
 #include <cassert>
 #include <cstring>
 #include <sstream>

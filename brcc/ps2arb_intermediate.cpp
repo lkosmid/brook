@@ -1,3 +1,6 @@
+#ifdef _WIN32
+#pragma warning(disable:4786)
+#endif
 #include <assert.h>
 #include "ps2arb_intermediate.h"
 

@@ -38,12 +38,12 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
 
   // assign temporary ids to any non-output split nodes
   int temporaryID = 1;
-  for( size_t i = 0; i < _rdsNodeList.size(); i++ )
+  {for( size_t i = 0; i < _rdsNodeList.size(); i++ )
   {
     SplitNode* node = _rdsNodeList[i];
     if( node->isMarkedAsSplit() && !(node->isOutputNode()) )
       node->setTemporaryID( temporaryID++ );
-  }
+  }}
   int temporaryCount = temporaryID-1;
 
   // go recursively through the nodes
@@ -54,8 +54,9 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
     inStream << "\t\t.temporaries(" << temporaryCount << ")" << std::endl;
   }
 
-  for( size_t i = 0; i < _outputList.size(); i++ )
+  {for( size_t i = 0; i < _outputList.size(); i++ ){
     _outputList[i]->rdsPrint( *this, _compiler, inStream );
+  }}
   inStream << "\t)";
 }
 
@@ -210,8 +211,9 @@ void SplitTree::rdsMerge( SplitNode* n )
   }
 
   std::cerr << "empty subset was chosen" << std::endl;
-  for( size_t i = 0; i < childCount; i++ )
+  {for( size_t i = 0; i < childCount; i++ ){
     n->_graphChildren[i]->_rdsSplitHere = true;
+  }}
 
   // we couldn't manage any of them...
   // mark all children for saving,
@@ -245,8 +247,9 @@ void SplitTree::printShaderFunction( const std::vector<SplitNode*>& inOutputs, s
   for( size_t i = 0; i < _rdsNodeList.size(); i++ )
     _rdsNodeList[i]->unmarkAsOutput();
   _outputPositionInterpolant->unmarkAsOutput();
-  for( size_t i = 0; i < inOutputs.size(); i++ )
+  {for( size_t i = 0; i < inOutputs.size(); i++ ){
     inOutputs[i]->markAsOutput();
+  }}
 
   // create the wrapper for the function
   inStream << "void main(" << std::endl;

@@ -5,7 +5,7 @@
  *      .[ch] files required to invoke it.  It converts to CG and feeds that
  *      through a CG compiler.
  */
-#include <memory>
+
 
 #ifdef _WIN32
 #pragma warning(disable:4786)
@@ -16,6 +16,7 @@
 #include <sstream>
 #include <iomanip>
 #include <fstream>
+#include <memory>
 extern "C" {
 #include <stdio.h>
 #include <string.h>
