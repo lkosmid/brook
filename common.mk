@@ -75,8 +75,7 @@ makedirs:
 	@if test ! -d $(BINDIR); then $(MKDIR) $(BINDIR); fi
 
 
-.SUFFIXES : $OBJSUFFIX .c .cpp .cg .br .fp
-.PRECIOUS : reduce.cg
+.SUFFIXES : $OBJSUFFIX .c .cpp .br .fp
 
 $(OBJDIR)/%$(OBJSUFFIX): %.c
 	@$(CC) $(CFLAGS) $(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
@@ -84,11 +83,8 @@ $(OBJDIR)/%$(OBJSUFFIX): %.c
 $(OBJDIR)/%$(OBJSUFFIX): %.cpp
 	@$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
-.br.cg:
-	@brcc $* < $<
-
-.cg.fp:
-	@cgc -profile fp30 -o $@ $<
+.br.fp:
+	@brcc $<
 
 $(BINDIR)/$(BINARY): $(OBJS) $(ADDITIONAL_DEPENDANCIES)
 	@$(ECHO) Building $@
