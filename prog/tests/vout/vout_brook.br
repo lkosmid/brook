@@ -1,8 +1,7 @@
 #include <stdio.h>
-
+#include "streamholder.h"
 kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], vout []float e<>) {
-  return;
   e = a+b+d[c.xy];
   push(e);
   if (fmod( (indexof a).x,2)==0) {
