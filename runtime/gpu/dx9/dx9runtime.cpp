@@ -4,6 +4,7 @@
 #include "dx9window.hpp"
 #include "dx9texture.hpp"
 #include "dx9writequery.hpp"
+#include "dx9writemask.hpp"
 
 #include <windows.h>
 #include <d3d9.h>
@@ -258,6 +259,7 @@ namespace brook
     void unbind();
     void bind();
     IWriteQuery* createWriteQuery();
+    IWriteMask* createWriteMask( int inY, int inX );
 
     // TIM: hacky magick for raytracer
     virtual void hackEnableWriteMask();
@@ -978,6 +980,10 @@ namespace brook
 
    IWriteQuery* GPUContextDX9Impl::createWriteQuery() {
       return new DX9WriteQuery( this );
+   }
+
+   IWriteMask* GPUContextDX9Impl::createWriteMask( int inY, int inX ) {
+      return new DX9WriteMask( this, inY, inX );
    }
 
   // TIM: hacky magick for raytracer

@@ -585,6 +585,39 @@ namespace brook {
     brook::Kernel* _kernel;
   };
 
+   /* wrapper class for write masking with z buffer */
+  class IWriteMask;
+  class write_mask
+  {
+  public:
+     static write_mask create( int inY, int inX );
+
+     write_mask();
+     write_mask( const write_mask& inMask );
+
+     write_mask& operator=( const write_mask& inMask );
+
+     // bind/unbind this mask as the current mask of the context
+     void bind();
+     void unbind();
+
+     // enable/disable use of this mask to limit computation
+     void enableTest();
+     void disableTest();
+
+     // enable/disable writing to this mask
+     void enableSet();
+     void disableSet();
+
+     // clear the mask to enable all writes
+     void clear();
+
+  private:
+     explicit write_mask( IWriteMask* inMask );
+
+     IWriteMask* _mask;
+  };
+
    /* wrapper class for occlusion queries */
 
    class IWriteQuery;

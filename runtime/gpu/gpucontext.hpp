@@ -231,6 +231,7 @@ namespace brook {
     virtual void unbind() = 0;
     virtual void bind() = 0;
     virtual IWriteQuery* createWriteQuery() { return 0; }
+    virtual IWriteMask* createWriteMask( int inY, int inX ) { return 0; }
 
     // TIM: hacky magick for raytracer
     virtual void hackEnableWriteMask() { GPUError("unimplemented"); throw 1; }
