@@ -144,6 +144,8 @@ namespace brook {
     unsigned int _slopTextureUnit;
     int currentPbufferComponents;
 
+    void copy_to_pbuffer(OGLTexture *texture);
+
     OGLWindow *wnd;
 
   };
