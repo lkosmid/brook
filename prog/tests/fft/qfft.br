@@ -181,6 +181,19 @@ kernel void DoubleFrag(float4 input[][], out float4 output<>, float2 NNo2,
 float tof(int i) {return (float)i;}
 void FftwTransform2d(float2 *data, unsigned long N, unsigned long M,
                      int isign, char cast);
+
+
+kernel void setZero(float4 indata<>, 
+                    out float4 outdata<>, 
+                    float2 clampsize,
+                    float scale) {
+	float4 i=indexof(indata);
+	float4 zero = {0.0,0.0,0.0,0.0};
+	float zeroit=(i.x>clampsize.x)&&(i.y>clampsize.y);
+	outdata = zeroit.xxxx?zero:indata/scale;
+}
+
+
 void computeFFT2d(float2 *input,
                   float2 *output,
                   int logN,
@@ -199,7 +212,7 @@ void computeFFT2d(float2 *input,
    iter float2 iter4 <N,(M/2)> =iter(float2(0,tof(N/2)),float2(tof(M/2),tof(N)));
    iter float2 s_iter <N,(M/2)> =iter(float2(0,0),float2(tof(M/2),tof(N)));
    float indicesY<N>;
-   int nPass,nBits,nPassCounter;
+   int nPass,nBits,nPassCounter, thereAndBack;
    rawindices=bitReversedIndices(logN,logM);
    streamRead(indicesXo2YXp1o2Xm2,rawindices);
 
@@ -209,7 +222,7 @@ void computeFFT2d(float2 *input,
       printf("FFT Input:\n");
       streamPrint(s);
    }
-   if (1) {	
+   for (thereAndBack=0;thereAndBack<2;++thereAndBack) {	
    if (1==N*M) streamSwap(s_out,s);
    else {
          nPass=nBits=logN;
@@ -250,6 +263,13 @@ void computeFFT2d(float2 *input,
      bitReverseXo2Y(s_out,indicesXo2YXp1o2Xm2,s);      
             
    }
+	if (thereAndBack==0) {
+           float2 clampsize;
+           clampsize.x = (float)(M/4);
+           clampsize.y = (float)(N/4);
+           setZero(s_out,s_out,clampsize,(float)(M*N));
+           streamSwap(s,s_out);
+        }
    }
    free(rawindices);
    if (output)
@@ -264,7 +284,7 @@ void computeFFT2d(float2 *input,
 }
 
 
-void doOptFFT(int logN, int logM, float2 * data) {
+float2 * doOptFFT(int logN, int logM, float2 * data) {
    int i,N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
@@ -274,8 +294,71 @@ void doOptFFT(int logN, int logM, float2 * data) {
    computeFFT2d(data,output,logM,logN,M,N,FFT_2D); 
    }
    stop = GetTimeMillis();
+   return output;
    //FftwTransform2d(data,N,M,1,1);
 }
+
+#include <png.h>
+
+extern int readPng(const char *filename, unsigned char **data, unsigned int *width, unsigned int *height, int *color_type, int *bpp);
+extern int writePng(const char *filename, const unsigned char *data, unsigned int width, unsigned int height, int color_type, int bpp);
+float clamp (float x) {
+	return x>1?1:x<0?0:x;
+}
+unsigned char float2char(float x) {
+	return (char)(clamp(x)*255);
+}
 int main (int argc, char ** argv) {
+	unsigned char *imgdata;
+	unsigned int width, height, len;
+	int bpp, bypp, color_type;
+	unsigned int logn, logm;
+	unsigned int i;
+	float2 *data, *retdata;
+	if (argc<3) {
+		printf("Usage: %s <input_file> <output_file>\n",argc>=1?argv[0]:"qfft");
+		return 1; // 1 is argument error
+	}
+	if (!readPng(argv[1],&imgdata,&width,&height,&color_type,&bpp)) {
+		return 2; // 2 is read error
+	}
+	if (color_type!=PNG_COLOR_TYPE_GRAY||bpp!=8) {
+		fprintf(stderr,"Only grayscale images with 8 bits per pixel are supported.\n");
+		free(imgdata);
+		return 2;
+	}
+	bypp=bpp/8;
+	len=width*height*bypp;
+	data = (float2 *) malloc (sizeof(float2)*len);
+	for (i=0;i<len;i+=bypp) {
+		data[i].x = ((float)imgdata[i])/255;
+		data[i].y = 0;
+	}
+	for (i=1, logn=0; i<height; i*=2, ++logn) {}
+	for (i=1, logm=0; i<width; i*=2, ++logm) {}
+	retdata=doOptFFT(logn,logm,data); 
+        
+/*
+	{
+		float4 str<height,(width/2)>;
+		float2 size;
+		size.x=(float)(width/4); // *3.0f;
+		size.y=(float)(height/2); // *1.5f;
+		streamRead(str,retdata);
+		setZero(str,str,size);
+		streamWrite(str,retdata);
+	}
+	data=doOptFFT(logn,logm,retdata);
+*/
+	for (i=0;i<len;i+=bypp) {
+		imgdata[i] = float2char(((retdata[i].x)));//  /width)/height));
+	}
+	free(data);
+	free(retdata); 
+	if (!writePng(argv[2],imgdata,width,height,color_type,bpp)) {
+		free(imgdata);
+		return 3; // 3 is write error
+	}
+	free(imgdata);
 	return 0;
 }
