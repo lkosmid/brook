@@ -981,7 +981,6 @@ iter_constructor_expr: ITER LPAREN iter_constructor_arg COMMA
 
 unary_expr:  postfix_expr
           |  sizeof_expr
-          |  indexof_expr
           |  unary_minus_expr
           |  unary_plus_expr
           |  log_neg_expr
@@ -1006,8 +1005,17 @@ sizeof_expr:  SIZEOF LPAREN type_name RPAREN   %prec HYPERUNARY
         }
         ;
 
-indexof_expr: INDEXOF unary_expr
+indexof_expr: INDEXOF ident
 	{
+	  $$ = new BrtIndexofExpr(new Variable($2,*$1),*$1);
+	}
+        |  INDEXOF LPAREN ident RPAREN
+	{
+	  $$ = new BrtIndexofExpr(new Variable($3,*$1),*$1);
+	}
+        ;
+
+/*
             if ($2->etype==ET_Variable) {
 	        $$ = new BrtIndexofExpr((Variable *)$2,*$1);
 	    } else {
@@ -1018,8 +1026,8 @@ indexof_expr: INDEXOF unary_expr
 
                $$ = new BrtIndexofExpr(new Variable(new Symbol,*$1),*$1);
             }
-	}
-	;
+*/
+
 
 unary_minus_expr:  MINUS cast_expr    %prec UNARY
         {
@@ -1100,9 +1108,11 @@ postfix_expr: prim_expr
             | func_call
             | postinc_expr
             | postdec_expr
+            | indexof_expr
         ;
 
-subscript_expr: postfix_expr LBRCKT expr RBRCKT
+subscript_expr: 
+        postfix_expr LBRCKT expr RBRCKT
         {
             $$ = new IndexExpr($1,$3,*$2);
             delete $2;
@@ -1131,7 +1141,8 @@ postdec_expr: postfix_expr DECR
 field_ident: any_ident
         ;
         
-direct_comp_select: postfix_expr DOT field_ident
+direct_comp_select: 
+        postfix_expr DOT field_ident
         {
             Variable *var = new Variable($3,*$2);
             BinaryExpr *be = new BinaryExpr(BO_Member,$1,var,*$2);
