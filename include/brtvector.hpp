@@ -483,12 +483,14 @@ MATRIXXY_CLASS(__BrtChar,1,1);
 inline static __BrtFloat4 computeIndexOf(unsigned int i,
                                          unsigned int dim,
                                          const unsigned int *extents){
-   return __BrtFloat4(i%extents[dim-1],
-                      dim>1?(i/extents[dim-1])%extents[dim-2]:0,
-                      dim>2?(i/(extents[dim-2]*extents[dim-1]))
-                            %extents[dim-3]:0,
-                      dim>3?(i/(extents[dim-3]*extents[dim-2]*extents[dim-1]))
-                           :0);
+   return __BrtFloat4((float)(i%extents[dim-1]),
+                      dim>1?(float)((i/extents[dim-1])%extents[dim-2]):0.0f,
+                      dim>2?(float)((i/(extents[dim-2]*extents[dim-1]))
+                            %extents[dim-3]):0.0f,
+                      dim>3?(float)(i/(extents[dim-3]
+                                       *extents[dim-2]
+                                       *extents[dim-1])):0.0f
+                      );
 }
 
 inline static void incrementIndexOf(__BrtFloat4 &indexof,
