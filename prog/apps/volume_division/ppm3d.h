@@ -29,9 +29,9 @@ ppm openPPM (char * name) {
       ret.width=ret.height=ret.depth=256;
       den_header dh;
       fread(&dh,sizeof(char)*62,1,ret.fp);
-      ret.width=((int)dh.map_max[45])+256*(int)dh.map_max[44];
-      ret.height=((int)dh.map_max[47])+256*(int)dh.map_max[46];
-      ret.depth=((int)dh.map_max[49])+256*(int)dh.map_max[48];
+      ret.width=((int)dh.map_max[51])+256*(int)dh.map_max[50];
+      ret.height=((int)dh.map_max[53])+256*(int)dh.map_max[52];
+      ret.depth=((int)dh.map_max[55])+256*(int)dh.map_max[54];
       ret.start = ftell(ret.fp);
    }
    return ret;
