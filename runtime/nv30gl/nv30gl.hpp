@@ -27,9 +27,6 @@ namespace brook {
       NV30GLRunTime();
 
       Kernel *CreateKernel(const void*[]);
-      Stream *CreateStream(int fieldCount, const __BRTStreamType fieldTypes[],
-                           int dims, const int extents[]);
-      Iter *CreateIter(__BRTStreamType type, int dims, int e[],float r[]);
    };
 
    class NV30GLKernel : public GLKernel {
@@ -38,15 +35,10 @@ namespace brook {
          : GLKernel(runtime, sourcelist) { /* All done in GLKernel() */ }
       virtual ~NV30GLKernel() { /* Everything is done in ~GLKernel() */ };
 
-      void Map();
 
    protected:
-      void ReduceScalar();
-      void ReduceStream();
-
-      void RecomputeTexCoords(unsigned int w, unsigned int h,
-                              glfloat4 f1[], glfloat4 f2[]);
-      void IssueTexCoords(glfloat4 f1[], glfloat4 f2[]);
+      void BindParameter(const float x, const float y,
+                         const float z, const float w);
   };
 }
 #endif

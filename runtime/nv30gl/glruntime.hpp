@@ -120,16 +120,21 @@ namespace brook {
       void PushReduce(void * val, __BRTStreamType type);
       void PushGatherStream(Stream *s);
       void PushOutput(Stream *s);
-      void Map() = 0;
+      void Map();
       void Reduce() {
          reduceType == __BRTSTREAM ? ReduceStream() : ReduceScalar();
          ResetStateMachine();
       }
 
    protected:
+      virtual void BindParameter(const float x, const float y,
+                                 const float z, const float w) = 0;
       void ResetStateMachine();
-      virtual void ReduceScalar() = 0;
-      virtual void ReduceStream() = 0;
+      void ReduceScalar();
+      void ReduceStream();
+      void RecomputeTexCoords(unsigned int w, unsigned int h,
+                              glfloat4 f1[], glfloat4 f2[]);
+      void IssueMapTexCoords(glfloat4 f1[], glfloat4 f2[]);
 
       GLRunTime *runtime;
 
@@ -160,9 +165,8 @@ namespace brook {
 
   class GLStream : public Stream {
   public:
-     GLStream (GLRunTime * runtime, int fieldCount,
-               const __BRTStreamType type[],
-               int dims, const int extents[]);
+     GLStream(GLRunTime * runtime, int fieldCount,
+              const __BRTStreamType type[], int dims, const int extents[]);
      virtual ~GLStream ();
      void Read(const void *inData);
      void Write(void *outData);
@@ -230,8 +234,17 @@ namespace brook {
   public:
      GLRunTime();
 
+     Stream *CreateStream(int fieldCount, const __BRTStreamType fieldTypes[],
+                          int dims, const int extents[]) {
+        return new GLStream(this, fieldCount, fieldTypes, dims, extents);
+     }
+
+     Iter *CreateIter(__BRTStreamType type, int dims, int extents[],float r[]) {
+        return new GLIter(this, type, dims, extents, r);
+     }
+
      void createPBuffer(int ncomponents);
-     void printMemUsage(void);
+     void printMemUsage();
 
      enum WORKSPACESIZE {
         workspace = 2048

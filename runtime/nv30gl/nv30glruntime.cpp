@@ -52,15 +52,3 @@ NV30GLRunTime::CreateKernel(const void* sourcelist[]) {
    return new NV30GLKernel (this, sourcelist);
 }
 
-Stream *
-NV30GLRunTime::CreateStream(
-      int fieldCount, const __BRTStreamType fieldTypes[],
-      int dims, const int extents[]) {
-  return new GLStream(this, fieldCount, fieldTypes, dims, extents);
-}
-
-Iter *
-NV30GLRunTime::CreateIter(__BRTStreamType type,
-                          int dims, int extents[],float r[]) {
-   return new GLIter(this, type, dims, extents, r);
-}
