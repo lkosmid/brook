@@ -4,9 +4,6 @@
 kernel float test(float vol<>,float index<>){
   return vol>0;
 }
-kernel float lensqr (float3 x) {
-  return dot(x,x);
-}
 kernel float eval (float3 loc<>) {  
   float  power;
   const float offset=32;
