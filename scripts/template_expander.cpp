@@ -105,22 +105,37 @@ string removeTypenames (string in) {
   return in;
 }
 string findBetween (string in, string name, string &pre, string &post) {
-  pre=in;
-  unsigned int premarker = pre.find ("#define "+name);
+  pre="";
+  post=in;
+  unsigned int premarker = post.find ("#define "+name);
   string s;
   if (premarker!=string::npos) {
-    s= pre.substr(premarker);
-    pre = pre.substr(0,premarker);
+    s= post.substr(premarker);
+    pre = post.substr(0,premarker);
+	post="";
     string postmarkstr("#undef "+name);
     unsigned int postmarker = s.find(postmarkstr);
     if( postmarker!=string::npos) {
       postmarker+=postmarkstr.length();
       post = s.substr(postmarker);
-      s = s.substr(0,postmarker)+"\n";
+      s = s.substr(0,postmarker);
       printf ("found %s\n",name.c_str());
     }
   } 
   return s;
+}
+unsigned int countLines (string s) {
+	unsigned int line=0;
+	for (unsigned int i=0;i<s.length();++i) {
+		if (s[i]=='\n')
+			line++;
+	}
+	return line;
+}
+string lineString(unsigned int in) {
+	char num [256];
+	sprintf(num,"%d",in);
+	return string("#line ")+num+string(" \"brtvector.hpp\"\n");
 }
 int main (int argc, char ** argv) {
   FILE * fp = fopen (argv[1],"r");
@@ -132,13 +147,49 @@ int main (int argc, char ** argv) {
   string in(mem,st.st_size);
   free (mem);
   ofstream o(argv[2]);
+  bool lin=true;
+  
+  if (argc>3)
+	  if (strcmp(argv[3],"-noline")==0)
+		  lin=false;
   string pre,general,firstpost,vectoronly,post,operonly,lastpost;
-  {
-    general=findBetween(in,"GENERAL_TEMPLATIZED_FUNCTIONS",pre,post);
-    vectoronly=findBetween(post,"VECTOR_TEMPLATIZED_FUNCTIONS",firstpost,post);
-    operonly=findBetween(post,"OPERATOR_TEMPLATIZED_FUNCTIONS",post,lastpost);
-  }
+  
+  general=findBetween(in,"GENERAL_TEMPLATIZED_FUNCTIONS",pre,post);
+  unsigned int linestart=1;
+  unsigned int line =linestart+countLines(pre);
+  
+  unsigned int generallines=countLines(general);
+  if (lin)
+	  general= lineString(line)+general;
+  general+="\n";
+  vectoronly=findBetween(post,"VECTOR_TEMPLATIZED_FUNCTIONS",firstpost,post);
+  unsigned int firstpostlines=countLines(firstpost);
+  line+=generallines;
+  if (lin)
+	  firstpost = lineString(line)+firstpost;
+  line+=firstpostlines;
+  unsigned int vectoronlylines=countLines(vectoronly);
+  if (lin)
+	  vectoronly= lineString(line)+vectoronly;
+  line+=vectoronlylines;
+  vectoronly+="\n";
+  operonly=findBetween(post,"OPERATOR_TEMPLATIZED_FUNCTIONS",post,lastpost);
+  unsigned int postlines = countLines(post);
+  if (lin)
+	  post+=lineString(line)+post;
+  line+=postlines;
+  unsigned int operonlylines=countLines(operonly);
+  if (lin)
+	  operonly= lineString(line)+operonly;    
+  operonly+="\n";
+  line+=operonlylines;
+  if (lin)
+	  lastpost= lineString(line)+lastpost;
+  if (lin)
+	  o << "#line "<<linestart<<" \"brtvector.hpp\"\n";
+  
   o << findReplace(pre,"BRTVECTOR_HPP","VC6VECTOR_HPP") <<std::endl;
+
   o << removeTypenames (preprocessTemplates(general,generalTypes))<<std::endl;
   o << firstpost<<std::endl;
   o << removeTypenames(preprocessTemplates(vectoronly,vectorTypes))<<std::endl;
