@@ -2,6 +2,44 @@
 #include<assert.h>
 #include "cpu.hpp"
 #include <stdio.h>
+#define USE_THREADS
+struct BrtThread {
+#ifdef _WIN32
+  DWORD Id;
+#else
+  pthread_t Id;
+#endif
+  bool active;
+};
+static void BrtCreateThread(void * (*func)(void *),void* arg, BrtThread & ret) {
+  bool oncpu=true;
+  ret.active=false;
+#ifdef USE_THREADS
+#ifdef _WIN32
+    oncpu= (CreateThread(NULL,0,func,arg,0,&ret.Id)==NULL)
+#else
+    oncpu= (pthread_create(&ret.Id,NULL,func,arg)!=0);
+#endif
+#endif
+  if (oncpu) 
+    (*func)(arg);
+  else
+    ret.active=true;
+}
+static void  BrtJoinThread (const BrtThread &id) {
+  if (!id.active)
+    return;
+#ifdef USE_THREADS
+#ifdef _WIN32
+  WaitForSingleObject(id.Id, INFINITE);
+  //!= WAIT_OBJECT;    
+#else
+  void *ret;
+  pthread_join (id.Id,&ret);
+#endif
+#endif
+}
+
 static void nothing (const std::vector<void*>&args,
                      const std::vector<const unsigned int *>&extents,
                      const std::vector<unsigned int> &dims,
@@ -172,11 +210,11 @@ namespace brook{
        unsigned int cur=0;
        unsigned int step = totalsize/numThreads;
        unsigned int remainder = totalsize%numThreads;
-       vector<pthread_t>threads;
+       vector<BrtThread>threads;
        for (i=0;i<numThreads-1;++i)
-         threads.push_back(pthread_t());
-       //pthread_create(&threads[0],NULL,staticSubMap,new subMapInput(this,args,cur,step));
-       staticSubMap(new subMapInput(this,args,cur,step));
+         threads.push_back(BrtThread());
+       BrtCreateThread(staticSubMap,new subMapInput(this,args,cur,step),threads[0]);
+       //       staticSubMap(new subMapInput(this,args,cur,step));
        cur+=step;
        std::vector<void *>reductionbackup;
        for (j=reductions.begin();
@@ -191,8 +229,8 @@ namespace brook{
           if (i<remainder)
              thisstep++;//leap year
           //fork!          
-          //pthread_create(&threads[i],NULL,staticSubMap,new subMapInput(this,args,cur,thisstep));
-          staticSubMap(new subMapInput(this,args,cur,thisstep));
+          BrtCreateThread(staticSubMap,new subMapInput(this,args,cur,thisstep),threads[i]);
+          //staticSubMap(new subMapInput(this,args,cur,thisstep));
           cur+=thisstep;
           for (j=reductions.begin();j!=reductions.end();++j) {
              args[j->which]=((char *)args[j->which])+(j->type*sizeof(float));
@@ -200,8 +238,7 @@ namespace brook{
        }
        subMap(cur,totalsize-cur);
        for (unsigned int i=0;i<threads.size();++i) {
-         //void * Nill;
-         //pthread_join(threads[i],&Nill);
+         BrtJoinThread(threads[i]);
        }
        cur=0;
        for (i=0;i<reductions.size();++i) {
@@ -335,13 +372,27 @@ namespace brook{
             }
           }
           cur=0;
-          vector<pthread_t> pthreads;
+          vector<BrtThread> pthreads;
+          for (i=0;i<numThreads-1;++i) {
+              pthreads.push_back(BrtThread());
+          }
           for (unsigned int threads=0;threads<numThreads;++threads) {
             unsigned int curfinal=cur+step;
             if (threads<remainder) curfinal++;
             unsigned int * mapbegin=e+threads*dim;
             if (threads!=numThreads-1) {
-              pthreads.push_back(pthread_t());
+              BrtCreateThread(                             
+                             CPUKernel::staticReduceToStream,
+                             new reduceToStreamInput(this,
+                                                     args,
+                                                     cur,
+                                                     curfinal,
+                                                     extent,
+                                                     rdim,
+                                                     mapbegin,
+                                                     mag),
+                             pthreads.back());
+              /*
               CPUKernel::staticReduceToStream(new reduceToStreamInput(this,
                                                                       args,
                                                                       cur,
@@ -350,7 +401,7 @@ namespace brook{
                                                                       rdim,
                                                                       mapbegin,
                                                                       mag));
-              
+              */
             }else{
               ReduceToStream(args,cur,curfinal,extent,rdim,mapbegin,mag);
             }
@@ -358,6 +409,9 @@ namespace brook{
             cur=curfinal;
             //forkborkborkbork
             
+          }
+          for (unsigned int i=0;i<pthreads.size();++i) {
+            BrtJoinThread (pthreads[i]);
           }
           free (buffer);
           for (j=reductions.begin();j!=reductions.end();++j) {

@@ -18,7 +18,7 @@ C_STATIC_FLAG    :=
 C_OUTPUT_FLAG    := -o 
 C_COMPILE_FLAG   := -c 
 
-LDFLAGS           += 
+LDFLAGS           += -lpthread
 LD_LIBDIR_FLAG    := -L
 LD_SHARED_FLAG    := -shared   
 LD_OUTPUT_FLAG    := -o 
