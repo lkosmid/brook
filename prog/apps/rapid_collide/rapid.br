@@ -225,14 +225,136 @@ kernel float TrianglesHaveContact (float3 mRx,
   return tri_contact(i1,i2,i3,t2.A,t2.B,t2.C);
 
 }
-kernel float obb_disjoint (float3 Bx<>,
-                           float3 By<>,
-                           float3 Bz<>,
+kernel float obb_disjoint (float3 Bx,
+                           float3 By,
+                           float3 Bz,
                            float3 T,
-                           float3 a,
-                           float3 b) {
-  
-  return 1;
+                           float3 a<>,
+                           float3 b<>) {
+  float t, s;
+  float r;
+  float3 Bfx;
+  float3 Bfy;
+  float3 Bfz;
+  const float reps = 1e-6;
+
+  // Bf = abs (B)
+  Bfx.x = abs (Bx.x);  Bfx.x += reps;
+  Bfx.y = abs (Bx.y);  Bfx.y += reps;
+  Bfx.z = abs (Bx.z);  Bfx.z += reps;
+  Bfy.x = abs (By.x);  Bfy.x += reps;
+  Bfy.y = abs (By.y);  Bfy.y += reps;
+  Bfy.z = abs (By.z);  Bfy.z += reps;
+  Bfz.x = abs (Bz.x);  Bfz.x += reps;
+  Bfz.y = abs (Bz.y);  Bfz.y += reps;
+  Bfz.z = abs (Bz.z);  Bfz.z += reps;
+
+  // if any of these tests are one-sided, then the polyhedra are disjoint
+  r = 1;
+
+  // A1 x A2 = A0
+  t = abs (T.x);
+
+  r = r&& (t <= (a.x + b.x * Bfx.x + b.y * Bfx.y + b.z * Bfx.z));
+  //if (!r) return 1;
+
+  // B1 x B2 = B0
+  s = T.x * Bx.x + T.y * By.x + T.z * Bz.x;
+  t = abs (s);
+
+  r =r&& (t <= (b.x + a.y * Bfx.x + a.y * Bfy.x + a.z * Bfz.x));
+  //if (!r) return 2;
+
+  // A2 x A0 = A1
+  t = abs (T.y);
+
+  r = r&&(t <= (a.y + b.x * Bfy.x + b.y * Bfy.y + b.z * Bfy.z));
+  //if (!r) return 3;
+
+  // A0 x A1 = A2
+  t = abs (T.z);
+
+  r =r&& (t <= (a.z + b.x * Bfz.x + b.y * Bfz.y + b.z * Bfz.z));
+  //if (!r) return 4;
+
+  // B2 x B0 = B1
+  s = T.x * Bx.y + T.y * By.y + T.z * Bz.y;
+  t = abs (s);
+
+  r =r&& (t <= (b.y + a.x * Bfx.y + a.y * Bfy.y + a.z * Bfz.y));
+  //if (!r) return 5;
+
+  // B0 x B1 = B2
+  s = T.x * Bx.z + T.y * By.z + T.z * Bz.z;
+  t = abs (s);
+
+  r =r&& (t <= (b.z + a.x * Bfx.z + a.y * Bfy.z + a.z * Bfz.z));
+  //if (!r) return 6;
+
+  // A0 x B0
+  s = T.z * By.x - T.y * Bz.x;
+  t = abs (s);
+
+  r =r&& (t <= (a.y * Bfz.x + a.z * Bfy.x + b.y * Bfx.z + b.z * Bfx.y));
+  //if (!r) return 7;
+
+  // A0 x B1
+  s = T.z * By.y - T.y * Bz.y;
+  t = abs (s);
+
+  r =r&& (t <= (a.y * Bfz.y + a.z * Bfy.y + b.x * Bfx.z + b.z * Bfx.x));
+  //if (!r) return 8;
+
+  // A0 x B2
+  s = T.z * By.z - T.y * Bz.z;
+  t = abs (s);
+
+  r =r&& (t <= (a.y * Bfz.z + a.z * Bfy.z + b.x * Bfx.y + b.y * Bfx.x));
+  //if (!r) return 9;
+
+  // A1 x B0
+  s = T.x * Bz.x - T.z * Bx.x;
+  t = abs (s);
+
+  r =r&& (t <= (a.x * Bfz.x + a.z * Bfx.x + b.y * Bfy.z + b.z * Bfy.y));
+  //if (!r) return 10;
+
+  // A1 x B1
+  s = T.x * Bz.y - T.z * Bx.y;
+  t = abs (s);
+
+  r =r&& (t <= (a.x * Bfz.y + a.z * Bfx.y + b.x * Bfy.z + b.z * Bfy.x));
+  //if (!r) return 11;
+
+  // A1 x B2
+  s = T.x * Bz.z - T.z * Bx.z;
+  t = abs (s);
+
+  r =r&& (t <= (a.x * Bfz.z + a.z * Bfx.z + b.x * Bfy.y + b.y * Bfy.x));
+  //if (!r) return 12;
+
+  // A2 x B0
+  s = T.y * Bx.x - T.x * By.x;
+  t = abs (s);
+
+  r =r&& (t <= (a.x * Bfy.x + a.y * Bfx.x + b.y * Bfz.z + b.z * Bfz.y));
+  //if (!r) return 13;
+
+  // A2 x B1
+  s = T.y * Bx.y - T.x * By.y;
+  t = abs (s);
+
+  r =r&& (t <= (a.x * Bfy.y + a.y * Bfx.y + b.x * Bfz.z + b.z * Bfz.x));
+  //if (!r) return 14;
+
+  // A2 x B2
+  s = T.y * Bx.z - T.x * By.z;
+  t = abs (s);
+
+  r =r&& (t <= (a.x * Bfy.z + a.y * Bfx.z + b.x * Bfz.y + b.y * Bfz.x));
+  //if (!r) return 15;
+
+  return r?0:1;  // should equal 0
 }
 
 
