@@ -1,0 +1,44 @@
+typedef struct Quad_t{
+   float4 A;
+   float4 B;
+   float4 C;
+   float4 D;
+   /*
+   float4 AAA;
+   float4 AAB;
+   float4 ABB;
+   float4 BBB;
+   float4 BBC;
+   float4 BCC;
+   float4 CCC;
+   float4 CCD;
+   float4 CDD;
+   float4 DDD;
+   float4 ADD;
+   float4 AAD;
+   */
+} Quad;
+
+
+
+kernel void produceQuadP(Quad q<>, vout [4]float4 shouldProduce<>) {
+   shouldProduce.xy = (indexof q).xy; 
+   shouldProduce.z = (float)(q.A.w==-1.0f
+                             &&q.B.w==-1.0f
+                             &&q.C.w==-1.0f
+                             &&q.D.w==-1.0f);
+   shouldProduce.w=0;
+   push(shouldProduce);
+   if (shouldProduce.z) {
+      shouldProduce.z=2.0f;
+      push(shouldProduce);
+      shouldProduce.z=3.0f;
+      push(shouldProduce);
+      shouldProduce.z=4.0f;
+      push(shouldProduce);      
+   }
+}
+
+int main () {
+   
+}
