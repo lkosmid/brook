@@ -11,7 +11,7 @@
 #include "readwrite.h"
 #include "runkernel.h"
 #include "blas.h"
-#include "fft.h"
+#include "fft2d.h"
 //#include "sparse.h"
 #include "matmult4x4.h"
 
@@ -113,11 +113,11 @@ main(int argc, char *argv[])
    }
 
    SetupMillisTimer();
-
-   ReadWrite_Time(length);
-   std::cout << std::endl;
-   RunKernel_Time(length);
-   std::cout << std::endl;
+   doFFT(length);
+   //ReadWrite_Time(length);
+   //std::cout << std::endl;
+   //RunKernel_Time(length);
+   //std::cout << std::endl;
    // Blas_Time(argc, argv);
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);

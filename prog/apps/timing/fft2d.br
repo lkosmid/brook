@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "main.h"
 extern int debug_fft;
 kernel void mult_complex(float2 a <>, float2 b <>, out float2 c <>)
 {
@@ -179,8 +180,20 @@ void doFFT(int logN) {
    int logM = logN; 
    int N = (1<<logN);
    int M = (1<<logM);
-   float2 * output=0;
+   int MPlusN=M+N;
+   float2 * output;
+   output = (float2*)malloc(sizeof(float2)*M*N);
+   start = GetTime();
    compute2dFFT(data,output,logN,logM,N,M,FFT_2D);
+   stop=GetTime();
+   {
+     int numBytes = M*N * sizeof (float2);
+
+     printf("%9d\t%6d\t\t%6.2f\t\t(* %s *)\n",
+          M, (int) (stop - start),
+          numBytes / (float) (stop - start), "FFT");
+   }
+//   ReadWriteProcessTiming("FFT",data,output,1<<MPlusN,1<<MPlusN);
    //FftwTransform2d(data,N,M,1,1);
 }
 
