@@ -4,8 +4,8 @@
 
 
 #define MAX_NZ_PER_ROW  7
-#define NUM_ROWS        10
-#define MAX_NZ          70
+#define NUM_ROWS        100
+#define MAX_NZ          (NUM_ROWS*MAX_NZ_PER_ROW)
 
 
 /*** Kernels needed for Sparse Matrix-Vector multiplication *****************************************/
