@@ -1,7 +1,11 @@
 // splitbuilder.h
 #ifndef __SPLITBUILDER_H__
 #define __SPLITBUILDER_H__
-
+#ifdef _WIN32
+#pragma warning(disable:4786)
+//debug symbol warning
+#endif
+#include <string>
 #include <map>
 #include "../stemnt.h"
 

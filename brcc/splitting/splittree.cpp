@@ -34,8 +34,8 @@ void SplitTree::build( FunctionDef* inFunctionDef )
   Statement* headStatement = inFunctionDef->head;
 
   SplitTreeBuilder builder( *this );
-
-  for( unsigned int i = 0; i < functionType->nArgs; i++ )
+  unsigned int i;
+  for( i = 0; i < functionType->nArgs; i++ )
   {
     Decl* argumentDecl = functionType->args[i];
     builder.addArgument( argumentDecl, i );
@@ -50,7 +50,7 @@ void SplitTree::build( FunctionDef* inFunctionDef )
     statement = statement->next;
   }
 
-  for( unsigned int i = 0; i < functionType->nArgs; i++ )
+  for( i = 0; i < functionType->nArgs; i++ )
   {
     Decl* argumentDecl = functionType->args[i];
     Type* argumentType = argumentDecl->form;

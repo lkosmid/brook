@@ -1,7 +1,12 @@
 // splittree.h
 #ifndef __SPLITTREE_H__
 #define __SPLITTREE_H__
+#ifdef _WIN32
+#pragma warning(disable:4786)
+//debug symbol warning
+#endif
 
+#include <string>
 #include <map>
 
 class FunctionDef;

@@ -29,6 +29,10 @@
     o+     A high-level view of expressions.
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
+#ifdef _WIN32
+#pragma warning(disable:4786)
+//debug symbol warning
+#endif
 
 #include <cstdio>
 #include <cstring>

@@ -2,6 +2,11 @@
  * brtexpress.cpp -- 
  *  the actual code to convert gathers streams and indexof exprs
  */ 
+#ifdef _WIN32
+#pragma warning(disable:4786)
+//debug symbol warning
+#endif
+
 #include "brtexpress.h"
 #include "splitting/splitting.h"
 #include "main.h"
