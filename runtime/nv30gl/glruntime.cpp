@@ -13,35 +13,42 @@ static const char passthrough[] =
 "OUTPUT oColor = result.color;\n"
 "TEX oColor, tex0, texture[0], RECT;\n"
 "END\n";
+namespace brook {
+  GLArch getGLArch() {
+   if (strstr((const char *) glGetString(GL_VENDOR), "ATI"))
+     return ARCH_ATI;
+   else if (strstr((const char *)glGetString(GL_VENDOR), "NVIDIA"))
+     return  ARCH_NV30;
+   else {
 
+      fprintf (stderr, "GL: Warning unknown card\n\t%s\n\t%s\n",
+               glGetString(GL_VENDOR), glGetString(GL_RENDERER));
+      return ARCH_UNKNOWN;
+   }
+    
+  }
+}
 GLRunTime::GLRunTime()
 {
    int i, n;
 
    streamlist = NULL;
 
-#ifdef WIN32
+#ifdef _WIN32
    createWindow();
    createWindowGLContext();
+   arch = getGLArch();
+#else
+   //   arch = ARCH_NV30;
 #endif
 #ifdef _WIN32
-   if (strstr((const char *) glGetString(GL_VENDOR), "ATI"))
-      arch = ARCH_ATI;
-   else if (strstr((const char *)glGetString(GL_VENDOR), "NVIDIA"))
-      arch = ARCH_NV30;
-   else {
-      arch = ARCH_UNKNOWN;
-      fprintf (stderr, "GL: Warning unknown card\n\t%s\n\t%s\n",
-               glGetString(GL_VENDOR), glGetString(GL_RENDERER));
-   }
-#else
-   arch = ARCH_NV30;
-#endif
-#ifdef WIN32
    initglfunc();
 #endif
-
    createPBuffer(4);
+#ifndef _WIN32
+   arch = getGLArch();      
+#endif
+
    glDrawBuffer(GL_FRONT);
    glReadBuffer(GL_FRONT);
    CHECK_GL();
