@@ -168,6 +168,12 @@ namespace brook
     virtual void bindPixelShader( PixelShaderHandle inPixelShader );
     virtual void bindVertexShader( VertexShaderHandle inVertexShader );
 
+    virtual void setOutputDomainMode( bool inUsingOutputDomain ) {
+    }
+
+    virtual void setAddressTranslationMode( bool inUsingAddressTranslation ) {
+    }
+
     virtual void drawRectangle(
       const GPURegion& outputRegion, 
       const GPUInterpolant* interpolants, 

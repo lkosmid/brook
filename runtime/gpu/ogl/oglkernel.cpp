@@ -534,7 +534,7 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   CHECK_GL();
 
   if (_wnd->bindPbuffer(w, h, numOutputs, maxComponent)) {
-    
+
     // Rebind the shader
     GPUAssert(_boundPixelShader, "Missing pixel shader");
     bindPixelShader((PixelShaderHandle) _boundPixelShader);
@@ -555,6 +555,49 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   }
   
   CHECK_GL();
+
+  // TIM: hacky magic magic
+  if( _isUsingAddressTranslation && _isUsingOutputDomain )
+  {
+    // if we are writing to a domain of an address-translated
+    // stream, then copy the output textures to the pbuffer
+    // so that we can overwrite the proper domain
+
+    // NOTE: this will fail if we try to optimize domain
+    // handling by only drawing to a subrectangle - for
+    // now we render to the whole thing, so copying in
+    // the whole texture is correct
+    for( i = 0; i < numOutputs; i++ )
+    {
+      OGLTexture* output = _outputTextures[i];
+      glDrawBuffer(outputEnums[i]);
+      copy_to_pbuffer(output);
+    }
+
+    // We need to rebind stuff since we messed up the state
+    // of things
+
+    // Rebind the shader
+    GPUAssert(_boundPixelShader, "Missing pixel shader");
+    bindPixelShader((PixelShaderHandle) _boundPixelShader);
+
+    // Rebind the textures
+    for (i=0; i<32; i++) 
+    if (_boundTextures[i]) {
+    glActiveTextureARB(GL_TEXTURE0_ARB+i);
+    glBindTexture(GL_TEXTURE_RECTANGLE_NV, _boundTextures[i]->id());
+    }
+
+    // Rebind the constants
+    for (i=0; i<_boundPixelShader->largest_constant; i++) {
+    bindConstant((PixelShaderHandle) _boundPixelShader,
+    i, _boundPixelShader->constants[i]);
+    }
+  }
+
+  if (_maxOutputCount > 1)
+    glDrawBuffersATI (numOutputs, outputEnums); 
+   
 
   if (_maxOutputCount > 1)
     glDrawBuffersATI (numOutputs, outputEnums); 

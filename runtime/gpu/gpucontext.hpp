@@ -206,6 +206,9 @@ namespace brook {
     /* Turn off a shader output */
     virtual void disableOutput( unsigned int inIndex ) = 0;
     
+    virtual void setOutputDomainMode( bool inUsingOutputDomain ) = 0;
+    virtual void setAddressTranslationMode( bool inUsingAddressTranslation ) = 0;
+
     /* Issue a shader */
     virtual void drawRectangle( const GPURegion &outputRegion, 
                                 const GPUInterpolant *interpolants, 

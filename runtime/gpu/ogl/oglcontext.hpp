@@ -159,6 +159,14 @@ namespace brook {
 
     virtual void disableOutput( unsigned int inIndex );
 
+    virtual void setAddressTranslationMode( bool inUsingAddressTranslation ) {
+      _isUsingAddressTranslation = inUsingAddressTranslation;
+    }
+
+    virtual void setOutputDomainMode( bool inUsingOutputDomain ) {
+      _isUsingOutputDomain = inUsingOutputDomain;
+    }
+
     virtual void drawRectangle( const GPURegion &outputRegion, 
                                 const GPUInterpolant *interpolants, 
                                 unsigned int numInterpolants );
@@ -187,6 +195,7 @@ namespace brook {
     void copy_to_pbuffer(OGLTexture *texture);
 
     OGLWindow *_wnd;
+    bool _isUsingAddressTranslation, _isUsingOutputDomain;
 
   };
 

@@ -214,11 +214,14 @@ namespace brook
     const unsigned int* outReversed = outputStream->getReversedExtents();
     const unsigned int* outDomainMin = outputStream->getDomainMin();
     const unsigned int* outDomainMax = outputStream->getDomainMax();
+    bool usingOutputDomain = false;
     unsigned int r;
     for( r = 0; r < outRank; r++ )
     {
         unsigned int d = outRank - (r+1);
         _outReversedExtents[r] = outDomainMax[d] - outDomainMin[d];
+        if( _outReversedExtents[r] != outReversed[r] )
+          usingOutputDomain = true;
     }
     for( r = outRank; r < 4; r++ )
         _outReversedExtents[r] = 1;
@@ -362,6 +365,9 @@ namespace brook
 
         if( requiresInputAddressTranslation != techniqueInputTrans )
             continue;
+
+        _context->setOutputDomainMode( usingOutputDomain );
+        _context->setAddressTranslationMode( techniqueTrans || techniqueInputTrans );
 
         _context->beginScene();
         
@@ -631,6 +637,9 @@ namespace brook
     GPUAssert( inFactor >= 2, "Attempt to reduce by a factor of less than 2" );
     size_t techniqueIndex = inFactor - 2;
     GPUAssert( techniqueIndex < _techniques.size(), "Attempt to reduce by too large of a factor" );
+
+    _context->setOutputDomainMode( false );
+    _context->setAddressTranslationMode( false );
 
     // we use the standard technique-mapping code to make things easier...
     executeTechnique( _techniques[techniqueIndex] );
