@@ -6,7 +6,8 @@
 using namespace brook;
 
 NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
-                            __BRTStreamType type, int dims, const int extents[])
+                            __BRTStreamType type, int dims, 
+                            const int extents[])
   : elementType(type), runtime(rt) { 
 
    int i;
@@ -36,7 +37,6 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
     exit(1);
   }
 
-  
   // Initialize ncomp
   ncomp = type;
   if (ncomp < 1 || ncomp > 4) {
@@ -55,7 +55,7 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
   CHECK_GL();
   
   // Initialize the cacheptr
-  cacheptr = malloc (sizeof(float)*4*width*height);
+  cacheptr = NULL;
   
   // Initialize extents
   for (i=0; i<dims; i++)
@@ -119,7 +119,9 @@ NV30GLStream::GLWriteData (const void *data) {
 
 void * 
 NV30GLStream::getData (unsigned int flags) {
-
+  
+  cacheptr = malloc (sizeof(float)*4*width*height);
+  
   if (flags == StreamInterface::READ ||
       flags == StreamInterface::READWRITE) {    
      GLReadData(cacheptr);
@@ -135,6 +137,8 @@ NV30GLStream::releaseData (unsigned int flags) {
       flags == StreamInterface::READWRITE) {
      GLWriteData(cacheptr);
   }
+
+  free (cacheptr);
 }
 
 
@@ -151,7 +155,6 @@ void NV30GLStream::Write(void *p) {
 }
 
 NV30GLStream::~NV30GLStream () {
-  free (cacheptr);
   glDeleteTextures (1, &id);
   CHECK_GL();
 }
