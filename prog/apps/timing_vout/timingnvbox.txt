@@ -1,0 +1,209 @@
+$ export BRT_RUNTIME=nv30gl
+$ ../../../bin/timing_vout -mc 64
+One Time Cost 273.000000
+One Time Cost 240.000000
+Ready time 3337.000000 3337.000000 Total time with reads 3337.000000
+Ready time 3052.000000 3052.000000 Total time with reads 3052.000000
+Ready time 1088.000000 1088.000000 Total time 1089.000000Total time with reads 1089.000000
+Ready time 1070.000000 1070.000000 Total time 1071.000000Total time with reads 1071.000000
+Ready time 1074.000000 1074.000000 Total time 1075.000000Total time with reads 1075.000000
+Ready time 1067.000000 1067.000000 Total time 1068.000000Total time with reads 1068.000000
+Ready time 1068.000000 1068.000000 Total time 1069.000000Total time with reads 1069.000000
+Ready time 1071.000000 1071.000000 Total time 1072.000000Total time with reads 1072.000000
+$ ../../../bin/timing_vout -mc 128
+One Time Cost 564.000000
+One Time Cost 512.000000
+Ready time 11480.000000 11480.000000 Total time with reads 11480.000000
+Ready time 10752.000000 10752.000000 Total time with reads 10752.000000
+Ready time 3647.000000 3647.000000 Total time 3650.000000Total time with reads 3650.000000
+Ready time 3682.000000 3682.000000 Total time 3685.000000Total time with reads 3685.000000
+Ready time 3670.000000 3670.000000 Total time 3674.000000Total time with reads 3674.000000
+Ready time 3677.000000 3677.000000 Total time 3681.000000Total time with reads 3681.000000
+Ready time 3672.000000 3672.000000 Total time 3676.000000Total time with reads 3676.000000
+Ready time 3671.000000 3671.000000 Total time 3675.000000Total time with reads 3675.000000
+$ ../../../bin/timing_vout -mc 192
+One Time Cost 949.000000
+One Time Cost 874.000000
+Ready time 24858.000000 24858.000000 Total time with reads 24858.000000
+Ready time 24613.000000 24613.000000 Total time with reads 24613.000000
+Ready time 7817.000000 7817.000000 Total time 7829.000000Total time with reads 7829.000000
+Ready time 7840.000000 7840.000000 Total time 7852.000000Total time with reads 7852.000000
+Ready time 7839.000000 7839.000000 Total time 7863.000000Total time with reads 7863.000000
+Ready time 7836.000000 7836.000000 Total time 7848.000000Total time with reads 7848.000000
+Ready time 8519.000000 8519.000000 Total time 8534.000000Total time with reads 8534.000000
+Ready time 8774.000000 8774.000000 Total time 8786.000000Total time with reads 8786.000000
+$ ../../../bin/timing_vout -mc 256
+One Time Cost 1469.000000
+One Time Cost 1344.000000
+Ready time 45511.000000 45511.000000 Total time with reads 45511.000000
+Ready time 45228.000000 45229.000000 Total time with reads 45229.000000
+Ready time 13504.000000 13504.000000 Total time 13525.000000Total time with reads 13525.000000
+Ready time 13460.000000 13460.000000 Total time 13479.000000Total time with reads 13479.000000
+Ready time 14377.000000 14377.000000 Total time 14397.000000Total time with reads 14397.000000
+Ready time 15207.000000 15207.000000 Total time 15226.000000Total time with reads 15226.000000
+Ready time 15142.000000 15142.000000 Total time 15161.000000Total time with reads 15161.000000
+Ready time 15146.000000 15146.000000 Total time 15165.000000Total time with reads 15165.000000
+$ ../../../bin/timing_vout -mc 288
+One Time Cost 1789.000000
+One Time Cost 1622.000000
+Ready time 60593.000000 60593.000000 Total time with reads 60593.000000
+Ready time 60346.000000 60346.000000 Total time with reads 60346.000000
+Ready time 17200.000000 17200.000000 Total time 17225.000000Total time with reads 17225.000000
+Ready time 17154.000000 17154.000000 Total time 17180.000000Total time with reads 17180.000000
+Ready time 19207.000000 19207.000000 Total time 19232.000000Total time with reads 19232.000000
+Ready time 19222.000000 19222.000000 Total time 19246.000000Total time with reads 19246.000000
+Ready time 19209.000000 19209.000000 Total time 19235.000000Total time with reads 19235.000000
+Ready time 19180.000000 19180.000000 Total time 19206.000000Total time with reads 19206.000000
+$ ../../../bin/timing_vout -mc 320
+One Time Cost 2164.000000
+One Time Cost 1950.000000
+Ready time 77267.000000 77267.000000 Total time with reads 77267.000000
+Ready time 76944.000000 76944.000000 Total time with reads 76944.000000
+Ready time 21168.000000 21169.000000 Total time 21201.000000Total time with reads 21201.000000
+Ready time 22248.000000 22248.000000 Total time 22280.000000Total time with reads 22280.000000
+Ready time 23673.000000 23673.000000 Total time 23710.000000Total time with reads 23710.000000
+Ready time 23680.000000 23680.000000 Total time 23712.000000Total time with reads 23712.000000
+Ready time 23665.000000 23665.000000 Total time 23696.000000Total time with reads 23696.000000
+Ready time 23668.000000 23668.000000 Total time 23699.000000Total time with reads 23699.000000
+$ ../../../bin/timing_vout -mc -noamplify 128
+One Time Cost 568.000000
+One Time Cost 518.000000
+Ready time 10930.000000 10930.000000 Total time with reads 10930.000000
+Ready time 5727.000000 5727.000000 Total time 5728.000000Total time with reads 5992.000000
+Ready time 3609.000000 3609.000000 Total time 3613.000000Total time with reads 3613.000000
+Ready time 3611.000000 3611.000000 Total time 3615.000000Total time with reads 3615.000000
+Ready time 3667.000000 3667.000000 Total time 3671.000000Total time with reads 3671.000000
+Ready time 3677.000000 3677.000000 Total time 3681.000000Total time with reads 3681.000000
+Ready time 3668.000000 3668.000000 Total time 3672.000000Total time with reads 3672.000000
+Ready time 3668.000000 3668.000000 Total time 3672.000000Total time with reads 3672.000000
+$ ../../../bin/timing_vout -mc 320
+$ ../../../bin/timing_vout -mc -noamplify 320
+One Time Cost 2186.000000
+One Time Cost 1969.000000
+Ready time 77703.000000 77703.000000 Total time with reads 77703.000000
+Ready time 50228.000000 50228.000000 Total time 50230.000000Total time with reads 52643.000000
+Ready time 21715.000000 21715.000000 Total time 21745.000000Total time with reads 21745.000000
+Ready time 22707.000000 22707.000000 Total time 22737.000000Total time with reads 22737.000000
+Ready time 23880.000000 23880.000000 Total time 23910.000000Total time with reads 23910.000000
+Ready time 23900.000000 23900.000000 Total time 23930.000000Total time with reads 23930.000000
+Ready time 23889.000000 23889.000000 Total time 23920.000000Total time with reads 23921.000000
+Ready time 23882.000000 23882.000000 Total time 23912.000000Total time with reads 23912.000000
+$ ../../../bin/timing_vout -mc -noamplify 288
+One Time Cost 1808.000000
+One Time Cost 1642.000000
+Ready time 60962.000000 60962.000000 Total time with reads 60962.000000
+Ready time 38669.000000 38669.000000 Total time 38671.000000Total time with reads 40143.000000
+Ready time 17093.000000 17093.000000 Total time 17117.000000Total time with reads 17117.000000
+Ready time 17420.000000 17420.000000 Total time 17445.000000Total time with reads 17445.000000
+Ready time 19164.000000 19164.000000 Total time 19189.000000Total time with reads 19189.000000
+Ready time 19165.000000 19165.000000 Total time 19189.000000Total time with reads 19189.000000
+Ready time 19162.000000 19162.000000 Total time 19186.000000Total time with reads 19186.000000
+Ready time 19156.000000 19156.000000 Total time 19181.000000Total time with reads 19181.000000
+$ ../../../bin/timing_vout -mc -noamplify 256
+../../../bin/timing_vout: not found
+$ ../../../bin/timing_vout -mc -noamplify 256
+One Time Cost 1487.000000
+One Time Cost 1354.000000
+Ready time 45784.000000 45784.000000 Total time with reads 45784.000000
+Ready time 28439.000000 28439.000000 Total time 28440.000000Total time with reads 29621.000000
+Ready time 13791.000000 13791.000000 Total time 13811.000000Total time with reads 13811.000000
+Ready time 13548.000000 13548.000000 Total time 13567.000000Total time with reads 13567.000000
+$ ../../../bin/timing_vout -mc -noamplify 192
+One Time Cost 963.000000
+One Time Cost 891.000000
+Ready time 25957.000000 25957.000000 Total time with reads 25957.000000
+Ready time 14881.000000 14881.000000 Total time 14882.000000Total time with reads 15553.000000
+Ready time 8352.000000 8352.000000 Total time 8359.000000Total time with reads 8359.000000
+Ready time 8113.000000 8113.000000 Total time 8123.000000Total time with reads 8123.000000
+$ ../../../bin/timing_vout -mc -noamplify 128
+One Time Cost 575.000000
+One Time Cost 533.000000
+Ready time 11062.000000 11062.000000 Total time with reads 11062.000000
+Ready time 5787.000000 5787.000000 Total time 5788.000000Total time with reads 6050.000000
+Ready time 3648.000000 3648.000000 Total time 3652.000000Total time with reads 3652.000000
+Ready time 3663.000000 3663.000000 Total time 3667.000000Total time with reads 3667.000000
+$ ../../../bin/timing_vout -mc -noamplify 96
+One Time Cost 417.000000
+One Time Cost 385.000000
+Ready time 6657.000000 6658.000000 Total time with reads 6658.000000
+Ready time 3346.000000 3346.000000 Total time 3347.000000Total time with reads 3490.000000
+Ready time 2187.000000 2187.000000 Total time 2189.000000Total time with reads 2189.000000
+Ready time 2189.000000 2189.000000 Total time 2191.000000Total time with reads 2191.000000
+$ ../../../bin/timing_vout -mc -noamplify 64
+One Time Cost 289.000000
+One Time Cost 249.000000
+Ready time 3393.000000 3393.000000 Total time with reads 3393.000000
+Ready time 1612.000000 1612.000000 Total time 1613.000000Total time with reads 1679.000000
+Ready time 1091.000000 1091.000000 Total time 1092.000000Total time with reads 1092.000000
+Ready time 1089.000000 1089.000000 Total time 1090.000000Total time with reads 1090.000000
+$ ../../../bin/timing_vout -mc -noamplify 48
+One Time Cost 225.000000
+One Time Cost 186.000000
+Ready time 2251.000000 2251.000000 Total time with reads 2251.000000
+Ready time 1017.000000 1017.000000 Total time 1017.000000Total time with reads 1060.000000
+Ready time 682.000000 682.000000 Total time 683.000000Total time with reads 683.000000
+Ready time 675.000000 675.000000 Total time 675.000000Total time with reads 675.000000
+$ ../../../bin/timing_vout -mc -noamplify 32
+One Time Cost 152.000000
+One Time Cost 123.000000
+Ready time 1347.000000 1347.000000 Total time with reads 1347.000000
+Ready time 553.000000 553.000000 Total time 553.000000Total time with reads 568.000000
+Ready time 367.000000 367.000000 Total time 367.000000Total time with reads 367.000000
+Ready time 358.000000 358.000000 Total time 358.000000Total time with reads 358.000000
+$ ../../../bin/timing_vout -mc -noamplify 24
+One Time Cost 118.000000
+One Time Cost 102.000000
+Ready time 994.000000 994.000000 Total time with reads 994.000000
+Ready time 379.000000 379.000000 Total time 379.000000Total time with reads 389.000000
+Ready time 236.000000 236.000000 Total time 236.000000Total time with reads 236.000000
+Ready time 236.000000 236.000000 Total time 236.000000Total time with reads 236.000000
+$ ../../../bin/timing_vout -mc -noamplify 16
+One Time Cost 87.000000
+One Time Cost 62.000000
+Ready time 692.000000 692.000000 Total time with reads 692.000000
+Ready time 224.000000 224.000000 Total time 224.000000Total time with reads 228.000000
+Ready time 133.000000 133.000000 Total time 133.000000Total time with reads 133.000000
+Ready time 132.000000 132.000000 Total time 132.000000Total time with reads 132.000000
+$ ../../../bin/timing_vout -mc -noamplify 8
+One Time Cost 57.000000
+One Time Cost 31.000000
+Ready time 443.000000 443.000000 Total time with reads 443.000000
+Ready time 96.000000 96.000000 Total time 96.000000Total time with reads 97.000000
+Ready time 52.000000 52.000000 Total time 52.000000Total time with reads 52.000000
+Ready time 53.000000 53.000000 Total time 53.000000Total time with reads 53.000000
+$ ../../../bin/timing_vout -mc -noamplify 4
+One Time Cost 37.000000
+One Time Cost 16.000000
+Ready time 337.000000 338.000000 Total time with reads 338.000000
+Ready time 42.000000 42.000000 Total time 42.000000Total time with reads 42.000000
+Ready time 20.000000 20.000000 Total time 20.000000Total time with reads 20.000000
+Ready time 20.000000 20.000000 Total time 20.000000Total time with reads 20.000000
+$ ../../../bin/timing_vout -mc 48
+One Time Cost 216.000000
+One Time Cost 187.000000
+Ready time 2251.000000 2251.000000 Total time with reads 2251.000000
+Ready time 1979.000000 1979.000000 Total time with reads 1979.000000
+Ready time 704.000000 704.000000 Total time 704.000000Total time with reads 704.000000
+Ready time 694.000000 694.000000 Total time 696.000000Total time with reads 696.000000
+$ ../../../bin/timing_vout -mc 32
+One Time Cost 152.000000
+One Time Cost 124.000000
+Ready time 1344.000000 1344.000000 Total time with reads 1344.000000
+Ready time 1076.000000 1077.000000 Total time with reads 1077.000000
+Ready time 382.000000 382.000000 Total time 382.000000Total time with reads 382.000000
+Ready time 362.000000 362.000000 Total time 362.000000Total time with reads 362.000000
+$ ../../../bin/timing_vout -mc 24
+One Time Cost 119.000000
+One Time Cost 94.000000
+Ready time 1002.000000 1002.000000 Total time with reads 1002.000000
+Ready time 734.000000 734.000000 Total time with reads 734.000000
+Ready time 249.000000 249.000000 Total time 250.000000Total time with reads 250.000000
+Ready time 245.000000 245.000000 Total time 245.000000Total time with reads 245.000000
+$ ../../../bin/timing_vout -mc 16
+One Time Cost 87.000000
+One Time Cost 62.000000
+Ready time 691.000000 691.000000 Total time with reads 691.000000
+Ready time 415.000000 415.000000 Total time with reads 415.000000
+Ready time 141.000000 142.000000 Total time 142.000000Total time with reads 142.000000
+Ready time 132.000000 132.000000 Total time 132.000000Total time with reads 132.000000
+$ 
