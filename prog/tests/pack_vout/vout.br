@@ -14,7 +14,7 @@ void debugStreamPrint (struct StreamHolder stream,char * title) {
    if (debug_vout) {
       printf ("%s\n",title);
       
-      streamPrint(**stream,1);
+      streamPrint(*stream,1);
       printf ("\n\n");
    }
 }
