@@ -457,11 +457,11 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
    */
    free(data);
 
-   if (0) 
-     RunKernel2DCPU("RunK2DCPU", streamLength, nRuns);
+   //RunKernel2DCPU("RunK2DCPU", streamLength, nRuns);
 }
 
 
+#if 0
 /*
  * RunKernel2DCPU --
  *
@@ -492,7 +492,7 @@ RunKernel2DCPU(char *logName, int streamLength, int nRuns)
    free(data);
    free(outData);
 }
-
+#endif
 
 /*
  * RunKernelDoRun --
