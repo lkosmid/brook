@@ -302,6 +302,11 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       possibleTag = true;
                       return(err_tok = STRUCT);
                     }
+<INITIAL>"class"    {
+                      lvalp->typeSpec = BT_UserType;
+                      possibleTag = true;
+                      return(err_tok = STRUCT);                      
+                    }
 <INITIAL>"union"    { 
                       lvalp->typeSpec = BT_Union;
                       possibleTag = true;

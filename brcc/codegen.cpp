@@ -894,7 +894,7 @@ CodeGen_GenerateCode(Type *retType, const char *name,
            out.close();
         }
      }
-
+     fprintf (stderr, "Generating code for %s\n",name);
      fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
      free(shadercode);
   } else {

@@ -66,11 +66,11 @@ BrtStreamType::printType( std::ostream& out, Symbol *name,
     out << *name;
 
   // TIM: add initializer as constructor
-  out << "(::brook::getStreamType< ";
+  out << "(::brook::getStreamType(( ";
 
   base->printType( out, NULL, true, 0 );
 
-  out << " >(), ";
+  out << " *)0), ";
   /*
   if (base->getBase()->typemask&BT_Float4) {
     out << "__BRTFLOAT4";
