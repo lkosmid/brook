@@ -81,8 +81,8 @@ kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
 }
 
 kernel void ISECT(float3 VV<>, float3 D, out float2 isect<>) {
-  isect =float2(VV[0] + (VV[1]-VV[0])*D[0]/(D[0]-D[1]),
-                VV[1] + (VV[2]-VV[0])*D[0]/(D[0]-D[2]));
+  isect =float2(VV.x + (VV.y-VV.x)*D.x/(D.x-D.y),
+                VV.y + (VV.z-VV.x)*D.x/(D.x-D.z));
 }
 kernel float COMPUTE_INTERVALS (float3 VV<>,
                                 float3 D<>,
@@ -96,15 +96,15 @@ kernel float COMPUTE_INTERVALS (float3 VV<>,
   VVord = pred?VV.yxz:VVord; Dord = pred?D.yxz:Dord;
   ret=pred?0:ret;
   
-  pred=(float) (ret&&(D[1] * D[2] > 0.0f || D[0] != 0.0f));
+  pred=(float) (ret&&(D.y * D.z > 0.0f || D.x != 0.0f));
   VVord = pred?VV:VVord; Dord=  pred?D:Dord;
   ret=pred?0:ret;
   
-  pred= (float)(ret&&D[1]!=0.0f);
+  pred= (float)(ret&&D.y!=0.0f);
   VVord = pred?VV.yxz:VVord; Dord = pred?D.yxz:Dord;
   ret=pred?0:ret;
   
-  pred=  (float)(ret&&D[2]!=0.0f);
+  pred=  (float)(ret&&D.z!=0.0f);
   VVord = pred?VV.zxy:VVord; Dord = pred?D.zxy:Dord;
   ret=pred?0:ret;
   ISECT(VVord,Dord,isect);
@@ -151,8 +151,8 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
               dot(N1,U1)+d1,
               dot(N1,U2)+d1);
   du=du*(float3)(abs(du)>=EPSILON);
-  du0du1 = du[0] *du[1];
-  du0du2 = du[0] *du[2];
+  du0du1 = du.x *du.y;
+  du0du2 = du.x *du.z;
   
   ret= (float) (du0du1<= 0.0f||du0du2<= 0.0f);
   E1 = U1-U0;
@@ -163,17 +163,17 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
               dot(N2,V1)+d2,
               dot(N2,V2)+d2);
   dv *= (float3)(abs(dv)>=EPSILON);
-  dv0dv1 = dv[0]*dv[1];
-  dv0dv2 = dv[0]*dv[2];
+  dv0dv1 = dv.x*dv.y;
+  dv0dv2 = dv.x*dv.z;
   ret= (float)(ret&&(dv0dv1<= 0.0f || dv0dv2 <=0.0f));
       
   D = cross(N2,N1);
   // compute and index to the largest component of D 
-  max = abs  (D [0]);
+  max = abs  (D .x);
   vp=float3(V0.x,V1.x,V2.x);
   up=float3(U0.x,U1.x,U2.x);
-  b = abs  (D [1]);
-  c = abs  (D [2]);
+  b = abs  (D .y);
+  c = abs  (D .z);
   b_biggest = (float)(b>max&&!(c>b));
   c_biggest = (float)(c>max);
   vp  = ((float3)b_biggest)? make_float3(V0.y,V1.y,V2.y)
@@ -195,7 +195,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   isect1 = sort2 (isect1);
   isect2 = sort2 (isect2);
     
-  ret= (ret&&!coplanar)?(float) !(isect1 [1] < isect2 [0] || isect2 [1] < isect1 [0]):ret;    
+  ret= (ret&&!coplanar)?(float) !(isect1 .y < isect2 .x || isect2 .y < isect1 .x):ret;    
   
   return ret;
 }
