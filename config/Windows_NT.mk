@@ -15,7 +15,7 @@ BINSUFFIX        := .exe
 SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32
 
 #CFLAGS           += /nologo /MDd /W1 /O2 /DWIN32
-CFLAGS           += /nologo /MDd /W3 /DWIN32 /DWINDOWS /EHsc
+CFLAGS           += /nologo /MDd /W3 /DWIN32 /DWINDOWS /EHsc /Zm500
 C_INCLUDE_FLAG   := /I
 C_DEBUG_FLAG     := /Z7 /Yd /GZ 
 C_STATIC_FLAG    := 
