@@ -110,7 +110,19 @@ Known Issues in the Runtimes
      resolved.
 
    * The Linux OpenGL runtime is even slower and more constrained than
-     the Windows OpenGL runtime, as a result of driver bugs.
+     the Windows OpenGL runtime.
+
+        * Driver bugs keep us from reallocating pbuffers at runtime,
+          so only a single pbuffer is allocated at application startup.
+
+        * As a result, maximum stream size is limited to 2048x1024.
+
+        * Attempting to run a multiple-output shader will fail.
+
+        * All GPU kernels will be compiled with cgc. The cgc compiler
+          may fail to generate code, or produce incorrect code for
+          some shaders for which the Windows-only fxc compiler
+          succeeds.
 
    * When writing to multiple outputs on a GPU runtime, incorrect results
      may be generated unless all outputs are of the same type.
