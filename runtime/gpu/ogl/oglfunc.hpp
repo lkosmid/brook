@@ -46,9 +46,9 @@ typedef void (APIENTRYP PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
 #define GL_TEXTURE0 GL_TEXTURE0_ARB
 #endif
 #ifndef GL_NV_fragment_program
-typedef void (APIENTRY * PFNGLPROGRAMNAMEDPARAMETER4FNVPROC) (GLuint id, GLsizei len, const GLubyte *name, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
+typedef void (APIENTRY * PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC) (GLuint id, GLsizei len, const GLubyte *name, GLfloat* x);
 #define RUNTIME_BONUS_GL_FNS_4 \
-   XXX(PFNGLPROGRAMNAMEDPARAMETER4FNVPROC,        glProgramNamedParameter4fNV)               
+   XXX(PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC,        glProgramNamedParameter4fvNV)               
 #else
 #define RUNTIME_BONUS_GL_FNS_4
 #endif
