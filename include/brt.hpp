@@ -21,21 +21,6 @@ enum __BRTStreamType {
    __BRTFLOAT4=4,
 };
 
-template <class T> inline __BRTStreamType __BRTReductionType(const T*e) {
-   return __BRTSTREAM;
-}
-template <> inline __BRTStreamType __BRTReductionType(const float4*e) {
-   return __BRTFLOAT4;
-}
-template <> inline __BRTStreamType __BRTReductionType(const float3*e) {
-   return __BRTFLOAT3;
-}
-template <> inline __BRTStreamType __BRTReductionType(const float2*e) {
-   return __BRTFLOAT2;
-}
-template <> inline __BRTStreamType __BRTReductionType(const float*e) {
-   return __BRTFLOAT;
-}
 namespace brook {
   class Kernel;
   class Stream;
@@ -132,6 +117,27 @@ inline static void streamRead( brook::Stream *s, void *p) {
 
 inline static void streamWrite( brook::Stream *s, void *p) {
   s->Write(p);
+}
+
+template <class T> inline __BRTStreamType __BRTReductionType(const T*e) {
+   const float * f = e;
+   //error case! will complain about casting an T to a float.
+   return __BRTFLOAT;
+}
+template <> inline __BRTStreamType __BRTReductionType(const __BRTStream*e) {
+   return __BRTSTREAM;
+}
+template <> inline __BRTStreamType __BRTReductionType(const float4*e) {
+   return __BRTFLOAT4;
+}
+template <> inline __BRTStreamType __BRTReductionType(const float3*e) {
+   return __BRTFLOAT3;
+}
+template <> inline __BRTStreamType __BRTReductionType(const float2*e) {
+   return __BRTFLOAT2;
+}
+template <> inline __BRTStreamType __BRTReductionType(const float*e) {
+   return __BRTFLOAT;
 }
 
 
