@@ -279,7 +279,7 @@ NV30GLRunTime::createPBuffer (int ncomponents) {
      
   if (first) {
      glXMakeCurrent(pDisplay, glxPbuffer, NULL);
-     glXDeletePbuffer(pDisplay, glxPbuffer);
+     glXDestroyPbuffer(pDisplay, glxPbuffer);
   }
 
   glxPbuffer = glXCreatePbuffer(pDisplay, 
@@ -293,7 +293,7 @@ NV30GLRunTime::createPBuffer (int ncomponents) {
   
   if (!first) {
      glxContext = glXCreateNewContext(pDisplay, 
-                                      glxConfig[0], 
+                                      glxConfig[0][0], 
                                       GLX_RGBA_TYPE, 
                                       0, true);
      if (!glxConfig) {

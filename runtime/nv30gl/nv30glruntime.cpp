@@ -2,7 +2,7 @@
 #include "nv30gl.hpp"
 
 #include <stdio.h>
-
+#include  <string.h>
 using namespace brook;
 
 namespace brook {
