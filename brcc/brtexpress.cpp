@@ -46,15 +46,22 @@ BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr)
 void
 BrtGatherExpr::print (std::ostream& out) const
 {
-   unsigned int i;
-   
    out << "_gather" << ndims << "(";
    base->print(out);
 
    out << ",(";
-   for (i=0; i<dims.size(); i++) {
-      if (i) out << ",";
-      dims[i]->print(out);
+   
+   if (dims.size() == 1) 
+     dims[0]->print(out);
+   else if (dims.size() == 2) {
+     out << "float2(";
+     dims[0]->print(out);
+     out << ",";
+     dims[1]->print(out);
+     out << ")";
+   } else {
+     std::cerr << location
+               << "GPU runtimes can't handle gathers greater than 2D.\n";
    }
 
    out << ")";
@@ -75,10 +82,20 @@ BrtGatherExpr::print (std::ostream& out) const
    }
 
    out << ",(";
-   for (i=0; i<dims.size(); i++) {
-      if (i) out << ",";
-      dims[i]->print(out);
+
+   if (dims.size() == 1) 
+     dims[0]->print(out);
+   else if (dims.size() == 2) {
+     out << "float2(";
+     dims[0]->print(out);
+     out << ",";
+     dims[1]->print(out);
+     out << ")";
+   } else {
+     std::cerr << location
+               << "GPU runtimes can't handle gathers greater than 2D.\n";
    }
+
    out << ")";
    // now scale and modulate by the constant:
    if( ndims == 1 )
