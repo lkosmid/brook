@@ -126,7 +126,7 @@ void compute2dFFT(float2 *input,
    }
    for (thereAndBack=0;thereAndBack<DOTIMES;++thereAndBack) {
    if (1==N*M) streamSwap(s_out,s);
-   else {if (0)
+   else {
       if (twod==FFT_2D||twod==FFT_HORIZONTAL) {
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {

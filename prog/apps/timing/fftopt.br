@@ -158,7 +158,7 @@ void computeFFT2d(float2 *input,
    for (thereAndBack=0;thereAndBack<DOTIMES;++thereAndBack) {
    if (1==N*M) streamSwap(s_out,s);
    else {
-      nPass=nBits=logM;if (0)
+      nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             int nStride = (1<<nPassCounter);
             DFTX(s,W_horiz,float2((float) nStride, (float) (M/4)),s_out);
