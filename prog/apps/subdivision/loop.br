@@ -26,34 +26,64 @@ typedef struct Neighbor_t {
   float4 AAC;// w = AC->A.z
 }Neighbor;
 
-
+/** OBSOLETE
+kernel float triCombine (float myin<>, 
+                         float b1<>, 
+                         float b2<>) {
+   float ret=0;
+   if (myin == 2.0f) ret= (b1?2.0f:0);
+   if (myin == 4.0f) ret= (b2?4.0f:0);
+   if (myin == 8.0f) ret= ((b1&&b2)?8.0f:(b1?2.0f:(b2?4.0f:0)));
+   return ret;
+}
+*/
+kernel float triCombine(float b1<>, float b2<>) {
+   return (b1&&b2)?8:(b1?2:(b2?4:0));
+}
 // from a triangle and its neighbors, determines 
-kernel void smallEnough(Tri t<>, Neighbor u<>, out Tri v<>, float epsilon) {
+kernel void smallEnough(Tri t<>, Neighbor u<>, 
+                        out Tri v<>, 
+                        out Neighbor n<>, 
+                        float epsilon) {
   v.A.xyz = t.A.xyz;
-  v.A.w = (float)(t.A.w!=0 &&
-                  (dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon
-                   || dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)>epsilon
-                   || dot(t.A.xyz-u.AB.xyz,t.A.xyz-u.AB.xyz)>epsilon
-                   || dot(t.A.xyz-u.AC.xyz,t.A.xyz-u.AC.xyz)>epsilon
-                   || dot(t.A.xyz-u.AAC.xyz,t.A.xyz-u.AAC.xyz)>epsilon
-                   || dot(t.A.xyz-u.AAB.xyz,t.A.xyz-u.AAB.xyz)>epsilon));
+  v.A.w = (float)(//t.A.w!=0 &&
+                  dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon);
   v.B.xyz = t.B.xyz;
-  v.B.w = (float)(t.B.w!=0 &&
-                  (dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon
-                   || dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon
-                   || dot(t.B.xyz-u.AB.xyz,t.B.xyz-u.AB.xyz)>epsilon
-                   || dot(t.B.xyz-u.BC.xyz,t.B.xyz-u.BC.xyz)>epsilon
-                   || dot(t.B.xyz-u.BBC.xyz,t.B.xyz-u.BBC.xyz)>epsilon
-                   || dot(t.B.xyz-u.ABB.xyz,t.B.xyz-u.ABB.xyz)>epsilon));
-  v.C.xyz= t.C.xyz;
-  v.C.w = (float)(t.C.w!=0 &&
-                  (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz.xyz)>epsilon
-                   || dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon
-                   || dot(t.C.xyz-u.AC.xyz,t.C.xyz-u.AC.xyz)>epsilon
-                   || dot(t.C.xyz-u.BC.xyz,t.C.xyz-u.BC.xyz)>epsilon
-                   || dot(t.C.xyz-u.BCC.xyz,t.C.xyz-u.BCC.xyz)>epsilon
-                   || dot(t.C.xyz-u.ACC.xyz,t.C.xyz-u.ACC.xyz)>epsilon));
-
+  v.B.w = (float)(//t.B.w!=0 &&
+                  (dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon));
+  v.C.xyz = t.C.xyz;
+  v.C.w = (float)(//t.C.w!=0 &&
+                  (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)>epsilon));
+  n.AB.xyz = u.AB.xyz;
+  n.AB.w = triCombine(//u.AB.w,
+                      (float)(dot(t.A.xyz-u.AB.xyz,t.A.xyz-u.AB.xyz)>epsilon),
+                      (float)(dot(t.B.xyz-u.AB.xyz,t.B.xyz-u.AB.xyz)>epsilon));
+  n.BC.xyz=u.BC.xyz;
+  n.BC.w = triCombine(//u.BC.w,
+                      (float)(dot(t.B.xyz-u.BC.xyz,t.B.xyz-u.BC.xyz)>epsilon),
+                      (float)(dot(t.C.xyz-u.BC.xyz,t.C.xyz-u.BC.xyz)>epsilon));
+  n.AC.xyz=u.AC.xyz;
+  n.AC.w = triCombine(//u.AC.w,
+                      (float)(dot(t.C.xyz-u.AC.xyz,t.C.xyz-u.AC.xyz)>epsilon),
+                      (float)(dot(t.A.xyz-u.AC.xyz,t.A.xyz-u.AC.xyz)>epsilon));
+  n.AAC.xyz=u.AAC.xyz;
+  n.AAC.w = (float)(//u.AAC.w!=0&&
+                    dot(t.A.xyz-u.AAC.xyz,t.A.xyz-u.AAC.xyz)>epsilon);
+  n.AAB.xyz=u.AAB.xyz;
+  n.AAB.w = (float)(//u.AAB.w!=0&&
+                    dot(t.A.xyz-u.AAB.xyz,t.A.xyz-u.AAB.xyz)>epsilon);
+  n.ABB.xyz=u.ABB.xyz;
+  n.ABB.w = (float)(//u.ABB.w!=0&&
+                    dot(t.B.xyz-u.ABB.xyz,t.B.xyz-u.ABB.xyz)>epsilon);
+  n.BBC.xyz=u.BBC.xyz;
+  n.BBC.w = (float)(//u.BBC.w!=0&&
+                    dot(t.B.xyz-u.BBC.xyz,t.B.xyz-u.BBC.xyz)>epsilon);
+  n.BCC.xyz=u.BCC.xyz;
+  n.BCC.w = (float)(//u.BCC.w!=0&&
+                    dot(t.C.xyz-u.BCC.xyz,t.C.xyz-u.BCC.xyz)>epsilon);
+  n.ACC.xyz=u.ACC.xyz;
+  n.ACC.w = (float)(//u.ACC.w!=0&&
+                    dot(t.C.xyz-u.ACC.xyz,t.C.xyz-u.ACC.xyz)>epsilon);
 }
 kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 shouldNotProduce<>){
    if (t.A.w!=0.0f
@@ -71,52 +101,75 @@ kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 
 kernel void computeNeighbors(Tri tgather[][], Neighbor ugather[][], float2 i<>, out Neighbor v<>) {
   Neighbor u = ugather[i];
   Tri t = tgather[i];
-  float3 AB_B=lerp(lerp(t.B.xyz,u.AB.xyz,.5),
-                   lerp(t.A.xyz,u.ABB.xyz,.5),
-                   .25);
-  float3 AC_A=lerp(lerp(t.A.xyz,u.AC.xyz,.5),
-                   lerp(t.C.xyz,u.AAC.xyz,.5),
-                   .25);
-  float3 BC_C=lerp(lerp(t.C.xyz,u.BC.xyz,.5),
-                   lerp(t.B.xyz,u.BCC.xyz,.5),
-                   .25);
-  v.AB.xyz = lerp(lerp(t.A.xyz,u.AB.xyz,.5),
-                  lerp(t.B.xyz,u.AAB.xyz,.5),
-                  .25);
+  float3 AB_B, AC_A, BC_C;
+  AB_B=lerp(t.B.xyz,u.AB.xyz,.5);
+  if (u.AB.w==4||u.AB.w==8)
+     AB_B=lerp(AB_B,
+               lerp(t.A.xyz,u.ABB.xyz,.5),
+               .25);
+  AC_A=lerp(t.A.xyz,u.AC.xyz,.5);
+  if (u.AC.w==4||u.AC.w==8)
+     AC_A=lerp(AC_A,
+               lerp(t.C.xyz,u.AAC.xyz,.5),
+               .25);
+  BC_C=lerp(t.C.xyz,u.BC.xyz,.5);
+  if (u.BC.w==4||u.AC.w==8)
+     BC_C=lerp(BC_C,
+               lerp(t.B.xyz,u.BCC.xyz,.5),
+               .25);
+  v.AB.xyz = lerp(t.A.xyz,u.AB.xyz,.5);
+  if (u.AB.w==2||u.AB.w==8)
+     v.AB.xyz = lerp(v.AB.xyz,
+                     lerp(t.B.xyz,u.AAB.xyz,.5),
+                     .25);
   v.AB.w = AB_B.x;
-  v.BBC.xyz = lerp(lerp(t.B.xyz,u.BBC.xyz,.5),
-                   lerp(u.ABB.xyz,u.BC.xyz,.5),
-                   .25);
+  v.BBC.xyz = lerp(t.B.xyz,u.BBC.xyz,.5);
+  if (u.BBC.w)
+     v.BBC.xyz = lerp(v.BBC.xyz,
+                      lerp(u.ABB.xyz,u.BC.xyz,.5),
+                      .25);
   v.BBC.w = AB_B.y;
-  v.ABB.xyz = lerp(lerp(t.B.xyz,u.ABB.xyz,.5),
-                   lerp(u.AB.xyz,u.BBC.xyz,.5),
-                   .25);
+  v.ABB.xyz = lerp(t.B.xyz,u.ABB.xyz,.5);
+  if (u.ABB.w)
+     v.ABB.xyz = lerp(v.ABB.xyz,
+                      lerp(u.AB.xyz,u.BBC.xyz,.5),
+                      .25);
   v.ABB.w = AB_B.z;
-
-  v.AC.xyz = lerp(lerp(t.C.xyz,u.AC.xyz,.5),
-                  lerp(t.A.xyz,u.ACC.xyz,.5),
-                  .25);
+  v.AC.xyz = lerp(t.C.xyz,u.AC.xyz,.5);
+  if (u.AC.w==2||u.AC.w==8)
+     v.AC.xyz = lerp(v.AC.xyz,
+                     lerp(t.A.xyz,u.ACC.xyz,.5),
+                     .25);
   v.AC.w = AC_A.x;
-  v.AAB.xyz = lerp(lerp(t.A.xyz,u.AAB.xyz,.5),
-                   lerp(u.AAC.xyz,u.AB.xyz,.5),
-                   .25);
+  v.AAB.xyz = lerp(t.A.xyz,u.AAB.xyz,.5);
+  if (u.AAB.w)
+     v.AAB.xyz = lerp(v.AAB.xyz,
+                      lerp(u.AAC.xyz,u.AB.xyz,.5),
+                      .25);
   v.AAB.w = AC_A.y;
-  v.AAC.xyz = lerp(lerp(t.A.xyz,u.AAC.xyz,.5),
-                   lerp(u.AAB.xyz,u.AC.xyz,.5),
-                   .25);
+  v.AAC.xyz = lerp(t.A.xyz,u.AAC.xyz,.5);
+  if (u.AAC.w)
+     v.AAC.xyz = lerp(v.AAC.xyz,
+                      lerp(u.AAB.xyz,u.AC.xyz,.5),
+                      .25);
   v.AAC.w = AC_A.z;
-
-  v.BC.xyz = lerp(lerp(t.B.xyz,u.BC.xyz,.5),
-                  lerp(t.C.xyz,u.BBC.xyz,.5),
-                  .25);
+  v.BC.xyz = lerp(t.B.xyz,u.BC.xyz,.5);
+  if (u.BC.w==2||u.BC.w==8)
+     v.BC.xyz = lerp(v.BC.xyz,
+                     lerp(t.C.xyz,u.BBC.xyz,.5),
+                     .25);
   v.BC.w = BC_C.x;
-  v.ACC.xyz = lerp(lerp(t.C.xyz,u.ACC.xyz,.5),
-                   lerp(u.AC.xyz,u.BCC.xyz,.5),
-                   .25);
+  v.ACC.xyz = lerp(t.C.xyz,u.ACC.xyz,.5);
+  if (u.ACC.w)
+     v.ACC.xyz = lerp(v.ACC.xyz,
+                      lerp(u.AC.xyz,u.BCC.xyz,.5),
+                      .25);
   v.ACC.w = BC_C.y;
-  v.BCC.xyz = lerp(lerp(t.C.xyz,u.BCC.xyz,.5),
-                   lerp(u.BC.xyz,u.ACC.xyz,.5),
-                   .25);
+  v.BCC.xyz = lerp(t.C.xyz,u.BCC.xyz,.5);
+  if (u.BCC.w)
+     v.BCC.xyz = lerp(v.BCC.xyz,
+                      lerp(u.BC.xyz,u.ACC.xyz,.5),
+                      .25);
   v.BCC.w = BC_C.z;  
 }
 kernel void writeFinalTriangles (Tri triangles[][],
@@ -146,25 +199,30 @@ kernel void splitTriangles (Tri triangles[][],
   Tri tri=triangles[i];
   Neighbor oldneighbors=neighbors[i];
   splittri.AC = lerp (tri.A,tri.C,.5);
-  if (tri.A.w||tri.C.w)
+  if (tri.C.w)
     splittri.AC = addN(lerp(splittri.AC.xyz,
                             lerp (tri.B.xyz,oldneighbors.AC.xyz,.5),
                             .25),
                        1);
   splittri.AB = lerp (tri.A,tri.B,.5);
-  if (tri.A.w||tri.B.w)
+  if (tri.A.w)
     splittri.AB = addN(lerp(splittri.AB.xyz,
                                 lerp(tri.C.xyz,oldneighbors.AB.xyz,.5),
                                 .25),
                            1);
   splittri.BC = lerp (tri.B,tri.C,.5);
-  if (tri.B.w||tri.C.w)
+  if (tri.B.w)
     splittri.BC = addN(lerp(splittri.BC.xyz,
                                 lerp(tri.A.xyz,oldneighbors.BC.xyz,.5),
                                 .25),
                            1);
   splittri.A = tri.A;
-  if (tri.A.w)
+  if (tri.A.w&&
+      tri.C.w&&
+      (oldneighbors.AC.w==4||oldneighbors.AC.w==8)&&
+      (oldneighbors.AB.w==2||oldneighbors.AB.w==8)&&
+      oldneighbors.AAB.w&&
+      oldneighbors.AAC.w)       
     splittri.A.xyz = ident3(lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,
                                               oldneighbors.AC.xyz,
                                               .5),
@@ -178,7 +236,12 @@ kernel void splitTriangles (Tri triangles[][],
                                .625),
                           1);
   splittri.B = tri.B;
-  if (tri.B.w)
+  if (tri.A.w&&
+      tri.B.w&&
+      (oldneighbors.BC.w==2||oldneighbors.BC.w==8)&&
+      (oldneighbors.AB.w==4||oldneighbors.AB.w==8)&&
+      oldneighbors.ABB.w&&
+      oldneighbors.BBC.w)        
     splittri.B.xyz=ident3(lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,
                                           oldneighbors.BC.xyz,
                                           .5),
@@ -192,7 +255,12 @@ kernel void splitTriangles (Tri triangles[][],
                            .625),
                       1);
   splittri.C = tri.C;
-  if (tri.C.w)
+  if (tri.C.w&&
+      tri.B.w&&
+      (oldneighbors.BC.w==4||oldneighbors.BC.w==8)&&
+      (oldneighbors.AC.w==2||oldneighbors.AC.w==8)&&
+      oldneighbors.ACC.w&&
+      oldneighbors.BCC.w)       
     splittri.C.xyz=ident3(lerp(lerp(lerp(lerp(oldneighbors.AC.xyz,
                                            oldneighbors.BC.xyz,
                                            .5),
@@ -207,7 +275,6 @@ kernel void splitTriangles (Tri triangles[][],
                             tri.C.xyz,
                             .625),
                        1);
-  
 }
 
 
@@ -222,7 +289,8 @@ kernel void reorgSplitTriangles (SplitTri splittri<>,
                                  out Neighbor neighborA<>,
                                  out Neighbor neighborB<>,
                                  out Neighbor neighborC<>,
-                                 out Neighbor neighborD<>) {
+                                 out Neighbor neighborD<>,
+                                 float epsilon) {
   float4 ac = splittri.AC;
   float4 ab = splittri.AB;
   float4 bc = splittri.BC;
@@ -290,14 +358,18 @@ kernel void reorgSplitTriangles (SplitTri splittri<>,
   neighborD.AAC = newnei.BC;
   neighborD.AC = b;
   neighborD.ACC = AB_B;
-
+  smallEnough(triA,neighborA,triA,neighborA,epsilon);
+  smallEnough(triB,neighborB,triB,neighborB,epsilon);
+  smallEnough(triC,neighborC,triC,neighborC,epsilon);
+  smallEnough(triD,neighborD,triD,neighborD,epsilon);
 }
 
 
 kernel void linearReorgSplitTriangles (SplitTri splittri<>,
                                        Neighbor newnei<>,
                                        out Tri tri<>,
-                                       out Neighbor neighbor<>) {
+                                       out Neighbor neighbor<>,
+                                       float epsilon) {
   float unclampedwhich = round(fmod((indexof tri).x,4));
   float which = unclampedwhich>3.5?0:unclampedwhich;
   float4 ac = splittri.AC;
@@ -373,6 +445,7 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
     neighbor.AC = b;
     neighbor.ACC = AB_B;
   }
+  smallEnough(tri,neighbor,tri,neighbor,epsilon);
 }
 
 int main () {
