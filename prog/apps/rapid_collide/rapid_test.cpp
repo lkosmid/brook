@@ -5,7 +5,7 @@ float ABS (float x) {
 }
 #include "csgeom/vector3.h"
 #include "csgeom/matrix3.h"
-#include "csgeom/rapcol.h"
+#include "rapcol.h"
 /*
 typedef struct Tri_t {
   float3 A;
