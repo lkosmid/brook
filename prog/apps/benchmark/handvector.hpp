@@ -166,13 +166,10 @@ public:
         return *this;
     }
     template<class BRT_TYPE> BRT_TYPE castTo() {
-        return InitializeClass<BRT_TYPE>()(getAt(0),
-					   getAt(1),
-					   getAt(2),
-					   getAt(3));
+        return (BRT_TYPE)f;
     }
 #define BROOK_UNARY_OP(op) Float1 operator op ()const { \
-      return Float1 (op getAt(0)); \
+      return Float1 (op f); \
     }
     BROOK_UNARY_OP(+)
     BROOK_UNARY_OP(-)
@@ -202,7 +199,7 @@ public:
         (*this)=scalar;
     }
     template <class BRT_TYPE> operator BRT_TYPE () const{
-      return InitializeClass<BRT_TYPE>()(getAt(0),getAt(1),getAt(2),getAt(3));
+      return (BRT_TYPE)f;
     }
     Float1& operator = (const float & in) { 
         f = in;
@@ -258,11 +255,6 @@ public:
 						const BRT_TYPE &c)const {
        return f?b.getAt(0):c.getAt(0);
     }
-#if defined (_MSC_VER) && (_MSC_VER <= 1200)
-#define TEMPL_TYPESIZE sizeof(BRT_TYPE)/sizeof(BRT_TYPE::TYPE)
-#else
-#define TEMPL_TYPESIZE BRT_TYPE::size
-#endif
 #define BROOK_BINARY_OP(op,opgets,TYPESPECIFIER) template <class BRT_TYPE>          \
     Float1 operator op (const BRT_TYPE &b)const{ \
       return Float1(*this) opgets b; \
@@ -276,10 +268,7 @@ public:
 #define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class BRT_TYPE>          \
     Float1 operator op (const BRT_TYPE &b)const{ \
       return Float1 \
-                (getAt(0) op GetAt<BRT_TYPE>(b,0), \
-                 getAt(1) op GetAt<BRT_TYPE>(b,1), \
-                 getAt(2) op GetAt<BRT_TYPE>(b,2), \
-                 getAt(3) op GetAt<BRT_TYPE>(b,3)); \
+                (f op GetAt<BRT_TYPE>(b,0)); \
     }
     BROOK_BINARY_OP(||,LCM);
     BROOK_BINARY_OP(&&,LCM);
@@ -289,7 +278,6 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
-#undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #undef tsize
