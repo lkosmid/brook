@@ -171,20 +171,20 @@ endif
 ## Clean BRCC generated .cpp files ##
 BR_FILES_CLEAN   = $(addsuffix .br-clean, $(FILES))
 %.br-clean:
-	@if test -f $*.br; then rm -rf $*.cpp; fi	
+	if test -f $*.br; then rm -rf $*.cpp; fi	
 
 ## Clean
 clean: $(BR_FILES_CLEAN)
 ifdef SUBDIRS
-	@for i in $(SUBDIRS); do $(MAKE) --no-print-directory -C $$i clean; done
+	for i in $(SUBDIRS); do $(MAKE) --no-print-directory -C $$i clean; done
 endif
 ifdef BINARY
-	@rm -rf $(OBJDIR) $(BINDIR)/$(BINARY)
-	@rm -rf $(BINDIR)/$(BINARY_NAME).pdb $(DEPDIR)
-	@rm -rf $(BINARY_NAME).output
+	rm -rf $(OBJDIR) $(BINDIR)/$(BINARY)
+	rm -rf $(BINDIR)/$(BINARY_NAME).pdb $(DEPDIR)
+	rm -rf $(BINARY_NAME).output
 endif
-	@rm -rf *~ .#* #*
-	@rm -rf $(SLOP)
+	rm -rf *~ .#* #*
+	rm -rf $(SLOP)
 
 ## Regression testing ##
 
