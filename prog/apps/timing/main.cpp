@@ -53,6 +53,7 @@ int64 start, mid, mid2, stop;
 
 static unsigned int timerRes;
 #ifndef _WIN32
+#include <unistd.h>
 #include <sys/time.h>
 #include <string.h>
 void SetupMillisTimer(void) {}
