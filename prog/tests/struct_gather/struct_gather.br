@@ -6,6 +6,34 @@ typedef struct Pair_t {
   float first;
   float second;
 } Pair;
+/*
+typedef struct traverser_t {
+  float4 index;//.xy is index into the aTree  .zw is index into bTree
+  float3 Translation; 
+  float3 Rotationx;
+  float3 Rotationy;
+  float3 Rotationz;
+}Traverser;
+*/
+typedef struct bbox_t{
+  float4 Rotationx;
+  float3 Rotationy;
+  // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
+  /// cross(Rotationx,Rotationy);
+  float3 Translation;
+  float4 Radius;// if it's a leaf Radius.w is 1 else Radius.w = 0
+
+  // if leaf, the Children.xy is an index to the Triangle
+  // if node, the Children.xy is an index to left child
+  // assert right.xy is always left + {1,0} this may require gaps in the tree
+  float2 Children;
+}BBox;
+
+kernel void gatherBBox( BBox tmp [][], out float2 child<>) {
+  float2 ind={2,0};
+  BBox gath = tmp[ind];
+  child = gath.Children;
+}
 
 kernel void gatherPairs( float index<>, Pair pairs[], out float result<> ) {
   Pair p = pairs[index];
@@ -13,6 +41,9 @@ kernel void gatherPairs( float index<>, Pair pairs[], out float result<> ) {
 }
 
 int main() {
+  BBox bboxes<1,4>;
+  float2 bboxout<1,1>;
+  BBox assign[4];
   Pair pairs< 100 >;
   float indices< 100 >;
   float output< 100 >;
@@ -20,7 +51,34 @@ int main() {
   float indices_data[100];
   float output_data[100];
   int i;
-
+  /*Traverser baseTraverser;
+    Traverser trav<1,1>;
+  baseTraverser.index=float4(2,0,2,0);
+  baseTraverser.Translation=float3(-0.13644515,  0.112712905,  -0.0222729594);
+  baseTraverser.Rotationx=float3(-0.170251727,  0.966706932,  -0.191028923);
+  baseTraverser.Rotationy=float3(0.966706932, 0.201434806,  0.15780279);
+  baseTraverser.Rotationz=float3(-0.191028923,  0.15780279,  0.968816876);
+  streamRead(trav,&baseTraverser);
+  */
+  assign[0].Children=float2(2,0);
+  assign[0].Rotationx=float4( -0.0854557604, 0.99632597, -0.0056440942,-1);
+  assign[0].Rotationy=float3(0.978623033, 0.0849982575, 0.187275991);
+  assign[0].Radius=float4(0.0763418078,  0.100202203,  0.0545564666,  0);
+  assign[1].Children=float2(0,0);
+  assign[1].Rotationx=float4(1,0,0,1);
+  assign[1].Rotationy=float3(0,1,0);
+  assign[1].Children=float2(0,0);
+  assign[1].Rotationx=float4(1,0,0,1);
+  assign[1].Rotationy=float3(0,1,0);
+  assign[2].Children=float2(4,0);
+  assign[2].Rotationx=float4(1,0,0,1);
+  assign[2].Rotationy=float3(0,1,0);
+  assign[3].Children=float2(1006,1);
+  assign[3].Rotationx=float4(1,0,0,1);
+  assign[3].Rotationy=float3(0,1,0);
+  streamRead(bboxes,assign);
+  gatherBBox(bboxes,bboxout);
+  streamPrint(bboxout);
   for( i = 0; i < 100; i++ )
   {
     pairs_data[i].first = (float)i;
