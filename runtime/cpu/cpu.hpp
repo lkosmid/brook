@@ -27,6 +27,7 @@ namespace brook {
        typedef void combinable (const std::vector<void*>&args,
                                 unsigned int start);
        callable * func;
+       combinable *combine;
        std::vector<void *> args;
        class ReductionArg {public:
           unsigned int which;
@@ -37,11 +38,11 @@ namespace brook {
              this->stream=stream;
           }
        };
+       brook::Stream  * streamReduction;
        std::vector<ReductionArg> reductions;
-       Stream * writeOnly;
-       std::vector<Stream *> readOnly;
-       std::vector<Stream *> writeOnlies;
-       unsigned int extent;
+       unsigned int totalsize;
+       unsigned int dim;
+       const unsigned int *extents;
        void Cleanup();
     };
     class CPUStream: public Stream {
