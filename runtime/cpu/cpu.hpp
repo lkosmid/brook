@@ -7,26 +7,35 @@ namespace brook {
 	extern const char* CPU_RUNTIME_STRING;	
     class CPUKernel : public Kernel {
     public:
-	CPUKernel(const void * source []);
-	virtual void PushStream(Stream *s);
-	virtual void PushConstant(const float &val);  
-	virtual void PushConstant(const float2 &val);  
-	virtual void PushConstant(const float3 &val); 
-	virtual void PushConstant(const float4 &val);
-	virtual void PushGatherStream(Stream *s);
-	virtual void PushOutput(Stream *s);
-	virtual void Map();
-	virtual void Release();
+       CPUKernel(const void * source []);
+       virtual void PushStream(Stream *s);
+       virtual void PushConstant(const float &val);  
+       virtual void PushConstant(const float2 &val);  
+       virtual void PushConstant(const float3 &val); 
+       virtual void PushConstant(const float4 &val);
+       virtual void PushGatherStream(Stream *s);
+       virtual void PushReduce (void * val, unsigned int size);
+       virtual void PushOutput(Stream *s);
+       virtual void Map();
+       virtual void Release();
     protected:
-	virtual ~CPUKernel();
-	typedef void callable(const std::vector<void *>&args,unsigned int start, unsigned int end);
-	callable * func;
-	std::vector<void *> args;
-        Stream * writeOnly;
-        std::vector<Stream *> readOnly;
-        std::vector<Stream *> writeOnlies;
-	unsigned int extent;
-        void Cleanup();
+       virtual ~CPUKernel();
+       typedef void callable(const std::vector<void *>&args,
+                             unsigned int start, 
+                             unsigned int end);
+       callable * func;
+       std::vector<void *> args;
+       class ReductionArg {public:
+          unsigned int which;
+          unsigned int size;
+          ReductionArg(unsigned int w, unsigned int s) {which=w;size=s;}
+       };
+       std::vector<ReductionArg> reductions;
+       Stream * writeOnly;
+       std::vector<Stream *> readOnly;
+       std::vector<Stream *> writeOnlies;
+       unsigned int extent;
+       void Cleanup();
     };
     class CPUStream: public Stream {
     public:

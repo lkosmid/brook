@@ -42,7 +42,23 @@ void DX9Kernel::PushStream(Stream *s) {
   inputRects[textureUnit] = stream->getInputRect();
   DX9Trace("PushInput - end");
 }
-
+void DX9Kernel::PushReduce(void * val, unsigned int size) {
+   //XXX Add Reduce functionality
+   fprintf (stderr,"Reduce inoperative in DirectX\n");
+   switch (size) {
+   case sizeof(float2):
+      PushConstant(*(float2*)val);
+      break;
+   case sizeof(float3):
+      PushConstant(*(float3*)val);
+      break;
+   case sizeof(float4):
+      PushConstant(*(float4*)val);
+      break;
+   default:
+      PushConstant(*(float*)val);
+   }  
+}
 void DX9Kernel::PushConstant(const float &val) {
   float4 value;
   value.x = val;

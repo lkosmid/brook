@@ -45,6 +45,10 @@ namespace brook{
     void CPUKernel::PushGatherStream(Stream *s){
         args.push_back(s);
     }
+    void CPUKernel::PushReduce(void * data, unsigned int size) {
+       reductions.push_back(ReductionArg(args.size(),size));
+       args.push_back(data);
+    }
     void CPUKernel::PushOutput(Stream *s){
         args.push_back(s->getData(Stream::WRITE));
 	unsigned int total_size=s->getTotalSize();
