@@ -4,12 +4,11 @@ kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], vout []float e<>) {
   e = a+b+d[c.xy];
   push(e);
-  if (c==0) {
+  if (fmod( (indexof a).x,2)==0) {
     e = 2;
     push (e);
-    return;
   }
-  if (c==1) {
+  if (fmod((indexof a).y,3)==0) {
      e=1;
      push (e);
      e=-1;

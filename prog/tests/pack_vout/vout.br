@@ -44,6 +44,7 @@ kernel void streamCombine1(float input0[][],
                            out float output <>) {
    float2 newindex;
    float whichmod;
+   indexof(output);
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
