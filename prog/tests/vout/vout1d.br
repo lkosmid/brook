@@ -237,11 +237,13 @@ float shiftValues1dBRT_TYPE(BRT_TYPE list_stream <>,
       width = size;
       if (1) {
         BRT_TYPE proper_output_stream<width>;
-        RelativeGatherBRT_TYPE1d(proper_output_stream,
-                               logN%2==0?ret_stream:guess_stream,
-                               list_stream,
-                               float2((float)sign,1.0f/(float)floor(.5)),
-                               maxvalue);
+        if (width) {
+          RelativeGatherBRT_TYPE1d(proper_output_stream,
+                                   logN%2==0?ret_stream:guess_stream,
+                                   list_stream,
+                                   float2((float)sign,1.0f/(float)floor(.5)),
+                                   maxvalue);
+        }
         streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
