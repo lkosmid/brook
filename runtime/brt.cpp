@@ -217,13 +217,13 @@ namespace brook {
 
 }
 __BRTStream * sentinelStream (int dim) {
-   static vector <__BRTStream *> sentinels;
+   static std::vector <__BRTStream *> sentinels;
    if (dim<(int)sentinels.size())
       if (sentinels[dim]!=0)
          return sentinels[dim];
    while ((int)sentinels.size()<=dim)
       sentinels.push_back(0);
-   vector<int> extents;
+   std::vector<int> extents;
    for (int i=0;i<dim;++i){
       extents.push_back(1);
    }
