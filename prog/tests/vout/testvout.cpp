@@ -249,13 +249,13 @@ __BrtFloat4 indexof0 = computeIndexOf(mapbegin, dims[0], extents[0]);
     }
   }
 }
-extern int finiteValueProduced (struct __BRTStream * input);
-extern float shiftValues(struct __BRTStream *list_stream,
+extern int finiteValueProducedfloat (struct __BRTStream * input);
+extern float shiftValuesfloat(struct __BRTStream *list_stream,
                          struct __BRTStream *output_stream,
                          int WIDTH, 
                          int LENGTH, 
                          int sign);
-void combineStreams (struct __BRTStream **streams,
+void combineStreamsfloat (struct __BRTStream **streams,
                      unsigned int num,
                      unsigned int width, 
                      unsigned int length,
@@ -291,16 +291,16 @@ void  foo (const __BRTStream& a,
     k->PushConstant(__vout_counter);
     k->Map();
     __vout_counter.x+=1.0f;
-    __e_values = finiteValueProduced(__e_outputs.back())?1:0;
+    __e_values = finiteValueProducedfloat(__e_outputs.back())?1:0;
   }
   __BRTStream temp (__e_stream->getStreamType(),1,1,-1);
 
-  combineStreams(&__e_outputs[0],
+  combineStreamsfloat(&__e_outputs[0],
                  __e_outputs.size()-1,
                  maxextents[0],
                  maxextents[1],
                  &temp);
-  float out = shiftValues(&temp,
+  float out = shiftValuesfloat(&temp,
                           &__e_stream,
                           temp->getExtents()[0],
                           temp->getExtents()[1],

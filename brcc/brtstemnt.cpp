@@ -178,6 +178,18 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
       
    }
 }
+std::string undecoratedBase(Decl * decl) {
+   BaseType * base = decl->form->getBase();
+   BaseTypeSpec typemask = base->typemask;
+   if (typemask&BT_Float2)
+      return "float2";
+   else if (typemask&BT_Float3)
+      return "float3";
+   else if (typemask&BT_Float4)
+      return "float4";
+   return "float";
+         
+}
 void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    out << "    __vout_counter.x+=1.0f;"<<std::endl;
    FunctionType* ft = static_cast<FunctionType*>(decl->form);
@@ -187,17 +199,21 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
       = voutFunctions[FunctionName()->name].end();
    std::set<unsigned int >::iterator iter;
    for (iter = beginvout;iter!=endvout;++iter) {
+      
       Decl * decl = ft->args[*iter];
       out << "    "<<getDeclStream(decl,"_values")<< " = ";
-      out << " finiteValueProduced ("<<getDeclStream(decl,"_outputs");
+      out << " finiteValueProduced";      
+      out << undecoratedBase(decl)<<"("<<getDeclStream(decl,"_outputs");
       out << ".back())?1:0;"<<std::endl;
    }
    out << "  }"<<std::endl;
    for (iter = beginvout;iter!=endvout;++iter) {
+      std::string type = undecoratedBase(decl);
       Decl * decl = ft->args[*iter];
       out<< "  __BRTStream "<<getDeclStream(decl,"_temp")<<"(";
       out<< decl->name->name<< "->getStreamType(),1,1,-1);"<<std::endl;
-      out<< "  combineStreams(&"<<getDeclStream(decl,"_outputs")<<"[0],";
+      out<< "  combineStreams";
+      out << type <<" (&"<<getDeclStream(decl,"_outputs")<<"[0],";
       out<< std::endl;
       out<< "                 "<<getDeclStream(decl,"_outputs")<<".size()-1,";
       out<< std::endl;
@@ -207,7 +223,8 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
       out<< std::endl;
       out<< "                 &"<<getDeclStream(decl,"_temp")<<");";
       out<< std::endl;
-      out<< "  shiftValues(&"<<getDeclStream(decl,"_temp")<<",";
+      out<< "  shiftValues";
+      out << type << "(&"<<getDeclStream(decl,"_temp")<<",";
       out<< std::endl;
       out<< "              &"<< decl->name->name<<",";
       out<< std::endl;
@@ -222,29 +239,39 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    }
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+static void printPrototypes(std::ostream & out, std::string type) {
+   out << "extern int finiteValueProduced" ;
+   out << type << " (struct __BRTStream * input);\n"
+      "extern float shiftValues";
+   out << type << "(struct __BRTStream *list_stream,\n"
+      "                         struct __BRTStream *output_stream,\n"
+      "                         int WIDTH, \n"
+      "                         int LENGTH, \n"
+      "                         int sign);\n"
+      "void combineStreams";
+   out << type << "(struct __BRTStream **streams,\n"
+      "                     unsigned int num,\n"
+      "                     unsigned int width, \n"
+      "                     unsigned int length,\n"
+      "                     struct __BRTStream * output) ;\n";
+   
+}
 void
 BRTKernelDef::printStub(std::ostream& out) const
 {
    FunctionType *fType;
    int i,NumArgs;
-
+   printPrototypes (out,"float");
+   printPrototypes (out,"float2");
+   printPrototypes (out,"float3");
+   printPrototypes (out,"float4");
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
    std::vector <bool> streamOrVal;
    NumArgs=fType->nArgs;
    bool vout=voutFunctions.find(FunctionName()->name)!=voutFunctions.end();
    if (vout) {
-      out << "extern int finiteValueProduced (struct __BRTStream * input);\n"
-             "extern float shiftValues(struct __BRTStream *list_stream,\n"
-             "                         struct __BRTStream *output_stream,\n"
-             "                         int WIDTH, \n"
-             "                         int LENGTH, \n"
-             "                         int sign);\n"
-             "void combineStreams (struct __BRTStream **streams,\n"
-             "                     unsigned int num,\n"
-             "                     unsigned int width, \n"
-             "                     unsigned int length,\n"
-             "                     struct __BRTStream * output) ;\n";
+
    }
    if (vout) {
       NumArgs--;
