@@ -134,7 +134,6 @@ endif
 $(BINDIR)/$(BINARY):  $(ADDITIONAL_DEPENDANCIES) $(OBJS)
 	@$(ECHO) Building $@
 ifdef STATIC_LIBRARY
-	@echo "AR: '$(AR)', Flags: '$(ARFLAGS)', Output: '$(AR_OUTPUT_FLAG)'"
 	$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)
 else
 	$(LD) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LDFLAGS)
