@@ -97,14 +97,14 @@ void SplitCompilerHLSL::compileShader(
     }
   }*/
 
-  int passCost = inConfiguration.passCost;
-  int textureInstructionCost = inConfiguration.textureInstructionCost;
-  int arithmeticInstructionCost = inConfiguration.arithmeticInstructionCost;
-  int samplerCost = inConfiguration.samplerCost;
-  int interpolantCost = inConfiguration.interpolantCost;
-  int constantCost = inConfiguration.constantCost;
-  int temporaryCost = inConfiguration.temporaryCost;
-  int outputCost = inConfiguration.outputCost;
+  // int passCost = inConfiguration.passCost;
+  // int textureInstructionCost = inConfiguration.textureInstructionCost;
+  // int arithmeticInstructionCost = inConfiguration.arithmeticInstructionCost;
+  // int samplerCost = inConfiguration.samplerCost;
+  // int interpolantCost = inConfiguration.interpolantCost;
+  // int constantCost = inConfiguration.constantCost;
+  // int temporaryCost = inConfiguration.temporaryCost;
+  // int outputCost = inConfiguration.outputCost;
 
   // TIM: shader model is interesting
 

@@ -94,6 +94,9 @@ void SplitStatementTraversal::traverse( SplitNode* inNode )
       break;
     case kSplitBasicType_Float4:
       break;
+    default:
+       // Ian: What if Unknown type???
+       break;
     }
     stream << ");" << std::endl;
     return;

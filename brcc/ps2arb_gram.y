@@ -1,9 +1,11 @@
 %{
+
 //#define YYDEBUG 1
-#ifdef _WIN32
+#ifdef WIN32
 #pragma warning(disable:4786)
 #pragma warning(disable:4065)
 #endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -104,7 +106,10 @@ static std::map<string,UnaryFactory*> unary_factory=createUnaryFactory();
 static std::map<string,BinaryFactory*> binary_factory=createBinaryFactory();
 static std::map<string,TrinaryFactory*> trinary_factory=createTrinaryFactory();
 
+#ifdef WIN32
 #pragma warning( disable : 4102 ) 
+#endif
+
 extern int yylex(void);
 static void yyerror (char *s) {
   fprintf (stderr, "Error Line %d: %s\n", ps_lineno,s);

@@ -51,7 +51,7 @@ bool IntermediateLanguage::makeTemporaries(std::vector <Symbol> &ret,
          temporaries[(*i).second.registerindex] = true;
       }
    }
-   assert (temporaries.size()==maxtemporaries);
+   assert (temporaries.size()== (unsigned int) maxtemporaries);
    for (int j=0;j<maxtemporaries&&num>0;++j) {
       if (temporaries[j]==false) {
          Symbol s;

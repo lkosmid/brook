@@ -113,7 +113,7 @@ void SplitNodeSet::remove( size_t inIndex )
 }
 
 SplitNodeSet::iterator::iterator( const SplitNodeSet& inSet, size_t inIndex )
-  : set(inSet), index(inIndex)
+   : index(inIndex), set(inSet)
 {
   validate();
 }

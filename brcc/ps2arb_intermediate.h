@@ -101,26 +101,30 @@ public:
 };
 class OpCode{
 public:
-	InstructionFlags flags;
-	string opcode;
-	OpCode (string opcode, const InstructionFlags &flags):opcode(opcode),flags(flags){}
-	//OpCode (string opcode):flags(InstructionFlags::FULL,0),opcode(opcode){}
+  InstructionFlags flags;
+  string opcode;
+  OpCode (string opcode, const InstructionFlags &flags):
+    flags(flags), opcode(opcode) {}
+  virtual ~OpCode () {}
+  //OpCode (string opcode):flags(InstructionFlags::FULL,0),opcode(opcode){}
 	PRINT_PROTOTYPES;
 };
+
 class Instruction:public Statement {
 public:
-	CLONE_F(Instruction,Statement);
-	CLONE_F(Instruction,Instruction);
-	Instruction (const OpCode &oc):op(oc){}
-	void SetLowPrecision(InstructionFlags::ACCURACY a) {op.flags.acc=a;}
-	void SetSaturated(bool sat) {op.flags.saturate=sat?1:0;}
-	PRINT_FUNCTIONS;
-	void AdjustOpcodeFlags(const InstructionFlags & f) {
-		op.flags = f;
-	}
+  CLONE_F(Instruction,Statement);
+  CLONE_F(Instruction,Instruction);
+  Instruction (const OpCode &oc):op(oc){}
+  void SetLowPrecision(InstructionFlags::ACCURACY a) {op.flags.acc=a;}
+  void SetSaturated(bool sat) {op.flags.saturate=sat?1:0;}
+  PRINT_FUNCTIONS;
+  void AdjustOpcodeFlags(const InstructionFlags & f) {
+    op.flags = f;
+  }
 protected:
-	OpCode op;
+  OpCode op;
 };
+
 class VoidOp:public Instruction {
 public:
 	CLONE_F(VoidOp,Statement);

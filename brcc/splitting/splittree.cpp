@@ -50,8 +50,9 @@ static unsigned long getTime()
 
 #endif
 
-SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler )
-  : _pseudoRoot(NULL), _resultValue(NULL), _compiler(inCompiler)
+SplitTree::SplitTree( FunctionDef* inFunctionDef, 
+                      const SplitCompiler& inCompiler )
+   : _pseudoRoot(NULL), _resultValue(NULL), _compiler(inCompiler) 
 {
   _functionName = inFunctionDef->FunctionName()->name;
   std::cout << "$$$$$ creating a split tree for " << _functionName << std::endl;
@@ -59,8 +60,10 @@ SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompile
   build( inFunctionDef );
 }
 
-SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler, const std::vector<SplitNode*>& inArguments )
-: _resultValue(NULL), _compiler(inCompiler), _pseudoRoot(NULL)
+SplitTree::SplitTree( FunctionDef* inFunctionDef, 
+                      const SplitCompiler& inCompiler, 
+                      const std::vector<SplitNode*>& inArguments )
+   : _pseudoRoot(NULL), _resultValue(NULL), _compiler(inCompiler)
 {
   build( inFunctionDef, inArguments );
 }
@@ -878,8 +881,8 @@ void SplitTree::rdsSearch()
 
   // use the resulting configuration
   // for one final compile pass
-  int finalCost = rdsCompileConfiguration( true );
-//  dumpFile << "final cost is " << finalCost << std::endl;
+  // int finalCost = rdsCompileConfiguration( true );
+  // dumpFile << "final cost is " << finalCost << std::endl;
 }
 
 int SplitTree::rdsCompileConfiguration( bool inLastTime )

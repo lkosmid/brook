@@ -329,6 +329,9 @@ BrtConstantSplitNode::BrtConstantSplitNode( Constant* inValue )
   case CT_Float:
     inferredType = kSplitBasicType_Float;
     break;
+  default:
+     // Ian: What if other types???
+     break;
   }
 }
 
@@ -478,6 +481,9 @@ void TextureFetchSplitNode::printTemporaryExpression( std::ostream& inStream )
   case kSplitBasicType_Float4:
     inStream << ".xyzw";
     break;
+  default:
+     // Ian: What if kSplitBasicType_Unknown ???
+     break;
   }
 }
 

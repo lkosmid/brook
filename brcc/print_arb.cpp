@@ -286,7 +286,10 @@ std::ostream & IntermediateLanguage::print_arbfp (std::ostream & s) {
             s << "ATTRIB "<<nam<<" = fragment.fogcoord"<<arbendl;					
             break;
          case Symbol::POSITION:
-            s << "ATTRIB "<<nam<<" = fragment.position"<<arbendl;					
+            s << "ATTRIB "<<nam<<" = fragment.position"<<arbendl;  
+            break;
+         default:
+            s << "UNKNOWN" <<arbendl;
             break;
          }
       }

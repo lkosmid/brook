@@ -15,6 +15,8 @@
   result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); \
 }
 
+#define YY_NO_UNPUT 1
+
 #include "ps2arb_gram.h"
 
 int scopecount = 0;

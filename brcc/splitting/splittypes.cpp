@@ -23,3 +23,5 @@ std::ostream& operator<<( std::ostream& inStream, SplitBasicType inType )
   }
   return inStream;
 }
+
+
