@@ -378,7 +378,12 @@ BRTKernelDef::printStub(std::ostream& out) const
             out << "::brook::stream ";
             if ((voutFunctions[FunctionName()->name].find(i)
                  !=voutFunctions[FunctionName()->name].end())) {
-               out << "&";//Vout changes dimension and must be passed by ref
+               out << "&";
+               // Vout changes dimension and must be passed by ref
+               // Optionally we could make streamSwap work properly--but this
+               // is tricky with all the behind-the-scenes inheritance going on
+               // if you change, please talk to danielrh at graphics 
+               // first  Otherwise he'll have to fix all his vout tests.
             }
             out << *fType->args[i]->name;
          } else {
