@@ -81,7 +81,7 @@ BRTKernelDef::printStub(std::ostream& out) const
    for (i = 0; i < fType->nArgs; i++) {
       if (i) out << ",\n\t\t";
 
-      if (fType->args[i]->isStream()) {
+      if (fType->args[i]->isStream() || fType->args[i]->isArray()) {
          out << "const __BRTStream& " << *fType->args[i]->name;
       } else {
          out << "const ";
@@ -96,12 +96,12 @@ BRTKernelDef::printStub(std::ostream& out) const
        << "__" << *FunctionName() << "_fp);\n\n";
 
    for (i=0; i < fType->nArgs; i++) {
-      if (fType->args[i]->isStream()) {
-         if (fType->args[i]->form->getQualifiers() & TQ_Out) {
+      if (fType->args[i]->isStream() &&
+          fType->args[i]->form->getQualifiers() & TQ_Out) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
-         } else {
-            out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
-         }
+      } else if (fType->args[i]->isStream() ||
+                 fType->args[i]->isArray()) {
+         out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
       } else {
          out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
       }
