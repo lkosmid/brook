@@ -186,21 +186,21 @@ inline float modf_float (float x, float & oout) {
    oout=(float)exp;
    return x;
 }
-inline finite_float (float x) {
+inline float finite_float (float x) {
 #ifdef _WIN32
    return _finite(x);
 #else
    return finite(x);
 #endif
 }
-inline isnan_float (float x) {
+inline float isnan_float (float x) {
 #ifdef _WIN32
    return _isnan(x);
 #else
    return isnan(x);
 #endif
 }
-inline isinf_float (float x) {
+inline float isinf_float (float x) {
 #ifdef _WIN32
    return (!finite_float(x))&&(!isnan_float(x));
 #else
