@@ -64,7 +64,7 @@ public:
            unsigned int total=index.getAt(T::size-1);
            for (unsigned int i=1;i<T::size&&i<dims;++i) {
               total*=extents[i];
-              total+=index.getAt(T::size-i-1);
+              total+=(unsigned int)index.getAt(T::size-i-1);
            }
            return total;
 	}
