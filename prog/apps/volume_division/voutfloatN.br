@@ -16,6 +16,7 @@ unsigned int debug_vout = 0;
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
 
+
 kernel void kernelReadItem (float items[][], float2 index, out float item<>) {
   item = items[index];
 }
@@ -74,17 +75,14 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float2(output) finite_float(output.x)
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
-kernel float isSentinel (float tester, float sentinel) {
-  return tester==sentinel;
-}
+
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
-                                   reduce float output<>,
-                                   float sentinel) {
-  output=isSentinel(input.x,sentinel)?output:input;
+                                   reduce float output<>) {
+   output=isinf(input.x)?output:input;
 }
-kernel void isFiniteKernelfloat(float inp<>, out float outp<>, float sentinel) {
-  outp=!isSentinel(inp.x,sentinel);
+kernel void isFiniteKernelfloat(float inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
 }
 
 int finiteValueProducedfloat (float input<>) {
@@ -94,9 +92,9 @@ int finiteValueProducedfloat (float input<>) {
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedfloat(input,output,getSentinel());
+   valueProducedfloat(input,output);
    streamWrite(output,&rettype);
-   isFiniteKernelfloat(output,finiteout,getSentinel());
+   isFiniteKernelfloat(output,finiteout);
    streamWrite(finiteout,&ret);
    return (int)ret;
 }
@@ -112,15 +110,15 @@ kernel void valueAtfloat (float value[][],
       output = value[index];
 }
 kernel void NanToBoolRightfloat (float value[][], 
-                                    out float output<>, 
-                                    float2 sign,
-                                    float2 maxvalue) {
+                            out float output<>, 
+                            float sign,
+                            float2 maxvalue) {
    float2 nextPlaceToLook;
    float neighbor;
-   getIndexAt(indexof(output),sign.x,maxvalue,nextPlaceToLook);
+   getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isSentinel(value[indexof(output)].x,sign.y)?1:0) 
-     + (isSentinel(neighbor.x,sign.y)?1:0);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightfloat (float value [][],
                                 out float output<>,
@@ -149,17 +147,17 @@ kernel void GatherGuessfloat(float scatterindex[][],
                         float twotologkminusi,
                         float2 maxvalue,
                         float halfk,
-                        float2 signsentinel) {
-      float neighbor;
+                        float sign) {
+     float neighbor;
       float2 nextPlaceToLook;
-      getIndexAt(indexof(output),-signsentinel.x*halfk,maxvalue,nextPlaceToLook);
+      getIndexAt(indexof(output),-sign*halfk,maxvalue,nextPlaceToLook);
       valueAtfloat(scatterindex,nextPlaceToLook,neighbor,maxvalue,0);
       if (neighbor>halfk) {
          output=halfk+twotologkminusi;
       }else {
          float actualValue;
          valueAtfloat(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&!isSentinel(actualValue.x,signsentinel.y)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -172,7 +170,7 @@ kernel void EstablishGuessfloat(float scatterindex[][],
                                    float twotologkminusi,
                                    float2 maxvalue,
                                    float halfk,
-                                   float2 signsentinel) {
+                                   float sign) {
    if (scatterindex[indexof(output)]==0) {
       output=0;
    } else {
@@ -182,7 +180,7 @@ kernel void EstablishGuessfloat(float scatterindex[][],
                           twotologkminusi,
                           maxvalue,
                           halfk,
-                          signsentinel);
+                          sign);
     }
 }
 
@@ -193,33 +191,34 @@ kernel void UpdateGuessfloat(float scatterindex[][],
                                 float twotologkminusi,
                                 float2 maxvalue,
                                 float lastguess<>,
-                                float2 signsentinel) {
+                                float sign) {
    GatherGuessfloat(scatterindex,
                        output,
                        value,
                        twotologkminusi,
                        maxvalue,
                        lastguess,
-                       signsentinel);
+                       sign);
 }
 
 kernel void RelativeGatherfloat(out float output<>,
                                 float gatherindex[][],
                                 float value[][],
-                                float2 signsentinel,
+                                float inf<>,
+                                float sign,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
    float2 isoffedge;
    getIndexAt(indexof(output),
-              -signsentinel.x*gatherindex[indexof(output)],
+              -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   getIndexAt(indexof(output),-signsentinel.x*maxshift,maxvalue,isoffedge);
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
    if (isoffedge.y>=-.0625
        || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
-     output=signsentinel.y;
+     output=inf;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -243,7 +242,7 @@ float shiftValuesfloat(float list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat (list_stream,ret_stream,float2((float)sign,getSentinel()),maxvalue);   
+   NanToBoolRightfloat (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
@@ -271,7 +270,7 @@ float shiftValuesfloat(float list_stream <>,
                           (float)(1 << LogNMinusK),
                           maxvalue,
                           (float)(1<<i),
-                          float2((float)sign,getSentinel()));
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
@@ -281,7 +280,7 @@ float shiftValuesfloat(float list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              float2((float)sign,getSentinel()));
+                              (float)sign);
       else
          UpdateGuessfloat (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
@@ -289,7 +288,7 @@ float shiftValuesfloat(float list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              float2((float)sign,getSentinel()));
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -302,8 +301,9 @@ float shiftValuesfloat(float list_stream <>,
         if (width) {
           RelativeGatherfloat(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
-                                 list_stream,                                 
-                                 float2((float)sign,getSentinel()),
+                                 list_stream,
+                                 *sentinelStream(2),
+                                 (float)sign,
                                  maxvalue,
                                  maxshift);
         }
@@ -989,7 +989,7 @@ kernel void combinefloat (float input1[][],
                            float2 startsecond,
                            float2 endsecond,
                            float2 maxinput2value,
-                           float sentinel){
+                           float inf){
    //   getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
    //              -shift1,
    //              maxinput1value,
@@ -1012,7 +1012,7 @@ kernel void combinefloat (float input1[][],
       if (secondindex.y>endsecond.y
           ||(secondindex.y==endsecond.y
              &&secondindex.x>=endsecond.x)) {
-         output=sentinel;
+         output=inf;
       }else {
          output = input2[secondindex];
       }
@@ -1092,12 +1092,11 @@ unsigned int totalCombineVoutfloat (float list_stream<>,
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
-                                   reduce float2 output<>,
-                                   float sentinel) {
-  output=isSentinel(input.x,sentinel)?output:input;
+                                   reduce float2 output<>) {
+   output=isinf(input.x)?output:input;
 }
-kernel void isFiniteKernelfloat2(float2 inp<>, out float outp<>, float sentinel) {
-  outp=!isSentinel(inp.x,sentinel);
+kernel void isFiniteKernelfloat2(float2 inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
 }
 
 int finiteValueProducedfloat2 (float2 input<>) {
@@ -1107,9 +1106,9 @@ int finiteValueProducedfloat2 (float2 input<>) {
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedfloat2(input,output,getSentinel());
+   valueProducedfloat2(input,output);
    streamWrite(output,&rettype);
-   isFiniteKernelfloat2(output,finiteout,getSentinel());
+   isFiniteKernelfloat2(output,finiteout);
    streamWrite(finiteout,&ret);
    return (int)ret;
 }
@@ -1125,15 +1124,15 @@ kernel void valueAtfloat2 (float2 value[][],
       output = value[index];
 }
 kernel void NanToBoolRightfloat2 (float2 value[][], 
-                                    out float output<>, 
-                                    float2 sign,
-                                    float2 maxvalue) {
+                            out float output<>, 
+                            float sign,
+                            float2 maxvalue) {
    float2 nextPlaceToLook;
    float2 neighbor;
-   getIndexAt(indexof(output),sign.x,maxvalue,nextPlaceToLook);
+   getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtfloat2(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isSentinel(value[indexof(output)].x,sign.y)?1:0) 
-     + (isSentinel(neighbor.x,sign.y)?1:0);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightfloat2 (float value [][],
                                 out float output<>,
@@ -1162,17 +1161,17 @@ kernel void GatherGuessfloat2(float scatterindex[][],
                         float twotologkminusi,
                         float2 maxvalue,
                         float halfk,
-                        float2 signsentinel) {
-      float neighbor;
+                        float sign) {
+     float neighbor;
       float2 nextPlaceToLook;
-      getIndexAt(indexof(output),-signsentinel.x*halfk,maxvalue,nextPlaceToLook);
+      getIndexAt(indexof(output),-sign*halfk,maxvalue,nextPlaceToLook);
       valueAtfloat(scatterindex,nextPlaceToLook,neighbor,maxvalue,0);
       if (neighbor>halfk) {
          output=halfk+twotologkminusi;
       }else {
          float2 actualValue;
          valueAtfloat2(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&!isSentinel(actualValue.x,signsentinel.y)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -1185,7 +1184,7 @@ kernel void EstablishGuessfloat2(float scatterindex[][],
                                    float twotologkminusi,
                                    float2 maxvalue,
                                    float halfk,
-                                   float2 signsentinel) {
+                                   float sign) {
    if (scatterindex[indexof(output)]==0) {
       output=0;
    } else {
@@ -1195,7 +1194,7 @@ kernel void EstablishGuessfloat2(float scatterindex[][],
                           twotologkminusi,
                           maxvalue,
                           halfk,
-                          signsentinel);
+                          sign);
     }
 }
 
@@ -1206,33 +1205,34 @@ kernel void UpdateGuessfloat2(float scatterindex[][],
                                 float twotologkminusi,
                                 float2 maxvalue,
                                 float lastguess<>,
-                                float2 signsentinel) {
+                                float sign) {
    GatherGuessfloat2(scatterindex,
                        output,
                        value,
                        twotologkminusi,
                        maxvalue,
                        lastguess,
-                       signsentinel);
+                       sign);
 }
 
 kernel void RelativeGatherfloat2(out float2 output<>,
                                 float gatherindex[][],
                                 float2 value[][],
-                                float2 signsentinel,
+                                float inf<>,
+                                float sign,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
    float2 isoffedge;
    getIndexAt(indexof(output),
-              -signsentinel.x*gatherindex[indexof(output)],
+              -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   getIndexAt(indexof(output),-signsentinel.x*maxshift,maxvalue,isoffedge);
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
    if (isoffedge.y>=-.0625
        || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
-     output=signsentinel.y;
+     output=inf;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -1256,7 +1256,7 @@ float shiftValuesfloat2(float2 list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat2 (list_stream,ret_stream,float2((float)sign,getSentinel()),maxvalue);   
+   NanToBoolRightfloat2 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat2(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
@@ -1284,7 +1284,7 @@ float shiftValuesfloat2(float2 list_stream <>,
                           (float)(1 << LogNMinusK),
                           maxvalue,
                           (float)(1<<i),
-                          float2((float)sign,getSentinel()));
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
@@ -1294,7 +1294,7 @@ float shiftValuesfloat2(float2 list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              float2((float)sign,getSentinel()));
+                              (float)sign);
       else
          UpdateGuessfloat2 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
@@ -1302,7 +1302,7 @@ float shiftValuesfloat2(float2 list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              float2((float)sign,getSentinel()));
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -1315,8 +1315,9 @@ float shiftValuesfloat2(float2 list_stream <>,
         if (width) {
           RelativeGatherfloat2(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
-                                 list_stream,                                 
-                                 float2((float)sign,getSentinel()),
+                                 list_stream,
+                                 *sentinelStream(2),
+                                 (float)sign,
                                  maxvalue,
                                  maxshift);
         }
@@ -2002,7 +2003,7 @@ kernel void combinefloat2 (float2 input1[][],
                            float2 startsecond,
                            float2 endsecond,
                            float2 maxinput2value,
-                           float sentinel){
+                           float inf){
    //   getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
    //              -shift1,
    //              maxinput1value,
@@ -2025,7 +2026,7 @@ kernel void combinefloat2 (float2 input1[][],
       if (secondindex.y>endsecond.y
           ||(secondindex.y==endsecond.y
              &&secondindex.x>=endsecond.x)) {
-         output=sentinel;
+         output=inf;
       }else {
          output = input2[secondindex];
       }
@@ -2105,12 +2106,11 @@ unsigned int totalCombineVoutfloat2 (float2 list_stream<>,
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
-                                   reduce float3 output<>,
-                                   float sentinel) {
-  output=isSentinel(input.x,sentinel)?output:input;
+                                   reduce float3 output<>) {
+   output=isinf(input.x)?output:input;
 }
-kernel void isFiniteKernelfloat3(float3 inp<>, out float outp<>, float sentinel) {
-  outp=!isSentinel(inp.x,sentinel);
+kernel void isFiniteKernelfloat3(float3 inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
 }
 
 int finiteValueProducedfloat3 (float3 input<>) {
@@ -2120,9 +2120,9 @@ int finiteValueProducedfloat3 (float3 input<>) {
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedfloat3(input,output,getSentinel());
+   valueProducedfloat3(input,output);
    streamWrite(output,&rettype);
-   isFiniteKernelfloat3(output,finiteout,getSentinel());
+   isFiniteKernelfloat3(output,finiteout);
    streamWrite(finiteout,&ret);
    return (int)ret;
 }
@@ -2138,15 +2138,15 @@ kernel void valueAtfloat3 (float3 value[][],
       output = value[index];
 }
 kernel void NanToBoolRightfloat3 (float3 value[][], 
-                                    out float output<>, 
-                                    float2 sign,
-                                    float2 maxvalue) {
+                            out float output<>, 
+                            float sign,
+                            float2 maxvalue) {
    float2 nextPlaceToLook;
    float3 neighbor;
-   getIndexAt(indexof(output),sign.x,maxvalue,nextPlaceToLook);
+   getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtfloat3(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isSentinel(value[indexof(output)].x,sign.y)?1:0) 
-     + (isSentinel(neighbor.x,sign.y)?1:0);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightfloat3 (float value [][],
                                 out float output<>,
@@ -2175,17 +2175,17 @@ kernel void GatherGuessfloat3(float scatterindex[][],
                         float twotologkminusi,
                         float2 maxvalue,
                         float halfk,
-                        float2 signsentinel) {
-      float neighbor;
+                        float sign) {
+     float neighbor;
       float2 nextPlaceToLook;
-      getIndexAt(indexof(output),-signsentinel.x*halfk,maxvalue,nextPlaceToLook);
+      getIndexAt(indexof(output),-sign*halfk,maxvalue,nextPlaceToLook);
       valueAtfloat(scatterindex,nextPlaceToLook,neighbor,maxvalue,0);
       if (neighbor>halfk) {
          output=halfk+twotologkminusi;
       }else {
          float3 actualValue;
          valueAtfloat3(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&!isSentinel(actualValue.x,signsentinel.y)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -2198,7 +2198,7 @@ kernel void EstablishGuessfloat3(float scatterindex[][],
                                    float twotologkminusi,
                                    float2 maxvalue,
                                    float halfk,
-                                   float2 signsentinel) {
+                                   float sign) {
    if (scatterindex[indexof(output)]==0) {
       output=0;
    } else {
@@ -2208,7 +2208,7 @@ kernel void EstablishGuessfloat3(float scatterindex[][],
                           twotologkminusi,
                           maxvalue,
                           halfk,
-                          signsentinel);
+                          sign);
     }
 }
 
@@ -2219,33 +2219,34 @@ kernel void UpdateGuessfloat3(float scatterindex[][],
                                 float twotologkminusi,
                                 float2 maxvalue,
                                 float lastguess<>,
-                                float2 signsentinel) {
+                                float sign) {
    GatherGuessfloat3(scatterindex,
                        output,
                        value,
                        twotologkminusi,
                        maxvalue,
                        lastguess,
-                       signsentinel);
+                       sign);
 }
 
 kernel void RelativeGatherfloat3(out float3 output<>,
                                 float gatherindex[][],
                                 float3 value[][],
-                                float2 signsentinel,
+                                float inf<>,
+                                float sign,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
    float2 isoffedge;
    getIndexAt(indexof(output),
-              -signsentinel.x*gatherindex[indexof(output)],
+              -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   getIndexAt(indexof(output),-signsentinel.x*maxshift,maxvalue,isoffedge);
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
    if (isoffedge.y>=-.0625
        || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
-     output=signsentinel.y;
+     output=inf;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -2269,7 +2270,7 @@ float shiftValuesfloat3(float3 list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat3 (list_stream,ret_stream,float2((float)sign,getSentinel()),maxvalue);   
+   NanToBoolRightfloat3 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat3(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
@@ -2297,7 +2298,7 @@ float shiftValuesfloat3(float3 list_stream <>,
                           (float)(1 << LogNMinusK),
                           maxvalue,
                           (float)(1<<i),
-                          float2((float)sign,getSentinel()));
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
@@ -2307,7 +2308,7 @@ float shiftValuesfloat3(float3 list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              float2((float)sign,getSentinel()));
+                              (float)sign);
       else
          UpdateGuessfloat3 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
@@ -2315,7 +2316,7 @@ float shiftValuesfloat3(float3 list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              float2((float)sign,getSentinel()));
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -2328,8 +2329,9 @@ float shiftValuesfloat3(float3 list_stream <>,
         if (width) {
           RelativeGatherfloat3(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
-                                 list_stream,                                 
-                                 float2((float)sign,getSentinel()),
+                                 list_stream,
+                                 *sentinelStream(2),
+                                 (float)sign,
                                  maxvalue,
                                  maxshift);
         }
@@ -3015,7 +3017,7 @@ kernel void combinefloat3 (float3 input1[][],
                            float2 startsecond,
                            float2 endsecond,
                            float2 maxinput2value,
-                           float sentinel){
+                           float inf){
    //   getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
    //              -shift1,
    //              maxinput1value,
@@ -3038,7 +3040,7 @@ kernel void combinefloat3 (float3 input1[][],
       if (secondindex.y>endsecond.y
           ||(secondindex.y==endsecond.y
              &&secondindex.x>=endsecond.x)) {
-         output=sentinel;
+         output=inf;
       }else {
          output = input2[secondindex];
       }
@@ -3118,12 +3120,11 @@ unsigned int totalCombineVoutfloat3 (float3 list_stream<>,
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
-                                   reduce float4 output<>,
-                                   float sentinel) {
-  output=isSentinel(input.x,sentinel)?output:input;
+                                   reduce float4 output<>) {
+   output=isinf(input.x)?output:input;
 }
-kernel void isFiniteKernelfloat4(float4 inp<>, out float outp<>, float sentinel) {
-  outp=!isSentinel(inp.x,sentinel);
+kernel void isFiniteKernelfloat4(float4 inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
 }
 
 int finiteValueProducedfloat4 (float4 input<>) {
@@ -3133,9 +3134,9 @@ int finiteValueProducedfloat4 (float4 input<>) {
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedfloat4(input,output,getSentinel());
+   valueProducedfloat4(input,output);
    streamWrite(output,&rettype);
-   isFiniteKernelfloat4(output,finiteout,getSentinel());
+   isFiniteKernelfloat4(output,finiteout);
    streamWrite(finiteout,&ret);
    return (int)ret;
 }
@@ -3151,15 +3152,15 @@ kernel void valueAtfloat4 (float4 value[][],
       output = value[index];
 }
 kernel void NanToBoolRightfloat4 (float4 value[][], 
-                                    out float output<>, 
-                                    float2 sign,
-                                    float2 maxvalue) {
+                            out float output<>, 
+                            float sign,
+                            float2 maxvalue) {
    float2 nextPlaceToLook;
    float4 neighbor;
-   getIndexAt(indexof(output),sign.x,maxvalue,nextPlaceToLook);
+   getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtfloat4(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isSentinel(value[indexof(output)].x,sign.y)?1:0) 
-     + (isSentinel(neighbor.x,sign.y)?1:0);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
 }
 kernel void NanToRightfloat4 (float value [][],
                                 out float output<>,
@@ -3188,17 +3189,17 @@ kernel void GatherGuessfloat4(float scatterindex[][],
                         float twotologkminusi,
                         float2 maxvalue,
                         float halfk,
-                        float2 signsentinel) {
-      float neighbor;
+                        float sign) {
+     float neighbor;
       float2 nextPlaceToLook;
-      getIndexAt(indexof(output),-signsentinel.x*halfk,maxvalue,nextPlaceToLook);
+      getIndexAt(indexof(output),-sign*halfk,maxvalue,nextPlaceToLook);
       valueAtfloat(scatterindex,nextPlaceToLook,neighbor,maxvalue,0);
       if (neighbor>halfk) {
          output=halfk+twotologkminusi;
       }else {
          float4 actualValue;
          valueAtfloat4(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&!isSentinel(actualValue.x,signsentinel.y)) {
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -3211,7 +3212,7 @@ kernel void EstablishGuessfloat4(float scatterindex[][],
                                    float twotologkminusi,
                                    float2 maxvalue,
                                    float halfk,
-                                   float2 signsentinel) {
+                                   float sign) {
    if (scatterindex[indexof(output)]==0) {
       output=0;
    } else {
@@ -3221,7 +3222,7 @@ kernel void EstablishGuessfloat4(float scatterindex[][],
                           twotologkminusi,
                           maxvalue,
                           halfk,
-                          signsentinel);
+                          sign);
     }
 }
 
@@ -3232,33 +3233,34 @@ kernel void UpdateGuessfloat4(float scatterindex[][],
                                 float twotologkminusi,
                                 float2 maxvalue,
                                 float lastguess<>,
-                                float2 signsentinel) {
+                                float sign) {
    GatherGuessfloat4(scatterindex,
                        output,
                        value,
                        twotologkminusi,
                        maxvalue,
                        lastguess,
-                       signsentinel);
+                       sign);
 }
 
 kernel void RelativeGatherfloat4(out float4 output<>,
                                 float gatherindex[][],
                                 float4 value[][],
-                                float2 signsentinel,
+                                float inf<>,
+                                float sign,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
    float2 isoffedge;
    getIndexAt(indexof(output),
-              -signsentinel.x*gatherindex[indexof(output)],
+              -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   getIndexAt(indexof(output),-signsentinel.x*maxshift,maxvalue,isoffedge);
+   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
    if (isoffedge.y>=-.0625
        || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
-     output=signsentinel.y;
+     output=inf;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -3282,7 +3284,7 @@ float shiftValuesfloat4(float4 list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat4 (list_stream,ret_stream,float2((float)sign,getSentinel()),maxvalue);   
+   NanToBoolRightfloat4 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat4(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
@@ -3310,7 +3312,7 @@ float shiftValuesfloat4(float4 list_stream <>,
                           (float)(1 << LogNMinusK),
                           maxvalue,
                           (float)(1<<i),
-                          float2((float)sign,getSentinel()));
+                          (float)sign);
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
@@ -3320,7 +3322,7 @@ float shiftValuesfloat4(float4 list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              float2((float)sign,getSentinel()));
+                              (float)sign);
       else
          UpdateGuessfloat4 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
@@ -3328,7 +3330,7 @@ float shiftValuesfloat4(float4 list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              float2((float)sign,getSentinel()));
+                              (float)sign);
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -3341,8 +3343,9 @@ float shiftValuesfloat4(float4 list_stream <>,
         if (width) {
           RelativeGatherfloat4(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
-                                 list_stream,                                 
-                                 float2((float)sign,getSentinel()),
+                                 list_stream,
+                                 *sentinelStream(2),
+                                 (float)sign,
                                  maxvalue,
                                  maxshift);
         }
@@ -4028,7 +4031,7 @@ kernel void combinefloat4 (float4 input1[][],
                            float2 startsecond,
                            float2 endsecond,
                            float2 maxinput2value,
-                           float sentinel){
+                           float inf){
    //   getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
    //              -shift1,
    //              maxinput1value,
@@ -4051,7 +4054,7 @@ kernel void combinefloat4 (float4 input1[][],
       if (secondindex.y>endsecond.y
           ||(secondindex.y==endsecond.y
              &&secondindex.x>=endsecond.x)) {
-         output=sentinel;
+         output=inf;
       }else {
          output = input2[secondindex];
       }
