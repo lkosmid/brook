@@ -259,7 +259,7 @@ float shiftValuesBRT_TYPE(struct __BRTStream *list_stream,
    if (1) {
       unsigned int size = LENGTH*WIDTH-maxshift;
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
-      float proper_output_stream<width,LENGTH>;
+      BRT_TYPE proper_output_stream<width,LENGTH>;
       RelativeGatherBRT_TYPE(proper_output_stream,
                           logN%2==0?ret_stream:guess_stream,
                           *list_stream,
@@ -819,7 +819,7 @@ void combineStreamsBRT_TYPE (struct __BRTStream **streams,
                           unsigned int length,
                           struct __BRTStream * output) {
    unsigned int  lengthmodmodulus=length%num;
-   float tmp<(num*width),length>;
+   BRT_TYPE tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
    case 0:

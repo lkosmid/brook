@@ -1,3 +1,13 @@
+
+
+
+
+
+
+
+
+
+
 #pragma warning(disable:4244)
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,7 +81,6 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
-#line 73 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -1049,7 +1058,6 @@ unsigned int totalCombineVoutfloat (struct __BRTStream *list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 73 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -1238,7 +1246,7 @@ float shiftValuesfloat2(struct __BRTStream *list_stream,
    if (1) {
       unsigned int size = LENGTH*WIDTH-maxshift;
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
-      float proper_output_stream<width,LENGTH>;
+      float2 proper_output_stream<width,LENGTH>;
       RelativeGatherfloat2(proper_output_stream,
                           logN%2==0?ret_stream:guess_stream,
                           *list_stream,
@@ -1798,7 +1806,7 @@ void combineStreamsfloat2 (struct __BRTStream **streams,
                           unsigned int length,
                           struct __BRTStream * output) {
    unsigned int  lengthmodmodulus=length%num;
-   float tmp<(num*width),length>;
+   float2 tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
    case 0:
@@ -2027,7 +2035,6 @@ unsigned int totalCombineVoutfloat2 (struct __BRTStream *list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 73 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -2216,7 +2223,7 @@ float shiftValuesfloat3(struct __BRTStream *list_stream,
    if (1) {
       unsigned int size = LENGTH*WIDTH-maxshift;
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
-      float proper_output_stream<width,LENGTH>;
+      float3 proper_output_stream<width,LENGTH>;
       RelativeGatherfloat3(proper_output_stream,
                           logN%2==0?ret_stream:guess_stream,
                           *list_stream,
@@ -2776,7 +2783,7 @@ void combineStreamsfloat3 (struct __BRTStream **streams,
                           unsigned int length,
                           struct __BRTStream * output) {
    unsigned int  lengthmodmodulus=length%num;
-   float tmp<(num*width),length>;
+   float3 tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
    case 0:
@@ -3005,7 +3012,6 @@ unsigned int totalCombineVoutfloat3 (struct __BRTStream *list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 73 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -3194,7 +3200,7 @@ float shiftValuesfloat4(struct __BRTStream *list_stream,
    if (1) {
       unsigned int size = LENGTH*WIDTH-maxshift;
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
-      float proper_output_stream<width,LENGTH>;
+      float4 proper_output_stream<width,LENGTH>;
       RelativeGatherfloat4(proper_output_stream,
                           logN%2==0?ret_stream:guess_stream,
                           *list_stream,
@@ -3754,7 +3760,7 @@ void combineStreamsfloat4 (struct __BRTStream **streams,
                           unsigned int length,
                           struct __BRTStream * output) {
    unsigned int  lengthmodmodulus=length%num;
-   float tmp<(num*width),length>;
+   float4 tmp<(num*width),length>;
    streamSwap(tmp,*output);
    switch (num) {
    case 0:
@@ -3983,16 +3989,10 @@ unsigned int totalCombineVoutfloat4 (struct __BRTStream *list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 1049 "brtvector.hpp"
-#line 1049 "brtvector.hpp"
 
-#line 1049 "brtvector.hpp"
 
-#line 1049 "brtvector.hpp"
 
-#line 1049 "brtvector.hpp"
 
-#line 1049 "brtvector.hpp"
 
 
 
