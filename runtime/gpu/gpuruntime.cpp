@@ -17,8 +17,10 @@ namespace brook
       _reductionTempBuffers[i] = NULL;
       _reductionTempBufferWidths[i] = 0;
       _reductionTempBufferHeights[i] = 0;
+      _reductionTempBufferComponents[i] = 0;
     }
     _reductionTargetBuffer = NULL;
+    _reductionTargetBufferComponents = 0;
   }
 
   bool GPURuntime::initialize( GPUContext* inContext )
@@ -62,8 +64,8 @@ namespace brook
 
   GPUContext::TextureHandle GPURuntime::getReductionTempBuffer(
     GPUReductionTempBufferID inBufferID,
-    size_t inMinWidth, size_t inMinHeight,
-    size_t* outWidth, size_t* outHeight )
+    size_t inMinWidth, size_t inMinHeight, size_t inMinComponents,
+    size_t* outWidth, size_t* outHeight, size_t* outComponents )
   {
     GPUAssert( inBufferID >= 0 && inBufferID < kGPUReductionTempBufferCount,
       "Invalid reduction temp buffer requested." );
@@ -71,8 +73,9 @@ namespace brook
     GPUContext::TextureHandle& buffer = _reductionTempBuffers[inBufferID];
     size_t& width = _reductionTempBufferWidths[inBufferID];
     size_t& height = _reductionTempBufferHeights[inBufferID];
+    size_t& components = _reductionTempBufferComponents[inBufferID];
     
-    if( buffer == NULL || width < inMinWidth || height < inMinHeight )
+    if( buffer == NULL || width < inMinWidth || height < inMinHeight || components < inMinComponents )
     {
       if( buffer != NULL )
         _context->releaseTexture( buffer );
@@ -81,8 +84,11 @@ namespace brook
         width = inMinWidth;
       if( inMinHeight > height )
         height = inMinHeight;
+      if( inMinComponents > components )
+        components = inMinComponents;
 
-      buffer = _context->createTexture2D( width, height, GPUContext::kTextureFormat_Float4 );
+      GPUContext::TextureFormat format = (GPUContext::TextureFormat)(GPUContext::kTextureFormat_Float1 + (inMinComponents-1));
+      buffer = _context->createTexture2D( width, height, format );
       GPUAssert( buffer != NULL, "Failed to allocate reduction temp buffer." );
     }
     
@@ -91,11 +97,18 @@ namespace brook
     return buffer;
   }
 
-  GPUContext::TextureHandle GPURuntime::getReductionTargetBuffer()
+  GPUContext::TextureHandle GPURuntime::getReductionTargetBuffer( size_t inMinComponents )
   {
+    if( inMinComponents > _reductionTargetBufferComponents )
+    {
+        _context->releaseTexture( _reductionTargetBuffer );
+        _reductionTargetBuffer = NULL;
+    }
     if( _reductionTargetBuffer == NULL )
     {
-      _reductionTargetBuffer = _context->createTexture2D( 1, 1, GPUContext::kTextureFormat_Float4 );
+      GPUContext::TextureFormat format = (GPUContext::TextureFormat)(GPUContext::kTextureFormat_Float1 + (inMinComponents-1));
+      _reductionTargetBuffer = _context->createTexture2D( 1, 1, format );
+      _reductionTargetBufferComponents = inMinComponents;
       GPUAssert( _reductionTargetBuffer != NULL, "Failed to allocate reduction target buffer." );
     }
     return _reductionTargetBuffer;

@@ -267,7 +267,27 @@ namespace brook
     }
     else
     {
-      TextureHandle outputTexture = _runtime->getReductionTargetBuffer();
+      size_t componentCount = 0;
+      switch( outputReductionType )
+      {
+      case __BRTFLOAT:
+          componentCount = 1;
+          break;
+      case __BRTFLOAT2:
+          componentCount = 2;
+          break;
+      case __BRTFLOAT3:
+          componentCount = 3;
+          break;
+      case __BRTFLOAT4:
+          componentCount = 4;
+          break;
+      default:
+          GPUError("reduce output type isn't float1/2/3/4");
+          break;
+      }
+
+      TextureHandle outputTexture = _runtime->getReductionTargetBuffer( componentCount );
       reduceToStream( outputTexture, 1, 1 );
 
       float4 reductionResult;
@@ -418,6 +438,28 @@ namespace brook
     state.currentExtents[1] = inputHeight;
     state.slopCount = 0;
 
+    StreamType fieldType = inputStream->getIndexedFieldType(0);
+    size_t componentCount = 0;
+    switch( fieldType )
+    {
+    case __BRTFLOAT:
+        componentCount = 1;
+        break;
+    case __BRTFLOAT2:
+        componentCount = 2;
+        break;
+    case __BRTFLOAT3:
+        componentCount = 3;
+        break;
+    case __BRTFLOAT4:
+        componentCount = 4;
+        break;
+    default:
+        GPUError("cannot reduce non float1/2/3/4 stream");
+        break;
+    }
+    state.componentCount = componentCount;
+
     beginReduction( state );
 
     // execute reduction passes in the first dimension
@@ -475,6 +517,7 @@ namespace brook
     size_t outputExtent = ioState.targetExtents[dim]; // how big we want it to be
     size_t remainingFactor = remainingExtent / outputExtent; // how much is left to reduce by
     size_t otherExtent = ioState.currentExtents[1-dim]; // how big the other dimension is...
+    size_t reductionComponents = ioState.componentCount; // float1/2/3/4?
 
     // First we must find an appropriate technqiue
     // execute. We will always try to find one
@@ -590,8 +633,11 @@ namespace brook
     size_t outputHeight = ioState.reductionBufferHeights[nextBuffer];
     if( outputBuffer == NULL )
     {
+      size_t ignoreComponents;
       outputBuffer = _runtime->getReductionTempBuffer(
-        kGPUReductionTempBuffer_Swap0 + nextBuffer, resultExtents[0], resultExtents[1], &outputWidth, &outputHeight );
+        kGPUReductionTempBuffer_Swap0 + nextBuffer,
+        resultExtents[0], resultExtents[1], reductionComponents,
+        &outputWidth, &outputHeight, &ignoreComponents );
       ioState.reductionBuffers[nextBuffer] = outputBuffer;
       ioState.reductionBufferWidths[nextBuffer] = outputWidth;
       ioState.reductionBufferHeights[nextBuffer] = outputHeight;
@@ -634,8 +680,9 @@ namespace brook
         slopExtents[dim] = outputExtent;
         slopExtents[1-dim] = otherExtent;
 
+        size_t ignoreComponents;
         slopBuffer = _runtime->getReductionTempBuffer( kGPUReductionTempBuffer_Slop,
-          slopExtents[0], slopExtents[1], &slopWidth, &slopHeight );
+          slopExtents[0], slopExtents[1], reductionComponents, &slopWidth, &slopHeight, &ignoreComponents );
         ioState.slopBuffer = slopBuffer;
         ioState.slopBufferWidth = slopWidth;
         ioState.slopBufferHeight = slopHeight;

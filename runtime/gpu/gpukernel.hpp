@@ -256,6 +256,8 @@ namespace brook {
       size_t inputExtents[2];
       size_t currentExtents[2];
       size_t slopCount;
+
+      size_t componentCount; // float1/2/3/4?
     };
 
     // internal methods

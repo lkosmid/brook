@@ -34,9 +34,9 @@ namespace brook
     GPUContext* getContext() { return _context; }
     GPUContext::TextureHandle getReductionTempBuffer(
       GPUReductionTempBufferID inBufferID,
-      size_t inMinWidth, size_t inMinHeight,
-      size_t* outWidth, size_t* outHeight );
-    GPUContext::TextureHandle getReductionTargetBuffer();
+      size_t inMinWidth, size_t inMinHeight, size_t inMinComponents,
+      size_t* outWidth, size_t* outHeight, size_t* outComponents );
+    GPUContext::TextureHandle getReductionTargetBuffer( size_t inMinComponents );
 
   protected:
     GPURuntime();
@@ -47,7 +47,9 @@ namespace brook
     GPUContext::TextureHandle _reductionTempBuffers[kGPUReductionTempBufferCount];
     size_t _reductionTempBufferWidths[kGPUReductionTempBufferCount];
     size_t _reductionTempBufferHeights[kGPUReductionTempBufferCount];
+    size_t _reductionTempBufferComponents[kGPUReductionTempBufferCount];
     GPUContext::TextureHandle _reductionTargetBuffer;
+    size_t _reductionTargetBufferComponents;
   };
 }
 
