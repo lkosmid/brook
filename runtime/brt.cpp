@@ -86,10 +86,10 @@ __BRTIter::__BRTIter(__BRTStreamType type, ...)
     extents.push_back(extent);
   }
   for (int i=0;i<type;++i) {
-     float f = va_arg(args,double);
+     float f = (float) va_arg(args,double);
      //     fprintf(stderr, "float %f\n",f);
      ranges.push_back(f);
-     f = va_arg(args,double);
+     f = (float) va_arg(args,double);
      //     fprintf(stderr, "float %f\n",f);
      ranges.push_back(f);
   }

@@ -1,6 +1,4 @@
 #include "nv30gl.hpp"
-// TIM: missing include file?
-//#include <brtcommon.hpp>
 #include "../common.h"
 
 using namespace brook;
@@ -10,11 +8,9 @@ namespace brook {
 }
 
 NV30GLRunTime::NV30GLRunTime() {
-// TIM: missing include file?
-//  BrtLog("NV30GLRunTime()");
 
   // Create a window
-//  hwnd = createwindow();
+  hwnd = createwindow();
 
   // Create a window glcontext
 //  hglrc_window = createglcontext();
