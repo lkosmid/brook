@@ -1,0 +1,81 @@
+// replication_stride.br
+// Tests automatic replication and stride of kernel arguments
+
+kernel void copy( float input<>, out float output<> ) {
+	output = input;
+}
+
+void test1( int extentIn, int extentOut )
+{
+	float input< extentIn >;
+	float output< extentOut >;
+	float* input_data = 0;
+	float* output_data = 0;
+	int i;
+	
+	input_data = (float*)malloc( extentIn*sizeof(float) );
+	output_data = (float*)malloc( extentOut*sizeof(float) );
+	
+	for( i = 0; i < extentIn; i++ )
+		input_data[i] = (float)i;
+	
+	streamRead( input, input_data );
+	
+	copy( input, output );
+	
+	streamWrite( output, output_data );
+	
+	for( i = 0; i < extentOut; i++ )
+		printf( "%6.3f ", output_data[i] );
+	printf( "\n" );
+}
+
+void test2( int extentInX, int extentInY, int extentOutX, int extentOutY )
+{
+	float input< extentInY, extentInX >;
+	float output< extentOutY, extentOutX >;
+	float* input_data = 0;
+	float* output_data = 0;
+	int i, j;
+	
+	input_data = (float*)malloc( extentInX*extentInY*sizeof(float) );
+	output_data = (float*)malloc( extentOutX*extentOutY*sizeof(float) );
+	
+	for( i = 0; i < extentInY; i++ )
+		for( j = 0; j < extentInX; j++ )
+			input_data[i*extentInX+j] = (float)(100*i+j);
+	
+	streamRead( input, input_data );
+	
+	copy( input, output );
+	
+	streamWrite( output, output_data );
+	
+	for( i = 0; i < extentOutY; i++ )
+	{
+		for( j = 0; j < extentOutX; j++ )
+			printf( "%6.3f ", output_data[i*extentOutX+j] );
+		printf("\n");
+	}
+}
+
+int main()
+{
+	// 1-dimensional streams
+	printf("5 -> 10\n");
+	test1( 5, 10 );
+	printf("10 -> 5\n");
+	test1( 10, 5 );
+	printf("7 -> 21\n");
+	test1( 7, 21 );
+	printf("21 -> 7\n");
+	test1( 21, 7 );
+
+	// 2-dimensional streams
+	printf("15 -> 5, 2 ->4\n");
+	test2( 15, 2, 5, 4 );
+	printf("3 -> 21, 10 ->2\n");
+	test2( 3, 10, 21, 2 );
+	
+	return 0;
+}
