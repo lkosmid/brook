@@ -6,13 +6,14 @@
  *      through a CG compiler.
  */
 
-#include <sstream>
-#include <iomanip>
 #ifdef _WIN32
+#pragma warning(disable:4786)
 #include <ios>
 #else
 #include <iostream>
 #endif
+#include <sstream>
+#include <iomanip>
 extern "C" {
 #include <stdio.h>
 #include <string.h>
@@ -22,6 +23,9 @@ extern "C" {
 #include "main.h"
 #include "decl.h"
 #include "subprocess.h"
+#include "project.h"
+#include "stemnt.h"
+#include "brtkernel.h"
 #include "b2ctransform.h"
 
 static const char fp30_assist[] =
@@ -143,6 +147,18 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
  *      This function takes a parsed kernel function as input and produces
  *      the CG code reflected, plus the support code required.
  */
+static void generate_hlsl_subroutines(std::ostream&  out) {
+   TransUnit * tu = gProject->units.back();
+   Statement *ste, *prev;
+   for (ste=tu->head, prev=NULL; ste; prev = ste, ste=ste->next) {
+      if (ste->isFuncDef()) {
+         FunctionDef * fd = static_cast<FunctionDef *> (ste);
+         if (fd->decl->isKernel()&&!fd->decl->isReduce()) {
+            BRTPS20KernelCode(*fd).printInnerCode(out);
+         }
+      }
+   }
+}
 
 static char *
 generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtionName) {
@@ -151,7 +167,7 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtio
   Decl *outArg = NULL;
   bool isReduction = false;
   int texcoord, constreg, i;
-
+  generate_hlsl_subroutines(hlsl);
   // Add the workspace variable
   constreg = 0;
   hlsl << "float4 _workspace    : register (c"

@@ -237,7 +237,6 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
 void
 BRTPS20KernelCode::printCode(std::ostream& out) const
 {
-   //   printInnerCode(std::cout);
    FunctionType *fType;
    std::ostringstream wrapOut;
    char *fpcode;

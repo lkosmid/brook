@@ -33,7 +33,6 @@ class BRTKernelCode : public DupableBRTKernelCode
     virtual void printCode(std::ostream& out) const = 0;
     virtual void printInnerCode(std::ostream&out)const=0;
     friend std::ostream& operator<< (std::ostream& o, const BRTKernelCode& k);
-
     FunctionDef *fDef;
 };
 
