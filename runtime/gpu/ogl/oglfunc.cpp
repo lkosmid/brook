@@ -24,7 +24,23 @@ RUNTIME_BONUS_GL_FNS_ATI
 #undef XXX
 
 
+static void checkextension (const char *ext) {
+  const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
+  if (!strstr(extensions, ext)) {
+      const char *card = (const char *) glGetString(GL_RENDERER);
+      fprintf (stderr, "Extension %s not found for graphics card: \n %s\n",
+               ext, card);
+      exit(1);
+  }
+}
+               
+
 void brook::initglfunc(void) {
+
+#define XXX(ext) checkextension(#ext);
+  RUNTIME_REQUIRED_EXTENSIONS;
+#undef XXX
+
 #ifdef WIN32
 #define  XXX(type, fn) fn = (type) wglGetProcAddress(#fn); \
                        GPUAssert(fn, "Failed to load" #fn);

@@ -92,6 +92,10 @@ typedef void (APIENTRYP PFNGLDRAWBUFFERSATIPROC) (GLsizei n, const GLenum *bufs)
 #define RUNTIME_BONUS_GL_FNS \
    RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3
 
+#define RUNTIME_REQUIRED_EXTENSIONS \
+   XXX(GL_ARB_texture_rectangle) \
+   XXX(GL_ARB_fragment_program)  \
+   XXX(GL_ARB_multitexture)
 
 /***** WGL API *****/
 #ifdef WIN32
@@ -121,9 +125,9 @@ typedef BOOL (WINAPI * PFNWGLRELEASETEXIMAGEARBPROC) (HPBUFFERARB hPbuffer, int 
    XXX(PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB) \
    XXX(PFNWGLBINDTEXIMAGEARBPROC,      wglBindTexImageARB)      \
    XXX(PFNWGLRELEASETEXIMAGEARBPROC,   wglReleaseTexImageARB)
-
 #endif // WIN32
   
+
 /* Declare undefined functions */
 #define XXX(type, fn) \
    extern type fn;
