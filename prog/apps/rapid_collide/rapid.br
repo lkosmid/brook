@@ -82,7 +82,7 @@ kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
 
 kernel void ISECT(float3 VV<>, float3 D, out float2 isect<>) {
   isect =float2(VV.x + (VV.y-VV.x)*D.x/(D.x-D.y),
-                VV.y + (VV.z-VV.x)*D.x/(D.x-D.z));
+                VV.x + (VV.z-VV.x)*D.x/(D.x-D.z));
 }
 kernel float COMPUTE_INTERVALS (float3 VV<>,
                                 float3 D<>,
