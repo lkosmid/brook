@@ -28,7 +28,7 @@ int main( int argc, char** argv )
   double n = (double)size;
   double stepOps = ((n*n - 2)*21+1);
   double windOps = (4*(n-1)*(n-1)*23);
-  double springOps = (6*n-8)*34;
+  double springOps = (2*n*(n-1) + 2*(n-1)*(n-1) + 2*n*(n-2))*34;
   double totalOps = ( stepOps + windOps + springOps ) * iterations;
   double megaflops = totalOps / (double)time;
 
