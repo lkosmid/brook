@@ -512,6 +512,9 @@ class CastExpr : public Expression
 
     void findExpr( fnExprCallback cb );
 
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
+
     Type        *castTo;
     Expression  *expr;    // The expression being cast.
 };

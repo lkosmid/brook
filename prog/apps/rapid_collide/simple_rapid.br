@@ -123,11 +123,14 @@ kernel float coplanar_tri_tri(float3 N<>,
   
   return 0;
 }
+
+/* TIM: this code is broken. kernels are only
+legally allowed to have void return type
 kernel float3 make_float3 (float a, float b, float c) {
   float3 temp={a,b,c};
   return temp;
 }
-
+*/
 
 
 kernel float min3(float a<>, float b<>, float c<>) {
@@ -257,6 +260,12 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   float b,c,max;
   float ret,coplanar;
   float b_biggest,c_biggest;
+  
+  float3 tim_temp0;
+  float3 tim_temp1;
+  float3 tim_temp2;
+  float3 tim_temp3;
+  
   E1 = V1-V0;
   E2 = V2-V0;
   N1 = cross(E1,E2);
@@ -290,10 +299,16 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   c = abs  (D .z);
   b_biggest = (b>max&&!(c>b))?1:0;
   c_biggest = (c>max)?1:0;
-  vp = (c_biggest) ? make_float3(V0.z,V1.z,V2.z) : vp;
-  vp = (b_biggest) ? make_float3(V0.y,V1.y,V2.y) : vp;
-  up = (c_biggest) ? make_float3(U0.z,U1.z,U2.z) : up;
-  up = (b_biggest)? make_float3(U0.y,U1.y,U2.y) : up;
+  
+  tim_temp0 = float3(V0.z,V1.z,V2.z);
+  tim_temp1 = float3(V0.y,V1.y,V2.y);
+  tim_temp2 = float3(U0.z,U1.z,U2.z);
+  tim_temp3 = float3(U0.y,U1.y,U2.y);
+  
+  vp = (c_biggest) ? tim_temp0 : vp;
+  vp = (b_biggest) ? tim_temp1 : vp;
+  up = (c_biggest) ? tim_temp2 : up;
+  up = (b_biggest)? tim_temp3 : up;
   max = c_biggest?c:max;
   max = b_biggest? b:max;
  

@@ -1602,6 +1602,16 @@ CastExpr::findExpr( fnExprCallback cb )
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* CastExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  SplitNode* expression = expr->buildSplitTree( ioBuilder );
+  std::vector<SplitNode*> constructorArguments;
+  constructorArguments.push_back( expression );
+  return ioBuilder.addConstructor( type->getBase(), constructorArguments );
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 SizeofExpr::SizeofExpr( Expression *operand, const Location& l )
          : Expression( ET_SizeofExpr, l )
 {
