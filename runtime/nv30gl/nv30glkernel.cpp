@@ -1,7 +1,5 @@
 
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 #include "nv30gl.hpp"
 
@@ -161,6 +159,7 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
    sreg = 0;
    treg = 0;
    outstream = NULL;
+   sreg0 = NULL;
 
    for (i=0; i<NV30GL_MAX_TEXCOORDS; i++) {
       sargs[i] = NULL;
@@ -179,6 +178,9 @@ void NV30GLKernel::PushStream(Stream *s) {
    inputReduceStream = nv_stream;
    inputReduceStreamTreg = treg;
    inputReduceStreamSreg = sreg;
+
+   if (sreg==0)
+     sreg0 = (NV30GLStream *) s;
 
    sargs[treg] = nv_stream;
    sreg++;
@@ -228,6 +230,9 @@ void NV30GLKernel::PushReduce(void * val, __BRTStreamType type) {
    reduceSreg = sreg;
    reduceTreg = treg;
 
+   if (sreg==0 && type == __BRTSTREAM)
+     sreg0 =(NV30GLStream *) (Stream *) *((__BRTStream*) val);
+
    sreg++;
    treg++;
 }
@@ -236,6 +241,9 @@ void NV30GLKernel::PushGatherStream(Stream *s) {
    glActiveTextureARB(GL_TEXTURE0_ARB+sreg);
    glBindTexture (GL_TEXTURE_RECTANGLE_NV, ((NV30GLStream *)s)->id);
    CHECK_GL();
+
+   if (sreg==0)
+     sreg0 = (NV30GLStream *) s;
    
    sreg++;
    creg++;
@@ -442,6 +450,7 @@ void NV30GLKernel::Map() {
       iargs[i] = NULL;
    }
    outstream = NULL;
+   sreg0 = NULL;
 }
 
 
@@ -451,7 +460,7 @@ NV30GLKernel::Reduce() {
 
    if (reduceType == __BRTSTREAM)
       ReduceStream();
-   else
+   else 
       ReduceScalar();
 
    /* Reset state machine */
@@ -460,7 +469,35 @@ NV30GLKernel::Reduce() {
    treg = 0;
    reduceVal = NULL;
    inputReduceStream = NULL;
+   sreg0 = NULL;
 }
+
+#if 0
+static void
+dumpframebuffer (int w, int h) {
+   int i, j;
+   float4 *pix = (float4 *) malloc (w*h*sizeof(float4));
+   glReadPixels (0,0,w,h,GL_RGBA,GL_FLOAT,pix);
+
+   fprintf (stderr, "---------\n");
+   for (i=0; i<h; i++) {
+      for (j=0; j<w; j++)
+         fprintf(stderr,"%3.2f ", pix[i*w+j].x);
+      fprintf(stderr, "\n");
+   }
+   fprintf (stderr, "---------\n");
+   fflush (stderr);
+}
+
+static void
+clearframebuffer () {
+   glClearColor(111.11f, 111.11f, 111.11f, 111.11f);
+   glClear(GL_COLOR_BUFFER_BIT);
+}
+#else
+#define dumpframebuffer(a,b)
+#define clearframebuffer()
+#endif
 
 static void
 issue_reduce_poly (int x1, int y1, 
@@ -468,7 +505,7 @@ issue_reduce_poly (int x1, int y1,
                    float4 f1[], float4 f2[], float4 fd[]) {
    
    int i;
-
+   
    glViewport(x1,y1,w,h);
    
    /* Issue the poly */
@@ -489,25 +526,6 @@ issue_reduce_poly (int x1, int y1,
    CHECK_GL();
 }
 
-#if 0
-static void
-dumpframebuffer (int w, int h) {
-   int i, j;
-   float4 *pix = (float4 *) malloc (w*h*sizeof(float4));
-   glReadPixels (0,0,w,h,GL_RGBA,GL_FLOAT,pix);
-
-   fprintf (stderr, "---------\n");
-   for (i=0; i<h; i++) {
-      for (j=0; j<w; j++)
-         fprintf(stderr,"%3.2f ", pix[i*w+j].x);
-      fprintf(stderr, "\n");
-   }
-   fprintf (stderr, "---------\n");
-}
-#else
-#define dumpframebuffer(a,b)
-#endif
-
 
 void
 NV30GLKernel::ReduceScalar() {
@@ -517,7 +535,7 @@ NV30GLKernel::ReduceScalar() {
    int h = inputReduceStream->height;
    int ncomp = inputReduceStream->ncomp;
    float4 readback;
-   
+   NV30GLStream *t;
    bool first = true;
 
    // Don't attempt reduce on 1x1
@@ -535,24 +553,18 @@ NV30GLKernel::ReduceScalar() {
    }
 
    if (!tmpReduceStream[ncomp]) {
-     int extents[2] = {w,h};
+     int extents[2] = {h,w};
       tmpReduceStream[ncomp] = 
          new NV30GLStream(runtime, (__BRTStreamType) ncomp, 2, extents);
    }
+
+   t = tmpReduceStream[ncomp];
 
    assert (inputReduceStreamTreg == 0 ||
            inputReduceStreamTreg == 1);
 
    assert (reduceTreg == 0 ||
            reduceTreg == 1);
-
-   glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-   glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
-   CHECK_GL();
-
-   glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-   glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
-   CHECK_GL();
 
    /* First reduce in the x dir */
    while (w != 1) {
@@ -571,6 +583,19 @@ NV30GLKernel::ReduceScalar() {
                  (float) wp+1, (float) h, 0.0f, 1.0f,
                  f1[1], f2[1], fd[1]);
          
+      if (first) {
+        glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+        glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+      } else {
+        glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+        glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+      }
+      CHECK_GL();
+
       glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
       issue_reduce_poly(0, 0, half, h, 2, f1, f2, fd);
       
@@ -580,34 +605,26 @@ NV30GLKernel::ReduceScalar() {
                     (float) (w-1)+0.5f, (float) h, 0.0f, 1.0f,
                     f1[0], f2[0], fd[0]);
          
-#if 0
-         fprintf (stderr,
-                  "\t%3.8f %3.8f %3.8f %3.8f\n\t%3.8f %3.8f %3.8f %3.8f\n", 
-                  f1[0].x, f1[0].y, f1[0].z, f1[0].w,
-                  f2[0].x, f2[0].y, f2[0].z, f2[0].w);
-#endif
-
+         glActiveTextureARB(GL_TEXTURE0_ARB);
+         if (first)
+           glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+         else 
+           glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
          issue_reduce_poly(half, 0, 1, h, 1, f1, f2, fd);
+         if (sreg0)
+           glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
       }
 
+      first = false;
 
-      if (first) {
-         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-         glBindTexture (GL_TEXTURE_RECTANGLE_NV, 
-                        tmpReduceStream[ncomp]->id);
-         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-         glBindTexture (GL_TEXTURE_RECTANGLE_NV, 
-                        tmpReduceStream[ncomp]->id);
-         CHECK_GL();
-         first = false;
-      }
-
-      //  dumpframebuffer(10, 10);
-
+      glActiveTextureARB(GL_TEXTURE0_ARB);
+      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
       glCopyTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
                        GLtype[ncomp], 0, 0, 
                        half+remainder, h, 0);
+      if (sreg0)
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
 
       w = half+remainder;
    }
@@ -629,6 +646,19 @@ NV30GLKernel::ReduceScalar() {
                  0.0f, (float) hp+1, 0.0f, 1.0f,
                  f1[1], f2[1], fd[1]);
          
+      if (first) {
+        glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+        glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+      } else {
+        glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+        glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+      }
+      CHECK_GL();
+
       glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
       issue_reduce_poly(0, 0, 1, half, 2, f1, f2, fd);
       
@@ -637,29 +667,31 @@ NV30GLKernel::ReduceScalar() {
                     0.0f, (float) (h-1), 0.0f, 1.0f,
                     0.0f, (float) (h-1), 0.0f, 1.0f,
                     f1[0], f2[0], fd[0]);
-         
+
+         glActiveTextureARB(GL_TEXTURE0_ARB);
+         if (first)
+           glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+         else 
+           glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+       
          issue_reduce_poly(0, half, 1, 1, 1, f1, f2, fd);
+         if (sreg0)
+           glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
       }
 
-
-      if (first) {
-         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-         glBindTexture (GL_TEXTURE_RECTANGLE_NV, 
-                        tmpReduceStream[ncomp]->id);
-         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-         glBindTexture (GL_TEXTURE_RECTANGLE_NV, 
-                        tmpReduceStream[ncomp]->id);
-         CHECK_GL();
-         first = false;
-      }
+      first = false;
 
       if (half + remainder > 1) {
-         glCopyTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                          GLtype[ncomp], 0, 0, 
-                          1, half+remainder, 0);
+        glActiveTextureARB(GL_TEXTURE0_ARB);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+        glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+        glCopyTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                         GLtype[ncomp], 0, 0, 
+                         1, half+remainder, 0);
+        if (sreg0)
+          glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
       }
-
       h = half+remainder;
    }
          
@@ -667,7 +699,6 @@ NV30GLKernel::ReduceScalar() {
    
    for (i=0; i<ncomp; i++)
       ((float *)reduceVal)[i] = ((float *)&readback)[i];
-
 }
 
 void
@@ -685,6 +716,8 @@ NV30GLKernel::ReduceStream() {
 
    int remainder_x;
    int remainder_y;
+
+   int leftSreg, rightSreg;
    
    Stream* outputStreamBase = *((const __BRTStream*) reduceVal);
    NV30GLStream *r = (NV30GLStream *)outputStreamBase;
@@ -721,7 +754,7 @@ NV30GLKernel::ReduceStream() {
    }
    
    if (!tmpReduceStream[ncomp]) {
-     int extents[2] = {w,h};
+     int extents[2] = {h,w};
 
      tmpReduceStream[ncomp] = 
        new NV30GLStream(runtime, (__BRTStreamType) ncomp, 2, extents);
@@ -737,10 +770,23 @@ NV30GLKernel::ReduceStream() {
    assert (reduceTreg == 0 ||
            reduceTreg == 1);
 
+   assert (treg == 2);
+
+   if (inputReduceStreamSreg < reduceSreg) {
+     leftSreg = inputReduceStreamSreg;
+     rightSreg = reduceSreg;
+   } else {
+     leftSreg = reduceSreg;
+     rightSreg = inputReduceStreamSreg;
+   }
+
+   clearframebuffer();
+
    /* First reduce in the x dir */
    while (ratiox != 1) {
       int half = ratiox/2;
       int remainder = ratiox%2;
+      int ratioxp = half*2;
    
       compute_st(half*nx, h, false,
                  0.0f, 0.0f, 0.0f, 1.0f,
@@ -752,28 +798,27 @@ NV30GLKernel::ReduceStream() {
                  (float) nx*ratiox+1,  (float) h, 0.0f, 1.0f,
                  f1[1], f2[1], fd[1]);
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
       if (first) {
-        glActiveTextureARB(GL_TEXTURE0_ARB);
+        glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
-        glActiveTextureARB(GL_TEXTURE1_ARB);
+        glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
       } else {
-        glActiveTextureARB(GL_TEXTURE0_ARB);
+        glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-        glActiveTextureARB(GL_TEXTURE1_ARB);
+        glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
       }
 
-      glClearColor(555.555f, 555.555f, 555.555f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
+      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
 
       issue_reduce_poly(0, 0, half*nx, h, 2, f1, f2, fd);
 
-      dumpframebuffer(10,10);
-
       if (remainder) { 
         if (have_remainder) {
+
+          assert (!first);
+
           compute_st(nx, h, false,
                      (float) ratiox-1, 0.0f, 0.0f, 1.0f,
                      (float) w+ratiox, (float) h, 0.0f, 1.0f,
@@ -783,8 +828,22 @@ NV30GLKernel::ReduceStream() {
                      (float) remainder_x+nx, (float) h, 0.0f, 1.0f,
                      f1[1], f2[1], fd[1]);
           
+          if (first) {
+            glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
+            glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+            glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
+            glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+          } else {
+            glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
+            glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+            glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
+            glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+          }
+
           glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+
           issue_reduce_poly(remainder_x, remainder_y, nx, h, 2, f1, f2, fd);
+
         } else {
           //  Copy the remainder values over
           compute_st(nx, h, false,
@@ -792,37 +851,54 @@ NV30GLKernel::ReduceStream() {
                      (float) w+ratiox, (float) h, 0.0f, 1.0f,
                      f1[0], f2[0], fd[0]);
 
-         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
-         issue_reduce_poly(remainder_x, remainder_y, nx, h, 1, f1, f2, fd);
+          glActiveTextureARB(GL_TEXTURE0_ARB);
+          if (first)
+            glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
+          else
+            glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+          issue_reduce_poly(remainder_x, remainder_y, nx, h, 1, f1, f2, fd);
+          if (sreg0)
+            glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
+          CHECK_GL();
         }
+          
+        CHECK_GL();
 
-        dumpframebuffer(10,10);
-        
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, 
-                       t->id);
+        glActiveTextureARB(GL_TEXTURE0_ARB);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
         glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
                             remainder_x, remainder_y,
                             remainder_x, remainder_y, 
                             nx, h);
+        if (sreg0)
+          glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
+
+        CHECK_GL();
 
         have_remainder = true;
-
       }
 
-
-      glBindTexture (GL_TEXTURE_RECTANGLE_NV, 
-                     t->id);
+      glActiveTextureARB(GL_TEXTURE0_ARB);
+      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
       glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
                           0, 0, 0, 0, 
                           half*nx, h);
+      if (sreg0)
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
 
-      first = false;
       CHECK_GL();
+
+      dumpframebuffer(10,10);
+      clearframebuffer();
+          
+      first = false;
 
       w = half * nx;
       ratiox = half;
    }
 
+   /* Perform final remainder calc */
    if (have_remainder) {
      compute_st(nx, h, false,
                 (float) 0.0f, 0.0f, 0.0f, 1.0f,
@@ -833,6 +909,10 @@ NV30GLKernel::ReduceStream() {
                 (float) remainder_x+nx, (float) h, 0.0f, 1.0f,
                 f1[1], f2[1], fd[1]);
      
+     glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
+     glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
+     glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
+     glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
      issue_reduce_poly(0, 0, nx, h, 2, f1, f2, fd);
 
@@ -841,6 +921,8 @@ NV30GLKernel::ReduceStream() {
      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
                          0, 0, 0, 0, 
                          nx, h);
+
+     CHECK_GL();
    }
 
    /* Yeah, we've reduced in x, now do the same thing in y */
@@ -849,6 +931,7 @@ NV30GLKernel::ReduceStream() {
    while (ratioy != 1) {
       int half = ratioy/2;
       int remainder = ratioy%2;
+      int ratioyp = half*2;
    
       compute_st(nx, half*ny, false,
                  0.0f, 0.0f, 0.0f, 1.0f,
@@ -860,31 +943,31 @@ NV30GLKernel::ReduceStream() {
                  (float) nx, (float) ny*ratioy+1, 0.0f, 1.0f,
                  f1[1], f2[1], fd[1]);
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
       if (first) {
-        glActiveTextureARB(GL_TEXTURE0_ARB);
+        glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
-        glActiveTextureARB(GL_TEXTURE1_ARB);
+        glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
       } else {
-        glActiveTextureARB(GL_TEXTURE0_ARB);
+        glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-        glActiveTextureARB(GL_TEXTURE1_ARB);
+        glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
       }
 
-      glClearColor(555.555f, 555.555f, 555.555f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
+      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
       issue_reduce_poly(0, 0, nx, ny*half, 2, f1, f2, fd);
 
-      dumpframebuffer(10,10);
-
-      glBindTexture (GL_TEXTURE_RECTANGLE_NV, 
-                     t->id);
+      glActiveTextureARB(GL_TEXTURE0_ARB);
+      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
       glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
                           0, 0, 0, 0, 
                           nx, half*ny);
+      if (sreg0)
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
+
+      CHECK_GL();
+   
 
       if (remainder) { 
         if (have_remainder) {
@@ -897,9 +980,9 @@ NV30GLKernel::ReduceStream() {
                      (float) nx, (float) ny, 0.0f, 1.0f,
                      f1[1], f2[1], fd[1]);
           
-          glActiveTextureARB(GL_TEXTURE0_ARB);
+          glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
           glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-          glActiveTextureARB(GL_TEXTURE1_ARB);
+          glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
           glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id);
           glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
           issue_reduce_poly(0, 0, nx, ny, 2, f1, f2, fd);
@@ -913,21 +996,28 @@ NV30GLKernel::ReduceStream() {
           glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
           glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
           issue_reduce_poly(0, 0, nx, ny, 1, f1, f2, fd);
+          if (sreg0)
+            glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
         }
 
-        dumpframebuffer(10,10);
-        
-        glBindTexture (GL_TEXTURE_RECTANGLE_NV, 
-                       r->id);
+        glActiveTextureARB(GL_TEXTURE0_ARB);
+        glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id);
         glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                            0, 0, 0, 0, 
-                            nx, ny);
+                            0, 0, 0, 0, nx, ny);
+        if (sreg0)
+          glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
 
+        CHECK_GL();
+        
+        
         have_remainder = true;
       }
 
-
       first = false;
+
+      dumpframebuffer(10,10);
+      clearframebuffer();
+
       CHECK_GL();
 
       h = half * ny;
@@ -944,13 +1034,12 @@ NV30GLKernel::ReduceStream() {
                 (float) nx, (float) ny, 0.0f, 1.0f,
                 f1[1], f2[1], fd[1]);
      
-     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
-
-     glActiveTextureARB(GL_TEXTURE0_ARB);
+     glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-     glActiveTextureARB(GL_TEXTURE1_ARB);
+     glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id);
-
+     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+     
      issue_reduce_poly(0, 0, nx, ny, 2, f1, f2, fd);
 
      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
@@ -963,6 +1052,7 @@ NV30GLKernel::ReduceStream() {
                 0.0f, 0.0f, 0.0f, 1.0f,
                 (float) nx,   (float) ny, 0.0f, 1.0f,
                 f1[0], f2[0], fd[0]);
+
      glActiveTextureARB(GL_TEXTURE0_ARB);
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
@@ -974,10 +1064,13 @@ NV30GLKernel::ReduceStream() {
      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
                          0, 0, 0, 0, 
                          nx, ny);
+     if (sreg0)
+       glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
    }
 
    dumpframebuffer(10,10);
 
+   CHECK_GL();
 }
 
 

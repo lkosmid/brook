@@ -94,6 +94,7 @@ void __check_gl(int line, char *file);
       void ReduceStream();
       
       NV30GLStream *tmpReduceStream[5];
+      NV30GLStream *sreg0;
 
       char **constnames;
 
