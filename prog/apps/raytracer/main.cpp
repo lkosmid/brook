@@ -19,6 +19,7 @@
 #include "FileIO.h"
 #include "streamTypes.h"
 #include "ppmImage.h"
+#include "timer.h"
 
 #include "built/tracerays.hpp"  /* Produced from tracerays.brh */
 
@@ -77,7 +78,6 @@ static Scene cboxScene = {
  */
 
 static Grid grid;
-static BitVector *grid_bitmap;
 static Point3 *v0;
 static Point3 *v1;
 static Point3 *v2;
@@ -178,7 +178,7 @@ ParseOpts(int *argc, char *argv[], Opts *opts)
       fprintf(stderr, "Unknown scene: %s\n", opts->sceneName);
       Usage(opts->progName);
    }
-   fprintf(stderr, "Raytracing the '%s' scene.\n", opts->sceneName);
+   printf("Raytracing the '%s' scene.\n", opts->sceneName);
 }
 
 
@@ -195,35 +195,35 @@ ParseOpts(int *argc, char *argv[], Opts *opts)
 static void
 PrintGridInfo(Grid *grid, Opts *opts)
 {
-   fprintf(stderr, "Grid: %i triangles, %ix%ix%i voxels, %i trilist size.\n",
-           grid->nTris, grid->dim.x, grid->dim.y, grid->dim.z,
-           grid->trilistSize);
+   printf("Grid: %i triangles, %ix%ix%i voxels, %i trilist size.\n",
+          grid->nTris, grid->dim.x, grid->dim.y, grid->dim.z,
+          grid->trilistSize);
 
    if (opts->verbose) {
       int maxLength, length, last, i;
 
 
-      fprintf(stderr, "Triangle List:\n");
+      printf("Triangle List:\n");
       maxLength = length = 0;
       for(i = 0; i < grid->trilistSize; i++) {
-         fprintf(stderr, "%i ", grid->trilist[i]);
+         printf("%i ", grid->trilist[i]);
          if (grid->trilist[i] != -1) {
             length++;
          } else {
-            fprintf(stderr, "Length: %d\n", length);
+            printf("Length: %d\n", length);
             if (length > maxLength) {
                maxLength = length;
             }
             length = 0;
          }
       }
-      fprintf(stderr, "Max length: %d\n", maxLength);
+      printf("Max length: %d\n", maxLength);
 
-      fprintf(stderr, "Triangle List Offsets:\n");
+      printf("Triangle List Offsets:\n");
       maxLength = 0;
       last = grid->trilistOffset[0];
       for (i = 1; i < grid->dim.x * grid->dim.y * grid->dim.z; i++) {
-         fprintf(stderr, "%i ", grid->trilistOffset[i]);
+         printf("%i ", grid->trilistOffset[i]);
 
          /* The -1 subtracts off the space for the sentinel */
          length = grid->trilistOffset[i] - last - 1;
@@ -236,9 +236,43 @@ PrintGridInfo(Grid *grid, Opts *opts)
       if (length > maxLength) {
          maxLength = length;
       }
-      fprintf(stderr, "\n");
-      fprintf(stderr, "Max length: %d\n", maxLength);
+      printf("\n");
+      printf("Max length: %d\n", maxLength);
    }
+}
+
+
+/*
+ * DensestVoxelSize --
+ *
+ *      Helper routine that computes the number of triangles in the most
+ *      densely packed voxel in the grid.
+ *
+ * Returns:
+ *      Maximum number of triangles in any grid cell.
+ */
+
+static int
+DensestVoxelSize(const Grid& grid)
+{
+   int numVoxels = grid.dim.x * grid.dim.y * grid.dim.z;
+   int maxTris = 0, ii, last;
+
+   for (last = grid.trilistOffset[0], ii=1; ii < numVoxels; ii++) {
+      int length;
+
+      /* Subtract off 1 for the space occupied by the sentinel */
+      length = grid.trilistOffset[ii] - last - 1;
+      last = grid.trilistOffset[ii];
+      if (length > maxTris) {
+         maxTris = length;
+      }
+   }
+   /* Don't forget the triangles in the final voxel! */
+   if (grid.trilistSize - last - 1 > maxTris) {
+      maxTris = grid.trilistSize - last - 1;
+   }
+   return maxTris;
 }
 
 
@@ -253,10 +287,7 @@ PrintGridInfo(Grid *grid, Opts *opts)
  */
 
 static void
-TraceRays(const float3& lookFrom,
-          const Camera& cam,
-
-          const Grid& grid,
+TraceRays(const float3& lookFrom, const Camera& cam, const Grid& grid,
 
           // triangle data (vertex, normal, and color)
           float* triv0, float* triv1, float* triv2,
@@ -272,25 +303,31 @@ TraceRays(const float3& lookFrom,
 
    // The following static arrays are only used as temporaries when
    // initializing stream contents.
-   static Triangle tridat[2048];
-   static ShadingInfo shadinfdat[2048];
-   static float4 emptyhits[1024*1024];
-   static GridTrilistOffset listoffsetdat[2048];
-   static GridTrilist trilistdat[2048];
+   static Triangle triDat[4096];
+   static ShadingInfo shadInfoDat[2048];
+   static GridTrilistOffset listOffsetDat[2048];
+   static GridTrilist trilistDat[2048];
 
    float3 gridDim((float) grid.dim.x, (float) grid.dim.y, (float) grid.dim.z);
    int numVoxels = grid.dim.x * grid.dim.y * grid.dim.z;
-   int maxIters, maxTris, length, last;
-   int ii;
+   int maxIters, lastLive, ii;
+   float now;
+   RayState *states;
 
-   iter wpos_norm(::brook::__BRTFLOAT2,
-                  imageW, imageH, -1, 0.0f, 0.0f, 1.0f, 1.0f, -1);
+   /*
+    * The eye-ray generator uses this iterator to reflect evenly spaced
+    * pixels on the film (image), coordinatized from 1 to -1 (it gets
+    * flipped when it passes through the pin-hole, so that's -1 to 1 in
+    * object space).
+    */
+   iter filmPos(::brook::__BRTFLOAT2,
+                imageW, imageH, -1, 1.0f, 1.0f, -1.0f, -1.0f, -1);
 
-   // contains vertex info (3 float3's) for a triangle
+   // Vertex info (3 float3's) for a triangle
    stream tris = stream::create<Triangle>(grid.nTris);
 
-   // stores normal and color info (6 float3's) for a triangle
-   stream shadinf = stream::create<ShadingInfo>(grid.nTris);
+   // Normal and color info (6 float3's) for a triangle
+   stream shadInfo = stream::create<ShadingInfo>(grid.nTris);
 
    // trilist is index list of triangles present in each grid voxel.
    // lists for each voxel are dilimited by a negative index value
@@ -298,143 +335,137 @@ TraceRays(const float3& lookFrom,
 
    // starting position of each voxel's triangle list in trilist
    // stream is stored here
-   stream listoffset = stream::create<GridTrilistOffset>(numVoxels);
+   stream listOffset = stream::create<GridTrilistOffset>(numVoxels);
 
    stream rays = stream::create<Ray>(imageW, imageH);
-   stream raystates = stream::create<RayState>(imageW, imageH);
+   stream rayStates = stream::create<RayState>(imageW, imageH);
    stream hits = stream::create<Hit>(imageW, imageH);
-   stream candidatehits = stream::create<Hit>(imageW, imageH);
-   stream travdatdyn = stream::create<TraversalDataDyn>(imageW, imageH);
-   stream travdatstatic = stream::create<TraversalDataStatic>(imageW, imageH);
+   stream candidateHits = stream::create<Hit>(imageW, imageH);
+   stream travDatDyn = stream::create<TraversalDataDyn>(imageW, imageH);
+   stream travDatStatic = stream::create<TraversalDataStatic>(imageW, imageH);
    stream pixels = stream::create<Pixel>(imageW, imageH);
 
    // The lack of read-modify-write means we have to ping pong writing
    // between two copies of our dynamic state, which is a big waste of space.
-   stream Braystates = stream::create<RayState>(imageW, imageH);
+   stream BrayStates = stream::create<RayState>(imageW, imageH);
    stream Bhits = stream::create<Hit>(imageW, imageH);
-   stream Btravdatdyn = stream::create<TraversalDataDyn>(imageW, imageH);
+   stream BtravDatDyn = stream::create<TraversalDataDyn>(imageW, imageH);
 
 
-   /*
-    * Fill all the streams:
-    */
-
-   for (ii=0; ii< grid.nTris; ii++) {
+   assert(3 * grid.nTris <= sizeof triDat / sizeof triDat[0]);
+   for (ii=0; ii < grid.nTris; ii++) {
      // fill in triangle information, first vertex data, then normal and color.
-     tridat[ii].v0 = float3(triv0[3*ii+0], triv0[3*ii+1], triv0[3*ii+2]);
-     tridat[ii].v1 = float3(triv1[3*ii+0], triv1[3*ii+1], triv1[3*ii+2]);
-     tridat[ii].v2 = float3(triv2[3*ii+0], triv2[3*ii+1], triv2[3*ii+2]);
-     shadinfdat[ii].n0 = float3(trin0[3*ii+0], trin0[3*ii+1], trin0[3*ii+2]);
-     shadinfdat[ii].n1 = float3(trin1[3*ii+0], trin1[3*ii+1], trin1[3*ii+2]);
-     shadinfdat[ii].n2 = float3(trin2[3*ii+0], trin2[3*ii+1], trin2[3*ii+2]);
-     shadinfdat[ii].c0 = float3(tric0[3*ii+0], tric0[3*ii+1], tric0[3*ii+2]);
-     shadinfdat[ii].c1 = float3(tric1[3*ii+0], tric1[3*ii+1], tric1[3*ii+2]);
-     shadinfdat[ii].c2 = float3(tric2[3*ii+0], tric2[3*ii+1], tric2[3*ii+2]);
+     triDat[ii].v0 = float3(triv0[3*ii+0], triv0[3*ii+1], triv0[3*ii+2]);
+     triDat[ii].v1 = float3(triv1[3*ii+0], triv1[3*ii+1], triv1[3*ii+2]);
+     triDat[ii].v2 = float3(triv2[3*ii+0], triv2[3*ii+1], triv2[3*ii+2]);
    }
-   tris.read(tridat);
-   shadinf.read(shadinfdat);
+   tris.read(triDat);
+
+   assert(numVoxels <= sizeof listOffsetDat / sizeof listOffsetDat[0]);
+   for (ii = 0; ii < numVoxels; ii++) {
+      listOffsetDat[ii].listOffset = (float) grid.trilistOffset[ii];
+   }
+   listOffset.read(listOffsetDat);
+
+   assert(grid.trilistSize <= sizeof trilistDat / sizeof trilistDat[0]);
+   for (ii = 0; ii < grid.trilistSize; ii++) {
+      trilistDat[ii].triNum = (float) grid.trilist[ii];
+   }
+   trilist.read(trilistDat);
 
    /*
     * Set .x (which is ray t) to HUGE so that any true hits will have a lower
     * t (i.e. happen closer to the eye position).
     */
-   assert(imageW * imageH <= sizeof emptyhits / sizeof emptyhits[0]);
-   for (ii=0; ii< imageW * imageH; ii++) {
-      emptyhits[ii].x = 999999;
-      emptyhits[ii].y = 0;
-      emptyhits[ii].z = 0;
-      emptyhits[ii].w = -1;
-   }
-   hits.read(emptyhits);
-
-   for (ii=0; ii< numVoxels; ii++) {
-      listoffsetdat[ii].listoffset = (float) grid.trilistOffset[ii];
-   }
-   listoffset.read(listoffsetdat);
-
-   for (ii=0; ii < grid.trilistSize; ii++) {
-      trilistdat[ii].trinum = (float) grid.trilist[ii];
-   }
-   trilist.read(trilistdat);
+   krnFloat4Set(float4(999999, 0, 0, -1), hits);
 
 
    /*
-    * Determine the maximum number of steps required.  The worst case is we
-    * step through the maximal number of voxels (i.e. a diagonal line) and
-    * intersect with each triangle along the way.  This is bounded by the sum
-    * of the dimensions of the grid multiplied by the maximum number of
-    * triangles in any voxel.
+    * In the worst case we step through the maximal number of voxels
+    * (which is the sum of the dimensions) and each cell is also the most
+    * densely filled cell.
     */
 
-   for (maxTris = 0, last = grid.trilistOffset[0], ii=1; ii <  numVoxels; ii++) {
-      /* Subtract off 1 for the space occupied by the sentinel */
-      length = grid.trilistOffset[ii] - last - 1;
-      last = grid.trilistOffset[ii];
-      if (length > maxTris) {
-         maxTris = length;
-      }
-   }
-   /* Don't forget the triangles in the final voxel! */
-   if (grid.trilistSize - last - 1 > maxTris) {
-      maxTris = grid.trilistSize - last - 1;
-   }
-   maxIters = (grid.dim.x + grid.dim.y + grid.dim.z) * maxTris;
-   fprintf(stderr, "Performing %d iterations\n", maxIters);
+   maxIters = DensestVoxelSize(grid) * (grid.dim.x + grid.dim.y + grid.dim.z);
 
    /*
     * The actual ray tracing loop:
     */
 
-   fprintf(stderr, "Generating eye rays\n");
-   krnGenEyeRays(lookFrom, cam.u, cam.v, cam.w,
-                 float2(cam.tx, cam.ty),
-                 float2(2.0f * cam.tx, 2.0f * cam.ty),
-                 grid.min, grid.max, wpos_norm, rays);
+   printf("Generating eye rays\n");
+   krnGenEyeRays(lookFrom, cam.u, cam.v, cam.w, float2(cam.tx, cam.ty),
+                 grid.min, grid.max, filmPos, rays);
 
-   fprintf(stderr, "setup traversal\n");
-   krnSetupTraversal(rays, grid.min, grid.vsize, gridDim,
-                     travdatdyn, travdatstatic, raystates);
+   printf("Initializing traversal data and ray states\n");
+   krnSetupTraversal(rays, grid.min, grid.vsize,
+                     gridDim, travDatDyn, travDatStatic, rayStates);
 
-   fprintf(stderr, "Traversing and intersecting\n");
-   for (ii = 0; ii < maxIters; ii++) { //adjust depending on scene...
-      int last = 0, prog;
-
-      if ((prog = 100 * ii / maxIters) != last) {
-         printf("\r%3d%% Done.", 100 * ii / maxIters);
-         last = prog;
-      }
+   printf("Traversing and intersecting (up to %d iterations)\n", maxIters);
+   states = new RayState [imageW * imageH];
+   lastLive = imageW * imageH;
+   printf("%6d Live rays.", lastLive);
+   Timer_Reset();
+   for (lastLive = -1, ii = 0; ii < maxIters; ii++) {
+      int jj, live;
 
       //fprintf(stderr, "traverse voxel %i\n", ii);
-      krnTraverseVoxel(rays, travdatstatic, travdatdyn, raystates,
-                       listoffset, gridDim, Btravdatdyn, Braystates);
-
-      krnTraverseVoxel(rays, travdatstatic, Btravdatdyn, Braystates,
-                       listoffset, gridDim, travdatdyn, raystates);
+      krnTraverseVoxel(rays, travDatStatic, travDatDyn, rayStates,
+                       listOffset, gridDim, BtravDatDyn, BrayStates);
+      krnTraverseVoxel(rays, travDatStatic, BtravDatDyn, BrayStates,
+                       listOffset, gridDim, travDatDyn, rayStates);
 
 
       //fprintf(stderr, "intersect triangle %i\n", ii);
-      krnIntersectTriangle(rays, tris, raystates, trilist, candidatehits);
-      krnValidateIntersection(rays, candidatehits, grid.min, grid.vsize,
-                              gridDim, hits, travdatdyn, raystates, trilist,
-                              Bhits, Braystates);
+      krnIntersectTriangle(rays, tris, rayStates, trilist, candidateHits);
+      krnValidateIntersection(rays, candidateHits, grid.min, grid.vsize,
+                              gridDim, hits, travDatDyn, rayStates, trilist,
+                              Bhits, BrayStates);
+      krnIntersectTriangle(rays, tris, BrayStates, trilist, candidateHits);
+      krnValidateIntersection(rays, candidateHits, grid.min, grid.vsize,
+                              gridDim, Bhits, travDatDyn, BrayStates, trilist,
+                              hits, rayStates);
 
-      krnIntersectTriangle(rays, tris, Braystates, trilist, candidatehits);
-      krnValidateIntersection(rays, candidatehits, grid.min, grid.vsize,
-                              gridDim, Bhits, travdatdyn, Braystates, trilist,
-                              hits, raystates);
+      /*
+       * Early termination: determine how many rays are actually still live
+       * and bail when all have either left the grid or hit something.
+       */
+
+      rayStates.write(states);
+      for (live = 0, jj = 0; jj < imageW * imageH; jj++) {
+         if (states[jj].state.x > 0 || states[jj].state.y > 0) {
+            live++;
+         }
+      }
+      if (live != lastLive) {
+         printf("\r%6d Live rays.", live);
+         lastLive = live;
+
+         if (live == 0) break;
+      }
    }
-   printf("\r%3d%% Done.\n", 100 * ii / maxIters);
+   delete [] states;
+   now = Timer_GetMS() / 1000.0f;
+   printf("\nFinished in %d iterations (%3.2f seconds).\n", ii, now);
 
 #if 0
-   for (ii = 0; ii <  grid.nTris; ii++) {
+   for (ii = 0; ii < grid.nTris; ii++) {
       fprintf(stderr, "intersect triangle %i\n", ii);
-      krnBruteIntersectTriangle(rays, tris, (float)ii, hits,
-                                travdatdyn, raystates, hits, raystates);
+      krnBruteIntersectTriangle(rays, tris, (float) ii, hits,
+                                travDatDyn, rayStates, hits, rayStates);
    }
 #endif
 
-   fprintf(stderr, "Shading hits\n");
-   krnShadeHits(rays, hits, tris, shadinf, pointLight, raystates, pixels);
+   printf("Shading hits\n");
+   for (ii = 0; ii < grid.nTris; ii++) {
+      shadInfoDat[ii].n0 = float3(trin0[3*ii+0], trin0[3*ii+1], trin0[3*ii+2]);
+      shadInfoDat[ii].n1 = float3(trin1[3*ii+0], trin1[3*ii+1], trin1[3*ii+2]);
+      shadInfoDat[ii].n2 = float3(trin2[3*ii+0], trin2[3*ii+1], trin2[3*ii+2]);
+      shadInfoDat[ii].c0 = float3(tric0[3*ii+0], tric0[3*ii+1], tric0[3*ii+2]);
+      shadInfoDat[ii].c1 = float3(tric1[3*ii+0], tric1[3*ii+1], tric1[3*ii+2]);
+      shadInfoDat[ii].c2 = float3(tric2[3*ii+0], tric2[3*ii+1], tric2[3*ii+2]);
+   }
+   shadInfo.read(shadInfoDat);
+   krnShadeHits(rays, hits, tris, shadInfo, pointLight, rayStates, pixels);
 
    pixels.write(imageBuf);
 }
@@ -504,7 +535,7 @@ main(int argc, char **argv)
              opts.scene->pointLight,
              image->Width(), image->Height(), image->Data());
 
-   fprintf(stderr, "Writing image to %s\n", opts.imageFile);
+   printf("Writing image to %s\n", opts.imageFile);
    image->Write(opts.imageFile);
    delete image;
    return 0;

@@ -59,22 +59,22 @@ typedef struct pixel_t {
 } Pixel;
 
 typedef struct gridtrilistoffset_t {
-  float listoffset;  //actually ints
+  float listOffset;  //actually ints
 } GridTrilistOffset;
 
 typedef struct gridtrilist_t {
-  float trinum;  //actually ints
+  float triNum;  //actually ints
 } GridTrilist;
 
 typedef struct traversaldatadyn_t {
   float3 tMax;     // t when exiting current voxel
-  float3 voxno;    //actually ints (current voxel for grid traversal)
-  float3 voxtouse; //ints   (current voxel when intersecting tris)
+  float3 voxNo;    //actually ints (current voxel for grid traversal)
+  float3 voxToUse; //ints   (current voxel when intersecting tris)
 } TraversalDataDyn;
 
 typedef struct traversaldatastatic_t {
   float3 tDelta; // change in t from voxel to voxel
   float3 step;   //actually -1 or 1 only, change in voxel index
-  float3 outno;  //actually ints, index of voxel when ray leaves grid
+  float3 outNo;  //actually ints, index of voxel when ray leaves grid
 } TraversalDataStatic;
 #endif

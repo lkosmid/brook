@@ -34,8 +34,11 @@ POUND endif
 
 
 kernel void
+krnFloat4Set(float4 c, out float4 dst<>);
+
+kernel void
 krnGenEyeRays(float3 lookfrom, float3 u, float3 v, float3 w,
-              float2 txty, float2 txty2, float3 grid_min, float3 grid_max,
+              float2 txty, float3 grid_min, float3 grid_max,
               float2 wpos_norm<>, out Ray ray<>);
 
 kernel void

@@ -6,21 +6,52 @@ POUND include <stdlib.h>
 #include "streamTypes.h"
 
 
-// uses camera information to generate eye rays for each of the pixels
-// in the output image
+/*
+ * krnFloat4Set --
+ *
+ *      memset() for streams.  Fills an entire float4 stream with the given
+ *      constant.
+ */
+
 kernel void
-krnGenEyeRays(float3 lookfrom, float3 u, float3 v, float3 w,
-              float2 txty, float2 txty2, float3 grid_min, float3 grid_max,
-              float2 wpos_norm<>, out Ray ray<>)
+krnFloat4Set(float4 c, out float4 dst<>)
+{
+   dst = c;
+}
+
+
+/*
+ * krnGenEyeRays --
+ *
+ *      This kernel takes the camera parameters, grid dimensions, and an
+ *      iterator that goes from 1 to -1 in width and height.  It then
+ *      calculates the ray from each position on the 'film' (image) through
+ *      the pinhole of the camera.
+ *
+ *      Note: filmPos goes from 1 to -1 because the image is flipped by
+ *      passing through the pinhole and this way the multiplication by -1
+ *      is done automagically by the iterator.
+ *
+ * Returns:
+ *      A stream of rays with unit directions corresponding to each of the
+ *      pixels in the result.
+ */
+
+kernel void
+krnGenEyeRays(float3 lookFrom, float3 u, float3 v, float3 w,
+              float2 txty, float3 grid_min, float3 grid_max,
+              float2 filmPos<>, out Ray ray<>)
 {
   float3 t1, t2, tmaxV, tminV;
   float tnear, tfar;
   float2 scale;
 
-  ray.o = lookfrom;
-  scale = txty - wpos_norm*txty2;
+  ray.o = lookFrom;
+  scale = txty * filmPos;
   ray.d = w + u*scale.x + v*scale.y;
-  ray.d = ray.d/sqrt(dot(ray.d, ray.d));//normalize is busted
+
+  // XXX Normalize is busted?  Says who?  It seems to work for me. --Jeremy.
+  ray.d = ray.d / sqrt(dot(ray.d, ray.d)); // normalize is busted
 
   ray.tmax = -1;
 
@@ -29,11 +60,11 @@ krnGenEyeRays(float3 lookfrom, float3 u, float3 v, float3 w,
   tmaxV = max(t1,t2);
   tminV = min(t1, t2);
 
-  tnear = max( max(tminV.x, tminV.y), max(tminV.x, tminV.z) );
-  tfar = min( min(tmaxV.x, tmaxV.y), min(tmaxV.x, tmaxV.z) );
+  tnear = max(max(tminV.x, tminV.y), max(tminV.x, tminV.z));
+  tfar = min(min(tmaxV.x, tmaxV.y), min(tmaxV.x, tmaxV.z));
 
   // this puts tmax right on the first cell the ray hits in the grid
-  // (or it might in the middle of the first cell if that's where the
+  // (or it might be in the middle of the first cell if that's where the
   // eye is)
   ray.tmax = (tnear > tfar) ? ray.tmax  :
              (tfar  < 0.0f) ? ray.tmax  :
@@ -63,23 +94,27 @@ krnSetupTraversal(Ray ray<>,
   curpos = ray.o + ray.d*ray.tmax;
 
   // determine starting voxel
-  travdatdyn.voxno = floor((curpos - grid_min) / grid_vsize);
+  travdatdyn.voxNo = floor((curpos - grid_min) / grid_vsize);
 
   //these ? : should be made much smarter...
-  travdatdyn.voxno.x = (travdatdyn.voxno.x) >= grid_dim.x ? travdatdyn.voxno.x-1 : travdatdyn.voxno.x;
-  travdatdyn.voxno.y = (travdatdyn.voxno.y) >= grid_dim.y ? travdatdyn.voxno.y-1 : travdatdyn.voxno.y;
-  travdatdyn.voxno.z = (travdatdyn.voxno.z) >= grid_dim.z ? travdatdyn.voxno.z-1 : travdatdyn.voxno.z;
+  travdatdyn.voxNo.x = (travdatdyn.voxNo.x) >= grid_dim.x ?
+     travdatdyn.voxNo.x-1 : travdatdyn.voxNo.x;
+  travdatdyn.voxNo.y = (travdatdyn.voxNo.y) >= grid_dim.y ?
+     travdatdyn.voxNo.y-1 : travdatdyn.voxNo.y;
+  travdatdyn.voxNo.z = (travdatdyn.voxNo.z) >= grid_dim.z ?
+     travdatdyn.voxNo.z-1 : travdatdyn.voxNo.z;
 
   // temp is point ray leaves current voxel
-  temp.x = (ray.d.x > 0.0f ? (travdatdyn.voxno.x+1)*grid_vsize.x + grid_min.x :
-	    travdatdyn.voxno.x*grid_vsize.x + grid_min.x);
-  temp.y = (ray.d.y > 0.0f ? (travdatdyn.voxno.y+1)*grid_vsize.y + grid_min.y :
-	    travdatdyn.voxno.y*grid_vsize.y + grid_min.y);
-  temp.z = (ray.d.z > 0.0f ? (travdatdyn.voxno.z+1)*grid_vsize.z + grid_min.z :
-	    travdatdyn.voxno.z*grid_vsize.z + grid_min.z);
+  temp.x = (ray.d.x > 0.0f ? (travdatdyn.voxNo.x+1)*grid_vsize.x + grid_min.x :
+	    travdatdyn.voxNo.x*grid_vsize.x + grid_min.x);
+  temp.y = (ray.d.y > 0.0f ? (travdatdyn.voxNo.y+1)*grid_vsize.y + grid_min.y :
+	    travdatdyn.voxNo.y*grid_vsize.y + grid_min.y);
+  temp.z = (ray.d.z > 0.0f ? (travdatdyn.voxNo.z+1)*grid_vsize.z + grid_min.z :
+	    travdatdyn.voxNo.z*grid_vsize.z + grid_min.z);
 
   // tmax corresponding end of current voxel
   travdatdyn.tMax = (temp - curpos) / ray.d + ray.tmax;
+  travdatdyn.voxToUse = float3(0,0,0); //needed??
 
 
   // now set up state that is constant for each ray through the entire
@@ -88,20 +123,16 @@ krnSetupTraversal(Ray ray<>,
 
   // deltaT when moving to next grid cell
   travdatstatic.tDelta = grid_vsize/ray.d;
-  travdatstatic.tDelta.x = ray.d.x < 0.0f ? -travdatstatic.tDelta.x : travdatstatic.tDelta.x;
-  travdatstatic.tDelta.y = ray.d.y < 0.0f ? -travdatstatic.tDelta.y : travdatstatic.tDelta.y;
-  travdatstatic.tDelta.z = ray.d.z < 0.0f ? -travdatstatic.tDelta.z : travdatstatic.tDelta.z;
+  travdatstatic.tDelta = ray.d < zero ?
+                         -travdatstatic.tDelta : travdatstatic.tDelta;
 
-  // cell index delta to ge tto next cell (+1 or -1)
+  // cell index delta to get to next cell (+1 or -1)
   travdatstatic.step = ray.d > zero ? one : minusone;
 
   // cell index when the ray leaves the grid
-  travdatstatic.outno = ray.d > zero ? grid_dim : minusone;
-  //travdatstatic.outno.x = ray.d.x > 0.0f ? grid_dim.x : -1;
-  //travdatstatic.outno.y = ray.d.y > 0.0f ? grid_dim.y : -1;
-  //travdatstatic.outno.z = ray.d.z > 0.0f ? grid_dim.z : -1;
+  travdatstatic.outNo = ray.d > zero ? grid_dim : minusone;
 
-  travdatdyn.voxtouse = float3(0,0,0); //needed??
+  // All rays start in the traversal state
   raystate.state = float4(1,0,0,0);
 }
 
@@ -131,28 +162,28 @@ krnTraverseVoxel(Ray ray<>, TraversalDataStatic travdatstatic<>,
     else if (minval == travdatdynold.tMax.z)
       compmask = float3(0,0,1);
 
-    if (travdatdynold.voxno.x == travdatstatic.outno.x ||
-	travdatdynold.voxno.y == travdatstatic.outno.y ||
-	travdatdynold.voxno.z == travdatstatic.outno.z ||
+    if (travdatdynold.voxNo.x == travdatstatic.outNo.x ||
+	travdatdynold.voxNo.y == travdatstatic.outNo.y ||
+	travdatdynold.voxNo.z == travdatstatic.outNo.z ||
 	dot(travdatdynold.tMax, compmask) > 999999) { //should be tmax, but busted now...
 
       // ray is out of grid, do nothing
-      travdatdyn.voxno = travdatdynold.voxno;
+      travdatdyn.voxNo = travdatdynold.voxNo;
       travdatdyn.tMax = travdatdynold.tMax;
-      travdatdyn.voxtouse = travdatdynold.voxtouse;
+      travdatdyn.voxToUse = travdatdynold.voxToUse;
       raystate.state = float4(0,0,0,0);
     } else {
 
-      // use linear offset of current voxel to fetch offset into the triangle list
-      // The list of triangles located in this voxel starts at this offset in the
-      // global triangle list
-      offsetaddr = grid_dim.z*(travdatdynold.voxno.x*grid_dim.y + travdatdynold.voxno.y) +
-	travdatdynold.voxno.z;
-      trilistpos = listoffset[offsetaddr].listoffset;
-      travdatdyn.voxtouse = travdatdynold.voxno;
+      // use linear offset of current voxel to fetch offset into the
+      // triangle list The list of triangles located in this voxel starts at
+      // this offset in the global triangle list
+      offsetaddr = grid_dim.z*(travdatdynold.voxNo.x*grid_dim.y +
+                               travdatdynold.voxNo.y) + travdatdynold.voxNo.z;
+      trilistpos = listoffset[offsetaddr].listOffset;
+      travdatdyn.voxToUse = travdatdynold.voxNo;
 
       // update dynamic ray state to next voxel
-      travdatdyn.voxno = travdatdynold.voxno + compmask*travdatstatic.step;
+      travdatdyn.voxNo = travdatdynold.voxNo + compmask*travdatstatic.step;
       travdatdyn.tMax = travdatdynold.tMax + compmask*travdatstatic.tDelta;
 
       if (trilistpos >= 0) {
@@ -163,9 +194,9 @@ krnTraverseVoxel(Ray ray<>, TraversalDataStatic travdatstatic<>,
     }
   } else {
     // do nothing, ray not in traversal state
-    travdatdyn.voxno = travdatdynold.voxno;
+    travdatdyn.voxNo = travdatdynold.voxNo;
     travdatdyn.tMax = travdatdynold.tMax;
-    travdatdyn.voxtouse = travdatdynold.voxtouse;
+    travdatdyn.voxToUse = travdatdynold.voxToUse;
     raystate.state = oldraystate.state;
   }
 }
@@ -185,7 +216,7 @@ krnIntersectTriangle(Ray ray<>, Triangle tris[], RayState oldraystate<>,
   if (oldraystate.state.y > 0) {
     // starting index of triangle list to search is stored in oldraystate.state.w
     // first get a triangle number
-    idx = trilist[oldraystate.state.w].trinum;
+    idx = trilist[oldraystate.state.w].triNum;
 
     edge1 = tris[idx].v1 - tris[idx].v0;
     edge2 = tris[idx].v2 - tris[idx].v0;
@@ -214,7 +245,7 @@ krnValidateIntersection(Ray ray<>, Hit candidatehit<>,
                         RayState oldraystate<>, GridTrilist trilist[],
                         out Hit hit<>, out RayState raystate<>)
 {
-  float trinum;
+  float triNum;
   float validhit;
   float3 hitp, myvox;
   float3 fudgeup, fudgedown;
@@ -237,8 +268,8 @@ krnValidateIntersection(Ray ray<>, Hit candidatehit<>,
       myvox.z = myvox.z >= grid_dim.z ? myvox.z-1 : myvox.z;
 
       // fudge more since equality is busted...
-      fudgeup = travdatdyn.voxtouse + 0.1f;
-      fudgedown = travdatdyn.voxtouse - 0.1f;
+      fudgeup = travdatdyn.voxToUse + 0.1f;
+      fudgedown = travdatdyn.voxToUse - 0.1f;
 
       // Ensure the intersection with the triangle occurs in the current
       // voxel.  If not, we'll end up finding the hit again later
@@ -255,9 +286,9 @@ krnValidateIntersection(Ray ray<>, Hit candidatehit<>,
     }
 
     // move on to next triangle, see if we've hit the end of the triangle list
-    trinum = trilist[oldraystate.state.w+1].trinum;
+    triNum = trilist[oldraystate.state.w+1].triNum;
 
-    if (trinum < 0) {
+    if (triNum < 0) {
       // Have come to end of the triangle list for this voxel
       // If we found a hit, mark the ray for shading
       if (validhit > 0 || oldhit.data.w >= 0) {
@@ -361,224 +392,3 @@ krnShadeHits(Ray ray<>, Hit hit<>, Triangle tris[],
     pixel.data = float4(0,0,0,0);
   }
 }
-
-
-#if 0
-void
-TraceRaysBR(
-          // bunch of camera params
-          float lookfromX, float lookfromY, float lookfromZ,
-          float uX, float uY, float uZ,
-          float vX, float vY, float vZ,
-          float wX, float wY, float wZ,
-          float tx, float ty,
-
-          float gridminX, float gridminY, float gridminZ,
-          float gridmaxX, float gridmaxY, float gridmaxZ,
-
-          // griddim is number of cells in each direction
-          float griddimX, float griddimY, float griddimZ,
-
-          // numvox better be equal to griddimX*griddimY*griddimZ,
-          int numvox,
-
-          // gridvsize is the world space size of a voxel
-          float gridvsizeX, float gridvsizeY, float gridvsizeZ,
-
-          // gridtrilist_offset stores the starting offset of
-          // the first triangle in the corresponding grid cell
-          int* grid_trilist_offset,
-
-          // trilist is the list of triangles in each grid cell
-          int* grid_trilist,
-          int trilistsize,
-
-          int numtris,
-          // triangle data (vertex, normal, and color)
-          float* triv0, float* triv1, float* triv2,
-          float* trin0, float* trin1, float* trin2,
-          float* tric0, float* tric1, float* tric2,
-
-          float pointlightX, float pointlightY, float pointlightZ,
-
-          // output image
-          float* imgbuf)
-{
-POUND define W 256
-POUND define H 256
-
-  // following static arrays are only used as temporarys to pass values
-  // to streamRead
-  static Triangle tridat[2048];
-  static ShadingInfo shadinfdat[2048];
-  static float4 emptyhits[W*H];
-  static GridTrilistOffset listoffsetdat[2048];
-  static GridTrilist trilistdat[2048];
-
-  int maxIters, maxTris, length, last;
-  int ii;
-
-  float3 lookfrom = float3(lookfromX, lookfromY, lookfromZ);
-  float3 u = float3(uX, uY, uZ);
-  float3 v = float3(vX, vY, vZ);
-  float3 w = float3(wX, wY, wZ);
-  float2 txty = float2(tx, ty);
-  float2 txty2 = float2(2.0*tx, 2.0*ty);
-  float3 grid_min = float3(gridminX, gridminY, gridminZ);
-  float3 grid_max = float3(gridmaxX, gridmaxY, gridmaxZ);
-  float3 grid_dim = float3(griddimX, griddimY, griddimZ);
-  float3 grid_vsize = float3(gridvsizeX, gridvsizeY, gridvsizeZ);
-  float3 pointlight = float3(pointlightX, pointlightY, pointlightZ);
-
-  iter float2 wpos_norm<W,H> = iter(float2(0,0), float2(1,1));
-
-  // contains vertex info (3 float3's) for a triangle
-  Triangle tris <numtris>;
-
-  // stores normal and color info (6 float3's) for a triangle
-  ShadingInfo shadinf <numtris>;
-
-  // trilist is index list of triangles present in each grid voxel.
-  // lists for each voxel are dilimited by a negative index value
-  GridTrilist trilist<trilistsize>;
-
-  // starting position of each voxel's triangle list in trilist
-  // stream is stored here
-  GridTrilistOffset listoffset<numvox>;
-
-  Ray rays<W,H>;
-  RayState raystates<W,H>;
-  Hit hits<W,H>;
-  Hit candidatehits<W,H>;
-  TraversalDataDyn travdatdyn<W,H>;
-  TraversalDataStatic travdatstatic<W,H>;
-  Pixel pixels <W,H>;
-
-  // The lack of read-modify-write means we have to ping pong writing
-  // between two copies of our dynamic state, which is a big waste of space.
-  RayState Braystates<W,H>;
-  Hit Bhits<W,H>;
-  TraversalDataDyn Btravdatdyn<W,H>;
-
-
-  /*
-   * Fill all the streams:
-   */
-
-  for (ii=0; ii<numtris; ii++) {
-    // fill in triangle information, first vertex data, then normal and color.
-    tridat[ii].v0 = float3(triv0[3*ii+0], triv0[3*ii+1], triv0[3*ii+2]);
-    tridat[ii].v1 = float3(triv1[3*ii+0], triv1[3*ii+1], triv1[3*ii+2]);
-    tridat[ii].v2 = float3(triv2[3*ii+0], triv2[3*ii+1], triv2[3*ii+2]);
-    shadinfdat[ii].n0 = float3(trin0[3*ii+0], trin0[3*ii+1], trin0[3*ii+2]);
-    shadinfdat[ii].n1 = float3(trin1[3*ii+0], trin1[3*ii+1], trin1[3*ii+2]);
-    shadinfdat[ii].n2 = float3(trin2[3*ii+0], trin2[3*ii+1], trin2[3*ii+2]);
-    shadinfdat[ii].c0 = float3(tric0[3*ii+0], tric0[3*ii+1], tric0[3*ii+2]);
-    shadinfdat[ii].c1 = float3(tric1[3*ii+0], tric1[3*ii+1], tric1[3*ii+2]);
-    shadinfdat[ii].c2 = float3(tric2[3*ii+0], tric2[3*ii+1], tric2[3*ii+2]);
-  }
-  streamRead(tris, tridat);
-  streamRead(shadinf, shadinfdat);
-
-  /*
-   * Set .x (which is ray t) to HUGE so that any true hits will have a lower
-   * t (i.e. happen closer to the eye position).
-   */
-  for (ii=0; ii<W*H; ii++) {
-    emptyhits[ii].x = 999999;
-    emptyhits[ii].y = 0;
-    emptyhits[ii].z = 0;
-    emptyhits[ii].w = -1;
-  }
-  streamRead(hits, emptyhits);
-
-
-  for (ii=0; ii<numvox; ii++) {
-    listoffsetdat[ii].listoffset = (float)grid_trilist_offset[ii];
-  }
-  streamRead(listoffset, listoffsetdat);
-
-  for (ii=0; ii<trilistsize; ii++) {
-    trilistdat[ii].trinum = (float)grid_trilist[ii];
-  }
-  streamRead(trilist, trilistdat);
-
-
-  /*
-   * Determine the maximum number of steps required.  The worst case is we
-   * step through the maximal number of voxels (i.e. a diagonal line) and
-   * intersect with each triangle along the way.  This is bounded by the sum
-   * of the dimensions of the grid multiplied by the maximum number of
-   * triangles in any voxel.
-   */
-
-  for (maxTris = 0, last = grid_trilist_offset[0], ii=1; ii < numvox; ii++) {
-     /* Subtract off 1 for the space occupied by the sentinel */
-     length = grid_trilist_offset[ii] - last - 1;
-     last = grid_trilist_offset[ii];
-     if (length > maxTris) {
-        maxTris = length;
-     }
-  }
-  /* Don't forget the triangles in the final voxel! */
-  if (trilistsize - last - 1 > maxTris) {
-     maxTris = trilistsize - last - 1;
-  }
-  maxIters = ((int) (grid_dim.x + grid_dim.y + grid_dim.z)) * maxTris;
-  fprintf(stderr, "Performing %d iterations\n", maxIters);
-
-  /*
-   * The actual ray tracing loop:
-   */
-
-  fprintf(stderr, "Generating eye rays\n");
-  krnGenEyeRays(lookfrom,
-                u, v, w, txty, txty2, grid_min, grid_max, wpos_norm, rays);
-
-  fprintf(stderr, "setup traversal\n");
-  krnSetupTraversal(rays, grid_min, grid_vsize, grid_dim,
-                    travdatdyn, travdatstatic, raystates);
-
-
-  fprintf(stderr, "Traversing and intersecting\n");
-  for (ii=0; ii<maxIters; ii++) { //adjust depending on scene...
-     if (100 * ii % maxIters == 0) {
-        printf("\r%3d%% Done.", 100 * ii / maxIters);
-     }
-
-    //fprintf(stderr, "traverse voxel %i\n", ii);
-    krnTraverseVoxel(rays, travdatstatic, travdatdyn, raystates,
-                     listoffset, grid_dim, Btravdatdyn, Braystates);
-
-    krnTraverseVoxel(rays, travdatstatic, Btravdatdyn, Braystates,
-                     listoffset, grid_dim, travdatdyn, raystates);
-
-
-    //fprintf(stderr, "intersect triangle %i\n", ii);
-    krnIntersectTriangle(rays, tris, raystates, trilist, candidatehits);
-    krnValidateIntersection(rays, candidatehits, grid_min, grid_vsize,
-                            grid_dim, hits, travdatdyn, raystates, trilist,
-                            Bhits, Braystates);
-
-    krnIntersectTriangle(rays, tris, Braystates, trilist, candidatehits);
-    krnValidateIntersection(rays, candidatehits, grid_min, grid_vsize,
-                            grid_dim, Bhits, travdatdyn, Braystates, trilist,
-                            hits, raystates);
-
-  }
-  printf("\r%3d%% Done.\n", 100 * ii / maxIters);
-
-#if 0
-  for (ii = 0; ii < numtris; ii++) {
-     fprintf(stderr, "intersect triangle %i\n", ii);
-     krnBruteIntersectTriangle(rays, tris, (float)ii, hits,
-                               travdatdyn, raystates, hits, raystates);
-  }
-#endif
-
-  fprintf(stderr, "Shading hits\n");
-  krnShadeHits(rays, hits, tris, shadinf, pointlight, raystates, pixels);
-
-  streamWrite(pixels, imgbuf);
-}
-#endif
