@@ -1,0 +1,55 @@
+// sum.br
+// The absolute minimal test. It tests
+// using a kernel to sum both 1-dimensional
+// and two-dimensional input streams.
+
+#include <stdio.h>
+
+int main() {
+  int i, j;
+  float a1< 100 >;
+  float a2< 10, 10 >;
+  float input_a1[100];
+  float input_a2[10][10];
+  float input_b1[7];
+  float input_b2[3][7];
+
+  // initialize data
+  for( i = 0; i < 10; i++) {
+    for( j = 0; j < 10; j++) {
+      input_a1[10*i+j] = (float)i*10+j;
+      input_a2[i][j] = (float)i*10+j;
+    }
+  }
+
+  for(i=0; i<7; i++)
+    input_b1[i] = i;
+
+  for( i = 0; i < 3; i++)
+    for( j = 0; j < 7; j++)
+      input_b2[i][j] = (float)i*10+j;
+
+  streamRead( a1, input_a1 );
+  streamRead( a2, input_a2 );
+  
+  streamRead( a1.domain(19.0f, 19.0f+7), input_b1);
+  streamRead( a2.domain(float2(5.0f, 1.0f), float2(5.0f+3, 1.0f+7)),
+              input_b2);
+  
+  streamWrite( a1, input_a1 );
+  streamWrite( a2, input_a2 );
+  
+  for( i = 0; i < 10; i++ ) {
+    for( j = 0; j < 10; j++ )
+      printf( "%3.2f ", input_a1[10*i+j] );
+    printf("\n");
+  }
+  
+  for( i = 0; i < 10; i++ ) {
+    for( j = 0; j < 10; j++ )
+      printf( "%3.2f ", input_a2[i][j] );
+    printf("\n");
+  }
+  
+  return 0;
+}
