@@ -271,6 +271,12 @@ void DX9Kernel::ReduceToStream()
   DX9Stream* inputStream = inputReductionStream;
   int tex0 = inputReductionStreamTexCoordIndex;
   int tex1 = outputReductionVarTexCoordIndex;
+  if( tex0 > tex1 )
+  {
+    int temp = tex0;
+    tex0 = tex1;
+    tex1 = temp;
+  }
   int inputWidth = inputStream->getWidth();
   int inputHeight = inputStream->getHeight();
 
@@ -333,6 +339,12 @@ void DX9Kernel::ReduceToValue()
   int sampler1 = outputReductionVarSamplerIndex;
   int tex0 = inputReductionStreamTexCoordIndex;
   int tex1 = outputReductionVarTexCoordIndex;
+  if( tex0 > tex1 )
+  {
+    int temp = tex0;
+    tex0 = tex1;
+    tex1 = temp;
+  }
   int inputWidth = inputStream->getWidth();
   int inputHeight = inputStream->getHeight();
 
@@ -449,13 +461,15 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
   DX9Assert( outputExtent < inputExtent, "Output extent must be less than input extent on reduce" );
   DX9Assert( (inputExtent % outputExtent) == 0, "Output extent must evenly divide input extent on reduce" );
 
+  DX9Trace( " tex0 = %d, tex1 = %d\n", tex0, tex1 );
+
   int remainingFactor = reductionFactor;
   int remainingExtent = inputExtent;
   int slopBufferCount = 0;
   while( remainingFactor > 1 )
   {
     // TIM: debugging
-//    DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, slopBufferCount, dim );
+    DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, slopBufferCount, dim );
 
     if( remainingFactor & 1 ) // odd factor
     {
@@ -506,7 +520,7 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
   DX9Assert( remainingExtent == outputExtent, "Failed to reduce by the right amount!!!" );
 
   // TIM: debugging
-//  DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, slopBufferCount, dim );
+  DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, slopBufferCount, dim );
 
   // if we have slop buffers, composite them into place
   if( slopBufferCount != 0 )
@@ -520,7 +534,7 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
     runtime->execute( outputRect, inputRects );
 
     // TIM: debugging
-//    DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, 0, dim );
+    DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, 0, dim );
   }
 
 
@@ -692,6 +706,7 @@ void DX9Kernel::BindReductionOperationState()
 void DX9Kernel::DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int dim )
 {
   static float4* data = new float4[kDX9ReductionBufferWidth*kDX9ReductionBufferHeight];
+  runtime->getReductionBuffer()->markCachedDataChanged();
   runtime->getReductionBuffer()->getData( (float*)data );
   int xMin, yMin, xMax, yMax;
   if( dim == 0 )
