@@ -247,23 +247,33 @@ namespace brook {
   }
 
 }
+class StreamSentinels {public:
+   std::vector<__BRTStream *> sentinels;
+   ~StreamSentinels() {
+      while (!sentinels.empty()) {
+         if (sentinels.back())
+            delete sentinels.back();
+         sentinels.pop_back();
+      }
+   }
+};
 __BRTStream * sentinelStream (int dim) {
-   static std::vector <__BRTStream *> sentinels;
-   if (dim<(int)sentinels.size())
-      if (sentinels[dim]!=0)
-         return sentinels[dim];
-   while ((int)sentinels.size()<=dim)
-      sentinels.push_back(0);
+   static StreamSentinels s;
+   if (dim<(int)s.sentinels.size())
+      if (s.sentinels[dim]!=0)
+         return s.sentinels[dim];
+   while ((int)s.sentinels.size()<=dim)
+      s.sentinels.push_back(0);
    std::vector<int> extents;
    for (int i=0;i<dim;++i){
       extents.push_back(1);
    }
-   sentinels[dim]=new brook::stream(&extents[0],
-                                    dim,
-                                    brook::getStreamType((float*)0));   
+   s.sentinels[dim]=new brook::stream(&extents[0],
+                                      dim,
+                                      brook::getStreamType((float*)0));   
    float inf = 1.0f/(float)floor(.5);
-   streamRead(*sentinels[dim],&inf);
-   return sentinels[dim];
+   streamRead(*s.sentinels[dim],&inf);
+   return s.sentinels[dim];
 }
 void streamPrint(brook::StreamInterface * s, bool flatten) {
 flatten=false;
