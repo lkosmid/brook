@@ -22,9 +22,6 @@ namespace brook
          NULL );
       DX9AssertResult( result, "failed to create depth buffer in DX9WriteMask::DX9WriteMask" );
 
-      _colorSurface = _context->createTexture2D(
-         _extentX, _extentY, GPUContext::kTextureFormat_Fixed1 );
-
       bind();
       clear();
       unbind();
@@ -103,11 +100,6 @@ namespace brook
       HRESULT result;
 
       _context->beginScene();
-
-      _context->bindOutput( 0, _colorSurface );
-      size_t outputCount = _context->getMaximumOutputCount();
-      for( size_t i = 0; i < outputCount; i++ )
-         _context->disableOutput( i );
 
       result = _device->Clear( 0, 0, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0 );
       DX9AssertResult( result, "failed to clear depth buffer in DX9WriteMask::clear" );

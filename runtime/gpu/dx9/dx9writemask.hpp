@@ -34,6 +34,5 @@ namespace brook {
       size_t _extentX, _extentY;
 
       IDirect3DSurface9* _depthStencilSurface;
-      GPUContext::TextureHandle _colorSurface;
    };
 }
