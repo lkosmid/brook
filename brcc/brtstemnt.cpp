@@ -14,6 +14,23 @@
 #include "brtexpress.h"
 #include "project.h"
 #include "codegen.h"
+//FIXME eventually we'll want to code-transform to do the following 2 functions
+bool recursiveIsGather(Type * form) {
+  bool ret=(form->type==TT_Array);
+  bool isarray=ret;
+  Type * t=form;
+  while (isarray) {
+    t =static_cast<ArrayType *>(t)->subType;
+    isarray= (t->type==TT_Array);
+  }
+  return ret&&t->type!=TT_Stream;
+}
+bool recursiveIsArrayStream(Type * form) {
+  return form->type==TT_Array&&(!recursiveIsGather(form));
+} 
+bool recursiveIsStream(Type* form) {
+  return (form->type==TT_Array||form->type==TT_Stream)&&(!recursiveIsGather(form));
+}
 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -107,12 +124,12 @@ BRTKernelDef::printStub(std::ostream& out) const
        << "__" << *FunctionName() << "_fp);\n\n";
 
    for (i=0; i < fType->nArgs; i++) {
-      if (fType->args[i]->isStream() &&
-          fType->args[i]->form->getQualifiers() & TQ_Out) {
+      if (recursiveIsStream(fType->args[i]->form) &&
+          (fType->args[i]->form->getQualifiers() & TQ_Out)) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
-      } else if (fType->args[i]->isStream()) {
+      } else if (recursiveIsStream(fType->args[i]->form)) {
          out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
-      } else if (fType->args[i]->isArray()) {
+      } else if (recursiveIsGather(fType->args[i]->form)) {
          out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
       } else {
          out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
@@ -146,7 +163,7 @@ BRTKernelDef::CheckSemantics() const
          }
          outArg = fType->args[i];
 
-         if (!fType->args[i]->isStream()) {
+         if (!recursiveIsStream(fType->args[i]->form)) {
             std::cerr << "Output is not a stream: ";
             fType->args[i]->print(std::cerr, true);
             std::cerr << ".\n";

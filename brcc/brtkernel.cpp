@@ -128,15 +128,23 @@ static Symbol getSymbol(std::string in) {
     return name;
 }
 
+extern bool recursiveIsGather(Type*);
+extern bool recursiveIsArrayStream(Type*);
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class PrintCPUArg {
     Decl * a;
     unsigned int index;
 public:
-
+     bool isGather() {
+       return recursiveIsGather(a->form);
+    }
+    bool isArrayStream() {
+      return recursiveIsArrayStream(a->form);
+    }
     PrintCPUArg(Decl * arg,unsigned int index):a(arg),index(index){}
     enum STAGE {HEADER,DEF,USE,CLEANUP};
-   
+  
    //this function determines if the size actually is specified for this dim
     bool isDimensionlessHelper(Type * t) {
         if (t->type==TT_Array) {
@@ -152,17 +160,15 @@ public:
     }
    // this function figures that all arrays have a chance to have all dims specified
     bool isDimensionless() {
+      return false;
+#if 0
         if (a->form->type==TT_Array) {
             return isDimensionlessHelper(static_cast<ArrayType*>
                                          (a->form)->subType);
         }
         return false;
+#endif
     }
-
-    bool isArray() {
-        return (a->form->type==TT_Array);
-    }
-
     void printDimensionlessGatherStream(std::ostream&out,STAGE s){
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
@@ -209,13 +215,23 @@ public:
 
    //The following function is obsolete for now since static sized
    //arrays are no longer helpful
-    void printDimensionalGatherStream(std::ostream &out, STAGE s) {
-	printDimensionlessGatherStream(out,s);
-	return;
-	//past this point is dead code.
-        Type * t=a->form;//obsolete! not allowed to index with float4
+    void printArrayStream(std::ostream &out, STAGE s) {
+        Type * t=a->form;
+	//temporarily dissect type.
+	Type * u=t;
+	Type ** typeToRestore=NULL;
+	Type * originalTarget=NULL;
+	while (u->type==TT_Array) {
+	  ArrayType * uu =static_cast<ArrayType*>(u);
+	  if (uu->subType->type==TT_Stream) {
+	    //now we hop to the base type;
+	    typeToRestore = &uu->subType;
+	    originalTarget = uu->subType;
+	    uu->subType = static_cast<ArrayType*>(uu->subType)->subType;
+	  }
+	}
         switch (s) {
-        case HEADER:{//obsolete! not allowed to index with float4
+        case HEADER:{
             TypeQual tq= t->getQualifiers();            
             if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
                 out << "const ";//kernels are only allowed to touch out params
@@ -223,7 +239,7 @@ public:
             a->print(out,0);
             break;
         }
-        case DEF:{//obsolete! not allowed to index with float4
+        case DEF:{
             t=static_cast<ArrayType*>(t)->subType;
             Symbol s;
             if (t->type==TT_Base)
@@ -236,12 +252,10 @@ public:
             t->printType(out,&s,true,0);
             out << ")"<<std::endl;
             indent(out,2);
-            out <<"reinterpret_cast<brook::Stream *>(args["<<index<<"])";
-	    indent(out,3);
-	    out << "->getData(brook::Stream::READ);";
+            out <<"args["<<index<<"];";
             break;
         }
-        case USE:{//obsolete! not allowed to index with float4
+        case USE:{
             out <<"arg"<<index;
             break;
         }
@@ -252,6 +266,8 @@ public:
 	  out << std::endl;
 	  break;
         }
+	if (typeToRestore)
+	  *typeToRestore = originalTarget;
     }
 
    //standard args, not gather or scatter
@@ -294,44 +310,39 @@ public:
     
    //redirects call
     void printCPUFunctionArg(std::ostream & out){
-        if(isArray())
-            if (isDimensionless())
-                printDimensionlessGatherStream(out,HEADER);
-            else
-                printDimensionalGatherStream(out,HEADER);
+        if(isGather())
+	  printDimensionlessGatherStream(out,HEADER);
+	else if (isArrayStream())
+	  printArrayStream(out,HEADER);
         else
-            printNormalArg(out,HEADER);
+	  printNormalArg(out,HEADER);
     }
 
    //redirects call
     void printInternalDef(std::ostream &out){
-        if(isArray())
-            if (isDimensionless())
-                printDimensionlessGatherStream(out,DEF);
-            else
-                printDimensionalGatherStream(out,DEF);
+        if(isGather())
+	  printDimensionlessGatherStream(out,DEF);
+	if (!isArrayStream())            
+	  printArrayStream(out,DEF);
         else
-            printNormalArg(out,DEF);
+	  printNormalArg(out,DEF);
     }
-
    //redirects call
     void printInternalUse(std::ostream &out){
-        if(isArray())
-            if (isDimensionless())
-                printDimensionlessGatherStream(out,USE);
-            else
-                printDimensionalGatherStream(out,USE);
+        if(isGather())
+	  printDimensionlessGatherStream(out,USE);
+	else if (isArrayStream())           
+	  printArrayStream(out,USE);
         else
-            printNormalArg(out,USE);
+	  printNormalArg(out,USE);
     }
     void printInternalCleanup(std::ostream &out){
-        if(isArray())
-            if (isDimensionless())
-                printDimensionlessGatherStream(out,CLEANUP);
-            else
-                printDimensionalGatherStream(out,CLEANUP);
+        if(isGather())
+	  printDimensionlessGatherStream(out,CLEANUP);
+	else if (isArrayStream())
+	  printArrayStream(out,CLEANUP);
         else
-            printNormalArg(out,CLEANUP);
+	  printNormalArg(out,CLEANUP);
     }
 };
 
