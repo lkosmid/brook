@@ -129,29 +129,74 @@ GLRunTime::createWindowGLContext(void)
 }
 
 
+// Ugh.  Should we put this into NVIDIA's wglext.h?
+#define WGL_TYPE_RGBA_FLOAT_ATI             0x21A0
+
 void
 GLRunTime::createPBufferWGL(int ncomponents)
 {
    static int pixelformat[4];
    static bool runOnce;
    static const int piAttribList[] = {0,0};
-   static const float fAttributes[] = {0, 0};
+   static const float fAttributes[] = {0,0};
+
+   static bool ati_not_nv;
 
    if (!runOnce) {
       BOOL status;
-      int iAttributes[30] = { WGL_RED_BITS_ARB,        0,
-                              WGL_GREEN_BITS_ARB,      0,
-                              WGL_BLUE_BITS_ARB,       0,
-                              WGL_ALPHA_BITS_ARB,      0,
-                              WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE,
-                              WGL_FLOAT_COMPONENTS_NV, GL_TRUE,
-                              WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB,
-                              WGL_DEPTH_BITS_ARB,      0,
-                              WGL_STENCIL_BITS_ARB,    0,
-                              WGL_DOUBLE_BUFFER_ARB,   GL_FALSE,
-                              WGL_SUPPORT_OPENGL_ARB,  GL_TRUE,
-                              0,                       0};
+      int iAttributes[30];
+      int nAttrib = 0;
       unsigned int numFormats;
+      
+      const char *(*wglGetExtensionsString)(void) = 
+        (const char *(*)(void)) wglGetProcAddress("wglGetExtensionsStringEXT");
+
+      if (!wglGetExtensionsString) {
+        fprintf(stderr, "Graphics adaptor %s does not support "
+                "wglGetExtensionsString.\n", glGetString(GL_RENDERER));
+        exit(1);
+      }
+
+      /* Figure out which pbuffer to create */
+      if (strstr (wglGetExtensionsString(), 
+                  "WGL_ATI_pixel_format_float")) {                  
+        ati_not_nv = true;
+      } else {
+        if (strstr (wglGetExtensionsString(),
+                    "WGL_NV_float_buffer")) {
+          ati_not_nv = false;
+        } else {
+          fprintf (stderr, "WARNING: Graphics adaptor %s does not support\n"
+                   "known floating point render targets. Assuming ATI.\n",
+                   glGetString(GL_RENDERER));
+          ati_not_nv = true;
+          
+        }
+      }   
+
+#define PUSH_ATTRIB(a, b) \
+iAttributes[nAttrib++] = a; iAttributes[nAttrib++] = b; 
+
+      PUSH_ATTRIB (WGL_RED_BITS_ARB,        32);
+      PUSH_ATTRIB (WGL_GREEN_BITS_ARB,      32);
+      PUSH_ATTRIB (WGL_BLUE_BITS_ARB,       32);
+      PUSH_ATTRIB (WGL_ALPHA_BITS_ARB,      32);
+      PUSH_ATTRIB (WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE);
+      PUSH_ATTRIB (WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB);
+      PUSH_ATTRIB (WGL_DEPTH_BITS_ARB,      0);
+      PUSH_ATTRIB (WGL_STENCIL_BITS_ARB,    0);
+      PUSH_ATTRIB (WGL_DOUBLE_BUFFER_ARB,   GL_FALSE);
+      PUSH_ATTRIB (WGL_SUPPORT_OPENGL_ARB,  GL_TRUE);
+      PUSH_ATTRIB (WGL_AUX_BUFFERS_ARB,     0);
+
+      if (ati_not_nv) {
+        PUSH_ATTRIB (WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI);
+      } else {
+        PUSH_ATTRIB (WGL_FLOAT_COMPONENTS_NV, GL_TRUE);
+      }
+        
+      PUSH_ATTRIB (0, 0);
+
 
       for (int i=0; i<4; i++) {
          for (int j=0; j<4; j++)

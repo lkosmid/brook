@@ -64,7 +64,9 @@
    XXX(PFNGLBINDPROGRAMARBPROC,        glBindProgramARB)               \
    XXX(PFNGLPROGRAMSTRINGARBPROC,      glProgramStringARB)             \
    XXX(PFNGLPROGRAMLOCALPARAMETER4FARBPROC, glProgramLocalParameter4fARB) \
-                                                                       \
+
+
+#define RUNTIME_BONUS_NV_FNS \
    XXX(PFNGLGENPROGRAMSNVPROC,         glGenProgramsNV)                \
    XXX(PFNGLLOADPROGRAMNVPROC,         glLoadProgramNV)                \
    XXX(PFNGLBINDPROGRAMNVPROC,         glBindProgramNV)                \
@@ -74,8 +76,14 @@
    extern type fn;
 
 RUNTIME_BONUS_GL_FNS
+RUNTIME_BONUS_NV_FNS
 #undef XXX
 #endif
+
+#define GL_RGBA_FLOAT32_ATI             0X8814
+#define GL_RGB_FLOAT32_ATI              0X8815
+#define GL_ALPHA_FLOAT32_ATI            0X8816
+#define GL_LUMINANCE_ALPHA_FLOAT32_ATI  0X8819
 
 namespace brook {
 
@@ -95,10 +103,7 @@ namespace brook {
    typedef struct{
       float x, y, z, w;
    } glfloat4;
-
-   // Is there a GL_RG?  I'm not sure that LUMINANCE_ALPHA is correct here
-   const GLenum GLformat[] = {0, GL_RED, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA};
-
+      
    void __check_gl(int line, char *file);
 #define CHECK_GL() __check_gl(__LINE__, __FILE__);
 
@@ -189,6 +194,70 @@ namespace brook {
      unsigned int width, height;
      unsigned int *ncomp;
      GLuint *id;
+
+     GLenum GLtype(const int i) {
+        static bool runonce;
+        static GLenum lookup[5];
+
+        if (!runonce) {
+           if (strstr((const char *) glGetString(GL_EXTENSIONS), 
+                      "ATI_texture_float")) {
+              lookup[1] = GL_ALPHA_FLOAT32_ATI;
+              lookup[2] = GL_LUMINANCE_ALPHA_FLOAT32_ATI;
+              lookup[3] = GL_RGB_FLOAT32_ATI;
+              lookup[4] = GL_RGBA_FLOAT32_ATI;
+           } else {
+              if (strstr((const char *) glGetString(GL_EXTENSIONS),
+                         "NV_float_buffer")) {
+                 lookup[1] = GL_FLOAT_R32_NV;
+                 lookup[2] = GL_FLOAT_RG32_NV;
+                 lookup[3] = GL_FLOAT_RGB32_NV;
+                 lookup[4] = GL_FLOAT_RGBA32_NV;
+              } else {
+                 fprintf (stderr, "Graphics adaptor %s does not support\n"
+                          "known floating point render target types.\n",
+                          glGetString(GL_RENDERER));
+                 exit(1);
+              }
+           }
+           runonce = true;
+        }     
+        return lookup[i];
+     }
+
+
+     GLenum GLformat(int i) {
+        static bool runonce;
+        static GLenum lookup[5];
+
+        if (!runonce) {
+           if (strstr((const char *) glGetString(GL_EXTENSIONS), 
+                      "ATI_texture_float")) {
+              lookup[1] = GL_ALPHA;
+              lookup[2] = GL_LUMINANCE_ALPHA;
+              lookup[3] = GL_RGB;
+              lookup[4] = GL_RGBA;
+           } else {
+              if (strstr((const char *) glGetString(GL_EXTENSIONS),
+                         "NV_float_buffer")) {
+                 lookup[1] = GL_RED;
+                 lookup[2] = GL_LUMINANCE_ALPHA;
+                 lookup[3] = GL_RGB;
+                 lookup[4] = GL_RGBA;
+              } else {
+                 fprintf (stderr, "Graphics adaptor %s does not support\n"
+                          "known floating point render target types.\n",
+                          glGetString(GL_RENDERER));
+                 exit(1);
+              }
+           }
+           runonce = true;
+        }     
+        return lookup[i];
+     }
+
+
+
 
   protected:
      __BRTStreamType elementType;

@@ -5,14 +5,6 @@
 
 using namespace brook;
 
-/*
- * I don't know if this is really NV specific or not.  This code may have
- * to move to the subclasses once I get the ARB stuff done. --Jeremy.
- */
-const GLenum GLtype[] = {
-   0, GL_FLOAT_R32_NV, GL_FLOAT_RG32_NV, GL_FLOAT_RGB32_NV, GL_FLOAT_RGBA32_NV
-};
-
 GLStream::GLStream (GLRunTime *rt, int fieldCount,
                     const __BRTStreamType fieldType[],
                     int dims, const int extents[])
@@ -68,12 +60,13 @@ GLStream::GLStream (GLRunTime *rt, int fieldCount,
         stride[i] = stride[i-1]+ncomp[i-1];
 
      glActiveTextureARB(GL_TEXTURE0_ARB+15);
+     CHECK_GL();
      glBindTexture (GL_TEXTURE_RECTANGLE_EXT, id[i]);
-
+     CHECK_GL();
      // Create a texture with NULL data
-     glTexImage2D (GL_TEXTURE_RECTANGLE_EXT, 0, GLtype[ncomp[i]],
+     glTexImage2D (GL_TEXTURE_RECTANGLE_EXT, 0, GLtype(ncomp[i]),
                    width, height, 0,
-                   GLformat[ncomp[i]], GL_FLOAT, NULL);
+                   GLformat(ncomp[i]), GL_FLOAT, NULL);
      CHECK_GL();
   }
 
@@ -163,7 +156,7 @@ GLStream::Write(void *data)
 
 
          if (width == 1 && height == 1) {
-            glGetTexImage(GL_TEXTURE_RECTANGLE_EXT, 0, GLformat[ncomp[i]],
+            glGetTexImage(GL_TEXTURE_RECTANGLE_EXT, 0, GLformat(ncomp[i]),
                           GL_FLOAT, (void *)(t));
             return;
          }
@@ -201,11 +194,11 @@ GLStream::Write(void *data)
             glEnd();
          }
          glFinish();
-         glReadPixels (0, 0, width, height, GLformat[ncomp[i]],
+         glReadPixels (0, 0, width, height, GLformat(ncomp[i]),
                        GL_FLOAT, t);
 #else
          glFinish();
-         glGetTexImage(GL_TEXTURE_RECTANGLE_EXT, 0, GLformat[ncomp[i]],
+         glGetTexImage(GL_TEXTURE_RECTANGLE_EXT, 0, GLformat(ncomp[i]),
                        GL_FLOAT, t);
 #endif
 
@@ -256,7 +249,7 @@ GLStream::Read(const void *data)
 
          if (nfields == 1)
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
-                            0, 0, width, height, GLformat[ncomp[i]],
+                            0, 0, width, height, GLformat(ncomp[i]),
                             GL_FLOAT, data);
          else {
             float *t = (float *) malloc (sizeof(float)*ncomp[i]*width*height);
@@ -270,12 +263,11 @@ GLStream::Read(const void *data)
             }
 
             glTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
-                            0, 0, width, height, GLformat[ncomp[i]],
+                            0, 0, width, height, GLformat(ncomp[i]),
                             GL_FLOAT, t);
             free(t);
          }
       }
-
    }
 
    CHECK_GL();
