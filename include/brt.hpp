@@ -21,19 +21,19 @@ enum __BRTStreamType {
    __BRTFLOAT4=4,
 };
 
-template <class T> __BRTStreamType __BRTReductionType(const T*e) {
+template <class T> inline __BRTStreamType __BRTReductionType(const T*e) {
    return __BRTSTREAM;
 }
-template <> __BRTStreamType __BRTReductionType(const float4*e) {
+template <> inline __BRTStreamType __BRTReductionType(const float4*e) {
    return __BRTFLOAT4;
 }
-template <> __BRTStreamType __BRTReductionType(const float3*e) {
+template <> inline __BRTStreamType __BRTReductionType(const float3*e) {
    return __BRTFLOAT3;
 }
-template <> __BRTStreamType __BRTReductionType(const float2*e) {
+template <> inline __BRTStreamType __BRTReductionType(const float2*e) {
    return __BRTFLOAT2;
 }
-template <> __BRTStreamType __BRTReductionType(const float*e) {
+template <> inline __BRTStreamType __BRTReductionType(const float*e) {
    return __BRTFLOAT;
 }
 namespace brook {

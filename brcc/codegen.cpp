@@ -134,6 +134,7 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
   const char xyzw[] = "xyzw";
   std::ostringstream hlsl;
   Decl *outArg = NULL;
+  bool isReduction = false;
   int texcoord, constreg, i;
 
 
@@ -157,8 +158,13 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
       outArg = args[i];
       continue;
     }
+
+    if ((args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
+      outArg = args[i];
+      isReduction = true;
+    }
     
-    if (args[i]->isStream()) {
+    if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
        hlsl << "sampler _tex_" << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
     } else if (args[i]->isArray()) {
@@ -184,7 +190,7 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
         continue;
      }
 
-     if (args[i]->isStream()) {
+     if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
        if (i) hlsl <<  ",\n\t\t";
        hlsl << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
             << texcoord++;
@@ -213,9 +219,9 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
 
   /* Perform stream fetches */
   for (i=0; i < nArgs; i++) {
-     if (args[i] == outArg) continue;
+     if (args[i] == outArg && !isReduction) continue;
 
-     if (args[i]->isStream()) {
+     if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
         int dimension = FloatDimension(args[i]->form->getBase()->typemask);
         assert(dimension > 0);
 
