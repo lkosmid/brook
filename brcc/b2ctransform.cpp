@@ -438,7 +438,9 @@ class NewIndexExpr :public IndexExpr {public:
       */
       out << "]";
       if (printCast&&isGather) {
+#ifdef MULTIPLE_ARRAY_BOUNDS_LOOKUPS
          out << ".gather()";
+#endif
       }
    }
 
