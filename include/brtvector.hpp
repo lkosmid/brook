@@ -42,6 +42,9 @@ template <> class GetValueOf <int> {public:
 template <> class GetValueOf <char> {public:
     typedef char type;
 };
+template <> class GetValueOf <bool> {public:
+    typedef bool type;
+};
 
 template <class T> class Holder {
 public:
@@ -60,6 +63,7 @@ HOLDER(double);
 HOLDER(char);
 HOLDER(unsigned int);
 HOLDER(int);
+HOLDER(bool);
 template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
     return Holder<T>().getAt(in,i);
 }
