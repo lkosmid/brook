@@ -135,12 +135,11 @@ kernel float turbulence4(float4 vec, float p[], float4 g[])
 {
     float n, i;
 
-    n = noise4(vec, p, g);/* +
+    n = noise4(vec, p, g) +
 	 0.5 * noise4(vec * 2.0, p, g) +
 	 0.25 * noise4(vec * 4.0, p, g) +
 	 0.125 * noise4(vec * 8.0, p, g) +
 	 0.0625 * noise4(vec * 16.0, p, g);
-			  */
     return n;
 }
 
@@ -161,6 +160,10 @@ kernel void fireFP(float  p[],         // permutations texture
     float2 uv;
     float4 v;
     float4 frag_pos;
+    float2 up, diag, right;
+    up   = float2(0.0f,1.0f);
+    diag = float2(1.0f,1.0f);
+    right = float2(1.0f,0.0f);
 	
     frag_pos = float4( it.x, it.y, z_pos, 1);
     uv = float2( frag_pos.x, z_pos );
@@ -223,68 +226,84 @@ int main(int argc, char* argv[]) {
     unsigned char* output = NULL;
     float* outputf = NULL;
     float* inputf = NULL;
-    int i, j;
+    int i, j, m;
     int size;
     float turbscale = 1.0;
     float zpos = 0.5;
     float time = 1000.;
     char filename[255];
+    char base_file[255];
+    char zeros[8];
+    int iters;
     FILE* outfile;
 
     if(argc < 6){
-	fprintf(stderr, "Usage: %s <size> <turbscale> <zpos> <time> <outfile>\n", argv[0]);
+	fprintf(stderr, "Usage: %s <size> <turbscale> <zpos> <outfile> <iterations>\n", argv[0]);
 	exit(1);
     }
  
     size = atoi(argv[1]);
     turbscale = (float)atof(argv[2]);
     zpos = (float)atof(argv[3]);
-    time = (float)atof(argv[4]);
-    strncpy(filename, argv[5], 254);
+    strncpy(base_file, argv[4], 254);
+    iters = atoi(argv[5]);
 
     create_noise_lookups();
     {	
-        iter float2 it<size,size> = iter( float2(0.-size/2.0f, 0.-size/2.0f), float2(size/2.0f, size/2.0f) );
-	float* fire_image_float;
-        float3 fire<size,size>;
-	float p_stream<256>;
-	float4 g_stream<256>;
-	float3 firetex<128,64>;
-
-	fire_image_float = (float*)malloc(3*128*64*sizeof(float));
-
-	for(i=0; i<3*128*64; i++){
-	     fire_image_float[i] = fire_image[i];
-	}
-       
-        output  = (unsigned char*)malloc(size*size*3*sizeof(unsigned char));
-        outputf = (float*)malloc(size*size*3*sizeof(float));
-
-        streamRead(p_stream, p);
-        streamRead(g_stream, g);
-	streamRead(firetex, fire_image_float);
-
-        fireFP(p_stream, g_stream, firetex, turbscale, 4*zpos, time, it, fire );
-
-        streamWrite(fire, outputf);
-
-        // convert output back to bytes for (ppm) output
-        for(i=0; i<size; i++){
-            for(j=0; j<size; j++){
-                output[i*size*3+j*3+0] = (unsigned char)outputf[i*size*3+j*3+0];
-                output[i*size*3+j*3+1] = (unsigned char)outputf[i*size*3+j*3+1];
-                output[i*size*3+j*3+2] = (unsigned char)outputf[i*size*3+j*3+2];
-            }
-        }
-
-	outfile = fopen(filename, "wb");
-	fprintf(outfile, "P6\n%d\n%d\n255\n", size, size);
-        for(i=0; i<size; i++){
-            for(j=0; j<size; j++){
-		 fwrite(&output[i*size*3+j*3], sizeof(unsigned char), 3, outfile); 
-	    }
-	}
-	fclose(outfile);
+	 iter float2 it<size,size> = iter( float2(-64.0f, -32.0f), float2(64.0f, 32.0f) );
+	 float* fire_image_float;
+	 float3 fire<size,size>;
+	 float p_stream<256>;
+	 float4 g_stream<256>;
+	 float3 firetex<128,64>;
+	 
+	 fire_image_float = (float*)malloc(3*128*64*sizeof(float));
+	 
+	 for(i=0; i<3*128*64; i++){
+	      fire_image_float[i] = fire_image[i];
+	 }
+	 
+	 output  = (unsigned char*)malloc(size*size*3*sizeof(unsigned char));
+	 outputf = (float*)malloc(size*size*3*sizeof(float));
+	 
+	 streamRead(p_stream, p);
+	 streamRead(g_stream, g);
+	 streamRead(firetex, fire_image_float);
+	 
+	 for(m=0; m<iters; m++){
+	      
+	      fireFP(p_stream, g_stream, firetex, turbscale, 4*zpos, m*10., it, fire );
+	      
+	      streamWrite(fire, outputf);
+	      
+	      // convert output back to bytes for (ppm) output
+	      for(i=0; i<size; i++){
+		   for(j=0; j<size; j++){
+			output[i*size*3+j*3+0] = (unsigned char)outputf[i*size*3+j*3+0];
+			output[i*size*3+j*3+1] = (unsigned char)outputf[i*size*3+j*3+1];
+			output[i*size*3+j*3+2] = (unsigned char)outputf[i*size*3+j*3+2];
+		   }
+	      }
+	      
+	      if(m<10)
+		   sprintf(zeros, "0000");
+	      else if(m<100)
+		   sprintf(zeros, "000");
+	      else if(m<1000)
+		   sprintf(zeros, "00");
+	      else if(m<10000)
+		   sprintf(zeros, "0");
+	      
+	      sprintf(filename, "%s%s%d.ppm", base_file, zeros, m);
+	      outfile = fopen(filename, "wb");
+	      fprintf(outfile, "P6\n%d\n%d\n255\n", size, size);
+	      for(i=0; i<size; i++){
+		   for(j=0; j<size; j++){
+			fwrite(&output[i*size*3+j*3], sizeof(unsigned char), 3, outfile); 
+		   }
+	      }
+	      fclose(outfile);
+	 }
     }
     return 0;
 }
