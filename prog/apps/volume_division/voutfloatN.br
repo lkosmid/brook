@@ -214,8 +214,9 @@ kernel void RelativeGatherfloat(out float output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];
@@ -1225,8 +1226,9 @@ kernel void RelativeGatherfloat2(out float2 output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];
@@ -2236,8 +2238,9 @@ kernel void RelativeGatherfloat3(out float3 output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];
@@ -3247,8 +3250,9 @@ kernel void RelativeGatherfloat4(out float4 output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];
