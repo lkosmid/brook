@@ -254,9 +254,9 @@ public:
 #undef BROOK_UNARY_OP
 #define NONCONST_BROOK_UNARY_OP(op) vec<VALUE,tsize> operator op (){ \
       return vec<VALUE, tsize > (op getAt(0),  \
-                                 op getAt(1),  \
-                                 op getAt(2),  \
-                                 op getAt(3)); \
+                                 tsize>1?op getAt(1):getAt(1),  \
+                                 tsize>2?op getAt(2):getAt(2),  \
+                                 tsize>3?op getAt(3):getAt(3)); \
     }
     NONCONST_BROOK_UNARY_OP(--);
     NONCONST_BROOK_UNARY_OP(++);

@@ -253,9 +253,9 @@ public:
 #undef BROOK_UNARY_OP
 #define NONCONST_BROOK_UNARY_OP(op) vec<VALUE,tsize> operator op (){ \
       return vec<VALUE, tsize > (op getAt(0),  \
-                                 op getAt(1),  \
-                                 op getAt(2),  \
-                                 op getAt(3)); \
+                                 tsize>1?op getAt(1):getAt(1),  \
+                                 tsize>2?op getAt(2):getAt(2),  \
+                                 tsize>3?op getAt(3):getAt(3)); \
     }
     NONCONST_BROOK_UNARY_OP(--);
     NONCONST_BROOK_UNARY_OP(++);
@@ -304,6 +304,7 @@ public:
     template <class BRT_TYPE> operator BRT_TYPE () const{
       return InitializeClass<BRT_TYPE>()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
+
 #define ASSIGN_OP(op) template <class BRT_TYPE> \
          vec<VALUE,tsize>& operator op (const BRT_TYPE & in) {  \
         f[0] op (VALUE)(GetAt<BRT_TYPE>(in,0));  \
