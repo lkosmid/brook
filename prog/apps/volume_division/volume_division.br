@@ -9,7 +9,7 @@ char use_vout_amplify=1;
  * If it is, it returns the single bit passed into the index (ex 1,2,4,...,128)
  */
 kernel float test(float vol<>,float index<>){
-  return (vol>0)?index:0;
+  return (vol>.5)?index:0;
 }
 /* This kernel is for a synthetic dataset consisting of one sphere centered at
  * offset and radius equal to sqrt(density). 
@@ -431,7 +431,7 @@ int main (int argc, char ** argv) {
          // What vertices are we going to spit out
          // since the vout code does address translation fill in a good guess
          // for the width of the output, but set the height to 1 (was 0)
-         float4 v<(dat.height),(use_vout_filter?1:dat.width)>;
+         float4 v<(dat.height),(dat.width)>;
          // this iterator tracks the center of the block we're working with
          iter float2 center <(dat.height),(dat.width)> 
            = iter (float2(0.0f,0.0f),

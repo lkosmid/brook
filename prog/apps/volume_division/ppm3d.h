@@ -58,14 +58,14 @@ float * mallocSlice (const ppm &fp) {
    return (float*)malloc(sizeof(float)*fp.width*fp.height);
 }
 float myrand () {
-  return rand()>RAND_MAX/2?1.0f:-1.0f;
+  return rand()>RAND_MAX/2?1.0f:0.0f;
    static unsigned int seed1=21051095;
    unsigned int * seed=&seed1;
    unsigned int rand_max =1509281;
    *seed = (*seed +26129357)%rand_max;
    if (*seed<(rand_max/2))
       return 1;
-   else return -1;
+   else return -0.0;
 }
 
 void readPPM3dSlice(const ppm &fp, 
@@ -89,9 +89,9 @@ void readPPM3dSlice(const ppm &fp,
      for (unsigned int j=0;j<fp.height;++j) {
        for (unsigned int i=0;i<fp.width;++i) {
          if (fp.width<=3)
-           data[i+j*fp.width]= (i==1&&j==1&&whichslice==1)?1.0f:-1.0f;
+           data[i+j*fp.width]= (i==1&&j==1&&whichslice==1)?1.0f:0.0f;
          else
-           data[i+j*fp.width]= ((j-offset)*(j-offset)+(whichslice-offset)*(whichslice-offset)+(i-offset)*(i-offset)<rad*rad)?1.0f:-1.0f;
+           data[i+j*fp.width]= ((j-offset)*(j-offset)+(whichslice-offset)*(whichslice-offset)+(i-offset)*(i-offset)<rad*rad)?1.0f:0.0f;
        }
      }
    }
