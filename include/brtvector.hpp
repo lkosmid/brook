@@ -337,6 +337,15 @@ template <> class BracketType <int> {public:
 template <> class BracketType <char> {public:
   typedef vec<char,1> type;
 };
+template <> class BracketType <vec<float,1> > {public:
+  typedef vec<vec<float,1>,1> type;
+};
+template <> class BracketType <vec<int,1> > {public:
+  typedef vec<vec<int,1>,1 > type;
+};
+template <> class BracketType <vec<char,1> > {public:
+  typedef vec<vec<char,1>,1 > type;
+};
 
 template <class T> class BracketOp {public:
   template <class U> T& operator ()(const U&u, unsigned int i) {
@@ -347,16 +356,22 @@ template <class T> class BracketOp {public:
   }
 };
 template <> class BracketOp <float> {public:
-  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
-  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
 };
 template <> class BracketOp <int> {public:
-  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
-  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
 };
 template <> class BracketOp <char> {public:
-  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
-  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+  template <class U> U operator ()(const U&u, unsigned int i) {return u;}
+};
+template <> class BracketOp <vec<float,1> > {public:
+	template <class U> vec<vec<float,1>,1> operator ()(const U&u, unsigned int i) {return vec<vec<float,1>,1>(u.getAt(0));}
+};
+template <> class BracketOp <vec<int,1> > {public:
+  template <class U> vec<vec<int,1>,1> operator ()(const U&u, unsigned int i) {return u.getAt(0);}
+};
+template <> class BracketOp <vec<char,1> > {public:
+  template <class U> vec<vec<char,1>,1> operator ()(const U&u, unsigned int i) {return u.getAt(0);}
 };
 
 
@@ -419,8 +434,7 @@ protected:
 public:
     const VALUE &getAt (unsigned int i) const{return f[i%size];}
     VALUE &getAt (unsigned int i) {return f[i%size];}
-    const typename BracketType<VALUE>::type &operator [] (unsigned int i)const {return BracketOp<VALUE>()(*this,i);}
-    typename BracketType<VALUE>::type &operator [] (unsigned int i) {return BracketOp<VALUE>()(*this,i);}
+    typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
     vec<VALUE,tsize>& cast() {
         return *this;
     }
@@ -443,19 +457,19 @@ public:
     BROOK_UNARY_OP(-)
     BROOK_UNARY_OP(!)    
 #undef BROOK_UNARY_OP
-    vec<VALUE,4> swizzle4(MASKS x,MASKS y,MASKS z,MASKS w)const {
+    vec<VALUE,4> swizzle4(int x,int y,int z,int w)const {
         return vec<VALUE,4>(getAt(x),
                             getAt(y),
                             getAt(z),
                             getAt(w));
     }
-    vec<VALUE,3> swizzle3(MASKS x,MASKS y,MASKS z)const {
+    vec<VALUE,3> swizzle3(int x,int y,int z)const {
         return vec<VALUE,3>(getAt(x),getAt(y),getAt(z));
     }
-    vec<VALUE,2> swizzle2(MASKS x,MASKS y)const {
+    vec<VALUE,2> swizzle2(int x,int y)const {
         return vec<VALUE,2>(getAt(x),getAt(y));
     }
-    vec<VALUE, 1> swizzle1(MASKS x)const {
+    vec<VALUE, 1> swizzle1(int x)const {
         return vec<VALUE,1>(getAt(x));
     }
     vec() {
@@ -508,7 +522,7 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE>
-      vec<VALUE,4> mask4 (const BRT_TYPE&in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+      vec<VALUE,4> mask4 (const BRT_TYPE&in,int X, int Y,int Z,int W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -519,20 +533,20 @@ public:
                     getAt(W));
     }
     template <class BRT_TYPE>
-      vec<VALUE,3> mask3 (const BRT_TYPE&in,MASKS X,MASKS Y,MASKS Z) {
+      vec<VALUE,3> mask3 (const BRT_TYPE&in,int X,int Y,int Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
     template <class BRT_TYPE> 
-      vec<VALUE,2> mask2 (const BRT_TYPE&in,MASKS X,MASKS Y) {
+      vec<VALUE,2> mask2 (const BRT_TYPE&in,int X,int Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
     template <class BRT_TYPE> 
-      vec<VALUE,1> mask1 (const BRT_TYPE&in,MASKS X) {
+      vec<VALUE,1> mask1 (const BRT_TYPE&in,int X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
