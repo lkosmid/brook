@@ -7,9 +7,6 @@
 #include <iostream>
 #include <stdlib.h>
 #include <ctype.h>
-extern "C" {
-  void usleep(long);
-}
 #include "timing.h"
 
 /*
