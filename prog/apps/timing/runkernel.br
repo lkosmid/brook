@@ -19,6 +19,103 @@
 #endif
 
 /*
+ * Streams can't be passed to functions, so use a macro.
+ *
+ *      We run the kernel once without any timing to prime the runtime,
+ *      which otherwise appears to occasionally take unexpectedly long.
+ *      Then we time  20*k + W and R + 20*k + W and subtract the former from
+ *      the latter and latch the result.
+ *
+ *      XXX This still sometimes calculates a cur_R less than 0.  If we get
+ *      a value less than 0, we truncate to 1 so that dividing by cur_R
+ *      won't cause exceptions.
+ */
+
+#define UPDATE_CUR_R(numEntries, data, s, o)                    \
+   do {                                                         \
+      int cur_kW, i;                                            \
+      float4 *scratch;                                          \
+                                                                \
+      curNEntries = numEntries;                                 \
+      scratch = (float4 *) malloc(numEntries * sizeof *scratch);\
+      streamRead(s, data);                                      \
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
+      streamWrite(o, scratch);                                  \
+      start = GETTIME();                                        \
+      for (i = 0; i < 20; i++)                                  \
+         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
+      streamWrite(o, scratch);                                  \
+      cur_kW = (int) (GETTIME() - start);                       \
+      start = GETTIME();                                        \
+      streamRead(s, data);                                      \
+      for (i = 0; i < 20; i++)                                  \
+         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
+      streamWrite(o, scratch);                                  \
+      cur_R = (int) (GETTIME() - start - cur_kW);               \
+      if (cur_R < 1) cur_R = 1;                                 \
+   } while(0)
+
+
+/*
+ * Streams can't be passed to functions, so use a macro.
+ *
+ *      We run the kernel once without any timing to prime the runtime,
+ *      which otherwise appears to occasionally take unexpectedly long.
+ *      Then we run our kernel, but before reading back, run our kernel on a
+ *      tiny stream (tiny so it runs quickly, it could be any length) and
+ *      then time the streamWrite() of the real stream.
+ *
+ *      XXX A sufficiently unlucky card could decide to punt the stream back
+ *      to system memory while we were running the kernel on the tiny
+ *      stream.  If so, them's the breaks.  We clamp any value less than 1
+ *      to 1 to avoid divide overflows.  In practice, I haven't had a
+ *      problem with low values (unlike cur_R).  --Jeremy.
+ *
+ */
+
+#define UPDATE_CUR_W(numEntries, data, s, o, tiny)              \
+   do {                                                         \
+      float4 *scratch;                                          \
+                                                                \
+      curNEntries = numEntries;                                 \
+      scratch = (float4 *) malloc(numEntries * sizeof *scratch);\
+      streamRead(s, data);                                      \
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
+      streamWrite(o, scratch);                                  \
+                                                                \
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, tiny); \
+      streamWrite(tiny, scratch);                               \
+      start = GETTIME();                                        \
+      streamWrite(o, scratch);                                  \
+      cur_W = (int) (GETTIME() - start);                        \
+      if (cur_W < 1) cur_W = 1;                                 \
+   } while (0)
+
+typedef void (*RunKernelWrapperFn)(char *logName, int length, int nRuns);
+
+static const int lengths[] = {
+   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+   21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+   40, 41, 42, 43, 44, 45, 46, 48, 49, 50, 61, 62, 63, 64, 65, 66,
+   67, 68, 69, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 256,
+   300, 350, 400, 450, 512, 1024, 2048
+};
+static const int iterations[] = {
+   1, 2, 4, 8, 16, /*20,  40,*/ 50, 75, 150, /* 200, 300, 500 */
+};
+static const int numLengths = sizeof lengths / sizeof lengths[0];
+static const int numIterations = sizeof iterations / sizeof iterations[0];
+
+/*
+ * Latched values (each time we see a request for to run a kernel on a
+ * stream with different from curNEntries, we calculate R: the length of
+ * time it takes to do a streamRead() on a stream of the new length).
+ */
+
+static int curNEntries;
+static int cur_R, cur_W;
+
+/*
  * RunKernelKickKernel --
  *
  *      Just copy.  This kernel is separate from the test kernels just so
@@ -43,6 +140,7 @@ kernel void
 RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
 {
    o = s;
+   o = c*o + s;
    o = c*o + s;
    o = c*o + s;
    o = c*o + s;
@@ -186,9 +284,11 @@ RunKernelHardWorkCPU(int streamLength, float4 c, float4 *input, float4 *output)
       output[i].x = c.x * output[i].x + input[i].x;
       output[i].x = c.x * output[i].x + input[i].x;
       output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
 
 
       output[i].y = input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
       output[i].y = c.y * output[i].y + input[i].y;
       output[i].y = c.y * output[i].y + input[i].y;
       output[i].y = c.y * output[i].y + input[i].y;
@@ -316,9 +416,11 @@ RunKernelHardWorkCPU(int streamLength, float4 c, float4 *input, float4 *output)
       output[i].z = c.z * output[i].z + input[i].z;
       output[i].z = c.z * output[i].z + input[i].z;
       output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
 
 
       output[i].w = input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
       output[i].w = c.w * output[i].w + input[i].w;
       output[i].w = c.w * output[i].w + input[i].w;
       output[i].w = c.w * output[i].w + input[i].w;
@@ -447,7 +549,7 @@ static void
 RunKernelProcessTiming(char *name, float4 *data,
                        int length, int numEntries, int nRuns)
 {
-   float scale, elapsed;
+   float scale, elapsed, numFLOPs;
    int i;
 
    elapsed = (float) (stop - start);
@@ -456,26 +558,29 @@ RunKernelProcessTiming(char *name, float4 *data,
     * Our kernel does one assignment and n '1.0*output + input' so the
     * result should be n*input and there will have been n + 1 ops in the
     * kernel.
+    *
+    * XXX If length is 1, our only entry is 0,0,0,0.  We hardcode a scale of
+    * 64 in that case since that's what the kernel currently does.
     */
-   scale = numEntries > 1 ? data[1].x : 0.0f;
-   if (scale > 1024.0f || (scale < 61.0f && numEntries > 1)) {
+   scale = numEntries > 1 ? data[1].x : 64.0f;
+   if (scale > 1024.0f || (scale < 60.0f && numEntries > 1)) {
       printf("(* Got back garbage!  data[1].x is %.2f *)\n", data[1].x);
       scale = 0.0f;
    }
+   numFLOPs = numEntries * nRuns * scale * 4.0f;
 
    /*
     * 'MFLOPS' calculation:
     *   - numEntries * nRuns entries processed total
     *   - calculations took elapsed usecs = elapsed/10^6 secs
-    *   - scale + 1 instructions
+    *   - scale instructions
     *   - 4 floats per entry
     */
-   printf("%8I64d\t%6.2f\t\t%4d\t\t(* %s %d R%d *)\n",
-          stop - start,
-          numEntries * nRuns / elapsed * (scale + 1.0f) * 4.0f,
-          nRuns, name, length, nRuns);
+   printf("%8I64d   %6.2f   %8.0f   %4d\t(* %s %d R%d %d %d *)\n",
+          stop - start, numFLOPs / elapsed, numFLOPs / 1000000,
+          nRuns, name, length, nRuns, cur_R, cur_W);
 
-   for (i = 0; CHECK_MISMATCH && i < numEntries; i++) {
+   for (i = 0; CHECK_MISMATCH && scale > 0.0f && i < numEntries; i++) {
       float expected = scale * i;
       float cur = data[i].x;
 
@@ -515,6 +620,12 @@ RunKernel1D(char *logName, int streamLength, int nRuns)
 
    RunKernelBuildData(&data, streamLength);
 
+   if (curNEntries != streamLength) {
+      float4 tiny<1>;
+      UPDATE_CUR_R(streamLength, data, s, o);
+      UPDATE_CUR_W(streamLength, data, s, o, tiny);
+   }
+
    start = GETTIME();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
@@ -543,6 +654,13 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
 
    RunKernelBuildData(&data, streamLength * streamLength);
 
+   if (curNEntries != streamLength * streamLength) {
+      float4 tiny<1>;
+
+      UPDATE_CUR_R(streamLength * streamLength, data, s, o);
+      UPDATE_CUR_W(streamLength * streamLength, data, s, o, tiny);
+   }
+
    start = GETTIME();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
@@ -554,6 +672,8 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
    RunKernelProcessTiming(logName, data,
                           streamLength, streamLength * streamLength, nRuns);
    free(data);
+
+   //RunKernel2DCPU("RunK2DCPU", streamLength, nRuns);
 }
 
 
@@ -587,54 +707,62 @@ RunKernel2DCPU(char *logName, int streamLength, int nRuns)
 }
 
 
+/*
+ * RunKernelDoRun --
+ *
+ *      More code factoring.  A convenient function for regularizing the
+ *      output of a run with a given length to avoiding copy-pasting.
+ */
+
+static void
+RunKernelDoRun(RunKernelWrapperFn f, char *logName, int length)
+{
+   int i;
+
+   printf("(* %s: length %d *)\n", logName, length);
+   printf("(* usecs   MFLOPS   # MFLOPs   runs *)\n");
+   for (i = 0; i < numIterations; i++) {
+      f(logName, length, iterations[i]);
+   }
+   printf("\n");
+}
 
 
 /*
- * RunKernel_Time --
+ * RunKernel1D_Time --
  *
- *      Entry point for the kernel overhead tests.  We measure execution
- *      time as a function of stream length.
+ *      Entry point for the 1D kernel overhead tests.
  */
 
 void
-RunKernel_Time(int maxLength)
+RunKernel1D_Time(int maxLength)
 {
-   static const int runLengths[] = { 1, 2, 4, 8, 10, 20, 40, 50, 75, /* 150, 200, 300, 500 */ };
-   static const int lengths[] = { 1, 4, 16, 64, 256, 512, 1024, 2048 };
-   static const int numLengths = sizeof lengths / sizeof lengths[0];
-   static const int numRunLengths = sizeof runLengths / sizeof runLengths[0];
-   int i, j;
+   int i;
 
    RunKernelKickBRT();
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
-      printf("(* RunKernel1D: length %d *)\n",lengths[i]);
-      printf("(* usecs\tMFLOPS\t\truns *)\n");
-      for (j = 0; j < numRunLengths; j++) {
-         RunKernel1D("RunK1D", lengths[i], runLengths[j]);
-      }
-      printf("\n");
+      RunKernelDoRun(RunKernel1D, "RunK1D", lengths[i]);
    }
-   printf("(* RunKernel1D length %d *)\n", maxLength);
-   printf("(* usecs\tMFLOPS\t\truns *)\n");
-   for (j = 0; j < numRunLengths; j++) {
-      RunKernel1D("RunK1D", maxLength, runLengths[j]);
-   }
-   printf("\n");
+   RunKernelDoRun(RunKernel1D, "RunK1D", maxLength);
+}
+
+
+/*
+ * RunKernel2D_Time --
+ *
+ *      Entry point for the 2D kernel overhead tests.
+ */
+
+void
+RunKernel2D_Time(int maxLength)
+{
+   int i;
+
+   RunKernelKickBRT();
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
-      printf("(* RunKernel2D length %d *)\n",lengths[i]);
-      printf("(* usecs\tMFLOPS\t\truns *)\n");
-      for (j = 0; j < numRunLengths; j++) {
-         RunKernel2D("RunK2D", lengths[i], runLengths[j]);
-         //RunKernel2DCPU("RunK2DCPU", lengths[i], runLengths[j]);
-      }
-      printf("\n");
+      RunKernelDoRun(RunKernel2D, "RunK2D", lengths[i]);
    }
-   printf("(* RunKernel2D length %d *)\n", maxLength);
-   printf("(* usecs\tMFLOPS\t\truns *)\n");
-   for (j = 0; j < numRunLengths; j++) {
-      RunKernel2D("RunK2D", maxLength, runLengths[j]);
-      //RunKernel2DCPU("RunK2DCPU", maxLength, runLengths[j]);
-   }
+   RunKernelDoRun(RunKernel2D, "RunK2D", maxLength);
 }

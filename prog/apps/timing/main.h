@@ -20,8 +20,23 @@ typedef long long int64;
 #define GETTIME()	(GetTimeMillis() * 1000)
 #endif
 
+#ifdef WIN32
+static inline
+int64 GetTimeTSC() {
+   __asm _emit 0x0f __asm _emit 0x31
+}
+#else
+static inline
+int64 GetTimeTSC() {
+   int64 t;
+   __asm__ __volatile__("rdtsc" : "=A" (t));
+   return t;
+}
+#endif
+
 extern int64 GetTime(void);
 extern unsigned int GetTimeMillis(void);
+extern int64 CyclesToUsecs(int64 cycles);
 
 /*
  * XXX brcc currently has grief with typedefs mixed with Brook code, so we

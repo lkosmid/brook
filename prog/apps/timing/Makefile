@@ -6,22 +6,28 @@ LIBRARIES = $(RUNTIME_LIBS)
 GRAPHDIR = graphs
 SLOP = graphs
 
-RUNTIME=cpu
-RUNSIZE=1024
-RUNTESTS=rw runk
+RUNTIME=nv30gl
+RUNSIZE=512
+RUNTESTS=rw runk2d
 
 include $(ROOTDIR)/common.mk
 
-graph: arch
+.PRECIOUS: $(OBJDIR)/%.pts
+
+$(GRAPHDIR)/graph-$(RUNTIME).pts: $(DEPS) $(BINDIR)/$(BINARY)
+	$(ECHO) "Generating $@"
 	@if test ! -d $(GRAPHDIR); then $(MKDIR) $(GRAPHDIR); fi
-	env BRT_RUNTIME=$(RUNTIME) $(BINDIR)/$(BINARY) $(RUNSIZE) $(RUNTESTS) > $(GRAPHDIR)/graph-$(RUNTIME).pts 2>&1
-	jgraph -P -comments timing-$(RUNTIME).jgr | ps2pdf - graphs/graph-$(RUNTIME).pdf
+	env BRT_RUNTIME=$(RUNTIME) $(BINDIR)/$(BINARY) $(RUNSIZE) $(RUNTESTS) > $@ 2>&1
+
+$(GRAPHDIR)/graph-$(RUNTIME).pdf: makedirs $(GRAPHDIR)/graph-$(RUNTIME).pts
+	$(ECHO) "Generating $@"
+	jgraph -P -comments timing-$(RUNTIME).jgr | ps2pdf - $@
 
 cpu-graph:
-	$(MAKE) RUNTIME=cpu graph
+	$(MAKE) RUNTIME=cpu $(GRAPHDIR)/graph-$(RUNTIME).pdf
 
 nv30-graph:
-	$(MAKE) RUNTIME=nv30gl graph
+	$(MAKE) RUNTIME=nv30gl $(GRAPHDIR)/graph-$(RUNTIME).pdf
 
 dx9-graph:
-	$(MAKE) RUNTIME=dx9 graph
+	$(MAKE) RUNTIME=dx9 $(GRAPHDIR)/graph-$(RUNTIME).pdf

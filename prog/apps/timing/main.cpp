@@ -28,7 +28,8 @@ struct timingEntry {
 
 static const struct timingEntry tests[] = {
    { "rw",      ReadWrite_Time },
-   { "runk",    RunKernel_Time },
+   { "runk1d",  RunKernel1D_Time },
+   { "runk2d",  RunKernel2D_Time },
    //{ "blas",    Blas_Time },
    //{ "spMV",    SpMatVec_Time },
    //{ "conj",    ConjGrad_Time },
@@ -135,6 +136,43 @@ void CleanupMillisTimer(void) {
 
 #endif
 
+
+/*
+ * CyclesToUsecs --
+ *
+ *      Simple function to convert clock cycles to usecs.  We rely upon
+ *      GetTimeMillis() to be fairly accurate over a medium duration Sleep()
+ *      and then compute the MHz rating once based on that.
+ */
+
+int64
+CyclesToUsecs(int64 cycles)
+{
+   static double Hz;
+
+   if (Hz == 0) {
+      int64 cCount;
+      int msCount;
+
+      cCount = GetTimeTSC();
+      msCount = GetTimeMillis();
+#ifdef WIN32
+      Sleep(100);
+#else
+      usleep(100 * 1000);
+#endif
+      cCount = GetTimeTSC() - cCount;
+      msCount = GetTimeMillis() - msCount;
+      Hz = cCount * 1000 / (double) msCount;
+
+      std::cerr << "Your CPU is roughly "
+                << (int) (Hz / 1000000) << " MHz.\n";
+   }
+
+   return (int64) (1000000 * cycles / Hz);
+}
+
+
 /*
  * RunTest --
  *
@@ -151,7 +189,6 @@ RunTest(char *id, int length)
    int i;
 
    for (i = 0; i < numTests; i++) {
-     
       if (_stricmp(id, tests[i].id) == 0) {
          tests[i].f(length);
          std::cout << std::endl;
@@ -178,6 +215,9 @@ main(int argc, char *argv[])
 {
    int length = 1024;
 
+   start = CyclesToUsecs(2800);
+   std::cerr << "2800 cycles is " << (int) start << " usecs.\n";
+
    argc--; argv++;      /* Skip argv[0] */
 
    /* See if argv[1] was a stream length */
@@ -199,7 +239,8 @@ main(int argc, char *argv[])
       } while (argc > 0);
    } else {
       RunTest("rw", length);
-      RunTest("runk", length);
+      RunTest("runk1d", length);
+      RunTest("runk2d", length);
    }
 
    //char c;
