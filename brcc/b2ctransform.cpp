@@ -1,3 +1,4 @@
+#include <set>
 #include <fstream>
 #include <string>
 #include "ctool.h"
@@ -156,12 +157,25 @@ class QuestionColonConverter{public:
 
 
 
+std::set<Expression *> ArrayBlacklist;//set of items we do not want to change to int1 objects.
+void ArrayBlackmailer(Expression * e) {
+	ArrayBlacklist.insert(e);
+}
 
-
-
-
-
-
+void FindArrayDecl (Statement * s) {
+	DeclStemnt * ds;
+	if ((s->type==ST_TypedefStemnt||s->type==ST_DeclStemnt)&&(ds=dynamic_cast<DeclStemnt*>(s))) {
+		//ds->findExpr(ArrayBlackmailer);
+		for (unsigned int i=0;i<ds->decls.size();++i) {
+			Type * t = ds->decls[i]->form;
+			ArrayType *at ;
+			if (t->type==TT_Array&&(at = dynamic_cast<ArrayType *>(t))) {
+				at->size->findExpr(ArrayBlackmailer);
+				ArrayBlackmailer(at->size);
+			}
+		}
+	}
+}
 
 
 
@@ -272,16 +286,18 @@ public:
     virtual void findExpr( fnExprCallback cb ) { next->findExpr(cb); }	
 };
 template <class ConverterFunctor> void ConvertToT (Expression * expression) {
-	Expression * e = ConverterFunctor()(expression);
-	if (e) {
+	if (ArrayBlacklist.find(expression)==ArrayBlacklist.end()) {
+		Expression * e = ConverterFunctor()(expression);
+		if (e) {
 //		(*expression)=ChainExpression(e);
-		Expression * k = new ChainExpression(e);//memory leak--but how else are we to guarantee the integrity of our expression..it's a lost cause unless we have some way of assinging to the passed in expression without rewriting the whole loop.
-		char location[sizeof(Location)];
-		memcpy (&location[0],&expression->location,sizeof(Location));
-		memcpy (expression,k,sizeof(Expression));//DANGEROUS but we don't have access to the code
-		memcpy (&expression->location,&location[0],sizeof(Location));
-		e->findExpr(ConvertToT<MaskConverter>);
-		
+			Expression * k = new ChainExpression(e);//memory leak--but how else are we to guarantee the integrity of our expression..it's a lost cause unless we have some way of assinging to the passed in expression without rewriting the whole loop.
+			char location[sizeof(Location)];
+			memcpy (&location[0],&expression->location,sizeof(Location));
+			memcpy (expression,k,sizeof(Expression));//DANGEROUS but we don't have access to the code
+			memcpy (&expression->location,&location[0],sizeof(Location));
+			e->findExpr(ConvertToT<MaskConverter>);
+			
+		}
 	}
 }
 void FindMask (Statement * s) {
@@ -303,10 +319,12 @@ bool compileCpp() {
 	if (tu) {
 		std::ofstream out;
 //		tu->findFunctionDef (ConvertToMask);
+		tu->findStemnt (FindArrayDecl);		
 		tu->findStemnt(FindMask);
 		tu->findStemnt (FindSwizzle);
 		tu->findStemnt (FindQuestionColon);
 		tu->findStemnt (FindIndexExpr);
+
 
 		std::string s (globals.coutputname);
 		s+="pp";
