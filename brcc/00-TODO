@@ -34,3 +34,5 @@ Long
    * Optimizations within a given kernel
 
    * Optimizations across kernels (merging?)
+
+   * Interpolant/constant streams
