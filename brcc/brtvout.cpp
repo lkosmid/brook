@@ -67,35 +67,53 @@ FunctionDef * TransformVoutToOut (FunctionDef * fd) {
    return NULL;
 }
 
-Statement * ModifyReturnStemnt (Statement * ste, 
-                                FunctionType * vt, 
-                                Decl * vout_counter,
-                                const Location & location) {
-   Block * block = new Block(location);
-   Block * subblock = new Block(location);
-   
-   Symbol * vcounter=  vout_counter->name->dup();
-   vcounter->name=vout_counter->name->name;
-   vcounter->entry=mk_paramdecl(vcounter->name,vout_counter);
-
-   Symbol * Eks = new Symbol;Eks->name = "x";
+Statement * InitialInfSet (std::string fname,                                 
+                           FunctionType * ft,
+                           Decl * vout_counter,
+                           const Location & location) {
+   VoutFunctionType::iterator func
+      =voutFunctions.find(fname);
+   if (func==voutFunctions.end())
+      return NULL;
+   std::set<unsigned int>::iterator iter =func->second.begin();
+   ExpressionStemnt * expr;
+   if (iter!=func->second.end()) {
+      Symbol * Why = new Symbol;Why->name = "y";
+      Symbol * vout_sym=  ft->args[*iter]->name->dup();     
+      expr = new ExpressionStemnt
+         (new AssignExpr (AO_Equal,
+                          new Variable(vout_sym,location),
+                          new BinaryExpr(BO_Member,
+                                         new Variable(vout_counter->name
+                                                      ->dup(),
+                                                      location),
+                                         new Variable (Why,location),
+                                         location),
+                          location),
+          location);
+      ++iter;
+   }else return NULL;
+   for (;iter!=func->second.end();++iter) {
+   Symbol * vout_sym=  ft->args[*iter]->name->dup();
    Symbol * Why = new Symbol;Why->name = "y";
-   block->add(new IfStemnt (new RelExpr(RO_GrtrEql,
-                                        new BinaryExpr(BO_Member,
-                                                       new Variable
-                                                       (vcounter,
-                                                        location),
-                                                       new Variable 
-                                                       (Eks,
-                                                        location),
+   expr->expression 
+      = new BinaryExpr(BO_Comma,
+                       expr->expression,
+                       new AssignExpr (AO_Equal,
+                                       new Variable(vout_sym,location),
+                                       new BinaryExpr(BO_Member,
+                                                      new Variable
+                                                      (vout_counter->name
+                                                       ->dup(),
                                                        location),
-                                       new IntConstant(0,location),
-                                       location),
-                           subblock,
-                           location));                           
-   if (ste)
-      block->add(ste->dup());
-   return block;
+                                                      new Variable(Why,
+                                                                   location),
+                                                      location),
+                                       location),  
+                       location);
+
+   }
+   return expr;
 }
 static 
 void TransformBlockStemnt (Block *fd, FunctionType * ft, Decl * vout_counter) {
@@ -244,21 +262,18 @@ FunctionDef* TransformVoutPush(FunctionDef*fd) {
    FunctionType * ft = static_cast<FunctionType*>(fd->decl->form);
    Decl * vout_counter = ft->args[ft->nArgs-1];
    TransAndFindBlockPush(fd,ft,vout_counter);
-   Location tmp(fd->location);
-   Block * AssignInf=NULL;
-   if (fd->head) {
-       AssignInf= new Block(fd->head->location);
-       Statement *temp = fd->head;
-       AssignInf->next=  fd->head->next;
-       fd->head->next= NULL;
-       AssignInf->add(fd->head);
-       fd->head= AssignInf;
-   }else AssignInf = new Block (fd->location);
-
-   //if (fd->tail)
-   //   fd->add(ModifyReturnStemnt(NULL,ft,vout_counter,fd->tail->location));
-   //else
-   //   fd->add(ModifyReturnStemnt(NULL,ft,vout_counter,fd->location));
+   Block * MainFunction= new Block(fd->location);
+   Statement * tmp=MainFunction->head;
+   MainFunction->head=fd->head;
+   fd->head=tmp;
+   tmp =MainFunction->tail;
+   MainFunction->tail=fd->tail;
+   fd->tail=tmp;
+   fd->add(InitialInfSet(fd->FunctionName()->name,
+                         ft,
+                         vout_counter,
+                         fd->location));
+   fd->add(MainFunction);
    return NULL;   
 }
 
