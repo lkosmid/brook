@@ -20,7 +20,7 @@ public:
 		}
 		return *this;
 	}
-	const VALUE& cast()const;
+	const VALUE& gather()const;
 	operator VALUE () const;
 };
 template <class VALUE, unsigned int dims, bool copy_data> class __XSpecified {
@@ -43,7 +43,7 @@ public:
 	TYPE getAt(unsigned int i)const { return GetAt((VALUE)*this,i);}
 */
 	operator VALUE () const;
-	VALUE& cast()const;	
+	VALUE& gather()const;	
 	VALUE &operator =  (const VALUE &f)const;
 	VALUE &operator += (const VALUE &f)const;
 	VALUE &operator *= (const VALUE &f)const;
@@ -126,10 +126,10 @@ template <class VALUE, unsigned int dims, bool copy_data> __XSpecified<VALUE,dim
 template <class VALUE, unsigned int dims, bool copy_data> __ConstXSpecified<VALUE,dims,copy_data>::operator VALUE ()const {
 	return parent->get(indices);
 }
-template <class VALUE, unsigned int dims, bool copy_data> VALUE &__XSpecified<VALUE,dims,copy_data>::cast ()const {
+template <class VALUE, unsigned int dims, bool copy_data> VALUE &__XSpecified<VALUE,dims,copy_data>::gather ()const {
 	return parent->get(indices);
 }
-template <class VALUE, unsigned int dims, bool copy_data> const VALUE & __ConstXSpecified<VALUE,dims,copy_data>::cast ()const {
+template <class VALUE, unsigned int dims, bool copy_data> const VALUE & __ConstXSpecified<VALUE,dims,copy_data>::gather ()const {
 	return parent->get(indices);
 }
 
