@@ -165,7 +165,7 @@ namespace brook{
         return;
       }
       
-      for (i = ((int)dims)-2; i>=0; i++) {
+      for (i = ((int)dims)-2; i>=0; i--) {
         index[i]++;
         if (index[i] >= domain_max[i] - domain_min[i]) {
           if (i == 0) {
@@ -204,7 +204,7 @@ namespace brook{
         return;
       }
       
-      for (i = ((int)dims)-2; i>=0; i++) {
+      for (i = ((int)dims)-2; i>=0; i--) {
         index[i]++;
         if (index[i] >= domain_max[i] - domain_min[i]) {
           if (i == 0) {
