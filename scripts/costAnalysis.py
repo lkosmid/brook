@@ -48,7 +48,7 @@ costs= {"InitialScan":(16,0,4,{"add":1,
 										  "bit":9}),
 		"writeFinalTriangles":(36,0,12,{"cmp":2,
 										"div":1}),
-		"checkTriangleCollide":(16,72,16,{"add":81,
+		"CheckTriangleCollide":(16,72,16,{"add":81,
 										  "mul":73,
 										  "div":4,
 										  "bit":13,
@@ -126,19 +126,19 @@ for arg in sys.argv[1:]:
 			procmem+=mem
 			procarith+=arith
 		#print st
-	print arg
+	print arg+" "+str (procmem)+" "+str (voutmem)+" "+str (voutscatmem)+" "+str (procarith)+" "+str (voutarith)+" "+str (voutscatarith);
 #	print "Totals"
 #	print "Mem: "+str (procmem+voutmem)
 #	print "Ath: "+str (procarith+voutarith)
 #	print ""
 #	print "Proc"
-	print "Mem Arith: "+str (procmem)+" "+str (procarith)
+#	print "Mem Arith: "+str (procmem)+" "+str (procarith)
 #	print ""
 #	print "Vout"
-	print "Mem Arith: "+str (voutmem)+" "+str (voutarith)
+#	print "Mem Arith: "+str (voutmem)+" "+str (voutarith)
 #	print ""
 #	print "Vout Scatter"
-	print "Mem Arith: "+str (voutscatmem)+" "+str (voutscatarith)
+#	print "Mem Arith: "+str (voutscatmem)+" "+str (voutscatarith)
 
 
 
