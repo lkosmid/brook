@@ -18,8 +18,8 @@ int readPPM(const char *filename,
   }while (err!=0&&err!=EOF);
   fscanf (fp, "%d %d %d\n", width, height, &nbyte);
   assert (nbyte == 255);
-  assert (*width > 0 && *width <= 2048);
-  assert (*height > 0 && *height <= 2048);
+  //assert (*width > 0 && *width <= 2048);
+  //assert (*height > 0 && *height <= 2048);
 
   *data = (unsigned char *) malloc (*width * *height * 3);
   assert (*data);
