@@ -4,9 +4,16 @@
 #include <stdio.h>
 #include <string>
 using std::vector;
+float neighboreps=0.0001f;
+bool eq(float a, float b) {
+  return fabs(a-b)<neighboreps;
+}
+bool ne(float4 a, float4 b){
+	return !(eq(a.x, b.x) && eq(a.y, b.y) && eq(a.z, b.z));
+}
 void LoadPly (const char * file,vector<Tri> &ret);
 bool operator ==(const float4 &a, const float4 &b) {
-   return a.x==b.x&&a.y==b.y&&a.z==b.z;
+   return eq(a.x,b.x)&&eq(a.y,b.y)&&eq(a.z,b.z);
 }
 void checkEdgeNeighbor(const float4 &a, const float4 &b, float4 &c,const Tri &t){ 
    if ((t.A==a&&t.B==b)||(t.A==b&&t.B==a))
@@ -15,13 +22,6 @@ void checkEdgeNeighbor(const float4 &a, const float4 &b, float4 &c,const Tri &t)
       c = t.B;
    if ((t.B==a&&t.C==b)||(t.B==b&&t.C==a))
       c = t.A;
-}
-float neighboreps=0.000001f;
-bool eq(float a, float b) {
-  return fabs(a-b)<neighboreps;
-}
-bool ne(float4 a, float4 b){
-	return !(eq(a.x, b.x) && eq(a.y, b.y) && eq(a.z, b.z));
 }
 
 void checkEdgeNeighbor2(const float4 &a, const float4 &alreadyhave, const float4 &b, float4 &c, const Tri &t){ 
