@@ -407,10 +407,10 @@ template <class BRT_TYPE>
       return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<BRT_TYPE>(b,0)), \
-                 subop(getAt(1) , GetAt<BRT_TYPE>(b,1)), \
-                 subop(getAt(2) , GetAt<BRT_TYPE>(b,2)), \
-                 subop(getAt(3) , GetAt<BRT_TYPE>(b,3))); \
+                (::subop(getAt(0) , GetAt<BRT_TYPE>(b,0)), \
+                 ::subop(getAt(1) , GetAt<BRT_TYPE>(b,1)), \
+                 ::subop(getAt(2) , GetAt<BRT_TYPE>(b,2)), \
+                 ::subop(getAt(3) , GetAt<BRT_TYPE>(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)

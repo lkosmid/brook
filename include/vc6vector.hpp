@@ -1132,10 +1132,10 @@ public:
       return vec< TYPESPECIFIER<float, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<float,1> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<float,1> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<float,1> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<float,1> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<float,1> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<float,1> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<float,1> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<float,1> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -1259,10 +1259,10 @@ public:
       return vec< TYPESPECIFIER<int, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<int,1> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<int,1> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<int,1> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<int,1> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<int,1> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<int,1> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<int,1> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<int,1> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -1386,10 +1386,10 @@ public:
       return vec< TYPESPECIFIER<char, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<char,1> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<char,1> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<char,1> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<char,1> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<char,1> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<char,1> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<char,1> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<char,1> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -1513,10 +1513,10 @@ public:
       return vec< TYPESPECIFIER<float, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<float,2> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<float,2> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<float,2> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<float,2> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<float,2> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<float,2> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<float,2> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<float,2> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -1640,10 +1640,10 @@ public:
       return vec< TYPESPECIFIER<int, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<int,2> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<int,2> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<int,2> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<int,2> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<int,2> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<int,2> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<int,2> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<int,2> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -1767,10 +1767,10 @@ public:
       return vec< TYPESPECIFIER<char, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<char,2> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<char,2> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<char,2> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<char,2> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<char,2> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<char,2> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<char,2> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<char,2> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -1894,10 +1894,10 @@ public:
       return vec< TYPESPECIFIER<float, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<float,3> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<float,3> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<float,3> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<float,3> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<float,3> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<float,3> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<float,3> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<float,3> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -2021,10 +2021,10 @@ public:
       return vec< TYPESPECIFIER<int, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<int,3> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<int,3> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<int,3> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<int,3> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<int,3> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<int,3> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<int,3> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<int,3> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -2148,10 +2148,10 @@ public:
       return vec< TYPESPECIFIER<char, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<char,3> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<char,3> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<char,3> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<char,3> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<char,3> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<char,3> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<char,3> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<char,3> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -2275,10 +2275,10 @@ public:
       return vec< TYPESPECIFIER<float, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<float,4> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<float,4> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<float,4> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<float,4> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<float,4> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<float,4> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<float,4> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<float,4> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -2402,10 +2402,10 @@ public:
       return vec< TYPESPECIFIER<int, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<int,4> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<int,4> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<int,4> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<int,4> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<int,4> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<int,4> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<int,4> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<int,4> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
@@ -2529,10 +2529,10 @@ public:
       return vec< TYPESPECIFIER<char, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
-                (subop(getAt(0) , GetAt<vec<char,4> >(b,0)), \
-                 subop(getAt(1) , GetAt<vec<char,4> >(b,1)), \
-                 subop(getAt(2) , GetAt<vec<char,4> >(b,2)), \
-                 subop(getAt(3) , GetAt<vec<char,4> >(b,3))); \
+                (::subop(getAt(0) , GetAt<vec<char,4> >(b,0)), \
+                 ::subop(getAt(1) , GetAt<vec<char,4> >(b,1)), \
+                 ::subop(getAt(2) , GetAt<vec<char,4> >(b,2)), \
+                 ::subop(getAt(3) , GetAt<vec<char,4> >(b,3))); \
     }
     BROOK_BINARY_OP(atan2,atan2,LCM)
     BROOK_BINARY_OP(fmod,fmod,LCM)
