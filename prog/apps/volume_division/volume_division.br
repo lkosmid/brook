@@ -11,8 +11,8 @@ float __printf_cpu_inner (float a, float b, float c, float d) {
 }
 kernel float eval (float3 loc<>) {  
   float  power;
-  const float offset=64;
-  const float length=64;
+  const float3 offset=20;
+  const float length=20;
   float3 center =loc-offset;
   power = dot(center,center);
   /*
@@ -34,10 +34,10 @@ kernel float eval (float3 loc<>) {
   power += dot(center,center);
   */
   {
-    const float  R = 16;
-    const float  density = 184;
-    //    printf (power,R,density,power/R-density);
-    return power/R-density;
+
+    const float  density = 64;
+    //printf (power,loc.z,density,power-density);
+    return density-power;
   }
 }
 kernel float3 combineIndex (float a,float b, float c) {
@@ -57,13 +57,13 @@ kernel float evaluateNeighbors (float2 center<>,
       test(eval(float3(center.x,opposing.y,slice.y)),64.0f) +
       test(eval(float3(opposing.x,opposing.y,slice.y)),128.0f) +
       test(eval(float3(opposing.x,center.y,slice.y)),256.0f);
-   return a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f);
+   return a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f)?a:0;
     
 }
 kernel void processSlice (float curslice<>, 
                           float curgather[][],
                           float nextslice[][],
-                          vout [1]float vertex<>,
+                          vout [1]float4 vertex<>,
                           iter float2 center<>,
                           iter float2 corner<>) {
   
@@ -73,8 +73,9 @@ kernel void processVirtualSlice(vout[1] float4 vertex<>,
                                 iter float2 center<>,
                                 iter float2 opposing<>,
                                 float2 slice/*first value is cur then next*/) {
-  if(evaluateNeighbors(center,opposing,slice)) {
-    vertex=float4(center.x,center.y,slice.x,0);
+  float pattern;
+  if((pattern=evaluateNeighbors(center,opposing,slice))) {
+    vertex=float4(center.x,center.y,slice.x,pattern);
     push(vertex);
   }
 }
@@ -82,8 +83,9 @@ kernel void processVirtualSliceNoCompact(out float4 vertex<>,
                                          iter float2 center<>,
                                          iter float2 opposing<>,
                                          float2 slice/*first value is cur then next*/) {
-  if(evaluateNeighbors(center,opposing,slice)) {
-    vertex=float4(center.x,center.y,slice.x,0);
+  float pattern;
+  if((pattern=evaluateNeighbors(center,opposing,slice))) {
+    vertex=float4(center.x,center.y,slice.x,pattern);
   }else {
     vertex=float4(-1.0,-1.0f,-1.0f,-1.0f);
   }
@@ -114,7 +116,7 @@ float tof (int a) {
          unsigned int i;
          float cur<(dat.height),(dat.width)>;
          float next<(dat.height),(dat.width)>;
-         float v<1,(dat.width)>;
+         float4 v<1,(dat.width)>;
          iter float2 curiter <(dat.height),(dat.width)> = iter (float2(0.0f,0.0f),
                                                            float2(dat.width,
                                                                   dat.height));

@@ -33,11 +33,24 @@ ppm openPPM (char * name) {
 void printVolume (const ppm &fp) {
    std::vector<float4>::const_iterator i=fp.vertices.begin();
    unsigned int j=0;
-   for (;i!=fp.vertices.end();++i,++j) {
-      printf ("[%f %f %f %f]",i->x,i->y,i->z,i->w);
-      if (j%2==1)
-         printf("\n");
+   printf ("<Mesh texture=\"white.bmp\">\n");
+   printf("<Points>\n");
+   for (;i!=fp.vertices.end();++i) {
+      if (finite_float(i->x)&&finite_float(i->y)&&finite_float(i->z)) {
+         if (i->x>0&&i->y>0&&i->z>0) {
+            printf ("<Point><Location x=\"%f\" y=\"%f\" z=\"%f\"/><Normal i=\"1\" j=\"0\" k=\"0\"/></Point>\n",i->x,i->y,i->z);
+            printf ("<Point><Location x=\"%f\" y=\"%f\" z=\"%f\"/></Point>\n",i->x+.5,i->y+.5,i->z+.5);
+            ++j;
+         }
+      }
    }
+   printf("</Points>\n<Polygons>\n");
+   {for (unsigned int i=0;i<j;++i) {
+      printf ("<Line> <Vertex point=\"%d\"/><Vertex point=\"%d\"/></Line>\n",
+              i*2,i*2+1);
+      
+   }}
+   printf ("</Polygons></Mesh>\n");
 }
 float * mallocSlice (const ppm &fp) {
    return (float*)malloc(sizeof(float)*fp.width*fp.height);
