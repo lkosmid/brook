@@ -24,7 +24,7 @@ int main (int argc, char ** argv) {
      int j;
      if (strncmp(argv[i],"-angle",6)==0) {
        match=1;
-       angle=atof(argv[i]+6);
+       angle=(float)atof(argv[i]+6);
      }
      if (match) {
        for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
@@ -34,7 +34,7 @@ int main (int argc, char ** argv) {
    }
   
   float4 * intersections =0;
-  angle*=3.1415926536/180;
+  angle*=(float)(3.1415926536/180);
   csMatrix3 R1(cos(angle),sin(angle),0,
                 -sin(angle),cos(angle),0,
                 0,0,1);
