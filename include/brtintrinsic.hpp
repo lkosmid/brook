@@ -273,7 +273,6 @@ inline float isinf_float (float x) {
   UNINTRINSIC(frac,frac_float)
   UNINTRINSIC(frc,frc_float)
   UNINTRINSIC(isinf,isinf_float)
-  BININTRINSIC(ldexp,ldexp_float)
   BININTRINSIC(distance,distance)
   UNINTRINSIC(log,log)
   UNINTRINSIC(log2,log2_float)
