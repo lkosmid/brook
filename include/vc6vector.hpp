@@ -190,7 +190,6 @@ public:
         return vec<VALUE,1>(getAt(x));
     }
     vec() {}
-
 #line 192 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
@@ -956,9 +955,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-
 #line 235 "brtvector.hpp"
-
 
 #line 236 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
@@ -1824,7 +1821,7 @@ public:
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-
+#line 306 "brtvector.hpp"
 #line 306 "brtvector.hpp"
 
 #line 306 "brtvector.hpp"
@@ -1832,9 +1829,6 @@ public:
 #line 306 "brtvector.hpp"
 
 #line 306 "brtvector.hpp"
-
-#line 306 "brtvector.hpp"
-
 
 #line 306 "brtvector.hpp"
 
@@ -1936,5 +1930,3 @@ MATRIXXY_CLASS(__BrtChar,1,1);
 #undef MATRIXXY_CLASS
 #endif
 #endif
-
-#undef __MY_VC6_HEADER
