@@ -285,9 +285,12 @@ flatten=false;
             printf(" ");
          }
          if (finite_flt(x)) {
+           
 	    if (x==36893206672442393000.00)
                 printf("inf");
-            else 
+            else if (fabs(x)<.000001)
+                printf ("0.00");
+            else
                 printf("%3.2f",x);
 	 }
          else if (isnan_flt(x))
