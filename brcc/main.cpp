@@ -32,7 +32,7 @@ static void
 usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
-  fprintf (stderr, "brcc [-v] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
+  fprintf (stderr, "brcc [-v] [-n] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
 
   exit(1);
 }
@@ -57,8 +57,10 @@ parse_args (int argc, char *argv[]) {
   globals.workspace    = 1024;
   globals.compilername = argv[0];
 
-  while ((opt = getopt(argc, argv, "o:p:vw:")) != EOF) {
+  while ((opt = getopt(argc, argv, "no:p:vw:")) != EOF) {
      switch(opt) {
+     case 'n':
+        globals.parseOnly = true;
      case 'o':
 	if (outputprefix) usage();
 	outputprefix = strdup(optarg);
@@ -194,12 +196,14 @@ main(int argc, char *argv[])
    if (tu) {
       std::ofstream out;
 
-      /*
-       * If I didn't mind violating some abstractions, I'd roll my own loop
-       * here instead of using the Translation Unit methods.
-       */
-     tu->findStemnt(ConvertToBrtStreams);
-     tu->findFunctionDef(ConvertToBrtKernels);
+      if (!globals.parseOnly) {
+         /*
+          * If I didn't mind violating some abstractions, I'd roll my own loop
+          * here instead of using the Translation Unit methods.
+          */
+         tu->findStemnt(ConvertToBrtStreams);
+         tu->findFunctionDef(ConvertToBrtKernels);
+      }
 
      out.open(globals.coutputname);
      if (out.fail()) {

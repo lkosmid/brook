@@ -6,7 +6,7 @@
 
 struct globals_struct {
   bool verbose;
-  bool cpuKernel;
+  bool parseOnly;
   char *sourcename;
   char *compilername;
   char *cgoutputname;
