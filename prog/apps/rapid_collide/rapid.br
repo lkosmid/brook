@@ -11,6 +11,22 @@ typedef struct traverser_t {
   float4 index;//.xy is index into the aTree  .zw is index into bTree
   
 }Traverser;
+
+typedef struct transposedbbox_t{
+  float3 transp_rotx;
+  float3 transp_roty;
+  // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
+  /// cross(Rotationx,Rotationy);
+  float3 Translation;
+  float3 Radius;
+
+  // if leaf, the Children.xy is an index to the Triangle Children.zw is{-1,-1}
+  // if node, the Children.xy is an index to left child .zw is right
+  // assert right.xy is always left + {1,0} this may require gaps in the tree
+  float4 Children;  
+}TransposedBBox;
+
+
 typedef struct bbox_t{
   float3 Rotationx;
   float3 Rotationy;
@@ -51,6 +67,9 @@ kernel float obb_disjoint (float3 Bx<>,
 kernel float isLeaf(BBox a<>) {
   return a.Children.z==-1;
 }
+kernel float isLeafT(TransposedBBox a<>) {
+  return a.Children.z==-1;
+}
 
 kernel float modTwo(float who) {
   float tmp = fmod(who,2.0);
@@ -86,7 +105,7 @@ kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
                        
                        
 kernel void updateCurrentNode(float4 curNodeIndices<>,
-                              BBox aTree[][],
+                              TransposedBBox aTree[][],
                               BBox bTree[][],
                               Traverser nodes[][],
                               out Traverser nextNode<>) {
@@ -101,7 +120,8 @@ kernel void updateCurrentNode(float4 curNodeIndices<>,
   float3 lastNodeRotationz = cross(lastNode.Rotationx,
                                    lastNode.Rotationy);
   if (curNodeIndices.z>=0) {
-    BBox a =aTree[aTreeIndex];
+    TransposedBBox a =aTree[aTreeIndex];
+    /*
     float3 rot_transpX;
     float3 rot_transpY;
     float3 rot_transpZ;
@@ -110,11 +130,15 @@ kernel void updateCurrentNode(float4 curNodeIndices<>,
                         a.Rotationy,
                         aRotationz,
                         rot_transpX,rot_transpY,rot_transpZ);    
-    matMult(rot_transpX,rot_transpY,rot_transpZ,
+    */
+    float3 atransp_rotz = cross(a.transp_rotx,a.transp_roty);
+    matMult(//rot_transpX,rot_transpY,rot_transpZ,
+            a.transp_rotx,a.transp_roty,atransp_rotz,
             lastNode.Rotationx,lastNode.Rotationy,lastNodeRotationz,
             nextNode.Rotationx,nextNode.Rotationy);
             
-    nextNode.Translation=matVecMult(rot_transpX,rot_transpY,rot_transpZ,
+    nextNode.Translation=matVecMult(//rot_transpX,rot_transpY,rot_transpZ,
+                                    a.transp_rotx,a.transp_roty,atransp_rotz,
                                     lastNode.Translation-a.Translation);
   }else {
     BBox b =bTree[bTreeIndex];
