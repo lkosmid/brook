@@ -1,4 +1,4 @@
-BRCCFLAGS := -m
+BRCCFLAGS := -m -y
 ifndef ROOTDIR
 ROOTDIR := .
 endif
