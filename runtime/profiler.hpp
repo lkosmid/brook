@@ -63,11 +63,17 @@ namespace internal {
 
   private:
     Profiler();
-    ~Profiler();
+
 
     void dump();
 
     ProfilerNode* firstNode;
+#ifdef _MSC_VER
+#if _MSC_VER <= 1200
+  public: //bug with destructor protection. Fails to compile with private des
+#endif
+#endif
+    ~Profiler();
   };
 
   class ProfilerSample

@@ -33,8 +33,6 @@ namespace internal {
 
   private:
     Logger();
-    ~Logger();
-
     static Logger& getInstance();
 
     const char* prefix;
@@ -42,6 +40,12 @@ namespace internal {
     std::ostream* stream;
     bool ownsStream;
     int level;
+#ifdef _MSC_VER
+#if _MSC_VER <= 1200
+  public: //bug with destructor protection. Fails to compile with private dest
+#endif
+#endif
+    ~Logger();
   };
 
 }}

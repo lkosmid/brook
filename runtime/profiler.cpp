@@ -109,10 +109,12 @@ namespace internal {
   void ProfilerNode::dump( std::ostream& output )
   {
     // convert to microseconds
-    int64 total = (totalTime * 1000000) / getFrequency();
-    int64 withoutChildren = (withoutChildrenTime * 1000000) / getFrequency();
+    double total = ((double)totalTime * 1000000.) / getFrequency();
+    double withoutChildren = 
+       ((double)withoutChildrenTime * 1000000.)
+       / getFrequency();
 
-    output << name << "\t" << totalCalls << "\t" << total << "\t" << withoutChildren << std::endl;
+    output << name << "\t" << (double)totalCalls << "\t" << total << "\t" << withoutChildren << std::endl;
   }
 
   Profiler::Profiler()

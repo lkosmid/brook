@@ -386,11 +386,12 @@ void CPUGatherType::printAfter(std::ostream &out) const{
 BrtKernelType::BrtKernelType(FunctionType *functionType)
   : _functionType(functionType)
 {
+  unsigned int i;
   extend((*_functionType->getSubType())->dup0());
-  for (unsigned int i=0;i<_functionType->nArgs;i++)
+  for (i=0;i<_functionType->nArgs;i++)
     addArg(_functionType->args[i]->dup0());
 
-  for (unsigned int i=0;i<nArgs;i++)
+  for (i=0;i<nArgs;i++)
   {
     TypeQual q = args[i]->form->getQualifiers();
     if( (q & TQ_Out) == 0 )
