@@ -369,7 +369,7 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
   }else if (which<2.5) {
     
     tri.A=identity(ac,1);
-    tri.B=identity(ab,1);
+    tri.B=identity(bc,1);
     tri.C=identity(c,1);
 
     neighbor.BCC=newnei.BCC;
