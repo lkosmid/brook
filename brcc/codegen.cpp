@@ -1135,7 +1135,7 @@ compile_cg_code (char *cgcode) {
   while ((wherewarn = parse_fpcode.find("warning"))!=std::string::npos) {
     std::string warnung=parse_fpcode.substr(0,parse_fpcode.find("\n"));
     if (cg_warnings.find(warnung)==cg_warnings.end()) {
-      printf("%s\n",warnung.c_str());
+      fprintf(stderr,"%s\n",warnung.c_str());
       cg_warnings.insert(warnung);
     }
     parse_fpcode=parse_fpcode.substr(wherewarn+7);
