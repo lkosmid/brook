@@ -22,12 +22,16 @@ __BrtFloat4 C;
 }
 __cpustruct_STri;
 
+
 namespace brook {
 	template<> const __BRTStreamType* getStreamType(STri*) {
 		static const __BRTStreamType result[] = {__BRTFLOAT4, __BRTFLOAT4, __BRTFLOAT4, __BRTNONE};
 		return result;
 	}
 }
+static unsigned int  totalTriCount = 0;
+extern bool firstRound;
+extern bool forcevanilla;
 void Aggregate3(brook::stream threefloat, brook::stream in, brook::stream out);
 void Aggregate2(brook::stream threefloat, brook::stream in, brook::stream out);
 typedef struct SplitTri_t {
@@ -205,7 +209,7 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
   {
     if (rr==0) spvec[counter]=brook::stream(::brook::getStreamType(( float2  *)0), streamY , 0,-1);
     if (rr==0) snpvec[counter]=brook::stream(::brook::getStreamType(( float2  *)0), streamY , 0,-1);
-    if (rr<2) {
+    if (rr<3) {
        if (rr==0) {
           TallyKernel("produceTriP",*triangles);
        }
@@ -219,8 +223,10 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
     ::brook::stream shouldNotProduce=snpvec[counter];
     assert((int ) (streamX) == toi(streamSize(shouldProduce).x));
     {
-      int  wosizex = 3 * toi(streamSize(shouldNotProduce).x);
-      int  wosizey = toi(streamSize(shouldNotProduce).y);
+       int xmult = 3;//(debugLoop||toi(streamSize(shouldNotProduce).x)*3<=2048)?3:1;
+      int ymult = xmult==3?1:3;
+      int  wosizex = xmult*toi(streamSize(shouldNotProduce).x);
+      int  wosizey = ymult*toi(streamSize(shouldNotProduce).y);
       if (rr==0) otvec[counter]=brook::stream(::brook::getStreamType(( float3  *)0), wosizey , wosizex,-1);
       ::brook::stream outputTri=otvec[counter];
 
@@ -229,11 +235,12 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
            TallyKernel("writeFinalTriangles",outputTri);
         }
         writeFinalTriangles(*triangles,shouldNotProduce,outputTri);
+        totalTriCount += wosizex*wosizey/3;
       }
       streamY = toi(streamSize(shouldProduce).y);
       if (streamY && streamX)
       {
-        float  stretchX = (streamY * 4 > 2048) ? (0.000000f) : (1.000000f);
+        float  stretchX = (streamY * 4 > 2048) ? (1.000000f) : (0.000000f);
         if (rr==0) snvec[counter]=brook::stream(::brook::getStreamType(( Neighbor  *)0), streamY , streamX,-1);
         ::brook::stream sharedNeighbors=snvec[counter];
         if(rr==0) stvec[counter]=brook::stream(::brook::getStreamType(( SplitTri  *)0), streamY , streamX,-1);
@@ -279,6 +286,7 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
       int  sizey = output->size;
       if (rr==0) {
          TallyKernel("copyFinalTriangles",outputTri);
+         totalTriCount += toi(streamSize(*triangles).y) * toi(streamSize(*triangles).x);
       }
       copyFinalTriangles(*triangles,outputTri);
       if (debugLoop) {
@@ -375,7 +383,7 @@ unsigned int  loadModelData(char  *file, STri  **triangles, Neighbor  **neighbor
 int  subdivision(int  argc, char  **argv)
 {
   unsigned int  i = 0;
-  unsigned int  vcount = 0;
+  unsigned int vcount=0;
   float  epsilon = 0.000100f;
   STri  *triangledata = 0;
   Neighbor  *neighbordata = 0;
@@ -398,7 +406,10 @@ int  subdivision(int  argc, char  **argv)
       epsilon = (float ) (atof(argv[i] + 8));
       match = 1;
     }
-
+    if (strcmp(argv[i],"-precache")==0) {
+       forcevanilla=false;
+       match=1;
+    }
     if (strncmp(argv[i],"-counter",8) == 0)
     {
       counterMax = (int ) (atoi(argv[i] + 8));
@@ -424,7 +435,8 @@ int  subdivision(int  argc, char  **argv)
   epsilon *= epsilon;
   numTriangles = loadModelData((argc > 1) ? (argv[1]) : ("dragon.ply"),&triangledata,&neighbordata);
   {
-    for (rr=0;rr<6;++rr) {
+    for (rr=0;rr<8;++rr) {
+       firstRound= (rr==0);
        ::brook::stream neighbors(::brook::getStreamType(( Neighbor  *)0), bestHeight(numTriangles) , bestWidth(numTriangles),-1);
        ::brook::stream triangles(::brook::getStreamType(( STri  *)0), bestHeight(numTriangles) , bestWidth(numTriangles),-1);
 
@@ -458,10 +470,11 @@ int  subdivision(int  argc, char  **argv)
              vcount *= 4;
           }
        if (debugLoop) {
-          fprintf(stderr,"Num Rounds %d Adaptive Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,vcount);
+          fprintf(stderr,"Num Rounds %d Adaptive Num Vertices %d Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,totalTriCount, vcount);
        }else {
-          printf("Num Rounds %d Adaptive Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,vcount);
+          printf("Num Rounds %d Adaptive Num Vertices %d Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size / 3,totalTriCount, vcount);
        }
+       totalTriCount=0;
     }
     return 0;
   }
