@@ -124,14 +124,15 @@ kernel void computeNeighbors(Tri tgather[][],
                              float2 i<>, 
                              out Neighbor v<>) {
   float2 zero2=0;
-  Neighbor u = ugather[(i>=0&&i<8192)?i:zero2];
+  float2 ind = (i>=0&&i<8192)?i:zero2;
+  Neighbor u = ugather[ind];
   float eAAB=isNeighbor(u.AAB);
   float eAAC=isNeighbor(u.AAC);
   float eABB=isNeighbor(u.ABB);
   float eBBC=isNeighbor(u.BBC);
   float eBCC=isNeighbor(u.BCC);
   float eACC=isNeighbor(u.ACC);
-  Tri t = tgather[i];
+  Tri t = tgather[ind];
   float3 AB_B, AC_A, BC_C;
   float3 zero3=0;
   AB_B=lerp(t.B.xyz,u.AB.xyz,.5);
