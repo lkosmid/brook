@@ -204,8 +204,9 @@ kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];

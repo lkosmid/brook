@@ -1,13 +1,25 @@
+#line 1 "brtvector.hpp"
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -76,6 +88,7 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
+#line 69 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -214,8 +227,9 @@ kernel void RelativeGatherfloat(out float output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];
@@ -1087,6 +1101,7 @@ unsigned int totalCombineVoutfloat (float list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 69 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -1225,8 +1240,9 @@ kernel void RelativeGatherfloat2(out float2 output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];
@@ -2098,6 +2114,7 @@ unsigned int totalCombineVoutfloat2 (float2 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 69 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -2236,8 +2253,9 @@ kernel void RelativeGatherfloat3(out float3 output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];
@@ -3109,6 +3127,7 @@ unsigned int totalCombineVoutfloat3 (float3 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 69 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -3247,8 +3266,9 @@ kernel void RelativeGatherfloat4(out float4 output<>,
               maxvalue,
               nextPlaceToLook);
    getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
-   if (isoffedge.y>=maxvalue.y
-       || (isoffedge.y>=maxvalue.y-1&&isoffedge.x>=maxvalue.x)) {
+   isoffedge-=maxvalue;
+   if (isoffedge.y>=0
+       || (isoffedge.y>=-1&&isoffedge.x>=0)) {
      output=sign.y;
    }else {
      output=value[nextPlaceToLook];
@@ -4120,10 +4140,16 @@ unsigned int totalCombineVoutfloat4 (float4 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 1080 "brtvector.hpp"
+#line 1080 "brtvector.hpp"
 
+#line 1080 "brtvector.hpp"
 
+#line 1080 "brtvector.hpp"
 
+#line 1080 "brtvector.hpp"
 
+#line 1080 "brtvector.hpp"
 
 
 
