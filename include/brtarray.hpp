@@ -1,8 +1,9 @@
 #ifndef BRTARRAY_H_
 #define BRTARRAY_H_
 #ifndef MULTIPLE_ARRAY_BOUNDS_LOOKUPS
+#define ARRAY_EPSILON .25
 template <class W> unsigned int clampArrayBound(W val, unsigned int extent) {
-    val=(W)floor(val+.25);
+    val=(W)floor(val+ARRAY_EPSILON);
     return val<0?0:((unsigned int)val)>=extent?extent-1:(unsigned int)val;
 }
 template <class VALUE> class __BrtArray1d {
@@ -53,6 +54,14 @@ public:
   template <class T> const VALUE & operator [] (const T&index) const{
     return data[indexOf(index)];
   }
+  template <class T> VALUE& getInBounds (const T &index) {
+    static VALUE emergency;
+    if (index.unsafeGetAt(0)+ARRAY_EPSILON<0
+        ||index.unsafeGetAt(0)+ARRAY_EPSILON>=extentsx)
+      return emergency;
+    return (*this)[index];    
+  }
+
 };
 
 template <class VALUE> class __BrtArray2d {
@@ -103,6 +112,18 @@ public:
              *extentsx
         + clampArrayBound(index.unsafeGetAt(0),extentsx);
   }
+
+  template <class T> VALUE& getInBounds (const T &index) {
+    static VALUE emergency;
+    if (T::size!=1&&(index.unsafeGetAt(1)+ARRAY_EPSILON<0
+                     ||index.unsafeGetAt(1)+ARRAY_EPSILON>=extentsy))
+      return emergency;
+    if (index.unsafeGetAt(0)+ARRAY_EPSILON<0
+        ||index.unsafeGetAt(0)+ARRAY_EPSILON>=extentsx)
+      return emergency;
+    return (*this)[index];    
+  }
+  
   template <class T> VALUE & operator [] (const T&index) {
     return data[indexOf(index)];
   }
@@ -180,16 +201,35 @@ public:
            unsigned int i=T::size-1;
            if (dims<T::size)
               i=dims-1;
-           float temp = (float)floor(.25+index.getAt(i));
+           float temp = (float)floor(ARRAY_EPSILON+index.getAt(i));
            unsigned int total=(temp<0)?0:temp>=extents[0]-1?extents[0]-1:
               (unsigned int)temp;
            for (unsigned int j=1;j<=i;++j) {
               total*=extents[j];
-              temp = (float)floor(.25+index.getAt(i-j));
+              temp = (float)floor(ARRAY_EPSILON+index.getAt(i-j));
               total+=(temp<0)?0:temp>=extents[j]-1?extents[j]-1:
                  (unsigned int)temp;
            }
            return total;
+	}
+	template <class T> VALUE& getInBounds (const T &index) {
+           static VALUE emergency;
+           unsigned int i=T::size-1;
+           if (dims<T::size)
+              i=dims-1;
+           float temp = (float)floor(ARRAY_EPSILON+index.getAt(i));
+           if (temp<0||temp>=extents[0])
+             return emergency;
+           
+           unsigned int total=(unsigned int)temp;
+           for (unsigned int j=1;j<=i;++j) {
+              total*=extents[j];
+              temp = (float)floor(ARRAY_EPSILON+index.getAt(i-j));
+              if (temp<0||temp>=extents[j])
+                return emergency;
+              total+=(unsigned int)temp;
+           }
+           return data[total];
 	}
    template <class T> VALUE & operator [] (const T&index) {
       return data[indexOf(index)];
