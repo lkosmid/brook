@@ -112,16 +112,19 @@ BRTScatterDef::print(std::ostream& out, int) const {
    std::string name = this->decl->name->name;
    std::vector<unsigned int> extraArgs;
    FunctionType * decl = static_cast<FunctionType*> (this->decl->form);   
-   Symbol * in=NULL;Symbol* ret=NULL;
+   Decl * in=NULL;Decl* ret=NULL;
+   unsigned int inindex=0,retindex=0;
    unsigned int i;
 
    for (int j=0;j<decl->nArgs;++j) {
       if (decl->args[j]->form->type!=TT_Stream) {
          extraArgs.push_back(j);
       } else if ((decl->args[j]->form->getQualifiers()&TQ_Reduce)!=0) {
-         ret=decl->args[j]->name;
+        ret=decl->args[j];
+        retindex=j;
       }else {
-         in = decl->args[j]->name;
+        in = decl->args[j];
+        inindex=j;
       }
    }
    out << "class ";
@@ -163,14 +166,39 @@ BRTScatterDef::print(std::ostream& out, int) const {
          std::string s=decl->args[extraArgs[i]]->name->name;
          out << s<<"("<<s<<")";
       }
-      out << "{}"<<endl;
+      out << "{}"<<std::endl;
    }
    if (in&&ret){
      indent(out,1);
-     out << "template <class T> void operator () (T &"<< ret->name<<", "<<endl;
+     out << "void operator () (";
+     BRTCPUKernelCode::PrintCPUArg(decl->args[retindex],
+                                   retindex,
+                                   false,
+                                   true).printCPU(out,BRTCPUKernelCode::
+                                                  PrintCPUArg::HEADER);
+     out <<", "<<endl;
      indent(out,1);
-     out << "                                     const T& "<<in->name<<") const";
-     fdef->Block::print(out,1);
+     out << "                  ";
+     //     if ((in->form->getQualifiers()&TQ_Const)==0)
+     //       out << "const ";     
+     BRTCPUKernelCode::PrintCPUArg(decl->args[inindex],
+                                   inindex,
+                                   false,
+                                   true).printCPU(out,BRTCPUKernelCode::
+                                                  PrintCPUArg::HEADER);
+     out <<") const {";
+     //fdef->Block::print(out,1);
+     out << std::endl;
+     indent(out,2);
+     out << "__"<<name<<"_cpu_inner (";
+     for (int i=0;i<decl->nArgs;++i) {
+       if (i!=0) 
+         out << ", ";
+       out << decl->args[i]->name->name;
+     }
+     out << ");"<<std::endl;
+     indent(out,1);
+     out << "}"<<endl;
    }
    out << "}";
    if (extraArgs.empty())
