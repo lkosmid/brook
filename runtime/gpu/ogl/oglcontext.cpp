@@ -58,7 +58,7 @@ OGLContext::OGLContext():
     _boundTextures[i] = NULL;
 }
 
-unsigned int OGLContext::getMaximumOutputCount() {
+unsigned int OGLContext::getMaximumOutputCount() const {
   return _maxOutputCount;
 }
 

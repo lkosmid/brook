@@ -37,7 +37,7 @@ namespace brook {
     isTextureExtentValid( unsigned int inExtent ) const
     { return (inExtent <= 2048); }
 
-    virtual unsigned int  getMaximumOutputCount();
+    virtual unsigned int getMaximumOutputCount() const;
 
     virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const;
     virtual float4 getStreamGatherConstant(
