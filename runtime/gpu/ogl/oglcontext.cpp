@@ -73,7 +73,16 @@ void* OGLContext::getTextureRenderData( OGLContext::TextureHandle inTexture )
   return (void*) texture->id();
 }
 
-void OGLContext::hackRestoreContext()
+void OGLContext::finish()
+{
+   glFinish();
+}
+
+void OGLContext::unbind()
+{
+}
+
+void OGLContext::bind()
 {
   _wnd->makeCurrent();
 }

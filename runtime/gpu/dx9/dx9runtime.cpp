@@ -255,14 +255,16 @@ namespace brook
       return _maximumOutputCount;
     }
 
+    void finish();
+    void unbind();
+    void bind();
+
     // TIM: hacky magick for raytracer
     virtual void hackEnableWriteMask();
     virtual void hackDisableWriteMask();
     virtual void hackSetWriteMask( TextureHandle inTexture );
     virtual void hackBeginWriteQuery();
     virtual int hackEndWriteQuery();
-
-    virtual void hackRestoreContext() {}
 
   private:
     GPUContextDX9Impl();
@@ -880,10 +882,7 @@ namespace brook
     codeBuffer->Release();
 
     if( FAILED(result) )
-    {
-      DX9WARN << "Failed to allocate vertex shader.";
       return NULL;
-    }
 
     return (VertexShaderHandle)shader;
   }
@@ -965,6 +964,17 @@ namespace brook
     DX9Texture* texture = (DX9Texture*)inTexture;
     texture->validateCachedData();
   }
+
+   void GPUContextDX9Impl::finish()
+   {
+      // TODO: find an appropriate mechanism to cause a finish in DX
+   }
+
+   void GPUContextDX9Impl::unbind() {
+   }
+
+   void GPUContextDX9Impl::bind() {
+   }
 
   // TIM: hacky magick for raytracer
   void GPUContextDX9Impl::enableZTest()

@@ -180,7 +180,10 @@ namespace brook {
     virtual void synchronizeTextureRenderData( TextureHandle inTexture ) {
     }
 
-    virtual void hackRestoreContext();
+    void finish();
+    void unbind();
+    void bind();
+
     void shareLists(HGLRC                     inContext );
 
     virtual ~OGLContext();
