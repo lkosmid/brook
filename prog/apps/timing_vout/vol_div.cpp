@@ -26,8 +26,9 @@ static std::vector<brook::stream> savedStreams;
       return savedStreams[count++%savedStreams.size()];
    }
 }
-
+void copy4( brook::stream in, brook::stream out);
 void Aggregate4(brook::stream fourfloat, brook::stream in, brook::stream out);
+void Aggregate34(brook::stream threefloat,brook::stream fourfloat, brook::stream in, brook::stream out);
 void Aggregate3(brook::stream threefloat, brook::stream in, brook::stream out);
 void Aggregate2(brook::stream twofloat, brook::stream in, brook::stream out);
 void Aggregate1(brook::stream onefloat, brook::stream in, brook::stream out);
@@ -299,7 +300,9 @@ int volume_division (int argc, char ** argv) {
                sizesx.push_back(toi(streamSize(v).x));
                sizesy.push_back(toi(streamSize(v).y));
             }
-               
+            if (rr==0&&i==(dat.depth/2)) {
+               copy4(v,vbak);
+            }
                 // we know the width of the triangles (i.e. for the address
                 // calc) will be 4x as big...we have no idea how many 3x
                 // vout[3] outputs there will be (0 or 3 for each tri)
@@ -359,7 +362,7 @@ int volume_division (int argc, char ** argv) {
                                            v, 
                                            volumeTriangles);
                  // write them all into mem
-                 Aggregate3(trianglesB,agg,agg);
+                 //Aggregate34(trianglesB,v,agg,agg);
                  //Aggregate3(trianglesB,agg,agg);
                  //Aggregate3(trianglesC,agg,agg);
                  //Aggregate3(trianglesD,agg,agg);
@@ -391,11 +394,19 @@ int volume_division (int argc, char ** argv) {
             sliceZ.x++;sliceZ.y++;
          }
          int tsize = vertexData.size()-1;
+         int j;
+         if (!vertexData.empty())
+            
+            Aggregate3(vertexData[tsize],agg,agg);
          streamWrite(agg,toagg);
          stop = GetTimeMillis();
-         printf ("Ready time %f",(float)(stop-start));
+         for (j=1;j<tsize;j+=2) {
+            Aggregate34(vertexData[tsize],vertexData[tsize-1],agg,agg);
+         }
+         streamWrite(agg,toagg);
 
-         int j;
+         printf ("Ready time %f %f ",(float)(stop-start),(float)(GetTimeMillis()-start));
+
          for (j=0;j<(int)vertexData.size();++j) {
             if (rr!=2) {
                streamWrite(vertexData[j],
