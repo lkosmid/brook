@@ -231,11 +231,12 @@ kernel void processFirstTriangles(out float3 triangles<>,
                                   float4 vertices<>,
                                   float3 volumeTriangles[][]) {
 
-  float4 whichVolumeTriangle={fmod((indexof triangles).x,3.0f),vertices.w,0,0};
+    float4 whichVolumeTriangle={round(fmod((indexof triangles).x,3.0f)),vertices.w,0,0};
    if (whichVolumeTriangle.x+.5>3.0f) whichVolumeTriangle.x=0.0f;
-  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
-    whichVolumeTriangle.y=0;
+   if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
+      whichVolumeTriangle.y=0;
    triangles=vertices.xyz;
+     //   if (whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0)
    triangles+=volumeTriangles[whichVolumeTriangle];
 }
 
