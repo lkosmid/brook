@@ -264,14 +264,12 @@ BRTGPUKernelCode::printCodeForType(std::ostream& out,
    fDef->Block::print(wrapOut, 0);
    if (globals.verbose) {
       std::cerr << "***Wrapping***\n";
-      fDef->decl->print(out, true);
+      fDef->decl->print(std::cerr, true);
       std::cerr << std::endl << wrapOut.str() << "\n**********\n";
    }
 
    assert (fDef->decl->form->type == TT_Function);
    fType = (FunctionType *) fDef->decl->form;
-   fprintf (stderr, 
-	"Generating code for %s...\n",fDef->FunctionName()->name.c_str());
    fpcode = CodeGen_GenerateCode(fType->subType,
                                  fDef->FunctionName()->name.c_str(),
                                  fType->args, fType->nArgs,

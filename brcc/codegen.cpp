@@ -836,8 +836,10 @@ compile_cg_code (char *cgcode) {
   endline += strlen("\nEND");
   *endline = '\0';
   endline++;
-  fprintf(stderr, "***Summary information from cgc:\n");
-  fwrite (endline, strlen(endline), 1, stderr);
+  if (globals.verbose) {
+     fprintf(stderr, "***Summary information from cgc:\n");
+     fwrite (endline, strlen(endline), 1, stderr);
+  }
   return fpcode;
 }
 
@@ -1058,7 +1060,11 @@ CodeGen_GenerateCode(Type *retType, const char *name,
            out.close();
         }
      }
-     fprintf (stderr, "Generating code for %s\n",name);
+
+     if (globals.verbose) {
+        fprintf(stderr, "Generating %s code for %s.\n",
+                ps20_not_fp30 ? "ps20" : "fp30", name);
+     }
      fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
      free(shadercode);
   } else {
