@@ -1,6 +1,8 @@
 #ifndef BRT_HPP
 #define BRT_HPP
-
+#ifndef _WIN32
+#include <stdlib.h>
+#endif
 extern "C" {
 #include <assert.h>
 };
