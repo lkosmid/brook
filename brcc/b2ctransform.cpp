@@ -150,7 +150,7 @@ class QuestionColonConverter{public:
     Expression * operator()(Expression * e) {
         TrinaryExpr * te;
         NewQuestionColon * ret=NULL;
-        if (e->etype==ET_TrinaryExpr&& (te = dynamic_cast<TrinaryExpr*>(e))) {
+        if (e->etype==ET_TrinaryExpr&& (te = static_cast<TrinaryExpr*>(e))) {
             ret = new NewQuestionColon(te->condExpr()->dup(),
                                        te->trueExpr()->dup(),
                                        te->falseExpr()->dup(),
@@ -200,7 +200,7 @@ void ArrayBlackmailer(Expression * e) {
 void BlackmailType(Type **t);
 template <class T> void BlackmailT(Type **&t) {
     T * k;
-    k = dynamic_cast<T *>(*t);
+    k = static_cast<T *>(*t);
     if (k) {
         BlackmailType(&k->subType);
     }
@@ -216,12 +216,12 @@ void BlackmailType (Type **t) {
         return;
     BaseType * basei ;
     
-    if ((*t)->type==TT_Base&&(basei= dynamic_cast<BaseType *>(*t))) {
+    if ((*t)->type==TT_Base&&(basei= static_cast<BaseType *>(*t))) {
 		*t = new BaseType1(*basei);
 		//delete base;
     }
     ArrayType *at ;
-    if ((*t)->type==TT_Array&&(at = dynamic_cast<ArrayType *>(*t))) {
+    if ((*t)->type==TT_Array&&(at = static_cast<ArrayType *>(*t))) {
         at->size->findExpr(ArrayBlackmailer);
         ArrayBlackmailer(at->size);
     }
@@ -233,14 +233,14 @@ void BlackmailType (Type **t) {
 	    BlackmailT<BitFieldType>(t);
     BrtStreamType * st;
 
-    if ((*t)->type==TT_BrtStream && (st = dynamic_cast<BrtStreamType *>(*t))) {
+    if ((*t)->type==TT_BrtStream && (st = static_cast<BrtStreamType *>(*t))) {
 //        st->dims->findExpr(ArrayBlackmailer); //these must not be constant any more
 //        ArrayBlackmailer(st->dims);        //these must not be constant any more
         BlackmailBaseType(&st->base);
         
     }
     FunctionType * ft;
-    if ((*t)->type==TT_Function&&(ft = dynamic_cast<FunctionType *>(*t))) {
+    if ((*t)->type==TT_Function&&(ft = static_cast<FunctionType *>(*t))) {
 		for (int i=0;i<ft->nArgs;++i) {
 			BlackmailType(&ft->args[i]->form);
 		}
@@ -253,14 +253,14 @@ void BlackmailType (Type **t) {
 void FindTypesDecl (Statement * s) {
     DeclStemnt * ds;
 
-    if (s->isDeclaration()&&(ds=dynamic_cast<DeclStemnt*>(s))) {
+    if (s->isDeclaration()&&(ds=static_cast<DeclStemnt*>(s))) {
         for (unsigned int i=0;i<ds->decls.size();++i) {
             BlackmailType(&ds->decls[i]->form);
         }
 //        ds->print(std::cout,0);        
     }
     FunctionDef * fd;
-    if (s->isFuncDef() && (fd = dynamic_cast<FunctionDef *>(s))) {
+    if (s->isFuncDef() && (fd = static_cast<FunctionDef *>(s))) {
         BlackmailType(&fd->decl->form);
       }
     
@@ -296,13 +296,13 @@ class IndexExprConverter{public:
     Expression * operator()(Expression * e) {
         IndexExpr *ie;
         IndexExpr * ret=NULL;
-        if (e->etype==ET_IndexExpr&&(ie=dynamic_cast<IndexExpr*>(e))) {
+        if (e->etype==ET_IndexExpr&&(ie=static_cast<IndexExpr*>(e))) {
             ret = new NewIndexExpr (ie->array->dup(),ie->_subscript->dup(),e->location);
             ret->array->findExpr(&ConvertToTIndexExprConverter);
             ret->_subscript->findExpr(&ConvertToTIndexExprConverter);            
         }
         CastExpr * ce;
-        if (e->etype==ET_CastExpr&&(ce=dynamic_cast<CastExpr*>(e))) {
+        if (e->etype==ET_CastExpr&&(ce=static_cast<CastExpr*>(e))) {
             BlackmailType(&ce->castTo);
         }
         return ret;
@@ -358,35 +358,35 @@ class ConstantExprConverter{public:
     Expression * operator()(Expression * e) {
         Constant *con;
         Constant * ret=NULL;
-        if (e->etype==ET_Constant&&(con=dynamic_cast<Constant*>(e))) {
+        if (e->etype==ET_Constant&&(con=static_cast<Constant*>(e))) {
             switch (con->ctype) {
             case CT_Char:
             {
-                CharConstant * cc = dynamic_cast<CharConstant *>(con);
+                CharConstant * cc = static_cast<CharConstant *>(con);
                 ret = new NewCharConstant(cc->ch,cc->location);
                 break;
             }
             case CT_Int:
             {
-                IntConstant * cc = dynamic_cast<IntConstant *>(con);
+                IntConstant * cc = static_cast<IntConstant *>(con);
                 ret = new NewIntConstant(cc->lng,cc->location);                
                 break;
             }
             case CT_UInt:
             {
-                UIntConstant * cc = dynamic_cast<UIntConstant *>(con);
+                UIntConstant * cc = static_cast<UIntConstant *>(con);
                 ret = new NewUIntConstant(cc->ulng,cc->location);                                
                 break;
             }
             case CT_Float:
             {
-                FloatConstant * cc = dynamic_cast<FloatConstant *>(con);
+                FloatConstant * cc = static_cast<FloatConstant *>(con);
                 ret = new NewFloatConstant(cc->doub,cc->location);                                                
                 break;
             }
             case CT_Array:
             {
-                ArrayConstant * ac = dynamic_cast<ArrayConstant *>(con);
+                ArrayConstant * ac = static_cast<ArrayConstant *>(con);
                 ArrayConstant *aret=  new NewArrayConstant (ac->location);
                 ret=aret;
                 for (unsigned int i=0;i<ac->items.size();++i){
@@ -406,10 +406,10 @@ class ConstantExprConverter{public:
 class SwizzleConverter{public:
     Expression * operator()(Expression * e) {
         BinaryExpr * be;
-        if (e->etype==ET_BinaryExpr&& (be = dynamic_cast<BinaryExpr*>(e))) {
+        if (e->etype==ET_BinaryExpr&& (be = static_cast<BinaryExpr*>(e))) {
             if (be->op()==BO_Member) {
                 Variable * vswiz;
-                if (be->rightExpr()->etype==ET_Variable&&(vswiz = dynamic_cast<Variable*>(be->rightExpr()))) {
+                if (be->rightExpr()->etype==ET_Variable&&(vswiz = static_cast<Variable*>(be->rightExpr()))) {
                     if (looksLikeMask(vswiz->name->name)) {
 //                        printf ("swizzlefound %s",vswiz->name->name.c_str());
                         unsigned int len =vswiz->name->name.length();
@@ -433,12 +433,12 @@ Expression * operator () (Expression * e) {
     AssignExpr * ae;
     BinaryExpr * ret =NULL;
     Variable * vmask=NULL;
-    if (e->etype == ET_BinaryExpr&&(ae= dynamic_cast<AssignExpr *> (e))) {
+    if (e->etype == ET_BinaryExpr&&(ae= static_cast<AssignExpr *> (e))) {
         //now lets identify what expression is to the left... if it's a dot then we go!
         BinaryExpr * lval;
-        if (ae->lValue()->etype==ET_BinaryExpr&& (lval = dynamic_cast<BinaryExpr*>(ae->lValue()))) {
+        if (ae->lValue()->etype==ET_BinaryExpr&& (lval = static_cast<BinaryExpr*>(ae->lValue()))) {
             if (lval->op()==BO_Member) {
-                if (lval->rightExpr()->etype==ET_Variable&&(vmask = dynamic_cast<Variable*>(lval->rightExpr()))) {
+                if (lval->rightExpr()->etype==ET_Variable&&(vmask = static_cast<Variable*>(lval->rightExpr()))) {
                     if (looksLikeMask(vmask->name->name)) {
                         //printf ("mask detected %s\n",vmask->name->name.c_str());
                         BinaryOp bo =TranslatePlusGets (ae->op());
