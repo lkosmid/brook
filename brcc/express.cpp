@@ -719,6 +719,12 @@ Variable::Variable(Symbol *varname, const Location& l)
          : Expression( ET_Variable, l)
 {
     name = varname;
+    /*
+     * If the name is in the symbol table, grab its type.
+     */
+    if (name->entry && name->entry->uVarDecl) {
+       type = name->entry->uVarDecl->form;
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
