@@ -119,6 +119,16 @@ kernel void produceTriP(STri t<>, vout [1]float2 shouldProduce<>, vout[1] float2
      push(shouldNotProduce);
    }
 }
+kernel void produceTriPNoCompact(STri t<>, out float2 shouldProduce<>, out float2 shouldNotProduce<>){
+   shouldProduce = shouldNotProduce=-1;
+   if (t.A.w!=0.0f
+       ||t.B.w!=0.0f
+       ||t.C.w!=0.0f) { // if either of the 3 vertices are still mobile, continue to split
+     shouldProduce = (indexof t).xy;
+   }else { //all the vertices are pinned by edges (either neighbor or triangle) that are too short
+     shouldNotProduce = (indexof t).xy;
+   }
+}
 
 kernel void computeNeighbors(STri tgather[][], 
                              Neighbor ugather[][], 
@@ -430,7 +440,7 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
   }
   smallEnough(tri,neighbor,tri,neighbor,epsilon);
 }
-
+#if 0
 //simple growable array, similar to std::vector (I hate C parsers)
 struct VertexArray{
   float3 * v;
@@ -718,3 +728,4 @@ int subdivision (int argc, char**argv) {
 
 
 
+#endif
