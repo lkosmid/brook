@@ -1,0 +1,37 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "toy", "toy\toy.vcproj", "{BE1F0D0C-08E6-4A99-89BC-1EF9924BA871}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "accumulate", "accumulate\accumulate.vcproj", "{9D016E9E-87E4-4269-842E-49C893C2401C}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "allocate", "allocate\allocate.vcproj", "{CDD56135-BF93-4224-A0BA-8C777208F000}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{BE1F0D0C-08E6-4A99-89BC-1EF9924BA871}.Debug.ActiveCfg = Debug|Win32
+		{BE1F0D0C-08E6-4A99-89BC-1EF9924BA871}.Debug.Build.0 = Debug|Win32
+		{BE1F0D0C-08E6-4A99-89BC-1EF9924BA871}.Release.ActiveCfg = Release|Win32
+		{BE1F0D0C-08E6-4A99-89BC-1EF9924BA871}.Release.Build.0 = Release|Win32
+		{9D016E9E-87E4-4269-842E-49C893C2401C}.Debug.ActiveCfg = Debug|Win32
+		{9D016E9E-87E4-4269-842E-49C893C2401C}.Debug.Build.0 = Debug|Win32
+		{9D016E9E-87E4-4269-842E-49C893C2401C}.Release.ActiveCfg = Release|Win32
+		{9D016E9E-87E4-4269-842E-49C893C2401C}.Release.Build.0 = Release|Win32
+		{CDD56135-BF93-4224-A0BA-8C777208F000}.Debug.ActiveCfg = Debug|Win32
+		{CDD56135-BF93-4224-A0BA-8C777208F000}.Debug.Build.0 = Debug|Win32
+		{CDD56135-BF93-4224-A0BA-8C777208F000}.Release.ActiveCfg = Release|Win32
+		{CDD56135-BF93-4224-A0BA-8C777208F000}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
