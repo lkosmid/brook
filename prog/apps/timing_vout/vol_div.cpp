@@ -10,6 +10,7 @@ char use_vout_amplify=1;
 bool firstRound=true;
 bool vanilla=false;
 int count=0;
+bool debug_model=false;
 static std::vector<brook::stream> savedStreams;
 ::brook::stream & quickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
 
@@ -30,6 +31,14 @@ void Aggregate4(brook::stream fourfloat, brook::stream in, brook::stream out);
 void Aggregate3(brook::stream threefloat, brook::stream in, brook::stream out);
 void Aggregate2(brook::stream twofloat, brook::stream in, brook::stream out);
 void Aggregate1(brook::stream onefloat, brook::stream in, brook::stream out);
+void  processSliceNoCompact (::brook::stream curgather,
+		::brook::stream nextslice,
+		::brook::stream vertex,
+		const __BRTIter& center,
+		const __BRTIter& up,
+		const __BRTIter& forward,
+		const __BRTIter& upforward,
+                             const float2  slice) ;
 void processSlice(brook::stream curslice,
                   brook::stream nextslice,
                   ::brook::stream &__vertex_stream,
@@ -38,14 +47,6 @@ void processSlice(brook::stream curslice,
                   const __BRTIter& forward,
                   const __BRTIter& upforward,
                   const float2  slice);
-void  processSliceNoCompact (::brook::stream curgather,
-                             ::brook::stream nextslice,
-                             ::brook::stream vertex,
-                             const __BRTIter& center,
-                             const __BRTIter& up,
-                             const __BRTIter& forward,
-                             const __BRTIter& upforward,
-                             const float2  slice);
 void  processTrianglesNoCompact (::brook::stream trianglesA,
                                  ::brook::stream trianglesB,
                                  ::brook::stream trianglesC,
@@ -53,6 +54,9 @@ void  processTrianglesNoCompact (::brook::stream trianglesA,
                                  ::brook::stream trianglesE,
                                  ::brook::stream vertices1,
                                  ::brook::stream volumeTriangles);
+void  processTrianglesNoCompactOneOut (::brook::stream trianglesA,
+                                       ::brook::stream vertices1,
+                                       ::brook::stream volumeTriangles);
 void  processTriangles (::brook::stream &__triangles_stream,
                         ::brook::stream vertices,
                         ::brook::stream volumeTriangles,
@@ -298,16 +302,16 @@ int volume_division (int argc, char ** argv) {
                 // we know the width of the triangles (i.e. for the address
                 // calc) will be 4x as big...we have no idea how many 3x
                 // vout[3] outputs there will be (0 or 3 for each tri)
-            ::brook::stream triangles=quickAllocStream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
-            ::brook::stream trianglesA=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-            ::brook::stream trianglesB=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-            ::brook::stream trianglesC=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-            ::brook::stream trianglesD=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-            ::brook::stream trianglesE=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-
+            ::brook::stream trianglesB;
+            if (!debug_model)
+               trianglesB=quickAllocStream(::brook::getStreamType(( float3  *)0), (rr==2?sizesy[i]:toi(streamSize(v).y))*15 , (rr==2?sizesx[i]:toi(streamSize(v).x)) ,-1);
+            else if (!use_vout_amplify)
+               trianglesB=brook::stream(::brook::getStreamType(( float3  *)0), (rr==2?sizesy[i]:toi(streamSize(v).y))*15 , (rr==2?sizesx[i]:toi(streamSize(v).x)) ,-1);
             if (streamSize(v).y){
 
               if (use_vout_amplify) {
+                 ::brook::stream triangles=brook::stream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
+                 ::brook::stream trianglesFirst=brook::stream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
 
                 // multiply our width by 4x since we could output up to 4x
                 // of our original values
@@ -325,8 +329,8 @@ int volume_division (int argc, char ** argv) {
                  // our first triangle lookups are going to be exactly 3x as big
                                       
                 // process all the first triangles
-                processFirstTriangles(trianglesA,v,volumeTriangles);
-                Aggregate3(trianglesA,agg,agg);
+                processFirstTriangles(trianglesFirst,v,volumeTriangles);
+                Aggregate3(trianglesFirst,agg,agg);
 
                 // process the rest
                 processTriangles(triangles, 
@@ -334,10 +338,10 @@ int volume_division (int argc, char ** argv) {
                                  volumeTriangles,
                                  newsize);
                 //write it to the same place in memory
-                
-                  vertexData.push_back(trianglesA);
+                if (debug_model) {
+                  vertexData.push_back(trianglesFirst);
                   vertexData.push_back(triangles);
-                
+                }
                  Aggregate3(triangles,agg,agg);
                  /*
                  streamWrite(trianglesFirst,
@@ -350,26 +354,23 @@ int volume_division (int argc, char ** argv) {
                   // each triangle stream will be 3x bigger than the volume
                   
                  // output exactly 5 vertices for each input 
-                 processTrianglesNoCompact(trianglesA,
-                                           trianglesB,
-                                           trianglesC,
-                                           trianglesD,
-                                           trianglesE,
+                 processTrianglesNoCompactOneOut(trianglesB,
                                            v, 
                                            volumeTriangles);
                  // write them all into mem
-                 Aggregate3(trianglesA,agg,agg);
                  Aggregate3(trianglesB,agg,agg);
-                 Aggregate3(trianglesC,agg,agg);
-                 Aggregate3(trianglesD,agg,agg);
-                 Aggregate3(trianglesE,agg,agg);
-                 
-                vertexData.push_back(trianglesA);
+                 //Aggregate3(trianglesB,agg,agg);
+                 //Aggregate3(trianglesC,agg,agg);
+                 //Aggregate3(trianglesD,agg,agg);
+                 //Aggregate3(trianglesE,agg,agg);
+                 if (!debug_model)
+                    vertexData.push_back(trianglesB);
+                /*
                 vertexData.push_back(trianglesB);
                 vertexData.push_back(trianglesC);
                 vertexData.push_back(trianglesD);
                 vertexData.push_back(trianglesE);
-                 
+                */
                 /*
                  streamWrite(trianglesA,
                              consolidateVertices(dat,streamSize(trianglesA)));
@@ -389,9 +390,10 @@ int volume_division (int argc, char ** argv) {
             sliceZ.x++;sliceZ.y++;
          }
          int tsize = vertexData.size()-1;
+         streamWrite(agg,toagg);
          stop = GetTimeMillis();
          printf ("Ready time %f",(float)(stop-start));
-         streamWrite(agg,toagg);
+
          int j;
          for (j=0;j<(int)vertexData.size();++j) {
            streamWrite(vertexData[j],
@@ -404,7 +406,7 @@ int volume_division (int argc, char ** argv) {
          }
          vertexData.clear();
          printf("Total time with reads %f\n",(float)(GetTimeMillis()-start));
-         if (rr!=2)printVolume(dat);
+         if (debug_model&&rr!=2)printVolume(dat);
          //         dat.vertices.clear();
    }
    free(slice);
