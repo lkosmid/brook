@@ -466,6 +466,15 @@ void edgeDetect (float4 freqSpace<>,
 kernel void scale2d (float4 input<>, out float4 output<>, float scale) {
   output=input/scale;
 }
+void allocatePlan(float4 (*plan)<>,
+                  int logN,
+                  int logM) {
+  int bigger = logN>logM?logN:logM;
+  int size = (1<<bigger);
+  float4 tmp<size>;
+  *plan=tmp;
+  generatePlan(tmp,logN,logM);
+}
 void blur2d(float2 *input,
             float2 *output,
             int logN,
