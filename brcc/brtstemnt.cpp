@@ -56,7 +56,7 @@ BRTKernelDef::print(std::ostream& out, int) const
 {
    FunctionType *fType;
    std::ostringstream wrapOut;
-   char *code;
+   char *fpcode, *stub;
 
    if (Project::gDebug) {
       out << "/* BRTKernelDef:" ;
@@ -74,8 +74,13 @@ BRTKernelDef::print(std::ostream& out, int) const
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
 
-   code = CodeGen_GenerateCode(fType->subType, FunctionName()->name.c_str(),
+   fpcode = CodeGen_GenerateCode(fType->subType, FunctionName()->name.c_str(),
                                fType->args, fType->nArgs, wrapOut.str().c_str());
-   out << code;
-   free(code);
+   out << fpcode;
+   free(fpcode);
+
+   stub = CodeGen_GenerateStub(fType->subType, FunctionName()->name.c_str(),
+                               fType->args, fType->nArgs);
+   out << stub;
+   free(stub);
 }

@@ -259,23 +259,19 @@ append_argument_information (char *fpcode,
 
 
 /*
- * generate_c_code --
+ * generate_c_fp_code --
  *
- *      Takes completely processed fp code and emits a C wrapper to invoke
- *      it.
+ *      Spits out the compiled fp code as a string available to the emitted
+ *      C code.
  */
 
 static char *
-generate_c_code(char *fpcode, Type *retType, const char *name,
-                Decl **args, int nArgs)
+generate_c_fp_code(char *fpcode, const char *name)
 {
   std::ostringstream fp;
   int i;
 
-  assert (globals.coutputname);
-  assert (retType);
   assert (name);
-  assert (args);
 
   fp << "\nstatic const char " << name << "_fp[] =" << std::endl;
 
@@ -288,32 +284,49 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
   }
   fp << "\";\n\n";
 
-  fp << "static int __" << name << "_p = 0;\n\n";
+  return strdup(fp.str().c_str());
+}
 
-  retType->printType(fp, NULL, true, 0);
-  fp << " " << name << " (";
+
+/*
+ * CodeGen_GenerateStub --
+ *
+ *      Spits out a small wrapper function to setup the runtime and then
+ *      invoke the kernel.
+ */
+
+char *
+CodeGen_GenerateStub(Type *retType, const char *name, Decl **args, int nArgs)
+{
+  std::ostringstream cStub;
+  int i;
+
+  cStub << "static int __" << name << "_p = 0;\n\n";
+
+  retType->printType(cStub, NULL, true, 0);
+  cStub << " " << name << " (";
 
   for (i = 0; i < nArgs; i++) {
-     if (i) fp << ",\n\t";
+     if (i) cStub << ",\n\t";
 
      if (args[i]->isStream()) {
-        fp << "stream arg_" << i;
+        cStub << "stream arg_" << i;
      } else {
-        args[i]->form->printBase(fp, 0);
-        args[i]->form->printBefore(fp, NULL, 0);
-        fp << " arg_" << i;
+        args[i]->form->printBase(cStub, 0);
+        args[i]->form->printBefore(cStub, NULL, 0);
+        cStub << " arg_" << i;
      }
   }
-  fp << ") {\n";
+  cStub << ") {\n";
 
-  fp << "  if (!__" << name << "_p) __" << name << "_p = LoadKernelText("
+  cStub << "  if (!__" << name << "_p) __" << name << "_p = LoadKernelText("
      << name << "_fp);\n";
-  fp << "  KernelMap (p, ";
+  cStub << "  KernelMap (p, ";
   for (i=0; i < nArgs; i++) {
-    if (i) fp << ", ";
-    fp << "arg_" << i;
+    if (i) cStub << ", ";
+    cStub << "arg_" << i;
   }
-  fp << ");\n}\n\n";
+  cStub << ");\n}\n\n";
 
 #if 0
   /*
@@ -324,35 +337,35 @@ generate_c_code(char *fpcode, Type *retType, const char *name,
 
   /* XXX is kernel a legal reduce kernel ? */
 
-  fp << retType << " " << name << "_reduce (";
-  fp << "stream arg_src,";
-  fp << arglist->args[2]->type << " *arg_out";
+  cStub << retType << " " << name << "_reduce (";
+  cStub << "stream arg_src,";
+  cStub << arglist->args[2]->type << " *arg_out";
 
   for (i=3; i<arglist->len; i++) {
     struct argtype *arg = arglist->args[i];
-    if (i) fp << ",\n\t";
+    if (i) cStub << ",\n\t";
     if (arg->modifier & MODIFIER_OUT)
-      fp << arg->type << " *arg_" << i;
+      cStub << arg->type << " *arg_" << i;
     else if (arg->modifier & MODIFIER_STREAM ||
 	     arg->modifier & MODIFIER_GATHER)
-      fp << "stream arg_" << i;
+      cStub << "stream arg_" << i;
     else
-      fp << arg->type << " arg_" << i;
+      cStub << arg->type << " arg_" << i;
    }
-  fp << ") {\n";
+  cStub << ") {\n";
 
-  fp << "  if (!p) p = LoadKernelText(" << name << "_fp);\n";
-  fp << "  KernelReduce (p, arg_src, arg_out";
+  cStub << "  if (!p) p = LoadKernelText(" << name << "_fp);\n";
+  cStub << "  KernelReduce (p, arg_src, arg_out";
   for (i=3; i<arglist->len; i++) {
-    if (i) fp << ",";
+    if (i) cStub << ",";
     if (!arglist->args[i]->modifier)
-      fp << "&";
-    fp << "arg_" << i;
+      cStub << "&";
+    cStub << "arg_" << i;
   }
-  fp << ");\n}\n\n";
+  cStub << ");\n}\n\n";
 #endif
 
-  return strdup(fp.str().c_str());
+  return strdup(cStub.str().c_str());
 }
 
 
@@ -424,27 +437,6 @@ CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs)
 
 
 /*
- * dump_to_file --
- *
- *      SImple helper function that dumps the speicifed string to a file of
- *      the specified name.
- */
-
-static void
-dump_to_file (char *fname, char *s) {
-  FILE *fp;
-  fp = fopen (fname, "wt");
-  if (!fp) {
-    fprintf (stderr, "Unable to open file %s for writing\n",
-	     fname);
-    exit(1);
-  }
-  fwrite (s, strlen(s), 1, fp);
-  fclose(fp);
-}
-
-
-/*
  * CodeGen_GenerateCode --
  *
  *      Takes a parsed kernel and crunches it down to C code:
@@ -463,11 +455,6 @@ CodeGen_GenerateCode(Type *retType, const char *name,
 
   cgcode = generate_cg_code(args, nArgs, body);
   //std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
-  if (globals.cgonly) {
-    dump_to_file(globals.cgoutputname, cgcode);
-    free(cgcode);
-    return NULL;
-  }
 
   fpcode = compile_cg_code(cgcode);
   free(cgcode);
@@ -478,13 +465,7 @@ CodeGen_GenerateCode(Type *retType, const char *name,
   //std::cerr << "***Produced this instrumented fpcode:\n"
   //          << fpcode_with_brccinfo << "\n";
 
-  if (globals.fponly) {
-    dump_to_file(globals.fpoutputname, fpcode_with_brccinfo);
-    free (fpcode_with_brccinfo);
-    return NULL;
-  }
-
-  c_code = generate_c_code(fpcode_with_brccinfo, retType, name, args, nArgs);
+  c_code = generate_c_fp_code(fpcode_with_brccinfo, name);
   free(fpcode_with_brccinfo);
   //std::cerr << "***Produced this C code:\n" << c_code;
 
