@@ -109,8 +109,18 @@ namespace brook{
           unsigned int rdim = streamReduction->getDimension();
           const unsigned int * rextents = streamReduction->getExtents();
           unsigned int total = streamReduction->getTotalSize();
+          std::vector<ReductionArg>::iterator j;
+          for (j=reductions.begin();j!=reductions.end();++j) {
+             args[(*j).which]=(*j).stream->getData(brook::Stream::WRITE);
+          }
           for (unsigned int i=0;i<total;++i) {
+             for (j=reductions.begin();j!=reductions.end();++j) {
+                args[(*j).which]=(char*)args[(*j).which]+(*j).stream->getStride();
+             }
              
+          }
+          for (j=reductions.begin();j!=reductions.end();++j) {
+             (*j).stream->releaseData(brook::Stream::WRITE);
           }
        }
        Cleanup();
