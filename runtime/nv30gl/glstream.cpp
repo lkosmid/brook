@@ -140,53 +140,55 @@ GLStream::Write(void *data)
      glActiveTextureARB(GL_TEXTURE0_ARB);
      glBindTexture(GL_TEXTURE_RECTANGLE_EXT, id[i]);
      
-     if (width == 1 && height == 1) {
-       glGetTexImage(GL_TEXTURE_RECTANGLE_EXT, 0, GLformat(ncomp[i]),
-                     GL_FLOAT, (void *)(t));
-       
-     } else {
 #if 1    
-       runtime->createPBuffer(ncomp[i]);
-       
-       glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
-       
-       glViewport (0, 0, width, height);
-       if (height == 1) {
-         glBegin(GL_TRIANGLES);
-         glTexCoord2f(0.0f, 0.5f);
-         glVertex2f(-1.0f, -1.0f);
-         glTexCoord2f(width*2.0f, 0.5f);
-         glVertex2f(3.0f, -1.0f);
-         glTexCoord2f(0.0f, 0.5f);
-         glVertex2f(-1.0f, 3.0f);
-         glEnd();
-       } else if (width == 1) {
-         glBegin(GL_TRIANGLES);
-         glTexCoord2f(0.5f, 0.0f);
-         glVertex2f(-1.0f, -1.0f);
-         glTexCoord2f(0.5f, 0.0f);
-         glVertex2f(3.0f, -1.0f);
-         glTexCoord2f(0.5f, height*2.0f);
-         glVertex2f(-1.0f, 3.0f);
-         glEnd();
-       } else {
-         glBegin(GL_TRIANGLES);
-         glTexCoord2f(0.0f, 0.0f);
-         glVertex2f(-1.0f, -1.0f);
-         glTexCoord2f(width*2.0f, 0.0f);
-         glVertex2f(3.0f, -1.0f);
-         glTexCoord2f(0.0f, height*2.0f);
-         glVertex2f(-1.0f, 3.0f);
-         glEnd();
-       }
-       glFinish();
-       glReadPixels (0, 0, width, height, GLformat(ncomp[i]),
-                     GL_FLOAT, t);
-#else
-       glGetTexImage(GL_TEXTURE_RECTANGLE_EXT, 0, GLformat(ncomp[i]),
-                     GL_FLOAT, t);
-#endif
+     runtime->createPBuffer(ncomp[i]);
+     
+     glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
+     
+     glViewport (0, 0, width, height);
+     
+     if (width == height == 1) {
+        glBegin(GL_TRIANGLES);
+        glTexCoord2f(0.5f, 0.5f);
+        glVertex2f(-1.0f, -1.0f);
+        glVertex2f(3.0f, -1.0f);
+        glVertex2f(-1.0f, 3.0f);
+        glEnd();
+     } else if (height == 1) {
+        glBegin(GL_TRIANGLES);
+        glTexCoord2f(0.0f, 0.5f);
+        glVertex2f(-1.0f, -1.0f);
+        glTexCoord2f(width*2.0f, 0.5f);
+        glVertex2f(3.0f, -1.0f);
+        glTexCoord2f(0.0f, 0.5f);
+        glVertex2f(-1.0f, 3.0f);
+        glEnd();
+     } else if (width == 1) {
+        glBegin(GL_TRIANGLES);
+        glTexCoord2f(0.5f, 0.0f);
+        glVertex2f(-1.0f, -1.0f);
+        glTexCoord2f(0.5f, 0.0f);
+        glVertex2f(3.0f, -1.0f);
+        glTexCoord2f(0.5f, height*2.0f);
+        glVertex2f(-1.0f, 3.0f);
+        glEnd();
+     } else {
+        glBegin(GL_TRIANGLES);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2f(-1.0f, -1.0f);
+        glTexCoord2f(width*2.0f, 0.0f);
+        glVertex2f(3.0f, -1.0f);
+        glTexCoord2f(0.0f, height*2.0f);
+        glVertex2f(-1.0f, 3.0f);
+        glEnd();
      }
+     glFinish();
+     glReadPixels (0, 0, width, height, GLformat(ncomp[i]),
+                   GL_FLOAT, t);
+#else
+     glGetTexImage(GL_TEXTURE_RECTANGLE_EXT, 0, GLformat(ncomp[i]),
+                   GL_FLOAT, t);
+#endif
        
      if (ncomp[i] == 2) {       
        if (nfields == 1) {

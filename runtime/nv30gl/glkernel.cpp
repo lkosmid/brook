@@ -956,68 +956,69 @@ GLKernel::ReduceStream()
       issue_reduce_poly(0, 0, half*nx, h, 2, f1, f2);
 
       if (remainder) {
-        if (have_remainder) {
+         if (have_remainder) {
+            
+            assert (!first);
+            
+            ComputeTexCoords(nx, h, false, false,
+                             (float) ratiox-1, 0.0f, 0.0f, 1.0f,
+                             (float) w+ratiox, (float) h, 0.0f, 1.0f,
+                             f1[0], f2[0]);
+            ComputeTexCoords(nx, h, false, false,
+                             (float) remainder_x, 0.0f, 0.0f, 1.0f,
+                             (float) remainder_x+nx, (float) h, 0.0f, 1.0f,
+                             f1[1], f2[1]);
+            
+            if (first) {
+               glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
+               glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+               glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
+               glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+            } else {
+               glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
+               glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+               glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
+               glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+            }
+            
+            glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
+            
+            issue_reduce_poly(remainder_x, remainder_y, nx, h, 2, f1, f2);
+            
+         } else {
+            //  Copy the remainder values over
+            ComputeTexCoords(nx, h, false, false,
+                             (float) ratiox-1, 0.0f, 0.0f, 1.0f,
+                             (float) w+ratiox, (float) h, 0.0f, 1.0f,
+                             f1[0], f2[0]);
+            
+            glActiveTextureARB(GL_TEXTURE0_ARB);
+            if (first)
+               glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+            else
+               glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+            glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
+            issue_reduce_poly(remainder_x, remainder_y, nx, h, 1, f1, f2);
+            if (sreg0)
+               glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
+            CHECK_GL();
+         }
+         
+         CHECK_GL();
+         
+         glActiveTextureARB(GL_TEXTURE0_ARB);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
+                             remainder_x, remainder_y,
+                             remainder_x, remainder_y,
+                             nx, h);
 
-          assert (!first);
-
-          ComputeTexCoords(nx, h, false, false,
-                     (float) ratiox-1, 0.0f, 0.0f, 1.0f,
-                     (float) w+ratiox, (float) h, 0.0f, 1.0f,
-                     f1[0], f2[0]);
-          ComputeTexCoords(nx, h, false, false,
-                     (float) remainder_x, 0.0f, 0.0f, 1.0f,
-                     (float) remainder_x+nx, (float) h, 0.0f, 1.0f,
-                     f1[1], f2[1]);
-
-          if (first) {
-            glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
-            glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
-          } else {
-            glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
-            glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
-          }
-
-          glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
-
-          issue_reduce_poly(remainder_x, remainder_y, nx, h, 2, f1, f2);
-
-        } else {
-          //  Copy the remainder values over
-           ComputeTexCoords(nx, h, false, false,
-                     (float) ratiox-1, 0.0f, 0.0f, 1.0f,
-                     (float) w+ratiox, (float) h, 0.0f, 1.0f,
-                     f1[0], f2[0]);
-
-          glActiveTextureARB(GL_TEXTURE0_ARB);
-          if (first)
-            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
-          else
-            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
-          glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
-          issue_reduce_poly(remainder_x, remainder_y, nx, h, 1, f1, f2);
-          if (sreg0)
+         if (sreg0)
             glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
-          CHECK_GL();
-        }
-
-        CHECK_GL();
-
-        glActiveTextureARB(GL_TEXTURE0_ARB);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
-                            remainder_x, remainder_y,
-                            remainder_x, remainder_y,
-                            nx, h);
-        if (sreg0)
-          glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
-
-        CHECK_GL();
-
-        have_remainder = true;
+         
+         CHECK_GL();
+         
+         have_remainder = true;
       }
 
       glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -1025,6 +1026,7 @@ GLKernel::ReduceStream()
       glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
                           0, 0, 0, 0,
                           half*nx, h);
+
       if (sreg0)
         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
 
