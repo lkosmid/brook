@@ -300,7 +300,8 @@ OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
 
   int   (*iAttribList)[4][64]  = (int   (*)[4][64])
     malloc (sizeof(baseiAttribList));
-  float (*fAttribList)[16]     = (float (*)[16]) malloc (sizeof(basefAttribList));
+  float (*fAttribList)[16]     = (float (*)[16]) 
+	malloc (sizeof(basefAttribList));
  
   unsigned int numFormats;
   BOOL status;
@@ -474,32 +475,6 @@ OGLWindow::bindPbuffer(unsigned int width,
 #include <GL/gl.h>
 #include <GL/glx.h>
 
-#define CRGBA(c, r,g,b,a) \
-        GLX_RED_SIZE,               r, \
-        GLX_GREEN_SIZE,             g, \
-        GLX_BLUE_SIZE,              b, \
-        GLX_ALPHA_SIZE,             a, \
-        GLX_STENCIL_SIZE,           0, \
-        GLX_DEPTH_SIZE,             0, \
-        GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT
-
-static const int 
-baseiAttribList[4][64] = { {CRGBA(32,32,0,0,0), 0, 0},
-                           {CRGBA(64,32,32,0,0), 0, 0},
-                           {CRGBA(96,32,32,32,0), 0, 0},
-                           {CRGBA(128,32,32,32,32), 0, 0} };
-
-static const float
-basefAttribList[4][16] = { {0.0f,0.0f}, 
-                           {0.0f,0.0f}, 
-                           {0.0f,0.0f},
-                           {0.0f,0.0f}};
-
-#define PBATTRIB \
-    GLX_PRESERVED_CONTENTS, GL_TRUE, \
-    GLX_PBUFFER_WIDTH, 1024, \
-    GLX_PBUFFER_HEIGHT, 1024
-
 
 /*
 ** Static OGLWindow members:
@@ -521,23 +496,49 @@ XVisualInfo *OGLWindow::visual;
 GLXFBConfig *OGLWindow::glxConfig[4];
 GLXPbuffer   OGLWindow::glxPbuffer;
 GLXContext   OGLWindow::glxContext;
+
 int          OGLWindow::piAttribList[4][16];
 
 bool         OGLWindow::static_window_created = false;
 bool         OGLWindow::static_pbuffers_initialized = false;
 
+#define CRGBA(c, r,g,b,a) \
+        GLX_RED_SIZE,               r, \
+        GLX_GREEN_SIZE,             g, \
+        GLX_BLUE_SIZE,              b, \
+        GLX_ALPHA_SIZE,             a, \
+        GLX_STENCIL_SIZE,           0, \
+        GLX_DEPTH_SIZE,             0, \
+        GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT
 
-#define BASEATTRIB {{PBATTRIB, 0, 0}, \
-                    {PBATTRIB, 0, 0}, \
-                    {PBATTRIB, 0, 0}, \
-                    {PBATTRIB, 0, 0}}
+#define BASEIATTRIB { \
+{CRGBA(32,32,0,0,0), 0, 0}, \
+{CRGBA(64,32,32,0,0), 0, 0}, \
+{CRGBA(96,32,32,32,0), 0, 0}, \
+{CRGBA(128,32,32,32,32), 0, 0} }
 
+static const int 
+baseiAttribList[4][4][64] = { BASEIATTRIB,
+							  BASEIATTRIB,
+							  BASEIATTRIB,
+							  BASEIATTRIB};
+
+static const float
+basefAttribList[4][16] = { {0.0f,0.0f}, 
+                           {0.0f,0.0f}, 
+                           {0.0f,0.0f},
+                           {0.0f,0.0f}};
+
+#define PBATTRIB \
+    GLX_PRESERVED_CONTENTS, GL_TRUE, \
+    GLX_PBUFFER_WIDTH, 1024, \
+    GLX_PBUFFER_HEIGHT, 1024
 
 static int
-basepiAttribList[4][4][16] = { BASEATTRIB,
-                               BASEATTRIB,
-                               BASEATTRIB,
-                               BASEATTRIB};
+basepiAttribList[4][16] = { {PBATTRIB, 0, 0}, \
+							{PBATTRIB, 0, 0}, \
+							{PBATTRIB, 0, 0}, \
+							{PBATTRIB, 0, 0}};
 
 OGLWindow::OGLWindow() {
   int attrib[] = { GLX_RGBA, None };

@@ -48,16 +48,27 @@ OGLContext::getPassthroughVertexShader(void) {
 
 GPUContext::PixelShaderHandle 
 OGLContext::getPassthroughPixelShader() {
+  
+  fprintf (stderr, "getPassthroughPixelShader: this=0x%p\n", this);
+
   if (!_passthroughPixelShader) {
     GLuint id;
+	fprintf (stderr, "Calling glGenProgramsARB...\n");
     glGenProgramsARB(1, &id);
+	fprintf (stderr, "Calling glBindProgramARB...\n");
     glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, id);
+	fprintf (stderr, "Loading String: \n");
+	fprintf (stderr, "%s\n", passthrough_pixel);
     glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
                           strlen(passthrough_pixel), 
                           (GLubyte *) passthrough_pixel);
+	fprintf (stderr, "Mallocing PixelShader\n");
     _passthroughPixelShader = new OGLPixelShader(id);
+	fprintf (stderr, "Checking GL\n");
     CHECK_GL();
   }
+
+  fprintf (stderr, "  returning 0x%p\n ", _passthroughPixelShader);
   return (GPUContext::PixelShaderHandle) _passthroughPixelShader;
 }
 
