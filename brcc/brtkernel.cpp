@@ -167,24 +167,14 @@ bool recursiveIsArrayType(Type * form) {
 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-class PrintCPUArg {
-    Decl * a;
-    unsigned int index;
-   bool shadowOutput;
-public:
-     bool isGather() {
-       return recursiveIsGather(a->form);
-    }
-    bool isArrayType() {
+bool BRTCPUKernelCode::PrintCPUArg::isGather() {
+	return recursiveIsGather(a->form);
+}
+bool BRTCPUKernelCode::PrintCPUArg::isArrayType() {
       return recursiveIsArrayType(a->form);
-    }
-    PrintCPUArg(Decl * arg,unsigned int index, bool shadow)
-       :a(arg),index(index){
-       shadowOutput=shadow;
-    }
-    enum STAGE {HEADER,DEF,USE,CLEANUP};
+}
   
-    void printDimensionlessGatherStream(std::ostream&out,STAGE s){
+void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&out,STAGE s){
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
         case HEADER:{
@@ -229,11 +219,11 @@ public:
 	  out << std::endl;
 	  break;
         }
-    }
+}
 
    //The following function is obsolete for now since static sized
    //arrays are no longer helpful
-    void printArrayStream(std::ostream &out, STAGE s) {
+void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s) {
         Type * t=a->form;
 	//temporarily dissect type.
         assert (t->type==TT_Stream||t->type==TT_Array);
@@ -277,8 +267,8 @@ public:
 	case CLEANUP:
 	  break;
         }
-    }
-    void printShadowArg(std::ostream&out,STAGE s) {
+}
+void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
        Type * t = a->form;
        bool isStream = (t->type==TT_Stream);        
        switch(s) {
@@ -295,9 +285,9 @@ public:
           out << "arg"<<index;
           break;
        }
-    }  
+}  
    //standard args, not gather or scatter
-    void printNormalArg(std::ostream&out,STAGE s){
+void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
         TypeQual tq= t->getQualifiers();
         bool isStream = (t->type==TT_Stream);        
@@ -332,27 +322,27 @@ public:
 	case CLEANUP:
 	  break;
         }
-    }
+}
     
    //redirects call
-    void printCPUVanilla(std::ostream & out,STAGE s){
+void BRTCPUKernelCode::PrintCPUArg::printCPUVanilla(std::ostream & out,STAGE s){
         if(isGather())
 	  printDimensionlessGatherStream(out,s);
 	else if (isArrayType())
 	  printArrayStream(out,s);
         else
 	  printNormalArg(out,s);
-    }
-   void printCPU(std::ostream & out, STAGE s) {
+}
+void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out, STAGE s) {
       Type * t = a->form;
       if (shadowOutput&&(t->getQualifiers()&TQ_Out)!=0) {
          printShadowArg(out,s);
       }else {
          printCPUVanilla(out,s);
       }
-   }
+}
 
-};
+
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::string whiteout (std::string s) {
@@ -363,12 +353,12 @@ std::string whiteout (std::string s) {
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void printInnerFunction (std::ostream & out,
-                         std::string fullname,
-                         FunctionDef *fDef, 
-                         std::vector<PrintCPUArg>&myArgs,
-                         bool shadowOutput,
-                         std::string origname) {
+void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
+										   std::string fullname,
+										   FunctionDef *fDef, 
+										   std::vector<PrintCPUArg>&myArgs,
+										   bool shadowOutput,
+										   std::string origname) {
    Type * form = fDef->decl->form;
     assert (form->isFunction());
     FunctionType* func = static_cast<FunctionType *>(form->dup());

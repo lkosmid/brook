@@ -9,7 +9,7 @@
 #include <sstream>
 
 #include "brtstemnt.h"
-#include "brtkernel.h"
+#include "brtreduce.h"
 #include "brtdecl.h"
 #include "brtexpress.h"
 #include "project.h"
@@ -62,19 +62,32 @@ BRTKernelDef::~BRTKernelDef()
 void
 BRTKernelDef::print(std::ostream& out, int) const
 {
-   BRTFP30KernelCode fp30(*this);
-   BRTPS20KernelCode ps20(*this);
-
+   BRTFP30KernelCode * fp30;
+   if (decl->isReduce())
+	   fp30=new BRTFP30ReduceCode(*this);
+   else
+	   fp30=new BRTFP30KernelCode(*this);
+   BRTPS20KernelCode * ps20;
+   if(decl->isReduce()) 
+	   ps20=new BRTPS20ReduceCode(*this);
+   else
+	   ps20=new BRTPS20KernelCode(*this);
+   
    if (Project::gDebug) {
       out << "/* BRTKernelDef:" ;
       location.printLocation(out) ;
       out << " */" << std::endl;
    }
-   out << fp30 << std::endl << ps20 << std::endl;
-   BRTCPUKernelCode cpu(*this);
-   out << cpu << std::endl;
+   out << *fp30 << std::endl << *ps20 << std::endl;
+   BRTCPUKernelCode *cpu;
+   if (decl->isReduce())
+	   cpu=new BRTCPUReduceCode(*this);
+   else
+	   cpu=new BRTCPUKernelCode(*this);
+   out << *cpu << std::endl;
 
    printStub(out);
+   delete cpu;delete fp30; delete ps20;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

@@ -66,6 +66,27 @@ class BRTPS20KernelCode : public BRTKernelCode
 class BRTCPUKernelCode : public BRTKernelCode
 {
   public:
+	class PrintCPUArg {
+		Decl * a;
+		unsigned int index;
+		bool shadowOutput;
+	public:
+		Decl * getDecl(){return a;}
+		bool isGather();
+		bool isArrayType();
+		PrintCPUArg(Decl * arg,unsigned int index, bool shadow)
+				:a(arg),index(index){
+			shadowOutput=shadow;
+		}
+		enum STAGE {HEADER,DEF,USE,CLEANUP};
+		void printDimensionlessGatherStream(std::ostream&out,STAGE s);
+		void printArrayStream(std::ostream &out, STAGE s);
+		void printShadowArg(std::ostream&out,STAGE s);
+		void printNormalArg(std::ostream&out,STAGE s);
+		void printCPUVanilla(std::ostream & out,STAGE s);
+		void printCPU(std::ostream & out, STAGE s);
+	};
+	
     BRTCPUKernelCode(const FunctionDef& _fDef) : BRTKernelCode(_fDef) {}
    ~BRTCPUKernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
 
@@ -77,6 +98,14 @@ class BRTCPUKernelCode : public BRTKernelCode
     void printIndexOfCallingArgs(std::ostream & out)const;
     void printCombineCode(std::ostream& out)const;
     void printCode(std::ostream& out) const;
+	
+	static void printInnerFunction(std::ostream&out,
+								   std::string fullname,
+								   FunctionDef*fDef,
+								   std::vector<PrintCPUArg>&args,
+								   bool shadowOutput,
+								   std::string origname);
+
 };
 
 #endif  /* STEMNT_H */
