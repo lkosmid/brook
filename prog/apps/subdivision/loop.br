@@ -1,0 +1,117 @@
+typedef struct Tri_t{
+   float4 A;
+   float4 B;
+   float4 C;
+} Tri;
+//Stores the neighbors of a given triangle
+// the unused 'w' components act as holders
+// for the recomputed neighbor list when a triangle is split
+typedef struct Neighbor_t {
+  float4 AB;// w = AB->B.x
+  float4 BBC;// w = AB->B.y
+  float4 ABB;// w = AB->B.z
+  float4 BC;// w = BC->C.x
+  float4 ACC;// w = BC->C.y
+  float4 BCC;// w = BC->C.z
+  float4 AC;// w = AC->A.x
+  float4 AAB;// w = AC->A.y
+  float4 AAC;// w = AC->A.z
+}Neighbor;
+
+
+kernel void smallEnough(Tri t<>, Neighbor u<>, out Tri v<>, float epsilon) {
+  v.A.xyz = t.A.xyz;
+  v.A.w = (float)(t.A.w!=0 &&
+                  (dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon
+                   || dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)>epsilon
+                   || dot(t.A.xyz-u.AB.xyz,t.A.xyz-u.AB.xyz)>epsilon
+                   || dot(t.A.xyz-u.AC.xyz,t.A.xyz-u.AC.xyz)>epsilon
+                   || dot(t.A.xyz-u.AAC.xyz,t.A.xyz-u.AAC.xyz)>epsilon
+                   || dot(t.A.xyz-u.AAB.xyz,t.A.xyz-u.AAB.xyz)>epsilon));
+  v.B.xyz = t.B.xyz;
+  v.B.w = (float)(t.B.w!=0 &&
+                  (dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon
+                   || dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon
+                   || dot(t.B.xyz-u.AB.xyz,t.B.xyz-u.AB.xyz)>epsilon
+                   || dot(t.B.xyz-u.BC.xyz,t.B.xyz-u.BC.xyz)>epsilon
+                   || dot(t.B.xyz-u.BBC.xyz,t.B.xyz-u.BBC.xyz)>epsilon
+                   || dot(t.B.xyz-u.ABB.xyz,t.B.xyz-u.ABB.xyz)>epsilon));
+  v.C.xyz= t.C.xyz;
+  v.C.w = (float)(t.C.w!=0 &&
+                  (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz.xyz)>epsilon
+                   || dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon
+                   || dot(t.C.xyz-u.AC.xyz,t.C.xyz-u.AC.xyz)>epsilon
+                   || dot(t.C.xyz-u.BC.xyz,t.C.xyz-u.BC.xyz)>epsilon
+                   || dot(t.C.xyz-u.BCC.xyz,t.C.xyz-u.BCC.xyz)>epsilon
+                   || dot(t.C.xyz-u.ACC.xyz,t.C.xyz-u.ACC.xyz)>epsilon));
+
+}
+kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 shouldNotProduce<>){
+   if (t.A.w!=0.0f
+       ||t.B.w!=0.0f
+       ||t.C.w!=0.0f) {
+     shouldProduce = (indexof t).xy;
+     push(shouldProduce);
+   }else {
+     shouldNotProduce = (indexof t).xy;
+     push(shouldNotProduce);
+   }
+}
+
+
+kernel void computeNeighbors(Tri tgather[][], Neighbor ugather[][], float2 i<>, out Neighbor v<>) {
+  Neighbor u = ugather[i];
+  t = tgather[i];
+  {  
+  float3 AB_B=lerp(t.B.xyz,u.AB.xyz,.5);
+  float3 AC_A=lerp(t.A.xyz,u.AC.xyz,.5);
+  float3 BC_C=lerp(t.C.xyz,u.BC.xyz,.5);
+  v.AB.xyz = lerp(t.A.xyz,u.AB.xyz,.5);
+  v.AB.w = AB_B.x;
+  v.BBC.xyz = lerp(t.B.xyz,u.BBC.xyz,.5);
+  v.BBC.w = AB_B.y;
+  v.ABB.xyz = lerp(t.B.xyz,u.ABB.xyz,.5);
+  v.ABB.w = AB_B.z;
+
+  v.AC.xyz = lerp(t.C.xyz,u.AC.xyz,.5);
+  v.AC.w = AC_A.x;
+  v.AAB.xyz = lerp(t.A.xyz,u.AAB.xyz,.5);
+  v.AAB.w = AC_A.y;
+  v.AAC.xyz = lerp(t.A.xyz,u.AAC.xyz,.5);
+  v.AAC.w = AC_A.z;
+
+  v.BC.xyz = lerp(t.B.xyz,u.BC.xyz,.5);
+  v.BC.w = BC_C.x;
+  v.ACC.xyz = lerp(t.C.xyz,u.ACC.xyz,.5);
+  v.ACC.w = BC_C.y;
+  v.BCC.xyz = lerp(t.C.xyz,u.BCC.xyz,.5);
+  v.BCC.w = BC_C.z;  
+  }
+}
+kernel void writeFinalTriangles (Tri triangles[][],
+                                 float2 indices<>,
+                                 out float3 triList<>) {
+  float whichVertex=round(fmod((indexof triList).x,3));
+  Tri tri = triangles[indices];
+  triList = tri.A.xyz;
+  if (whichVertex>.5&&whichVertex<1.5)
+    triList=tri.B.xyz;
+  else if (whichVertex>=1.5&&whichVertex<2.5)
+    triList=tri.C.xyz;
+}
+kernel void splitTriangles (Tri triangles[][], 
+                            float2 i,
+                            Neighbor neighbors<>,
+                            out Tri tris<>,
+                            out Neighbor neighbor<>) {
+  Tri tris=triangles[i];
+  float3 ac = lerp (tris.A.xyz,tris.C.xyz,.5);
+  float3 ab = lerp (tris.A.xyz,tris.B.xyz,.5);
+  float3 bc = lerp (tris.B.xyz,tris.C.xyz,.5);
+  
+  tri.A=tri.B=tri.C=0;
+  neighbor = neighbors[indices];
+}
+int main () {
+   
+}

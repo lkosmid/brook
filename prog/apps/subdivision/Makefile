@@ -1,8 +1,8 @@
 ROOTDIR = ../../..
 EXECUTABLE = subdivision
-FILES = catmullclark voutfloatN vout1dfloatN 
+FILES = loop voutfloatN vout1dfloatN 
 #nurbs subdivision 
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = -k
+BRCCFLAGS = 
 include $(ROOTDIR)/common.mk
 
