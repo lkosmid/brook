@@ -22,6 +22,11 @@
 #define WGL_TEXTURE_RECTANGLE_NV       0x20A2
 #endif
 
+#ifndef WGL_ARB_render_texture
+#define WGL_TEXTURE_FORMAT_ARB  0x2072
+#define WGL_TEXTURE_TARGET_ARB  0x2073
+#endif
+
 #endif
 
 #ifndef GL_NV_float_buffer

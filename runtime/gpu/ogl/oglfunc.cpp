@@ -24,6 +24,7 @@ void brook::initglfunc(void) {
 #define  XXX(type, fn) fn = (type) wglGetProcAddress(#fn); \
                        GPUAssert(fn, "Failed to load" #fn);
   RUNTIME_BONUS_GL_FNS;
+  RUNTIME_BONUS_WGL_FNS;
 #undef XXX   
 #endif
 }

@@ -450,7 +450,6 @@ OGLWindow::OGLWindow() {
                             &swa);
 
 
-  fprintf (stderr, "OGLWindow: glXMakeCurrent\n");
   if (!glXMakeCurrent(pDisplay, glxWindow, glxContext)) {
     fprintf (stderr, "OGLWindow: Could not make current.\n");
     exit(1);
@@ -546,8 +545,6 @@ OGLWindow::initPbuffer(const int   (*/*unused*/)[4][64],
     exit (1);
   }
      
-  fprintf (stderr, "initPbuffer: glXMakeCurrent\n");
-
   if (!glXMakeCurrent(pDisplay, glxPbuffer, glxContext)) {
     fprintf (stderr, "initPbuffer: glXMakeCurrent Failed\n");
     exit(1);
@@ -585,7 +582,6 @@ OGLWindow::bindPbuffer(unsigned int ncomponents)
   assert (ncomponents > 0 &&
           ncomponents <= 4);
 
-  fprintf (stderr, "bindPbuffer: glXMakeCurrent None\n");
   glXMakeCurrent(pDisplay, None, NULL);
   glXDestroyPbuffer(pDisplay, glxPbuffer);
 
@@ -597,8 +593,6 @@ OGLWindow::bindPbuffer(unsigned int ncomponents)
     fprintf (stderr, "Error: Could not create float%d pbuffer.\n",
              ncomponents);
   }
-
-  fprintf (stderr, "bindPbuffer: glXMakeCurrent\n");
 
   if (!glXMakeCurrent(pDisplay, glxPbuffer, glxContext)) {
     fprintf (stderr, "bindPbuffer: glXMakeCurrent Failed\n");
@@ -615,8 +609,6 @@ OGLWindow::bindPbuffer(unsigned int ncomponents)
 OGLWindow::~OGLWindow() 
 {
 #if 0
-  fprintf (stderr, "OGLWindow::~OGLWindow\n");
-
   glXDestroyContext(pDisplay, glxContext);
   if (glxPbuffer)
     glXDestroyPbuffer(pDisplay, glxPbuffer);

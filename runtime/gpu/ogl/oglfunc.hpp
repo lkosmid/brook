@@ -2,7 +2,6 @@
 #define OGLFUNC_HPP
 
 #ifdef WIN32
-#define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
 #endif
 
@@ -20,24 +19,28 @@
 #endif
 
 #ifndef GL_VERSION_1_1
-#error "GL ERROR: The gl.h version on this computer is quite old."
+#error GL ERROR: The gl.h version on this computer is very old.
 #endif
 
-#define RUNTIME_BONUS_GL_FNS
-
 #ifndef GL_VERSION_1_2
-typedef void (APIENTRYP PFNGLMULTITEXCOORD2FVPROC) (GLenum target, const GLfloat *v);
-typedef void (APIENTRYP PFNGLMULTITEXCOORD4FVPROC) (GLenum target, const GLfloat *v);
-#define RUNTIME_BONUS_GL_FNS RUNTIME_BONUS_GL_FNS \
+typedef void (APIENTRYP PFNGLMULTITEXCOORD2FVARBPROC) (GLenum target, const GLfloat *v);
+typedef void (APIENTRYP PFNGLMULTITEXCOORD4FVARBPROC) (GLenum target, const GLfloat *v);
+#define RUNTIME_BONUS_GL_FNS_1 \
    XXX(PFNGLMULTITEXCOORD2FVARBPROC,   glMultiTexCoord2fvARB) \
    XXX(PFNGLMULTITEXCOORD4FVARBPROC,   glMultiTexCoord4fvARB)
+#else
+#define RUNTIME_BONUS_GL_FNS_1
 #endif
 
 #ifndef GL_ARB_multitexture
-typedef void (APIENTRYP PFNGLACTIVETEXTUREPROC) (GLenum texture);
+typedef void (APIENTRYP PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
 #define GL_TEXTURE0                       0x84C0
-#define RUNTIME_BONUS_GL_FNS RUNTIME_BONUS_GL_FNS \
+#define GL_TEXTURE0_ARB                   0x84C0
+#define GL_MAX_TEXTURE_UNITS              0x84E2
+#define RUNTIME_BONUS_GL_FNS_2 \
    XXX(PFNGLACTIVETEXTUREARBPROC,      glActiveTextureARB)
+#else
+#define RUNTIME_BONUS_GL_FNS_2
 #endif
 
 #ifndef GL_ARB_vertex_program
@@ -46,28 +49,65 @@ typedef void (APIENTRYP PFNGLBINDPROGRAMARBPROC) (GLenum target, GLuint program)
 typedef void (APIENTRYP PFNGLPROGRAMSTRINGARBPROC) (GLenum target, GLenum format, GLsizei len, const GLvoid *string);
 typedef void (APIENTRYP PFNGLPROGRAMLOCALPARAMETER4FVARBPROC) (GLenum target, GLuint index, const GLfloat *params);
 #define GL_VERTEX_PROGRAM_ARB             0x8620
-#define RUNTIME_BONUS_GL_FNS RUNTIME_BONUS_GL_FNS \
+#define GL_PROGRAM_ERROR_POSITION_ARB     0x864B
+#define GL_PROGRAM_ERROR_STRING_ARB       0x8874
+#define GL_PROGRAM_FORMAT_ASCII_ARB       0x8875
+#define RUNTIME_BONUS_GL_FNS_3 \
    XXX(PFNGLGENPROGRAMSARBPROC,        glGenProgramsARB)               \
    XXX(PFNGLBINDPROGRAMARBPROC,        glBindProgramARB)               \
    XXX(PFNGLPROGRAMSTRINGARBPROC,      glProgramStringARB)             \
    XXX(PFNGLPROGRAMLOCALPARAMETER4FVARBPROC, glProgramLocalParameter4fvARB)
+#else
+#define RUNTIME_BONUS_GL_FNS_3
 #endif
 
 #ifndef GL_ARB_fragment_program
 #define GL_FRAGMENT_PROGRAM_ARB           0x8804
 #endif
 
-#define RUNTIME_BONUS_WGL_FNS \
-   XXX(PFNWGLCREATEPBUFFERARBPROC,     wglCreatePbufferARB)            \
-   XXX(PFNWGLGETPBUFFERDCARBPROC,      wglGetPbufferDCARB)             \
-   XXX(PFNWGLRELEASEPBUFFERDCARBPROC,  wglReleasePbufferDCARB)         \
-   XXX(PFNWGLDESTROYPBUFFERARBPROC,    wglDestroyPbufferARB)           \
-   XXX(PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB)        \
-   XXX(PFNWGLBINDTEXIMAGEARBPROC,      wglBindTexImageARB)             \
-   XXX(PFNWGLRELEASETEXIMAGEARBPROC,   wglReleaseTexImageARB)          \
+#ifndef GL_NV_texture_rectangle
+#define GL_TEXTURE_RECTANGLE_NV           0x84F5
 #endif
 
+#ifndef GL_ARB_texture_rectangle
+#define GL_TEXTURE_RECTANGLE_ARB          0x84F5
+#endif
 
+#define RUNTIME_BONUS_GL_FNS \
+   RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3
+
+
+/***** WGL API *****/
+#ifdef WIN32
+
+#ifndef WGL_ARB_pbuffer
+DECLARE_HANDLE(HPBUFFERARB);
+typedef HPBUFFERARB (WINAPI * PFNWGLCREATEPBUFFERARBPROC) (HDC hDC, int iPixelFormat, int iWidth, int iHeight, const int *piAttribList);
+typedef HDC (WINAPI * PFNWGLGETPBUFFERDCARBPROC) (HPBUFFERARB hPbuffer);
+typedef int (WINAPI * PFNWGLRELEASEPBUFFERDCARBPROC) (HPBUFFERARB hPbuffer, HDC hDC);
+typedef BOOL (WINAPI * PFNWGLDESTROYPBUFFERARBPROC) (HPBUFFERARB hPbuffer);
+#endif
+
+#ifndef WGL_ARB_pixel_format
+typedef BOOL (WINAPI * PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
+#endif
+
+#ifndef WGL_ARB_render_texture
+typedef BOOL (WINAPI * PFNWGLBINDTEXIMAGEARBPROC) (HPBUFFERARB hPbuffer, int iBuffer);
+typedef BOOL (WINAPI * PFNWGLRELEASETEXIMAGEARBPROC) (HPBUFFERARB hPbuffer, int iBuffer);
+#endif
+
+#define RUNTIME_BONUS_WGL_FNS \
+   XXX(PFNWGLCREATEPBUFFERARBPROC,     wglCreatePbufferARB)     \
+   XXX(PFNWGLGETPBUFFERDCARBPROC,      wglGetPbufferDCARB)      \
+   XXX(PFNWGLRELEASEPBUFFERDCARBPROC,  wglReleasePbufferDCARB)  \
+   XXX(PFNWGLDESTROYPBUFFERARBPROC,    wglDestroyPbufferARB)    \
+   XXX(PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB) \
+   XXX(PFNWGLBINDTEXIMAGEARBPROC,      wglBindTexImageARB)      \
+   XXX(PFNWGLRELEASETEXIMAGEARBPROC,   wglReleaseTexImageARB)
+
+#endif // WIN32
+  
 /* Declare undefined functions */
 #define XXX(type, fn) \
    extern type fn;
@@ -81,11 +121,8 @@ RUNTIME_BONUS_GL_FNS
 #undef XXX
 
 namespace brook {
-
   void initglfunc(void);
-
 }
-
 
 #endif
 

@@ -9,6 +9,8 @@
 #include <GL/glx.h>
 #endif
 
+#include "oglfunc.hpp"
+
 namespace brook {
   
   class OGLWindow {
