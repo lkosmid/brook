@@ -19,16 +19,8 @@ MKDIR    := mkdir
 INCLUDEFILES := $(ROOTDIR)/$(INC)/*.h
 MAKEFILEDEPS := $(ROOTDIR)/common.mk Makefile $(INCLUDEFILES)
 
-ifdef OS
+include $(ROOTDIR)/config/DetectOS.mk
 include $(ROOTDIR)/config/$(OS).mk
-else
-# Linux.mk is a misnomer.  Really Linux.mk should build on many GNU
-# toolchain using systems and OS isn't a builtin variable on my (or other
-# that I've tested) Linux versions of make so we just use it as a default.
-# --Jeremy.
-
-include $(ROOTDIR)/config/Linux.mk
-endif
 
 CFLAGS    += $(C_INCLUDE_FLAG). $(C_INCLUDE_FLAG)$(INCLUDEDIR) $(C_DEBUG_FLAG)
 LDFLAGS   += $(LD_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)

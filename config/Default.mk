@@ -13,7 +13,7 @@ BINSUFFIX        :=
 
 SYSTEM_LIBS      := 
 
-CFLAGS           += -DBUILD_NV30GL 
+CFLAGS           += 
 C_INCLUDE_FLAG   := -I  
 C_DEBUG_FLAG     := -g3 -Wall 
 #-O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -finline-limit=10000 -frerun-loop-opt 

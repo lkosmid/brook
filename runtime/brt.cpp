@@ -7,11 +7,14 @@
 #include <string.h>
 
 
-#ifdef WIN32
+#ifdef BUILD_DX9
 #include "dx9/dx9.hpp"
 #endif
 
+#ifdef BUILD_NV30GL
 #include "nv30gl/nv30gl.hpp"
+#endif
+
 #include "cpu/cpu.hpp"
 #include "brtscatterintrinsic.hpp"
 
@@ -40,7 +43,7 @@ namespace brook {
       return new CPURunTime();
     }
 
-#ifdef WIN32
+#ifdef BUILD_DX9
     if (!strcmp(env, DX9_RUNTIME_STRING))
     {
       RunTime* result = DX9RunTime::create();
@@ -51,8 +54,10 @@ namespace brook {
     }
 #endif
 
+#ifdef BUILD_NV30GL
     if (!strcmp(env, NV30GL_RUNTIME_STRING))
       return new NV30GLRunTime();
+#endif
 
     if (strcmp(env,CPU_RUNTIME_STRING)) 
       fprintf (stderr, 
