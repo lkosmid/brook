@@ -297,6 +297,15 @@ kernel void writeFinalTriangles (STri triangles[][],
   float2 ind = (indices>=0&&indices<8192)?indices:zero2;
   copyFinalTriangles(triangles[ind],triList);
 }
+//Same as copy final triangles but with a dependent texture lookup
+kernel void gatherTriangles (STri triangles[][],
+                             float2 indices<>,
+                             out STri triList<>) {
+  float2 zero2=0;
+  float2 ind = (indices>=0&&indices<8192)?indices:zero2;
+  triList=triangles[ind];
+}
+
 //since we don't have proper float4 constructors, we need to manufacture one
 kernel float4 addN(float3 inxyz, float inw) {
    float4 x = float4(inxyz.x,
@@ -606,6 +615,39 @@ kernel void adaptiveReorgSplitTriangles (SplitTri splittri<>,
   smallEnough(tri,neighbor,tri,neighbor,epsilon);  
 }
 
+
+struct VertexArray4{
+  float4 * v;
+  unsigned int size;
+  unsigned int alloc;
+};
+void initVertexArray4(struct VertexArray4 *v) {
+  v->v=0;v->size=0;v->alloc=0;
+}
+void destroyVertexArray4(struct VertexArray4 *v) {
+  if (v->v) free(v->v);
+}
+void expandVertexArray4(struct VertexArray4 * v,
+                       unsigned int more) {
+  v->size+=more;
+  while(v->size>v->alloc) {
+    if (v->alloc==0)
+      v->alloc=16;
+    v->alloc*=2;
+    v->v = (float4*)realloc(v->v,v->alloc*sizeof(float4));
+  }
+}                   
+void pushBackVertexArray4(struct VertexArray4 * v,
+                         float4 f) {
+  if (++v->size>v->alloc) {
+    if (v->alloc==0)
+      v->alloc=16;
+    v->alloc*=2;
+    v->v = (float4*)realloc(v->v,v->alloc*sizeof(float4));
+  }
+  v->v[v->size-1]=f;
+}                   
+
 //simple growable array, similar to std::vector (I hate C parsers)
 struct VertexArray{
   float3 * v;
@@ -644,21 +686,29 @@ static int toi(float f) {return (int)f;}
 void subdivide (Neighbor (*neighbors)<>,
                 STri (*triangles)<>,
                 struct VertexArray *output,
-                int counter) {
+                struct VertexArray4 *output4,
+                int counter,
+                char out4) {
   unsigned int streamY=toi(streamSize(*triangles).y);
   unsigned int streamX=toi(streamSize(*triangles).x);
-  unsigned char snpSize=0;
   float stretchX = streamY*4>2048?1.0f:0.0f;      
 
   subdivisiondepth++;
   if (counter>=counterMax) {
-    float3 outputTri<toi(streamSize(*triangles).y),
-      toi(streamSize(*triangles).x*3)>;
-    int sizey = output->size;
-    copyFinalTriangles(*triangles,outputTri);
-    expandVertexArray(output,
+    if (out4) {
+      int sizey = output4->size;
+      expandVertexArray4(output4,
+                         3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
+      streamWrite(*triangles,output4->v+sizey);
+    }else {
+      int sizey = output->size;
+      float3 outputTri<toi(streamSize(*triangles).y),
+        toi(streamSize(*triangles).x*3)>;
+      copyFinalTriangles(*triangles,outputTri);
+      expandVertexArray(output,
                       3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
-    streamWrite(outputTri,output->v+sizey);
+      streamWrite(outputTri,output->v+sizey);
+    }
   }else {
     //allocate shared neighbor structs that hold the extra generated floats
     Neighbor sharedNeighbors<streamY,streamX>;
@@ -704,7 +754,7 @@ void subdivide (Neighbor (*neighbors)<>,
     if (counter<counterMax) {
       //if we can afford the ram, we recursively call this function
       // to evaluate other triangles
-      subdivide(neighbors,triangles,output,counter+1);
+      subdivide(neighbors,triangles,output,output4,counter+1,out4);
     } 
   }
 }
@@ -716,8 +766,9 @@ void subdivide (Neighbor (*neighbors)<>,
 void subdivideAdaptive (Neighbor (*neighbors)<>,
                         STri (*triangles)<>,
                         struct VertexArray *output,
+                        struct VertexArray4 *output4,
                         float epsilon,
-                        int counter) {
+                        int counter, char out4) {
   float3 tJunctionsRepairA<0,0>;
   float3 tJunctionsRepairB<0,0>;
   unsigned int streamY=toi(streamSize(*triangles).y);
@@ -735,7 +786,8 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
       int wosizey=toi(streamSize(shouldNotProduce).y);
       int tsizex=toi(streamSize(shouldProduce).x);
       int tsizey=toi(streamSize(shouldProduce).y);
-      float3 outputTri<wosizey,wosizex>;
+      float3 outputTri<(out4?0:wosizey),(out4?0:wosizex)>;
+      STri outputTri4<(out4?wosizey:0),(out4?toi(streamSize(shouldNotProduce).x):0)>;
       if (tsizey&&tsizex) {
         float3 tJunctionsA<tsizey,0>;
         float3 tJunctionsB<tsizey,0>;
@@ -755,8 +807,13 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
           repairTJunctions(*triangles,tJunctionsB,tJunctionsRepairB);
         }
       }
-      if (wosizex&&wosizey)
-        writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
+      if (wosizex&&wosizey) {
+        if (out4) {
+          gatherTriangles(*triangles,shouldNotProduce,outputTri4);          
+        }else {
+          writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
+        }
+      }
 
       streamY=toi(streamSize(shouldProduce).y);
       //if some should be split and produced then go here
@@ -815,15 +872,23 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
             counter<counterMax) {
           //if we can afford the ram, we recursively call this function
           // to evaluate other triangles
-          subdivideAdaptive(neighbors,triangles,output,epsilon,counter+1);
+          subdivideAdaptive(neighbors,triangles,output,output4,epsilon,counter+1,out4);
         } 
         //now we writeback from the card to local memory since we dont have
         // render to vertex array yet
         if (!onlyCracks){
-          wosizey = output->size;
-          expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
-                                                streamSize(outputTri).y));
-          streamWrite(outputTri,output->v+wosizey);   
+          if (out4) {
+            wosizey = output4->size;
+            expandVertexArray4(output4,(unsigned int)(streamSize(outputTri4).x*3*
+                                                      streamSize(outputTri4).y));
+            streamWrite(outputTri4,output4->v+wosizey);               
+          }else {
+            wosizey = output->size;
+
+            expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
+                                                    streamSize(outputTri).y));
+            streamWrite(outputTri,output->v+wosizey);   
+          }
         }
         if (streamSize(tJunctionsRepairA).x&&streamSize(tJunctionsRepairA).y&&!noCracks) {
           wosizey = output->size;
@@ -842,21 +907,28 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
     if (counter>=counterMax) {
       float3 outputTri<toi(streamSize(*triangles).y),
                        toi(streamSize(*triangles).x*3)>;
-      int sizey = output->size;
-      copyFinalTriangles(*triangles,outputTri);
-      if (!onlyCracks){
-        expandVertexArray(output,
-                          3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
-        streamWrite(outputTri,output->v+sizey);
+      if (out4) {
+        int sizey = output4->size;      
+        expandVertexArray4(output4,
+                           3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
+        streamWrite(*triangles,output4->v+sizey);
+      }else {
+        int sizey = output->size;      
+        copyFinalTriangles(*triangles,outputTri);
+        if (!onlyCracks){
+          expandVertexArray(output,
+                            3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
+          streamWrite(outputTri,output->v+sizey);
+        }
       }
       if (streamSize(tJunctionsRepairA).x&&streamSize(tJunctionsRepairA).y&&!noCracks) {
-        sizey = output->size;
+        int sizey = output->size;
         expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepairA).x*
                                                 streamSize(tJunctionsRepairA).y));
         streamWrite(tJunctionsRepairA,output->v+sizey);             
       }
       if (streamSize(tJunctionsRepairB).x&&streamSize(tJunctionsRepairB).y&&!noCracks) {
-        sizey = output->size;
+        int sizey = output->size;
         expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepairB).x*
                                                 streamSize(tJunctionsRepairB).y));
         streamWrite(tJunctionsRepairB,output->v+sizey);             
@@ -868,7 +940,7 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
   // vertices out to host ram, thus preserving memory. Only recurse if we have 
   // size in shouldSplit arrays :-)
   if ((low_texture_ram||snpSize==0)&&streamY&&streamX&&counter<counterMax) {
-     subdivideAdaptive(neighbors,triangles,output,epsilon,counter+1);
+     subdivideAdaptive(neighbors,triangles,output,output4,epsilon,counter+1,out4);
   } 
   // prevents all writing at the end
 }
@@ -936,6 +1008,7 @@ int main (int argc, char**argv) {
   Neighbor *neighbordata = 0;
   unsigned int numTriangles;
   char adaptive=1;
+  char out4=1;
   neighboreps=epsilon/1024.0f;
   for (i=0;i<(unsigned int)argc;++i) {
     char match=0;
@@ -964,6 +1037,10 @@ int main (int argc, char**argv) {
       adaptive=0;
       match=1;
     }
+    if (strcmp(argv[i],"-out3")==0) {
+      out4=0;
+      match=1;
+    }
     if (strncmp(argv[i],"-eps",4)==0) {
       epsilon = (float)atof(argv[i]+4);
       match=1;
@@ -981,9 +1058,11 @@ int main (int argc, char**argv) {
   Neighbor neighbors<bestHeight(numTriangles),bestWidth(numTriangles)>;
   STri triangles<bestHeight(numTriangles),bestWidth(numTriangles)>;
   struct VertexArray v;
+  struct VertexArray4 v4;
   streamRead(triangles,triangledata);
   streamRead(neighbors,neighbordata);
   initVertexArray(&v);
+  initVertexArray4(&v4);
   
   // initialize neighbors and triangles
   smallEnough(triangles,neighbors,triangles,neighbors,epsilon);
@@ -999,15 +1078,18 @@ int main (int argc, char**argv) {
        }
   }
   if ( adaptive )
-       subdivideAdaptive(&neighbors,&triangles,&v,epsilon,0); 
+       subdivideAdaptive(&neighbors,&triangles,&v,&v4,epsilon,0,out4); 
   else
   {
-    subdivide(&neighbors,&triangles,&v,0);
+    subdivide(&neighbors,&triangles,&v,&v4,0,out4);
   }
  
-  printf("%d\n", v.size);
+  printf("%d\n", v.size+v4.size);
   for(i=0; i<v.size; i++){
     printf("%3.3f, %3.3f, %3.3f\n", v.v[i].x, v.v[i].y, v.v[i].z);
+  }
+  for(i=0; i<v4.size; i++){
+    printf("%3.3f, %3.3f, %3.3f\n", v4.v[i].x, v4.v[i].y, v4.v[i].z);
   }
   vcount=numTriangles;
   for (i=0;i<(unsigned int)subdivisiondepth;++i) {
