@@ -13,7 +13,7 @@ bool forcevanilla=true;
 int count=0;
 int hpcount=0;
 int qtcount=0;
-bool debug_model=true;
+bool debug_model=false;
 static std::vector<brook::stream> savedStreams;
 ::brook::stream & quickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
 
@@ -236,10 +236,14 @@ int volume_division (int argc, char ** argv) {
        use_vout_amplify=1;//deprecated
      }else if (strncmp(argv[i],"-numspheres",11)==0) {
        match=1;
+
        numspheres=atoi(argv[i]+11);
      }else if (strncmp(argv[i],"-spheredist",11)==0) {
        match=1;
-       spheredist=atoi(argv[i]+11);
+       spheredist=(float)atoi(argv[i]+11);
+     }else if (strcmp(argv[i],"-debug")==0) {
+       match=1;
+       debug_model=true;
      }
      if (match) {
        for (j=i+1;j<argc;++j) argv[j-1]=argv[j];

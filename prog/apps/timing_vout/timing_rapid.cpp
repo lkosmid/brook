@@ -1,8 +1,12 @@
 #include "rapcol.h"
 #include <brook.hpp>
 #include <stdio.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <GL/gl.h>
 #include "timing.h"
+using std::vector;
 typedef struct traverser_t {
   float4 index;//.xy is index into the aTree  .zw is index into bTree
   float3 Translation; 
@@ -128,8 +132,8 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
   int  pass = 0;
   float  stretchX;
   unsigned int  alloc_intersections = 16;
-  float toagg[1]={0};
-  ::brook::stream agg(::brook::getStreamType(( float4  *)0), 1 , 1,-1);
+  float toagg[65536]={0};
+  ::brook::stream agg(::brook::getStreamType(( float  *)0), 1 , 1,-1);
   
   ::brook::stream m1(::brook::getStreamType(( TransposedBBox  *)0), bboxwidt1 , bboxheit1,-1);
   ::brook::stream m2(::brook::getStreamType(( BBox  *)0), bboxwidt2 , bboxheit2,-1);

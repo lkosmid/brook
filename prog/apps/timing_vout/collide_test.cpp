@@ -26,7 +26,7 @@ int rapidCollideMain (int argc, char ** argv) {
      int j;
      if (strncmp(argv[i],"-angle",6)==0) {
        match=1;
-       angle=atof(argv[i]+6);
+       angle=(float)atof(argv[i]+6);
      }
      if (strcmp(argv[i],"-debug")==0) {
        match=1;
@@ -45,7 +45,7 @@ int rapidCollideMain (int argc, char ** argv) {
    }
   
   float4 * intersections =0;
-  angle*=3.1415926536/180;
+  angle*=(float)(3.1415926536/180);
   csMatrix3 R1(cos(angle),sin(angle),0,
                 -sin(angle),cos(angle),0,
                 0,0,1);
