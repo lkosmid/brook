@@ -7,7 +7,8 @@ typedef struct NHType_t
 } NHType;
 
 
-kernel void Cinv_kernel(float2 constants, NHType F<>, out float q<>,  out NHType Cinv<>, out float coef<>)
+kernel void Cinv_kernel(float2 constants, NHType F<>, 
+                        out float q<>,  out NHType Cinv<>)
 {
 
    Cinv.row1 = float3(1,2,3);
@@ -15,33 +16,62 @@ kernel void Cinv_kernel(float2 constants, NHType F<>, out float q<>,  out NHType
    Cinv.row3 = float3(5,6,7);
 
    q = 8;
+}
 
-   coef = 9;
+
+kernel void Cinv_kernel_nostruct(float2 constants, NHType F<>, 
+                                 out float q<>,  
+                                 out float3 Cinv1<>, 
+                                 out float3 Cinv2<>, 
+                                 out float3 Cinv3<>)
+{
+
+   Cinv1 = float3(1,2,3);
+   Cinv2 = float3(2,3,4);
+   Cinv3 = float3(5,6,7);
+
+   q = 8;
 }
 
 #define NUM 100
 
 NHType	  S[NUM];
+float3	  S1[NUM];
+float3	  S2[NUM];
+float3	  S3[NUM];
 NHType    Cinvstream<NUM>;
+float3    Cinvstream1<NUM>;
+float3    Cinvstream2<NUM>;
+float3    Cinvstream3<NUM>;
 NHType    F<NUM>;
 float     q[NUM];
 float     qstream<NUM>;
-float	  cf[NUM];
-float     coef<NUM>;
 
 int main (void) {
 
-  Cinv_kernel (float2(3.0f,2.0f), F, qstream, Cinvstream, coef);
+  Cinv_kernel (float2(3.0f,2.0f), F, qstream, Cinvstream);
 
   streamWrite(Cinvstream, S);
   streamWrite(qstream, q);
-  streamWrite(coef, cf);
 
   printf ("%3.2f %3.2f %3.2f\n", S[0].row1.x, S[0].row1.y, S[0].row1.z);
   printf ("%3.2f %3.2f %3.2f\n", S[0].row2.x, S[0].row2.y, S[0].row2.z);
   printf ("%3.2f %3.2f %3.2f\n", S[0].row3.x, S[0].row3.y, S[0].row3.z);
-  printf ("%3.2f\n", q[0]);
-  printf ("%3.2f\n", cf[0]);
+  printf ("%3.2f\n\n", q[0]);
+
+  // Same thing except we eliminated the structure
+  Cinv_kernel_nostruct (float2(3.0f,2.0f), F, qstream, Cinvstream1, 
+                        Cinvstream2, Cinvstream3 );
+
+  streamWrite(Cinvstream1, S1);
+  streamWrite(Cinvstream2, S2);
+  streamWrite(Cinvstream3, S3);
+  streamWrite(qstream, q);
+
+  printf ("%3.2f %3.2f %3.2f\n", S1[0].x, S1[0].y, S1[0].z);
+  printf ("%3.2f %3.2f %3.2f\n", S2[0].x, S2[0].y, S2[0].z);
+  printf ("%3.2f %3.2f %3.2f\n", S3[0].x, S3[0].y, S3[0].z);
+  printf ("%3.2f\n\n", q[0]);
 
   return 0;	
 }
