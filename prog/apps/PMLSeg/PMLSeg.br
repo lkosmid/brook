@@ -54,15 +54,17 @@ kernel void process_img_pack( float4 img[][], float diff_strength,
     R7.w = (R2.x - R0.z); //d2e
 	
     //Segmentation differentials
-    R5.x = (R3.y - R0.y)*diff_strength;	
-    R5.y = (R1.w - R0.y)*diff_strength;	
-    R5.z = (R4.y - R0.y)*diff_strength;	
-    R5.w = (R0.w - R0.y)*diff_strength;
+    R5.x = (R3.y - R0.y);
+    R5.y = (R1.w - R0.y);
+    R5.z = (R4.y - R0.y);	
+    R5.w = (R0.w - R0.y);
+    R5 = R5*diff_strength;
 
-    R8.x = (R3.w - R0.w)*diff_strength;	
-    R8.y = (R0.y - R0.w)*diff_strength;	
-    R8.z = (R4.w - R0.w)*diff_strength;	
-    R8.w = (R2.y - R0.w)*diff_strength;
+    R8.x = (R3.w - R0.w);	
+    R8.y = (R0.y - R0.w);	
+    R8.z = (R4.w - R0.w);
+    R8.w = (R2.y - R0.w);
+    R8 = R8*diff_strength;
 
     R6 = R6*R6*inv_grad_cutoff;
     R7 = R7*R7*inv_grad_cutoff;
