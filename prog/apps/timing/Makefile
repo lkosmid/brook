@@ -5,17 +5,18 @@ LIBRARIES = $(RUNTIME_LIBS)
 GRAPHDIR = graphs
 SLOP = graphs
 
-RUNTIME=CPU_RUNTIME
+RUNTIME=cpu
 RUNSIZE=1024
 
 include $(ROOTDIR)/common.mk
 
 graph: arch
 	@if test ! -d $(GRAPHDIR); then $(MKDIR) $(GRAPHDIR); fi
-	env BRT_RUNTIME=$(RUNTIME) $(BINDIR)/$(BINARY) $(RUNSIZE) > $(GRAPHDIR)/graph-$(RUNTIME).jgr
+	env BRT_RUNTIME=$(RUNTIME) $(BINDIR)/$(BINARY) $(RUNSIZE) > $(GRAPHDIR)/graph-$(RUNTIME).pts 2>&1
+	jgraph -P -comments timing-$(RUNTIME).jgr | ps2pdf - graphs/graph-$(RUNTIME).pdf
 
 cpu-graph:
-	$(MAKE) RUNTIME=CPU_RUNTIME graph
+	$(MAKE) RUNTIME=cpu graph
 
 nv30-graph:
 	$(MAKE) RUNTIME=nv30gl graph

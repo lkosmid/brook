@@ -12,7 +12,7 @@
 #include "main.h"
 #include "runkernel.h"
 
-#if 0
+#if 1
 #define CHECK_MISMATCH 1
 #else
 #define CHECK_MISMATCH 0
@@ -111,6 +111,281 @@ RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
 
 
 /*
+ * RunKernelHardWorkCPU --
+ *
+ *      Simple C code to mimic the HardWork kernel.  Makes a plausible
+ *      baseline for a naive native implementation.
+ */
+
+static void
+RunKernelHardWorkCPU(int streamLength, float4 c, float4 *input, float4 *output)
+{
+   int i;
+
+   for (i = 0; i < streamLength * streamLength; i++) {
+      output[i].x = input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+      output[i].x = c.x * output[i].x + input[i].x;
+
+
+      output[i].y = input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+      output[i].y = c.y * output[i].y + input[i].y;
+
+
+      output[i].z = input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+      output[i].z = c.z * output[i].z + input[i].z;
+
+
+      output[i].w = input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+      output[i].w = c.w * output[i].w + input[i].w;
+   }
+}
+
+
+/*
  * RunKernelKickBRT --
  *
  *      Running the first kernel is very slow because a lot of one time
@@ -169,7 +444,8 @@ RunKernelBuildData(float4 **data, int numEntries)
  */
 
 static void
-RunKernelProcessTiming(char *name, float4 *data, int numEntries, int nRuns)
+RunKernelProcessTiming(char *name, float4 *data,
+                       int length, int numEntries, int nRuns)
 {
    float scale, elapsed;
    int i;
@@ -182,10 +458,9 @@ RunKernelProcessTiming(char *name, float4 *data, int numEntries, int nRuns)
     * kernel.
     */
    scale = numEntries > 1 ? data[1].x : 0.0f;
-   if (scale > 2048.0f) {
-      printf("(* Got back garbage!  data[1].x is %.2f\t\t%s *)\n",
-             data[1].x, name);
-      scale = 1.0f;
+   if (scale > 1024.0f || (scale < 61.0f && numEntries > 1)) {
+      printf("(* Got back garbage!  data[1].x is %.2f *)\n", data[1].x);
+      scale = 0.0f;
    }
 
    /*
@@ -195,10 +470,10 @@ RunKernelProcessTiming(char *name, float4 *data, int numEntries, int nRuns)
     *   - scale + 1 instructions
     *   - 4 floats per entry
     */
-   printf("%8I64d\t%6.2f\t\t%4d\t\t\t(* %s *)\n",
+   printf("%8I64d\t%6.2f\t\t%4d\t\t(* %s %d R%d *)\n",
           stop - start,
           numEntries * nRuns / elapsed * (scale + 1.0f) * 4.0f,
-          nRuns, name);
+          nRuns, name, length, nRuns);
 
    for (i = 0; CHECK_MISMATCH && i < numEntries; i++) {
       float expected = scale * i;
@@ -213,11 +488,11 @@ RunKernelProcessTiming(char *name, float4 *data, int numEntries, int nRuns)
        */
 
       if ((cur != expected &&
-           (cur - expected > 0.1f * expected || expected - cur > 0.f * cur)) ||
+           (cur - expected > 0.1f * expected || expected - cur > 0.1f * cur)) ||
           data[i].y != cur || data[i].z != cur || data[i].w != cur) {
-         printf("(* Mismatch %d/%d:\t\t%s *)\n"
-                "(* Expected %.2f, Got: %.2f %.2f %.2f %.2f\t\t%s *)\n",
-                 i, numEntries, name, expected,
+         printf("(* Mismatch %d,%d/%d: *)\n"
+                "(* Expected %.2f, Got: %.2f %.2f %.2f %.2f *)\n",
+                 i / length, i % length, length, name, expected,
                  data[i].x, data[i].y, data[i].z, data[i].w, name);
          return;
       }
@@ -248,7 +523,7 @@ RunKernel1D(char *logName, int streamLength, int nRuns)
    streamWrite(o, data);
    stop = GetTime();
 
-   RunKernelProcessTiming(logName, data, streamLength, nRuns);
+   RunKernelProcessTiming(logName, data, streamLength, streamLength, nRuns);
    free(data);
 }
 
@@ -276,9 +551,42 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
    streamWrite(o, data);
    stop = GetTime();
 
-   RunKernelProcessTiming(logName, data, streamLength * streamLength, nRuns);
+   RunKernelProcessTiming(logName, data,
+                          streamLength, streamLength * streamLength, nRuns);
    free(data);
 }
+
+
+/*
+ * RunKernel2DCPU --
+ *
+ *      Simple CPU implementation to see what comes from the CPU runtime and
+ *      what's just that the CPU is slow.
+ */
+
+static void
+RunKernel2DCPU(char *logName, int streamLength, int nRuns)
+{
+   float4 *data, *outData;
+   int i;
+
+   RunKernelBuildData(&data, streamLength * streamLength);
+   outData = (float4 *) malloc(streamLength * streamLength * sizeof *outData);
+
+   start = GetTime();
+   for (i = 0; i < nRuns; i++) {
+      RunKernelHardWorkCPU(streamLength,
+                           float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
+   }
+   stop = GetTime();
+
+   RunKernelProcessTiming(logName, outData, streamLength,
+                          streamLength * streamLength, nRuns);
+   free(data);
+   free(outData);
+}
+
+
 
 
 /*
@@ -319,6 +627,7 @@ RunKernel_Time(int maxLength)
       printf("(* usecs\tMFLOPS\t\truns *)\n");
       for (j = 0; j < numRunLengths; j++) {
          RunKernel2D("RunK2D", lengths[i], runLengths[j]);
+         //RunKernel2DCPU("RunK2DCPU", lengths[i], runLengths[j]);
       }
       printf("\n");
    }
@@ -326,5 +635,6 @@ RunKernel_Time(int maxLength)
    printf("(* usecs\tMFLOPS\t\truns *)\n");
    for (j = 0; j < numRunLengths; j++) {
       RunKernel2D("RunK2D", maxLength, runLengths[j]);
+      //RunKernel2DCPU("RunK2DCPU", maxLength, runLengths[j]);
    }
 }
