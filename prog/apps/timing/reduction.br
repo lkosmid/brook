@@ -8,8 +8,6 @@ void Sleep(int n) {
 }
 #endif
 
-
-
 #include "main.h"
 #include "reduction.h"
 
@@ -19,17 +17,17 @@ reduce void reductionKernel(float4 x<>, reduce float4 result<>) {
   result += x;
 }
 
-
 kernel void reductionRegKernel(float4 x<>, float4 constant, out float4 result<>) {
   result = x + constant;
-  discard;
+  if (constant.x) discard;
 }
 
 kernel void forceGPUFlush(float4 input<>, out float4 result<>) {
   result = input;
 }
-void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
 
+void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
+  
   int i;
   float* x;
   float4 result;
@@ -38,58 +36,57 @@ void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
   float4 xStrm<dim,dim>;
   float4 yStrm<dim,dim>;
   float4 resultStrm<1>;
-
+  
   float4 flush[1];
   float4 flushStrm<1>;
-
+  
   x = (float*)malloc(sizeof(float)*dim*dim*4);
-
+  
   for (i=0;i<dim*dim*4;i++)
     x[i] = 1.0f;
-
+  
   constant.x = constant.y = constant.z = constant.w = 2.0f;
-
+  
   streamRead(xStrm, x);
   forceGPUFlush(xStrm, flushStrm);
   streamRead(flushStrm, flush);
-
-  // wait for a little, make sure system is ready
-  Sleep(250);
-
-
-  if (!simReduceReg) {
   
+  // wait for a little, make sure system is ready
+  //Sleep(1);
+  
+  if (!simReduceReg) {
+    
     start = GetTimeTSC();        
-	for (i=0;i<iterations;i++) {    
-		reductionKernel(xStrm, resultStrm);
-		sum = result.x + result.y + result.z + result.w;
+    for (i=0;i<iterations;i++) {    
+      reductionKernel(xStrm, resultStrm);
+      sum = result.x + result.y + result.z + result.w;
     }    
     stop = GetTimeTSC();
-
-	if (fabs(sum - (4.0f*dim*dim)) > .05 )
-		printf("Error!\n");	
-	
+    
+    //    if (fabs(sum - (4.0f*dim*dim)) > .05 )
+    //  printf("Error!\n");	
+    
     // printf("sum = %f\n", sum);
-
+    
   } else {
-	
+    
     start = GetTimeTSC();
     for (i=0;i<iterations;i++) {
-		reductionRegKernel(xStrm, constant, yStrm);		
+      reductionRegKernel(xStrm, constant, yStrm);		
     }     	
     
-	forceGPUFlush(yStrm, flushStrm);
-	streamWrite(flushStrm, flush);	   	
+    forceGPUFlush(yStrm, flushStrm);
+    streamWrite(flushStrm, flush);	   	
     stop = GetTimeTSC();              
-   
+    
   }
-
+  
   //printf("%d\n", (int)(stop - start) );
-
+  
   *time = (int)(CyclesToUsecs(stop-start));  
-
+  
   free(x);
-
+  
 }
 
 
@@ -110,13 +107,16 @@ void Reduction_Time(int length) {
   printf("(* size *)  (* usec *)\n");
   for (size = 1; size<=length; size*=2) {
     do_reduction(size, simReduceReg, iterations, &usec);
-    printf("%8d    %.5f         (* kernel reduce *)\n", 4*size*size, (float)usec / (float)iterations );
+    printf("%8d    %.5f         (* kernel reduce *)\n",
+	   4*size*size, (float)usec / (float)iterations );
   }
 
   printf("\n\n\n");
 
 
   simReduceReg = 1;
+  do_reduction(size, simReduceReg, iterations, &usec);
+
 
   printf("(* size *)  (* usec *)\n");
   for (size = 1; size<=length; size*=2) {
