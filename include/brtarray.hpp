@@ -45,10 +45,13 @@ template <class VALUE, unsigned int dims, bool copy_data> class BrtArray {
 			for (unsigned int i=0;i<dims;++i) {
 				size*=extents[i];
 			}
+			return size;
 	}
 public:
 	BrtArray(VALUE * data, const unsigned int *extents) {
-		memcpy (this->extents,extents,sizeof(unsigned int)*dims);		
+		for (unsigned int i=0;i<dims;++i) {
+			this->extents[i]=extents[i];
+		}		
 		if (!copy_data)
 			this->data =data;
 		else {
@@ -58,7 +61,7 @@ public:
 		}
 
 	}
-	BrtArray(const BrtArray&c) {
+	BrtArray& operator = (const BrtArray<VALUE,dims,copy_data> &c) {
 		for (unsigned int i=0;i<dims;++i) {
 			extents[i]=c.extents[i];
 		}
@@ -68,6 +71,10 @@ public:
 			this->data = (VALUE *)malloc(sizeof(VALUE)*size);
 			memcpy(this->data,c.data,sizeof(VALUE)*size);
 		}
+		return *this;
+	}
+	BrtArray(const BrtArray <VALUE,dims,copy_data>&c) {
+		*this=c;
 	}
 	~BrtArray() {
 		if (copy_data)
