@@ -29,6 +29,10 @@
     o+     A high-level view of statements.
     o+
     o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
+#ifdef _WIN32
+#pragma warning(disable:4786)
+//the above warning disables visual studio's annoying habit of warning when using the standard set lib
+#endif
 
 #include <cstring>
 #include <cassert>
