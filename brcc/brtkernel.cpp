@@ -514,7 +514,7 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
               indent(out,1);
               out << "unsigned int ratioiter"<<index<<" = 0;"<<std::endl;
               indent (out,1);
-              out << "if (ratioiter"<<index<<") ";
+              out << "if (ratio"<<index<<") ";
               if (nDcube) {
                  out << "ratioiter"<<index<<" = mapbegin[dim-1]%";
                  out << "ratio"<<index<<";";
