@@ -32,6 +32,6 @@ ARBKernel::PushScaleBias(Stream *s) {
 
 void
 ARBKernel::PushShape(Stream *s) {
-   BindParameter(1.0f, 1.0f, -0.5f, -0.5f);
+   BindParameter(1.0f, 1.0f, 0.0f, 0.0f);
    creg++;
 }

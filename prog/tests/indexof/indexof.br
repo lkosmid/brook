@@ -1,12 +1,9 @@
 // indexof.br
-// Tests the built-in operator 'indexof.'
-// It confirms the invariant that when
-// a stream is passed as both a stream
-// argument and a gather argument to
-// a kernel, fetching from the gather
-// argument with the index of the stream
-// argument should produce the same
-// value as the stream argument.
+//
+// Tests the built-in operator 'indexof.' It confirms the invariant that
+// when a stream is passed as both a stream argument and a gather argument
+// to a kernel, fetching from the gather argument with the index of the
+// stream argument should produce the same value as the stream argument.
 
 #include <stdio.h>
 
@@ -14,52 +11,62 @@ extern void printf();
 extern void streamRead();
 extern void streamWrite();
 
-kernel void bar (float d_prime<>, float b<>, float4 c,
-		 float d[10][10], out float e<>,float4 indexofe) {
-  e = ((d_prime==d[indexof(d_prime)])
-       &&(d_prime==d[indexof(d_prime)])
-       &&(d_prime==d[(indexof d_prime ).xy])
-       &&!(d_prime==d[(indexofe ).yx]));
+kernel void
+bar(float d_prime<>, float d[10][10], out float e<>, float4 indexofe)
+{
   /* this test should make a matrix of 1 and a diagonal of 0's*/
+  e = ((d_prime == d[indexof(d_prime)]) &&
+       (d_prime == d[indexof(d_prime)]) &&
+       (d_prime == d[(indexof d_prime).xy]) &&
+       !(d_prime == d[(indexofe).yx]));
 }
-kernel void foo (float ay<>, 
-                 float mydprime<>, float4 c, float d[10][10],out float e<>) {
-   
-   bar(mydprime,ay,c,d,e,indexof(e));
+
+
+kernel void
+foo(float mydprime<>, float d[10][10],out float e<>)
+{
+   bar(mydprime,d,e,indexof(e));
 }
-int main () {
 
-  float a<10, 10>;
-  float b<10, 10>;
-  float d<10, 10>;
-  float e<10, 10>;
-  
-  float data_a[10][10];
-  float data_b[10][10];
-  float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
-  float data_d[10][10];
-  float data_e[10][10];
+kernel void
+test(float a<>, out float b<>)
+{
+   b = (indexof(a)).x;
+}
 
+
+int main(void)
+{
+  float data_d[10][10], data_e[10][10];
+  float d<10, 10>, e<10, 10>;
   int i,j;
 
-  for (i=0; i<10; i++)
-    for (j=0; j<10; j++) {
-      data_a[i][j] = ((float) i) + ((float) j) / 10.0f;
-      data_b[i][j] = ((float) j) + ((float) i) / 10.0f;
-      data_d[i][j] = ((float) i) / 100.0f;
-    }
-
-  streamRead(a, data_a);
-  streamRead(b, data_b);
-  streamRead(d, data_d);
-
-  foo(b,d,c,d,e);
-
-  streamWrite(e, data_e);
-  
   for (i=0; i<10; i++) {
     for (j=0; j<10; j++) {
-      printf ("%3.2f ", data_e[i][j]);
+      data_d[i][j] = ((float) i) / 100.0f;
+    }
+  }
+
+  streamRead(d, data_d);
+  test(d,e);
+  streamWrite(e, data_e);
+
+  printf("Here are the results from the simple indexof test:\n");
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f  ", data_e[i][j]);
+    }
+    printf ("\n");
+  }
+  printf ("\n");
+
+  foo(d,d,e);
+  streamWrite(e, data_e);
+
+  printf("Here are the results from the advanced indexof test:\n");
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f  ", data_e[i][j]);
     }
     printf ("\n");
   }
