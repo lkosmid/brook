@@ -18,15 +18,14 @@
  * 2003). */
 
 
+
 #ifndef FFT_DIM
 #error Need to define FFT_DIM to either x or y
 #endif
 
-#define M_PI		3.14159265358979323846
-#define M_TWOPI		(M_PI * 2.0)
 
-kernel void complex_mult(in float4 ar<>, in float4 ai<>,
-                         in float4 br<>, in float4 bi<>,
+kernel void complex_mult(float4 ar<>, float4 ai<>,
+                         float4 br<>, float4 bi<>,
                          out float4 resultr<>, out float4 resulti<>)
 {
     resultr = ar*br - ai*bi;
@@ -34,93 +33,147 @@ kernel void complex_mult(in float4 ar<>, in float4 ai<>,
 }
 
 /* Real stored in x, imaginary stored in y. */
-kernel void W(in float N, in float k, out float2 result<>)
+kernel void W(float N, float k, out float2 result<>)
 {
-    float angle = -M_TWOPI*k/N;
+    float angle = -2*3.1415926536*k/N;
     result.x = cos(angle);
     result.y = sin(angle);
 }
 
-struct vert2frag
-{
-#ifdef CALCULATE_REAL
-    float4 realCoord	: POSITION;
-    float4 realIndex	: WPOS;
-    float4 imagIndex	: TEXCOORD0;
-#endif
-#ifdef CALCULATE_IMAGINARY
-    float4 imagCoord	: POSITION;
-    float4 realIndex	: TEXCOORD0;
-    float4 imagIndex	: WPOS;
-#endif
-};
-
-struct frag2frame
-{
-    float4 value : COLOR;
-};
-
-vert2frag FFTVert(app2vert input,
-		  uniform float2 ArraySize)
-{
-    vert2frag output;
-#ifdef CALCULATE_REAL
-    output.realCoord.xy = 2*input.realIndex.xy/ArraySize - 1;
-    output.realCoord.zw = input.realIndex.zw;
-    output.imagIndex = input.imagIndex;
-#endif
-#ifdef CALCULATE_IMAGINARY
-    output.realIndex = input.realIndex;
-    output.imagCoord.xy = 2*input.imagIndex.xy/ArraySize - 1;
-    output.imagCoord.zw = input.imagIndex.zw;
-#endif
-    return output;
-}
 
 /* direction is set to 1 for the forward FFT, -1 for the reverse FFT.
  * Scaling is not done for the reverse FFT (it is instead done during
- * tangling).*/
-frag2frame FFTFrag(vert2frag input,
-		   uniform float2 ArraySize,
-		   uniform float PartitionSize,
-		   uniform float NumPartitions,
-		   uniform float Direction,
-		   uniform samplerRECT InputSamples,
-                   out float4 outputcolor<>)
+ * tangling).
+kernel void FFTFrag(iter float4 input <>,// input coords
+	       float2 ArraySize,
+	       float PartitionSize,
+	       float NumPartitions,
+	       float Direction,
+	       float4 InputSamples<>,
+	       out float4 output<>)
 {
-    frag2frame output;
     float isImag = round(fmod(input.y,2))==1;
     float2 real_index = isImag?opposingIndex:(indexof outputcolor).xy;
     float2 imag_index = isImag?(indexof outputcolor).xy:opposingIndex;
     float fft_index;    
     float k = floor(input.realIndex.FFT_DIM / NumPartitions);
-  /* This modifier will perform a mod ArraySize. */
-    float modifier = (float)(real_index.FFT_DIM >= ArraySize.FFT_DIM/2);
+  // This modifier will perform a mod ArraySize. 
+    float modifier;
+    modifier = (float)(real_index.FFT_DIM >= ArraySize.FFT_DIM/2);
     modifier *= ArraySize.FFT_DIM;
 
     fft_index = real_index.FFT_DIM + k*NumPartitions - modifier;
 
     real_index.FFT_DIM = imag_index.FFT_DIM = fft_index;
+    {
+      float4 Gr = InputSamples[real_index];
+      float4 Gi = InputSamples[imag_index];
 
-    float4 Gr = InputSamples[real_index];
-    float4 Gi = InputSamples[imag_index];
+      real_index.FFT_DIM += NumPartitions;
+      imag_index.FFT_DIM += NumPartitions;
+      {
+        float4 Hr = f4texRECT(InputSamples, real_index);
+        float4 Hi = f4texRECT(InputSamples, imag_index);
 
-    real_index.FFT_DIM += NumPartitions;
-    imag_index.FFT_DIM += NumPartitions;
+        float2 WNk = W(PartitionSize, k);
 
-    float4 Hr = f4texRECT(InputSamples, real_index);
-    float4 Hi = f4texRECT(InputSamples, imag_index);
+        float4 WHr, WHi;
+        complex_mult(WNk.xxxx, Direction*WNk.yyyy, Hr, Hi, WHr, WHi);
+        if (!isImag) {
+          output.value = Gr + WHr;
+        }else {
+          output.value = Gi + WHi;
+        }
+      }
+    }
+}
+*/
 
-    float2 WNk = W(PartitionSize, k);
+kernel void FFTFragX(iter float4 input <>,// input coords
+	       float2 ArraySize,
+	       float PartitionSize,
+	       float NumPartitions,
+	       float Direction,
+	       float4 InputSamples<>,
+	       out float4 output<>)
+{
+    float isImag = round(fmod(input.y,2))==1;
+    float2 real_index = isImag?opposingIndex:(indexof outputcolor).xy;
+    float2 imag_index = isImag?(indexof outputcolor).xy:opposingIndex;
+    float fft_index;    
+    float k = floor(input.realIndex.x / NumPartitions);
+  /* This modifier will perform a mod ArraySize. */
+    float modifier;
+    modifier = (float)(real_index.x >= ArraySize.x/2);
+    modifier *= ArraySize.x;
 
-    float4 WHr, WHi;
-    complex_mult(WNk.xxxx, Direction*WNk.yyyy, Hr, Hi, WHr, WHi);
+    fft_index = real_index.x + k*NumPartitions - modifier;
 
-#ifdef CALCULATE_REAL
-    output.value = Gr + WHr;
-#endif
-#ifdef CALCULATE_IMAGINARY
-    output.value = Gi + WHi;
-#endif
-    return output;
+    real_index.x = imag_index.x = fft_index;
+    {
+      float4 Gr = InputSamples[real_index];
+      float4 Gi = InputSamples[imag_index];
+
+      real_index.x += NumPartitions;
+      imag_index.x += NumPartitions;
+      {
+        float4 Hr = f4texRECT(InputSamples, real_index);
+        float4 Hi = f4texRECT(InputSamples, imag_index);
+
+        float2 WNk = W(PartitionSize, k);
+
+        float4 WHr, WHi;
+        complex_mult(WNk.xxxx, Direction*WNk.yyyy, Hr, Hi, WHr, WHi);
+        if (!isImag) {
+          output.value = Gr + WHr;
+        }else {
+          output.value = Gi + WHi;
+        }
+      }
+    }
+}
+
+
+kernel void FFTFragY(iter float4 input <>,// input coords
+	       float2 ArraySize,
+	       float PartitionSize,
+	       float NumPartitions,
+	       float Direction,
+	       float4 InputSamples<>,
+	       out float4 output<>)
+{
+    float isImag = round(fmod(input.y,2))==1;
+    float2 real_index = isImag?opposingIndex:(indexof outputcolor).xy;
+    float2 imag_index = isImag?(indexof outputcolor).xy:opposingIndex;
+    float fft_index;    
+    float k = floor(input.realIndex.y / NumPartitions);
+  /* This modifier will perform a mod ArraySize. */
+    float modifier;
+    modifier = (float)(real_index.y >= ArraySize.y/2);
+    modifier *= ArraySize.y;
+
+    fft_index = real_index.y + k*NumPartitions - modifier;
+
+    real_index.y = imag_index.y = fft_index;
+    {
+      float4 Gr = InputSamples[real_index];
+      float4 Gi = InputSamples[imag_index];
+
+      real_index.y += NumPartitions;
+      imag_index.y += NumPartitions;
+      {
+        float4 Hr = f4texRECT(InputSamples, real_index);
+        float4 Hi = f4texRECT(InputSamples, imag_index);
+
+        float2 WNk = W(PartitionSize, k);
+
+        float4 WHr, WHi;
+        complex_mult(WNk.xxxx, Direction*WNk.yyyy, Hr, Hi, WHr, WHi);
+        if (!isImag) {
+          output.value = Gr + WHr;
+        }else {
+          output.value = Gi + WHi;
+        }
+      }
+    }
 }
