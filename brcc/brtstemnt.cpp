@@ -214,7 +214,7 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	if (form->type==TT_Stream||form->type==TT_Array) {
 	    if (copy_on_write&&form->type==TT_Array) {
 		form = new CPUGatherType(*static_cast<ArrayType *>(form));
-	    }else {
+	    }else if (form->type==TT_Stream){
 		form = static_cast<ArrayType *>(form)->subType;
 	    }
 	}
