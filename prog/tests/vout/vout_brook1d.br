@@ -1,0 +1,48 @@
+#include <stdio.h>
+
+kernel void foo (float a<>, float b<>, float4 c,
+		 float d[10][10], vout []float e<>) {
+  e = a+b;
+  push(e);
+  if (round(fmod( (indexof a).x,2))!=1) {
+    e = 2;
+    push (e);
+  }
+}
+int main (int argc, char * argv[]) {
+  int WID=(argc>1?atoi(argv[1]):10);
+  float a<WID>;
+  float b<WID>;
+  float d<WID>;
+  float e<WID>;
+  float nil<400>;
+  float test <400>;
+  float *data_a;
+  float *data_b;
+  float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
+  float *data_d;
+  float *data_nil;
+  float *data_out;
+  int i;
+  data_a=(float*)malloc(WID*sizeof(float));
+  data_b=(float*)malloc(WID*sizeof(float));
+  data_d=(float*)malloc(WID*sizeof(float));
+  data_out=(float*)malloc(10*40*sizeof(float));
+  data_nil=(float*)malloc(10*40*sizeof(float));
+  memset(data_nil,0,10*40*sizeof(float));
+  for (i=0; i<WID; i++) {
+      data_a[i] = ((float) i);
+      data_b[i] = ((float)i)/10;
+      data_d[i] = 0;
+  }
+  
+  streamRead(a, data_a);
+  streamRead(b, data_b);
+  streamRead(d, data_d);
+
+  foo(a,b,c,d,e);
+  //foo(a,b,c,d_broken,e);
+
+  streamPrint(e);
+  return 0;
+}

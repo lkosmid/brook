@@ -1,0 +1,932 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+extern unsigned int debug_vout;
+
+
+#define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
+
+
+kernel void kernelReadItem1d (float items[], float index, out float item<>) {
+  item = items[index];
+}
+void cpuGetIndexAt1d(float inputindex,
+                     float shiftRight,
+                     float maxvalue,
+                     float *index) {
+   *index=inputindex+shiftRight;
+   *index=*index > maxvalue-1?maxvalue-1:*index<0?0:*index;
+}
+
+
+const unsigned int MAX_VOUT_STREAMS=31;//if you change this, change one 5 lines
+kernel void calculateDividedIndex1d(float4 index, 
+                                  float modulus, 
+                                  out float newindex<>){
+   float epsilon=1.0f/32.0f;//this is needed because the division may result in
+   // loss of accuracy.  We know that for a 2048 texture the mantissa holds 
+   // 1/32 precision
+   newindex=floor(index.x/modulus+epsilon);
+}
+
+kernel void calculateIndexModulus1d (float4 index, 
+                                   float modulus, 
+                                   float offset,
+                                   out float which <>) {
+   which= floor(fmod(index.x,modulus)-offset);
+}
+
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+reduce void valueProducedBRT_TYPE1d (BRT_TYPE input <>, 
+                                   reduce BRT_TYPE output<>) {
+   output=isinf(input.x)?output:input;
+}
+kernel void isFiniteKernelBRT_TYPE1d(BRT_TYPE inp<>, out float outp<>) {
+   outp=!isinf(inp.x);
+}
+
+int finiteValueProducedBRT_TYPE1d (BRT_TYPE input<>) {
+   BRT_TYPE output<1,1>;
+   float finiteout<1,1>;
+   BRT_TYPE rettype;
+   float ret;
+  
+   debugStreamPrint (input,"Finite Values in...");
+   valueProducedBRT_TYPE1d(input,output);
+   streamWrite(output,&rettype);
+   isFiniteKernelBRT_TYPE1d(output,finiteout);
+   streamWrite(finiteout,&ret);
+   return (int)ret;
+}
+
+kernel void valueAtBRT_TYPE1d (BRT_TYPE value[],
+                             float index,
+                             out BRT_TYPE output<>,
+                             float maxvalue,
+                             float nothing) {
+   if (index>=maxvalue||index<-.1)
+      output = nothing;
+   else 
+      output = value[index];
+}
+kernel void NanToBoolRightBRT_TYPE1d (BRT_TYPE value[], 
+                            out float output<>, 
+                            float sign,
+                            float maxvalue) {
+   float nextPlaceToLook=(indexof output).x+sign;
+   BRT_TYPE neighbor;
+   valueAtBRT_TYPE1d(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = (isinf(value[indexof(output)].x)?1:0) 
+      + (isinf(neighbor.x)?1:0);
+}
+kernel void NanToRightBRT_TYPE1d (float value [],
+                                out float output<>,
+                                float twotoi,
+                                float maxvalue) {
+   float nextPlaceToLook=(indexof output).x+twotoi;
+   float neighbor;
+   valueAtfloat1d(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = round(value[indexof(output)]+neighbor);
+}
+kernel void CountToRightBRT_TYPE1d (BRT_TYPE value [],
+                                  out BRT_TYPE output<>,
+                                  float twotoi,
+                                  float maxvalue) {
+   float nextPlaceToLook=(indexof output).x+twotoi;
+   BRT_TYPE neighbor;
+   valueAtBRT_TYPE1d(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = value[indexof(output)]+neighbor;
+}
+
+kernel void GatherGuessBRT_TYPE1d(float scatterindex[],
+                        out float output<>,
+                        BRT_TYPE value[],
+                        float twotologkminusi,
+                        float maxvalue,
+                        float halfk,
+                        float sign) {
+     float neighbor;
+      float nextPlaceToLook=(indexof output).x-sign*halfk;
+      valueAtfloat1d(scatterindex,nextPlaceToLook,neighbor,maxvalue,0);
+      if (neighbor>halfk) {
+         output=halfk+twotologkminusi;
+      }else {
+         BRT_TYPE actualValue;
+         valueAtBRT_TYPE1d(value,nextPlaceToLook,actualValue,maxvalue,0);
+         if (neighbor==halfk&&!isinf(actualValue.x)) {
+            output=halfk;
+         }else {
+            output = halfk-twotologkminusi;
+         }         
+      }
+}
+kernel void EstablishGuessBRT_TYPE1d(float scatterindex[],
+                                   out float output<>,
+                                   BRT_TYPE value[],
+                                   float twotologkminusi,
+                                   float maxvalue,
+                                   float halfk,
+                                   float sign) {
+   if (scatterindex[indexof(output)]==0) {
+      output=0;
+   } else {
+      GatherGuessBRT_TYPE1d(scatterindex,
+                          output,
+                          value,
+                          twotologkminusi,
+                          maxvalue,
+                          halfk,
+                          sign);
+    }
+}
+kernel void UpdateGuessBRT_TYPE1d(float scatterindex[],
+                                out float output<>,
+                                BRT_TYPE value[],
+                                float twotologkminusi,
+                                float maxvalue,
+                                float lastguess<>,
+                                float sign) {
+   GatherGuessBRT_TYPE1d(scatterindex,
+                       output,
+                       value,
+                       twotologkminusi,
+                       maxvalue,
+                       lastguess,
+                       sign);
+}
+
+kernel void RelativeGatherBRT_TYPE1d(out BRT_TYPE output<>,
+                                float gatherindex[],
+                                BRT_TYPE value[],
+                                float2 sign,
+                                float maxvalue) {
+   float nextPlaceToLook=(indexof output).x-sign.x*gatherindex[indexof(output)];
+   valueAtBRT_TYPE1d(value,nextPlaceToLook,output,maxvalue,sign.y);   
+}
+
+
+float shiftValuesBRT_TYPE1d(BRT_TYPE list_stream <>,
+                       BRT_TYPE output_stream<>,
+                       int WIDTH, 
+                       int unused,
+                       int sign) {
+   float tmp_stream<WIDTH>;
+   float ret_stream<WIDTH>;
+   float guess_stream<WIDTH>;
+   unsigned int i;
+   float maxvalue;
+   unsigned int logN;
+   unsigned int LogNMinusK;
+   float maxshift;
+   maxvalue=(float)WIDTH;
+   logN=(unsigned int)ceil(log((float)WIDTH)/log(2.0f));
+   debugStreamPrint(list_stream,"Combined...");
+   NanToBoolRightBRT_TYPE1d (list_stream,ret_stream,(float)sign,maxvalue);   
+   for (i=1;i<logN;++i) {
+      if (i%2)
+         NanToRightBRT_TYPE1d(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
+      else
+         NanToRightBRT_TYPE1d(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+   }
+   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   {
+     float item<1>;
+     float index;
+     if (sign==-1) {
+       index = (float)(WIDTH-1);
+     }else {
+       index=0;
+     }
+     kernelReadItem1d(logN%2==0?tmp_stream:ret_stream,index,item);
+     streamWrite(item,&maxshift);
+   }
+   LogNMinusK=logN-2;
+   i= logN-1;//could make this k! rather than N
+   // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
+   EstablishGuessBRT_TYPE1d(logN%2==0?tmp_stream:ret_stream,
+                          guess_stream,
+                          list_stream,
+                          (float)(1 << LogNMinusK),
+                          maxvalue,
+                          (float)(1<<i),
+                          (float)sign);
+   for (i=1;i<logN;++i) {
+      LogNMinusK=logN-1-i;
+      if (i%2)
+         UpdateGuessBRT_TYPE1d (logN%2==0?tmp_stream:ret_stream,//scatter values
+                              logN%2==0?ret_stream:tmp_stream,//new guess
+                              list_stream,//actual values
+                              (float)(1<<LogNMinusK),
+                              maxvalue,
+                              guess_stream,//old guess
+                              (float)sign);
+      else
+         UpdateGuessBRT_TYPE1d (logN%2==0?tmp_stream:ret_stream,//scatter values
+                              guess_stream,//new guess
+                              list_stream,//actual values
+                              (float)(1<<LogNMinusK),
+                              maxvalue,
+                              logN%2==0?ret_stream:tmp_stream, //old guess
+                              (float)sign);
+   }
+   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
+   if (1) {
+      unsigned int size,width;
+      size = (unsigned int)WIDTH
+         - (unsigned int) maxshift;
+      width = size;
+      if (1) {
+        BRT_TYPE proper_output_stream<width>;
+        RelativeGatherBRT_TYPE1d(proper_output_stream,
+                               logN%2==0?ret_stream:guess_stream,
+                               list_stream,
+                               float2((float)sign,1.0f/(float)floor(.5)),
+                               maxvalue);
+        streamSwap(output_stream,proper_output_stream);
+      }
+      debugStreamPrint(output_stream, "Final Value");
+   }
+   return maxshift;
+}
+
+kernel void BRT_TYPE1dstreamCombine1(BRT_TYPE input0[],
+                                float modulus,
+                                float offset,
+                                BRT_TYPE oldoutput<>,
+                                out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex1d(indexof(output), modulus, newindex);
+   calculateIndexModulus1d(indexof(output), 
+                         modulus,
+                         offset,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else {
+      output=oldoutput;
+   }
+}
+
+kernel void BRT_TYPE1dstreamCombine2f(BRT_TYPE input0[],
+                            BRT_TYPE input1[],
+                            float modulus,
+                            out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex1d(indexof(output), modulus, newindex);
+   calculateIndexModulus1d(indexof(output), 
+                         modulus,
+                         -0.5f,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else {
+      output=input1[newindex];
+   }
+}
+
+kernel void BRT_TYPE1dstreamCombine2(BRT_TYPE input0[],
+                           BRT_TYPE input1[],
+                           float modulus,
+                           float offset,
+                           BRT_TYPE oldoutput<>,
+                           out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex1d(indexof(output), modulus, newindex);
+   calculateIndexModulus1d(indexof(output), 
+                         modulus,
+                         offset,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else {
+      output=oldoutput;
+   }
+}
+
+kernel void BRT_TYPE1dstreamCombine3f(BRT_TYPE input0[],
+                            BRT_TYPE input1[],
+                            BRT_TYPE input2[],
+                            float modulus,
+                            out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex1d(indexof(output), modulus, newindex);
+   calculateIndexModulus1d(indexof(output), 
+                         modulus,
+                         -0.5f,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else {
+      output=input2[newindex];
+   }
+}
+
+kernel void BRT_TYPE1dstreamCombine3(BRT_TYPE input0[],
+                           BRT_TYPE input1[],
+                           BRT_TYPE input2[],
+                           float modulus,
+                           float offset,
+                           BRT_TYPE oldoutput<>,
+                           out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex1d(indexof(output), modulus, newindex);
+   calculateIndexModulus1d(indexof(output), 
+                         modulus,
+                         offset,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else {
+      output=oldoutput;
+   }
+}
+
+kernel void BRT_TYPE1dstreamCombine4f(BRT_TYPE input0[],
+                            BRT_TYPE input1[],
+                            BRT_TYPE input2[],
+                            BRT_TYPE input3[],
+                            float modulus,
+                            out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex1d(indexof(output), modulus, newindex);
+   calculateIndexModulus1d(indexof(output), 
+                         modulus,
+                         -0.5f,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else {
+      output=input3[newindex];
+   }
+}
+
+kernel void BRT_TYPE1dstreamCombine4(BRT_TYPE input0[],
+                           BRT_TYPE input1[],
+                           BRT_TYPE input2[],
+                           BRT_TYPE input3[],
+                           float modulus,
+                           float offset,
+                           BRT_TYPE oldoutput<>,
+                           out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex1d(indexof(output), modulus,  newindex);
+   calculateIndexModulus1d(indexof(output), 
+                         modulus,
+                         offset,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else if (whichmod==3) {
+      output=input3[newindex];
+   }else {
+      output=oldoutput;
+   }
+}
+
+kernel void BRT_TYPE1dstreamCombine5f(BRT_TYPE input0[],
+                            BRT_TYPE input1[],
+                            BRT_TYPE input2[],
+                            BRT_TYPE input3[],
+                            BRT_TYPE input4[],
+                            float modulus,
+                            out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex1d(indexof(output), modulus, newindex);
+   calculateIndexModulus1d(indexof(output), 
+                         modulus,
+                         -0.5f,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else if (whichmod==3) {
+      output=input3[newindex];
+   }else {
+      output=input4[newindex];
+   }
+}
+/*
+kernel void BRT_TYPEstreamCombine5(BRT_TYPE input0[],
+                           BRT_TYPE input1[],
+                           BRT_TYPE input2[],
+                           BRT_TYPE input3[],
+                           BRT_TYPE input4[],
+                           float modulus,
+                           float offset,
+                           BRT_TYPE oldoutput<>,
+                           out BRT_TYPE output <>) {
+   float newindex;
+   float whichmod;
+   calculateDividedIndex(indexof(output), modulus, newindex);
+   calculateIndexModulus(indexof(output), 
+                         modulus,
+                         offset,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else if (whichmod==3) {
+      output=input3[newindex];
+   }else if (whichmod==4) {
+      output=input4[newindex];
+   }else {
+      output=oldoutput;
+   }
+}
+
+
+kernel void BRT_TYPEstreamCombine6f(BRT_TYPE input0[],
+                            BRT_TYPE input1[],
+                            BRT_TYPE input2[],
+                            BRT_TYPE input3[],
+                            BRT_TYPE input4[],
+                            BRT_TYPE input5[],
+                            float modulus,
+                            out BRT_TYPE output <>) {
+   float2 newindex;
+   float whichmod;
+   calculateDividedIndex(indexof(output), modulus,  newindex);
+   calculateIndexModulus(indexof(output), 
+                         modulus,
+                         -0.5f,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else if (whichmod==3) {
+      output=input3[newindex];
+   }else if (whichmod==4) {
+      output=input4[newindex];
+   }else {
+      output=input5[newindex];
+   }
+}
+
+kernel void BRT_TYPEstreamCombine6(BRT_TYPE input0[],
+                           BRT_TYPE input1[],
+                           BRT_TYPE input2[],
+                           BRT_TYPE input3[],
+                           BRT_TYPE input4[],
+                           BRT_TYPE input5[],
+                           float modulus,
+                           float offset,
+                           BRT_TYPE oldoutput<>,
+                           out BRT_TYPE output <>) {
+   float2 newindex;
+   float whichmod;
+   calculateDividedIndex(indexof(output), modulus, newindex);
+   calculateIndexModulus(indexof(output), 
+                         modulus,
+                         offset,
+                         whichmod);
+   if (whichmod==0) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else if (whichmod==3) {
+      output=input3[newindex];
+   }else if (whichmod==4) {
+      output=input4[newindex];
+   }else if (whichmod==5) {
+      output=input5[newindex];
+   }else {
+      output=oldoutput;
+   }
+}
+
+kernel void BRT_TYPEstreamCombine7f(BRT_TYPE input0[],
+                            BRT_TYPE input1[],
+                            BRT_TYPE input2[],
+                            BRT_TYPE input3[],
+                            BRT_TYPE input4[],
+                            BRT_TYPE input5[],
+                            BRT_TYPE input6[],
+                            float modulus,
+                            out BRT_TYPE output <>) {
+   float2 newindex;
+   float whichmod;
+   calculateDividedIndex(indexof(output), modulus, newindex);
+   calculateIndexModulus(indexof(output), 
+                         modulus,
+                         -0.5f,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else if (whichmod==3) {
+      output=input3[newindex];
+   }else if (whichmod==4) {
+      output=input4[newindex];
+   }else if (whichmod==5) {
+      output=input5[newindex];
+   }else {
+      output=input6[newindex];
+   }
+}
+
+kernel void BRT_TYPEstreamCombine7(BRT_TYPE input0[],
+                           BRT_TYPE input1[],
+                           BRT_TYPE input2[],
+                           BRT_TYPE input3[],
+                           BRT_TYPE input4[],
+                           BRT_TYPE input5[],
+                           BRT_TYPE input6[],
+                           float modulus,
+                           float offset,
+                           BRT_TYPE oldoutput<>,
+                           out BRT_TYPE output <>) {
+   float2 newindex;
+   float whichmod;
+   calculateDividedIndex(indexof(output), modulus, newindex);
+   calculateIndexModulus(indexof(output), 
+                         modulus,
+                         offset,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else if (whichmod==3) {
+      output=input3[newindex];
+   }else if (whichmod==4) {
+      output=input4[newindex];
+   }else if (whichmod==5) {
+      output=input5[newindex];
+   }else if (whichmod==6) {
+      output=input6[newindex];
+   }else {
+      output=oldoutput;
+   }
+}
+
+kernel void BRT_TYPEstreamCombine8f(BRT_TYPE input0[],
+                            BRT_TYPE input1[],
+                            BRT_TYPE input2[],
+                            BRT_TYPE input3[],
+                            BRT_TYPE input4[],
+                            BRT_TYPE input5[],
+                            BRT_TYPE input6[],
+                            BRT_TYPE input7[],
+                            float modulus,
+                            out BRT_TYPE output <>) {
+   float2 newindex;
+   float whichmod;
+   calculateDividedIndex(indexof(output), modulus, newindex);
+   calculateIndexModulus(indexof(output), 
+                         modulus,
+                         -0.5f,
+                         whichmod);
+   if (whichmod==0||whichmod==modulus) {
+      output=input0[newindex];
+   }else if (whichmod==1) {
+      output=input1[newindex];
+   }else if (whichmod==2) {
+      output=input2[newindex];
+   }else if (whichmod==3) {
+      output=input3[newindex];
+   }else if (whichmod==4) {
+      output=input4[newindex];
+   }else if (whichmod==5) {
+      output=input5[newindex];
+   }else if (whichmod==6) {
+      output=input6[newindex];
+   }else {
+      output=input7[newindex];
+   }
+}
+*/
+void combineStreamsHelperBRT_TYPE1d (BRT_TYPE (**streams) <>,
+                                unsigned int num,
+                                BRT_TYPE output<>,
+                                float modulus,
+                                float offset) {
+   switch (num) {
+   case 1:
+      BRT_TYPE1dstreamCombine1(*streams[0],
+                     modulus,
+                     offset,
+                     output,
+                     output);
+      break;
+   case 2:
+      BRT_TYPE1dstreamCombine2(*streams[0],
+                     *streams[1],
+                     modulus,
+                     offset,
+                     output,
+                     output);
+      break;
+   case 3:
+      BRT_TYPE1dstreamCombine3(*streams[0],
+                     *streams[1],
+                     *streams[2],
+                     modulus,
+                     offset,
+                     output,
+                     output);
+      break;
+   case 4:
+   default:
+      BRT_TYPE1dstreamCombine4(*streams[0],
+                     *streams[1],
+                     *streams[2],
+                     *streams[3],
+                     modulus,
+                     offset,
+                     output,
+                     output);
+      if (num>4) {
+         combineStreamsHelperBRT_TYPE1d(streams+4,
+                                      num-4,
+                                      output,
+                                      modulus,
+                                      4+offset);
+      }
+      /*
+   case 5:
+      BRT_TYPEstreamCombine5(streams[0],
+                     *streams[1],
+                     *streams[2],
+                     *streams[3],
+                     *streams[4],
+                     modulus,
+                     offset,
+                     output,
+                     output);
+      break;
+   case 6:
+      BRT_TYPEstreamCombine6(*streams[0],
+                     *streams[1],
+                     *streams[2],
+                     *streams[3],
+                     *streams[4],
+                     *streams[5],
+                     modulus,
+                     offset,
+
+                     output,
+                     output);
+      break;
+   default:
+      BRT_TYPEstreamCombine7(*streams[0],
+                     *streams[1],
+                     *streams[2],
+                     *streams[3],
+                     *streams[4],
+                     *streams[5],
+                     *streams[6],
+                     modulus,
+                     offset,
+
+                     output,
+                     output);
+      if (num>7) {
+         combineStreamsHelperBRT_TYPE(streams+7,
+                                      num-7,
+                                      output,
+                                      modulus,
+                                      7+offset);         
+      } 
+      */     
+   }
+}
+void combineStreamsBRT_TYPE1d (BRT_TYPE (**streams)<>,
+                          unsigned int num,
+                          unsigned int width, 
+                          unsigned int UNUSED,
+                          BRT_TYPE output<>) {
+   BRT_TYPE tmp<(num*width)>;
+   streamSwap(tmp,output);
+   switch (num) {
+   case 0:
+      return;
+   case 1:
+      streamSwap(output,*streams[0]);
+      break;
+   case 2:
+      BRT_TYPE1dstreamCombine2f(*streams[0],
+                      *streams[1],
+                      (float)num,
+                      output);
+      break;
+   case 3:
+      BRT_TYPE1dstreamCombine3f(*streams[0],
+                      *streams[1],
+                      *streams[2],
+                      (float)num,
+                      output);
+      break;
+   case 4:
+      BRT_TYPE1dstreamCombine4f(*streams[0],
+                      *streams[1],
+                      *streams[2],
+                      *streams[3],
+                      (float)num,
+                      output);
+      break;
+   case 5:
+   default:
+      BRT_TYPE1dstreamCombine5f(*streams[0],
+                      *streams[1],
+                      *streams[2],
+                      *streams[3],
+                      *streams[4],
+                      (float)num,
+                      output);
+      if (num>MAX_VOUT_STREAMS) {
+         fprintf (stderr,
+                  "vout stream not reconstituted properly. %s%d streams",
+                  "Too little precision for more than ",MAX_VOUT_STREAMS);
+      }
+      if (num>5) {
+         combineStreamsHelperBRT_TYPE1d(streams+5,
+                                      num-5,
+                                      output,
+                                      (float)num,
+                                      (float)(5-.5));
+      }
+      /*
+      break;
+   case 6:
+      BRT_TYPEstreamCombine6f(*streams[0],
+                      *streams[1],
+                      *streams[2],
+                      *streams[3],
+                      *streams[4],
+                      *streams[5],
+                      num,
+                      output);
+      break;
+   case 7:
+      BRT_TYPEstreamCombine7f(*streams[0],
+                      *streams[1],
+                      *streams[2],
+                      *streams[3],
+                      *streams[4],
+                      *streams[5],
+                      *streams[6],
+                      num,
+                      output);
+      break;
+   default:
+      if (num>MAX_VOUT_STREAMS) {
+         fprintf (stderr,
+                  "vout stream not reconstituted properly. %s%d streams",
+                  "Too little precision for more than ",MAX_VOUT_STREAMS);
+      }
+      BRT_TYPEstreamCombine8f(*streams[0],
+                      *streams[1],
+                      *streams[2],
+                      *streams[3],
+                      *streams[4],
+                      *streams[5],
+                      *streams[6],
+                      *streams[7],
+                      num,
+                      output);
+      if (num>8) {
+         combineStreamsHelperBRT_TYPE(streams+8,
+                                      num-8,
+                                      output,
+                                      num,
+                                      8);
+      }
+      break;
+      */
+   }
+}
+
+
+
+
+kernel void combineBRT_TYPE1d (BRT_TYPE input1[], 
+                           BRT_TYPE input2[], 
+                           out BRT_TYPE output<>,
+                           float startsecond,
+                           float endsecond,
+                           float maxinput2value,
+                           float inf){
+   if ((indexof output).x>=startsecond.x) {
+      float secondindex=(indexof output).x-startsecond;
+      //getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
+      //           -shift2,
+      //           maxinput1value,
+      //           endsecond); // moved outside kernel
+      if (secondindex.x>=endsecond.x) {
+         output=inf;
+      }else {
+         output = input2[secondindex];
+      }
+   }else {
+      output=input1[(indexof output).x];
+   }
+}
+
+unsigned int  voutCombineBRT_TYPE1d(BRT_TYPE outleft_stream<>,
+                               float maxshiftleft,
+                               unsigned int LEFTWIDTH,
+                               BRT_TYPE outright_stream<>,
+                               float maxshiftright,
+                               unsigned int RIGHTWIDTH,
+                               BRT_TYPE output<>){
+   unsigned int totalsize;
+   float maxleftvalue,maxrightvalue;
+   maxleftvalue=(float)LEFTWIDTH;
+   maxrightvalue=(float)RIGHTWIDTH;
+   totalsize = (LEFTWIDTH
+                +RIGHTWIDTH
+                -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
+   if (1) {      
+      unsigned int width = totalsize;
+      BRT_TYPE output_stream<width>;
+      float startsecond,endsecond;
+      cpuGetIndexAt1d(maxleftvalue-1,
+                    -maxshiftleft,
+                    maxleftvalue,
+                    &startsecond);
+      cpuGetIndexAt1d(maxrightvalue-1,
+                    -maxshiftright,
+                    maxrightvalue,
+                    &endsecond);
+      combineBRT_TYPE1d(outleft_stream,
+                   outright_stream,
+                   output_stream,
+                   startsecond,
+                   endsecond,
+                   maxrightvalue,
+                   1.0f/(float)floor(.5));
+      streamSwap (output,output_stream);
+   }
+   return totalsize;
+}
+
+unsigned int totalCombineVoutBRT_TYPE1d (BRT_TYPE list_stream<>, 
+                                    unsigned int WIDTH,
+                                    BRT_TYPE list2_stream<>,
+                                    unsigned int WIDTH2,
+                                    BRT_TYPE output<>){
+
+   float outleft_stream<WIDTH>;
+   float outright_stream<WIDTH2>;
+   float maxshiftleft =shiftValuesBRT_TYPE1d(list_stream,
+                                           outleft_stream,
+                                           WIDTH,1,
+                                           -1);
+   float maxshiftright=shiftValuesBRT_TYPE1d(list2_stream,
+                                           outright_stream,
+                                           WIDTH2,1,
+                                           -1);
+   return voutCombineBRT_TYPE1d (outleft_stream,
+                            maxshiftleft,
+                               WIDTH,
+                            outright_stream,
+                            maxshiftright,
+                               WIDTH2,
+                            output);
+}
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+
+
+
+
+
