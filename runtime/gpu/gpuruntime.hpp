@@ -23,7 +23,6 @@ namespace brook
 
     GPUContext* getContext() { return _context; }
 
-//    void execute( const GPUFatRect& outputRect, int inputRectCount, const GPUFatRect* inputRects );
   protected:
     GPURuntime();
     bool initialize( GPUContext* inContext );

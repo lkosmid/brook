@@ -20,10 +20,14 @@ namespace brook {
                               float ranges[])=0;
     virtual ~RunTime() {}
 
-    static RunTime* GetInstance( const char* inRuntimeName = 0, void* inContextValue = 0, bool addressTranslation = false );
+    static RunTime* GetInstance( const char* inRuntimeName = 0, 
+                                 void* inContextValue = 0, 
+                                 bool addressTranslation = false );
 
   private:
-    static RunTime* CreateInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation );
+    static RunTime* CreateInstance( const char* inRuntimeName, 
+                                    void* inContextValue, 
+                                    bool addressTranslation );
   };
 }
 #endif
