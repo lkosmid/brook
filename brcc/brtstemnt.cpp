@@ -135,7 +135,8 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
    FunctionType* ft = static_cast<FunctionType*>(decl->form);
    std::set<unsigned int > *vouts= &voutFunctions[FunctionName()->name];
    std::set<unsigned int >::iterator iter;
-   out << "  float2 __vout_counter(0.0f, 1.0f / (float)floor (.5));";
+   out << "  float __vout_counter=0.0f;"<<std::endl;
+   out << "  brook::Stream * __inf = *sentinelStream(1);";
    out << std::endl;
    out << "  int maxextents[2]={0,0};"<<std::endl;
    int i=0;   
@@ -202,7 +203,7 @@ std::string undecoratedBase(Decl * decl) {
          
 }
 void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
-   out << "    __vout_counter.x+=1.0f;"<<std::endl;
+   out << "    __vout_counter+=1.0f;"<<std::endl;
    FunctionType* ft = static_cast<FunctionType*>(decl->form);
    std::set<unsigned int >::iterator beginvout
       = voutFunctions[FunctionName()->name].begin();
@@ -289,7 +290,7 @@ BRTKernelDef::printStub(std::ostream& out) const
 
    }
    if (vout) {
-      NumArgs--;
+     NumArgs-=2;//one for counter one for innf
    }
    for (i = 0; i < NumArgs; i++) {
       if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {

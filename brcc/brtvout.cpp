@@ -45,8 +45,15 @@ FunctionDef * TransformHeader (FunctionDef * fd) {
    Symbol * voutCounter = new Symbol;
    voutCounter->name = "__vout_counter";
    Decl * VoutCounter =  new Decl (voutCounter);
-   VoutCounter->form = new BaseType (BT_Float2);
+   VoutCounter->form = new BaseType (BT_Float);
    ft->addArg(VoutCounter);
+   Symbol * Inf = new Symbol;
+   Inf->name = "__inf";
+   Decl * InfDecl =  new Decl (Inf);
+   ArrayType * streamtype = new ArrayType(TT_Array,NULL);
+   streamtype->extend(new BaseType(BT_Float));
+   InfDecl->form=streamtype;
+   ft->addArg(InfDecl);
    return NULL;
 }
 FunctionDef * TransformVoutToOut (FunctionDef * fd) {
@@ -67,10 +74,22 @@ FunctionDef * TransformVoutToOut (FunctionDef * fd) {
    return NULL;
 }
 
+Symbol * findSentinel (FunctionType * ft) {
+   Symbol * ret = new Symbol;
+   ret->name="__inf";
+   for (int i=0;i<ft->nArgs;++i) {
+      if (ft->args[i]->name->name=="__inf"){
+         ret->entry = mk_paramdecl("__inf",ft->args[i]);
+         return ret;
+      }
+   }
+   return ret;
+}
+
 Statement * InitialInfSet (std::string fname,                                 
                            FunctionType * ft,
-                           Decl * vout_counter,
                            const Location & location) {
+
    VoutFunctionType::iterator func
       =voutFunctions.find(fname);
    if (func==voutFunctions.end())
@@ -78,16 +97,13 @@ Statement * InitialInfSet (std::string fname,
    std::set<unsigned int>::iterator iter =func->second.begin();
    ExpressionStemnt * expr;
    if (iter!=func->second.end()) {
-      Symbol * Why = new Symbol;Why->name = "y";
       Symbol * vout_sym=  ft->args[*iter]->name->dup();     
       expr = new ExpressionStemnt
          (new AssignExpr (AO_Equal,
                           new Variable(vout_sym,location),
-                          new BinaryExpr(BO_Member,
-                                         new Variable(vout_counter->name
-                                                      ->dup(),
+                          new IndexExpr (new Variable(findSentinel(ft),
                                                       location),
-                                         new Variable (Why,location),
+                                         new FloatConstant(0.0,location),
                                          location),
                           location),
           location);
@@ -101,14 +117,9 @@ Statement * InitialInfSet (std::string fname,
                        expr->expression,
                        new AssignExpr (AO_Equal,
                                        new Variable(vout_sym,location),
-                                       new BinaryExpr(BO_Member,
-                                                      new Variable
-                                                      (vout_counter->name
-                                                       ->dup(),
-                                                       location),
-                                                      new Variable(Why,
-                                                                   location),
-                                                      location),
+                                       new Variable
+                                       (findSentinel(ft),
+                                        location),
                                        location),  
                        location);
 
@@ -120,7 +131,7 @@ Decl * findVoutCounter (FunctionType * ft) {
       if (ft->args[i]->name->name=="__vout_counter")
          return ft->args[i];
    }
-   return ft->args[ft->nArgs-1];
+   return ft->args[ft->nArgs-2];
 }
 
 static FunctionType * pushFunctionType=NULL;
@@ -177,13 +188,8 @@ static Statement * PushToIfStatement(Statement * ste) {
                   (new RelExpr(RO_Equal,
                                new FloatConstant(-1,fc->location),
                                new AssignExpr(AO_MinusEql,
-                                              new BinaryExpr
-                                              (BO_Member,
                                                new Variable (counter,
                                                              fc->location),
-                                               new Variable (Eks,
-                                                             fc->location),
-                                               fc->location),
                                               new IntConstant(1,fc->location),
                                               fc->location),
                                fc->location),
@@ -201,7 +207,6 @@ FunctionDef* TransformVoutPush(FunctionDef*fd) {
    if (func==voutFunctions.end())
       return NULL;
    FunctionType * ft = static_cast<FunctionType*>(fd->decl->form);
-   Decl * vout_counter = findVoutCounter(ft);
    pushFunctionType = ft;
    TransformStemnt(fd,&PushToIfStatement);
    Block * MainFunction= new Block(fd->location);
@@ -213,7 +218,6 @@ FunctionDef* TransformVoutPush(FunctionDef*fd) {
    fd->tail=tmp;
    fd->add(InitialInfSet(fd->FunctionName()->name,
                          ft,
-                         vout_counter,
                          fd->location));
    fd->add(MainFunction);
    return NULL;   

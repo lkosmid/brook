@@ -239,6 +239,7 @@ inline static void maxDimension(int * out,
       if (in[i]>(unsigned int)out[i])out[i]=in[i];
    }
 }
+__BRTStream* sentinelStream(int dim);
 inline static void streamRead( brook::Stream *s, void *p) {
   s->Read(p);
 }

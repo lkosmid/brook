@@ -216,7 +216,24 @@ namespace brook {
   }
 
 }
-
+__BRTStream * sentinelStream (int dim) {
+   static vector <__BRTStream *> sentinels;
+   if (dim<(int)sentinels.size())
+      if (sentinels[dim]!=0)
+         return sentinels[dim];
+   while ((int)sentinels.size()<=dim)
+      sentinels.push_back(0);
+   vector<int> extents;
+   for (int i=0;i<dim;++i){
+      extents.push_back(1);
+   }
+   sentinels[dim]=new brook::stream(&extents[0],
+                                    dim,
+                                    brook::getStreamType((float*)0));   
+   float inf = 1.0f/(float)floor(.5);
+   streamRead(*sentinels[dim],&inf);
+   return sentinels[dim];
+}
 void streamPrint(brook::StreamInterface * s, bool flatten) {
    unsigned int dims = s->getDimension();
    const unsigned int * extent = s->getExtents();
