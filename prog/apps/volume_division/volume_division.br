@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "ppm3d.h"
 #include "volume_division.h"
+char use_vout_filter=1;
+char use_vout_amplify=1;
 kernel float test(float vol<>,float index<>){
   return (vol>0)?index:0;
 }
@@ -10,12 +12,12 @@ float __printf_cpu_inner (float a, float b, float c, float d) {
   printf ("%f %f -> %f %f\n",a,b,c,d);
   return 1;
 }
-kernel float eval1 (float3 loc<>) {
+kernel float eval (float3 loc<>) {
    return (float) (loc.x==loc.y&&loc.y==loc.z&&loc.z==1);
 }
-kernel float eval (float3 loc<>) {
+kernel float eval2 (float3 loc<>) {
   float  power;
-  const float3 offset=32;
+  const float3 offset=8;
   float3 center =loc-offset;
   power = dot(center,center);
   /*
@@ -41,7 +43,7 @@ kernel float eval (float3 loc<>) {
   */
   {
 
-     const float  density = 32*32;
+     const float  density =8*8;
     //printf (power,loc.z,density,power-density);
     return density-power;
   }
@@ -130,7 +132,13 @@ kernel void processVirtualSliceNoCompact(out float4 vertex<>,
   }
 }
 
-kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, out float3 trianglesC<>,out float3 trianglesD<>, out float3 trianglesE<>, float4 vertices1<>,float3 volumeTriangles[][]) {
+kernel void processTrianglesNoCompact(out float3 trianglesA<>, 
+                                      out float3 trianglesB<>, 
+                                      out float3 trianglesC<>,
+                                      out float3 trianglesD<>, 
+                                      out float3 trianglesE<>, 
+                                      float4 vertices1<>,
+                                      float3 volumeTriangles[][]) {
    float4 whichVolumeTriangle={fmod((indexof trianglesA).x,3),vertices1.w,0,0};
    float3 vertices=vertices1.xyz;
   //whichVolumeTriangle.x*=(float)(whichVolumeTriangle.x+.5<3);
@@ -145,6 +153,29 @@ kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, o
   whichVolumeTriangle.x+=3;  
   trianglesE=vertices.xyz+volumeTriangles[whichVolumeTriangle];  
 }
+
+kernel void processTriangles(vout[3] float3 triangles<>, 
+                             float4 vertices<>,
+                             float3 volumeTriangles[][],
+                             iter float2 streamsize<>) {
+
+  float4 whichVolumeTriangle={fmod(streamsize.x,5.0f)*3.0f,vertices.w,0,0};
+  float3 firstTrianglePos;
+
+   if (whichVolumeTriangle.x+.5>15.0f) whichVolumeTriangle.x=0;
+   firstTrianglePos=volumeTriangles[whichVolumeTriangle];
+   if (1||abs(firstTrianglePos.x-.5)<.75) {
+     triangles=vertices.xyz+firstTrianglePos;
+     push(triangles);
+     whichVolumeTriangle.x+=1;
+     triangles=vertices.xyz+volumeTriangles[whichVolumeTriangle];
+     push(triangles);
+     whichVolumeTriangle.x+=1;
+     triangles=vertices.xyz+volumeTriangles[whichVolumeTriangle];
+     push(triangles);
+   }  
+}
+
 unsigned int reverseBits(unsigned int x, unsigned int base) {
    unsigned int i,ret=0;
    unsigned int j=base-1;
@@ -232,10 +263,27 @@ int toi (float a) {
   return (int)a;
 }
  int main (int argc, char ** argv) {
+   int i;
    float3 volumeTriangles<256,15>;
    struct ppm dat;
    float * slice=0;
    char generatedData=0;
+   for (i=0;i<argc;++i) {
+     char match=0;
+     int j;
+     if (strcmp(argv[i],"-nofilter")==0) {
+       match=1;
+       use_vout_filter=0;
+     }else if (strcmp(argv[i],"-noamplify")==0) {
+       match=1;
+       use_vout_amplify=0;
+     }
+     if (match) {
+       for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
+       argc--;
+       i--;
+     }
+   }
    streamRead(volumeTriangles,getVolumeTriangles());
    //   streamPrint(volumeTriangles,1);
    if (argc<2) {
@@ -269,7 +317,7 @@ int toi (float a) {
          float2 sliceZ;
          float cur<(dat.height),(dat.width)>;
          float next<(dat.height),(dat.width)>;
-         float4 v<(dat.height),(dat.width)>;
+         float4 v<(dat.height),(use_vout_filter?1:dat.width)>;
          iter float2 center <(dat.height),(dat.width)> 
            = iter (float2(0.0f,0.0f),
                    float2(tof(dat.width),
@@ -302,44 +350,74 @@ int toi (float a) {
                if (i!=dat.depth-1) {
                   streamRead(next,slice);
                }
-               processSlice(cur,
-                            i!=dat.depth-1?next:cur,
-                            v,
-                            center,
-                            up,
-                            upforward,
-                            forward,
-                            sliceZ);
+               use_vout_filter?processSlice(cur,
+                                     i!=dat.depth-1?next:cur,
+                                     v,
+                                     center,
+                                     up,
+                                     upforward,
+                                     forward,
+                                     sliceZ):
+                 processSliceNoCompact(cur,
+                                       i!=dat.depth-1?next:cur,
+                                       v,
+                                       center,
+                                       up,
+                                       upforward,
+                                       forward,
+                                       sliceZ);
             }else {
-               processVirtualSlice(v,center,upforward,sliceZ);
+              use_vout_filter?
+                processVirtualSlice(v,center,upforward,sliceZ):
+                processVirtualSliceNoCompact(v,center,upforward,sliceZ);
             }
             if (streamSize(v).y){
-              float3 trianglesA<(toi(streamSize(v).y)),
-                               (toi(streamSize(v).x)*3)>;
-              float3 trianglesB<(toi(streamSize(v).y)),
-                               (toi(streamSize(v).x)*3)>;
-              float3 trianglesC<(toi(streamSize(v).y)),
-                               (toi(streamSize(v).x)*3)>;
-              float3 trianglesD<(toi(streamSize(v).y)),
-                               (toi(streamSize(v).x)*3)>;
-              float3 trianglesE<(toi(streamSize(v).y)),
-                               (toi(streamSize(v).x)*3)>;
-              processTriangles(trianglesA,trianglesB,trianglesC,trianglesD,trianglesE,
-                               v, volumeTriangles);
-              streamWrite(trianglesA,
-                          consolidateVertices(dat,streamSize(trianglesA)));
-              streamWrite(trianglesB,
-                          consolidateVertices(dat,streamSize(trianglesB)));
-              streamWrite(trianglesC,
-                          consolidateVertices(dat,streamSize(trianglesC)));
-              streamWrite(trianglesD,
-                          consolidateVertices(dat,streamSize(trianglesD)));
-              streamWrite(trianglesE,
-                          consolidateVertices(dat,streamSize(trianglesE)));
+              if (use_vout_amplify) {
+                iter float2 newsize <(toi(streamSize(v).y)),
+                                    (toi(streamSize(v).x)*5)> =
+                  iter(float2(0,0),float2(streamSize(v).x*5.0f,
+                                          streamSize(v).y));
+                float3 triangles <1,(toi(streamSize(v).x)*5)>;
+                processTriangles(triangles, 
+                                 v,
+                                 volumeTriangles,
+                                 newsize);
+                 streamWrite(triangles,
+                             consolidateVertices(dat,streamSize(triangles)));
+                                
+              }else {
+                 float3 trianglesA<(toi(streamSize(v).y)),
+                                  (toi(streamSize(v).x)*3)>;
+                 float3 trianglesB<(toi(streamSize(v).y)),
+                                  (toi(streamSize(v).x)*3)>;
+                 float3 trianglesC<(toi(streamSize(v).y)),
+                                  (toi(streamSize(v).x)*3)>;
+                 float3 trianglesD<(toi(streamSize(v).y)),
+                                  (toi(streamSize(v).x)*3)>;
+                 float3 trianglesE<(toi(streamSize(v).y)),
+                                  (toi(streamSize(v).x)*3)>;
+                 processTrianglesNoCompact(trianglesA,
+                                           trianglesB,
+                                           trianglesC,
+                                           trianglesD,
+                                           trianglesE,
+                                           v, 
+                                           volumeTriangles);
+                 streamWrite(trianglesA,
+                             consolidateVertices(dat,streamSize(trianglesA)));
+                 streamWrite(trianglesB,
+                             consolidateVertices(dat,streamSize(trianglesB)));
+                 streamWrite(trianglesC,
+                             consolidateVertices(dat,streamSize(trianglesC)));
+                 streamWrite(trianglesD,
+                             consolidateVertices(dat,streamSize(trianglesD)));
+                 streamWrite(trianglesE,
+                             consolidateVertices(dat,streamSize(trianglesE)));
               //              streamPrint(trianglesA,1);
               //              streamPrint(trianglesB,1);
               //              streamPrint(trianglesC,1);
               //              streamPrint(trianglesD,1);
+              }
             }
             sliceZ.x++;sliceZ.y++;
          }
