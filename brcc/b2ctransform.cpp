@@ -60,28 +60,94 @@ BinaryOp TranslatePlusGets (AssignOp ae) {
 				}
 				return bo;
 }
+bool looksLikeMask (std::string s) {
+	if (s.length()<=4) {
+		for (unsigned int i=0;i<s.length();++i) {
+			if (s[i]!='x'&&s[i]!='y'&&s[i]!='z'&&s[i]!='w'&&
+				s[i]!='r'&&s[i]!='g'&&s[i]!='b'&&s[i]!='a'){
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
+}
+int translateMask (char mask) {
+	switch (mask) {
+	case 'y':
+	case 'g':
+		return 1;
+	case 'z':
+	case 'b':
+		return 2;
+	case 'w':
+	case 'a':
+		return 3;
+	default:
+		return 0;
+	}
+}
+class MaskExpr : public BinaryExpr {
+  public:
+	std::string mask;
+    MaskExpr( Expression *lExpr, Expression *rExpr, std::string mask, const Location& l ):
+		BinaryExpr(BO_Member,lExpr,rExpr,l) {
+		this->mask=mask;
+	}
+	~MaskExpr(){}
+	
+    Expression *lValue() const { return leftExpr(); }
+    Expression *rValue() const { return rightExpr(); }
+
+    int precedence() const { return 16;/*maybe left expr's prec*/ }
+
+    Expression *dup0()  const {
+		MaskExpr *ret = new MaskExpr(_leftExpr->dup(),_rightExpr->dup(),mask, location);
+		ret->type = type;  
+		return ret;
+	}
+	
+    void print(std::ostream& out) const{
+		if (lValue()->precedence()<precedence())
+			out << "(" << *lValue() << ")";
+		else
+			out << *lValue();
+		out << ".mask(";
+		if (rValue()->precedence()<2/*comma*/)
+			out << "(" <<*rValue() <<")";
+		else
+			out << *rValue();
+		for (unsigned int i=0;i<4&&i<mask.length();++i) {
+			out << ",";
+			out << translateMask(mask[i]);
+		}
+		out << ")";
+	}
+
+};
 
 
 Expression * MaskConverter (Expression * e) {
 	AssignExpr * ae;
 	BinaryExpr * ret =NULL;
+	Variable * vmask=NULL;
 	if (e->etype == ET_BinaryExpr&&(ae= dynamic_cast<AssignExpr *> (e))) {
 		//now lets identify what expression is to the left... if it's a dot then we go!
 		BinaryExpr * lval;
 		if (e->etype==ET_BinaryExpr&& (lval = dynamic_cast<BinaryExpr*>(ae->lValue()))) {
 			if (lval->op()==BO_Member) {
-				printf ("mask detected");
-				BinaryOp bo =TranslatePlusGets (ae->op());
-				if (bo!=BO_Assign) {
-					//now we need to move the lval to the right
-					ae->_rightExpr = new BinaryExpr(bo,ae->lValue()->dup0(),ae->rValue(),ae->location);
-					ae->aOp=AO_Equal;
+				if (lval->rightExpr()->etype==ET_Variable&&(vmask = dynamic_cast<Variable*>(lval->rightExpr()))) {
+					if (looksLikeMask(vmask->name->name)) {
+						printf ("mask detected");
+						BinaryOp bo =TranslatePlusGets (ae->op());
+						if (bo!=BO_Assign) {
+							//now we	 		need to move the lval to the right
+							ae->_rightExpr = new BinaryExpr(bo,ae->lValue()->dup(),ae->rValue(),ae->location);
+							ae->aOp=AO_Equal;
+						}
+						ret = new MaskExpr (lval->leftExpr()->dup(),ae->rValue()->dup(),vmask->name->name,lval->location);
+					}
 				}
-				Symbol mask;mask.name="mask";
-				FunctionCall * func = new FunctionCall (new Variable (new Symbol(mask),ae->location),ae->location);
-				func->addArg ( ae->rValue()->dup0());
-				ret = new BinaryExpr (BO_Member,lval->leftExpr ()->dup0(),func,lval->location);
-				
 			}
 		}
 	}
