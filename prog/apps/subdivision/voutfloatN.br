@@ -13,7 +13,10 @@
 
 unsigned int debug_vout = 0;
 #define sentinelStream brook::sentinelStream
-
+#ifdef _WIN32
+// do not let it warn us that we use more than 64K lines of code
+#pragma warning(disable:4049)
+#endif
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
 
 
