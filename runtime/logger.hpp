@@ -38,6 +38,7 @@ namespace internal {
     static Logger& getInstance();
 
     const char* prefix;
+    const char* path;
     std::ostream* stream;
     bool ownsStream;
     int level;

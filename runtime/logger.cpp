@@ -10,21 +10,12 @@ namespace internal {
     : stream(NULL), ownsStream(false), level(-1), prefix(NULL)
   {
     const char* levelVariable = getenv("BRT_LOG_LEVEL");
-    const char* pathVariable = getenv("BRT_LOG_PATH");
     
+    path = getenv("BRT_LOG_PATH");
     prefix = getenv("BRT_LOG_PREFIX");
 
     if( levelVariable )
       level = atoi( levelVariable );
-
-    if( pathVariable && strlen(pathVariable) != 0 )
-    {
-      ownsStream = true;
-      stream = new std::ofstream( pathVariable );
-    }
-    
-    if( !stream )
-      stream = &(std::cerr);
   }
 
   Logger::~Logger()
@@ -43,15 +34,25 @@ namespace internal {
     return sResult;
   }
 
-  bool Logger::isEnabled( int inLevel )
-  {
-    Logger& instance = getInstance();
-    return instance.stream && (instance.level >= inLevel);
+  bool Logger::isEnabled( int inLevel ) {
+    return getInstance().level >= inLevel;
   }
   
   std::ostream& Logger::getStream()
   {
     Logger& instance = getInstance();
+
+    if( !instance.stream )
+    {
+      if( instance.path && strlen(instance.path) != 0 )
+      {
+        instance.ownsStream = true;
+        instance.stream = new std::ofstream( instance.path );
+      }
+      else
+        instance.stream = &(std::cerr);
+    }
+
     std::ostream& result = *instance.stream;
     if( instance.prefix )
       result << instance.prefix;
