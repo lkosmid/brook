@@ -210,8 +210,16 @@ BRTGPUKernelDef::printCode(std::ostream& out) const
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
 
-   fpcode = CodeGen_HLSLGenerateCode(fType->subType, FunctionName()->name.c_str(),
-                                     fType->args, fType->nArgs, wrapOut.str().c_str());
+#if 0
+   fpcode = CodeGen_CGGenerateCode(fType->subType, FunctionName()->name.c_str(),
+                                   fType->args, fType->nArgs,
+                                   wrapOut.str().c_str());
+#else
+   fpcode = CodeGen_HLSLGenerateCode(fType->subType,
+                                     FunctionName()->name.c_str(),
+                                     fType->args, fType->nArgs,
+                                     wrapOut.str().c_str());
+#endif
    out << fpcode;
    free(fpcode);
 }
@@ -359,7 +367,7 @@ public:
             printType(out,t,true);
             out << ")args["<<index<<"];";
             if (isStream)
-                    out<<" arg"<<index<<+"+=mapbegin;";
+                    out<<" arg"<<index<<"+=mapbegin;";
             break;
         case USE:
                 out <<"*arg"<<index;
