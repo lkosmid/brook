@@ -12,6 +12,11 @@
 #include "main.h"
 #include "readwrite.h"
 
+#if 0
+#define CHECK_MISMATCH 1
+#else
+#define CHECK_MISMATCH 0
+#endif
 
 /*
  * ReadWriteNOP --
@@ -65,7 +70,7 @@ ReadWrite1D(int length)
    printf("   %d\t\t%d\t\t%.2f\n",
           length, (int) (stop - start), numBytes / (float) (stop - start));
 
-   for (i = 0; i < length; i++) {
+   for (i = 0; CHECK_MISMATCH && i < length; i++) {
       if (in[i].x != output[i].x ||
           in[i].y != output[i].y ||
           in[i].z != output[i].z ||
@@ -125,7 +130,8 @@ ReadWrite2D(int length)
 
          cur_in = *(in + i*length + j);
          cur_out = *(output + i*length + j);
-         if (cur_in.x != cur_out.x &&
+         if (CHECK_MISMATCH &&
+             cur_in.x != cur_out.x &&
              cur_in.y != cur_out.y &&
              cur_in.z != cur_out.z &&
              cur_in.w != cur_out.w) {

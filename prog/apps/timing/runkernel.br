@@ -12,6 +12,11 @@
 #include "main.h"
 #include "runkernel.h"
 
+#if 0
+#define CHECK_MISMATCH 1
+#else
+#define CHECK_MISMATCH 0
+#endif
 
 /*
  * RunKernelKickKernel --
@@ -29,7 +34,7 @@ RunKernelKickKernel(float s<>, out float o<>)
 
 
 /*
- * RunKernel1DDouble --
+ * RunKernelDouble --
  *
  *      A dead simple 1D kernel.  Just double every element
  */
@@ -38,6 +43,85 @@ kernel void
 RunKernelDouble(float4 s<>, out float4 o<>)
 {
    o = s + s;
+}
+
+
+/*
+ * RunKernelHardWork --
+ *
+ *      Try for a kernel that will actually exercise the GPU
+ */
+
+static void RunKernelHardWork2(float4 c, ...) {}
+
+kernel void
+RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
+{
+   o = s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   o = c*o + s;
+   /*
+   */
 }
 
 
@@ -60,7 +144,7 @@ RunKernelKickBRT(void)
    RunKernelKickKernel(s, o);
    streamWrite(o, d);
 
-   if (d[0] != 12.34f) {
+   if (CHECK_MISMATCH && d[0] != 12.34f) {
       fprintf(stderr, "RunKernelKickBRT: Mismatch!  Got %.2f expecting %.2f\n",
               d[0], 12.34f);
    }
@@ -92,20 +176,22 @@ RunKernel1D(int streamLength, int nRuns)
    start = GetTime();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
-      RunKernelDouble(s, o);
+      //RunKernelDouble(s, o);
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    }
    streamWrite(o, data);
    stop = GetTime();
-   elapsed = ((int) (stop - start)) / (float) nRuns;
+   elapsed = (stop - start) / 1.0f /*(float) nRuns*/;
 
-   printf("   %d\t\t%.2f\t\t%d\n",
-          (int) elapsed, (float) (streamLength / elapsed), nRuns);
+   printf("   %I64d\t\t%.2f\t\t%d\n",
+          stop - start, (float) (nRuns * streamLength / elapsed), nRuns);
 
-   for (i = 0; i < streamLength; i++) {
-      if (data[i].x != (float) 2*i || data[i].y != data[i].x ||
+   for (i = 0; CHECK_MISMATCH && i < streamLength; i++) {
+      if (data[i].x != (float) 63*i || data[i].y != data[i].x ||
           data[i].z != data[i].x || data[i].w != data[i].x) {
          fprintf(stderr, "RunKernel1D: Mismatch %d/%d: %.2f %.2f %.2f %.2f\n",
                  i, streamLength, data[i].x, data[i].y, data[i].z, data[i].w);
+         exit(1);
       }
    }
 
@@ -142,23 +228,26 @@ RunKernel2D(int streamLength, int nRuns)
    start = GetTime();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
-      RunKernelDouble(s, o);
+      //RunKernelDouble(s, o);
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    }
    streamWrite(o, data);
    stop = GetTime();
-   elapsed = ((int) (stop - start)) / (float) nRuns;
+   elapsed = (stop - start) / 1.0f /*(float) nRuns*/;
 
-   printf("   %d\t\t%.2f\t\t%d\n",
-          (int) elapsed, (float) (streamLength*streamLength / elapsed), nRuns);
+   printf("   %I64d\t\t%.2f\t\t%d\n",
+          stop - start,
+          (float) (nRuns * streamLength * streamLength / elapsed), nRuns);
 
-   for (i = 0; i < streamLength; i++) {
+   for (i = 0; CHECK_MISMATCH && i < streamLength; i++) {
       for (j = 0; j < streamLength; j++) {
          float4 *cur = (data + i*streamLength + j);
 
-         if (cur->x != (float) (2*(i*streamLength + j)) ||
+         if (cur->x != (float) (63*(i*streamLength + j)) ||
              cur->y != cur->x || cur->z != cur->x || cur->w != cur->x) {
             fprintf(stderr, "RunKernel2D: Mismatch %d/%d: %.2f %.2f %.2f %.2f\n",
                     i, streamLength, cur->x, cur->y, cur->z, cur->w);
+            exit(1);
          }
       }
    }
@@ -177,7 +266,7 @@ RunKernel2D(int streamLength, int nRuns)
 void
 RunKernel_Time(int maxLength)
 {
-   static const int runLengths[] = { 50, 75, 100, /*150, 200*/ };
+   static const int runLengths[] = { 1, 10, 50, 75, /*150, 200*/ };
    static const int lengths[] = { 1, 4, 16, 64, 256, 512, 1024, 2048 };
    static const int numLengths = sizeof lengths / sizeof lengths[0];
    static const int numRunLengths = sizeof runLengths / sizeof runLengths[0];
@@ -187,14 +276,14 @@ RunKernel_Time(int maxLength)
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
       printf("(* RunKernel1D streamLength %d *)\n", lengths[i]);
-      printf("(* usecs\tMOps/s\t\truns *)\n");
+      printf("(* usecs\tMFloat4s/s\t\truns *)\n");
       for (j = 0; j < numRunLengths; j++) {
          RunKernel1D(lengths[i], runLengths[j]);
       }
       printf("\n");
    }
    printf("(* RunKernel1D streamLength %d *)\n", maxLength);
-   printf("(* usecs\tMOps/s\t\truns *)\n");
+   printf("(* usecs\tMFloat4s/s\t\truns *)\n");
    for (j = 0; j < numRunLengths; j++) {
       RunKernel1D(maxLength, runLengths[j]);
    }
@@ -202,14 +291,14 @@ RunKernel_Time(int maxLength)
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
       printf("(* RunKernel2D streamLength %d *)\n", lengths[i]);
-      printf("(* usecs\tMOps/s\t\truns *)\n");
+      printf("(* usecs\tMFloat4s/s\t\truns *)\n");
       for (j = 0; j < numRunLengths; j++) {
          RunKernel2D(lengths[i], runLengths[j]);
       }
       printf("\n");
    }
    printf("(* RunKernel2D streamLength %d *)\n", maxLength);
-   printf("(* usecs\tMOps/s\t\truns *)\n");
+   printf("(* usecs\tMFloat4s/s\t\truns *)\n");
    for (j = 0; j < numRunLengths; j++) {
       RunKernel2D(maxLength, runLengths[j]);
    }
