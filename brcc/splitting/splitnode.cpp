@@ -540,6 +540,16 @@ FunctionCallSplitNode::FunctionCallSplitNode( const std::string& inName, const s
     assert( _arguments.size() == 2 );
     inferredType = kSplitBasicType_Float;
   }
+  else if( _name == "lerp" )
+  {
+       assert( _arguments.size() == 3 );
+       inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "modf" )
+  {
+       assert( _arguments.size() == 2 );
+       inferredType = _arguments[0]->inferredType;
+  }
   else if( _name == "sqrt" )
   {
     assert( _arguments.size() == 1 );
