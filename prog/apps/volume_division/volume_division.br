@@ -159,12 +159,10 @@ kernel void processTriangles(vout[3] float3 triangles<>,
                              float3 volumeTriangles[][],
                              iter float2 streamsize<>) {
 
-  float4 whichVolumeTriangle={fmod(streamsize.x,5.0f)*3.0f,vertices.w,0,0};
-  float3 firstTrianglePos;
-
-   if (whichVolumeTriangle.x+.5>15.0f) whichVolumeTriangle.x=0;
-   firstTrianglePos=volumeTriangles[whichVolumeTriangle];
-   if (abs(firstTrianglePos.x-.5)<.75) {
+  float4 whichVolumeTriangle={fmod(streamsize.x,4.0f)*3.0f+3.0f,vertices.w,0,0};
+  if (whichVolumeTriangle.x+.5>15.0f) whichVolumeTriangle.x=3.0f;
+  firstTrianglePos=volumeTriangles[whichVolumeTriangle];
+  if (abs(firstTrianglePos.x-.5)<.75) {
      triangles=vertices.xyz+firstTrianglePos;
      push(triangles);
      whichVolumeTriangle.x+=1;
@@ -174,6 +172,16 @@ kernel void processTriangles(vout[3] float3 triangles<>,
      triangles=vertices.xyz+volumeTriangles[whichVolumeTriangle];
      push(triangles);
    }  
+}
+kernel void processFirstTriangles(out float3 triangles<>, 
+                                  float4 vertices<>,
+                                  float3 volumeTriangles[][]) {
+
+  float4 whichVolumeTriangle={fmod((indexof triangles).x,3.0f),vertices.w,0,0};
+  float3 firstTrianglePos;
+
+   if (whichVolumeTriangle.x+.5>3.0f) whichVolumeTriangle.x=0.0f;
+   triangles=vertices.xyz+volumeTriangles[whichVolumeTriangle];
 }
 
 unsigned int reverseBits(unsigned int x, unsigned int base) {
@@ -380,14 +388,19 @@ int toi (float a) {
             if (streamSize(v).y){
               if (use_vout_amplify) {
                 iter float2 newsize <(toi(streamSize(v).y)),
-                                    (toi(streamSize(v).x)*5)> =
-                  iter(float2(0,0),float2(streamSize(v).x*5.0f,
+                                    (toi(streamSize(v).x)*4)> =
+                  iter(float2(0,0),float2(streamSize(v).x*4.0f,
                                           streamSize(v).y));
-                float3 triangles <1,(toi(streamSize(v).x)*5)>;
+                float3 trianglesFirst<(toi(streamSize(v).y)),
+                                      (toi(streamSize(v).x)*3)>;                  
+                float3 triangles <1,(toi(streamSize(v).x)*4)>;
+                processFirstTriangles(trianglesFirst,v,volumeTriangles);
                 processTriangles(triangles, 
                                  v,
                                  volumeTriangles,
                                  newsize);
+                 streamWrite(trianglesFirst,
+                             consolidateVertices(dat,streamSize(trianglesFirst)));
                  streamWrite(triangles,
                              consolidateVertices(dat,streamSize(triangles)));
                                 
