@@ -74,7 +74,7 @@ void __check_gl(int line, char *file);
       void PushOutput(Stream *s);
       void Map();
       void Reduce();
-      void Release() {}
+      void Release() {delete this;}
       void ResetStateMachine();
     
       NV30GLRunTime * runtime;
@@ -115,7 +115,6 @@ void __check_gl(int line, char *file);
                   __BRTStreamType type, int dims, const int extents[]);
     void Read(const void* inData);
     void Write(void* outData);
-    void Release() {}
     void * getData (unsigned int flags);
     void releaseData(unsigned int flags);
     const unsigned int * getExtents() const {return extents;}
