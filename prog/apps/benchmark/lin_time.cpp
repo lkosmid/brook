@@ -47,44 +47,15 @@ double getNewTime() {
 }
 
 
-#ifdef _WIN32
-#include <windows.h>
-
-
-void micro_sleep(unsigned int n) {
-	Sleep(n / 1000);
-
-	return;
-}
-#elif defined(IRIX)
-#include <unistd.h>
-
-void micro_sleep(unsigned int n) {
-	(void) usleep((useconds_t)n);
-	return;
-}
-
-#else
-
-void micro_sleep(unsigned int n) {
-	struct timeval tv = { 0, 0 };
-
-	tv.tv_usec = n%1000000;
-	tv.tv_sec=n/1000000;
-	select(0, NULL, NULL, NULL, &tv);
-
-	return;
-}
-#endif
 
 void InitTime () {
 #ifdef WIN32
   QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
   QueryPerformanceCounter((LARGE_INTEGER*)&ttime);
 
-#elif defined(HAVE_GETTIMEOFDAY)
+#elif 1
   struct timeval tv;
-  (void) gettimeofday(&tv, NULL);
+  (void) gettimeofday(&tv, 0);
 
   newtime = (double)tv.tv_sec + (double)tv.tv_usec * 1.e-6;
   lasttime = newtime -.001;
@@ -113,9 +84,9 @@ void UpdateTime() {
   else
 	  dblnewtime = ((double)newtime)/((double)freq);
   static double ftime = firsttime = dblnewtime;
-#elif defined(HAVE_GETTIMEOFDAY)
+#elif 1
   struct timeval tv;
-  (void) gettimeofday(&tv, NULL);
+  (void) gettimeofday(&tv, 0);
 
   lasttime = newtime;
   newtime = (double)tv.tv_sec + (double)tv.tv_usec * 1.e-6;
