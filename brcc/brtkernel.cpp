@@ -77,7 +77,7 @@ static Variable * NewGatherArg (Variable * v) {
    Symbol * s = new Symbol;
    s->name = "_const_"+v->name->name+"_scalebias";
    return new Variable(s,v->location);
-   
+
 }
 
 
@@ -109,7 +109,7 @@ void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
    }
    std::set<unsigned int>::iterator iter=
       FunctionProp[ fDef->decl->name->name].begin();
-   std::set<unsigned int>::iterator iterend = 
+   std::set<unsigned int>::iterator iterend =
       FunctionProp[ fDef->decl->name->name].end();
    for (;iter!=iterend;++iter,++i) {
       if (i!=0)
@@ -141,7 +141,7 @@ BRTGPUKernelCode::ConvertGathers (Expression *expr) {
 
               std::set<unsigned int>::iterator iter=
                  FunctionProp[function->name->name].begin();
-              std::set<unsigned int>::iterator iterend = 
+              std::set<unsigned int>::iterator iterend =
                  FunctionProp[function->name->name].end();
 
               for ( ; iter!=iterend; ++iter) {
@@ -155,9 +155,9 @@ BRTGPUKernelCode::ConvertGathers (Expression *expr) {
                     if (v->name->entry &&
                         v->name->entry->uVarDecl){
                        if (v->name->entry->uVarDecl->isStream()) {
-                          Decl * indexofDecl 
+                          Decl * indexofDecl
                              = new Decl(new BaseType(BT_Float4));
-                          
+
                           Symbol * indexofS = new Symbol;
                           indexofS->name = "__indexof_"+v->name->name;
                           indexofS->entry = mk_vardecl(indexofS->name,
@@ -194,24 +194,24 @@ BRTGPUKernelCode::ConvertGathers (Expression *expr) {
 
   /* Convert gather expressions: a[i][j] */
   if (expr->etype == ET_IndexExpr) {
-    
+
     if (globals.verbose) {
       std::cerr << "Found Index Expr: " << expr << std::endl;
     }
-    
+
     // Check to see if the expression is from a gather stream
     IndexExpr *p = (IndexExpr *) expr;
-    for (p = (IndexExpr *) p->array; 
+    for (p = (IndexExpr *) p->array;
          p && p->etype == ET_IndexExpr;
          p = (IndexExpr *) p->array);
-    
+
     // If things have gone horribly wrong
     if (!p) return expr;
     if (p->etype != ET_Variable) return expr;
-    
+
     Variable *v = (Variable *) p;
     assert(v->name->entry);
-    
+
     if (v->name->entry->type != ParamDeclEntry)
       return expr;
 
@@ -222,9 +222,9 @@ BRTGPUKernelCode::ConvertGathers (Expression *expr) {
         if (v->name->entry->uVarDecl->form->type!=TT_Array)
           return expr;
     gather = new BrtGatherExpr((IndexExpr *) expr);
-    
+
     // IAB: XXX For some reason I can't delete expr!!!
-    //delete expr; 
+    //delete expr;
     return gather;
   }
   return expr;
@@ -246,7 +246,7 @@ BRTPS20KernelCode::printCode(std::ostream& out) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
-BRTGPUKernelCode::printCodeForType(std::ostream& out, 
+BRTGPUKernelCode::printCodeForType(std::ostream& out,
                                    bool ps20_not_fp30) const
 {
    FunctionType *fType;
@@ -275,9 +275,9 @@ BRTGPUKernelCode::printCodeForType(std::ostream& out,
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function prints out the type of a variable from a stream passed in
 // it may optionally add indirection.
-static void printType (std::ostream & out, 
-                Type * t, 
-                bool addIndirection, 
+static void printType (std::ostream & out,
+                Type * t,
+                bool addIndirection,
                 std::string name ="") {
     Symbol sym;
     sym.name=name;
@@ -340,16 +340,16 @@ bool BRTCPUKernelCode::PrintCPUArg::isStream() {
 // This function used to do a reinterpret cast to the stream that was on
 // the argument list.  With stream->stream reductions this became obsolete
 // and such arguments are now passed in as the extents, dims, and args, arrays
-void PrintAccessStream(std::ostream &out, 
+void PrintAccessStream(std::ostream &out,
                        unsigned int index,
-                       std::string function, 
+                       std::string function,
                        std::string permissions="") {
    if (function=="getExtents") {
       out << "extents["<<index<<"]";
    }else if(function=="getDimension") {
       out << "dims["<<index<<"]";
    }else if (function=="releaseData") {
-      
+
    }else {
       out << "args["<<index<<"]";
    }
@@ -358,11 +358,11 @@ void PrintAccessStream(std::ostream &out,
    indent(out,3);
    out << "(args["<<index<<"])->"<<function;
    out << "("<<permissions<<")";
-   
-}  
+
+}
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-// This function prints the header (prototype), tight loop definition, and 
+// This function prints the header (prototype), tight loop definition, and
 // cleanup for a dimensionless gather stream.(all gather streams are so marked)
 void BRTCPUKernelCode::
      PrintCPUArg::printDimensionlessGatherStream(std::ostream&out,STAGE s){
@@ -378,9 +378,9 @@ void BRTCPUKernelCode::
             break;
         }
         case DEF:{
-            CPUGatherType cgt (*t,false);        
+            CPUGatherType cgt (*t,false);
             Symbol arg1;arg1.name="arg"+tostring(index);
-            
+
             cgt.printType(out,&arg1,false,0);
             out << "("<<std::endl;
             indent(out,3);
@@ -418,7 +418,7 @@ void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
 	if (!a->isStream())
 		return;
 	bool isIter = (a->form->getQualifiers()&TQ_Iter)!=0;
-        
+
 	if (!nDcube&&(ref==index||isIter))
            return;
 	if (!nDcube) {
@@ -426,14 +426,14 @@ void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
 		out << "iter"<<index<<"=getIndexOf(i+mapbegin,";
                 out << "extents["<<index<<"],";
                 out << "dim, extents["<<ref<<"]);";
-		out << std::endl;           
+		out << std::endl;
         }else {
            indent(out,3);
 		out << "iter"<<index<<" = getIndexOf(i, mapbegin, mapextents,";
                 out << "extents["<<index<<"], ";
                 out << "dim, extents["<<ref<<"]);";
-		out << std::endl;           
-        }   
+		out << std::endl;
+        }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -441,8 +441,8 @@ void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
 // Only streams must be incremented. output streams are always incremented
 // input streams are only incremented if a ratio point has been hit.
 // simple output streams (no nd cube) may be incremented with a ++ operator
-void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out, 
-                                              bool nDcube, 
+void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
+                                              bool nDcube,
                                               unsigned int ref) {
 	if (a->isReduce())
 		return;
@@ -453,7 +453,7 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
            indent(out,2);
            out << "++arg"<<index<<";"<<std::endl;
 	}else if (!nDcube) {
-		indent(out,2);		
+		indent(out,2);
 		out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){";
                 out << std::endl;
 		indent(out,3);
@@ -474,11 +474,11 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
            }else {
               out << "iter"<<index<<"++;"<<std::endl;
            }
-           
-           
+
+
            if (ref!=index) {
               indent(out,2);
-              out << "}"<<std::endl;			
+              out << "}"<<std::endl;
            }
 	}
 }
@@ -488,8 +488,8 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 // simple outputs for non nD case may just add the starting offset.
 // more complex outputs require the indexOf function call and need
 // the ratio variables to be initialized so they may be later used.
-void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out, 
-                                               bool nDcube, 
+void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
+                                               bool nDcube,
                                                unsigned int ref) {
 	if (a->isReduce())
 		return;
@@ -527,7 +527,7 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
            }
            indent (out,1);
            out << "unsigned int iter"<<index<<" = getIndexOf(";
-           if (!nDcube) 
+           if (!nDcube)
               out << "mapbegin,";
            else
               out << "0, mapbegin, mapextents, ";
@@ -541,7 +541,7 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
 // the inner function is called from the tight loop.
 // most items are dereferenced when passed.
 // input streams and outputs for the nD case must have iterX added to them.
-void BRTCPUKernelCode::PrintCPUArg::Use(std::ostream &out, 
+void BRTCPUKernelCode::PrintCPUArg::Use(std::ostream &out,
                                         bool nDcube,
                                         unsigned int ref) {
    bool isIter = (a->form->getQualifiers()&TQ_Iter)!=0;
@@ -555,7 +555,7 @@ void BRTCPUKernelCode::PrintCPUArg::Use(std::ostream &out,
          out << "*arg"<<index;
       }else {
          out << "*(arg"<<index<<" + iter"<<index<<")";
-      }			
+      }
    }
 }
 
@@ -563,7 +563,7 @@ void BRTCPUKernelCode::PrintCPUArg::Use(std::ostream &out,
 // This function prints the Header, tight loop definition and cleanup
 // for any given argument of type ArrayStream (a stream of float2[10] for ex.)
 // Arrays have pass by ref semantics in C++, but are just passed const here.
-void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, 
+void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out,
                                                      STAGE s) {
         Type * t=a->form;
         bool isOut = (t->getQualifiers()&TQ_Out)!=0;
@@ -576,7 +576,7 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out,
         }
         switch (s) {
         case HEADER:{
-            TypeQual tq= t->getQualifiers();            
+            TypeQual tq= t->getQualifiers();
             if ((tq&TQ_Const)==0&&isOut==false&&(tq&TQ_Reduce)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
@@ -626,7 +626,7 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out,
 // so as not to corrupt the legitimate output.
 void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
        Type * t = a->form;
-       bool isStream = (t->type==TT_Stream);        
+       bool isStream = (t->type==TT_Stream);
        switch(s) {
        case HEADER:
           printCPUVanilla(out,s);
@@ -640,25 +640,25 @@ void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
        case CLEANUP:
          break;
        }
-}  
+}
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function prints out streams of basic types and basic type constants.
-// It prints the header (function prototype), definition in tight loop, and 
+// It prints the header (function prototype), definition in tight loop, and
 // cleanup.  Outputs must be passed by reference as indicaed... others are
 // const.
 void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
         TypeQual tq= t->getQualifiers();
         bool isOut = (tq&TQ_Out)!=0;
-        bool isStream = (t->type==TT_Stream);        
+        bool isStream = (t->type==TT_Stream);
         switch(s) {
         case HEADER:{
             if ((tq&TQ_Const)==0&&isOut==false&&(tq&TQ_Reduce)==0){
                 out << "const ";//kernels are only allowed to touch out params
             }
             Symbol name=getSymbol(a->name->name);
-            name=getSymbol("&"+a->name->name);            
+            name=getSymbol("&"+a->name->name);
             if (isStream)
                 t = static_cast<ArrayType*>(t)->subType;
             t->printType(out,&name,true,0);
@@ -694,7 +694,7 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
 	  break;
         }
 }
-    
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function redirects the call to the specific printer based on type
 void BRTCPUKernelCode::PrintCPUArg::printCPUVanilla(std::ostream & out,
@@ -715,7 +715,7 @@ bool BRTCPUKernelCode::PrintCPUArg::useShadowOutput()const {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function calls the appropriate redirect function. Ironic, huh?
-void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out, 
+void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out,
                                              STAGE s) {
       if (useShadowOutput()) {
          printShadowArg(out,s);
@@ -729,7 +729,7 @@ void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out,
 // This function trasnforms the arguments in the decl into a PrintCPUArg
 // class, which has all the utility functions described above...
 // and redirectors and so forth.
-std::vector<BRTCPUKernelCode::PrintCPUArg> 
+std::vector<BRTCPUKernelCode::PrintCPUArg>
 BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
     Type * form = fDef->decl->form;
     assert (form->isFunction());
@@ -740,7 +740,7 @@ BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
                                      i,
                                      shadowOutput,
                                      fDef->decl->isReduce()));
-    }}  
+    }}
     return myArgs;
 }
 
@@ -749,7 +749,7 @@ BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
 // of the CPU. This function may also be called from within other kernels.
 void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
                                            std::string fullname,
-                                           FunctionDef *fDef, 
+                                           FunctionDef *fDef,
                                            bool shadowOutput,
                                            std::string origname) {
     Type * form = fDef->decl->form;
@@ -779,7 +779,7 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
           }
        }
     }
-    out << ")";    
+    out << ")";
     fDef->Block::print(out,0);
 }
 
@@ -789,7 +789,7 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
 // argument to the first reduce function. Other reduce functions are not called
 void BRTCPUKernelCode::printCombineInnerLoop(std::ostream &out)const {
    if (!globals.multiThread) return;//only print if multithreading.
-    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
+    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
     Brook2Cpp_ConvertKernel(fDef);
     BrookCombine_ConvertKernel(fDef);
     std::vector <PrintCPUArg> myArgs = getPrintableArgs (fDef,true);
@@ -797,63 +797,70 @@ void BRTCPUKernelCode::printCombineInnerLoop(std::ostream &out)const {
                         "__"+fDef->decl->name->name+"_cpu_inner",
                         fDef,
                         true,
-                        this->fDef->decl->name->name);    
+                        this->fDef->decl->name->name);
     delete fDef;
 
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This prints the combine caller (if necessary) which sets up locals and calls
-// the combine above.  
-void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
-   if (!globals.multiThread) return;//only print if multithreading.
-    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
+// the combine above.
+void BRTCPUKernelCode::printCombineCode(std::ostream &out) const
+{
+    if (!globals.multiThread) return;//only print if multithreading.
+
+    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
     Brook2Cpp_ConvertKernel(fDef);
     BrookCombine_ConvertKernel(fDef);
-    std::vector <PrintCPUArg> myArgs = getPrintableArgs (fDef,true);        
+    std::vector <PrintCPUArg> myArgs = getPrintableArgs (fDef,true);
     std::string enhanced_name= "__"+fDef->decl->name->name + "_cpu";
     std::string myvoid ("void  ");
+
+
     out << myvoid;
     out << enhanced_name;
 
     std::string whiteOut= whiteout(myvoid + enhanced_name+" (");
     out << " (const std::vector<void *>&args,"<<std::endl;
     out << whiteOut << "const std::vector<const unsigned int *>&extents,";
-    out <<std::endl;
-    out << whiteOut << "const std::vector<unsigned int>&dims,"<<std::endl;
-    out << whiteOut << "unsigned int mapbegin) {"<<std::endl;
+    out << std::endl;
+    out << whiteOut << "const std::vector<unsigned int>&dims," << std::endl;
+    out << whiteOut << "unsigned int mapbegin) {" << std::endl;
+
     indent(out,1);
-    out << "unsigned int i= 0;"<<std::endl;
     initializeIndexOf(out);
+
     unsigned int reference_stream = getReferenceStream(this->fDef);
-    {for (unsigned int i=0;i<myArgs.size();++i) {
+    unsigned int i;
+    for (i=0; i < myArgs.size(); ++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
-    }}
+    }
+
     indent(out,1);
-    out << "unsigned int dim=dims["<<reference_stream<<"];"<<std::endl;
-    {for (unsigned int i=0;i<myArgs.size();++i) {
+    for (i=0; i < myArgs.size(); ++i) {
           myArgs[i].InitialSet(out,false,reference_stream);
-    }}
-    indent(out,2);out<< "__" <<fDef->decl->name->name<<"_cpu_inner (";
-    out << std::endl;
-    {for (unsigned int i=0;i<myArgs.size();++i) {
-        if (i!=0)
-            out <<","<<std::endl;
+    }
+
+    indent(out,2);
+    out << "__" <<fDef->decl->name->name<<"_cpu_inner (" << std::endl;
+    for (i = 0; i < myArgs.size(); ++i) {
+        if (i != 0) out << "," << std::endl;
         indent(out,3);
-        myArgs[i].Use(out,false,reference_stream);
-    }}
+        myArgs[i].Use(out, false, reference_stream);
+    }
     printIndexOfCallingArgs(out);
-    out<< ");"<<std::endl;
-    {for (unsigned int i=0;i<myArgs.size();++i) {
+    out<< ");" << std::endl;
+
+    for (i = 0; i < myArgs.size(); ++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
-    }}    
-    out << "}"<<std::endl;   
+    }
+    out << "}" << std::endl;
     delete fDef;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-// This function prints indexof args in headers as necessary for the given 
+// This function prints indexof args in headers as necessary for the given
 // function.
 // The FunctionProp map determines the necessity by looking at the dag.
 void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
@@ -927,7 +934,7 @@ void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
        }
        {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].ResetNewLine(out,nDcube,reference_stream);
-       }}          
+       }}
        indent(out,2);
        out << "}"<<std::endl;
 }
@@ -935,10 +942,10 @@ void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function will print out the tight loop for the given function.
 // This works on maps and reduce to single value.
-void BRTCPUKernelCode::printTightLoop(std::ostream&out, 
-                                      FunctionDef * fDef, 
+void BRTCPUKernelCode::printTightLoop(std::ostream&out,
+                                      FunctionDef * fDef,
                                       std::vector<PrintCPUArg> myArgs,
-                                      bool reduceneeded)const{ 
+                                      bool reduceneeded)const{
     Symbol enhanced_name;
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
     std::string myvoid("void  ");
@@ -971,7 +978,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     indent(out,1); out << "unsigned int i=0; "<<std::endl;
     if (reduceneeded) {
        indent(out,1); out << "if (mapextent) {"<<std::endl;
-       
+
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
        out << std::endl;
        {for (unsigned int i=0;i<myArgs.size();++i) {
@@ -1002,17 +1009,17 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
-    }}    
-    out << "}"<<std::endl;     
+    }}
+    out << "}"<<std::endl;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function prints the tight loop that is used for stream->stream
 // Reductions.
-void BRTCPUKernelCode::printNdTightLoop(std::ostream&out, 
-                                        FunctionDef * fDef, 
+void BRTCPUKernelCode::printNdTightLoop(std::ostream&out,
+                                        FunctionDef * fDef,
                                         std::vector<PrintCPUArg> myArgs,
-                                        bool reduceneeded)const{ 
+                                        bool reduceneeded)const{
     Symbol enhanced_name;
     enhanced_name.name = "__"+fDef->decl->name->name + "_ndcpu";
     std::string myvoid("void  ");
@@ -1049,7 +1056,7 @@ void BRTCPUKernelCode::printNdTightLoop(std::ostream&out,
     indent(out,1); out << "i=0; "<<std::endl;
     if (reduceneeded) {
        indent(out,1); out << "if (mapextent) {"<<std::endl;
-       
+
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
        out << std::endl;
        {for (unsigned int i=0;i<myArgs.size();++i) {
@@ -1080,27 +1087,27 @@ void BRTCPUKernelCode::printNdTightLoop(std::ostream&out,
     indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
-    }}    
-    out << "}"<<std::endl;     
+    }}
+    out << "}"<<std::endl;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const
 {
   /* We've already transformed everything, so just print ourselves */
- 
+
 
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
-    
+
     Brook2Cpp_ConvertKernel(fDef);
     std::vector<PrintCPUArg> myArgs=getPrintableArgs(fDef,false);
     printInnerFunction (out,
                         "__"+fDef->decl->name->name+"_cpu_inner",
                         fDef,
                         false,
-                        this->fDef->decl->name->name);    
+                        this->fDef->decl->name->name);
     bool reduceneeded=reduceNeeded(fDef);
-    
+
     if (reduceneeded){
        FunctionDef * baseCase = static_cast<FunctionDef*>(this->fDef->dup());
        Brook2Cpp_ConvertKernel(baseCase);

@@ -4,7 +4,7 @@
   Sorts ARRAYSIZE numbers in O(ARRAYSIZE * lg^2(ARRAYSIZE) ) time.
   ARRAYSIZE should be a power of two
 
-  A good explaination of the parallel sorting algorithm cna be found at:
+  A good explaination of the parallel sorting algorithm can be found at:
   http://www.iti.fh-flensburg.de/lang/algorithmen/sortieren/bitonic/bitonicen.htm
 
 ****************************************************************************/
@@ -28,8 +28,6 @@ kernel void bitonic(iter float idx1<>, float input[ARRAYSIZE], out float output<
   float sign, dir;
   float min, max;
 
-  float foo;
-  
   // either compared with element above or below 
   sign = ( fmod(idx1, twoOffset) < offset) ? 1.0 : -1.0;
 
