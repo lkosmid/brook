@@ -147,18 +147,18 @@ LPDIRECT3DSURFACE9 DX9Texture::getSurfaceHandle()
 DX9Rect DX9Texture::getTextureSubRect( int l, int t, int r, int b ) {
   DX9Rect result;
   result.left = (float)(l) / (float)(width);
-  result.top = 1.0f - (float)(t) / (float)(height);
+  result.top = (float)(b) / (float)(height);
   result.right = (float)(r) / (float)(width);
-  result.bottom = 1.0f - (float)(b) / (float)(height);
+  result.bottom = (float)(t) / (float)(height);
   return result;
 }
 
 DX9Rect DX9Texture::getSurfaceSubRect( int l, int t, int r, int b ) {
   DX9Rect result;
   result.left = -1.0f + (float)(2*l) / (float)(width);
-  result.top = -1.0f + (float)(2*t) / (float)(height);
+  result.top = 1.0f - (float)(2*b) / (float)(height);
   result.right = -1.0f + (float)(2*r) / (float)(width);
-  result.bottom = -1.0f + (float)(2*b) / (float)(height);
+  result.bottom = 1.0f - (float)(2*t) / (float)(height);
   return result;
 }
 
@@ -180,6 +180,8 @@ void DX9Texture::getTopLeftPixel( float4& outResult ) {
 
 	float* output = (float*)&outResult;
 
+  DX9Trace( "pixel was: %f %f %f %f", outResult.x, outResult.y, outResult.z, outResult.w );
+
 	const float* inputPixel = inputLine;
 	const float* input = inputPixel;
 
@@ -187,6 +189,8 @@ void DX9Texture::getTopLeftPixel( float4& outResult ) {
 	{
 	  *output++ = *input++;
 	}
+
+  DX9Trace( "pixel is: %f %f %f %f", outResult.x, outResult.y, outResult.z, outResult.w );
 
 	result = shadowSurface->UnlockRect();
 	DX9CheckResult( result );

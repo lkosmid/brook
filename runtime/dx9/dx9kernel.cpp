@@ -154,6 +154,65 @@ void DX9Kernel::Map() {
 
 void DX9Kernel::Reduce() {
   DX9Trace("Reduce");
+
+  if( outputReductionType == __BRTSTREAM )
+    ReduceToStream();
+  else
+    ReduceToValue();
+}
+
+DX9Kernel::~DX9Kernel() {
+  // Does nothing
+}
+
+IDirect3DDevice9* DX9Kernel::getDevice() {
+  return runtime->getDevice();
+}
+
+void DX9Kernel::initialize( const char* source ) {
+  pixelShader = DX9PixelShader::create( runtime, source );
+
+  // TIM: initialize all the rects, just in case
+  outputRect = DX9Rect(0,0,0,0);
+  for( int i = 0; i < 8; i++ )
+  {
+    inputRects[i] = DX9Rect(0,0,0,0);
+    inputTextures[i] = NULL;
+  }
+}
+
+void DX9Kernel::PushSampler( DX9Stream* s )
+{
+  int samplerIndex = argumentSamplerIndex++;
+  DX9Trace("PushSampler[%d]",samplerIndex);
+  IDirect3DTexture9* texture = s->getTextureHandle();
+  inputTextures[samplerIndex] = texture;
+}
+
+void DX9Kernel::PushTexCoord( const DX9Rect& r )
+{
+  int textureUnit = argumentTexCoordIndex++;
+  DX9Trace("PushTexCoord[%d]",textureUnit);
+  inputRects[textureUnit] = r;
+}
+
+void DX9Kernel::ClearInputs()
+{
+  argumentStreamIndex = 0;
+  argumentSamplerIndex = 0;
+  argumentTexCoordIndex = 0;
+  argumentConstantIndex = 0;
+  argumentOutputIndex = 0;
+  argumentReductionIndex = 0;
+}
+
+void DX9Kernel::ReduceToStream()
+{
+  DX9Fail("Can't reduce to stream right now");
+}
+
+void DX9Kernel::ReduceToValue()
+{
   HRESULT result;
 
   int streamCount = argumentStreamIndex;
@@ -201,22 +260,23 @@ void DX9Kernel::Reduce() {
   }
 
   // first pass - just copy the data into the reduction buffer...
+  // this step *could* be elliminated in the future
   result = getDevice()->SetPixelShader( passthroughPixelShader->getHandle() );
   DX9CheckResult( result );
 
   inputRects[0] = inputStream->getTextureSubRect( 0, 0, inputWidth, inputHeight );
-  outputRect = reductionBuffer->getTextureSubRect( 0, 0, inputWidth, inputHeight );
+  outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, inputWidth, inputHeight );
   result = getDevice()->SetTexture( 0, inputStream->getTextureHandle() );
   DX9CheckResult( result );
   runtime->execute( outputRect, inputRects );
 
-  // remaining passes - 'fold' the data in half repeatedly...
-  result = getDevice()->SetPixelShader( passthroughPixelShader->getHandle() );
+  // remaining passes - fold the data in half as needed
+  result = getDevice()->SetPixelShader( pixelShader->getHandle() );
   DX9CheckResult( result );
 
   result = getDevice()->SetTexture( 0, reductionBuffer->getTextureHandle() );
   DX9CheckResult( result );
-  result = getDevice()->SetTexture( 0, reductionBuffer->getTextureHandle() );
+  result = getDevice()->SetTexture( 1, reductionBuffer->getTextureHandle() );
   DX9CheckResult( result );
   int remainingWidth = inputWidth;
   int remainingHeight = inputHeight;
@@ -238,71 +298,23 @@ void DX9Kernel::Reduce() {
     outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, remainingWidth, rowsToRemove );
     runtime->execute( outputRect, inputRects );
     remainingHeight -= rowsToRemove;
-  }
+   } 
 
   result = getDevice()->EndScene();
   DX9CheckResult( result );
-  
-  float4 reductionResult;
+
+  float4 reductionResult = {-1,-1,-1,-1};
   reductionBuffer->getTopLeftPixel( reductionResult );
   if( outputReductionType == __BRTFLOAT )
-    *((float*)&outputReductionData) = *((float*)&reductionResult);
+    *((float*)outputReductionData) = *((float*)&reductionResult);
   else if( outputReductionType == __BRTFLOAT2 )
-    *((float2*)&outputReductionData) = *((float2*)&reductionResult);
+    *((float2*)outputReductionData) = *((float2*)&reductionResult);
   else if( outputReductionType == __BRTFLOAT3 )
-    *((float3*)&outputReductionData) = *((float3*)&reductionResult);
+    *((float3*)outputReductionData) = *((float3*)&reductionResult);
   else if( outputReductionType == __BRTFLOAT4 )
-    *((float4*)&outputReductionData) = *((float4*)&reductionResult);
+    *((float4*)outputReductionData) = *((float4*)&reductionResult);
   else
     DX9Fail("Invalid reduction target type for DX9");
 
-  //result = getDevice()->Present( NULL, NULL, NULL, NULL );
-  //DX9CheckResult( result );
-
   ClearInputs();
-}
-
-DX9Kernel::~DX9Kernel() {
-  // Does nothing
-}
-
-IDirect3DDevice9* DX9Kernel::getDevice() {
-  return runtime->getDevice();
-}
-
-void DX9Kernel::initialize( const char* source ) {
-  pixelShader = DX9PixelShader::create( runtime, source );
-
-  // TIM: initialize all the rects, just in case
-  outputRect = DX9Rect(0,0,0,0);
-  for( int i = 0; i < 8; i++ )
-  {
-    inputRects[i] = DX9Rect(0,0,0,0);
-    inputTextures[i] = NULL;
-  }
-}
-
-void DX9Kernel::PushSampler( DX9Stream* s )
-{
-  int samplerIndex = argumentSamplerIndex++;
-  DX9Trace("PushSampler[%d]",samplerIndex);
-  IDirect3DTexture9* texture = s->getTextureHandle();
-  inputTextures[samplerIndex] = texture;
-}
-
-void DX9Kernel::PushTexCoord( const DX9Rect& r )
-{
-  int textureUnit = argumentTexCoordIndex++;
-  DX9Trace("PushTexCoord[%d]",textureUnit);
-  inputRects[textureUnit] = r;
-}
-
-void DX9Kernel::ClearInputs()
-{
-  argumentStreamIndex = 0;
-  argumentSamplerIndex = 0;
-  argumentTexCoordIndex = 0;
-  argumentConstantIndex = 0;
-  argumentOutputIndex = 0;
-  argumentReductionIndex = 0;
 }

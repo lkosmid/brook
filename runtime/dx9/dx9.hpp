@@ -44,6 +44,9 @@ namespace brook {
     void PushTexCoord( const DX9Rect& r );
     void ClearInputs();
 
+    void ReduceToStream();
+    void ReduceToValue();
+
     int argumentStreamIndex;
     int argumentSamplerIndex;
     int argumentTexCoordIndex;

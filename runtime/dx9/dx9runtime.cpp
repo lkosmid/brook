@@ -104,6 +104,14 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
   result = vertexBuffer->Lock( 0, 0, (void**)&vertices, D3DLOCK_DISCARD );
   DX9CheckResult( result );
 
+  DX9Trace("execute:");
+  DX9Trace("position: (%f, %f) - (%f, %f)",
+    outputRect.left, outputRect.top, outputRect.right, outputRect.bottom );
+  DX9Trace("texture0: (%f, %f) - (%f, %f)",
+    inputRects[0].left, inputRects[0].top, inputRects[0].right, inputRects[0].bottom );
+  DX9Trace("texture1: (%f, %f) - (%f, %f)",
+    inputRects[1].left, inputRects[1].top, inputRects[1].right, inputRects[1].bottom );
+
   DX9Vertex vertex;
   for( int i = 0; i < 4; i++ )
   {
