@@ -31,7 +31,11 @@ extern "C" {
  */
 
 char *
-compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outUsage, bool inValidate) {
+compile_fxc (const char *name, 
+             const char *shader, 
+             CodeGenTarget target, 
+             ShaderResourceUsage* outUsage,
+             bool inValidate) {
 
   static const int kInputFileArgument = 5;
   static const int kOutputFileArgument = 4;
@@ -44,10 +48,13 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
                    "/DFXC=1", NULL };
   char *fpcode,  *errcode;
 
-  FILE *fp = fopen (globals.shaderoutputname, "wb+");
+  std::string inputfname  = std::string(name) + ".cg";
+  std::string outputfname = std::string(name) + ".ps";
+
+  FILE *fp = fopen (inputfname.c_str(), "wb+");
   if (fp == NULL) {
-    fprintf (stderr, "Unable to open tmp file %s\n", globals.shaderoutputname);
-    return NULL;
+     fprintf (stderr, "Unable to open tmp file %s\n", outputfname.c_str());
+     return NULL;
   }
   fwrite(shader, sizeof(char), strlen(shader), fp);
   fclose(fp);
@@ -62,22 +69,22 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
      return NULL;
   }
   
-  argv[kOutputFileArgument] = (char *) malloc(strlen("/Fc.ps") +
-                            strlen(globals.shaderoutputname) + 1);
-  sprintf (argv[kOutputFileArgument], "/Fc%s.ps", globals.shaderoutputname);
-  argv[kInputFileArgument] = globals.shaderoutputname;
+  argv[kOutputFileArgument] = strdup ((std::string("/Fc") + outputfname).c_str());
+  argv[kInputFileArgument]  = strdup (inputfname.c_str());
 
   /* Run FXC */
   errcode = Subprocess_Run(argv, NULL);
 
-  if (!globals.keepFiles) 
-    remove(globals.shaderoutputname);
+  if (!globals.keepFiles)
+     remove(inputfname.c_str());
 
   if (errcode == NULL) {
     fprintf(stderr, "%s resulted in an error,"
             "skipping ps20 / dx9 target ", argv[0]);
     
      remove(argv[kOutputFileArgument]+3);
+     free(argv[kOutputFileArgument]);
+     free(argv[kInputFileArgument]);
      return NULL;
   }
 
@@ -91,6 +98,8 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
              argv[kOutputFileArgument]+3);
     fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
             errcode);
+    free(argv[kOutputFileArgument]);
+    free(argv[kInputFileArgument]);
     return NULL;
   }
 
@@ -201,8 +210,12 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
   free(comments);
   
   fclose(fp);
-  remove(argv[kOutputFileArgument]+3);
+
+  if (!globals.keepFiles)
+     remove(argv[kOutputFileArgument]+3);
+
   free(argv[kOutputFileArgument]);
+  free(argv[kInputFileArgument]);
 
   if (target == CODEGEN_ARB) {
      std::istringstream ifpcode(fpcode);

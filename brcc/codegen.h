@@ -10,10 +10,21 @@
 #include "decl.h"
 
 typedef enum {
-   CODEGEN_PS20,
-   CODEGEN_FP30,
-   CODEGEN_ARB
+   CODEGEN_PS20 = 0,
+   CODEGEN_FP30 = 1,
+   CODEGEN_ARB  = 2
 } CodeGenTarget;
+
+struct ShaderResourceUsage
+{
+  int arithmeticInstructionCount;
+  int textureInstructionCount;
+  int samplerRegisterCount;
+  int interpolantRegisterCount;
+  int constantRegisterCount;
+  int temporaryRegisterCount;
+  int outputRegisterCount;
+};
 
 static inline const char *
 CodeGen_TargetName(CodeGenTarget t) {
@@ -21,6 +32,9 @@ CodeGen_TargetName(CodeGenTarget t) {
            t == CODEGEN_FP30 ? "fp30" :
            "arb");
 }
+
+void CodeGen_Init(void);
+
 
 extern char *
 CodeGen_GenerateCode(Type *retType, const char *name,

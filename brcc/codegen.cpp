@@ -36,6 +36,7 @@ extern "C" {
 #include "fxc.h"
 #include "cgc.h"
 
+
 // structures to store information about the resources
 // used in each pass/technique
 struct shader_input_info
@@ -102,6 +103,39 @@ struct technique_info
   bool outputAddressTranslation;
   bool inputAddressTranslation;
 };
+
+
+static char * (*shadercompile[3]) (const char *name,
+                                   const char *shader, 
+                                   CodeGenTarget target, 
+                                   ShaderResourceUsage* outUsage, 
+                                   bool inValidate);
+
+void
+CodeGen_Init(void) {
+   switch (globals.favorcompiler) {
+   case COMPILER_DEFAULT:
+      shadercompile[CODEGEN_PS20] = compile_fxc;
+      shadercompile[CODEGEN_FP30] = compile_cgc;
+      shadercompile[CODEGEN_ARB]  = compile_fxc;
+      break;
+   case COMPILER_CGC:
+      shadercompile[CODEGEN_PS20] = compile_cgc;
+      shadercompile[CODEGEN_FP30] = compile_cgc;
+      shadercompile[CODEGEN_ARB]  = compile_cgc;
+      break;
+   case COMPILER_FXC:
+      shadercompile[CODEGEN_PS20] = compile_fxc;
+      shadercompile[CODEGEN_FP30] = compile_cgc;
+      shadercompile[CODEGEN_ARB]  = compile_fxc;
+      break;
+   default:
+      fprintf (stderr, 
+               "Error Unknown compiler specified: %d\n", 
+               globals.favorcompiler);
+      exit(1);
+   }
+}
 
 /*
  * generate_hlsl_code --
@@ -753,15 +787,15 @@ static void
 generate_shader_support(std::ostream& shader)
 {
   shader << "#ifdef USERECT\n";
-  shader << "#define _stype   samplerRECT\n";
+  shader << "#define _stype  samplerRECT\n";
   shader << "#define _sfetch  texRECT\n";
   shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) texRECT((s),(i))\n";
   shader << "#define SKIPSCALEBIAS\n";
   shader << "#else\n";
-  shader << "#define _stype   sampler\n";
+  shader << "#define _stype   sampler2D\n";
   shader << "#define _sfetch  tex2D\n";
-  shader << "#define __sample1(s,i) tex1D((s),(i))\n";
+  shader << "#define __sample1(s,i) tex2D((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) tex2D((s),(i))\n";
   shader << "#endif\n\n";
 
@@ -1509,10 +1543,11 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
 
     if (globals.keepFiles) {
       std::ofstream out;
-
-      out.open(globals.shaderoutputname);
+      std::string fname =  std::string(globals.shaderoutputname) + "_" + name + ".cg";
+      
+      out.open(fname.c_str());
       if (out.fail()) {
-        std::cerr << "***Unable to open " <<globals.shaderoutputname<< "\n";
+        std::cerr << "***Unable to open " << fname << "\n";
       } else {
         out << shadercode;
         out.close();
@@ -1522,21 +1557,12 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
        fprintf(stderr, "Generating %s code for %s outputs [%d, %d).\n",
                CodeGen_TargetName(target), name, firstOutput, firstOutput+outputCount);
     }
-    
-    switch (target) {
-    case CODEGEN_PS20:
-       fpcode = compile_fxc(shadercode, target);
-       break;
-    case CODEGEN_ARB:
-       fpcode = compile_fxc(shadercode, target);
-       break;
-    case CODEGEN_FP30:
-       fpcode = compile_cgc(shadercode, target);
-       break;
-    default:
-       std::cerr << "Unknown compile target.\n";
-       exit(1);
-    }
+
+    assert (target < 3 && target >= 0);
+    assert (shadercompile[target]);
+
+    fpcode = shadercompile[target]((std::string(globals.shaderoutputname) + "_" + name).c_str(), 
+                                   shadercode, target, 0, true);
     
     if (fpcode==NULL) {
        fprintf (stderr,"for kernel %s.\n",

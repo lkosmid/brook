@@ -6,6 +6,11 @@
 #define TARGET_FP30     (1<<2)
 #define TARGET_ARB      (1<<3)
 #define TARGET_MULTITHREADED_CPU (1<<4)
+
+#define COMPILER_DEFAULT 0
+#define COMPILER_CGC     1
+#define COMPILER_FXC     2
+
 struct globals_struct {
   globals_struct() {
       verbose=false,parseOnly=false;
@@ -29,6 +34,7 @@ struct globals_struct {
   bool enableGPUAddressTranslation;
   bool allowKernelToKernel;
   bool noTypeChecks;
+  int favorcompiler;
   // TIM: hacked flag for now
   bool enableKernelSplitting;
 };

@@ -33,28 +33,35 @@ extern "C" {
 
 
 char *
-compile_cgc (const char *cgcode, CodeGenTarget target) {
+compile_cgc (const char * /*name*/,
+             const char *shader, 
+             CodeGenTarget target, 
+             ShaderResourceUsage* /*outUsage*/, 
+             bool /*inValidate*/) {
 
-  char *argv[16] = { "cgc", "-quiet", "-profile", NULL,
-                     NULL, "-DCGC=1", NULL };
+
+  char *argv[16] = { "cgc", "-quiet", "-DCGC=1", "-profile", NULL,
+                     NULL, NULL, NULL, NULL};
   char *fpcode, *endline, *startline;
-  char* tempCode = strdup( cgcode );
+  char* tempCode = strdup( shader );
   char arbfp[]="arbfp1";
   char fp30[]="fp30";
   char ps20[]="ps_2_0";
   char userect[]="-DUSERECT=1";
+  char maxindirections[]="-profileopts MaxTexIndirections=4";
 
   switch (target) {
   case CODEGEN_PS20:
-     argv[3] = ps20;
+     argv[4] = ps20;
      break;
   case CODEGEN_FP30:
-     argv[3] = fp30;
-     argv[4] = userect;
+     argv[4] = fp30;
+     argv[5] = userect;
      break;
   case CODEGEN_ARB: 
-     argv[3] = arbfp;
-     argv[4] = userect;
+     argv[4] = arbfp;
+     argv[5] = userect;
+     argv[6] = maxindirections;
      break;
   default: 
      fprintf(stderr, "Unsupported Cgc target.\n");
@@ -72,9 +79,13 @@ compile_cgc (const char *cgcode, CodeGenTarget target) {
      return NULL;
   }
 
+  if (target == CODEGEN_PS20)
+     return fpcode;
+
   // cgc has this annoying feature that it outputs warnings
   // and errors to stdout rather than stderr.  So lets
   // figure out where the fragment code really starts...
+
   startline = strstr (fpcode, "!!");
   if (startline) {
      char *p, *q;
@@ -88,30 +99,30 @@ compile_cgc (const char *cgcode, CodeGenTarget target) {
      
      endline = strstr (fpcode, "\nEND\n");
   }
-
+  
   if (!startline || !endline ) {
-      fprintf(stderr, "Unable to parse returned CG Code: %s\n",
-	      fpcode);
-      return NULL;
+     fprintf(stderr, "Unable to parse returned CG Code: %s\n",
+                fpcode);
+     return NULL;
   }
-
+  
   // Trim off the execess cgc commentary
   endline += strlen("\nEND");
   *endline = '\0';
   endline++;
-
+  
   // Print any warning messages
   if (startline != fpcode) {
-    fprintf (stderr, "cgc warnings:\n");
-    fwrite (fpcode, startline-fpcode, 1, stderr);
+     fprintf (stderr, "cgc warnings:\n");
+     fwrite (fpcode, startline-fpcode, 1, stderr);
   }
-
+  
   // Print the commentary
   if (globals.verbose) {
      fprintf(stderr, "***Summary information from cgc:\n");
      fwrite (endline, strlen(endline), 1, stderr);
   }
-
+  
   // Trim off the warning messages
   memcpy (fpcode, startline, endline - startline);
   return fpcode;

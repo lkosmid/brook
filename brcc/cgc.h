@@ -9,6 +9,7 @@
 #include "codegen.h"
 
 char *
-compile_cgc (const char *shader, CodeGenTarget target);
+compile_cgc (const char *name, const char *shader, CodeGenTarget target, 
+             ShaderResourceUsage* outUsage = NULL, bool inValidate = true);
 
 #endif

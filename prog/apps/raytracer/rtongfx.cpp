@@ -1,5 +1,5 @@
-//#define CBOX
-#define GLASSNER
+#define CBOX
+//#define GLASSNER
 
 #include <stdlib.h>
 #include <stdio.h>

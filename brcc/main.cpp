@@ -24,6 +24,8 @@ extern "C" {
 #include "ctool.h"
 #include "brtscatter.h"
 #include "brtvout.h"
+#include "codegen.h"
+
 struct globals_struct globals;
 
 
@@ -51,6 +53,7 @@ usage (void) {
         "\t-o prefix\tprefix prepended to all output files\n"
         "\t-w workspace\tworkspace size (16 - 2048, default 1024)\n"
         "\t-p shader\tcpu / ps20 / fp30 / cpumt (can specify multiple)\n"
+        "\t-f compiler\tfavor a particular compiler (cgc / fxc / default)\n"  
         "\n");
 
   exit(1);
@@ -74,7 +77,7 @@ parse_args (int argc, char *argv[]) {
    */
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-  while ((opt = getopt(argc, argv, "d:hkntyANSlo:p:vw")) != EOF) {
+  while ((opt = getopt(argc, argv, "d:hkntyANSlf:o:p:vw")) != EOF) {
      switch(opt) {
      case 'h':
         usage();
@@ -105,6 +108,16 @@ parse_args (int argc, char *argv[]) {
 	if (outputprefix) usage();
 	outputprefix = strdup(optarg);
 	break;
+     case 'f':
+       if (strcasecmp (optarg, "cgc") == 0)
+         globals.favorcompiler = COMPILER_CGC;
+       else if (strcasecmp (optarg, "fxc") == 0)
+         globals.favorcompiler = COMPILER_FXC;
+       else if (strcasecmp (optarg, "default") == 0)
+         globals.favorcompiler = COMPILER_DEFAULT;
+       else
+         usage();
+       break;
      case 'p':
 	if (strcasecmp (optarg, "cpu") == 0)
 	  globals.target |= TARGET_CPU;
@@ -168,9 +181,7 @@ parse_args (int argc, char *argv[]) {
     outputprefix[n-suffixLength] = (char)  '\0';
   }
 
-  globals.shaderoutputname = (char *) malloc (strlen(outputprefix) +
-                                              strlen(".cg") + 1);
-  sprintf (globals.shaderoutputname, "%s.cg",outputprefix);
+  globals.shaderoutputname = strdup(outputprefix);
 
   globals.coutputname = (char *) malloc (strlen(outputprefix) +
 					 suffixLength + 2);
@@ -179,6 +190,9 @@ parse_args (int argc, char *argv[]) {
   } else {
     sprintf (globals.coutputname, "%s.cpp",outputprefix);
   }
+
+  // Initialize the codegen unit.
+  CodeGen_Init();
 
   free(outputprefix);
 }

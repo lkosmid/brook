@@ -38,7 +38,7 @@ void SplitCompilerHLSL::compileShader(
   bool shouldValidate = inConfiguration.validateShaders;
 //  bool shouldValidate = false;
 
-  char* assemblerBuffer = compile_fxc( inHighLevelCode.c_str(), CODEGEN_PS20, &usage, shouldValidate );
+  char* assemblerBuffer = compile_fxc( "unknown", inHighLevelCode.c_str(), CODEGEN_PS20, &usage, shouldValidate );
 /*
   std::cout << "size is " << inHighLevelCode.length() << std::endl;
 
