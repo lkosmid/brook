@@ -44,7 +44,7 @@ namespace {
   class AtStartup {
     static AtStartup atStartup;
     AtStartup() {
-      ::brook::RunTime* runtime = ::brook::createRunTime( true );
+      ::brook::Runtime* runtime = ::brook::createRuntime( true );
       if (0)
          runtime=0;
     }
