@@ -100,7 +100,7 @@ DX9RunTime::~DX9RunTime() {
   // TIM: finalize D3D
 }
 
-void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
+void DX9RunTime::execute( const DX9FatRect& outputRect, const DX9FatRect* inputRects )
 {
   HRESULT result;
   initializeVertexBuffer();
@@ -108,32 +108,20 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
   DX9Vertex* vertices;
   result = vertexBuffer->Lock( 0, 0, (void**)&vertices, D3DLOCK_DISCARD );
   DX9CheckResult( result );
-/*
-  DX9Trace("execute:");
-  DX9Trace("position: (%f, %f) - (%f, %f)",
-    outputRect.left, outputRect.top, outputRect.right, outputRect.bottom );
-  DX9Trace("texture0: (%f, %f) - (%f, %f)",
-    inputRects[0].left, inputRects[0].top, inputRects[0].right, inputRects[0].bottom );
-  DX9Trace("texture1: (%f, %f) - (%f, %f)",
-    inputRects[1].left, inputRects[1].top, inputRects[1].right, inputRects[1].bottom );
-*/
+
   DX9Vertex vertex;
   for( int i = 0; i < 4; i++ )
   {
-    int xIndex = (i&0x01) ? 0 : 2;
-    int yIndex = (i&0x02) ? 3 : 1;
+    float4 position = outputRect.vertices[i];
 
     // TIM: bad
-    vertex.position.x = outputRect[xIndex];
-    vertex.position.y = outputRect[yIndex];
+    vertex.position.x = position.x;
+    vertex.position.y = position.y;
     vertex.position.z = 0.5f;
     vertex.position.w = 1.0f;
 
     for( int t = 0; t < 8; t++ )
-    {
-      vertex.texcoords[t].x = inputRects[t][xIndex];
-      vertex.texcoords[t].y = inputRects[t][yIndex];
-    }
+      vertex.texcoords[t] = inputRects[t].vertices[i];
 
     *vertices++ = vertex;
   }
@@ -160,14 +148,14 @@ DX9Texture* DX9RunTime::getReductionBuffer() {
 static const D3DVERTEXELEMENT9 kDX9VertexElements[] =
 {
 	{ 0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-	{ 0, 4*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-	{ 0, 6*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
-	{ 0, 8*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 2 },
-	{ 0, 10*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 3 },
-	{ 0, 12*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 4 },
-	{ 0, 14*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 5 },
-	{ 0, 16*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 6 },
-	{ 0, 18*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 7 },
+	{ 0, 4*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+	{ 0, 8*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+	{ 0, 12*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 2 },
+	{ 0, 16*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 3 },
+	{ 0, 20*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 4 },
+	{ 0, 24*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 5 },
+	{ 0, 28*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 6 },
+	{ 0, 32*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 7 },
 	D3DDECL_END()
 };
 

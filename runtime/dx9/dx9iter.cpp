@@ -52,12 +52,26 @@ DX9Iter::DX9Iter( DX9RunTime * runtime,
 
   if( dimensionCount == 1 )
   {
-    DX9Assert( componentCount == 1, "no more than float 1D iterator in DX9 right now" );
-    
-    rect.left = ranges[0];
-    rect.right = ranges[1];
-    rect.top = 0;
-    rect.bottom = 0;
+    float4 min = {0,0,0,0};
+    float4 max = {0,0,0,0};
+
+    int i;
+    for( i = 0; i < componentCount; i++ )
+    {
+      ((float*)&min)[i] = ranges[i];
+      ((float*)&max)[i] = ranges[i+componentCount];
+    }
+    // fill in remaining components just in case...
+    for( ; i < 4; i++ )
+    {
+      ((float*)&min)[i] = (i==4) ? 1.0f : 0.0f;
+      ((float*)&max)[i] = (i==4) ? 1.0f : 0.0f;
+    }
+
+    rect.vertices[0] = max;
+    rect.vertices[1] = min;
+    rect.vertices[2] = max;
+    rect.vertices[3] = min;
   }
   else
   {
@@ -66,10 +80,7 @@ DX9Iter::DX9Iter( DX9RunTime * runtime,
     float minY = ranges[1];
     float maxX = ranges[2];
     float maxY = ranges[3];
-    rect.left = minX;
-    rect.right = maxX;
-    rect.bottom = minY;
-    rect.top = maxY;
+    rect = DX9Rect( minX, maxY, maxX, minY );
   }
 }
 

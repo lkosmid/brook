@@ -1,0 +1,141 @@
+// iterator_dimensions.br
+// Tests the various dimensionalities of iterator streams allowed.
+
+#include <stdio.h>
+
+kernel void copy1( iter float i<>, out float output<> ) {
+	output = i;
+}
+
+kernel void copy2( iter float2 i<>, out float2 output<> ) {
+	output = i;
+}
+
+kernel void copy3( iter float3 i<>, out float3 output<> ) {
+	output = i;
+}
+
+kernel void copy4( iter float4 i<>, out float4 output<> ) {
+	output = i;
+}
+
+void test1( int extent, float min, float max )
+{
+	iter float iterator< extent > = BRTIter( min, max );
+	float stream< extent >;
+	float* stream_data;
+	int i, count;
+	
+	copy1( iterator, stream );
+	
+	stream_data = (float*)malloc( extent*sizeof(float) );
+	streamWrite( stream, stream_data );
+	count = 0;
+	for( i = 0; i < extent; i++ )
+	{
+		if( count++ == 10 )
+		{
+			printf( "\n" );
+			count = 1;
+		}
+		printf( "%6.3f ", stream_data[i] );
+	}
+	printf( "\n" );
+	
+	free( stream_data );
+}
+
+void test2( int extent, float minX, float minY, float maxX, float maxY )
+{
+	iter float2 iterator< extent > = BRTIter( minX, minY, maxX, maxY );
+	float2 stream< extent >;
+	float2* stream_data;
+	int i, count;
+	
+	copy2( iterator, stream );
+	
+	stream_data = (float2*)malloc( extent*sizeof(float2) );
+	streamWrite( stream, stream_data );
+	count = 0;
+	for( i = 0; i < extent; i++ )
+	{
+		if( count++ == 10 )
+		{
+			printf( "\n" );
+			count = 1;
+		}
+		printf( "{%6.3f %6.3f} ", stream_data[i].x, stream_data[i].y );
+	}
+	printf( "\n" );
+	
+	free( stream_data );
+}
+
+void test3( int extent, float minX, float minY, float minZ, float maxX, float maxY, float maxZ )
+{
+	iter float3 iterator< extent > = BRTIter( minX, minY, minZ, maxX, maxY, maxZ );
+	float3 stream< extent >;
+	float3* stream_data;
+	int i, count;
+	
+	copy3( iterator, stream );
+	
+	stream_data = (float3*)malloc( extent*sizeof(float3) );
+	streamWrite( stream, stream_data );
+	count = 0;
+	for( i = 0; i < extent; i++ )
+	{
+		if( count++ == 10 )
+		{
+			printf( "\n" );
+			count = 1;
+		}
+		printf( "{%6.3f %6.3f %6.3f} ", stream_data[i].x, stream_data[i].y, stream_data[i].z );
+	}
+	printf( "\n" );
+	
+	free( stream_data );
+}
+
+void test4( int extent, float minX, float minY, float minZ, float minW, float maxX, float maxY, float maxZ, float maxW )
+{
+	iter float4 iterator< extent > = BRTIter( minX, minY, minZ, minW, maxX, maxY, maxZ, maxW );
+	float4 stream< extent >;
+	float4* stream_data;
+	int i, count;
+	
+	copy4( iterator, stream );
+	
+	stream_data = (float4*)malloc( extent*sizeof(float4) );
+	streamWrite( stream, stream_data );
+	count = 0;
+	for( i = 0; i < extent; i++ )
+	{
+		if( count++ == 10 )
+		{
+			printf( "\n" );
+			count = 1;
+		}
+		printf( "{%6.3f %6.3f %6.3f %6.3f} ", stream_data[i].x, stream_data[i].y, stream_data[i].z, stream_data[i].w );
+	}
+	printf( "\n" );
+	
+	free( stream_data );
+}
+
+int main()
+{
+	printf( " -- 1D, float, 10 elements, 0 - 10\n" );
+	test1( 10, 0.0f, 10.0f );
+	printf( " -- 1D, float, 10 elements, 10 - 0\n" );
+	test1( 10, 9.0f, -1.0f );
+	printf( " -- 1D, float, 128 elements, 0 - 64\n" );
+	test1( 128, 0.0f, 64.0f );
+	printf( " -- 1D, float2, 8 elements, (0,0) - (8,4)\n" );
+	test2( 8, 0.0f, 0.0f, 8.0f, 4.0f );
+	printf( " -- 1D, float3, 4 elements, (0,0,0) - (8,4,2)\n" );
+	test3( 4, 0.0f, 0.0f, 0.0f, 8.0f, 4.0f, 2.0f );
+	printf( " -- 1D, float4, 4 elements, (0,0,0,0) - (8,4,2,1)\n" );
+	test4( 4, 0.0f, 0.0f, 0.0f, 0.0f, 8.0f, 4.0f, 2.0f, 1.0f );
+	return 0;
+}

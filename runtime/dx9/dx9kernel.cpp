@@ -234,7 +234,7 @@ void DX9Kernel::PushSampler( DX9Stream* s )
   inputTextures[samplerIndex] = texture;
 }
 
-void DX9Kernel::PushTexCoord( const DX9Rect& r )
+void DX9Kernel::PushTexCoord( const DX9FatRect& r )
 {
   int textureUnit = argumentTexCoordIndex++;
   DX9Trace("PushTexCoord[%d]",textureUnit);
@@ -468,8 +468,9 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
   int slopBufferCount = 0;
   while( remainingFactor > 1 )
   {
-    // TIM: debugging
+#if defined(BROOK_DX9_TRACE_REDUCE)
     DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, slopBufferCount, dim );
+#endif
 
     if( remainingFactor & 1 ) // odd factor
     {
@@ -519,8 +520,9 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
 
   DX9Assert( remainingExtent == outputExtent, "Failed to reduce by the right amount!!!" );
 
-  // TIM: debugging
+#if defined(BROOK_DX9_TRACE_REDUCE)
   DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, slopBufferCount, dim );
+#endif
 
   // if we have slop buffers, composite them into place
   if( slopBufferCount != 0 )
@@ -533,11 +535,10 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
       0, 0, outputExtent, remainingOtherExtent, dim );
     runtime->execute( outputRect, inputRects );
 
-    // TIM: debugging
+#if defined(BROOK_DX9_TRACE_REDUCE)
     DumpReduceDimensionState( currentSide, outputExtent, remainingExtent, remainingOtherExtent, 0, dim );
+#endif
   }
-
-
 
   ioReductionBufferSide = currentSide;
   ioRemainingExtents[dim] = outputExtent;
@@ -563,8 +564,9 @@ void DX9Kernel::ReduceDimensionToOne( int& ioReductionBufferSide,
 
   while( remainingExtent > 1 )
   {
-    // TIM: debugging
-//    DumpReduceToOneState( currentSide, slopExtents, coreExtent, remainingOtherExtent, dim );
+#if defined(BROOK_DX9_TRACE_REDUCE)
+    DumpReduceToOneState( currentSide, slopExtents, coreExtent, remainingOtherExtent, dim );
+#endif
 
     // edge case - we have a single element on each side
     // of the reduction buffer
@@ -606,8 +608,9 @@ void DX9Kernel::ReduceDimensionToOne( int& ioReductionBufferSide,
     runtime->execute( outputRect, inputRects );
   }
 
-  // TIM: debugging
-//  DumpReduceToOneState( currentSide, slopExtents, coreExtent, remainingOtherExtent, dim );
+#if defined(BROOK_DX9_TRACE_REDUCE)
+  DumpReduceToOneState( currentSide, slopExtents, coreExtent, remainingOtherExtent, dim );
+#endif
 
   ioReductionBufferSide = currentSide;
   ioRemainingExtents[dim] = 1;

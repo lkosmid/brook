@@ -42,7 +42,7 @@ namespace brook {
     void initialize( const char* source );
 
     void PushSampler( DX9Stream* s );
-    void PushTexCoord( const DX9Rect& r );
+    void PushTexCoord( const DX9FatRect& r );
     void PushConstantImpl(const float4 &val);
     void ClearInputs();
 
@@ -79,11 +79,11 @@ namespace brook {
 
     DX9RunTime* runtime;
     DX9PixelShader* pixelShader;
-    DX9Rect inputRects[8]; // TIM: TODO: named constant?
+    DX9FatRect inputRects[8]; // TIM: TODO: named constant?
     float4 inputConstants[8];
     DX9Stream* inputStreams[8];
     IDirect3DTexture9* inputTextures[8];
-    DX9Rect outputRect;
+    DX9FatRect outputRect;
     DX9Stream* outputStream;
     IDirect3DSurface9* outputSurface;
     void* outputReductionData;
@@ -103,7 +103,7 @@ namespace brook {
              int extents[], 
              float ranges[]);
 
-     const DX9Rect& getRect() { return rect; }
+     const DX9FatRect& getRect() { return rect; }
 
      virtual void* getData (unsigned int flags);
      virtual void releaseData(unsigned int flags);
@@ -119,7 +119,7 @@ namespace brook {
      unsigned int extents[2];
      float ranges[8];
      int totalSize;
-     DX9Rect rect;
+     DX9FatRect rect;
      void* cpuBuffer;
      unsigned int cpuBufferSize;
   };
@@ -132,8 +132,8 @@ namespace brook {
 
     IDirect3DTexture9* getTextureHandle();
     IDirect3DSurface9* getSurfaceHandle();
-    const DX9Rect& getInputRect() { return inputRect; }
-    const DX9Rect& getOutputRect() { return outputRect; }
+    const DX9FatRect& getInputRect() { return inputRect; }
+    const DX9FatRect& getOutputRect() { return outputRect; }
     const float4& getGatherConstant() { return gatherConstant; }
     const float4& getIndexofConstant() { return indexofConstant; }
     int getWidth();
@@ -163,8 +163,8 @@ namespace brook {
 
     DX9RunTime* runtime;
     DX9Texture* texture;
-    DX9Rect inputRect;
-    DX9Rect outputRect;
+    DX9FatRect inputRect;
+    DX9FatRect outputRect;
     float4 gatherConstant;
     float4 indexofConstant;
   };
@@ -189,7 +189,7 @@ namespace brook {
     }
     DX9Texture* getReductionBuffer();
 
-    void execute( const DX9Rect& outputRect, const DX9Rect* inputRects );
+    void execute( const DX9FatRect& outputRect, const DX9FatRect* inputRects );
 
   private:
 
@@ -212,6 +212,6 @@ namespace brook {
   struct DX9Vertex
   {
     float4 position;
-    float2 texcoords[8]; // TIM: TODO: named constant
+    float4 texcoords[8]; // TIM: TODO: named constant
   };
 }
