@@ -252,13 +252,13 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
 	enhanced_name.name = "_cpu_loop_"+decl->name->name;
 	func->printBefore(out,&enhanced_name,0);
-	out << "(const std::vector<char *>&args,unsigned int mapbegin,unsigned int mapend) {"<<endl;
+	out << "(const std::vector<char *>&args,unsigned int mapbegin,unsigned int mapend) {"<<std::endl;
 	indent(out,1);
-	out << "for (unsigned int i=mapbegin;i<mapend;++i) {"<<endl;
-	indent(out,2);out << "_cpu_" <<decl->name->name<<" ("<<endl;
+	out << "for (unsigned int i=mapbegin;i<mapend;++i) {"<<std::endl;
+	indent(out,2);out << "_cpu_" <<decl->name->name<<" ("<<std::endl;
 	{for (unsigned int i=0;i<func->nArgs;++i) {
 		if (i!=0)
-			out <<","<<endl;
+			out <<","<<std::endl;
 		indent(out,3);
 		
 		if (func->args[i]->form->type==TT_Stream) {
@@ -277,8 +277,8 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 			out <<")(args["<<i<<"])";
 		}
 	}}
-	out<< ");"<<endl;
-	indent(out,1);out <<"}"<<endl;
-	out << "}"<<endl;
+	out<< ");"<<std::endl;
+	indent(out,1);out <<"}"<<std::endl;
+	out << "}"<<std::endl;
 	
 }
