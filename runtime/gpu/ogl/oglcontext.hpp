@@ -118,28 +118,28 @@ namespace brook {
     getMaximumOutputCount() const { return 1; }
 
     virtual void
-    set1DInterpolant( const float4 &start, 
+    get1DInterpolant( const float4 &start, 
                       const float4 &end,
                       const unsigned int outputWidth,
-                      GPUInterpolant *interpolant) const;
+                      GPUInterpolant &interpolant) const;
 
 
     virtual void 
-    set2DInterpolant( const float2 &start, 
+    get2DInterpolant( const float2 &start, 
                       const float2 &end,
                       const unsigned int outputWidth,
                       const unsigned int outputHeight, 
-                      GPUInterpolant *interpolant) const;
+                      GPUInterpolant &interpolant) const;
 
     virtual void 
-    setStreamInterpolant( const TextureHandle texture,
+    getStreamInterpolant( const TextureHandle texture,
                           const unsigned int outputWidth,
                           const unsigned int outputHeight, 
-                          GPUInterpolant *interpolant) const;
+                          GPUInterpolant &interpolant) const;
     
     virtual void
-    setStreamOutputRegion( const TextureHandle texture,
-                           GPURegion *region) const; 
+    getStreamOutputRegion( const TextureHandle texture,
+                           GPURegion &region) const; 
 
 
     /* The vendor specific backend must create the float textures
@@ -194,7 +194,7 @@ namespace brook {
     /* Not really sure what this should do... */
     virtual void disableOutput( unsigned int inIndex );
 
-    virtual void drawRectangle( const GPURegion *outputRegion, 
+    virtual void drawRectangle( const GPURegion &outputRegion, 
                                 const GPUInterpolant *interpolants, 
                                 unsigned int numInterpolants );
 

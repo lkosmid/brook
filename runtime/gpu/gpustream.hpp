@@ -12,13 +12,17 @@ namespace brook {
     typedef GPUContext::TextureHandle TextureHandle;
 
     static GPUStream* create( GPURuntime* inRuntime,
-    int inFieldCount, const __BRTStreamType* inFieldTypes,
-    int inDimensionCount, const int* inExtents );
+                              int inFieldCount, 
+                              const __BRTStreamType* inFieldTypes,
+                              int inDimensionCount, 
+                              const int* inExtents );
+
     virtual void Read( const void* inData );
     virtual void Write( void* outData );
 
     virtual void* getData (unsigned int flags);
     virtual void releaseData(unsigned int flags);
+
     virtual const unsigned int* getExtents() const { return &_extents[0]; }
     virtual unsigned int getDimension() const { return _dimensionCount; }
     virtual unsigned int getTotalSize() const { return _totalSize; }
@@ -27,18 +31,26 @@ namespace brook {
       return _fields[i].elementType;
     }
 
-    const GPURect& getInputInterpolant() {
-      return _outputRect;
+    void getDefaultInterpolant(GPUInterpolant &interpolant) const {
+      interpolant = _defaultInterpolant;
     }
 
-    const GPURect& getOutputRect() {
-      return _outputRect;
+    void getOutputRegion(GPURegion &region) const {
+      region = _outputRegion;
     }
+
+    void getStreamInterpolant (unsigned int _textureWidth,
+                               unsigned int _textureHeight,
+                               GPUInterpolant &_interpolant);
 
     TextureHandle getIndexedFieldTexture( size_t inIndex );
 
-    float4 getIndexofConstant() { return _indexofConstant; }
-    float4 getShapeConstant() { return _shapeConstant; }
+    float4 getIndexofConstant() const { return _indexofConstant; }
+    float4 getShapeConstant() const { return _shapeConstant; }
+
+    unsigned int getWidth() const {return _textureWidth; }
+    unsigned int getHeight() const {return _textureHeight; }
+
 
   private:
     GPUStream( GPURuntime* inRuntime );
@@ -70,8 +82,8 @@ namespace brook {
 
     unsigned int _textureWidth, _textureHeight;
 
-    GPURect _inputRect;
-    GPURect _outputRect;
+    GPUInterpolant _defaultInterpolant;
+    GPURegion      _outputRegion;
     float4 _indexofConstant;
     float4 _shapeConstant;
   };

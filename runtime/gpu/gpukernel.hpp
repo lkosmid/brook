@@ -12,7 +12,7 @@ namespace brook {
   class GPUKernel : public Kernel {
   public:
     typedef GPUContext::TextureHandle TextureHandle;
-    typedef GPUContext::SurfaceHandle SurfaceHandle;
+    typedef GPUContext::TextureHandle TextureHandle;
     typedef GPUContext::PixelShaderHandle PixelShaderHandle;
     typedef GPUContext::VertexShaderHandle VertexShaderHandle;
 
@@ -43,63 +43,106 @@ namespace brook {
     class ArgumentType
     {
     public:
-      virtual TextureHandle getTexture( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
-      virtual GPUFatRect getInterpolant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
-      virtual float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
+      virtual TextureHandle getTexture( GPUKernel* inKernel, 
+                                        size_t inIndex, 
+                                        size_t inComponent );
+      virtual void getInterpolant( GPUKernel* inKernel, 
+                                   size_t inIndex, 
+                                   size_t inComponent,
+                                   GPUInterpolant &outInterpolant);
+      virtual float4 getConstant( GPUKernel* inKernel, 
+                                  size_t inIndex, 
+                                  size_t inComponent );
     };
 
     class StreamArgumentType : public ArgumentType
     {
     public:
-      TextureHandle getTexture( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
-      GPUFatRect getInterpolant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
-      float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
+      TextureHandle getTexture( GPUKernel* inKernel, 
+                                size_t inIndex, 
+                                size_t inComponent );
+      void getInterpolant( GPUKernel* inKernel, 
+                           size_t inIndex, 
+                           size_t inComponent,
+                           GPUInterpolant &outInterpolant );
+      float4 getConstant( GPUKernel* inKernel, 
+                          size_t inIndex, 
+                          size_t inComponent );
     };
+
     friend class StreamArgumentType;//internal classes are not friendly enough
     class IteratorArgumentType : public ArgumentType
     {
     public:
-      GPUFatRect getInterpolant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
-      float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
+      void getInterpolant( GPUKernel* inKernel, 
+                           size_t inIndex, 
+                           size_t inComponent,
+                           GPUInterpolant &outInterpolant );
+      float4 getConstant( GPUKernel* inKernel, 
+                          size_t inIndex, 
+                          size_t inComponent );
     };
+
     friend class IteratorArgumentType; //internal classes are not friends
     class ConstantArgumentType : public ArgumentType
     {
     public:
-      float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
+      float4 getConstant( GPUKernel* inKernel, 
+                          size_t inIndex, 
+                          size_t inComponent );
     };
     friend class ConstantArgumentType; //internal classes are not friends
+
     class GatherArgumentType : public ArgumentType
     {
     public:
-      TextureHandle getTexture( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
-      float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
+      TextureHandle getTexture( GPUKernel* inKernel, 
+                                size_t inIndex, 
+                                size_t inComponent );
+      float4 getConstant( GPUKernel* inKernel, 
+                          size_t inIndex, 
+                          size_t inComponent );
     };
     friend class GatherArgumentType; //internal classes are not friends
+
     class OutputArgumentType : public ArgumentType
     {
     public:
-      TextureHandle getTexture( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
-      GPUFatRect getInterpolant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
-      float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
+      TextureHandle getTexture( GPUKernel* inKernel, 
+                                size_t inIndex, 
+                                size_t inComponent );
+      void getInterpolant( GPUKernel* inKernel, 
+                           size_t inIndex, 
+                           size_t inComponent,
+                           GPUInterpolant &outInterpolant);
+      float4 getConstant( GPUKernel* inKernel,
+                          size_t inIndex,
+                          size_t inComponent );
     };
     friend class OutputArgumentType; //internal classes are not friends
+
     class ArgumentInfo
     {
     public:
-      ArgumentInfo( ArgumentType* inType, size_t inIndex )
+      ArgumentInfo( ArgumentType* inType, 
+                    size_t inIndex )
         : type(inType), index(inIndex)
       {}
 
-      TextureHandle getTexture( GPUKernel* inKernel, size_t inComponent ) {
+      TextureHandle getTexture( GPUKernel* inKernel, 
+                                size_t inComponent ) {
         return type->getTexture( inKernel, index, inComponent );
       }
 
-      GPUFatRect getInterpolant( GPUKernel* inKernel, size_t inComponent ) {
-        return type->getInterpolant( inKernel, index, inComponent );
+      void getInterpolant( GPUKernel* inKernel, 
+                           size_t inComponent,
+                           GPUInterpolant &outInterpolant) {
+        type->getInterpolant( inKernel, index, inComponent, 
+                              outInterpolant );
       }
 
-      float4 getConstant( GPUKernel* inKernel, size_t inComponent ) {
+      float4 getConstant( GPUKernel* inKernel, 
+                          size_t inComponent ) {
         return type->getConstant( inKernel, index, inComponent );
       }
 
@@ -115,7 +158,8 @@ namespace brook {
       }
 
       Input( const ::brook::desc::gpu_input_desc& inDescriptor )
-        : argumentIndex(inDescriptor._argumentIndex), componentIndex(inDescriptor._componentIndex)
+        : argumentIndex(inDescriptor._argumentIndex), 
+          componentIndex(inDescriptor._componentIndex)
       {
       }
 
@@ -195,8 +239,11 @@ namespace brook {
     StreamList _outputArguments;
     ArgumentList _arguments;
 
-    GPURect _outputRect;
-    std::vector<GPUFatRect> _inputInterpolants;
+    unsigned int _outWidth;
+    unsigned int _outHeight;
+
+    GPURegion _outputRegion;
+    std::vector<GPUInterpolant> _inputInterpolants;
   
   };
 }

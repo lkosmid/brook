@@ -25,6 +25,9 @@ namespace brook {
       kTextureFormat_Float4
     };
 
+    virtual bool
+    isValidShaderNameString (const char *name) const = 0;
+
     /* Test to see if we can create a texture with
     ** a dimension of this size
     */
@@ -38,27 +41,27 @@ namespace brook {
     getMaximumOutputCount() const { return 1; }
     
     virtual void
-    set1DInterpolant( const float4 &start, 
+    get1DInterpolant( const float4 &start, 
                       const float4 &end,
                       const unsigned int outputWidth,
-                      GPUInterpolant *interpolant) const = 0;
+                      GPUInterpolant &interpolant) const = 0;
 
     virtual void 
-    set2DInterpolant( const float4 &start, 
-                      const float4 &end,
+    get2DInterpolant( const float2 &start, 
+                      const float2 &end,
                       const unsigned int outputWidth,
                       const unsigned int outputHeight, 
-                      GPUInterpolant *interpolant) const = 0;
+                      GPUInterpolant &interpolant) const = 0;
 
     virtual void 
-    setStreamInterpolant( const TextureHandle texture,
+    getStreamInterpolant( const TextureHandle texture,
                           const unsigned int outputWidth,
                           const unsigned int outputHeight, 
-                          GPUInterpolant *interpolant) const = 0;
+                          GPUInterpolant &interpolant) const = 0;
     
     virtual void
-    setStreamOutputRegion( const TextureHandle texture,
-                           GPUOutputRegion *region) const = 0; 
+    getStreamOutputRegion( const TextureHandle texture,
+                           GPURegion &region) const = 0; 
 
 
     /* Create a texture */
@@ -103,17 +106,17 @@ namespace brook {
     virtual void bindTexture( unsigned int inIndex, 
                               TextureHandle inTexture ) = 0;
     virtual void bindOutput( unsigned int inIndex, 
-                             SurfaceHandle inSurface ) = 0;
+                             TextureHandle inSurface ) = 0;
     virtual void bindPixelShader( PixelShaderHandle inPixelShader ) = 0;
     virtual void bindVertexShader( VertexShaderHandle inVertexShader ) = 0;
     
     /* Turn off a shader output */
     virtual void disableOutput( unsigned int inIndex ) = 0;
-
-    virtual void drawRectangle(
-      const GPUOutputRegion& outputRegion, 
-      const GPUInterpolant* interpolants, 
-      unsigned int numInterpolants ) = 0;
+    
+    /* Issue a shader */
+    virtual void drawRectangle( const GPURegion &outputRegion, 
+                                const GPUInterpolant *interpolants, 
+                                unsigned int numInterpolants ) = 0;
   };
 }
 

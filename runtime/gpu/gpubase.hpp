@@ -96,6 +96,21 @@ namespace brook
 
     float4 vertices[4];
   };
+
+  struct GPUInterpolant {
+    float4 v1;
+    float4 v2;
+    float4 v3;
+  };
+
+  struct GPURegion {
+    float2 v1;
+    float2 v2;
+    float2 v3;
+  };
+
 }
+
+
 
 #endif
