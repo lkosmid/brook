@@ -199,9 +199,8 @@ ifdef REGRESSIONDIRS
 
 regression:
 	@for i in $(REGRESSIONDIRS); do \
-		$(MAKE) --no-print-directory -C $$i regression || exit 17; \
-	done
-
+		make --no-print-directory -C $$i regression || k=$$k" "$$i; \
+	done; echo "FAILED: "$$k
 else
 
 regression: arch $(BINARY_NAME).gold
