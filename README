@@ -6,7 +6,7 @@ Hardware Prerequisites
 
    * The DirectX 9 backend requires a recent ATI video card.  9800s and
      9700s should both work.  Older cards may work.  The most important
-     require is support for floating point render targets.
+     requirement is support for floating point render targets.
 
    * The nv30 OpenGL backend requires (logically enough) an NVIDIA card that
      is at least an nv30 (GeForceFX / QuadroFX or better).
