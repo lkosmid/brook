@@ -21,9 +21,10 @@ namespace brook {
   RunTime* RunTime::CreateInstance() {
     char *env = getenv(RUNTIME_ENV_VAR);
 
-    if (!env) 
-      return new DX9RunTime();
-
+    if (!env) {
+      fprintf (stderr,"No runtime requested. Using CPU\n");
+      return new CPURunTime();
+    }
     if (!strcmp(env, DX9_RUNTIME_STRING))
       return new DX9RunTime();
 
