@@ -10,7 +10,7 @@
 #include "dup.h"
 #include "stemnt.h"
 #include "brtkernel.h"
-#include "brook2cpp.h"
+#include "b2ctransform.h"
 
 class BRTFP30ReduceCode : public BRTFP30KernelCode
 {

@@ -7,7 +7,7 @@
 #define    _BRTSCATTER_H_
 
 #include "stemnt.h"
-#include "brook2cpp.h"
+#include "b2ctransform.h"
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class BRTScatterDef : public FunctionDef

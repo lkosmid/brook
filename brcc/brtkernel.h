@@ -9,7 +9,7 @@
 
 #include "dup.h"
 #include "stemnt.h"
-#include "brook2cpp.h"
+#include "b2ctransform.h"
 
 class BRTKernelCode;
 typedef Dup<BRTKernelCode> DupableBRTKernelCode;
