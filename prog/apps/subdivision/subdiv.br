@@ -482,7 +482,7 @@ kernel void splitTrianglesAdaptive (STri triangles[][],
 kernel void splitTrianglesNoAdaptive (STri triangles<>, 
                                       Neighbor neighbors<>,
                                       out SplitTri splittri<>) {
-  splittri=splitTriangles(triangles,neighbors,0);
+  splittri=splitTriangles(triangles,neighbors,1);
 }
 
 /*
