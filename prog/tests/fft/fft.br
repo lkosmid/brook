@@ -12,7 +12,41 @@
 //     ``Introduction to Algorithms'', MIT Press, 2001.
 // NOTE:
 // We implement the Decimation in Frequency Algorithm of the FFT described in [1]
+int TwoPowerX(int nNumber) {
+  // Achieve the multiplication by left-shifting 
+  return (1<<nNumber);
+}
 
+
+// Procedure to reverse the bits. 
+// Example: 
+// INPUTS:  nNumberToReverse = 110; nNumberOfBits = 3;
+// OUTPUT:  nReversedNumber  = 011
+// CAUTION: Make sure that you pass atleast the minimum number of bits to represent the 
+//          number. For reversing 6 you need atleast 3 bits, if only 2 bits is passed then
+//          we get junk results.
+
+int LogN(int N) {
+  int i;
+  int logN;
+  for (i=1,logN=0;i<N;i*=2,++logN);
+  return logN;
+}
+int BitReverse(int nNumberToReverse, int nNumberOfBits) {
+  int nBitIndex;
+  int nReversedNumber = 0;
+  for (nBitIndex = nNumberOfBits-1; nBitIndex >= 0; --nBitIndex) {
+    if ((1 == nNumberToReverse >> nBitIndex)) {         
+      nReversedNumber  += TwoPowerX(nNumberOfBits-1-nBitIndex);    
+      nNumberToReverse -= TwoPowerX(nBitIndex);                      
+    }
+  }
+  return(nReversedNumber);
+}
+int __BitReverse_cpu_inner(int nNumberToReverse, int nNumberOfBits) {
+  
+  return BitReverse(nNumberToReverse,LogN(nNumberOfBits));
+}
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -210,7 +244,32 @@ float2 cmult (float2 a, float2 b) {
 //////////////////////////////////////////////////
 //FIXME
 
+#if 0
+typedef float2 __BrtFloat2;
+typedef float __BrtFloat1;
+#endif
 
+void __printfy_cpu_inner(__BrtFloat2 x, __BrtFloat1 index, __BrtFloat1 stride, __BrtFloat1 n, __BrtFloat1 ang) {
+  printf("W(ind:%.1f, str:%.0f, N:%.0f, deg:%.2f): %f %f\n",index.unsafeGetAt(0),stride.unsafeGetAt(0),n.unsafeGetAt(0),180*ang.unsafeGetAt(0),x.unsafeGetAt(0),x.unsafeGetAt(1));
+}
+kernel float2 getW(float aindex, float Stride2, float N2) {
+  float N=N2;
+  float Stride=N/Stride2;
+  float bindex=(float)BitReverse(aindex,N2);
+  float index=bindex;
+  float2 ret;
+  float2 tmp;
+  float angnopi = (index-fmod(index,Stride))/N;
+  float ang =angnopi*3.1415926536;
+  if (ang>=3.1415) {
+    ang-=3.1415926536;
+  }
+  ret.x = cos(ang);
+  ret.y = sin(ang);
+  
+  printfy (ret,index,Stride,N2,angnopi);
+  return ret;
+}
 
 // DFT()
 // Implements the Perfect Shuffle algorithm
@@ -221,12 +280,12 @@ DFT (float2 s[],
        out float4 s_prime<>) {
   float index = (indexof s_prime).x;
   float2 temp,r,t,twiddle;
-  twiddle = W[index-fmod(index,Stride)];
   r = s[index];
   t = s[index+round(N/2)];
-  s_prime.xy = r+t ;
-  mult ((r-t), twiddle, temp);
-  s_prime.zw = temp;
+  twiddle=getW(index,Stride,N);
+  mult(t,twiddle,temp);
+  s_prime.xy = r+temp;
+  s_prime.zw = r-temp;
 } 
 kernel void flattenS (out float2 s<>, 
                       float4 s_prime<>)
@@ -239,38 +298,13 @@ kernel void flattenS (out float2 s<>,
 
 // Utilities and the BitReverse() procedure
 // To compute 2**x
-int TwoPowerX(int nNumber) {
-  // Achieve the multiplication by left-shifting 
-  return (1<<nNumber);
-}
-
-
-// Procedure to reverse the bits. 
-// Example: 
-// INPUTS:  nNumberToReverse = 110; nNumberOfBits = 3;
-// OUTPUT:  nReversedNumber  = 011
-// CAUTION: Make sure that you pass atleast the minimum number of bits to represent the 
-//          number. For reversing 6 you need atleast 3 bits, if only 2 bits is passed then
-//          we get junk results.
-
-int BitReverse(int nNumberToReverse, int nNumberOfBits) {
-  int nBitIndex;
-  int nReversedNumber = 0;
-  for (nBitIndex = nNumberOfBits-1; nBitIndex >= 0; --nBitIndex) {
-    if ((1 == nNumberToReverse >> nBitIndex)) {         
-      nReversedNumber  += TwoPowerX(nNumberOfBits-1-nBitIndex);    
-      nNumberToReverse -= TwoPowerX(nBitIndex);                      
-    }
-  }
-  return(nReversedNumber);
-}
 
 
 // BitReverseStream()
 // INPUT: s, nDataLength. 
 // OUTPUT: r. `r' contains the bit-reversed stream
 typedef int streamcmplx;
-#define streamcmplx const __BRTStream &
+#define streamcmplx brook::Stream *
 float * bitReversedIndices (int logN) {
   int i,N = (1<< logN);
   float * s_array;
@@ -318,13 +352,13 @@ void BitReverseStream(streamcmplx r, streamcmplx s, int nDataLength) {
   free(s_array); 
 }
 
-float2 * getData(int N) {
+float2 * getData(int N, char ** data) {
    int i;
    float2 *ret;
-   ret  = (float2*)malloc(sizeof(float2)*N);
-   for (i=0;i<N;++i ) {
-      ret[i].x = i+1;
-      ret[i].y = 0;
+   ret  = (float2*)malloc(sizeof(float2)*N/2);
+   for (i=0;i<N;i+=2 ) {
+      ret[i/2].x = atoi(data[i]);
+      ret[i/2].y = atoi(data[i+1]);
    }
    //   ret[1].x=1;
    return ret;
@@ -341,12 +375,21 @@ float2 * getTwiddleFactor(int N) {
    for (i=2;i<N;++i) {
       ret[i]=cmult(ret[i-1],ret[1]);
    }
+   for (i=1;i<N;++i) {
+     if (ret[i].y<0||ret[i].x==-1) {
+       ret[i].x*=-1;
+       ret[i].y*=-1;
+     }
+   }
    return ret;
 }
-int haupt(int argc, char **argv)
+kernel void myGather(out float2 s_out<>, float indices<>,float2 s[]) {
+  s_out=s[indices];
+}
+int main(int argc, char **argv)
 {
-   int logN = argc>=2?atoi(argv[1]):3;
-  int N = (1<<logN);
+  int logN=LogN((argc-1)/2);
+  int N = (argc-1)/2;   
   float2 s<N>;
   float2 s_out<N>;
   float2 r <N>;
@@ -374,7 +417,7 @@ int haupt(int argc, char **argv)
   int nPass, nBits;
   int nPassCounter;
   int nDataLength;
-  float2 *dat = getData(N);
+  float2 *dat = getData(argc-1,argv+1);
   streamRead(s,dat);
   
   printf("The stream length is %d\n", N);
@@ -417,6 +460,11 @@ int haupt(int argc, char **argv)
         if (1) {           
            flattenS(s, s_prime);           
         }
+        if (debug_fft){
+          printf ("stage %d ",nPassCounter);
+          streamPrint(s_prime);
+          printf ("\n");
+        }
         // update the PassCounter
         ++nPassCounter;
       } // while()
@@ -430,7 +478,7 @@ int haupt(int argc, char **argv)
       static float indices<N>;
       streamRead(indices,rawindices);
       free(rawindices);
-      streamGatherOp(s_out,indices,s,STREAM_GATHER_FETCH);
+      myGather(s_out,indices,s);
     }
 //    printf("The scrambled FFT of the given data is\n");
 //    streamPrint(s); 
