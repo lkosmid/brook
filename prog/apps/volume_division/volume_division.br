@@ -162,7 +162,8 @@ kernel void processTriangles(vout[3] float3 triangles<>,
   float4 whichVolumeTriangle={fmod(streamsize.x,4.0f)*3.0f+3.0f,vertices.w,0,0};
   float3 firstTrianglePos;
   if (whichVolumeTriangle.x+.5>15.0f) whichVolumeTriangle.x=3.0f;
-  firstTrianglePos=volumeTriangles[whichVolumeTriangle];
+
+  firstTrianglePos = volumeTriangles[whichVolumeTriangle];
   if (abs(firstTrianglePos.x-.5)<.75) {
      triangles=vertices.xyz+firstTrianglePos;
      push(triangles);
@@ -178,9 +179,12 @@ kernel void processFirstTriangles(out float3 triangles<>,
                                   float4 vertices<>,
                                   float3 volumeTriangles[][]) {
 
-  float4 whichVolumeTriangle={fmod((indexof triangles).x,3.0f),vertices.w,0,0};
-   if (whichVolumeTriangle.x+.5>3.0f) whichVolumeTriangle.x=0.0f;
-   triangles=vertices.xyz+volumeTriangles[whichVolumeTriangle];
+  float4 whichVolumeTriangle={round(fmod((indexof triangles).x,3.0f)),vertices.w,0,0};
+  if (whichVolumeTriangle.x+.5>3.0f) whichVolumeTriangle.x=0.0f;
+  triangles = vertices.xyz;
+  if (vertices.w>0 && vertices.w<256) {
+    triangles+= volumeTriangles[whichVolumeTriangle];
+  }
 }
 
 unsigned int reverseBits(unsigned int x, unsigned int base) {
@@ -192,22 +196,22 @@ unsigned int reverseBits(unsigned int x, unsigned int base) {
    }
    return ret;
 }
-typedef float3 Triangle[5][3];
+typedef float3 Triangle[15];
 char volumeTriangles(Triangle tri[256]) {
    unsigned int i,j,k;
 
    for (i=0;i<256;++i) {
       for (j=0;j<15;++j) {
-         tri[i][(j/3)%5][j%3]=/*float3((float)i,(float)i,(float)i);*/float3(1.0f/(float)floor(.5),1.0f/(float)floor(.5),1.0f/(float)floor(.5));
+        tri[i][j]=/*float3((float)i,(float)i,(float)i);*/float3(-1024.0f,-1024.0f,-1024.0f);//1.0f/(float)floor(.5),1.0f/(float)floor(.5),1.0f/(float)floor(.5));
       }
       j=0;
-      while(1) {
+      while(j<15) {
          if (m_triTable[i][j]==-1){
             m_triNum[i]=(float)(j/3);
             break;           
          }
          for (k=0;k<3;++k) {
-            float3 * p=&tri[i][j/3][k];
+            float3 * p=&tri[i][j+k];
             p->x=m_triTable[i][j+k];
             p->y=m_triTable[i][j+k];
             p->z=m_triTable[i][j+k];
@@ -397,6 +401,16 @@ int toi (float a) {
                                  v,
                                  volumeTriangles,
                                  newsize);
+                /*
+                printf("Stream V into func\n");
+                streamPrint(v);
+                printf("FirstTris\n");
+                streamPrint(trianglesFirst);
+                printf("Last Tris\n");
+                streamPrint(triangles);
+                //printf ("Volume Trianges");
+                //streamPrint(volumeTriangles);
+                */
                  streamWrite(trianglesFirst,
                              consolidateVertices(dat,streamSize(trianglesFirst)));
                  streamWrite(triangles,
