@@ -66,7 +66,7 @@ yaxis label : MFLOPS
 xaxis label : # of runs
 
 border
-title : 1D 1x1 MFLOPS (streamRead + # runs + streamWrite)
+title : 1D Length 1 MFLOPS (streamRead + # runs + streamWrite)
 
 newcurve
   marktype circle
@@ -81,7 +81,7 @@ yaxis label : MFLOPS
 xaxis label : # of runs
 
 border
-title : 1D 4x4 MFLOPS (streamRead + # runs + streamWrite)
+title : 1D Length 4 MFLOPS (streamRead + # runs + streamWrite)
 
 newcurve
   marktype circle
@@ -96,7 +96,7 @@ yaxis label : MFLOPS
 xaxis label : # of runs
 
 border
-title : 1D 16x16 MFLOPS (streamRead + # runs + streamWrite)
+title : 1D Length 16 MFLOPS (streamRead + # runs + streamWrite)
 
 newcurve
   marktype circle
@@ -111,7 +111,7 @@ yaxis label : MFLOPS
 xaxis label : # of runs
 
 border
-title : 1D 64x64 MFLOPS (streamRead + # runs + streamWrite)
+title : 1D Length 64 MFLOPS (streamRead + # runs + streamWrite)
 
 newcurve
   marktype circle
@@ -126,7 +126,7 @@ yaxis label : MFLOPS
 xaxis label : # of runs
 
 border
-title : 1D 256x256 MFLOPS (streamRead + # runs + streamWrite)
+title : 1D Length 256 MFLOPS (streamRead + # runs + streamWrite)
 
 newcurve
   marktype circle
@@ -141,7 +141,7 @@ yaxis label : MFLOPS
 xaxis label : # of runs
 
 border
-title : 1D 512x512 MFLOPS (streamRead + # runs + streamWrite)
+title : 1D Length 512 MFLOPS (streamRead + # runs + streamWrite)
 
 newcurve
   marktype circle
@@ -156,7 +156,7 @@ yaxis label : MFLOPS
 xaxis label : # of runs
 
 border
-title : 1D 1024x1024 MFLOPS (streamRead + # runs + streamWrite)
+title : 1D Length 1024 MFLOPS (streamRead + # runs + streamWrite)
 
 newcurve
   marktype circle
@@ -171,7 +171,7 @@ yaxis label : MFLOPS
 xaxis label : # of runs
 
 border
-title : 1D 2048x2048 MFLOPS (streamRead + # runs + streamWrite)
+title : 1D Length 2048 MFLOPS (streamRead + # runs + streamWrite)
 
 newcurve
   marktype circle
