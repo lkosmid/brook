@@ -9,26 +9,6 @@
 using std::map;
 using std::string;
 typedef std::map<std::string,int> mapstrint;
-static map<string,int> getKnownTypes() {
-    map<string,int>ret;
-    ret.insert(mapstrint::value_type("float",sizeof(float)));
-    ret.insert(mapstrint::value_type("float1",sizeof(float)));
-    ret.insert(mapstrint::value_type("float2",sizeof(float2)));
-    ret.insert(mapstrint::value_type("float3",sizeof(float3)));
-    ret.insert(mapstrint::value_type("float4",sizeof(float4)));            
-    ret.insert(mapstrint::value_type("int",sizeof(int)));
-    ret.insert(mapstrint::value_type("int1",sizeof(int)));
-    ret.insert(mapstrint::value_type("int2",2*sizeof(int)));
-    ret.insert(mapstrint::value_type("int3",3*sizeof(int)));
-    ret.insert(mapstrint::value_type("int4",4*sizeof(int)));            
-    ret.insert(mapstrint::value_type("char",sizeof(char)));
-    ret.insert(mapstrint::value_type("char1",sizeof(char)));
-    ret.insert(mapstrint::value_type("char2",2*sizeof(char)));
-    ret.insert(mapstrint::value_type("char3",3*sizeof(char)));
-    ret.insert(mapstrint::value_type("char4",4*sizeof(char)));            
-    return ret;
-}
-static mapstrint knownTypes = getKnownTypes();
 
 std::string noWhiteSpace (std::string in) {
 	unsigned int j=0;
