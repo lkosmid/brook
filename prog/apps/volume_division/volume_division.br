@@ -222,40 +222,39 @@ kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>,
   mod35 = (mod35+onehalf2>threefive)?zero2:mod35;
   whichVolumeTriangle.x=mod35.x+mod35.y*3; 
 
-  {
-    float3 config = volumeTriangles[whichVolumeTriangle].xyz;
-    float3 ishalf;
-    float low,high,tmp;
-    ishalf = (float3)(config==onehalf);
-    if (ishalf.z) {
-      float2 lhGather = vertices.xy+config.xy;
-      low = curgather[lhGather];
-      high = nextgather[lhGather];
-    }else {
-      float2 lowGather,highGather;
-      if (ishalf.x) {
-        lowGather=float2(vertices.x,vertices.y+config.y);
-        highGather=float2(vertices.x+1.0f,vertices.y+config.y);
-      } 
-      if (ishalf.y) {
-        lowGather=float2(vertices.x+config.x,vertices.y);
-        highGather=float2(vertices.x+config.x,vertices.y+1.0f);
-      }
-      if (config.z==0) {
-        low = curgather[lowGather];
-        high = curgather[highGather];
-      }else {
-        low = nextgather[lowGather];
-        high= nextgather[highGather];
-      }
-    }
     {
-      float3 tmp =(isovalue-low)/(high-low); 
-      config=ishalf?tmp:config;
+    float3 config = volumeTriangles[whichVolumeTriangle].xyz;
+    float low,high;
+    float3 ishalf,tmp;
+    ishalf=(float3)config==onehalf;
+    if (ishalf.z) {
+       float2 lhGather = vertices.xy+config.xy;
+       low = curgather[lhGather];
+       high = nextgather[lhGather];
+    }else {
+       float2 lowGather,highGather;
+       if (ishalf.x) {
+          lowGather=float2(vertices.x,vertices.y+config.y);
+          highGather=float2(vertices.x+1.0f,vertices.y+config.y);
+       } else {
+          lowGather=float2(vertices.x+config.x,vertices.y);
+          highGather=float2(vertices.x+config.x,vertices.y+1.0f);
+       }
+       if (config.z==0) {
+          low = curgather[lowGather];
+          high = curgather[highGather];
+       }else {
+          low = nextgather[lowGather];
+          high= nextgather[highGather];
+       }
+
     }
+    tmp = (isovalue-low)/(high-low);
+    config=ishalf?tmp:config;
     trianglesA=vertices+config;
+    }
   }
-  }  
+   
 }/*
 kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>, 
                                       float4 vertices1<>,
