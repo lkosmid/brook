@@ -12,6 +12,15 @@ kernel void divide (float4 division<>,
                     out float4 outvert<>) {
   outvert=float4(1.0f,1.0f,1.0f,1.0f);;
 }
+kernel void dontDivide (float4 division<>,
+                        float4 data[][],
+                        float4 triangles[][],
+                        out float3 outvert<>) {
+  float index = {fmod((indexof outvert).x,3.0),0,0,0};
+  if (index.x+.5>3.0) index=0;
+  index.xy+=division.xy;
+  outvert = triangles[index].xyz;
+}
 kernel void shouldDivide (float4 triangles<>,
                           float4 trianglesGather[][],
                           float4 data[][], 
