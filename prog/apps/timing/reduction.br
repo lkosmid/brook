@@ -1,0 +1,96 @@
+#include <stdio.h>
+
+#include "main.h"
+#include "reduction.h"
+
+
+reduce void reductionKernel(float4 x<>, reduce float4 result<>) {
+  result += x;
+}
+
+
+kernel void reductionRegKernel(float4 x<>, out float4 result<>) {
+  result = x;
+}
+
+
+kernel void forceGPUFlush(float4 input<>, out float4 result<>) {
+  result = input;
+}
+
+
+
+void do_reduction(int dim, int simReduceReg, int* time) {
+
+  int i;
+  float* x;
+  float4 result;
+  float sum;
+  float4 xStrm<dim,dim>;
+  float4 yStrm<dim,dim>;
+
+  float4 flush[1];
+  float4 flushStrm<1>;
+
+  x = (float*)malloc(sizeof(float)*dim*dim*4);
+
+  for (i=0;i<dim*dim*4;i++)
+    x[i] = 1.0f;
+
+  streamRead(xStrm, x);
+  forceGPUFlush(xStrm, flushStrm);
+  streamRead(flushStrm, flush);
+
+  if (!simReduceReg) {
+    start = GETTIME();
+    reductionKernel(xStrm, result);
+    sum = result.x + result.y + result.z + result.w;
+    stop = GETTIME();
+
+    //printf("sum = %f\n", sum);
+
+  } else {
+    start = GETTIME();
+    reductionRegKernel(xStrm, yStrm);
+    forceGPUFlush(yStrm, flushStrm);
+    streamRead(flushStrm, flush);
+    stop = GETTIME();
+  }
+
+  *time = (int)(stop - start);
+
+  free(x);
+
+}
+
+
+
+
+void Reduction_Time(int length) {
+
+
+  int size; 
+  int simReduceReg;
+  int usec;
+
+
+  simReduceReg = 0;
+
+  printf("(* size *)  (* usec *)\n");
+  for (size = 1; size<=length; size*=2) {
+    do_reduction(size, simReduceReg, &usec);
+    printf("%8d    %8d (* reduce *)\n", 4*size*size, usec);
+  }
+
+  printf("\n\n\n");
+
+  simReduceReg = 1;
+
+  printf("(* size *)  (* usec *)\n");
+  for (size = 1; size<=length; size*=2) {
+    do_reduction(size, simReduceReg, &usec);
+    printf("%8d    %8d (* reduce *)\n", 4*size*size, usec);
+  }
+
+
+}
