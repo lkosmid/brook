@@ -783,7 +783,6 @@ generate_shader_out_arg(std::ostream& shader, Decl *arg,
                         int i, int& texcoord, int &constreg, pass_info& outPass)
 {
    std::string argName = arg->name->name;
-   TypeQual qual = arg->form->getQualifiers();
 
    if (globals.enableGPUAddressTranslation) {
       // index of output should already be available...
@@ -848,7 +847,6 @@ generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg, in
                         int& texcoord, int& constreg, int& samplerreg, pass_info& outPass )
 {
    std::string argName = arg->name->name;
-   TypeQual qual = arg->form->getQualifiers();
 
    expandStreamSamplerDecls(shader, argName, (i+1), 0, arg->form, samplerreg, outPass );
 
@@ -887,7 +885,6 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg, int i,
                            int& constreg, int& samplerreg, pass_info& outPass)
 {
    std::string argName = arg->name->name;
-   TypeQual qual = arg->form->getQualifiers();
    int samplerCount = getGatherStructureSamplerCount(arg->form);
 
    if (globals.enableGPUAddressTranslation) {
@@ -1194,7 +1191,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
      shader << " __saved = " << rightArgumentName << ";\n";
 
      // do additional reduction ops
-     for( int r = 2; r < reductionFactor; r++ ) {
+     for( r = 2; r < reductionFactor; r++ ) {
         std::stringstream s;
         s << "__reduce" << r;
         std::string argName = s.str();

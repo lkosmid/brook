@@ -16,3 +16,4 @@ enum SplitBasicType
 std::ostream& operator<<( std::ostream&, SplitBasicType );
 
 #endif
+
