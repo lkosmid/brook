@@ -206,7 +206,7 @@ public:
             
             cgt.printType(out,&arg1,false,0);
             out << "("<<std::endl;
-            indent(out,2);
+            indent(out,3);
             out << "(";
             Symbol nothing;
             nothing.name="";
@@ -216,7 +216,7 @@ public:
 	    indent(out,3);
             out << "(args["<<index<<"])->getData(brook::Stream::READ), ";
 	    out <<std::endl;
-            indent(out,2);
+            indent(out,3);
             out<<"reinterpret_cast<brook::Stream*>"<<std::endl;
 	    indent(out,3);
             out<< "(args["<<index<<"])->getExtents());";
@@ -228,7 +228,7 @@ public:
         case CLEANUP:
 	  indent(out,1);
 	  out << "reinterpret_cast<brook::Stream*>"<<std::endl;
-	  indent(out,2);
+	  indent(out,3);
 	  out << "(args["<<index<<"])->releaseData(brook::Stream::READ);";
 	  out << std::endl;
 	  break;
@@ -328,7 +328,12 @@ public:
 
 
 
-
+std::string whiteout (std::string s) {
+   for (unsigned int i=0;i<s.length();++i) {
+      s[i]=' ';
+   }
+   return s;
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTCPUKernelCode::printCode(std::ostream& out) const
@@ -336,32 +341,37 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
     bool copy_on_write=false;
     bool dims_specified=false;        
   /* We've already transformed everything, so just print ourselves */
-  Type * form = fDef->decl->form;
-  assert (form->isFunction());
-  FunctionType* func = static_cast<FunctionType *>(form->dup());
-    
-    out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
+    Type * form = fDef->decl->form;
+    assert (form->isFunction());
+    FunctionType* func = static_cast<FunctionType *>(form->dup());
+    std::string myvoid("void  ");
+    out << myvoid;//we don't want to automatically print this for it would say "kernel void" which means Nothing
     Symbol enhanced_name;
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu_inner";
     func->printBefore(out,&enhanced_name,0);
-    out << "(";
+    out << " (";
     std::vector<PrintCPUArg> myArgs;
     {for (int i=0;i<func->nArgs;++i) {
         myArgs.push_back(PrintCPUArg(func->args[i],i));
     }}
-    {for (unsigned int i=0;i<myArgs.size();++i) {
-        if (i!=0)
-            out << ", ";
-        myArgs[i].printCPU(out,PrintCPUArg::HEADER);
+    {
+       std::string long_name(whiteout(myvoid+enhanced_name.name+" ("));
+       for (unsigned int i=0;i<myArgs.size();++i) {
+          if (i!=0)
+             out << ","<<std::endl<<long_name;
+          myArgs[i].printCPU(out,PrintCPUArg::HEADER);
     }}
     out << ")";    
     fDef->Block::print(out,0);
-    out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
+    //we don't want to automatically print this for it would say "kernel void" which means Nothing
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
+    out << myvoid;
     func->printBefore(out,&enhanced_name,0);
-    out << "(const std::vector<void *>&args, ";
-    out <<  "unsigned int mapbegin, ";
-    out <<  "unsigned int mapend) {"<<std::endl;
+    out << " (";
+    std::string long_name (whiteout(myvoid + enhanced_name.name+" ("));
+    out << "const std::vector<void *>&args,"<<std::endl;
+    out << long_name<<"unsigned int mapbegin, "<<std::endl;
+    out << long_name<< "unsigned int mapend) {"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);

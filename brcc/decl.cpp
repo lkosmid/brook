@@ -1399,7 +1399,7 @@ Decl::dup0() const
 {
     Decl *ret = new Decl();
     ret->storage    = storage;
-    ret->form = form;//do copy so that cpu implementation can be above
+    ret->form = form->dup();//do copy so that cpu implementation can be above
 
     ret->name     = name->dup();
     ret->attrib = attrib->dup();

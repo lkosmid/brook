@@ -79,16 +79,23 @@ BRTKernelDef::print(std::ostream& out, int) const
    }
 
    out << fp30 << std::endl << ps20 << std::endl;
+#if 0
    out << "void __" 
        << *FunctionName() 
        << "_cpu(const std::vector<void *>&,unsigned int, unsigned int);" 
        << std::endl<<std::endl;
+#else
+   BRTCPUKernelCode cpu(*this);
+   out << cpu << std::endl;
+#endif
    printStub(out);
+#if 0
    //somehow the dup above does not prevent the arguments from being messed up by my 
    //type converter --Daniel
    //FIXME.. for now we call this function when we don't need the others... not good!
    BRTCPUKernelCode cpu(*this);
    out << cpu<<std::endl;
+#endif
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
