@@ -223,10 +223,18 @@ const V&d) {
 INITBASECLASS(float);
 INITBASECLASS(double);
 INITBASECLASS(int);
-ININTBASECLASS(unsigned int);
+INITBASECLASS(unsigned int);
 INITBASECLASS(bool);
 INITBASECLASS(char);
 INITBASECLASS(unsigned char);
+
+#ifdef _WIN32
+#define GCCTYPENAME
+#else
+#define GCCTYPENAME typename
+#endif
+
+
 
 template <class VALUE, unsigned int tsize> class vec{
 public:
@@ -339,16 +347,16 @@ public:
     }
     template <class T> 
       vec<typename T::TYPE,tsize> questioncolon(const T &b, const T &c)const {
-        return vec<T::TYPE,tsize>
+        return vec<GCCTYPENAME T::TYPE,tsize>
             (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
              singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
              singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
     }
 #define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class T>            \
-    vec<TYPESPECIFIER<T::TYPE,VALUE>::type, \
+    vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME T::TYPE,VALUE>::type, \
         LUB<size,tsize>::size> operator op (const T &b)const { \
-      return vec<TYPESPECIFIER<T::TYPE,VALUE>::type,LUB<size,tsize>::size> \
+      return vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME T::TYPE,VALUE>::type,LUB<size,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
                  getAt(1) op b.getAt(1), \
                  getAt(2) op b.getAt(2), \
