@@ -143,17 +143,22 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
       if (typ!=1)printf( "{");
       for (unsigned int j=0;j<(unsigned int)typ;++j) {
          float x = data[i*typ+j];
+         if (j!=0) {
+            printf(",");
+            printf(" ");
+         }
          if (finite_flt(x))
             printf("%.2g",x);
          else if (isnan_flt(x))
             printf("NaN");
          else 
             printf ("inf");
-         if (j!=0) printf(",");
-         printf(" ");
       }
+      
       if (typ!=1)
          printf("}");
+      else
+         printf (" ");
       if (!flatten)
          if ((i+1)%extent[dims-1]==0)
             printf("\n");
