@@ -125,23 +125,20 @@ for arg in sys.argv[1:]:
 			procwrites+=writes
 			procmem+=mem
 			procarith+=arith
-		print st
-print ""
-print "Totals"
-print "Mem: "+str (procmem+voutmem)
-print "Arith: "+str (procarith+voutarith)
-print ""
-print "Proc"
-print "Mem: "+str (procmem)
-print "Arith: "+str (procarith)
-print ""
-print "Vout"
-print "Mem: "+str (voutmem)
-print "Arith: "+str (voutarith)
-print ""
-print "Vout Scatter"
-print "Mem: "+str (voutscatmem)
-print "Arith: "+str (voutscatarith)
+		#print st
+	print arg
+#	print "Totals"
+#	print "Mem: "+str (procmem+voutmem)
+#	print "Ath: "+str (procarith+voutarith)
+#	print ""
+#	print "Proc"
+	print "Mem Arith: "+str (procmem)+" "+str (procarith)
+#	print ""
+#	print "Vout"
+	print "Mem Arith: "+str (voutmem)+" "+str (voutarith)
+#	print ""
+#	print "Vout Scatter"
+	print "Mem Arith: "+str (voutscatmem)+" "+str (voutscatarith)
 
 
 
