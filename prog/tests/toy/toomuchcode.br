@@ -1,0 +1,66 @@
+// toy.br
+// An ad-hoc regression test to cover all the
+// earliest features of the language, including
+// streams, gathers, and constants.
+
+#include <stdio.h>
+
+kernel void foo (float a<>, float b<>, float4 c,
+		 float d[10][10], out float e<>) {
+  float t;
+  float4 f;
+  t = a+b*c.x+c.y*c.z+a*c.x+c.y*dot(c.yy,a.xx);
+  t*=c.x+d[c];  
+  t*=c.y+d[c+1];  
+  t*=c.z+d[c+2];  
+  t*=c.w+d[c+3];  
+  t*=c.y+c.x;  
+  t*=a+b;  
+  t*=d[c]+a; 
+  t/=a*b+c;
+  f=t*t*(t+b);
+  f.zyxw=f/b+a;
+  f+= f*cos(t+a);
+  f*=sin(a+t+b)+3;
+  e=dot(f,f);
+  return;//just to foul up DX and NV30
+}
+
+int main () {
+
+  float a<10, 10>;
+  float b<10, 10>;
+  float d<10, 10>;
+  float e<10, 10>;
+  
+  float data_a[10][10];
+  float data_b[10][10];
+  float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
+  float data_d[10][10];
+  float data_e[10][10];
+
+  int i,j;
+
+  for (i=0; i<10; i++)
+    for (j=0; j<10; j++) {
+      data_a[i][j] = ((float) i) + ((float) j) / 10.0f;
+      data_b[i][j] = ((float) j) + ((float) i) / 10.0f;
+      data_d[i][j] = ((float) i) / 100.0f;
+    }
+
+  streamRead(a, data_a);
+  streamRead(b, data_b);
+  streamRead(d, data_d);
+
+  foo(a,b,c,d,e);
+
+  streamWrite(e, data_e);
+  
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f ", data_e[i][j]);
+    }
+    printf ("\n");
+  }
+  return 0;
+}
