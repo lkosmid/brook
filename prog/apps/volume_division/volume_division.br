@@ -15,9 +15,9 @@ float __printf_cpu_inner (float a, float b, float c, float d) {
 kernel float eval1 (float3 loc<>) {
    return (float) (loc.x==loc.y&&loc.y==loc.z&&loc.z==1);
 }
-kernel float eval (float3 loc<>) {
+kernel float eval(float3 loc<>) {
   float  power;
-  const float3 offset=0;
+  const float3 offset=1;
   float3 center =loc-offset;
   power = dot(center,center);
   /*
@@ -43,7 +43,7 @@ kernel float eval (float3 loc<>) {
   */
   {
 
-     const float  density =7*7;
+     const float  density =.5*.5;
     //printf (power,loc.z,density,power-density);
     return density-power;
   }
@@ -200,7 +200,6 @@ char volumeTriangles(Triangle tri[256]) {
       for (j=0;j<15;++j) {
          tri[i][(j/3)%5][j%3]=/*float3((float)i,(float)i,(float)i);*/float3(1.0f/(float)floor(.5),1.0f/(float)floor(.5),1.0f/(float)floor(.5));
       }
-      //      continue;
       j=0;
       while(1) {
          if (m_triTable[i][j]==-1){
@@ -368,16 +367,16 @@ int toi (float a) {
                                      v,
                                      center,
                                      up,
-                                     upforward,
                                      forward,
+                                     upforward,
                                      sliceZ):
                  processSliceNoCompact(cur,
                                        i!=dat.depth-1?next:cur,
                                        v,
                                        center,
                                        up,
-                                       upforward,
                                        forward,
+                                       upforward,
                                        sliceZ);
             }else {
               use_vout_filter?
