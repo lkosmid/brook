@@ -61,17 +61,21 @@ int PMLSeg_main(int argc, char* argv[]) {
     float time_in_ms = 0.0f;
     int xsize, ysize, loop_count;
     float xsizef, ysizef;
+    float diff_strength = 0.20f;
+    float inv_grad_cutoff = 0.025f;
+    float loww = 1200./65535.;
+    float highw = 2000./65535.0f;
 
     if(argc < 4){
           char buf[255];
           fprintf(stderr, "Usage: %s <size x> <size y> <loop count>\n", argv[0]);
-	  printf("Size in X: ");
+	  fprintf(stderr, "Size in X: ");
 	  fgets(buf, 254, stdin);
 	  xsize = atoi(buf);
-	  printf("Size in Y: ");
+	  fprintf(stderr, "Size in Y: ");
 	  fgets(buf, 254, stdin);
 	  ysize = atoi(buf);
-	  printf("# of loops: ");
+	  fprintf(stderr, "# of loops: ");
 	  fgets(buf, 254, stdin);
 	  loop_count = atoi(buf);
           xsizef = (float)xsize;
@@ -121,9 +125,11 @@ int PMLSeg_main(int argc, char* argv[]) {
 	    //We can't use the input and output buffers without hosing things
 	    //so we'll need to "ping-pong" between them
             if(i%2==0)
-                process_img(img, 0.20, 0.025, 1200./65535, 2000./65535, it0, it1, it2, it3, it4, o_img );
+                process_img(img, diff_strength, inv_grad_cutoff, loww, highw, 
+                            it0, it1, it2, it3, it4, o_img );
             else
-                process_img(o_img, 0.20, 0.025, 1200./65535, 2000./65535, it0, it1, it2, it3, it4, img );
+                process_img(o_img, diff_strength, inv_grad_cutoff, loww, highw,
+                            it0, it1, it2, it3, it4, img );
 	
         }
         if(i%2==0)
