@@ -245,9 +245,9 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
    }
    float * data = (float *)s->getData(brook::StreamInterface::READ);
    for (unsigned int i=0;i<tot;++i) {
-      if (numfields!=1)printf( "{");
-      for (unsigned int j=0;j<numfields;++j) {
-         float x = data[i*numfields+j];
+      if (numfloats!=1)printf( "{");
+      for (unsigned int j=0;j<numfloats;++j) {
+         float x = data[i*numfloats+j];
          if (j!=0) {
             printf(",");
             printf(" ");
@@ -260,7 +260,7 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
             printf ("inf");
       }
       
-      if (numfields!=1)
+      if (numfloats!=1)
          printf("}");
       else
          printf (" ");
