@@ -39,9 +39,6 @@ std::string printGatherIntrinsics () {
 }
 void ComputeGatherIntrinsics(std::string &o,std::string path, std::string file) {
    if (o.find("STREAM_GATHER_FETCH")!=std::string::npos) {
-      o=printGatherIntrinsics()+/*"\n#line 1\n"+*/o;//re_add #line
-      //error FIXME XXX daniel compiler will print out a row of nulls if the
-      //#line is there
+      o=printGatherIntrinsics()+"\n#line 1\n"+o;//re_add #line
    }
-   std::cout << o;
 }

@@ -64,7 +64,7 @@ int  gcc2_paren_cnt = 0;
 
 char  tokn_buff[MAX_TOKN_LEN];
 char *tokn_end = &tokn_buff[MAX_TOKN_LEN-1];
-char *tokn_ptr=&tokn_buff[MAX_TOKN_LEN-1];
+char *tokn_ptr=tokn_buff;
 
 int cnt_nl(char *txt, int len);
 
