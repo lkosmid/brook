@@ -66,14 +66,15 @@ void GenSetupMillisTimer(int argc, char**argv) {
     fclose(streamsummary);
   }
   std::string filename("log");
-  for (int i=1;i<argc;++i){
+  int i;
+  for ( i=1;i<argc;++i){
     if (argv[i][0]>='0'&&argv[i][1]<='9')
       filename+="-";
     filename+=argv[i];
   }
   streamlog = fopen (filename.c_str(),"w");
   filename="sum";
-  for (int i=1;i<argc;++i){
+  for ( i=1;i<argc;++i){
     if (argv[i][0]>='0'&&argv[i][1]<='9')
       filename+="-";
     filename+=argv[i];
