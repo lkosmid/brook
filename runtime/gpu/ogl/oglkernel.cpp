@@ -301,44 +301,72 @@ OGLContext::getStreamGatherConstant( TextureHandle inTexture ) const {
 
 void
 OGLContext::getStreamInterpolant( const TextureHandle texture,
-                                  const unsigned int w,
-                                  const unsigned int h,
+                                  unsigned int rank,
+                                  const unsigned int* domainMin,
+                                  const unsigned int* domainMax,
+                                  unsigned int w,
+                                  unsigned int h,
                                   GPUInterpolant &interpolant) const {
 
-  OGLTexture *oglTexture = (OGLTexture *) texture;
+  unsigned int minX, minY, maxX, maxY;
+  if( rank == 1 )
+  {
+      minX = domainMin[0];
+      minY = 0;
+      maxX = domainMax[0];
+      maxY = 0;
+  }
+  else
+  {
+      minX = domainMin[1];
+      minY = domainMin[0];
+      maxX = domainMax[1];
+      maxY = domainMax[0];
+  }
 
-  float2 start(0.005f, 0.005f);
-  float2 end(oglTexture->width()+0.005f, 
-             oglTexture->height()+0.005f);
+  float2 start(minX + 0.005f, minY + 0.005f);
+  float2 end(maxX + 0.005f, maxY + 0.005f);
 
   get2DInterpolant(  start, end, w, h, interpolant); 
 }
 
 void
 OGLContext::getStreamOutputRegion( const TextureHandle texture,
-                                   GPURegion &region) const {
-  
-/*  const OGLTexture *oglTexture = (OGLTexture *) texture;
+                                   unsigned int rank,
+                                   const unsigned int* domainMin,
+                                   const unsigned int* domainMax,
+                                   GPURegion &region) const
+{
+  OGLTexture* oglTexture = (OGLTexture*) texture;
+  unsigned int minX, minY, maxX, maxY;
+  if( rank == 1 )
+  {
+      minX = domainMin[0];
+      minY = 0;
+      maxX = domainMax[0];
+      maxY = 1;
+  }
+  else
+  {
+      minX = domainMin[1];
+      minY = domainMin[0];
+      maxX = domainMax[1];
+      maxY = domainMax[0];
+  }
 
-  region.vertices[0].x = 0.0f;
-  region.vertices[0].y = 0.0f;
+  region.vertices[0].x = -1;
+  region.vertices[0].y = -1;
 
-  region.vertices[1].x = oglTexture->width()*2.0f;
-  region.vertices[1].y = 0.0f;
+  region.vertices[1].x = 3;
+  region.vertices[1].y = -1;
 
-  region.vertices[2].x = 0.0f;
-  region.vertices[2].y = oglTexture->height()*2.0f;*/
+  region.vertices[2].x = -1;
+  region.vertices[2].y = 3;
 
-  // note to future generations: Ian Buck is a lying bastard
-  // the above code is just about as wrong as you can get :)
-  region.vertices[0].x = -1.0f;
-  region.vertices[0].y = -1.0f;
-
-  region.vertices[1].x = 3.0f;
-  region.vertices[1].y = -1.0f;
-
-  region.vertices[2].x = -1.0f;
-  region.vertices[2].y = 3.0f;
+  region.viewport.minX = minX;
+  region.viewport.minY = minY;
+  region.viewport.maxX = maxX;
+  region.viewport.maxY = maxY;
 }
 
 void 
@@ -365,27 +393,19 @@ OGLContext::getStreamReduceOutputRegion( const TextureHandle inTexture,
                                          const unsigned int maxY,
                                          GPURegion &region) const
 {
-    OGLTexture* texture = (OGLTexture*) inTexture;
-    unsigned int textureWidth = texture->width();
-    unsigned int textureHeight = texture->height();
+  region.vertices[0].x = -1;
+  region.vertices[0].y = -1;
 
-    float xmin = (float)minX / (float)textureWidth;
-    float ymin = (float)minY / (float)textureHeight;
-    float width = (float)(maxX - minX) / (float)textureWidth;
-    float height = (float)(maxY - minY) / (float)textureHeight;
-    
-    float xmax = xmin + 2*width;
-    float ymax = ymin + 2*height;
+  region.vertices[1].x = 3;
+  region.vertices[1].y = -1;
 
-    // transform from texture space to surface space:
-    xmin = 2*xmin - 1;
-    xmax = 2*xmax - 1;
-    ymin = 2*ymin - 1;
-    ymax = 2*ymax - 1;
+  region.vertices[2].x = -1;
+  region.vertices[2].y = 3;
 
-    region.vertices[0] = float4(xmin,ymin,0,1);
-    region.vertices[1] = float4(xmax,ymin,0,1);
-    region.vertices[2] = float4(xmin,ymax,0,1);
+  region.viewport.minX = minX;
+  region.viewport.minY = minY;
+  region.viewport.maxX = maxX;
+  region.viewport.maxY = maxY;
 }
 
 void 
@@ -404,7 +424,15 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
    * has vertices (-1, 3), (-1, -1), and (3, -1) which works out
    * nicely to contain the square (-1, -1), (-1, 1), (1, 1), (1, -1).
    */
-  glViewport(0, 0, w, h);
+
+  int minX = outputRegion.viewport.minX;
+  int minY = outputRegion.viewport.minY;
+  int maxX = outputRegion.viewport.maxX;
+  int maxY = outputRegion.viewport.maxY;
+  int width = maxX - minX;
+  int height = maxY - minY;
+
+  glViewport( minX, minY, width, height );
   glBegin(GL_TRIANGLES);
 
   for (v=0; v<3; v++ )
@@ -425,30 +453,10 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   }
   glEnd();
   CHECK_GL();
-/*
-  glViewport(0, 0, w, h);
 
-  glBegin(GL_TRIANGLES);
-  for (i=0; i<numInterpolants; i++) 
-  {
-    glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
-                          (GLfloat *) &(interpolants[i].vertices[0]));
-  }
-  glVertex2f(-1.0f, -1.0f);
-  for (i=0; i<numInterpolants; i++) 
-    glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
-                          (GLfloat *) &(interpolants[i].vertices[1]));
-  glVertex2f(3.0f, -1.0f);
-  for (i=0; i<numInterpolants; i++) 
-    glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
-                          (GLfloat *) &(interpolants[i].vertices[2]));
-  glVertex2f(-1.0f, 3.0f);
-  glEnd();
-  CHECK_GL();
-*/
   /* Copy the output to the texture */
   glActiveTextureARB(GL_TEXTURE0+_slopTextureUnit);
   glBindTexture(GL_TEXTURE_RECTANGLE_NV, _outputTexture->id());
-  glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0, w, h);
+  glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, minX, minY, minX, minY, width, height);
   CHECK_GL();
 }

@@ -12,6 +12,8 @@
 
 namespace brook
 {
+  static const float kNVInterpolantBias = 0.05f;
+
   static const char* kPassthroughVertexShaderSource =
     "vs.1.1\n"
     "dcl_position v0\n"
@@ -91,14 +93,20 @@ namespace brook
       GPUInterpolant &interpolant) const;
 
     virtual void 
-      getStreamInterpolant( const TextureHandle texture,
-      const unsigned int outputWidth,
-      const unsigned int outputHeight, 
-      GPUInterpolant &interpolant) const;
-
+    getStreamInterpolant( const TextureHandle texture,
+                          unsigned int rank,
+                          const unsigned int* domainMin,
+                          const unsigned int* domainMax,
+                          const unsigned int outputWidth,
+                          const unsigned int outputHeight, 
+                          GPUInterpolant &interpolant) const;
+    
     virtual void
-      getStreamOutputRegion( const TextureHandle texture,
-      GPURegion &region) const; 
+    getStreamOutputRegion( const TextureHandle texture,
+                           unsigned int rank,
+                           const unsigned int* domainMin,
+                           const unsigned int* domainMax,
+                           GPURegion &region) const;
 
     virtual void 
       getStreamReduceInterpolant( const TextureHandle texture,
@@ -373,19 +381,55 @@ namespace brook
     interpolant.vertices[2] = f3;
   }
 
-  void GPUContextDX9Impl::getStreamInterpolant( const TextureHandle texture,
+  void GPUContextDX9Impl::getStreamInterpolant( const TextureHandle inTexture,
+    unsigned int rank,
+    const unsigned int* domainMin,
+    const unsigned int* domainMax,
     const unsigned int outputWidth,
     const unsigned int outputHeight, 
     GPUInterpolant &interpolant) const
   {
-    interpolant.vertices[0] = float4(0,0,0.5,1);
-    interpolant.vertices[1] = float4(2,0,0.5,1);
-    interpolant.vertices[2] = float4(0,2,0.5,1);
+    DX9Texture* texture = (DX9Texture*)inTexture;
+    unsigned int minX, minY, maxX, maxY;
+    if( rank == 1 )
+    {
+        minX = domainMin[0];
+        minY = 0;
+        maxX = domainMax[0];
+        maxY = 0;
+    }
+    else
+    {
+        minX = domainMin[1];
+        minY = domainMin[0];
+        maxX = domainMax[1];
+        maxY = domainMax[0];
+    }
+
+    unsigned int textureWidth = texture->getWidth();
+    unsigned int textureHeight = texture->getHeight();
+
+    float xmin = (float)minX / (float)textureWidth;
+    float ymin = (float)minY / (float)textureHeight;
+    float width = (float)(maxX - minX) / (float)textureWidth;
+    float height = (float)(maxY - minY) / (float)textureHeight;
+    
+    float xmax = xmin + 2*width;
+    float ymax = ymin + 2*height;
+
+    interpolant.vertices[0] = float4(xmin,ymin,0.5,1);
+    interpolant.vertices[1] = float4(xmax,ymin,0.5,1);
+    interpolant.vertices[2] = float4(xmin,ymax,0.5,1);
 
     if( _isNV )
     {
-        float biasX = outputWidth <= 1 ? 0.0f : 0.05f / (float)outputWidth;
-        float biasY = outputHeight <= 1 ? 0.0f : 0.05f / (float)outputHeight;
+        float biasX = 0.0f;
+        float biasY = 0.0f;
+
+        if( textureWidth > 1 )
+            biasX = kNVInterpolantBias / (float)(textureWidth);
+        if( textureHeight > 1 )
+            biasY = kNVInterpolantBias / (float)(textureHeight);
 
         for( int i = 0; i < 3; i++ )
         {
@@ -396,15 +440,36 @@ namespace brook
   }
 
   void GPUContextDX9Impl::getStreamOutputRegion( const TextureHandle inTexture,
+    unsigned int rank,
+    const unsigned int* domainMin,
+    const unsigned int* domainMax,
     GPURegion &region) const
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
-    unsigned int textureWidth = texture->getWidth();
-    unsigned int textureHeight = texture->getHeight();
+    unsigned int minX, minY, maxX, maxY;
+    if( rank == 1 )
+    {
+        minX = domainMin[0];
+        minY = 0;
+        maxX = domainMax[0];
+        maxY = 0;
+    }
+    else
+    {
+        minX = domainMin[1];
+        minY = domainMin[0];
+        maxX = domainMax[1];
+        maxY = domainMax[0];
+    }
 
     region.vertices[0] = float4(-1,1,0.5,1);
     region.vertices[1] = float4(3,1,0.5,1);
     region.vertices[2] = float4(-1,-3,0.5,1);
+
+    region.viewport.minX = minX;
+    region.viewport.minY = minY;
+    region.viewport.maxX = maxX;
+    region.viewport.maxY = maxY;
   }
 
   void GPUContextDX9Impl::getStreamReduceInterpolant( const TextureHandle inTexture,
@@ -455,27 +520,14 @@ namespace brook
     const unsigned int maxY,
     GPURegion &region) const
   {
-    DX9Texture* texture = (DX9Texture*)inTexture;
-    unsigned int textureWidth = texture->getWidth();
-    unsigned int textureHeight = texture->getHeight();
+    region.vertices[0] = float4(-1,1,0.5,1);
+    region.vertices[1] = float4(3,1,0.5,1);
+    region.vertices[2] = float4(-1,-3,0.5,1);
 
-    float xmin = (float)minX / (float)textureWidth;
-    float ymin = (float)minY / (float)textureHeight;
-    float width = (float)(maxX - minX) / (float)textureWidth;
-    float height = (float)(maxY - minY) / (float)textureHeight;
-
-    float xmax = xmin + 2*width;
-    float ymax = ymin + 2*height;
-
-    // transform from texture space to surface space:
-    xmin = 2*xmin - 1;
-    xmax = 2*xmax - 1;
-    ymin = -2*ymin + 1;
-    ymax = -2*ymax + 1;
-
-    region.vertices[0] = float4(xmin,ymin,0.5,1);
-    region.vertices[1] = float4(xmax,ymin,0.5,1);
-    region.vertices[2] = float4(xmin,ymax,0.5,1);
+    region.viewport.minX = minX;
+    region.viewport.minY = minY;
+    region.viewport.maxX = maxX;
+    region.viewport.maxY = maxY;
   }
 
   GPUContextDX9Impl::TextureHandle GPUContextDX9Impl::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat )
@@ -653,6 +705,32 @@ namespace brook
     unsigned int inInterpolantCount )
   {
     HRESULT result;
+
+    unsigned int minX = inOutputRegion.viewport.minX;
+    unsigned int minY = inOutputRegion.viewport.minY;
+    unsigned int maxX = inOutputRegion.viewport.maxX;
+    unsigned int maxY = inOutputRegion.viewport.maxY;
+
+    D3DVIEWPORT9 viewport;
+    viewport.X = minX;
+    viewport.Y = minY;
+    viewport.Width = maxX - minX;
+    viewport.Height = maxY - minY;
+    viewport.MinZ = 0.0f;
+    viewport.MaxZ = 1.0f;
+
+    // TIM: we have to flush any host-side changes to
+    // the output buffers forward, since we might
+    // only be writing to a domain
+    for( size_t j = 0; j < kMaximumOutputCount; j++ )
+    {
+      if( _boundOutputs[j] )
+        _boundOutputs[j]->validateCachedData();
+    }
+
+    result = _device->SetViewport( &viewport );
+    DX9AssertResult( result, "SetViewport failed" );
+
 
 //    result = _device->Clear( 0, NULL, D3DCLEAR_TARGET, 0, 0.0, 0 );
 //    DX9AssertResult( result, "Clear failed" );

@@ -208,8 +208,8 @@ namespace brook
     GPUStream* outputStream = _outputArguments[0];
     outputStream->getOutputRegion(_outputRegion);
     
-    _outWidth = outputStream->getWidth();
-    _outHeight = outputStream->getHeight();
+    _outWidth = outputStream->getTextureWidth();
+    _outHeight = outputStream->getTextureHeight();
     
     // Check to see if the output size matches the input size
 
@@ -263,7 +263,7 @@ namespace brook
         "Reductions to streams of structure type is currently unsupported.");
 
       TextureHandle outputTexture = outputStream->getIndexedFieldTexture(0);
-      reduceToStream( outputTexture, outputStream->getWidth(), outputStream->getHeight() );
+      reduceToStream( outputTexture, outputStream->getTextureWidth(), outputStream->getTextureHeight() );
     }
     else
     {
@@ -370,8 +370,8 @@ namespace brook
       "Reductions must have one and only one input stream." );
 
     GPUStream* inputStream = _streamArguments[0];
-    size_t inputWidth = inputStream->getWidth();
-    size_t inputHeight = inputStream->getHeight();
+    size_t inputWidth = inputStream->getTextureWidth();
+    size_t inputHeight = inputStream->getTextureHeight();
 
     GPUAssert( inputStream->getFieldCount() == 1,
       "Reductions from structures are not currently supported." );

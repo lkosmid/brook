@@ -1,0 +1,60 @@
+// domain_read.br
+// tests that reading from a domain works
+
+#include <stdio.h>
+
+kernel void copy( float input<>, out float output<> )
+{
+  output = input;
+}
+
+int main()
+{
+	int i, j;
+	float a1< 100 >;
+	float b1< 50 >;
+	float a2< 100, 100 >;
+	float b2< 4, 7 >;
+
+	float input_a1[100];
+	float output_b1[100];
+	float input_a2[100][100];
+	float output_b2[4][7];
+	
+	// initialize data
+	for( i = 0; i < 100; i++ )
+	{
+		input_a1[i] = (float)i;
+
+		for( j = 0; j < 100; j++ )
+		{
+			input_a2[i][j] = (float)(i*100 + j);
+		}
+	}
+	streamRead( a1, input_a1 );
+	streamRead( a2, input_a2 );
+	
+	copy( a1.domain( 30, 80 ), b1 );
+	copy( a2.domain( int2(90,5), int2(94,12) ), b2 );
+	
+	streamWrite( b1, output_b1 );
+	streamWrite( b2, output_b2 );
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 5; j++ )
+			printf( "%3.2f ", output_b1[5*i+j] );
+		printf("\n");
+	}
+	
+	printf("***\n");
+	
+	for( i = 0; i < 4; i++ )
+	{
+		for( j = 0; j < 7; j++ )
+			printf( "%3.2f ", output_b2[i][j] );
+		printf("\n");
+	}
+	
+	return 0;
+}

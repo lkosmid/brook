@@ -30,6 +30,37 @@ typedef struct float4 {
 
   float x,y,z,w;
 } float4;
+
+typedef struct int2
+{
+    int2(void) {}
+    int2( int inX, int inY )
+        : x(inX), y(inY) {}
+    operator int*() { return (int*)this; }
+    operator const int*() const { return (const int*)this; }
+    int x, y;
+} int2;
+
+typedef struct int3
+{
+    int3(void) {}
+    int3( int inX, int inY, int inZ )
+        : x(inX), y(inY), z(inZ) {}
+    operator int*() { return (int*)this; }
+    operator const int*() const { return (const int*)this; }
+    int x, y, z;
+} int3;
+
+typedef struct int4
+{
+    int4(void) {}
+    int4( int inX, int inY, int inZ, int inW )
+        : x(inX), y(inY), z(inZ), w(inW) {}
+    operator int*() { return (int*)this; }
+    operator const int*() const { return (const int*)this; }
+    int x, y, z, w;
+} int4;
+
 enum __BRTStreamType {
    __BRTNONE=-1,
    __BRTSTREAM=0,//stream of stream is illegal. Used in reduce to stream.
@@ -72,6 +103,8 @@ namespace brook {
     virtual void readItem(void * p,unsigned int * index);
     virtual const unsigned int * getExtents() const=0;
     virtual unsigned int getDimension() const {return 0;}
+    virtual const unsigned int * getDomainMin() const {assert(0); return 0;}
+    virtual const unsigned int * getDomainMax() const {assert(0); return 0;}
 
     unsigned int getElementSize() const;
     virtual int getFieldCount() const = 0;
@@ -99,6 +132,18 @@ namespace brook {
     Stream () {}
     virtual void Read(const void* inData) = 0;
     virtual void Write(void* outData) = 0;
+    virtual Stream* Domain(int min, int max) {
+        assert(0); return 0;
+    }
+    virtual Stream* Domain(const int2& min, const int2& max) {
+        assert(0); return 0;
+    }
+    virtual Stream* Domain(const int3& min, const int3& max) {
+        assert(0); return 0;
+    }
+    virtual Stream* Domain(const int4& min, const int4& max) {
+        assert(0); return 0;
+    }
     
     //virtual unsigned int getStride() const {return sizeof(float)*getStreamType();}
     //virtual __BRTStreamType getStreamType ()const{return type;}
@@ -190,7 +235,34 @@ namespace brook {
       return _stream;
     }
 
+    void read (const void *p) {
+      _stream->Read(p);
+    }
+
+    void write (void *p) {
+      _stream->Write(p);
+    }
+
+    ::brook::stream domain(int min, int max) {
+      return stream(_stream->Domain(min, max));
+    }
+
+    ::brook::stream domain(const int2 &min, const int2 &max) {
+      return stream(_stream->Domain(min, max));
+    }
+
+    ::brook::stream domain(const int3 &min, const int3 &max) {
+      return stream(_stream->Domain(min, max));
+    }
+
+    ::brook::stream domain(const int4 &min, const int4 &max) {
+      return stream(_stream->Domain(min, max));
+    }
+
   private:
+    stream(::brook::Stream *s)
+      : _stream(s) {}
+
     ::brook::Stream* _stream;
   };
 

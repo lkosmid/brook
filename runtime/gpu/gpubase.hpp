@@ -103,6 +103,9 @@ namespace brook
 
   struct GPURegion {
     float4 vertices[3];
+    struct {
+        unsigned int minX, minY, maxX, maxY;
+    } viewport;
   };
 
 }

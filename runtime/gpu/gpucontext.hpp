@@ -58,12 +58,18 @@ namespace brook {
 
     virtual void 
     getStreamInterpolant( const TextureHandle texture,
+                          unsigned int rank,
+                          const unsigned int* domainMin,
+                          const unsigned int* domainMax,
                           const unsigned int outputWidth,
                           const unsigned int outputHeight, 
                           GPUInterpolant &interpolant) const = 0;
     
     virtual void
     getStreamOutputRegion( const TextureHandle texture,
+                           unsigned int rank,
+                           const unsigned int* domainMin,
+                           const unsigned int* domainMax,
                            GPURegion &region) const = 0; 
 
     // for reductions
