@@ -20,7 +20,7 @@ DX9Kernel* DX9Kernel::create( DX9RunTime* inRuntime, const void* inSource[] )
 
 DX9Kernel::DX9Kernel( DX9RunTime* inRuntime )
   : runtime(inRuntime), hasPushedOutputIndexof(false),
-  device(NULL)
+  device(NULL), streamShapeMismatch(false), mustMatchShapeStream(NULL)
 {
   device = inRuntime->getDevice();
   device->AddRef();
@@ -100,7 +100,18 @@ bool DX9Kernel::initialize( const char** inProgramStrings )
     s = s.substr( s.find(":")+1 );
     pass.outputCount = atoi( s.substr( 0, s.find(":") ).c_str() );
 
-    passes.push_back(pass);
+    s = s.substr( s.find("!!fullAddressTrans") );
+    s = s.substr( s.find(":")+1 );
+    int addressTrans = atoi( s.substr( 0, s.find(":") ).c_str() );
+
+    if( !addressTrans )
+    {
+      standardPasses.push_back(pass);
+    }
+    else
+    {
+      fullTranslationPasses.push_back(pass);
+    }
   }
 
   // initialize the output rects, just in case
@@ -110,9 +121,12 @@ bool DX9Kernel::initialize( const char** inProgramStrings )
 
 DX9Kernel::~DX9Kernel()
 {
-  int passCount = (int)passes.size();
+  int passCount = (int)standardPasses.size();
   for( int p = 0; p < passCount; p++ )
-    delete passes[p].pixelShader;
+    delete standardPasses[p].pixelShader;
+  passCount = (int)fullTranslationPasses.size();
+  for( int p = 0; p < passCount; p++ )
+    delete fullTranslationPasses[p].pixelShader;
 
   if( device != NULL )
     device->Release();
@@ -136,6 +150,8 @@ void DX9Kernel::PushStream(Stream *s) {
     inputStreamShapeConstantIndices.push_back( shapeConstantIndex );
     PushConstantImpl( stream->getATLinearizeConstant() );
     PushConstantImpl( stream->getATReshapeConstant() );
+
+    matchStreamShape( stream );
   }
   else
   {
@@ -253,6 +269,11 @@ void DX9Kernel::PushOutput(Stream *s) {
     outputSurfaces.push_back(surface);
   }
 
+  if( runtime->isAddressTranslationOn() )
+  {
+    matchStreamShape( stream );
+  }
+
   if( !runtime->isAddressTranslationOn() && argumentUsesIndexof[arg] && !hasPushedOutputIndexof )
   {
     hasPushedOutputIndexof = true;
@@ -361,9 +382,28 @@ void DX9Kernel::Map() {
     }
   }
 
-  int passCount = (int)passes.size();
-  for( int p = 0; p < passCount; p++ )
-    mapPass( passes[p] );
+  if( streamShapeMismatch )
+  {
+    int passCount = (int)fullTranslationPasses.size();
+    if( passCount == 0 )
+    {
+      DX9Assert(false,
+        "A kernel was called with unaligned streams for which a replication-stride "
+        "set of shader passes was not generated.");
+    }
+    for( int p = 0; p < passCount; p++ )
+      mapPass( fullTranslationPasses[p] );
+  }
+  else
+  {
+    int passCount = (int)standardPasses.size();
+    if( passCount == 0 )
+    {
+      DX9Assert(false,"No untranslated passes found to execute");
+    }
+    for( int p = 0; p < passCount; p++ )
+      mapPass( standardPasses[p] );
+  }
 
   int outputStreamCount = (int)outputStreams.size();
   for( int i = 0; i < outputStreamCount; i++ )
@@ -439,6 +479,8 @@ void DX9Kernel::ClearInputs()
 {
   argumentIndex = 0;
   hasPushedOutputIndexof = false;
+  mustMatchShapeStream = NULL;
+  streamShapeMismatch = false;
 
   outputStreams.clear();
   outputSurfaces.clear();
@@ -449,6 +491,33 @@ void DX9Kernel::ClearInputs()
   inputTextures.clear();
   outputReductionDatas.clear();
   outputReductionTypes.clear();
+
+  
+}
+
+void DX9Kernel::matchStreamShape( DX9Stream* inStream )
+{
+  if( mustMatchShapeStream == NULL )
+  {
+    mustMatchShapeStream = inStream;
+    return;
+  }
+  else
+  {
+    int dimensionCount = inStream->getDimension();
+    if( dimensionCount != mustMatchShapeStream->getDimension() )
+    {
+      DX9Assert( false, "Input streams must match in dimensionality" );
+    }
+    for( int d = 0; d < dimensionCount; d++ )
+    {
+      if( inStream->getExtents()[d] != mustMatchShapeStream->getExtents()[d] )
+      {
+       streamShapeMismatch = true;
+        return;
+      }
+    }
+  }
 }
 
 void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
@@ -690,9 +759,9 @@ void DX9Kernel::BindReductionOperationState()
   int samplerCount = (int)inputTextures.size();
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
 
-  DX9Assert( passes.size() == 1, "Only a single output allowed for reductions right now" );
+  DX9Assert( standardPasses.size() == 1, "Only a single output allowed for reductions right now" );
 
-  result = device->SetPixelShader( passes[0].pixelShader->getHandle() );
+  result = device->SetPixelShader( standardPasses[0].pixelShader->getHandle() );
   DX9AssertResult( result, "SetPixelShader failed" );
 
   int sampler0 = inputReductionStreamSamplerIndex;

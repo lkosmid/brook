@@ -25,10 +25,20 @@ bool DX9Stream::initialize(
   int inDimensionCount, const int* inExtents )
 {
   dimensionCount = inDimensionCount;
-  if( (dimensionCount <= 0) || (dimensionCount > 2) )
+  if( (dimensionCount <= 0)
+    || (!runtime->isAddressTranslationOn() && dimensionCount > 2)
+    || (runtime->isAddressTranslationOn() && dimensionCount > 4 ) )
   {
-    DX9Warn("Unable to create stream with %d dimensions.\n"
-      "Dimensions must be greater than 0 and less than 3.", dimensionCount );
+    if( runtime->isAddressTranslationOn() )
+    {
+      DX9Warn("Unable to create stream with %d dimensions.\n"
+        "Dimensions must be greater than 0 and less than 5.", dimensionCount );
+    }
+    else
+    {
+      DX9Warn("Unable to create stream with %d dimensions.\n"
+        "Dimensions must be greater than 0 and less than 3.", dimensionCount );
+    }
     return false;
   }
 
@@ -261,9 +271,9 @@ float4 DX9Stream::getATShapeConstant( const float4& outputShape )
   if( dimensionCount > 1 )
     result.y = (float)extents[1] / outputShape.y;
   if( dimensionCount > 2 )
-    result.z = 0;
+    result.z = (float)extents[2] / outputShape.z;
   if( dimensionCount > 3 )
-    result.w = 0;
+    result.w = (float)extents[3] / outputShape.w;
   return result;
 }
 
@@ -276,7 +286,7 @@ float4 DX9Stream::getATLinearizeConstant()
   if( dimensionCount > 2 )
     result.z = (float)(reversedExtents[0] * reversedExtents[1]) / (float)getTextureWidth();
   if( dimensionCount > 3 )
-    result.w = (float)(reversedExtents[0] * reversedExtents[1]) / (float)getTextureWidth();
+    result.w = (float)(reversedExtents[0] * reversedExtents[1] * reversedExtents[2]) / (float)getTextureWidth();
   return result;
 }
 
@@ -298,8 +308,10 @@ float4 DX9Stream::getATInverseShapeConstant()
   result.x = 1.0f / (float)reversedExtents[0];
   if( dimensionCount > 1 )
     result.y = 1.0f / (float)reversedExtents[1];
-  result.z = 0;
-  result.w = 0;
+  if( dimensionCount > 2 )
+    result.z = 1.0f / (float)reversedExtents[2];
+  if( dimensionCount > 3 )
+    result.w = 1.0f / (float)reversedExtents[3];
   return result;
 }
 

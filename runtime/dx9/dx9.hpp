@@ -94,7 +94,11 @@ namespace brook {
       DX9PixelShader* pixelShader;
       int firstOutput, outputCount;
     };
-    std::vector<Pass> passes;
+    std::vector<Pass> standardPasses;
+    std::vector<Pass> fullTranslationPasses;
+    DX9Stream* mustMatchShapeStream;
+    void matchStreamShape( DX9Stream* inStream );
+    bool streamShapeMismatch;
 
     void mapPass( const Pass& inPass );
 

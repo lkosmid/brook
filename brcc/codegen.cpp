@@ -585,7 +585,7 @@ static void expandStreamFetches( std::ostream& shader, const std::string& argume
 }
 
 static char *
-generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFirstOutput, int inOutputCount ) {
+generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFirstOutput, int inOutputCount, bool fullAddressTrans ) {
   const char xyzw[] = "xyzw";
   std::ostringstream shader;
   bool isReduction = false;
@@ -645,17 +645,16 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
     shader << "float4 __calculateindexof( float4 indexofoutput, float4 shape ) {\n";
     shader << "\treturn floor( indexofoutput*shape ); }\n";
 
-    shader << "float2 __calculatetexpos( float4 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
-    shader << "\tfloat linearIndex = dot( index, linearizeConst );\n";
+    shader << "float2 __calculatetexpos( float4 streamIndex,\n";
+    shader << "float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "float linearIndex = dot( streamIndex, linearizeConst );\n";
     shader << "#ifndef USERECT\n";
     shader << "//HLSL codegen bug workaround\n";
     shader << "\tlinearIndex *= hackConst;\n";
     shader << "#endif\n";
-    shader << "\tfloat2 result;\n";
-    shader << "\tresult.x = frac( linearIndex );\n";
-    shader << "\tresult.y = linearIndex - result.x;\n";
-    shader << "\tresult *= reshapeConst;\n";
-    shader << "return result;\n}\n\n";
+    shader << "float texX = frac( linearIndex );\n";
+    shader << "float texY = linearIndex - texX;\n";
+    shader << "return float2( texX, texY ) * reshapeConst;\n}\n\n";
 
     shader << "void __calculateoutputpos( float2 interpolant, float4 outputConst, out float4 index ) {\n";
     shader << "\tfloat2 cleanInterpolant = floor(interpolant);\n";
@@ -904,13 +903,21 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
         else {
           if( globals.enableGPUAddressTranslation )
           {
-            shader << "\tfloat4 __indexof_" << argName << " = ";
-            shader << "__calculateindexof( __indexofoutput, __streamshape_" << argName;
-            shader << " );\n";
-            shader << "\tfloat2 _tex_" << argName << "_pos = ";
-            shader << "__calculatetexpos( __indexof_" << argName << ", ";
-            shader << "__streamlinearize_" << argName << ", ";
-            shader << "__streamreshape_" << argName << ", __hackconst );\n";
+            if( !fullAddressTrans )
+            {
+              shader << "\tfloat4 __indexof_" << argName << " = __indexofoutput;\n";
+              shader << "\tfloat2 _tex_" << argName << "_pos = __outputtexcoord;\n";
+            }
+            else
+            {
+              shader << "\tfloat4 __indexof_" << argName << " = ";
+              shader << "__calculateindexof( __indexofoutput, __streamshape_" << argName;
+              shader << " );\n";
+              shader << "\tfloat2 _tex_" << argName << "_pos = ";
+              shader << "__calculatetexpos( __indexof_" << argName << ", ";
+              shader << "__streamlinearize_" << argName << ", ";
+              shader << "__streamreshape_" << argName << ", __hackconst );\n";
+            }
           }
 	        expandStreamFetches( shader, args[i]->name->name, args[i]->form );
           if( !globals.enableGPUAddressTranslation && FunctionProp[functionName].contains(i) )
@@ -1133,7 +1140,7 @@ compile_hlsl_code (char *hlslcode) {
 static char *
 append_argument_information (const char *commentstring, char *fpcode,
                              Decl **args, int nArgs,
-                             const char* functionName, int firstOutput, int outputCount )
+                             const char* functionName, int firstOutput, int outputCount, bool fullAddressTrans )
 {
   std::ostringstream fp;
 
@@ -1167,6 +1174,7 @@ append_argument_information (const char *commentstring, char *fpcode,
   fp << commentstring << "workspace:" << globals.workspace << std::endl;
 
   fp << commentstring << "!!multipleOutputInfo:" << firstOutput << ":" << outputCount << ":" << std::endl;
+  fp << commentstring << "!!fullAddressTrans:" << (fullAddressTrans ? 1 : 0 ) << ":" << std::endl;
 
   return strdup(fp.str().c_str());
 }
@@ -1246,12 +1254,12 @@ int getShaderOutputCount( int argumentCount, Decl** arguments, bool& outIsReduct
  *      Note: The caller is responsible for free()ing the returned string.
  */
 
-static char* generateShaderPass( Decl** args, int nArgs, const char* name, int firstOutput, int outputCount, bool ps20_not_fp30 )
+static char* generateShaderPass( Decl** args, int nArgs, const char* name, int firstOutput, int outputCount, bool ps20_not_fp30, bool fullAddressTrans )
 {
   
     char* fpcode;
     char* fpcode_with_brccinfo;
-    char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount );
+    char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount, fullAddressTrans );
     if (shadercode) {
       if (globals.verbose)
         std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
@@ -1283,7 +1291,7 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
 
       fpcode_with_brccinfo =
         append_argument_information(ps20_not_fp30?"//":"##",
-                                    fpcode, args, nArgs, name, firstOutput, outputCount );
+                                    fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans );
       free(fpcode);
 
       if (globals.verbose)
@@ -1296,18 +1304,14 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
     return fpcode_with_brccinfo;
 }
 
-char *
-CodeGen_GenerateCode(Type *retType, const char *name,
-                     Decl **args, int nArgs, const char *body, 
-                     bool ps20_not_fp30)
+bool generateShaderPasses( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans,
+                          std::vector<std::string>& ioShaderStrings )
 {
   bool isReduction = false;
   int outputCount = getShaderOutputCount( nArgs, args, isReduction );
   int maxOutputsPerPass = 1;
   if( ps20_not_fp30 && !isReduction && globals.allowDX9MultiOut )
     maxOutputsPerPass = 4;
-
-  std::vector<std::string> shaderStrings;
 
   int outputsLeft = outputCount;
   int firstOutput = 0;
@@ -1320,26 +1324,54 @@ CodeGen_GenerateCode(Type *retType, const char *name,
     char* shaderString = NULL;
     while( outputsToWrite > 0 )
     {
-      shaderString = generateShaderPass( args, nArgs, name, firstOutput, outputsToWrite, ps20_not_fp30 );
+      shaderString = generateShaderPass( args, nArgs, name, firstOutput, outputsToWrite, ps20_not_fp30, fullAddressTrans );
       if( shaderString ) break;
 
       // try again with fewer outputs
       outputsToWrite--;
       
       // we have failed if we can't even do one output
-      if( outputsToWrite == 0 )
-        return generate_c_code( std::vector<std::string>(), name, ps20_not_fp30?"ps20":"fp30" );
+      if( outputsToWrite == 0 ) return false;
     }
 
-    shaderStrings.push_back( shaderString );
+    ioShaderStrings.push_back( shaderString );
     free( shaderString );
 
     firstOutput += outputsToWrite;
     outputsLeft -= outputsToWrite;
   }
+  return true;
+}
+
+char *
+CodeGen_GenerateCode(Type *retType, const char *name,
+                     Decl **args, int nArgs, const char *body, 
+                     bool ps20_not_fp30)
+{
+  std::vector<std::string> shaderStrings;
+
+  if( globals.enableGPUAddressTranslation )
+  {
+    std::vector<std::string> fullTranslationStrings;
+    if( !generateShaderPasses( args, nArgs, name, ps20_not_fp30, true, fullTranslationStrings ) )
+      fullTranslationStrings.clear();
+    if( !generateShaderPasses( args, nArgs, name, ps20_not_fp30, false, shaderStrings ) )
+      shaderStrings.clear();
+
+    for( std::vector<std::string>::iterator i = fullTranslationStrings.begin();
+      i != fullTranslationStrings.end(); ++i )
+    {
+      shaderStrings.push_back( *i );
+    }
+  }
+  else
+  {
+    if( !generateShaderPasses( args, nArgs, name, ps20_not_fp30, false, shaderStrings ) )
+      shaderStrings.clear();
+  }
 
   char* c_code = generate_c_code( shaderStrings, name,
-                            ps20_not_fp30?"ps20":"fp30");
+                              ps20_not_fp30?"ps20":"fp30");
 
   if (globals.verbose)
     std::cerr << "***Produced this C code:\n" << c_code;
