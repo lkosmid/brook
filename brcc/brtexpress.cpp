@@ -77,7 +77,8 @@ BrtGatherExpr::print (std::ostream& out) const
    else
    {
      // TODO: handle the larger cases
-     std::cerr << "GPU runtimes can't handle gathers greater than 2D" << std::endl;
+     std::cerr << location
+               << "GPU runtimes can't handle gathers greater than 2D.\n";
    }
    out << ")";
 }

@@ -36,10 +36,17 @@
 
 Location NoLocation(0,0,"");
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+std::ostream&
+operator<< (std::ostream& out, const Location& l) {
+   l.printLocation(out);
+   return out;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 Location::printLocation(std::ostream& p) const
 {
-//     p << '"' << file << '"';
-    p << ", " << line << ", " << column;
+   p << file << ':' << line << ": ";
 }
 

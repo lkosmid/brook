@@ -46,6 +46,8 @@ class Location
   ~Location() {}
 
   void printLocation(std::ostream& p) const;
+
+  friend std::ostream& operator<< (std::ostream& o, const Location& l);
 };
 
 extern  Location NoLocation;

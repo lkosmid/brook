@@ -45,7 +45,7 @@ unsigned int getReferenceStream(FunctionDef * fDef) {
       }
    }
    if (!found) {
-      std::cerr << "Error ";
+      std::cerr << fDef->location << "Error: ";
       fDef->location.printLocation(std::cerr);
       std::cerr << " No stream present in kernel or reduce."<<std::endl;
       return 0;
@@ -100,7 +100,7 @@ static Variable * NewGatherArg (Variable * v) {
 
 
 void BRTPS20KernelCode::printInnerCode (std::ostream&out) const {
-   unsigned int i;
+   int i;
    std::string myvoid("void  ");
    FunctionType * ft = static_cast<FunctionType *>(fDef->decl->form);
    out << myvoid;
@@ -181,7 +181,7 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
                     }
                  }
               }
-              unsigned int i;
+              int i;
               for (i=0;i<fc->nArgs();++i) {
                  if (fc->args[i]->etype==ET_Variable){
                     Variable * v = static_cast<Variable*>(fc->args[i]);

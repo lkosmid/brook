@@ -41,8 +41,7 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
                }else if (fc->args[2]->etype==ET_Variable) {
                   strm = static_cast<Variable*>(fc->args[2]);
                }else {
-                  std::cerr << "Error:";
-                  fc->location.printLocation(std::cerr);
+                  std::cerr << fc->location << "Error: ";
                   std::cerr << "Function args must be stream variables";
                   assert (0);
                }
