@@ -235,7 +235,9 @@ main(int argc, char *argv[])
    TransUnit *tu;
 
    parse_args(argc, argv);
-   std::cerr << "***Compiling " << globals.sourcename << "\n";
+   if (globals.verbose) {
+      std::cerr << "***Compiling " << globals.sourcename << "\n";
+   }
 
    proj = new Project();
    tu = proj->parse(globals.sourcename, false, NULL, false, NULL, NULL, NULL);
@@ -267,7 +269,9 @@ main(int argc, char *argv[])
       exit(1);
    }
 
-   std::cerr << "***Successfully compiled " << globals.sourcename << "\n";
+   if (globals.verbose) {
+      std::cerr << "***Successfully compiled " << globals.sourcename << "\n";
+   }
    delete proj;
    exit(0);
    return 0;    /* Appease CL */

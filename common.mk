@@ -150,7 +150,7 @@ endif
 
 ##  Compile .br files ##
 $(OBJDIR)/%.cpp: %.br
-ifdef COMPILER_ECHOES
+ifndef COMPILER_ECHOES
 	@$(ECHO) $<
 endif
 	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $<
