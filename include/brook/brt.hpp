@@ -12,6 +12,7 @@ extern "C" {
 typedef struct fixed {
   fixed(unsigned char _x) { x =_x;}
   fixed(float _x) {if (_x>1) _x=1; if (_x<0)_x=0; x = (unsigned char)(_x*255);}
+   fixed(float _x,float _y,float _z,float _w) {if (_x>1) _x=1; if (_x<0)_x=0; x = (unsigned char)(_x*255);}
   fixed(void) {}
   operator __BrtFloat1()const {return __BrtFloat1(((float)x)/255.0f);}
   template <class T> T castToArg(const T&dummy)const{return T(((float)x)/255.0f);}
@@ -23,6 +24,7 @@ typedef struct fixed {
 
 typedef struct fixed2 {
   fixed2(float _x, float _y) { x = (unsigned char)(_x*255); y = (unsigned char)(_y*255); }
+   fixed2(float _x, float _y, float _z, float _w) { x = (unsigned char)(_x*255); y = (unsigned char)(_y*255); }
   fixed2(unsigned char _x, unsigned char _y) { x = _x;y=_y;}
   fixed2(void) {}
   unsigned char x,y,pad2,pad3;
@@ -32,6 +34,7 @@ typedef struct fixed2 {
 
 typedef struct fixed3 {
   fixed3(float _x, float _y, float _z) { x = (unsigned char)(_x*255); y = (unsigned char)(_y*255); z=(unsigned char)(_z*255);}
+   fixed3(float _x, float _y, float _z, float _w) { x = (unsigned char)(_x*255); y = (unsigned char)(_y*255); z=(unsigned char)(_z*255);}
   fixed3(unsigned char _x, unsigned char _y, unsigned char _z) { x = _x;y=_y;z=_z;}
   fixed3(void) {}
   operator __BrtFloat3() const{return __BrtFloat3(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f);}
