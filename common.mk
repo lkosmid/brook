@@ -74,23 +74,23 @@ makedirs:
 	@if test ! -d $(OBJDIR); then $(MKDIR) $(OBJDIR); fi
 	@if test ! -d $(BINDIR); then $(MKDIR) $(BINDIR); fi
 
-.SUFFIXES : $OBJSUFFIX .c .cpp .br
+.SUFFIXES : $(OBJSUFFIX) .c .cpp .br
 
 $(OBJDIR)/%$(OBJSUFFIX): %.c
-	@$(CC) $(CFLAGS) $(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
+	$(CC) $(CFLAGS) $(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
 $(OBJDIR)/%$(OBJSUFFIX): %.cpp
-	@$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
+	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
 .br.c:
-	@brcc $<
+	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $<
 
 $(BINDIR)/$(BINARY): $(OBJS) $(ADDITIONAL_DEPENDANCIES)
 	@$(ECHO) Building $@
 ifdef STATIC_LIBRARY
-	@$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)
+	$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)
 else
-	@$(LD) $(LDFLAGS) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LD_LIBRARIES_LINK)
+	$(LD) $(LDFLAGS) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LD_LIBRARIES_LINK)
 endif
 
 
@@ -106,3 +106,6 @@ else
 	@rm -rf $(OBJDIR) $(BINDIR)/$(BINARY) $(SLOP) *.proto.cpp $(BINDIR)/$(BINARY_NAME).pdb *~ *MCTEMPFILE* $(FRAGMENT_PROGRAMS)
 endif
 
+ifndef VERBOSE
+.SILENT:
+endif
