@@ -142,7 +142,7 @@ void TransformBlockStemnt (Block *fd, FunctionType * ft, Decl * vout_counter) {
                std::string voutname=static_cast<Variable*>
                   (fc->args[0])->name->name;
                Decl * streamDecl=NULL;
-               for (unsigned int i=0;i<ft->nArgs;++i) {
+               for (unsigned int i=0;i<(unsigned int)ft->nArgs;++i) {
                   if (ft->args[i]->name->name
                       ==std::string("__")+voutname+"_stream") {
                      streamDecl=ft->args[i];
