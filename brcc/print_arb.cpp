@@ -82,7 +82,10 @@ std::ostream &  UnaOp::print_arbfp (std::ostream & s)const {
 	return s;
 }
 std::ostream &NrmOp::print_arbfp(std::ostream &s)const {
-  OpCode OP("DOT",InstructionFlags(InstructionFlags::FULL,false));  
+  char inst[]="DP3";
+  //if (src0.swizzle.length()==3)
+  //inst[2]='3';
+  OpCode OP(inst,InstructionFlags(InstructionFlags::FULL,false));  
   OP.print_arbfp(s);
   Register dstalias(dst);
   if (dstalias.swizzle.length()==0) {
@@ -108,9 +111,9 @@ std::ostream &NrmOp::print_arbfp(std::ostream &s)const {
   s<<arbdelim;
   //dstalias.swizzle+=dstalias.swizzle;
   //dstalias.swizzle+=dstalias.swizzle;//replicate 4x
-  dstalias.print_arbfp(s);
-  s<<arbdelim;
   src0.print_arbfp(s);
+  s<<arbdelim;
+  dstalias.print_arbfp(s);
   s<<arbendl;
   return s;
 }
