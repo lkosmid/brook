@@ -1,0 +1,126 @@
+/*
+ * Copyright (C) 2003 Sandia Corporation
+ * Under the terms of Contract DE-AC04-94AL85000, there is a non-exclusive
+ * license for use of this work by or on behalf of the U.S. Government.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that this Notice and any statement
+ * of authorship are reproduced on all copies.
+ *
+ * $Id$
+ */
+
+/* Some of the programs needed for performing the FFT of real functions.
+ * Does a trick where it performs the FFT of two rows at a time, using one
+ * as the imaginary and the other as the real. */
+/* For more information, see the following paper:
+ * Moreland, K. and Angel, E.  "The FFT on a GPU," in Proceedings of
+ * SIGGRAPH/Eurographics Workshop on Graphics Hardware 2003, (July
+ * 2003). */
+
+
+#ifndef FFT_DIM
+#error Need to define FFT_DIM to either x or y
+#endif
+
+#define M_PI		3.14159265358979323846
+#define M_TWOPI		(M_PI * 2.0)
+
+kernel void complex_mult(in float4 ar<>, in float4 ai<>,
+                         in float4 br<>, in float4 bi<>,
+                         out float4 resultr<>, out float4 resulti<>)
+{
+    resultr = ar*br - ai*bi;
+    resulti = ar*bi + ai*br;
+}
+
+/* Real stored in x, imaginary stored in y. */
+kernel void W(in float N, in float k, out float2 result<>)
+{
+    float angle = -M_TWOPI*k/N;
+    result.x = cos(angle);
+    result.y = sin(angle);
+}
+
+struct vert2frag
+{
+#ifdef CALCULATE_REAL
+    float4 realCoord	: POSITION;
+    float4 realIndex	: WPOS;
+    float4 imagIndex	: TEXCOORD0;
+#endif
+#ifdef CALCULATE_IMAGINARY
+    float4 imagCoord	: POSITION;
+    float4 realIndex	: TEXCOORD0;
+    float4 imagIndex	: WPOS;
+#endif
+};
+
+struct frag2frame
+{
+    float4 value : COLOR;
+};
+
+vert2frag FFTVert(app2vert input,
+		  uniform float2 ArraySize)
+{
+    vert2frag output;
+#ifdef CALCULATE_REAL
+    output.realCoord.xy = 2*input.realIndex.xy/ArraySize - 1;
+    output.realCoord.zw = input.realIndex.zw;
+    output.imagIndex = input.imagIndex;
+#endif
+#ifdef CALCULATE_IMAGINARY
+    output.realIndex = input.realIndex;
+    output.imagCoord.xy = 2*input.imagIndex.xy/ArraySize - 1;
+    output.imagCoord.zw = input.imagIndex.zw;
+#endif
+    return output;
+}
+
+/* direction is set to 1 for the forward FFT, -1 for the reverse FFT.
+ * Scaling is not done for the reverse FFT (it is instead done during
+ * tangling).*/
+frag2frame FFTFrag(vert2frag input,
+		   uniform float2 ArraySize,
+		   uniform float PartitionSize,
+		   uniform float NumPartitions,
+		   uniform float Direction,
+		   uniform samplerRECT InputSamples,
+                   out float4 outputcolor<>)
+{
+    frag2frame output;
+    float isImag = round(fmod(input.y,2))==1;
+    float2 real_index = isImag?opposingIndex:(indexof outputcolor).xy;
+    float2 imag_index = isImag?(indexof outputcolor).xy:opposingIndex;
+    float fft_index;    
+    float k = floor(input.realIndex.FFT_DIM / NumPartitions);
+  /* This modifier will perform a mod ArraySize. */
+    float modifier = (float)(real_index.FFT_DIM >= ArraySize.FFT_DIM/2);
+    modifier *= ArraySize.FFT_DIM;
+
+    fft_index = real_index.FFT_DIM + k*NumPartitions - modifier;
+
+    real_index.FFT_DIM = imag_index.FFT_DIM = fft_index;
+
+    float4 Gr = InputSamples[real_index];
+    float4 Gi = InputSamples[imag_index];
+
+    real_index.FFT_DIM += NumPartitions;
+    imag_index.FFT_DIM += NumPartitions;
+
+    float4 Hr = f4texRECT(InputSamples, real_index);
+    float4 Hi = f4texRECT(InputSamples, imag_index);
+
+    float2 WNk = W(PartitionSize, k);
+
+    float4 WHr, WHi;
+    complex_mult(WNk.xxxx, Direction*WNk.yyyy, Hr, Hi, WHr, WHi);
+
+#ifdef CALCULATE_REAL
+    output.value = Gr + WHr;
+#endif
+#ifdef CALCULATE_IMAGINARY
+    output.value = Gi + WHi;
+#endif
+    return output;
+}
