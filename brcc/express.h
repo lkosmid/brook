@@ -50,7 +50,7 @@ class Type;
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
-typedef void (*fnExprCallback)(Expression *expr);
+typedef Expression *(*fnExprCallback)(Expression *expr);
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 enum ExpressionType

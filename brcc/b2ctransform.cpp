@@ -13,7 +13,7 @@
 #include "main.h"
 #include "brook2cpp.h"
 
-template <class ConverterFunctor> void ConvertToT (Expression * expression);
+template <class ConverterFunctor> Expression *ConvertToT (Expression * expression);
 using std::cout;
 using std::endl;
 BinaryOp TranslatePlusGets (AssignOp ae) {
@@ -217,9 +217,10 @@ class BaseType1:public BaseType {public:
 
 
 
-void ArrayBlackmailer(Expression * e) {
-    ArrayBlacklist.insert(e);
+Expression *ArrayBlackmailer(Expression * e) {
+   ArrayBlacklist.insert(e);   
 //	cout << "blackmailing "<< e<<endl; 
+   return e;
 }
 void BlackmailType(Type **t);
 
@@ -308,7 +309,7 @@ class NewIndexExpr :public IndexExpr {public:
     }
         
 };
-void ConvertToTIndexExprConverter(Expression * e);
+Expression *ConvertToTIndexExprConverter(Expression * e);
 class IndexExprConverter{public:
     Expression * operator()(Expression * e) {
         IndexExpr *ie;
@@ -370,7 +371,7 @@ class NewArrayConstant:public ArrayConstant {public:
         out << ")";
     }
 };
-void ConvertToTConstantExprConverter (Expression *);
+Expression *ConvertToTConstantExprConverter (Expression *);
 class ConstantExprConverter{public:
     Expression * operator()(Expression * e) {
         Constant *con;
@@ -446,7 +447,7 @@ class SwizzleConverter{public:
         return NULL;
     }
 };
-void ConvertToTMaskConverter (Expression * e);
+Expression *ConvertToTMaskConverter (Expression * e);
 class MaskConverter{public:
 Expression * operator () (Expression * e) {
     AssignExpr * ae;
@@ -489,7 +490,7 @@ public:
     }
     virtual void findExpr( fnExprCallback cb ) { next->findExpr(cb); }    
 };
-template <class ConverterFunctor> void ConvertToT (Expression * expression) {
+template <class ConverterFunctor> Expression *ConvertToT (Expression * expression) {
     if (ArrayBlacklist.find(expression)==ArrayBlacklist.end()) {
         Expression * e = ConverterFunctor()(expression);
         if (e) {
@@ -503,44 +504,50 @@ template <class ConverterFunctor> void ConvertToT (Expression * expression) {
             
         }
     }
+    return expression;
 }
 
-void ConvertToTMaskConverter (Expression * e) {
+Expression *ConvertToTMaskConverter (Expression * e) {
 	ConvertToT<MaskConverter>(e);
+        return e;
 }
 void FindMask (Statement * s) {
     s->findExpr(&ConvertToTMaskConverter);
 }
-void ConvertToTSwizzleConverter (Expression * e) {
+Expression *ConvertToTSwizzleConverter (Expression * e) {
 	ConvertToT<SwizzleConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
+        return e;
 }
 void FindSwizzle (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTSwizzleConverter);
 }
-void ConvertToTQuestionColonConverter (Expression * e) {
+Expression *ConvertToTQuestionColonConverter (Expression * e) {
 	ConvertToT<QuestionColonConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
+        return e;
 }
 void FindQuestionColon (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTQuestionColonConverter);
 }
-void ConvertToTIndexExprConverter (Expression * e) {
+Expression *ConvertToTIndexExprConverter (Expression * e) {
 	ConvertToT<IndexExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
+        return e;
 }
 void FindIndexExpr (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTIndexExprConverter);
 }
-void ConvertToTConstantExprConverter (Expression * e) {
+Expression *ConvertToTConstantExprConverter (Expression * e) {
 	ConvertToT<ConstantExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
+        return e;
 }
 void FindConstantExpr (Statement * s) {
-	void (*tmp)(class Expression *) = &ConvertToTConstantExprConverter;
-    s->findExpr(tmp);
+   Expression * (*tmp)(class Expression *) = &ConvertToTConstantExprConverter;
+   s->findExpr(tmp);
 }
 void RestoreTypes(BRTKernelDef *kDef){
 	ArrayBlacklist.clear();
 	kDef->findStemnt (FindTypesDecl);
 }
-void ChangeFunctionTarget (Expression * e) {
+Expression *ChangeFunctionTarget (Expression * e) {
 	if (e->etype==ET_FunctionCall) {
 		Expression *k= static_cast<FunctionCall *>(e)->function;
 		if (k->etype==ET_Variable) {
@@ -548,6 +555,7 @@ void ChangeFunctionTarget (Expression * e) {
 			s->name="_cpu_"+s->name;
 		}
 	}
+        return e;
 }
 void FindFunctionCall (Statement * s) {
 	s->findExpr(ChangeFunctionTarget);

@@ -656,13 +656,12 @@ ArrayConstant::print(std::ostream& out) const
 void
 ArrayConstant::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
+    ExprVector::iterator    j;
 
-    ExprVector::const_iterator    j;
-
-    for (j =items.begin(); j != items.end(); j++)
+    for (j = items.begin(); j != items.end(); j++)
     {
-        (*j)->findExpr(cb);
+       *j = (cb)(*j);
+       (*j)->findExpr(cb);
     }
 }
 
@@ -866,14 +865,14 @@ FunctionCall::print(std::ostream& out) const
 void
 FunctionCall::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
-
-    function->findExpr(cb);
+   function = (cb)(function);
+   function->findExpr(cb);
 
     ExprVector::iterator    j = args.begin();
 
     for (j = args.begin(); j != args.end(); j++)
     {
+        *j = (cb)(*j);
         (*j)->findExpr(cb);
     }
 }
@@ -978,8 +977,7 @@ UnaryExpr::precedence() const
 void
 UnaryExpr::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
-
+    _operand = (cb)(_operand);
     _operand->findExpr(cb);
 }
 
@@ -1105,10 +1103,10 @@ BinaryExpr::precedence() const
 void
 BinaryExpr::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
-
-    _leftExpr->findExpr(cb);
-    _rightExpr->findExpr(cb);
+   _leftExpr = (cb)(_leftExpr);
+   _leftExpr->findExpr(cb);
+   _rightExpr = (cb)(_rightExpr);
+   _rightExpr->findExpr(cb);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1167,10 +1165,11 @@ TrinaryExpr::print(std::ostream& out) const
 void
 TrinaryExpr::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
-
+    _condExpr = (cb)(_condExpr);
     _condExpr->findExpr(cb);
+    _trueExpr = (cb)(_trueExpr);
     _trueExpr->findExpr(cb);
+    _falseExpr = (cb)(_falseExpr);
     _falseExpr->findExpr(cb);
 }
 
@@ -1347,7 +1346,7 @@ CastExpr::print(std::ostream& out) const
 void
 CastExpr::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
+    expr = (cb)(expr);
 
     expr->findExpr(cb);
 }
@@ -1417,10 +1416,10 @@ SizeofExpr::print(std::ostream& out) const
 void
 SizeofExpr::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
-
-    if (expr != NULL)
-        expr->findExpr(cb);
+   if (expr != NULL) {
+      expr = (cb)(expr);
+      expr->findExpr(cb);
+   }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1478,10 +1477,10 @@ IndexExpr::print(std::ostream& out) const
 void
 IndexExpr::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
-
-    array->findExpr(cb);
-    _subscript->findExpr(cb);
+   array = (cb)(array);
+   array->findExpr(cb);
+   _subscript = (cb)(_subscript);
+   _subscript->findExpr(cb);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1545,9 +1544,10 @@ ConstructorExpr::print(std::ostream& out) const
 void
 ConstructorExpr::findExpr( fnExprCallback cb )
 {
-    (cb)(this);
-
-    for (unsigned int i = 0; i < _nExprs; i++) { exprN(i)->findExpr(cb); }
+    for (unsigned int i = 0; i < _nExprs; i++) { 
+       _exprs[i] = (cb)(exprN(i));
+       exprN(i)->findExpr(cb); 
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

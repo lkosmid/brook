@@ -104,8 +104,10 @@ BrtStreamType::findExpr( fnExprCallback cb )
     if (base)
         base->findExpr(cb);
 
-    for (unsigned int i=0; i<dims.size(); i++)
-      dims[i]->findExpr(cb);
+    for (unsigned int i=0; i<dims.size(); i++) {
+       dims[i] = (cb)(dims[i]);
+       dims[i]->findExpr(cb);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

@@ -31,7 +31,7 @@ class FunctionDef;
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
-typedef void (*fnExprCallback)(Expression *expr);
+typedef Expression *(*fnExprCallback)(Expression *expr);
 
 typedef void (*fnStemntCallback)(Statement *stemnt);
 

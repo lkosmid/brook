@@ -222,17 +222,19 @@ Label::print(std::ostream& out, int level) const
 void
 Label::findExpr( fnExprCallback cb )
 {
-    switch (type)
-    {
-        default:
-            break;
-
-        case LT_CaseRange:
-            end->findExpr(cb);
-        case LT_Case:
-            begin->findExpr(cb);
-            break;
-    }
+   switch (type)
+      {
+      default:
+         break;
+         
+      case LT_CaseRange:
+         end = (cb)(end);
+         end->findExpr(cb);
+      case LT_Case:
+         begin = (cb)(begin);
+         begin->findExpr(cb);
+         break;
+      }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -340,8 +342,9 @@ void
 Statement::findExpr( fnExprCallback cb )
 {
     LabelVector::iterator    j;
-    for (j=labels.begin(); j != labels.end(); j++)
-        (*j)->findExpr(cb);
+    for (j=labels.begin(); j != labels.end(); j++) {
+       (*j)->findExpr(cb);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -533,8 +536,10 @@ ExpressionStemnt::print(std::ostream& out, int level) const
 void
 ExpressionStemnt::findExpr( fnExprCallback cb )
 {
-    Statement::findExpr(cb);
-    expression->findExpr(cb);
+   Statement::findExpr(cb);
+   
+   expression = (cb)(expression);
+   expression->findExpr(cb);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -604,13 +609,16 @@ IfStemnt::findExpr( fnExprCallback cb )
 {
     Statement::findExpr(cb);
 
+    cond = (cb)(cond);
     cond->findExpr(cb);
 
     thenBlk->findExpr(cb);
 
-    if (elseBlk)
-        elseBlk->findExpr(cb);
+    if (elseBlk) {
+       elseBlk->findExpr(cb);
+    }
 }
+
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
@@ -680,6 +688,7 @@ void
 SwitchStemnt::findExpr( fnExprCallback cb )
 {
     Statement::findExpr(cb);
+    cond = (cb)(cond);
     cond->findExpr(cb);
     block->findExpr(cb);
 }
@@ -770,17 +779,21 @@ ForStemnt::findExpr( fnExprCallback cb )
 {
     Statement::findExpr(cb);
 
-    if (init != NULL)
-        init->findExpr(cb);
-
-    if (cond != NULL)
-        cond->findExpr(cb);
-
-    if (incr != NULL)
-        incr->findExpr(cb);
-
-    if (block != NULL)
-        block->findExpr(cb);
+    if (init != NULL) {
+       init = (cb)(init);
+       init->findExpr(cb);
+    }
+    if (cond != NULL) {
+       cond = (cb)(cond);
+       cond->findExpr(cb);
+    }
+    if (incr != NULL) {
+       incr = (cb)(incr);
+       incr->findExpr(cb);
+    }
+    if (block != NULL) {
+       block->findExpr(cb); 
+   }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -850,10 +863,12 @@ WhileStemnt::findExpr( fnExprCallback cb )
 {
     Statement::findExpr(cb);
 
+    cond = (cb)(cond);
     cond->findExpr(cb);
 
-    if (block)
-        block->findExpr(cb);
+    if (block) {
+       block->findExpr(cb);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -931,10 +946,12 @@ DoWhileStemnt::findExpr( fnExprCallback cb )
 {
     Statement::findExpr(cb);
 
+    cond = (cb)(cond);
     cond->findExpr(cb);
 
-    if (block)
-        block->findExpr(cb);
+    if (block) {
+       block->findExpr(cb);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1046,8 +1063,10 @@ ReturnStemnt::findExpr( fnExprCallback cb )
 {
     Statement::findExpr(cb);
 
-    if (result)
-        result->findExpr(cb);
+    if (result) {
+       result = (cb)(result);
+       result->findExpr(cb);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1189,7 +1208,7 @@ DeclStemnt::findExpr( fnExprCallback cb )
 
     for (j = decls.begin(); j != decls.end(); j++)
     {
-        (*j)->findExpr(cb);
+       (*j)->findExpr(cb);
     }
 }
 
@@ -1376,7 +1395,7 @@ Block::findExpr( fnExprCallback cb )
 
     for (stemnt=head; stemnt; stemnt=stemnt->next)
     {
-        stemnt->findExpr(cb);
+       stemnt->findExpr(cb);
     }
 }
 

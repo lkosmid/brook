@@ -560,8 +560,10 @@ ArrayType::findExpr( fnExprCallback cb )
     if (subType)
         subType->findExpr(cb);
 
-    if (size)
-        size->findExpr(cb);
+    if (size) {
+       size = (cb)(size);
+       size->findExpr(cb);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -667,8 +669,10 @@ BitFieldType::printForm(std::ostream& out) const
 void
 BitFieldType::findExpr( fnExprCallback cb )
 {
-    if (size)
-        size->findExpr(cb);
+   if (size) {
+      size = (cb)(size);
+      size->findExpr(cb);
+   }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1246,8 +1250,10 @@ EnumDef::findExpr( fnExprCallback cb )
 {
     for (int j=0; j < nElements; j++)
     {
-        if (values[j] != NULL)
-            values[j]->findExpr(cb);
+       if (values[j] != NULL) {
+          values[j] = (cb)(values[j]);
+          values[j]->findExpr(cb);
+       }
     }
 }
 
@@ -1468,8 +1474,10 @@ Decl::findExpr( fnExprCallback cb )
     if (form)
         form->findExpr(cb);
 
-    if (initializer != NULL)
-        initializer->findExpr(cb);
+    if (initializer != NULL) {
+       initializer = (cb)(initializer);
+       initializer->findExpr(cb);
+    }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
