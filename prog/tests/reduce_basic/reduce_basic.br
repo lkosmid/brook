@@ -1,0 +1,29 @@
+#include <stdio.h>
+
+reduce void SUM( float4 a<>, reduce float4 b ) {
+	b = b + a;
+}
+
+int main () {
+
+  float4 a< 10, 10 >;
+  
+  float4 data_a[10][10];
+  float4 result;
+
+  int i,j;
+
+  for (i=0; i<10; i++)
+    for (j=0; j<10; j++) {
+      data_a[i][j].x = (float)i;
+      data_a[i][j].y = (float)j;
+      data_a[i][j].z = (float)1;
+      data_a[i][j].w = (float)2;
+    }
+  streamRead(a, data_a);
+  
+  SUM(a,result);
+
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", result.x,result.y,result.z,result.w);
+  return 0;
+}
