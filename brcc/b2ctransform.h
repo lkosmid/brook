@@ -11,5 +11,9 @@ class FunctionDef;
 
 extern void
 Brook2Cpp_ConvertKernel(FunctionDef *kDef);
-
+extern void 
+BrookReduce_ConvertKernel (FunctionDef * kdef);
+extern void
+BrookCombine_ConvertKernel (FunctionDef * kdef);
 #endif
+
