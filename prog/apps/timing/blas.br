@@ -5,11 +5,13 @@
 #include "main.h"
 #include "blas.h"
 
-#define MAX_DIM     2048
+#define MAX_DIM         2048
 
-#define DO_VERIFY   0 
+#define DO_VERIFY       0 
 
-#define EPS 1e-3f
+#define EPS             1e-3f
+
+#define MAX_NZ_PER_ROW  7
 
 
 // SDOT related kernels ////////////////////////////////////////////////////////////
@@ -26,8 +28,12 @@ reduce void sumReduceKernel(float4 x<>, reduce float4 result<>) {
 }
 
 
-kernel void forceReadBack(float4 input<>, out float result<>) {
-  result = 0.0f;
+kernel void forceGPUFlush_float4(float4 input<>, out float4 result<>) {
+  result = input;
+}
+
+kernel void forceGPUFlush_float1(float input<>, out float result<>) {
+  result = input;
 }
 
 
@@ -65,6 +71,21 @@ kernel void denseMatVecKernel(iter float2 it1<>, iter float2 it2<>,
   result = (alpha * Ax) + (beta * y);
  }
 
+/*** Kernels needed for Sparse Matrix-Dense Vector multiplication ****/
+
+kernel void sparse_matmult_product( float index<>, float x[][], float A<>, out float result<> )
+{
+  // if we wanted to go 4-wide here, we'd have to fetch 4 different x elements.  We also must
+  // then do math to determine the component in the float4 that is desired.  The float4 packing
+  // in the case of general-sparse matrices doesn't seem provide any computation speedup, just
+  // mem savings.
+  result = x[index][0] * A;
+}
+
+
+reduce void sum(float a<>, reduce float result) {
+  result += a;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -111,29 +132,46 @@ static int fequals(float a, float b, float tol) {
 
 void saxpy_2d(int dim1, int dim2, float *x, float *y, float alpha, int num_iter, int* innerTime) {
 
-  float  force[1];
-  float  forceStrm<1>;
+  float4  flush[1];
+  float4  flushStrm<1>;
+
   float4 xStrm<dim1, dim2>;
   float4 yStrm<dim1, dim2>;
+  float4 zStrm<dim1, dim2>;
   int i;
   int millisStart, millisStop;
 
   streamRead(xStrm, x);
   streamRead(yStrm, y);
 
+  forceGPUFlush_float4(xStrm, flushStrm);
+  streamRead(flushStrm, flush);
+
   millisStart = GetTimeMillis();
 
-  for (i=1;i<=num_iter;i++)
-    saxpyKernel(xStrm, yStrm, alpha, xStrm);
+  // result = alpha*x + y each iteration
+  for (i=1;i<=num_iter;i++) {
+    if (i & 1) 
+      saxpyKernel(xStrm, yStrm, alpha, zStrm);
+    else
+      saxpyKernel(xStrm, zStrm, alpha, yStrm);
+  }
 
-  forceReadBack(xStrm, forceStrm);
-  streamRead(forceStrm, force);
+  if (i & 1)
+    forceGPUFlush_float4(yStrm, flushStrm);
+  else
+    forceGPUFlush_float4(zStrm, flushStrm);
+
+  streamRead(flushStrm, flush);
 
   millisStop = GetTimeMillis();
 
   *innerTime = (int)(millisStop-millisStart);
 
-  streamWrite(xStrm, y);
+  if (i & 1)
+    streamWrite(yStrm, y);
+  else
+    streamWrite(zStrm, y);
 }
 
 
@@ -198,27 +236,10 @@ void do_saxpy(int length, int num_iter, int* timing, float* flops) {
 
 
 
-void sdot(int strmSize, float* x, float* y, float* result) {
-   
-  float4 sums;
-  float4 xStrm<strmSize>;
-  float4 yStrm<strmSize>;
-  float4 tmpStrm<strmSize>;
-
-  streamRead(xStrm, x);
-  streamRead(yStrm, y);
-
-  multKernel(xStrm, yStrm, tmpStrm);
-  sumReduceKernel(tmpStrm, sums);
- 
-  *result = sums.x + sums.y + sums.z + sums.w;
-}
-
-
 void sdot_2d(int dim1, int dim2, float* x, float* y, float* result, int num_iter, int* innerTime) {
 
-  float force[1];
-  float forceStrm<1>;
+  float4 flush[1];
+  float4 flushStrm<1>;
 
   float4 sums;
   float4 xStrm<dim1, dim2>;
@@ -230,6 +251,10 @@ void sdot_2d(int dim1, int dim2, float* x, float* y, float* result, int num_iter
   streamRead(xStrm, x);
   streamRead(yStrm, y);
 
+  forceGPUFlush_float4(xStrm, flushStrm);
+  forceGPUFlush_float4(yStrm, flushStrm);
+  streamRead(flushStrm, flush);
+
   millisStart = GetTimeMillis();
 
   for (i=1;i<=num_iter;i++) {
@@ -237,8 +262,8 @@ void sdot_2d(int dim1, int dim2, float* x, float* y, float* result, int num_iter
     sumReduceKernel(tmpStrm, sums);
   }
 
-  forceReadBack(tmpStrm, forceStrm);
-  streamRead(forceStrm, force);
+  forceGPUFlush_float4(xStrm, flushStrm);
+  streamRead(flushStrm, flush);
 
   millisStop = GetTimeMillis();
 
@@ -311,13 +336,14 @@ void do_sdot(int length, int num_iter, int* timing, float* flops) {
 void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
                  float* x, float* y, float* A, float alpha, float beta, int num_iter, int* innerTime) {
 
-  float force[1];
-  float forceStrm<1>;
+  float4 flush[1];
+  float4 flushStrm<1>;
 
   int i;
   int millisStart, millisStop;
   float4 xStrm<1,dim>;
   float4 yStrm<dim, 1>;
+  float4 zStrm<dim, 1>;
   float4 AStrm<dim, wideDim>;
 
   float4 tmpStrm<dim, dim>;
@@ -332,22 +358,30 @@ void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
   streamRead(yStrm, y);
   streamRead(AStrm, A);
 
+  forceGPUFlush_float4(xStrm, flushStrm);
+  forceGPUFlush_float4(yStrm, flushStrm);
+  forceGPUFlush_float4(AStrm, flushStrm);
+  streamRead(flushStrm, flush);
+
   millisStart = GetTimeMillis();
 
+  // Computation here is sort of meaningless. Each iteration computes z = aAx + y
+  // z is never used again... should be fed back in, but input needs a <1,dim>, where
+  // z is a <dim, 1>.  Worry about it later
   for (i=1;i<=num_iter;i++) {
     denseMatVecKernel(it1, it2, it3, it4, AStrm, xStrm, tmpStrm);
     sumReduceKernel(tmpStrm, resultStrm);
-    denseMatVecScaleAddKernel(yStrm, resultStrm, yStrm, alpha, beta);
+    denseMatVecScaleAddKernel(yStrm, resultStrm, zStrm, alpha, beta);
   }
 
-  forceReadBack(yStrm, forceStrm);
-  streamRead(forceStrm, force);
+  forceGPUFlush_float4(zStrm, flushStrm);
+  streamRead(flushStrm, flush);
 
   millisStop = GetTimeMillis();
 
   *innerTime = (int)(millisStop - millisStart);
 
-  streamWrite(yStrm, y);
+  streamWrite(zStrm, y);
 }
 
 
@@ -452,7 +486,158 @@ void do_sgemv(int length, int num_iter, int* timing, float* flops) {
 }
 
 
-kernel void fooKernel(float a<>, out float b<>) {
+// hackish cube root function
+int intCubeRoot(int x) {
+
+  int i = 0;
+
+  assert(x >= 0 && x < 100*100*100);
+
+  while (i*i*i <= x)
+    i++;
+
+  return i-1;
+  
+}
+
+
+void createMatrix(int length, float* A, float* Aind) {
+
+  int i,j, colIdx, nnz;
+  int offset = intCubeRoot(length);
+  int offsets[MAX_NZ_PER_ROW];
+
+  offsets[0] = -1 * offset * offset;
+  offsets[1] = -1 * offset;
+  offsets[2] = -1;
+  offsets[3] =  0;
+  offsets[4] =  1;
+  offsets[5] =  offset;
+  offsets[6] =  offset * offset;
+
+
+  for (i=0;i<length;i++) {
+    nnz = 0;
+
+    for (j=0; j<MAX_NZ_PER_ROW; j++) {
+        colIdx = i + offsets[j];
+        if (colIdx >= 0 && colIdx < length) {
+          A[i*MAX_NZ_PER_ROW + nnz] = (j == 3) ? 6.0f : -1.0f;
+          Aind[i*MAX_NZ_PER_ROW + nnz] = (float)colIdx;
+          nnz++;
+        }
+    }
+     
+    while (nnz < MAX_NZ_PER_ROW) {
+        A[i*MAX_NZ_PER_ROW + nnz] = 0.0f;
+        Aind[i*MAX_NZ_PER_ROW + nnz] = 0.0f;
+        nnz++;
+    }
+  }
+}
+
+
+void spMatVecf1(int strmDim, float* A, float* Aind, float* x, float* y, int num_iter, int* innerTime) {
+
+  float flush[1];
+  float flushStrm<1>;
+
+  float AStrm<strmDim, MAX_NZ_PER_ROW>;
+  float AindStrm<strmDim, MAX_NZ_PER_ROW>;
+  float productsStrm<strmDim, MAX_NZ_PER_ROW>;
+  float xStrm<strmDim, 1>;
+  float yStrm<strmDim, 1>;
+  float forceStrm<1>;
+  float force[1];
+  int millisStart, millisStop;
+  int i;
+
+  streamRead(AStrm, A);
+  streamRead(AindStrm, Aind);
+  streamRead(xStrm, x);
+
+  forceGPUFlush_float1(AStrm, flushStrm);
+  forceGPUFlush_float1(AindStrm, flushStrm);
+  forceGPUFlush_float1(xStrm, flushStrm);
+  streamRead(flushStrm, flush);
+
+  millisStart = GetTimeMillis();
+
+  // (A^num_iter)x
+  for (i=1;i<=num_iter;i++) {
+    sparse_matmult_product( AindStrm, xStrm, AStrm, productsStrm );
+    sum( productsStrm, xStrm );
+  }
+
+  forceGPUFlush_float1(xStrm, flushStrm);
+  streamRead(flushStrm, force);
+
+  millisStop = GetTimeMillis();
+
+  streamWrite(xStrm, y);
+
+  *innerTime = millisStop - millisStart;
+}
+
+
+void do_spMatVec(int length, int num_iter, int* timing, float* flops) {
+
+  int i,j, base;
+  float val;
+  float *x, *y, *A, *Aind;
+  int millisStart, millisStop;
+  int innerTime;
+   
+  assert(length <= MAX_DIM);
+  assert(length % 4 == 0);
+
+  x = (float*)malloc(sizeof(float)*length);
+  y = (float*)malloc(sizeof(float)*length);
+  A = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
+  Aind = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
+
+
+  createMatrix(length, A, Aind);
+
+  for (i=0;i<length;i++)
+    x[i] = 1.0f;
+
+  millisStart = GetTimeMillis();
+  spMatVecf1(length, A, Aind, x, y, num_iter, &innerTime);
+  millisStop = GetTimeMillis();
+  
+  timing[0] = millisStop - millisStart;
+  timing[1] = innerTime;
+
+  flops[0] = (float)num_iter * (2.0f * MAX_NZ_PER_ROW - 1.0f) * length / (float)timing[0] / 1000.0f;
+  flops[1] = (float)num_iter * (2.0f * MAX_NZ_PER_ROW - 1.0f) * length / (float)timing[1] / 1000.0f;
+
+
+
+  if (DO_VERIFY) {
+
+    //printArray(y, length);
+
+    for (i=0;i<length;i++) {
+      val = 0.0f;
+      base = i*MAX_NZ_PER_ROW;
+      for (j=0;j<MAX_NZ_PER_ROW;j++)
+        val += A[base + j] * x[(int)Aind[base+j]];
+      
+      //printf("%.2f ", val);
+      assert(fequals(val, y[i], EPS));
+    }
+  }
+
+  free(x);
+  free(y);
+  free(A);
+  free(Aind);
+
+}
+
+
+kernel void dummyKernel(float a<>, out float b<>) {
   b = a;
 }
 
@@ -463,62 +648,73 @@ void startup() {
   float bStrm<1>;
 
   streamRead(aStrm, a);
-  fooKernel(aStrm, bStrm);
+  dummyKernel(aStrm, bStrm);
   streamWrite(bStrm, a);
 }
 
 
-#define MAX_ITER  5
-#define SKIP      1
-#define DO_SGEMV  1
 
 
-void Blas_Time(int streamLength, int num_iter) {
+void printData(char* str, int length, int iterations, int ms[2], float flops[2]) {
+  printf("%8d %4d %10d %7.4f %10d %7.4f %s\n", length, iterations, ms[0], flops[0], ms[1], flops[1], str);
+}
+
+
+// command line args: length iter skip
+void Blas_Time(int argc, char** argv) {
 
   int i;
-  int* times;
-  float* flops;
-  int doSgemv = DO_SGEMV;
-  int skip = SKIP;
+  int skip, length, iterations, num_iter;
 
-  num_iter = MAX_ITER;
+  int    ms[2];
+  float  flops[2]; 
 
-  times = (int*)malloc(sizeof(int) * 3 * 2 * num_iter);
-  flops = (float*)malloc(sizeof(float) * 3 * 2 * num_iter);
+
+  if (argc < 4) {
+    printf("Not enough args.\n");
+    return;
+  }
+
+  length = atoi(argv[1]);
+  num_iter = atoi(argv[2]);
+  skip = atoi(argv[3]);
 
   startup();
 
+  // hack to get around bug in DX9 code
+  if (length <= 2048) {
+    for (i=0; i<num_iter;i++) {
+      iterations = skip*(i+1);
+      do_sdot(length*length, iterations, ms, flops);
+      printData("sdot ", length*length, iterations, ms, flops);
+    }
+  }
+
+  printf("\n");
+
   for (i=0; i<num_iter;i++) {
-    do_sdot(streamLength, skip*(i+1), &times[2*(3*i)], &flops[2*(3*i)]);
-    do_saxpy(streamLength, skip*(i+1), &times[2*(3*i+1)], &flops[2*(3*i+1)]);
-
-    if (doSgemv)
-      do_sgemv(streamLength, skip*(i+1), &times[2*(3*i+2)], &flops[2*(3*i+2)]);
-  }
-  
-  
-  printf("\n\n");
-  printf("Data set size = %d\n", streamLength);
-
-  
-  printf("\n\n");
-  printf("sdot: \n");
-  for (i=0;i<num_iter;i++)
-    printf("%2d   %9d   %5.6f    %9d   %5.6f\n", skip*(i+1), times[2*(3*i)], flops[2*(3*i)], times[2*(3*i) + 1], flops[2*(3*i) + 1]);
- 
-  printf("\n\n");
-  printf("saxpy: \n");
-  for (i=0;i<num_iter;i++)
-    printf("%2d   %9d   %5.6f    %9d   %5.6f\n", skip*(i+1), times[2*(3*i+1)], flops[2*(3*i+1)], times[2*(3*i+1) + 1], flops[2*(3*i+1) + 1]);
-
-  if (doSgemv) {
-    printf("\n\n");
-    printf("sgemv: \n");
-    for (i=0;i<num_iter;i++)
-      printf("%2d   %9d   %5.6f    %9d   %5.6f\n", skip*(i+1), times[2*(3*i+2)], flops[2*(3*i+2)], times[2*(3*i+2) + 1], flops[2*(3*i+2) + 1]);
+    iterations = skip*(i+1);
+    do_saxpy(length*length, iterations, ms, flops);
+    printData("saxpy", length*length, iterations, ms, flops);
   }
 
-  free(times);
-  free(flops);
+  printf("\n");
+
+  for (i=0; i<num_iter;i++) {
+    iterations = skip*(i+1);
+    do_sgemv(length, iterations, ms, flops);
+    printData("sgemv", length, iterations, ms, flops);
+  }
+
+  printf("\n");  
+
+  for (i=0; i<num_iter;i++) {
+    iterations = skip*(i+1);
+    do_spMatVec(length, iterations, ms, flops);
+    printData("spMat", length, iterations, ms, flops);
+  }
+  
+
 
 }
+

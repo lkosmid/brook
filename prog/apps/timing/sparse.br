@@ -8,7 +8,7 @@
 
 #define MAX_DIM     2048
 
-#define DO_VERIFY   0 
+#define DO_VERIFY   1 
 
 #define EPS 1e-3f
 
@@ -55,6 +55,13 @@ kernel void mult(float a<>, float b<>, out float c<>) {
 }
 
 
+kernel void forceKernel(float input<>, out float result<>) {
+  result = 0.0f;
+}
+
+kernel void force4Kernel(float4 input<>, out float result<>) {
+  result = 0.0f;
+}
 
 
 /**********************************************************************/
@@ -131,53 +138,125 @@ void createMatrix(int length, float* A, float* Aind) {
 
 
 
-void spMatVec(int strmDim, float* A, float* Aind, float* x, float* y) {
+void spMatVecf4(int strmDim, float* A, float* Aind, float* x, float* y, int num_iter, int* innerTime) {
+
+  float4 AStrm<strmDim, MAX_NZ_PER_ROW>;
+  float4 AindStrm<strmDim, MAX_NZ_PER_ROW>;
+  float4 productsStrm<strmDim, MAX_NZ_PER_ROW>;
+  float4 xStrm<strmDim, 1>;
+  float4 yStrm<strmDim, 1>;
+  float forceStrm<1>;
+  float force[1];
+  int millisStart, millisStop;
+  int i;
+
+  streamRead(AStrm, A);
+  streamRead(AindStrm, Aind);
+  streamRead(xStrm, x);
+
+  millisStart = GetTimeMillis();
+
+  for (i=1;i<=num_iter;i++) {
+    sparse_matmult_product_f4( AindStrm, xStrm, AStrm, productsStrm );
+    sum( productsStrm, xStrm );
+  }
+
+  force4Kernel(xStrm, forceStrm);
+  streamRead(forceStrm, force);
+
+  millisStop = GetTimeMillis();
+
+  streamWrite(xStrm, y);
+
+  *innerTime = millisStop - millisStart;
+}
+
+
+void spMatVecf1(int strmDim, float* A, float* Aind, float* x, float* y, int num_iter, int* innerTime) {
 
   float AStrm<strmDim, MAX_NZ_PER_ROW>;
   float AindStrm<strmDim, MAX_NZ_PER_ROW>;
   float productsStrm<strmDim, MAX_NZ_PER_ROW>;
   float xStrm<strmDim, 1>;
   float yStrm<strmDim, 1>;
-
+  float forceStrm<1>;
+  float force[1];
+  int millisStart, millisStop;
+  int i;
 
   streamRead(AStrm, A);
   streamRead(AindStrm, Aind);
   streamRead(xStrm, x);
 
-  sparse_matmult_product( AindStrm, xStrm, AStrm, productsStrm );
-  sum( productsStrm, yStrm );
+  millisStart = GetTimeMillis();
 
-  streamWrite(yStrm, y);
+  for (i=1;i<=num_iter;i++) {
+    sparse_matmult_product( AindStrm, xStrm, AStrm, productsStrm );
+    sum( productsStrm, xStrm );
+  }
+
+  forceKernel(yStrm, forceStrm);
+  streamRead(forceStrm, force);
+
+  millisStop = GetTimeMillis();
+
+  streamWrite(xStrm, y);
+
+  *innerTime = millisStop - millisStart;
 }
 
 
+#define MAX_ITER    130
+#define SKIP        5
+#define DO_FLOAT4   0
 
 
-void SpMatVec_Time(int length, int* times, float* flops) {
+void SpMatVec_Time(int length, int num_iter) {
 
   int i,j, base;
   float val;
   float *x, *y, *A, *Aind;
   int millisStart, millisStop;
-
+  int skip = SKIP;
+  int innerTime, outerTime;
+  num_iter = MAX_ITER;
+   
   assert(length <= MAX_DIM);
+  assert(lenght % 4 == 0);
 
   x = (float*)malloc(sizeof(float)*length);
   y = (float*)malloc(sizeof(float)*length);
   A = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
   Aind = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
 
-  createMatrix(length, A, Aind);
-
+  if (!DO_FLOAT4)
+    createMatrix(length, A, Aind);
+  else {
+    printf("DFKJFFJSFJSDFKJDSFJKDSFJ\nDFKJDSFKJSDFKDSFJDSKFJD\nSDFFDFDFDFJFK\n");
+    createMatrix(length, Aind);
+  }
 
   for (i=0;i<length;i++)
     x[i] = 1.0f;
 
-  millisStart = GetTimeMillis();
-  spMatVec(length, A, Aind, x, y);
-  millisStop = GetTimeMillis();
+  printf("spMatVec: %s\n", (DO_FLOAT4) ? "(f4 version)" : "");
 
-  printf("Time_spMatVec: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (13.0f*length)/(float)(stop-start) );
+  for (i=0;i<num_iter;i++) {
+
+    if (!DO_FLOAT4) {
+      millisStart = GetTimeMillis();
+      spMatVecf1(length, A, Aind, x, y, skip*(i+1), &innerTime);
+      millisStop = GetTimeMillis();
+    } else {
+      millisStart = GetTimeMillis();
+      spMatVecf4(length/4, A, Aind, x, y, skip*(i+1), &innerTime);
+      millisStop = GetTimeMillis();
+    }
+
+    //printf("Time_spMatVec: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (13.0f*length)/(float)(stop-start) );
+    outerTime = millisStop - millisStart;
+    printf("%2d   %9d   %5.6f    %9d   %5.6f\n", skip*(i+1), outerTime, (13.0f*length)/(float)(outerTime), innerTime, (13.0f*length)/(float)(innerTime));
+  }
 
 
   if (DO_VERIFY) {

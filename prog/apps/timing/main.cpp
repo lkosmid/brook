@@ -11,7 +11,7 @@
 #include "readwrite.h"
 #include "runkernel.h"
 #include "blas.h"
-#include "sparse.h"
+//#include "sparse.h"
 #include "matmult4x4.h"
 
 
@@ -117,7 +117,7 @@ main(int argc, char *argv[])
    std::cout << std::endl;
    RunKernel_Time(length);
    std::cout << std::endl;
-   // Blas_Time(length, 0);
+   // Blas_Time(argc, argv);
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);
    //Matmult4x4_1way_Time(length);
