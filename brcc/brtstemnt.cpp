@@ -184,7 +184,7 @@ BRTGPUKernelDef::printCode(std::ostream& out) const
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
 
-   fpcode = CodeGen_GenerateCode(fType->subType, FunctionName()->name.c_str(),
+   fpcode = CodeGen_HLSLGenerateCode(fType->subType, FunctionName()->name.c_str(),
                                fType->args, fType->nArgs, wrapOut.str().c_str());
    out << fpcode;
    free(fpcode);
@@ -207,10 +207,10 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 //   out << "#error \"Don't know how to generate CPU kernel code for "
 //       << FunctionName()->name << "().\"\n";
 
-   /* We've already transformed everything, so just print ourselves */
-    Type * form = decl->form;
-    assert (form->isFunction());
-    FunctionType* func = static_cast<FunctionType *>(form->dup());
+  /* We've already transformed everything, so just print ourselves */
+  Type * form = decl->form;
+  assert (form->isFunction());
+  FunctionType* func = static_cast<FunctionType *>(form->dup());
     
     out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
 	Symbol enhanced_name;

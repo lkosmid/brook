@@ -163,20 +163,24 @@ Subprocess_Run(char *argv[], char *input)
 
   /* Feed the cg code to the compiler */
   if (debug) fprintf(stderr, "Sending the intput to %s\n", argv[0]);
-#if WIN32
-  _write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
-#else
-  {
-       char eof_holder = EOF;
 
-       /* fprintf(stderr, "Writing\n[35;1m%s[0m\n", input); */
-       if(write (hStdInPipe[WRITE_HANDLE], input, strlen(input))
-	  != strlen(input)){
-	    perror("Write problem: ");
-       }
-       write(hStdInPipe[WRITE_HANDLE], &eof_holder, 1);
-  }
+  if (input) {
+#if WIN32
+     _write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
+#else
+     {
+        char eof_holder = EOF;
+        
+        /* fprintf(stderr, "Writing\n[35;1m%s[0m\n", input); */
+        if(write (hStdInPipe[WRITE_HANDLE], input, strlen(input))
+           != strlen(input)){
+           perror("Write problem: ");
+        }
+        write(hStdInPipe[WRITE_HANDLE], &eof_holder, 1);
+     }
 #endif
+  }
+  
   if (debug) fprintf(stderr, "Closing pipe to %s\n", argv[0]);
   if(close(hStdInPipe[WRITE_HANDLE]) !=0){
        fprintf(stderr, "Write close error\n");

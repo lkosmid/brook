@@ -8,6 +8,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <ios>
 
 extern "C" {
 #include <stdio.h>
@@ -125,6 +126,123 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
   return strdup(cg.str().c_str());
 }
 
+/*
+ * generate_hlsl_code --
+ *
+ *      This function takes a parsed kernel function as input and produces
+ *      the CG code reflected, plus the support code required.
+ */
+
+static char *
+generate_hlsl_code (Decl **args, int nArgs, const char *body) {
+  const char xyzw[] = "xyzw";
+  std::ostringstream hlsl;
+  Decl *outArg = NULL;
+  int texcoord, constreg, i;
+  
+  if (globals.target != TARGET_FP30) {
+    fprintf (stderr, "Only FP30 target supported\n");
+    exit(1);
+  }
+
+  hlsl << "#define _WORKSPACE " << globals.workspace << std::endl;
+  hlsl << "#define _WORKSPACE_INV " << std::setprecision(9.9) <<
+    1.0 / globals.workspace << std::endl;
+  
+  /* Print out the texture stream */
+  texcoord = 0;
+  constreg = 0;
+  for (i=0; i < nArgs; i++) {
+    /* Don't put the output in the argument list */
+    if (args[i]->form->getQualifiers() & TQ_Out) {
+      outArg = args[i];
+      continue;
+    }
+    
+    if (args[i]->isStream()) {
+      hlsl << "sampler _tex_" << *args[i]->name;
+      hlsl << " : register (s" << texcoord++ << ");\n";
+    } else {
+      args[i]->print(hlsl, true);
+      hlsl << " : register (c" << constreg++ << ");\n";
+    }
+  }
+  hlsl << "\n";
+
+  hlsl << "float4 main (\n\t\t";
+
+  /* Print the argument list */
+  texcoord = 0;
+  for (i=0; i < nArgs; i++) {
+     /* Don't put the output in the argument list */
+     if (args[i]->form->getQualifiers() & TQ_Out) {
+        outArg = args[i];
+        continue;
+     }
+
+     if (args[i]->isStream()) {
+       if (i) hlsl <<  ",\n\t\t";
+       hlsl << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
+            << texcoord++;
+     }
+  }
+  hlsl << ") : COLOR0 {\n";
+
+  /* Declare the stream variables */
+  for (i=0; i < nArgs; i++) {
+     if (args[i] == outArg) {
+        TypeQual qualifier = outArg->form->getBase()->qualifier;
+        outArg->form->getBase()->qualifier &= ~TQ_Out;
+        hlsl << "\t";
+        args[i]->form->printBase(hlsl, 0);
+        hlsl << " " << *args[i]->name << ";\n";
+        outArg->form->getBase()->qualifier = qualifier;
+     } else if (args[i]->isStream()) {
+        hlsl << "\t";
+        args[i]->form->printBase(hlsl, 0);
+        hlsl << " " << *args[i]->name << ";\n";
+     }
+  }
+
+  /* Declare the output variable */
+  hlsl << "\tfloat4  _OUT;\n";
+
+  /* Perform stream fetches */
+  for (i=0; i < nArgs; i++) {
+     if (args[i] == outArg) continue;
+
+     if (args[i]->isStream()) {
+        int dimension = FloatDimension(args[i]->form->getBase()->typemask);
+        assert(dimension > 0);
+
+        hlsl << "\t" << *args[i]->name << " = tex2D"
+             << "(_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
+             << "_pos);\n";
+     }
+  }
+
+  /* Include the body of the kernel */
+  hlsl << body << std::endl;
+
+  /* Return the result */
+  if (outArg) {
+     int dimension = FloatDimension(outArg->form->getBase()->typemask);
+
+     for (i=0; i < dimension; i++) {
+        hlsl << "\t_OUT." << xyzw[i] << "= " << *outArg->name << "."
+           << xyzw[i] << ";\n";
+     }
+     for (;i < 4; i++) {
+        hlsl << "\t_OUT." << xyzw[i] << "= " << *outArg->name << "."
+           << xyzw[dimension-1] << ";\n";
+     }
+
+     hlsl << "\treturn _OUT;\n}\n";
+  }
+
+  return strdup(hlsl.str().c_str());
+}
+
 
 /*
  * compile_cg_code --
@@ -164,6 +282,66 @@ compile_cg_code (char *cgcode) {
 }
 
 /*
+ * compile_hlsl_code --
+ *
+ *      Takes HLSL code and runs it through the FXC compiler (and parses the
+ *      results) to produce the corresponding fragment program.
+ */
+
+static char *
+compile_hlsl_code (char *hlslcode) {
+
+  char *argv[] = { "fxc", "/Tps_2_0", "/nologo", 0, 0, NULL };
+  char *fpcode,  *errcode;
+
+  char *fname = tmpnam(NULL);
+  if (fname == NULL) {
+    fprintf (stderr, "Unable to get tmp file name\n");
+    exit(1);
+  }
+  FILE *fp = fopen (fname, "wb+");
+  if (fp == NULL) {
+    fprintf (stderr, "Unable to open tmp file %s\n", fname);
+    exit(1);
+  }
+  fwrite(hlslcode, sizeof(char), strlen(hlslcode), fp);
+  fclose(fp);
+  
+  argv[3] = (char *) malloc (strlen("/Fc.ps") + strlen(fname) + 1);
+  sprintf (argv[3], "/Fc%s.ps", fname);
+  argv[4] = fname;
+  errcode = Subprocess_Run(argv, NULL);
+  remove(fname);
+
+  fp = fopen(argv[3]+3, "rt");
+  if (fp == NULL) {
+    fprintf (stderr, "Unable to open compiler output file %s\n", 
+             argv[3]+3);
+     fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
+             errcode);
+    exit(1);
+  }
+
+  fseek(fp, 0, SEEK_END);
+  long flen = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  fpcode = (char *) malloc (flen+1);
+  
+  // Have to do it this way to fix the /r/n's
+  int pos = 0;
+  int i;
+  while ((i = fgetc(fp)) != EOF)
+    fpcode[pos++] = (char) i;
+  fpcode[pos] = '\0';
+
+  free(argv[3]);
+  free(argv[4]);
+  
+  return fpcode;
+}
+
+
+/*
  * append_argument_information --
  *
  *      Takes the fp code from the CG compiler and tacks on high level
@@ -171,16 +349,18 @@ compile_cg_code (char *cgcode) {
  */
 
 static char *
-append_argument_information (char *fpcode,
+append_argument_information (const char *commentstring, char *fpcode,
                              Decl **args, int nArgs, const char *body)
 {
-  std::ostringstream fp(fpcode);
+  std::ostringstream fp;
+
+  fp << fpcode;
 
   /* Add the brcc flag */
-  fp << "\n#!!BRCC\n";
+  fp << " \n" << commentstring << "!!BRCC\n";
 
   /* Include the program aguments */
-  fp << "#narg:" << nArgs << std::endl;
+  fp << commentstring << "narg:" << nArgs << std::endl;
 
   /* Add the argument information */
   for (int i=0; i < nArgs; i++) {
@@ -195,10 +375,11 @@ append_argument_information (char *fpcode,
         type = 'c';
      }
 
-     fp << "#" << type << ":" << dimension << ":" << *args[i]->name << "\n";
+     fp << commentstring << type << ":" << dimension 
+        << ":" << *args[i]->name << "\n";
   }
 
-  fp << "#workspace:" << globals.workspace << std::endl;
+  fp << commentstring << "workspace:" << globals.workspace << std::endl;
 
   return strdup(fp.str().c_str());
 }
@@ -222,6 +403,37 @@ generate_c_fp_code(char *fpcode, const char *name)
   fp << "\nstatic const char *__" << name << "_fp[] = {" << std::endl;
 
   fp << "\"fp30\", \"";
+  while ((i = *fpcode++) != '\0') {
+    if (i == '\n')
+      fp << "\\n\"\n\"";
+    else
+      fp << (char) i;
+  }
+  fp << "\",\n";
+  fp << "NULL, NULL};\n\n";
+
+  return strdup(fp.str().c_str());
+}
+
+/*
+ * generate_c_ps20_code --
+ *
+ *      Spits out the compiled pixel shader 
+ *      code as a string available to the emitted
+ *      C code.
+ */
+
+static char *
+generate_c_ps20_code(char *fpcode, const char *name)
+{
+  std::ostringstream fp;
+  int i;
+
+  assert (name);
+
+  fp << "\nstatic const char *__" << name << "_fp[] = {" << std::endl;
+
+  fp << "\"ps20\", \"";
   while ((i = *fpcode++) != '\0') {
     if (i == '\n')
       fp << "\\n\"\n\"";
@@ -305,7 +517,7 @@ CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs)
 
 
 /*
- * CodeGen_GenerateCode --
+ * CodeGen_CGGenerateCode --
  *
  *      Takes a parsed kernel and crunches it down to C code:
  *              . Creates and annotates equivalent CG
@@ -316,25 +528,66 @@ CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs)
  */
 
 char *
-CodeGen_GenerateCode(Type *retType, const char *name,
-                     Decl **args, int nArgs, const char *body)
+CodeGen_CGGenerateCode(Type *retType, const char *name,
+                       Decl **args, int nArgs, const char *body)
 {
   char *cgcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   cgcode = generate_cg_code(args, nArgs, body);
-  //std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
+  std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
 
   fpcode = compile_cg_code(cgcode);
   free(cgcode);
-  //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
+  std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
-  fpcode_with_brccinfo = append_argument_information(fpcode, args, nArgs, body);
+  fpcode_with_brccinfo = 
+    append_argument_information("##", fpcode, args, nArgs, body);
   free(fpcode);
-  //std::cerr << "***Produced this instrumented fpcode:\n"
-  //          << fpcode_with_brccinfo << "\n";
+  std::cerr << "***Produced this instrumented fpcode:\n"
+            << fpcode_with_brccinfo << "\n";
 
   c_code = generate_c_fp_code(fpcode_with_brccinfo, name);
   free(fpcode_with_brccinfo);
+  //std::cerr << "***Produced this C code:\n" << c_code;
+
+  return c_code;
+}
+
+
+/*
+ * CodeGen_HLSLGenerateCode --
+ *
+ *      Takes a parsed kernel and crunches it down to C code:
+ *              . Creates and annotates equivalent HLSL
+ *              . Compiles the HLSL
+ *              . Spits out the fragment program as a C string
+ *
+ *      Note: The caller is responsible for free()ing the returned string.
+ */
+
+char *
+CodeGen_HLSLGenerateCode(Type *retType, const char *name,
+                         Decl **args, int nArgs, const char *body)
+{
+  char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
+
+  hlslcode = generate_hlsl_code(args, nArgs, body);
+  std::cerr << "\n***Produced this cgcode:\n" << hlslcode << "\n";
+
+  fpcode = compile_hlsl_code(hlslcode);
+  free(hlslcode);
+  std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
+
+  fpcode_with_brccinfo = 
+    append_argument_information("//", fpcode, args, nArgs, body);
+  free(fpcode);
+
+  std::cerr << "***Produced this instrumented fpcode:\n"
+            << fpcode_with_brccinfo << "\n";
+
+  c_code = generate_c_ps20_code(fpcode_with_brccinfo, name);
+  free(fpcode_with_brccinfo);
+
   //std::cerr << "***Produced this C code:\n" << c_code;
 
   return c_code;
