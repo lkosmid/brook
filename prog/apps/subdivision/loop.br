@@ -280,7 +280,7 @@ kernel void splitTriangles (Tri triangles[][],
                                 .25),
                            1);
   splittri.A = tri.A;
-  if(0)if(tri.A.w&&
+  if(1)if(tri.A.w&&
       tri.C.w&&
       (oldneighbors.AC.w==4||oldneighbors.AC.w==8)&&
       (oldneighbors.AB.w==2||oldneighbors.AB.w==8)&&
@@ -295,7 +295,7 @@ kernel void splitTriangles (Tri triangles[][],
               +tri.C.xyz);
 
   splittri.B = tri.B;
-  if(0)if(tri.A.w&&
+  if(1)if(tri.A.w&&
       tri.B.w&&
       (oldneighbors.BC.w==2||oldneighbors.BC.w==8)&&
       (oldneighbors.AB.w==4||oldneighbors.AB.w==8)&&
@@ -310,7 +310,7 @@ kernel void splitTriangles (Tri triangles[][],
              +tri.C.xyz);
 
   splittri.C = tri.C;
-  if(0)if(tri.C.w&&
+  if(1)if(tri.C.w&&
       tri.B.w&&
       (oldneighbors.BC.w==4||oldneighbors.BC.w==8)&&
       (oldneighbors.AC.w==2||oldneighbors.AC.w==8)&&
