@@ -15,7 +15,9 @@ typedef enum {
 
 static inline const char *
 CodeGen_TargetName(CodeGenTarget t) {
-   return (t == CODEGEN_PS20 ? "ps20" : t == CODEGEN_FP30 ? "fp30" : "arb");
+   return (t == CODEGEN_PS20 ? "ps20" :
+           t == CODEGEN_FP30 ? "fp30" :
+           "arb");
 }
 
 extern char *

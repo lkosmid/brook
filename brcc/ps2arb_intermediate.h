@@ -268,30 +268,22 @@ class MaxOp:public BinOp {
 public:
 	BINOPDEF(MaxOp);
 };
-static const char *const  PowOp_str="pow";	
-class PowOp:public BinOp {
-public:
-	BINOPDEF(PowOp);
-	std::ostream &print_arbfp(std::ostream &s)const;
+
+#define XXX(a, b)                                         \
+static const char *const  a##Op_str=#b;                   \
+class a##Op:public BinOp {                                \
+public:                                                   \
+	BINOPDEF(a##Op);                                  \
+	std::ostream &print_arbfp(std::ostream &s)const;  \
 };
-static const char *const  TexldOp_str="texld";	
-class TexldOp:public BinOp {
-public:
-	BINOPDEF(TexldOp);
-	std::ostream &print_arbfp(std::ostream &s)const;
-};
-static const char *const  TexldpOp_str="texldp";	
-class TexldpOp:public BinOp {
-public:
-	BINOPDEF(TexldpOp);
-	std::ostream &print_arbfp(std::ostream &s)const;
-};
-static const char *const  TexldbOp_str="texldb";	
-class TexldbOp:public BinOp {
-public:
-	BINOPDEF(TexldbOp);
-	std::ostream &print_arbfp(std::ostream &s)const;
-};
+
+   XXX(Pow, pow);
+   XXX(Texld, tex);
+   XXX(Texldp, texldp);
+   XXX(Texldb, texldb);
+
+#undef XXX
+
 static const char *const  CmpOp_str="cmp";	
 class CmpOp:public TriOp {
 public:
@@ -381,6 +373,6 @@ public:
 	std::ostream & print_arbfp (std::ostream & s);
 };
 
-extern IntermediateLanguage iLanguage;
+extern IntermediateLanguage *iLanguage;
 
 }

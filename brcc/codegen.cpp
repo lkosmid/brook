@@ -31,6 +31,8 @@ extern "C" {
 #include "splitting/splitting.h"
 #include "codegen.h"
 #include "brtdecl.h"
+#include "fxc.h"
+#include "cgc.h"
 
 // structures to store information about the resources
 // used in each pass/technique
@@ -662,26 +664,29 @@ generate_shader_support(std::ostream& shader)
   shader << "#define _sfetch  texRECT\n";
   shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) texRECT((s),(i))\n";
-  shader << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
-  if( !globals.enableGPUAddressTranslation ) {
-    shader << "float __gatherindex1( float index, float4 scalebias ) { ";
-    shader << "return index; }\n";
-    shader << "float2 __gatherindex2( float2 index, float4 scalebias ) { ";
-    shader << "return index; }\n";
-  }
+  shader << "#define SKIPSCALEBIAS\n";
   shader << "#else\n";
   shader << "#define _stype   sampler\n";
   shader << "#define _sfetch  tex2D\n";
   shader << "#define __sample1(s,i) tex1D((s),(i))\n";
   shader << "#define __sample2(s,i) tex2D((s),(i))\n";
-  shader << "#define _computeindexof(a,b) (b)\n";
+  shader << "#endif\n\n";
+
   if( !globals.enableGPUAddressTranslation ) {
+    shader << "#ifdef SKIPSCALEBIAS\n";
+    shader << "float __gatherindex1( float index, float4 scalebias ) { ";
+    shader << "return index; }\n";
+    shader << "float2 __gatherindex2( float2 index, float4 scalebias ) { ";
+    shader << "return index; }\n";
+    shader << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
+    shader << "#else\n";
     shader << "float __gatherindex1( float index, float4 scalebias ) { ";
     shader << "return index*scalebias.x+scalebias.z; }\n";
     shader << "float2 __gatherindex2( float2 index, float4 scalebias ) { ";
     shader << "return index*scalebias.xy+scalebias.zw; }\n";
+    shader << "#define _computeindexof(a,b) (b)\n";
+    shader << "#endif\n\n";
   }
-  shader << "#endif\n\n";
 
   // TIM: simple subroutines
   shader << "float __fetch_float( _stype s, float i ) { return __sample1(s,i).x; }\n";
@@ -1229,171 +1234,6 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
 
 
 /*
- * compile_cg_code --
- *
- *      Takes CG code and runs it through the CG compiler (and parses the
- *      results) to produce the corresponding fragment program.
- */
-static std::set<std::string> cg_warnings;
-static char *
-compile_cg_code (const char *cgcode, bool generateARB) {
-
-  char *argv[16] = { "cgc", "-profile", NULL,
-                     "-DUSERECT", "-quiet", NULL };
-  char *fpcode, *endline, *startline;
-  char* tempCode = strdup( cgcode );
-  char arbfp[]="arbfp1";
-  char fp30[]="fp30";
-  argv[2] = generateARB ? arbfp : fp30;
-  fpcode = Subprocess_Run(argv, tempCode);
-  free( tempCode );
-  if (fpcode == NULL) {
-     fprintf(stderr, "%s resulted in an error, skipping fp30 / nv30gl target ",
-             argv[0]);
-     return NULL;
-  }
-
-  // cgc has this annoying feature that it outputs warnings
-  // and errors to stdout rather than stderr.  So lets
-  // figure out where the fragment code really starts...
-  startline = strstr (fpcode, "!!");
-  if (startline) {
-    // Find where the fragment code really ends
-    /* Tolerate CRLF or LF line endings. */
-    endline = strstr (startline, "\nEND\n");
-    if (!endline) {
-      endline = strstr (startline, "\nEND\r\n");
-    }
-  }
-
-  if (!startline || !endline ) {
-      fprintf(stderr, "Unable to parse returned CG Code: %s\n",
-	      fpcode);
-      return NULL;
-  }
-
-  // Trim off the execess cgc commentary
-  endline += strlen("\nEND");
-  *endline = '\0';
-  endline++;
-
-  // Print any warning messages
-  if (startline != fpcode) {
-    fprintf (stderr, "cgc warnings:\n");
-    fwrite (fpcode, startline-fpcode, 1, stderr);
-  }
-
-  // Print the commentary
-  if (globals.verbose) {
-     fprintf(stderr, "***Summary information from cgc:\n");
-     fwrite (endline, strlen(endline), 1, stderr);
-  }
-
-  // Trim off the warning messages
-  memcpy (fpcode, startline, endline - startline);
-  return fpcode;
-}
-
-/*
- * compile_hlsl_code --
- *
- *      Takes HLSL code and runs it through the FXC compiler (and parses the
- *      results) to produce the corresponding fragment program.
- */
-
-static char *
-compile_hlsl_code (const char *hlslcode) {
-
-  char *argv[] = { "fxc", "/Tps_2_0", "/nologo", 0, 0, NULL };
-  char *fpcode,  *errcode;
-
-  FILE *fp = fopen (globals.shaderoutputname, "wb+");
-  if (fp == NULL) {
-    fprintf (stderr, "Unable to open tmp file %s\n", globals.shaderoutputname);
-    return NULL;
-  }
-  fwrite(hlslcode, sizeof(char), strlen(hlslcode), fp);
-  fclose(fp);
-  
-  argv[3] = (char *) malloc(strlen("/Fc.ps") +
-                            strlen(globals.shaderoutputname) + 1);
-  sprintf (argv[3], "/Fc%s.ps", globals.shaderoutputname);
-  argv[4] = globals.shaderoutputname;
-  errcode = Subprocess_Run(argv, NULL);
-  if (!globals.keepFiles) remove(globals.shaderoutputname);
-  if (errcode == NULL) {
-     fprintf(stderr, "%s resulted in an error, skipping ps20 / dx9 target ",
-             argv[0]);
-     remove(argv[3]+3);
-     return NULL;
-  }
-
-  if (globals.verbose)
-    fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
-            errcode);
-
-  fp = fopen(argv[3]+3, "rt");
-  if (fp == NULL) {
-    fprintf (stderr, "Unable to open compiler output file %s\n", 
-             argv[3]+3);
-    fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
-            errcode);
-    return NULL;
-  }
-
-  fseek(fp, 0, SEEK_END);
-  long flen = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
-  fpcode = (char *) malloc (flen+1);
-  
-  // Have to do it this way to fix the \r\n's
-  int pos = 0;
-  int i;
-  bool incomment = false;
-
-  while ((i = fgetc(fp)) != EOF) {
-     
-#if 1
-     // Remove comment lines
-     if (incomment) {
-       if (i == (int) '\n') {
-         incomment = false;
-         while ((i = fgetc(fp)) != EOF &&
-                i == (int) '\n');
-         if (i == EOF)
-           break;
-       } else
-         continue;
-     }  else if (pos > 0 && 
-              fpcode[pos-1] == '/' &&
-              i == (int) '/') {
-        incomment = true;
-        fpcode[--pos] = '\0';
-        continue;
-     }
-#endif
-
-    fpcode[pos++] = (char) i;
-  }  
-  fpcode[pos] = '\0';
-
-  fclose(fp);
-  remove(argv[3]+3);
-  free(argv[3]);
-#if 0
-  //daniel: ==20000==   //looks like this is the result of mktemp which stores its result in some static place
-  //at 0x4002CD17: free (vg_replace_malloc.c:231)
-  // by 0x807BBD9: compile_hlsl_code(char*) (codegen.cpp:338)
-  //by 0x807C742: CodeGen_HLSLGenerateCode(Type*, char const*, Decl**, int, char const*) (codegen.cpp:577)
-  //by 0x807DBEF: BRTGPUKernelDef::printCode(std::ostream&) const (brtstemnt.cpp:186)
-  //Address 0x404CAC98 is not stack'd, malloc'd or free'd
-  free(argv[4]);
-#endif
-  return fpcode;
-}
-
-
-/*
  * append_argument_information --
  *
  *      Takes the fp code from the CG compiler and tacks on high level
@@ -1591,27 +1431,38 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
        fprintf(stderr, "Generating %s code for %s outputs [%d, %d).\n",
                CodeGen_TargetName(target), name, firstOutput, firstOutput+outputCount);
     }
-    if (target == CODEGEN_PS20) {
-       fpcode = compile_hlsl_code(shadercode);
-    } else {
-       fpcode = compile_cg_code(shadercode, target == CODEGEN_ARB);
+    
+    switch (target) {
+    case CODEGEN_PS20:
+       fpcode = compile_fxc(shadercode, target);
+       break;
+    case CODEGEN_ARB:
+       fpcode = compile_fxc(shadercode, target);
+       break;
+    case CODEGEN_FP30:
+       fpcode = compile_cgc(shadercode, target);
+       break;
+    default:
+       std::cerr << "Unknown compile target.\n";
+       exit(1);
     }
+    
     if (fpcode==NULL) {
-      fprintf (stderr,"for kernel %s.\n",
-        name);
+       fprintf (stderr,"for kernel %s.\n",
+                name);
     }
     free(shadercode);
   } else {
-    fpcode = NULL;
+     fpcode = NULL;
   }
-
+  
   if (fpcode) {
-    if (globals.verbose)
-      std::cerr << "***Produced this assembly:\n" << fpcode << "\n";
-
-    // TIM: the argument-info string is obsolete, and should go
-    // away once all runtimes parse the new info...
-    fpcode_with_brccinfo =
+     if (globals.verbose)
+        std::cerr << "***Produced this assembly:\n" << fpcode << "\n";
+     
+     // TIM: the argument-info string is obsolete, and should go
+     // away once all runtimes parse the new info...
+     fpcode_with_brccinfo =
        append_argument_information(target == CODEGEN_PS20 ? "//" : "##",
                                    fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
     free(fpcode);
@@ -1799,11 +1650,17 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
       << " code for " << functionName << "." << std::endl;
   }
 
-  if (target == CODEGEN_PS20) {
-    assemblerString = compile_hlsl_code(shaderString.c_str());
-  } else {
-    assemblerString = compile_cg_code(shaderString.c_str(),
-                                      target == CODEGEN_ARB);
+  switch (target) {
+  case CODEGEN_PS20:
+  case CODEGEN_ARB:
+     assemblerString = compile_fxc(shaderString.c_str(), target);
+     break;
+  case CODEGEN_FP30:
+     assemblerString = compile_cgc(shaderString.c_str(), target);
+     break;
+  default:
+     std::cerr << "Unknown compile target.\n";
+     exit(1);
   }
 
   if( globals.verbose )
@@ -1811,8 +1668,4 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
 
   std::vector<std::string> passStrings;
   passStrings.push_back( assemblerString );
-
-  //char* c_code = generate_c_code(passStrings, functionName.c_str(),
-  //                               CodeGen_TargetName(target));
-  //inStream << c_code << std::endl;
 }

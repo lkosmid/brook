@@ -50,12 +50,15 @@ std::ostream &  Register::print_arbfp (std::ostream & s)const {
 		s << "." << swizzle;
 	return s;
 }
+
 std::ostream &  DeclareRegisterUsage::print_arbfp (std::ostream & s)const {
 	return s;
 }
+
 std::ostream &  DeclareSampleRegister::print_arbfp (std::ostream & s)const {
 	return s;
 }
+
 std::ostream &  DefineConstantRegister::print_arbfp (std::ostream & s)const {
 //	s << "PARAM "<<reg.print_arbfp(s)<<" = { " << x <<", "<<y << ", "<< z << ", "<< w <<" }"<< arbendl; 
 	return s;
@@ -67,6 +70,7 @@ std::ostream &  VoidOp::print_arbfp (std::ostream & s)const {
 	s<<arbendl;
 	return s;
 }
+
 std::ostream &  UnaOp::print_arbfp (std::ostream & s)const {
 	op.print_arbfp(s);
 	dst.print_arbfp(s);
@@ -75,6 +79,7 @@ std::ostream &  UnaOp::print_arbfp (std::ostream & s)const {
 	s<<arbendl;
 	return s;
 }
+
 std::ostream &  BinOp::print_arbfp (std::ostream & s)const {
 	op.print_arbfp(s);
 	dst.print_arbfp(s);
@@ -85,6 +90,7 @@ std::ostream &  BinOp::print_arbfp (std::ostream & s)const {
 	s<<arbendl;
 	return s;
 }
+
 std::ostream &  TriOp::print_arbfp (std::ostream & s)const {
 	op.print_arbfp(s);
 	dst.print_arbfp(s)<<arbdelim;
@@ -93,11 +99,17 @@ std::ostream &  TriOp::print_arbfp (std::ostream & s)const {
 	src2.print_arbfp(s)<<arbendl;
 	return s;
 }
-static std::ostream& printTexldX(std::ostream &s, OpCode op,const Register & dst, const Register & src0, const Register & src1) {
+
+static std::ostream& printTexldX(std::ostream &s, 
+                                 OpCode op,
+                                 const Register & dst, 
+                                 const Register & src0, 
+                                 const Register & src1,
+                                 const char *default_tex = "2D") {
 	op.print_arbfp(s);
 	dst.print_arbfp(s)<<arbdelim;
 	src0.print_arbfp(s)<<arbdelim;
-	Symbol sym(iLanguage.findSymbol(src1));
+	Symbol sym(iLanguage->findSymbol(src1));
 	s << "texture["<<sym.registerindex<<"]"<<arbdelim;
 	switch (sym.properties.texturetarget) {
 	case Symbol::TEX1D:
@@ -114,12 +126,13 @@ static std::ostream& printTexldX(std::ostream &s, OpCode op,const Register & dst
 		break;
 	case Symbol::TEX2D:
 	default:
-		s << "2D";
+           s << "RECT";  //DANGER WILL ROBINSON! ALL 2D textures are now RECT
 		break;
 	}
 	s<<arbendl;
 	return s;
 }
+
 std::ostream & TexldOp::print_arbfp(std::ostream & s)const {
 	OpCode texld (op);
 	texld.opcode="TEX";
@@ -214,69 +227,71 @@ std::ostream & Dp2addOp::print_alternative(std::ostream &s) const{
 	s<<aendl;
 	return s;
 }
+
 std::ostream & IntermediateLanguage::print_arbfp (std::ostream & s) {
-		for (unsigned int i=0;i<comments.size();++i) {
-			comments[i]->print_arbfp(s);//hack for now to get some important comments before the !!
-		}
-	    s<<"!!ARBfp1.0\n";
-		if (1){
-			bool multiple_output=false;
-			if (1) {			   
-				for (map<string,Symbol>::iterator i = symbolTable.begin();i!=symbolTable.end();++i) {
-					Symbol * sym= &(*i).second;
-					if (sym->type==Symbol::OUTPUTCOLOR) {
-						if (sym->registerindex>0) {
-							multiple_output=true;
-							s<<"OPTION ATI_draw_buffers"<<arbendl;
-							break;
-						}
-					}
-				}
-			}
-			for (map<string,Symbol>::iterator i = symbolTable.begin();i!=symbolTable.end();++i) {
-				string nam = (*i).first;
-				Symbol * sym = &(*i).second;
-				switch (sym->type) {
-				case Symbol::OUTPUTCOLOR:
-					s << "OUTPUT "<<nam<<" = result.color";
-					if (multiple_output)
-						s << "["<<sym->registerindex<<"]";
-					s<<arbendl;
-					break;
-				case Symbol::OUTPUTDEPTH:
-					s << "OUTPUT "<<nam<<" = result.depth"<<arbendl;					
-					break;
-				case Symbol::TEMP:
-					s << "TEMP " << nam << arbendl;										
-					break;
-				case Symbol::CONST:
-					if (sym->properties.validfloats) {
-						s << "PARAM " << nam << " = {"<<sym->properties.x <<", "<<sym->properties.y <<", "<<sym->properties.z <<", "<<sym->properties.w <<"}"<<arbendl;
-					}else {
-						s << "PARAM " << nam << " = program.env[" <<sym->registerindex<<"]"<<arbendl;
-					}
-					break;
-				case Symbol::SAMPLE:
-					//we need this?
-					break;
-				case Symbol::TEXCOORD:
-					s << "ATTRIB "<<nam<<" = fragment.texcoord["<<sym->registerindex<<"]"<<arbendl;
-					break;
-				case Symbol::COLOR:
-					s << "ATTRIB "<<nam<<" = fragment.color["<<sym->registerindex<<"]"<<arbendl;					
-					break;
-				case Symbol::FOGCOORD:
-					s << "ATTRIB "<<nam<<" = fragment.fogcoord"<<arbendl;					
-					break;
-				case Symbol::POSITION:
-					s << "ATTRIB "<<nam<<" = fragment.position"<<arbendl;					
-					break;
-				}
-			}
-		}
-		for (unsigned int i=0;i<stmt.size();++i) {
-			stmt[i]->print_arbfp(s);
-		}
-		s << "END\n";
-		return s;
-	}
+   for (unsigned int i=0;i<comments.size();++i) {
+      //hack for now to get some important comments before the !!
+      comments[i]->print_arbfp(s);
+   }
+   s<<"!!ARBfp1.0\n";
+   if (1){
+      bool multiple_output=false;
+      if (1) {			   
+         for (map<string,Symbol>::iterator i = symbolTable.begin();i!=symbolTable.end();++i) {
+            Symbol * sym= &(*i).second;
+            if (sym->type==Symbol::OUTPUTCOLOR) {
+               if (sym->registerindex>0) {
+                  multiple_output=true;
+                  s<<"OPTION ATI_draw_buffers"<<arbendl;
+                  break;
+               }
+            }
+         }
+      }
+      for (map<string,Symbol>::iterator i = symbolTable.begin();i!=symbolTable.end();++i) {
+         string nam = (*i).first;
+         Symbol * sym = &(*i).second;
+         switch (sym->type) {
+         case Symbol::OUTPUTCOLOR:
+            s << "OUTPUT "<<nam<<" = result.color";
+            if (multiple_output)
+               s << "["<<sym->registerindex<<"]";
+            s<<arbendl;
+            break;
+         case Symbol::OUTPUTDEPTH:
+            s << "OUTPUT "<<nam<<" = result.depth"<<arbendl;					
+            break;
+         case Symbol::TEMP:
+            s << "TEMP " << nam << arbendl;										
+            break;
+         case Symbol::CONST:
+            if (sym->properties.validfloats) {
+               s << "PARAM " << nam << " = {"<<sym->properties.x <<", "<<sym->properties.y <<", "<<sym->properties.z <<", "<<sym->properties.w <<"}"<<arbendl;
+            }else {
+               s << "PARAM " << nam << " = program.local[" <<sym->registerindex<<"]"<<arbendl;
+            }
+            break;
+         case Symbol::SAMPLE:
+            //we need this?
+            break;
+         case Symbol::TEXCOORD:
+            s << "ATTRIB "<<nam<<" = fragment.texcoord["<<sym->registerindex<<"]"<<arbendl;
+            break;
+         case Symbol::COLOR:
+            s << "ATTRIB "<<nam<<" = fragment.color["<<sym->registerindex<<"]"<<arbendl;					
+            break;
+         case Symbol::FOGCOORD:
+            s << "ATTRIB "<<nam<<" = fragment.fogcoord"<<arbendl;					
+            break;
+         case Symbol::POSITION:
+            s << "ATTRIB "<<nam<<" = fragment.position"<<arbendl;					
+            break;
+         }
+      }
+   }
+   for (unsigned int i=0;i<stmt.size();++i) {
+      stmt[i]->print_arbfp(s);
+   }
+   s << "END\n";
+   return s;
+}

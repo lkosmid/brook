@@ -3,15 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#ifdef _WIN32
-#include <ios>
-#else
-#include <iostream>
-#endif
-#include <fstream>
+
+#include <sstream>
 
 #pragma warning(disable:4065)
 
+#include "ps2arb.h"
 #include "ps2arb_intermediate.h"
 
 using std::map;
@@ -167,7 +164,7 @@ createPS2Register (const YYSTYPE::Register &r) {
 			s.Set(Symbol::TEMP,index);
 			break;			
 		}
-		iLanguage.SpecifySymbol (r.reg,s);
+		iLanguage->SpecifySymbol (r.reg,s);
 	}else{
 		fprintf (stderr,"register %s not properly specified:",r.reg);
 	}
@@ -194,17 +191,17 @@ BinOp * MXxYFactory  (BinaryFactory * ThreeOrFour, const InstructionFlags & ifla
 	cinc.reg.negate="";
 	cinc.reg.reg = incRegister(src1);
 	destination.swizzle="x";
-	iLanguage.AddInst((*ThreeOrFour)(iflag,destination,src0,src1));
+	iLanguage->AddInst((*ThreeOrFour)(iflag,destination,src0,src1));
 	destination.swizzle="y";
 	BinOp * ret =(*ThreeOrFour)(iflag,destination,src0,createPS2Register(cinc.reg));
 	if (y>2) {
-		iLanguage.AddInst(ret);
+		iLanguage->AddInst(ret);
 		cinc.reg.reg = incRegister(tmp = cinc.reg.reg);
 		free(tmp);	
 		destination.swizzle="z";
 		ret = (*ThreeOrFour)(iflag,destination,src0,createPS2Register(cinc.reg));
 		if (y>3) {
-			iLanguage.AddInst(ret);
+			iLanguage->AddInst(ret);
 			cinc.reg.reg = incRegister(tmp = cinc.reg.reg);
 			free(tmp);
 			destination.swizzle="w";
@@ -259,7 +256,7 @@ instructions: instruction newlines instructions
 
 declaration: PS_DCL declreg 
 {	
-	iLanguage.AddDecl(new DeclareRegisterUsage(createPS2Register($2)));
+	iLanguage->AddDecl(new DeclareRegisterUsage(createPS2Register($2)));
 }
            | PS_DCLTEX PS_SAMPLEREG
 {
@@ -283,12 +280,12 @@ declaration: PS_DCL declreg
 
 	Symbol s;
 	s.Set(Symbol::SAMPLE,atoi($2+1),tt);
-	iLanguage.SpecifySymbol($2,s);
+	iLanguage->SpecifySymbol($2,s);
 	YYSTYPE tmp;
         tmp.reg.reg=$2; 
         tmp.reg.swizzlemask="";
         tmp.reg.negate="";
-	iLanguage.AddDecl(
+	iLanguage->AddDecl(
             new DeclareSampleRegister(
                createPS2Register(tmp.reg)));
 }
@@ -298,7 +295,7 @@ declaration: PS_DCL declreg
         tmp.reg.reg=$2; 
         tmp.reg.swizzlemask="";
         tmp.reg.negate="";
-	iLanguage.AddDecl(
+	iLanguage->AddDecl(
            new DefineConstantRegister(
              createPS2Register(tmp.reg),
 		$4, $6, $8, $10));
@@ -309,7 +306,7 @@ instruction:  unary_op | binary_op | trinary_op | sincos | texkill | mov
 
 trinary_op: PS_TRINARY_OP optional_flags dstreg PS_COMMA srcreg PS_COMMA srcreg PS_COMMA srcreg
 {
-        iLanguage.AddInst((*trinary_factory[$1])(
+        iLanguage->AddInst((*trinary_factory[$1])(
 	     AdjustInstructionFlags($2),
              createPS2Register($3),
              createPS2Register($5),
@@ -319,7 +316,7 @@ trinary_op: PS_TRINARY_OP optional_flags dstreg PS_COMMA srcreg PS_COMMA srcreg 
 
 binary_op: PS_BINARY_OP optional_flags dstreg PS_COMMA srcreg PS_COMMA srcreg
 {
-        iLanguage.AddInst((*binary_factory[$1])(
+        iLanguage->AddInst((*binary_factory[$1])(
              AdjustInstructionFlags($2),
              createPS2Register($3),
              createPS2Register($5),
@@ -328,7 +325,7 @@ binary_op: PS_BINARY_OP optional_flags dstreg PS_COMMA srcreg PS_COMMA srcreg
 
 unary_op: PS_UNARY_OP optional_flags dstreg PS_COMMA srcreg
 {
-        iLanguage.AddInst((*unary_factory[$1])(
+        iLanguage->AddInst((*unary_factory[$1])(
              AdjustInstructionFlags($2),
              createPS2Register($3),
              createPS2Register($5)));
@@ -341,7 +338,7 @@ optional_dualreg:  PS_COMMA srcreg PS_COMMA srcreg
 
 sincos: PS_SINCOS optional_flags dstreg PS_COMMA srcreg optional_dualreg
 {
-        iLanguage.AddInst((*unary_factory[$1])(
+        iLanguage->AddInst((*unary_factory[$1])(
              AdjustInstructionFlags($2),
              createPS2Register($3),
              createPS2Register($5)));
@@ -349,14 +346,14 @@ sincos: PS_SINCOS optional_flags dstreg PS_COMMA srcreg optional_dualreg
 
 texkill: PS_TEXKILL optional_flags srcreg
 {
-        iLanguage.AddInst((*void_factory[$1])(
+        iLanguage->AddInst((*void_factory[$1])(
              AdjustInstructionFlags($2),
              createPS2Register($3)));
 };
 
 mov: PS_MOV optional_flags movreg PS_COMMA  srcreg
 {
-        iLanguage.AddInst((*unary_factory[$1])(
+        iLanguage->AddInst((*unary_factory[$1])(
              AdjustInstructionFlags($2),
              createPS2Register($3),
              createPS2Register($5)));
@@ -440,32 +437,32 @@ readablereg: PS_COLORREG | PS_TEXCOORDREG | PS_SAMPLEREG | PS_CONSTREG | PS_TEMP
 
 newlines: PS_NEWLINE newlines 
 {
-        iLanguage.AddCommentOrNewline(
+        iLanguage->AddCommentOrNewline(
            new Newline((int)$1));
         $$ = $1 +$2;
 }
         | PS_NEWLINE
 {
-        iLanguage.AddCommentOrNewline(
+        iLanguage->AddCommentOrNewline(
            new Newline((int)$1));
         $$ = $1;
 }
         | PS_COMMENT newlines
 {
-        iLanguage.AddCommentOrNewline(
+        iLanguage->AddCommentOrNewline(
            new Comment($1));
         $$ = 1 + $2;
 }
         | PS_COMMENT
 {
-        iLanguage.AddCommentOrNewline(
+        iLanguage->AddCommentOrNewline(
           new Comment($1));
         $$ = 1; 
 };
 
 optendlesscomment: PS_ENDLESS_COMMENT
 {
-        iLanguage.AddCommentOrNewline(new Comment($1));
+        iLanguage->AddCommentOrNewline(new Comment($1));
 }
                  | /* empty */
 ;
@@ -481,21 +478,6 @@ optnewlines: newlines
 
 %%
 
-std::istream *ps2arb_ps20code;
 
-int convert_ps2arb (std::istream &ps20code, 
-		    std::ostream &arbcode){
 
-#if YYDEBUG
-  ps2arb_yydebug = 1;
-#endif
-
-  ps2arb_ps20code = &ps20code;
-
-  ps2arb_parse();
-
-  iLanguage.print_arbfp(arbcode);
-
-  return 1;
-}
 

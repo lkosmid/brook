@@ -3,8 +3,6 @@
 
 using namespace ps2arb;
 
-IntermediateLanguage ps2arb::iLanguage;
-
 Register::Register (string reg, string mask, string negate)
   : string(reg), swizzle(mask), negate(negate)
 {}
@@ -19,7 +17,7 @@ DefineConstantRegister::DefineConstantRegister (const Register & reg,
 	x=a; y=b; z=c; w=d;
 	
 	s.Set(s.type,s.registerindex,x,y,z,w);
-	iLanguage.SpecifySymbol(reg,s);
+	iLanguage->SpecifySymbol(reg,s);
 }	
 
 void IntermediateLanguage::SpecifySymbol(std::string name, const Symbol &sym) {
@@ -93,18 +91,18 @@ void Symbol::Set (TYPE type, unsigned int index) {
 	registerindex=index;
 	properties.texturetarget=UNSPECIFIED;
 	this->type=type;
-	lineno=iLanguage.nextInstructionNumber();
+	lineno=iLanguage->nextInstructionNumber();
 }
 void Symbol::Set(TYPE type, unsigned int index,float x,float y, float z, float w) {
 	properties.validfloats=true;
 	properties.x=x;	properties.y=y;	properties.z=z;	properties.w=w;
 	this->type=type;
-	lineno=iLanguage.nextInstructionNumber();
+	lineno=iLanguage->nextInstructionNumber();
 }
 void Symbol::Set (TYPE type,unsigned int index,TEXTARGET tt) {
 	this->lineno=lineno;
 	registerindex=index;
 	properties.texturetarget=tt;
 	this->type=type;
-	lineno=iLanguage.nextInstructionNumber();
+	lineno=iLanguage->nextInstructionNumber();
 }

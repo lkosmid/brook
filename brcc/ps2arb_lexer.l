@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string>
 
-// Ugh.  There muse be a better way to communicate this...
-extern std::istream *ps2arb_ps20code;
+#include <sstream> 
+#include "ps2arb.h"
 
 #define YY_INPUT(buf,result,max_size) {            \
   int c = ps2arb_ps20code->get();                  \
