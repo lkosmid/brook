@@ -192,23 +192,23 @@ inline float modf_float (float x, float & oout) {
 }
 inline float finite_float (float x) {
 #ifdef _WIN32
-   return _finite(x);
+   return (float) _finite(x);
 #else
 #ifdef __APPLE__
-   return __isfinitef(x);
+   return (float) __isfinitef(x);
 #else
-   return finite(x);
+   return (float) finite(x);
 #endif
 #endif
 }
 inline float isnan_float (float x) {
 #ifdef _WIN32
-   return _isnan(x);
+   return (float) _isnan(x);
 #else
 #ifdef __APPLE__
-   return __isnanf(x);
+   return (float) __isnanf(x);
 #else
-   return isnan(x);
+   return (float) isnan(x);
 #endif
 #endif
 }
