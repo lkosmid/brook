@@ -113,5 +113,33 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 //       << FunctionName()->name << "().\"\n";
 
    /* We've already transformed everything, so just print ourselves */
-   FunctionDef::print(out, 0);
+    Type * form = decl->form;
+    assert (form->isFunction());
+    FunctionType* func = static_cast<FunctionType *>(form->dup());
+    
+    out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
+    func->printBefore(out,decl->name,0);
+    
+    out << "(";
+    for (int j=0; j < func->nArgs; j++) {
+	if (j!=0)
+	    out << ", ";
+	Type * form = func->args[j]->form;
+	if (form->type==TT_Stream) {
+	    form = static_cast<ArrayType *>(form)->subType;
+	}
+	
+	TypeQual tq= form->getQualifiers();
+	if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0)
+	    out << "const ";//kernels are only allowed to touch out params
+	if ((tq&TQ_Out)==0)
+	    func->args[j]->name->name=std::string("&")+func->args[j]->name->name;
+	func->args[j]->form = form;
+	func->args[j]->print(out,true);
+	
+    }
+    
+    out << ")";
+    //delete func;
+    Block::print(out,0);
 }

@@ -167,8 +167,6 @@ class BaseType1:public BaseType {public:
 		//this->printQual(out,qualifier);
 	int special = BT_Char|BT_Int|BT_Float|BT_Float2|BT_Float3|BT_Float4|BT_Long;
 	if ((typemask&special)!=0){
-		if (qualifier &TQ_Out)
-			out << "out ";
 		if (qualifier &TQ_Const)
 			out << "const ";
 		if (qualifier &TQ_Volatile)
@@ -186,6 +184,9 @@ class BaseType1:public BaseType {public:
 			out << "float4 ";
 		else
 			out << "int1 ";
+		if (qualifier &TQ_Out)
+			out << "&";
+		
 	}else {
 		BaseType::printBase(out,level);
 	}
