@@ -35,7 +35,11 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
 
   static const int kInputFileArgument = 5;
   static const int kOutputFileArgument = 4;
-  char *argv[] = { "fxc", inValidate ? "/Tps_2_0" : "/Tps_2_sw", inValidate ? "" : "/Vd", "/nologo", 0, 0, NULL };
+  char validate[]="/Vd";
+  char software[]="/Tps_2_sw";
+  char hardware[]="/Tps_2_0";
+  char nothin[]=""; //gcc does not like ?: with ""
+  char *argv[] = { "fxc", inValidate ? hardware : software, inValidate ? nothin : validate, "/nologo", 0, 0, NULL };
   char *fpcode,  *errcode;
 
   FILE *fp = fopen (globals.shaderoutputname, "wb+");
