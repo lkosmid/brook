@@ -148,12 +148,12 @@ NVContext::create() {
 int 
 NVContext::getShaderFormatRank (const char *name) const {
   if( strcmp(name, "arb") == 0 )
-      return 1;
+    return 1;
   if( strcmp(name, "fp30") == 0 )
-     return 2;
+    return 3;
   if( supportsFP40 &&
       strcmp(name, "fp40") == 0 )
-      return 3;
+    return 4;
   return -1;
 }
 

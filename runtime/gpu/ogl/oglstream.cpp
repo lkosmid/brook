@@ -13,10 +13,13 @@ OGLContext::copy_to_pbuffer(OGLTexture *texture) {
   int w = texture->width();
   int h = texture->height();
 
-  wnd->bindPbuffer(texture->components());
+  OGLPixelShader *passthrough = (OGLPixelShader *)
+    getPassthroughPixelShader();
+
+  _wnd->bindPbuffer(w, h, 1, texture->components());
   
   glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,  
-                   (unsigned int) getPassthroughPixelShader());
+                   passthrough->id);
 
   glActiveTextureARB(GL_TEXTURE0_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_NV, texture->id());

@@ -184,6 +184,7 @@ namespace brook
 
     D3DCAPS9 _deviceCaps;
     bool _supportsPS2B;
+    bool _supportsPS2A;
     bool _supportsPS30;
     bool _isNV;
     bool _isATI;
@@ -263,9 +264,19 @@ namespace brook
     result = _device->GetDeviceCaps( &_deviceCaps );
     DX9AssertResult( result, "GetDeviceCaps failed" );
     
+    // Ian:  There are many more differences than this between PS2B and 
+    // PS2A but the biggie that we're going to count on is the number of 
+    // outputs.
+
     _supportsPS2B = _deviceCaps.PS20Caps.NumInstructionSlots >= 512 &&
       _deviceCaps.PS20Caps.NumTemps >= 32 &&
-      _deviceCaps.PS20Caps.Caps & D3DPS20CAPS_NOTEXINSTRUCTIONLIMIT;
+      _deviceCaps.PS20Caps.Caps & D3DPS20CAPS_NOTEXINSTRUCTIONLIMIT &&
+      _deviceCaps.NumSimultaneousRTs >= 4;
+
+    _supportsPS2A = _deviceCaps.PS20Caps.NumInstructionSlots >= 512 &&
+      _deviceCaps.PS20Caps.NumTemps >= 32 &&
+      _deviceCaps.PS20Caps.Caps & D3DPS20CAPS_NOTEXINSTRUCTIONLIMIT &&
+      _deviceCaps.NumSimultaneousRTs >= 1;
 
     _supportsPS30 = (_deviceCaps.MaxPixelShader30InstructionSlots >= 512);
 
@@ -314,10 +325,12 @@ namespace brook
   {
     if( strcmp( "ps20", inNameString ) == 0 )
       return 1;
-    if( _supportsPS2B && strcmp( "ps2b", inNameString ) == 0 )
+    if( _supportsPS2A && strcmp( "ps2a", inNameString ) == 0 )
       return 2;
-    if( _supportsPS30 && strcmp( "ps30", inNameString ) == 0 )
+    if( _supportsPS2B && strcmp( "ps2b", inNameString ) == 0 )
       return 3;
+    if( _supportsPS30 && strcmp( "ps30", inNameString ) == 0 )
+      return 4;
     return -1;
   }
 

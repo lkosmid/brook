@@ -17,6 +17,15 @@ static const char passthrough_pixel[] =
 "TEX oColor, tex0, texture[0], RECT;\n"
 "END\n";
 
+OGLPixelShader::OGLPixelShader(unsigned int _id):
+  id(_id), largest_constant(0) {
+  unsigned int i;
+  
+  for (i=0; i<MAXCONSTANTS; i++)
+    constants[i] = float4(0.0f, 0.0f, 0.0f, 0.0f);;
+}
+  
+
 
 GPUContext::VertexShaderHandle 
 OGLContext::getPassthroughVertexShader(void) {
@@ -46,10 +55,10 @@ OGLContext::getPassthroughPixelShader() {
     glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
                           strlen(passthrough_pixel), 
                           (GLubyte *) passthrough_pixel);
-    _passthroughPixelShader = (GPUContext::PixelShaderHandle) id;
+    _passthroughPixelShader = new OGLPixelShader(id);
     CHECK_GL();
   }
-  return _passthroughPixelShader;
+  return (GPUContext::PixelShaderHandle) _passthroughPixelShader;
 }
 
 GPUContext::PixelShaderHandle
@@ -101,7 +110,7 @@ OGLContext::createPixelShader( const char* shader )
     exit(1);
   }
 
-  return (GPUContext::PixelShaderHandle) id;
+  return (GPUContext::PixelShaderHandle) new OGLPixelShader(id);
 }
 
 void 
@@ -109,9 +118,21 @@ OGLContext::bindConstant( PixelShaderHandle ps,
                           unsigned int inIndex, 
                           const float4& inValue ) {
   
+  OGLPixelShader *oglps = (OGLPixelShader *) ps;
+
+  GPUAssert(oglps, "Missing shader");
+
   bindPixelShader(ps);
   glProgramLocalParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, inIndex,
                                 (const float *) &inValue);
+
+  GPUAssert(inIndex < OGLPixelShader::MAXCONSTANTS, 
+            "Too many constants used in kernel");
+
+  if (inIndex >= oglps->largest_constant)
+    oglps->largest_constant = inIndex+1;
+
+  oglps->constants[inIndex] = inValue;
   CHECK_GL();
 }
 
@@ -122,9 +143,14 @@ OGLContext::bindTexture( unsigned int inIndex,
   OGLTexture *oglTexture = (OGLTexture *) inTexture;
   
   GPUAssert(oglTexture, "Null Texture");
-  
+  GPUAssert(inIndex < _slopTextureUnit, 
+            "Too many bound textures");
+
   glActiveTextureARB(GL_TEXTURE0_ARB+inIndex);
   glBindTexture(GL_TEXTURE_RECTANGLE_NV, oglTexture->id());
+
+  _boundTextures[inIndex] = oglTexture;
+
   CHECK_GL();
 }
 
@@ -134,17 +160,24 @@ void OGLContext::bindOutput( unsigned int inIndex,
   OGLTexture *oglTexture = (OGLTexture *) inTexture;
   
   GPUAssert(oglTexture, "Null Texture");
-  GPUAssert(inIndex == 0, "Backend does not support more than"
-            " one shader output.");
-  
-  _outputTexture = oglTexture;
+
+  GPUAssert(inIndex <= _maxOutputCount , 
+            "Backend does not support more than"
+            " four shader output.");
+
+  _outputTextures[inIndex] = oglTexture;
 }
 
 void 
 OGLContext::bindPixelShader( GPUContext::PixelShaderHandle inPixelShader ) {
-  glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, 
-                   (unsigned int) inPixelShader);
+  
+  OGLPixelShader *ps = (OGLPixelShader *) inPixelShader;
+  GPUAssert(ps, "Null pixel shader");
+
+  glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, ps->id);
   CHECK_GL();
+  
+  _boundPixelShader = ps;
 }
 
 void 
@@ -157,10 +190,11 @@ OGLContext::bindVertexShader( GPUContext::VertexShaderHandle inVertexShader ) {
 }
 
 void OGLContext::disableOutput( unsigned int inIndex ) {
- GPUAssert(inIndex == 0, "Backend does not support more than"
-           " one shader output.");
+ GPUAssert(inIndex <= 4,
+           "Backend does not support more than"
+           " four shader outputs.");
 
- _outputTexture = NULL;
+ _outputTextures[inIndex] = NULL;
 }
 
 void
@@ -405,11 +439,53 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
                            const GPUInterpolant* interpolants, 
                            unsigned int numInterpolants ) {
   unsigned int w, h, i, v;
+  unsigned int numOutputs, maxComponent;
+  static const GLenum outputEnums[] = {GL_FRONT_LEFT, GL_AUX0,
+                                       GL_AUX1, GL_AUX2};
 
-  w = _outputTexture->width();
-  h = _outputTexture->height();
+  /* Here we assume that all of the outputs are of the same size */
+  w = _outputTextures[0]->width();
+  h = _outputTextures[0]->height();
 
-  wnd->bindPbuffer(_outputTexture->components());
+  numOutputs = 0;
+  maxComponent = 0;
+  for (i=0; i<4; i++) {
+    if (_outputTextures[i]) {
+      numOutputs = i+1;
+      if (_outputTextures[i]->components() > maxComponent)
+        maxComponent = _outputTextures[i]->components();
+    }
+  }
+
+  CHECK_GL();
+
+  if (_wnd->bindPbuffer(w, h, numOutputs, maxComponent)) {
+    
+    // Rebind the shader
+    GPUAssert(_boundPixelShader, "Missing pixel shader");
+    bindPixelShader((PixelShaderHandle) _boundPixelShader);
+    
+    // Rebind the textures
+    for (i=0; i<32; i++) 
+      if (_boundTextures[i]) {
+        glActiveTextureARB(GL_TEXTURE0_ARB+i);
+        glBindTexture(GL_TEXTURE_RECTANGLE_NV, _boundTextures[i]->id());
+      }
+
+    // Rebind the constants
+    for (i=0; i<_boundPixelShader->largest_constant; i++) {
+      bindConstant((PixelShaderHandle) _boundPixelShader,
+                   i, _boundPixelShader->constants[i]);
+    }
+        
+  }
+  
+  CHECK_GL();
+
+  if (_maxOutputCount > 1)
+    glDrawBuffersATI (numOutputs, outputEnums); 
+
+  CHECK_GL();
   
   /*
    * We execute our kernel by using it to texture a triangle that
@@ -424,7 +500,12 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   int width = maxX - minX;
   int height = maxY - minY;
 
+  CHECK_GL();
+
   glViewport( minX, minY, width, height );
+
+  CHECK_GL();
+
   glBegin(GL_TRIANGLES);
 
   for (v=0; v<3; v++ )
@@ -447,8 +528,19 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   CHECK_GL();
 
   /* Copy the output to the texture */
-  glActiveTextureARB(GL_TEXTURE0+_slopTextureUnit);
-  glBindTexture(GL_TEXTURE_RECTANGLE_NV, _outputTexture->id());
-  glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, minX, minY, minX, minY, width, height);
-  CHECK_GL();
+  for (i=0; i<numOutputs; i++) {
+    glActiveTextureARB(GL_TEXTURE0+_slopTextureUnit);
+    glBindTexture(GL_TEXTURE_RECTANGLE_NV, _outputTextures[i]->id());
+    glReadBuffer(outputEnums[i]);
+    glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
+                        minX, minY, 
+                        minX, minY, 
+                        width, height);
+    CHECK_GL();
+  }
+  glReadBuffer(outputEnums[0]);
+  glDrawBuffer(outputEnums[0]);
+
+  for (i=0; i<4; i++)
+    _outputTextures[i] = NULL;
 }

@@ -73,6 +73,17 @@ typedef void (APIENTRYP PFNGLPROGRAMLOCALPARAMETER4FVARBPROC) (GLenum target, GL
 #define GL_TEXTURE_RECTANGLE_ARB          0x84F5
 #endif
 
+#ifndef GL_ATI_draw_buffers
+#define GL_MAX_DRAW_BUFFERS_ATI              0x8824
+#define GL_DRAW_BUFFER0_ATI                  0x8825
+#define GL_DRAW_BUFFER1_ATI                  0x8826
+#define GL_DRAW_BUFFER2_ATI                  0x8827
+#define GL_DRAW_BUFFER3_ATI                  0x8828
+typedef void (APIENTRYP PFNGLDRAWBUFFERSATIPROC) (GLsizei n, const GLenum *bufs);
+#define RUNTIME_BONUS_GL_FNS_ATI \
+   XXX(PFNGLDRAWBUFFERSATIPROC,        glDrawBuffersATI)
+#endif
+
 #define RUNTIME_BONUS_GL_FNS \
    RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3
 
@@ -117,6 +128,7 @@ RUNTIME_BONUS_WGL_FNS
 #endif
 
 RUNTIME_BONUS_GL_FNS
+RUNTIME_BONUS_GL_FNS_ATI
 
 #undef XXX
 

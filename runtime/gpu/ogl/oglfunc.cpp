@@ -16,6 +16,8 @@ RUNTIME_BONUS_WGL_FNS
 #endif
 
 RUNTIME_BONUS_GL_FNS
+RUNTIME_BONUS_GL_FNS_ATI
+
 #undef XXX
 
 
@@ -25,6 +27,9 @@ void brook::initglfunc(void) {
                        GPUAssert(fn, "Failed to load" #fn);
   RUNTIME_BONUS_GL_FNS;
   RUNTIME_BONUS_WGL_FNS;
+#undef XXX   
+#define  XXX(type, fn) fn = (type) wglGetProcAddress(#fn);
+  RUNTIME_BONUS_GL_FNS_ATI;
 #undef XXX   
 #endif
 }

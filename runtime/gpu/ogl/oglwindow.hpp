@@ -23,7 +23,10 @@ namespace brook {
                       const float (*vfAttribList)[4][16],
                       const int   (*vpiAttribList)[4][16]);
     
-    void bindPbuffer(unsigned int numComponents);
+    bool bindPbuffer(unsigned int width,
+                     unsigned int height,
+                     unsigned int numOutputs, 
+                     unsigned int numComponents);
     
   private:
     
@@ -35,7 +38,7 @@ namespace brook {
     HDC hwindowdc;
     HDC hpbufferdc;
 
-    int pixelformat[4];
+    int pixelformat[4][4];
     int piAttribList[4][16];
 
 #else
@@ -55,8 +58,9 @@ namespace brook {
 #endif
     
     unsigned int currentPbufferComponents;
-
-
+    unsigned int currentPbufferOutputs;
+    unsigned int currentPbufferWidth;
+    unsigned int currentPbufferHeight;
   };
 
 }

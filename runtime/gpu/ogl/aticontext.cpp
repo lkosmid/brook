@@ -87,14 +87,12 @@ ATIContext::create() {
   return ctx;
 }
 
-
 int 
 ATIContext::getShaderFormatRank (const char *name) const {
   if( strcmp(name, "arb") == 0 )
-      return 1;
+    return 1;
   return -1;
 }
-
 
 GPUContext::TextureHandle 
 ATIContext::createTexture2D( unsigned int inWidth,

@@ -11,6 +11,17 @@ namespace brook {
   class OGLTexture;
   class OGLWindow;
 
+  class OGLPixelShader
+  {
+  public:
+    OGLPixelShader(unsigned int id);
+    static const int MAXCONSTANTS = 256;
+    unsigned int id;
+    float4 constants[256];
+    unsigned int largest_constant;
+  };
+
+
   class OGLContext : public GPUContext
   {
   public:
@@ -22,10 +33,7 @@ namespace brook {
     isTextureExtentValid( unsigned int inExtent ) const
     { return (inExtent <= 2048); }
 
-    /* Everybody supports at least 1.
-    */
-    virtual unsigned int 
-    getMaximumOutputCount() const { return 1; }
+    virtual unsigned int  getMaximumOutputCount();
 
     virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const;
     virtual float4 getStreamGatherConstant( TextureHandle inTexture ) const;
@@ -138,7 +146,6 @@ namespace brook {
     virtual void bindPixelShader( PixelShaderHandle inPixelShader );
     virtual void bindVertexShader( VertexShaderHandle inVertexShader );
 
-    /* Not really sure what this should do... */
     virtual void disableOutput( unsigned int inIndex );
 
     virtual void drawRectangle( const GPURegion &outputRegion, 
@@ -157,14 +164,18 @@ namespace brook {
 
   private:
     VertexShaderHandle _passthroughVertexShader;
-    PixelShaderHandle _passthroughPixelShader;
-    OGLTexture *_outputTexture;
+    OGLPixelShader *_passthroughPixelShader;
+    OGLTexture *_outputTextures[4];
     unsigned int _slopTextureUnit;
-    int currentPbufferComponents;
+    unsigned int _maxOutputCount;
+    
+    static const int MAXBOUNDTEXTURES = 32;
+    OGLTexture *_boundTextures[32];
+    OGLPixelShader *_boundPixelShader;
 
     void copy_to_pbuffer(OGLTexture *texture);
 
-    OGLWindow *wnd;
+    OGLWindow *_wnd;
 
   };
 
