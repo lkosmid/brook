@@ -234,6 +234,9 @@ public:
 	}
 	return false;
     }
+    bool isArray() {
+	return (a->form->type==TT_Array);
+    }
     void printDimensionlessGatherStream(std::ostream&out,STAGE s){
 	ArrayType * t = static_cast<ArrayType*>(a->form);
 	switch (s) {
@@ -265,7 +268,7 @@ public:
 	
 	}
     }
-    void printDimensionalGatherArg(std::ostream &out, STAGE s) {
+    void printDimensionalGatherStream(std::ostream &out, STAGE s) {
 	Type * t=a->form;
 	switch (s) {
 	case HEADER:{
@@ -282,12 +285,13 @@ public:
 	    if (t->type==TT_Base)
 		s=getSymbol(std::string("*arg")+tostring(index));
 	    else
-		getSymbol(std::string("(*arg")+tostring(index)+")");
+		s=getSymbol(std::string("(*arg")+tostring(index)+")");
 	    t->printType(out,&s,true,0);
 	    out << " = (";
 	    s=(t->type==TT_Base)?getSymbol("*"):getSymbol("(*)");
 	    t->printType(out,&s,true,0);
-	    out << ")reinterpret_cast<CPUStream *>(args["<<index<<"])->getData();";	    
+	    out << ")reinterpret_cast<CPUStream *>(args["<<index<<"])->getData();"<<std::endl;
+	    break;
 	}
 	case USE:{
 	    indent(out,3);
@@ -299,7 +303,6 @@ public:
     void printNormalArg(std::ostream&out,STAGE s){
 	Type * t = a->form;
 	TypeQual tq= t->getQualifiers();
-	bool isArray = (t->type==TT_Array);
 	bool isStream = (t->type==TT_Stream);	
 	switch(s) {
 	case HEADER:{
@@ -307,61 +310,57 @@ public:
 		out << "const ";//kernels are only allowed to touch out params
 	    }
 	    Symbol name=getSymbol(a->name->name);
-	    if (!isArray) {
-		name=getSymbol("&"+a->name->name);
-	    }
+	    name=getSymbol("&"+a->name->name);	    
 	    if (isStream)
 		t = static_cast<ArrayType*>(t)->subType;
 	    t->printType(out,&name,true,0);
 	    break;
 	}
 	case DEF:
-	    if (t->type!=TT_Array) {
-		if (isStream) {
-		    t=static_cast<ArrayType*>(t)->subType;
-		}
-		printType(out,t,true,"arg"+tostring(index));
-		out << " = (";
-		printType(out,t,true);
-		out << ")args["<<index<<"];";
-		if (isStream)
-		    out<<" arg"<<index<<+"+=mapbegin;";
-		out<<std::endl;
+	    if (isStream) {
+		t=static_cast<ArrayType*>(t)->subType;
 	    }
+	    printType(out,t,true,"arg"+tostring(index));
+	    out << " = (";
+	    printType(out,t,true);
+	    out << ")args["<<index<<"];";
+	    if (isStream)
+		    out<<" arg"<<index<<+"+=mapbegin;";
+	    out<<std::endl;	    
 	    break;
-	case USE:{
+	case USE:
 		indent(out,3);
-		if (!isArray) {
-		    out <<"*arg"<<index;
-		    if (isStream)
-			out <<"++";
-		}else {
-		    out << "(";
-		    t=static_cast<ArrayType*>(t)->subType;
-		    Symbol s=(t->type==TT_Base)?getSymbol("*"):getSymbol("(*)");
-		    t->printType(out,&s,true,0);
-		    out << ")reinterpret_cast<CPUStream *>(args["<<index<<"])->getData()";
-		}
+		out <<"*arg"<<index;
+		if (isStream)
+		    out <<"++";
 	    break;
-	}
 	}
     }
     
     void printCPUFunctionArg(std::ostream & out){
-	if(isDimensionless())
-	    printDimensionlessGatherStream(out,HEADER);
+	if(isArray())
+	    if (isDimensionless())
+		printDimensionlessGatherStream(out,HEADER);
+	    else
+		printDimensionalGatherStream(out,HEADER);
 	else
 	    printNormalArg(out,HEADER);
     }
     void printInternalDef(std::ostream &out){
-	if(isDimensionless())
-	    printDimensionlessGatherStream(out,DEF);
+	if(isArray())
+	    if (isDimensionless())
+		printDimensionlessGatherStream(out,DEF);
+	    else
+		printDimensionalGatherStream(out,DEF);
 	else
 	    printNormalArg(out,DEF);
     }
     void printInternalUse(std::ostream &out){
-	if(isDimensionless())
-	    printDimensionlessGatherStream(out,USE);
+	if(isArray())
+	    if (isDimensionless())
+		printDimensionlessGatherStream(out,USE);
+	    else
+		printDimensionalGatherStream(out,USE);
 	else
 	    printNormalArg(out,USE);
     }
