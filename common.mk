@@ -138,7 +138,7 @@ $(BINDIR)/$(BINARY):  $(ADDITIONAL_DEPENDANCIES) $(OBJS)
 ifdef STATIC_LIBRARY
 	$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)
 else
-	$(LD) $(LDFLAGS) $(LD_OUTPUT_FLAG)$@ $(OBJS)
+	$(LD) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LDFLAGS)
 endif
 
 ## Clean BRCC generated .cpp files ##
