@@ -507,7 +507,11 @@ class Decl
 
     bool    isTypedef() const { return (storage == ST_Typedef); }
     bool    isStatic() const { return (storage == ST_Static); }
-    bool    isKernel() const { return (storage == ST_Kernel); }
+    bool    isReduce() const {return (form->getQualifiers()&TQ_Reduce)!=0;}
+    bool    isKernel() const {
+       /// XXX Fixme: A kernel is not a reduce...but in the CPU side they are the same --Daniel
+       return (storage == ST_Kernel)||isReduce(); 
+    }
     bool    isStream() const {
        return (form->type == TT_Stream || form->type == TT_BrtStream); }
     bool    isArray() const {

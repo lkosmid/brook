@@ -4,9 +4,13 @@ extern void printf();
 extern void streamRead();
 extern void streamWrite();
 
+reduce void bar (float a<>, reduce float4 f) {
+   f=5+f+a;
+}
 kernel void foo (float a<>, float b<>, float4 c,
-		 float d[10][10], out float e<>) {
+		 float d[10][10], out float e<>, reduce float4 f) {
   e = a+b+d[c.xy];
+  bar (a,f);
 }
 
 int main () {
@@ -36,7 +40,7 @@ int main () {
   streamRead(b, data_b);
   streamRead(d, data_d);
 
-  foo(a,b,c,d,e);
+  foo(a,b,c,d,e,c);
   //foo(a,b,c,d_broken,e);
 
   streamWrite(e, data_e);

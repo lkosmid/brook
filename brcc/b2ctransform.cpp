@@ -781,8 +781,11 @@ Expression *ChangeFunctionTarget (Expression * e) {
 	if (e->etype==ET_FunctionCall) {
 		Expression *k= static_cast<FunctionCall *>(e)->function;
 		if (k->etype==ET_Variable) {
-			Symbol * s =static_cast<Variable*>(k)->name;
-			s->name="__"+s->name+"_cpu_inner";
+                   Symbol * s =static_cast<Variable*>(k)->name;
+                   if (!(s->name.find("__")==0
+                         &&s->name.find("_cpu_inner")!=std::string::npos)) {
+                      s->name="__"+s->name+"_cpu_inner";
+                   }
 		}
 	}
         return e;
