@@ -1,0 +1,37 @@
+// multiple_output.br
+
+#include <stdio.h>
+
+kernel void doubleAndSquare( float input<>, out float doubled<>, out float squared<> ) {
+  doubled = 2*input;
+  squared = input*input;
+}
+
+int main() {
+  float input< 100 >;
+  float doubled< 100 >;
+  float squared< 100 >;
+  float input_data[100];
+  float doubled_data[100];
+  float squared_data[100];
+  int i;
+
+  for( i = 0; i < 100; i++ )
+  {
+    input_data[i] = (float)i;
+  }
+
+  streamRead( input, input_data );
+  doubleAndSquare( input, doubled, squared );
+  streamWrite( doubled, doubled_data );
+  streamWrite( squared, squared_data );
+	
+	for( i = 0; i < 100; i++ )
+	{
+    printf( "{%6.1f, %6.1f}", doubled_data[i], squared_data[i] );
+    if( i % 5 == 4 )
+      printf("\n");
+	}
+	
+	return 0;
+}

@@ -5,6 +5,6 @@ REGRESSIONDIRS := toy read_write sum input_output gather_direct \
                   iterator_dimensions replication_stride \
 		  indexof_output infinite
 
-SUBDIRS := $(REGRESSIONDIRS) reduce 
+SUBDIRS := $(REGRESSIONDIRS) reduce struct_input struct_gather multiple_output struct_output
 
 include $(ROOTDIR)/common.mk

@@ -1,0 +1,44 @@
+// struct_output.br
+// Tests use of structures for output parameters (used multiple-output support)
+
+#include <stdio.h>
+
+typedef struct Pair_t {
+  float first;
+  float second;
+} Pair;
+
+kernel void makePairs( float first<>, float second<>, out Pair p<> ) {
+  p.first = first;
+  p.second = second;
+}
+
+int main() {
+  float first< 100 >;
+  float second< 100 >;
+  Pair pairs< 100 >;
+  float first_data[100];
+  float second_data[100];
+  Pair pairs_data[100];
+  int i;
+
+  for( i = 0; i < 100; i++ )
+  {
+    first_data[i] = (float)i;
+    second_data[i] = (float)(100-i);
+  }
+
+  streamRead( first, first_data );
+  streamRead( second, second_data );
+  makePairs( first, second, pairs );
+  streamWrite( pairs, pairs_data );
+	
+	for( i = 0; i < 100; i++ )
+	{
+    printf( "{%3.0f, %3.0f} ", pairs_data[i].first, pairs_data[i].second );
+    if( i % 5 == 4 )
+      printf("\n");
+	}
+	
+	return 0;
+}

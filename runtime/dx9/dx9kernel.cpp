@@ -294,11 +294,6 @@ void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
 
   runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
 
-  for( i = firstOutput; i < afterLastOutput; i++ )
-  {
-    outputStreams[i]->markGPUDataChanged();
-  }
-
   result = device->EndScene();
   DX9AssertResult( result, "EndScene failed" );
 
@@ -310,6 +305,12 @@ void DX9Kernel::Map() {
   int passCount = (int)passes.size();
   for( int p = 0; p < passCount; p++ )
     mapPass( passes[p] );
+
+  int outputStreamCount = (int)outputStreams.size();
+  for( int i = 0; i < outputStreamCount; i++ )
+  {
+    outputStreams[i]->markGPUDataChanged();
+  }
 
   ClearInputs();
 }
