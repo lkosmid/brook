@@ -306,6 +306,8 @@ int volfire_main(int argc, char* argv[]) {
 		   fclose(outfile);
 	      }
 	 }
+	 if(time)
+		streamWrite(fire, outputf);
 	 stop = GetTime();       
 	 time_in_ms = (float)(stop-start)/1000.;
 	 fprintf(stderr, "That took %.2fms total\n", time_in_ms);
