@@ -33,8 +33,10 @@ namespace brook {
   Stream * Iter::allocateStream(int dims, 
                                 int extents[],
                                 float ranges[])const {
-     Stream * s = new CPUStream (type,dims,extents);
-     float * data = (float *)s->getData(brook::Stream::READ);
+     //     Stream * s = new CPUStream (type,dims,extents);
+     Stream * s = brook::RunTime::GetInstance()->
+        CreateStream( type, dims, extents );
+     float * data = (float*)malloc (s->getTotalSize()*sizeof(float)*type);
      if (dims<2) {
         for (int i=0;i<extents[0];++i) {
            for (int j=0;j<type;++j) {
@@ -55,7 +57,8 @@ namespace brook {
      }else {
         assert(0);
      }
-     s->releaseData(brook::Stream::READ);
+     streamRead(s,data);
+     free(data);
        //XXX daniel this needs to be done
        //will use standard brook BRTCreateStream syntax and then copy data in
        //dx9 can then call this to easily fallback if cpu is necessary
