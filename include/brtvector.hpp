@@ -266,8 +266,12 @@ INITBASECLASS(bool);
 INITBASECLASS(char);
 INITBASECLASS(unsigned char);
 
-#ifdef _WIN32
+#ifdef _MSC_VER
+#if _MSC_VER <= 1200
 #define GCCTYPENAME
+#else
+#define GCCTYPENAME typename
+#endif
 #else
 #define GCCTYPENAME typename
 #endif
