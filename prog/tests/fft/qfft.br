@@ -189,7 +189,7 @@ kernel void setZero(float4 indata<>,
                     float scale) {
 	float4 i=indexof(indata);
 	float4 zero = {0.0,0.0,0.0,0.0};
-	float zeroit=(i.x>clampsize.x)&&(i.y>clampsize.y);
+	float zeroit=(i.x>clampsize.x&&i.y>clampsize.y);//(i.x*i.x/(clampsize.x*clampsize.x)+(i.y*i.y)/(clampsize.y*clampsize.y));
 	outdata = zeroit.xxxx?zero:indata/scale;
 }
 
@@ -266,7 +266,7 @@ void computeFFT2d(float2 *input,
 	if (thereAndBack==0) {
            float2 clampsize;
            clampsize.x = (float)(M/4);
-           clampsize.y = (float)(N/4);
+           clampsize.y = (float)(N/2);
            setZero(s_out,s_out,clampsize,(float)(M*N));
            streamSwap(s,s_out);
         }
@@ -284,17 +284,13 @@ void computeFFT2d(float2 *input,
 }
 
 
-float2 * doOptFFT(int logN, int logM, float2 * data) {
+void doOptFFT(int logN, int logM, float2 * data) {
    int i,N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
-   output = (float2*)malloc(sizeof(float2)*2*M*N);
    start = GetTimeMillis();
-   for (i=0;i<4;++i) {
-   computeFFT2d(data,output,logM,logN,M,N,FFT_2D); 
-   }
+   computeFFT2d(data,data,logM,logN,M,N,FFT_2D); 
    stop = GetTimeMillis();
-   return output;
    //FftwTransform2d(data,N,M,1,1);
 }
 
@@ -311,10 +307,11 @@ unsigned char float2char(float x) {
 int main (int argc, char ** argv) {
 	unsigned char *imgdata;
 	unsigned int width, height, len;
-	int bpp, bypp, color_type;
+	int bpp, color_type, channels;
+        int channelcount=0;
 	unsigned int logn, logm;
 	unsigned int i;
-	float2 *data, *retdata;
+	float2 *data;
 	if (argc<3) {
 		printf("Usage: %s <input_file> <output_file>\n",argc>=1?argv[0]:"qfft");
 		return 1; // 1 is argument error
@@ -322,39 +319,43 @@ int main (int argc, char ** argv) {
 	if (!readPng(argv[1],&imgdata,&width,&height,&color_type,&bpp)) {
 		return 2; // 2 is read error
 	}
-	if (color_type!=PNG_COLOR_TYPE_GRAY||bpp!=8) {
+        switch (color_type) {
+        case PNG_COLOR_TYPE_GRAY:
+        case PNG_COLOR_TYPE_PALETTE:
+           channels=1;      
+           break;
+        case PNG_COLOR_TYPE_RGB_ALPHA:
+           channels=4;
+           break;
+        case PNG_COLOR_TYPE_GRAY_ALPHA:
+           channels=2;
+           break;
+        case PNG_COLOR_TYPE_RGB:
+        default:
+           channels=3;
+        }
+	if (bpp!=8) {
 		fprintf(stderr,"Only grayscale images with 8 bits per pixel are supported.\n");
 		free(imgdata);
 		return 2;
 	}
-	bypp=bpp/8;
-	len=width*height*bypp;
+	len=width*height;
 	data = (float2 *) malloc (sizeof(float2)*len);
-	for (i=0;i<len;i+=bypp) {
-		data[i].x = ((float)imgdata[i])/255;
-		data[i].y = 0;
-	}
-	for (i=1, logn=0; i<height; i*=2, ++logn) {}
-	for (i=1, logm=0; i<width; i*=2, ++logm) {}
-	retdata=doOptFFT(logn,logm,data); 
+        for (channelcount=0;channelcount<channels;++channelcount) {
+           for (i=0;i<len;i++) {
+              data[i].x = ((float)imgdata[i*channels+channelcount])/255;
+              data[i].y = 0;
+           }
+           for (i=1, logn=0; i<height; i*=2, ++logn) {}
+           for (i=1, logm=0; i<width; i*=2, ++logm) {}
+           doOptFFT(logn,logm,data); 
         
-/*
-	{
-		float4 str<height,(width/2)>;
-		float2 size;
-		size.x=(float)(width/4); // *3.0f;
-		size.y=(float)(height/2); // *1.5f;
-		streamRead(str,retdata);
-		setZero(str,str,size);
-		streamWrite(str,retdata);
-	}
-	data=doOptFFT(logn,logm,retdata);
-*/
-	for (i=0;i<len;i+=bypp) {
-		imgdata[i] = float2char(((retdata[i].x)));//  /width)/height));
-	}
+           for (i=0;i<len;i++) {
+              imgdata[i*channels+channelcount] 
+                 = float2char(((data[i].x)));//  /width)/height));
+           }
+        }
 	free(data);
-	free(retdata); 
 	if (!writePng(argv[2],imgdata,width,height,color_type,bpp)) {
 		free(imgdata);
 		return 3; // 3 is write error

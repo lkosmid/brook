@@ -89,7 +89,7 @@ int readPng(const char *filename, unsigned char **data, unsigned int *width, uns
 	unsigned long stride = numchan*sizeof (unsigned char)*(*bpp)/8;
 	unsigned char * image = (unsigned char *) malloc (stride*(*width)*(*height));
 	for (unsigned int i=0;i<*height;i++) {
-		row_pointers[i] = &image[i*stride*(*width)];
+		row_pointers[*height-i-1] = &image[i*stride*(*width)];
 	}
 	png_read_image (png_ptr,row_pointers);
 	//   png_read_image(png_ptr, info_ptr, PNG_TRANSFORM_EXPAND , NULL);
@@ -107,7 +107,25 @@ int readPng(const char *filename, unsigned char **data, unsigned int *width, uns
 }
 
 int writePng(const char *filename, const unsigned char *data, unsigned int width, unsigned int height, int color_type, int bpp) {
+
 	FILE * fp = fopen (filename, "wb");
+        int channels=1;
+        switch (color_type) {
+        case PNG_COLOR_TYPE_GRAY:
+        case PNG_COLOR_TYPE_PALETTE:
+           channels=1;      
+           break;
+        case PNG_COLOR_TYPE_RGB_ALPHA:
+           channels=4;
+           break;
+        case PNG_COLOR_TYPE_GRAY_ALPHA:
+           channels=2;
+           break;
+        case PNG_COLOR_TYPE_RGB:
+        default:
+           channels=3;
+        }
+        int stride = channels * bpp/8;
 	if (!fp) {
 		fprintf(stderr,"Unable to open file \"%s\"for writing.\n",filename);
 		return 0;
@@ -148,7 +166,7 @@ int writePng(const char *filename, const unsigned char *data, unsigned int width
 		png_byte **row_pointers;
 		row_pointers= (png_byte**)malloc(height*sizeof(png_byte*));
 		for (unsigned int i=0;i<height;i++) {
-			row_pointers[i]= (png_byte *)&data[i*width];
+			row_pointers[i]= (png_byte *)&data[i*width*stride];
 		}
 		png_write_image (png_ptr,row_pointers);
 		png_write_end(png_ptr, info_ptr);
