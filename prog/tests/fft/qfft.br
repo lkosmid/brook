@@ -412,7 +412,6 @@ int main (int argc, char ** argv) {
           argc=3;
 		//turn 1; // 1 is argument error
 	}
-
 	if (0==readPPM(argv[1],&imgdata,&width,&height)) {
 		return 2; // 2 is read error
 	}
