@@ -19,9 +19,8 @@ DX9Kernel* DX9Kernel::create( DX9RunTime* inRuntime, const void* inSource[] )
 }
 
 DX9Kernel::DX9Kernel( DX9RunTime* inRuntime )
-  : runtime(inRuntime),
-  device(NULL),
-  pixelShader(NULL)
+  : runtime(inRuntime), hasPushedOutputIndexof(false),
+  device(NULL)
 {
   device = inRuntime->getDevice();
   device->AddRef();
@@ -35,12 +34,12 @@ bool DX9Kernel::initialize( const void* inSource[] )
   while( inSource[i] != NULL )
   {
     const char* nameString = (const char*)inSource[i];
-    const char* programString = (const char*)inSource[i+1];
+    const char** programStrings = (const char**)inSource[i+1];
 
     if( strncmp( nameString, PIXEL_SHADER_NAME_STRING, strlen(PIXEL_SHADER_NAME_STRING) ) == 0 )
     {
-      if( programString != NULL )
-        return initialize( programString );
+      if( programStrings != NULL )
+        return initialize( programStrings );
     }
 
     i += 2;
@@ -50,17 +49,17 @@ bool DX9Kernel::initialize( const void* inSource[] )
   return false;
 }
 
-bool DX9Kernel::initialize( const char* source )
+bool DX9Kernel::initialize( const char** inProgramStrings )
 {
-  pixelShader = DX9PixelShader::create( runtime, source );
-  if( pixelShader == NULL )
+  // must have least one shader
+  if( *inProgramStrings == NULL )
   {
-    DX9Warn( "Failed to create kernel's pixel shader" );
+    DX9Warn( "No attached ps20 pixel shaders found" );
     return false;
   }
 
   // look for our annotations...
-  std::string s = source;
+  std::string s = inProgramStrings[0];
 
   s = s.substr( s.find("!!BRCC") );
 
@@ -81,6 +80,29 @@ bool DX9Kernel::initialize( const char* source )
     argumentUsesIndexof.push_back( (indexofHint == 'i') );
   }
 
+  const char** programStrings = inProgramStrings;
+  while( *programStrings != NULL )
+  {
+    const char* programString = *programStrings++;
+
+    Pass pass;
+    pass.pixelShader = DX9PixelShader::create( runtime, programString );
+    if( pass.pixelShader == NULL )
+    {
+      DX9Warn( "Failed to create a kernel pass pixel shader" );
+      return false;
+    }
+
+    std::string s = programString;
+    s = s.substr( s.find("!!multipleOutputInfo") );
+    s = s.substr( s.find(":")+1 );
+    pass.firstOutput = atoi( s.substr( 0, s.find(":") ).c_str() );
+    s = s.substr( s.find(":")+1 );
+    pass.outputCount = atoi( s.substr( 0, s.find(":") ).c_str() );
+
+    passes.push_back(pass);
+  }
+
   // initialize the output rects, just in case
   outputRect = DX9Rect(0,0,0,0);
   return true;
@@ -88,8 +110,10 @@ bool DX9Kernel::initialize( const char* source )
 
 DX9Kernel::~DX9Kernel()
 {
-  if( pixelShader != NULL )
-    delete pixelShader;
+  int passCount = (int)passes.size();
+  for( int p = 0; p < passCount; p++ )
+    delete passes[p].pixelShader;
+
   if( device != NULL )
     device->Release();
 }
@@ -205,31 +229,43 @@ void DX9Kernel::PushOutput(Stream *s) {
     outputSurfaces.push_back(surface);
   }
 
-  if( argumentUsesIndexof[arg] )
+  if( argumentUsesIndexof[arg] && !hasPushedOutputIndexof )
   {
+    hasPushedOutputIndexof = true;
     PushConstantImpl( stream->getIndexofConstant() );
     PushTexCoord( stream->getInputRect() );
   }
 }
 
-void DX9Kernel::Map() {
-  DX9Trace("Map");
+void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
+{
   HRESULT result;
   int i;
-  
+
   int inputStreamCount = (int)inputStreams.size();
   int samplerCount = (int)inputTextures.size();
   int texCoordCount = (int)inputTextureRects.size();
   int constantCount = (int)inputConstants.size();
   int reductionCount = (int)outputReductionDatas.size();
 
+  DX9PixelShader* pixelShader = inPass.pixelShader;
   DX9VertexShader* vertexShader = runtime->getPassthroughVertexShader();
 
-  int outputSurfaceCount = (int)outputSurfaces.size();
-  for( i = 0; i < outputSurfaceCount; i++ )
+  int firstOutput = inPass.firstOutput;
+  int outputCount = inPass.outputCount;
+  int afterLastOutput = inPass.firstOutput + outputCount;
+
+  for( i = firstOutput; i < afterLastOutput; i++ )
   {
-    result = device->SetRenderTarget( i, outputSurfaces[i] );
+    DX9Assert( i < (int)outputSurfaces.size(), "Not enough output surfaces have been pushed!" );
+    result = device->SetRenderTarget( i-firstOutput, outputSurfaces[i] );
     DX9AssertResult( result, "SetRenderTarget failed" );
+  }
+  static const int kMaximumRenderTargetCount = 4;
+  for( i = outputCount; i < kMaximumRenderTargetCount; i++ )
+  {
+    result = device->SetRenderTarget( i, NULL );
+    DX9AssertResult( result, "SetRenderTarget(NULL) failed" );
   }
 
 
@@ -258,14 +294,22 @@ void DX9Kernel::Map() {
 
   runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
 
-  int outputStreamCount = (int)outputStreams.size();
-  for( i = 0; i < outputStreamCount; i++ )
+  for( i = firstOutput; i < afterLastOutput; i++ )
   {
     outputStreams[i]->markGPUDataChanged();
   }
 
   result = device->EndScene();
   DX9AssertResult( result, "EndScene failed" );
+
+}
+
+void DX9Kernel::Map() {
+  DX9Trace("Map");
+
+  int passCount = (int)passes.size();
+  for( int p = 0; p < passCount; p++ )
+    mapPass( passes[p] );
 
   ClearInputs();
 }
@@ -332,6 +376,7 @@ void DX9Kernel::PushConstantImpl(const float4 &val) {
 void DX9Kernel::ClearInputs()
 {
   argumentIndex = 0;
+  hasPushedOutputIndexof = false;
 
   outputStreams.clear();
   outputSurfaces.clear();
@@ -582,7 +627,9 @@ void DX9Kernel::BindReductionOperationState()
   int samplerCount = (int)inputTextures.size();
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
 
-  result = device->SetPixelShader( pixelShader->getHandle() );
+  DX9Assert( passes.size() == 1, "Only a single output allowed for reductions right now" );
+
+  result = device->SetPixelShader( passes[0].pixelShader->getHandle() );
   DX9AssertResult( result, "SetPixelShader failed" );
 
   int sampler0 = inputReductionStreamSamplerIndex;

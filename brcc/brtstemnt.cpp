@@ -452,14 +452,14 @@ BRTMapKernelDef::CheckSemantics() const
       }
 
       if ((fType->args[i]->form->getQualifiers() & TQ_Out) != 0) {
-         if (outArg) {
+ /*        if (outArg) {
             std::cerr << location << "Multiple outputs not supported: ";
             outArg->print(std::cerr, true);
             std::cerr << ", ";
             fType->args[i]->print(std::cerr, true);
             std::cerr << ".\n";
             return false;
-         }
+         }*/
          outArg = fType->args[i];
 
          if (!recursiveIsStream(outArg->form)) {

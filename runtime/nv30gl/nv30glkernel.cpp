@@ -12,6 +12,7 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
    runtime(runtime)
 {
    unsigned int i, n;
+   const char** sources = NULL;
    const char *source;
    char *progcopy;
    char *c;
@@ -23,12 +24,14 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
       const char* nameString = (const char*) sourcelist[i];
       assert (nameString);
       
-      source = (const char*) sourcelist[i+1];
+      sources = (const char**)sourcelist[i+1];
       
       if( strncmp( nameString, 
                    "fp30", strlen("fp30"))  == 0 )
          break;
    }
+
+   source = sources ? sources[0] : NULL;
    
    if (sourcelist[i] == NULL ||
        source == NULL) { 

@@ -42,7 +42,7 @@ namespace brook {
 
     DX9Kernel( DX9RunTime* inRuntime );
     bool initialize( const void* inSource[] );
-    bool initialize( const char* inSource );
+    bool initialize( const char** inProgramStrings );
     virtual ~DX9Kernel();
 
     void PushSamplers( DX9Stream* s );
@@ -67,13 +67,9 @@ namespace brook {
       int remainingExtent, int remainingOtherExtent, int slopBufferCount, int dim );
 
     int argumentIndex;
-//    int argumentSamplerIndex;
-//    int argumentTexCoordIndex;
-//    int argumentConstantIndex;
-//    int argumentOutputIndex;
-//    int argumentReductionIndex;
 
     std::vector<bool> argumentUsesIndexof;
+    bool hasPushedOutputIndexof;
 
     std::vector<DX9Stream*> outputStreams;
     std::vector<IDirect3DSurface9*> outputSurfaces;
@@ -91,7 +87,16 @@ namespace brook {
 
     DX9RunTime* runtime;
     IDirect3DDevice9* device;
-    DX9PixelShader* pixelShader;
+//    DX9PixelShader* pixelShader;
+    class Pass
+    {
+    public:
+      DX9PixelShader* pixelShader;
+      int firstOutput, outputCount;
+    };
+    std::vector<Pass> passes;
+
+    void mapPass( const Pass& inPass );
 
     DX9Stream* inputReductionStream;
     int inputReductionStreamSamplerIndex;
