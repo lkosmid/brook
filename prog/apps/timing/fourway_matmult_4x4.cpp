@@ -25,8 +25,8 @@ __BrtFloat4 row3;
 __cpustruct_matrix4;
 
 namespace brook {
-	template<> const __BRTStreamType* getStreamType(matrix4*) {
-		static const __BRTStreamType result[] = {__BRTFLOAT4, __BRTFLOAT4, __BRTFLOAT4, __BRTFLOAT4, __BRTNONE};
+	template<> const brook::StreamType* getStreamType(matrix4*) {
+		static const brook::StreamType result[] = {__BRTFLOAT4, __BRTFLOAT4, __BRTFLOAT4, __BRTFLOAT4, __BRTNONE};
 		return result;
 	}
 }
@@ -712,65 +712,6 @@ namespace {
 	static const void* __fourway_matmult_4x4_arb = &__fourway_matmult_4x4_arb_desc;
 }
 
-void __fourway_matmult_4x4_cpu_inner (const __cpustruct_matrix4 &a,
-                                       const __cpustruct_matrix4 &b,
-                                       __cpustruct_matrix4 &result){
-  __BrtFloat4  b_col0 = __BrtFloat4 (b.row0.swizzle1(maskX),b.row1.swizzle1(maskX),b.row2.swizzle1(maskX),b.row3.swizzle1(maskX));
-  __BrtFloat4  b_col1 = __BrtFloat4 (b.row0.swizzle1(maskY),b.row1.swizzle1(maskY),b.row2.swizzle1(maskY),b.row3.swizzle1(maskY));
-  __BrtFloat4  b_col2 = __BrtFloat4 (b.row0.swizzle1(maskZ),b.row1.swizzle1(maskZ),b.row2.swizzle1(maskZ),b.row3.swizzle1(maskZ));
-  __BrtFloat4  b_col3 = __BrtFloat4 (b.row0.swizzle1(maskW),b.row1.swizzle1(maskW),b.row2.swizzle1(maskW),b.row3.swizzle1(maskW));
-
-  result.row0 = __BrtFloat4 (__dot_cpu_inner(a.row0,b_col0),__dot_cpu_inner(a.row0,b_col1),__dot_cpu_inner(a.row0,b_col2),__dot_cpu_inner(a.row0,b_col3));
-  result.row1 = __BrtFloat4 (__dot_cpu_inner(a.row1,b_col0),__dot_cpu_inner(a.row1,b_col1),__dot_cpu_inner(a.row1,b_col2),__dot_cpu_inner(a.row1,b_col3));
-  result.row2 = __BrtFloat4 (__dot_cpu_inner(a.row2,b_col0),__dot_cpu_inner(a.row2,b_col1),__dot_cpu_inner(a.row2,b_col2),__dot_cpu_inner(a.row2,b_col3));
-  result.row3 = __BrtFloat4 (__dot_cpu_inner(a.row3,b_col0),__dot_cpu_inner(a.row3,b_col1),__dot_cpu_inner(a.row3,b_col2),__dot_cpu_inner(a.row3,b_col3));
-}
-void  __fourway_matmult_4x4_cpu (const std::vector<void *>&args,
-                                 const std::vector<const unsigned int *>&extents,
-                                 const std::vector<unsigned int>&dims,
-                                 unsigned int mapbegin, 
-                                 unsigned int mapextent) {
-  __cpustruct_matrix4*arg0 = (__cpustruct_matrix4*)args[0];
-  __cpustruct_matrix4*arg1 = (__cpustruct_matrix4*)args[1];
-  __cpustruct_matrix4*arg2 = (__cpustruct_matrix4*)args[2];
-  unsigned int dim=dims[2];
-  unsigned int newline=extents[2][dim-1];
-  unsigned int ratio0 = extents[2][dim-1]/extents[0][dim-1];
-  unsigned int scale0=extents[0][dim-1]/extents[2][dim-1];
-  if (scale0<1) scale0 = 1;
-  unsigned int ratioiter0 = 0;
-  if (ratio0) ratioiter0 = mapbegin%ratio0;
-  unsigned int iter0 = getIndexOf(mapbegin,extents[0], dim, extents[2]);
-  unsigned int ratio1 = extents[2][dim-1]/extents[1][dim-1];
-  unsigned int scale1=extents[1][dim-1]/extents[2][dim-1];
-  if (scale1<1) scale1 = 1;
-  unsigned int ratioiter1 = 0;
-  if (ratio1) ratioiter1 = mapbegin%ratio1;
-  unsigned int iter1 = getIndexOf(mapbegin,extents[1], dim, extents[2]);
-  arg2+=mapbegin;
-  unsigned int i=0; 
-  while (i<mapextent) {
-    __fourway_matmult_4x4_cpu_inner (
-      *(arg0 + iter0),
-      *(arg1 + iter1),
-      *arg2);
-    i++;
-    if (++ratioiter0>=ratio0){
-      ratioiter0=0;
-      iter0+=scale0;
-    }
-    if (++ratioiter1>=ratio1){
-      ratioiter1=0;
-      iter1+=scale1;
-    }
-    ++arg2;
-    if ((mapbegin+i)%newline==0) {
-      iter0=getIndexOf(i+mapbegin,extents[0],dim, extents[2]);
-      iter1=getIndexOf(i+mapbegin,extents[1],dim, extents[2]);
-    }
-  }
-}
-
 void  fourway_matmult_4x4 (::brook::stream a,
 		::brook::stream b,
 		::brook::stream result) {
@@ -778,9 +719,8 @@ void  fourway_matmult_4x4 (::brook::stream a,
      "fp30", __fourway_matmult_4x4_fp30,
      "arb", __fourway_matmult_4x4_arb,
      "ps20", __fourway_matmult_4x4_ps20,
-     "cpu", (void *) __fourway_matmult_4x4_cpu,
      NULL, NULL };
-  static __BRTKernel k(__fourway_matmult_4x4_fp);
+  static brook::kernel k(__fourway_matmult_4x4_fp);
 
   k->PushStream(a);
   k->PushStream(b);
@@ -1328,60 +1268,6 @@ namespace {
 	static const void* __fourway_matmult_4x4_pretransposed_arb = &__fourway_matmult_4x4_pretransposed_arb_desc;
 }
 
-void __fourway_matmult_4x4_pretransposed_cpu_inner (const __cpustruct_matrix4 &a,
-                                                     const __cpustruct_matrix4 &b,
-                                                     __cpustruct_matrix4 &result){
-  result.row0 = __BrtFloat4 (__dot_cpu_inner(a.row0,b.row0),__dot_cpu_inner(a.row0,b.row1),__dot_cpu_inner(a.row0,b.row2),__dot_cpu_inner(a.row0,b.row3));
-  result.row1 = __BrtFloat4 (__dot_cpu_inner(a.row1,b.row0),__dot_cpu_inner(a.row1,b.row1),__dot_cpu_inner(a.row1,b.row2),__dot_cpu_inner(a.row1,b.row3));
-  result.row2 = __BrtFloat4 (__dot_cpu_inner(a.row2,b.row0),__dot_cpu_inner(a.row2,b.row1),__dot_cpu_inner(a.row2,b.row2),__dot_cpu_inner(a.row2,b.row3));
-  result.row3 = __BrtFloat4 (__dot_cpu_inner(a.row3,b.row0),__dot_cpu_inner(a.row3,b.row1),__dot_cpu_inner(a.row3,b.row2),__dot_cpu_inner(a.row3,b.row3));
-}
-void  __fourway_matmult_4x4_pretransposed_cpu (const std::vector<void *>&args,
-                                               const std::vector<const unsigned int *>&extents,
-                                               const std::vector<unsigned int>&dims,
-                                               unsigned int mapbegin, 
-                                               unsigned int mapextent) {
-  __cpustruct_matrix4*arg0 = (__cpustruct_matrix4*)args[0];
-  __cpustruct_matrix4*arg1 = (__cpustruct_matrix4*)args[1];
-  __cpustruct_matrix4*arg2 = (__cpustruct_matrix4*)args[2];
-  unsigned int dim=dims[2];
-  unsigned int newline=extents[2][dim-1];
-  unsigned int ratio0 = extents[2][dim-1]/extents[0][dim-1];
-  unsigned int scale0=extents[0][dim-1]/extents[2][dim-1];
-  if (scale0<1) scale0 = 1;
-  unsigned int ratioiter0 = 0;
-  if (ratio0) ratioiter0 = mapbegin%ratio0;
-  unsigned int iter0 = getIndexOf(mapbegin,extents[0], dim, extents[2]);
-  unsigned int ratio1 = extents[2][dim-1]/extents[1][dim-1];
-  unsigned int scale1=extents[1][dim-1]/extents[2][dim-1];
-  if (scale1<1) scale1 = 1;
-  unsigned int ratioiter1 = 0;
-  if (ratio1) ratioiter1 = mapbegin%ratio1;
-  unsigned int iter1 = getIndexOf(mapbegin,extents[1], dim, extents[2]);
-  arg2+=mapbegin;
-  unsigned int i=0; 
-  while (i<mapextent) {
-    __fourway_matmult_4x4_pretransposed_cpu_inner (
-      *(arg0 + iter0),
-      *(arg1 + iter1),
-      *arg2);
-    i++;
-    if (++ratioiter0>=ratio0){
-      ratioiter0=0;
-      iter0+=scale0;
-    }
-    if (++ratioiter1>=ratio1){
-      ratioiter1=0;
-      iter1+=scale1;
-    }
-    ++arg2;
-    if ((mapbegin+i)%newline==0) {
-      iter0=getIndexOf(i+mapbegin,extents[0],dim, extents[2]);
-      iter1=getIndexOf(i+mapbegin,extents[1],dim, extents[2]);
-    }
-  }
-}
-
 void  fourway_matmult_4x4_pretransposed (::brook::stream a,
 		::brook::stream b,
 		::brook::stream result) {
@@ -1389,9 +1275,8 @@ void  fourway_matmult_4x4_pretransposed (::brook::stream a,
      "fp30", __fourway_matmult_4x4_pretransposed_fp30,
      "arb", __fourway_matmult_4x4_pretransposed_arb,
      "ps20", __fourway_matmult_4x4_pretransposed_ps20,
-     "cpu", (void *) __fourway_matmult_4x4_pretransposed_cpu,
      NULL, NULL };
-  static __BRTKernel k(__fourway_matmult_4x4_pretransposed_fp);
+  static brook::kernel k(__fourway_matmult_4x4_pretransposed_fp);
 
   k->PushStream(a);
   k->PushStream(b);

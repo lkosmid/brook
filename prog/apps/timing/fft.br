@@ -1,4 +1,6 @@
+#ifdef _WIN32
 #pragma warning(disable:4275)
+#endif
 #include <complex>
 #include <cmath>
 #include "main.h"
@@ -275,7 +277,7 @@ int BitReverse(int nNumberToReverse, int nNumberOfBits) {
 // INPUT: s, nDataLength. 
 // OUTPUT: r. `r' contains the bit-reversed stream
 typedef int streamcmplx;
-#define streamcmplx const __BRTStream &
+#define streamcmplx const brook::stream &
 float * bitReversedIndices (int logN) {
   int i,N = (1<< logN);
   float * s_array;
@@ -372,6 +374,10 @@ float2 * getTwiddleFactor(int N) {
    }
    return ret;
 }
+kernel void myGather(out float2 s_out<>, float indices<>,float2 s[]) {
+  s_out=s[indices];
+}
+
 void fft1d(int logN)
 {
   int N = (1<<logN);
@@ -459,7 +465,7 @@ void fft1d(int logN)
       static float indices<N>;
       streamRead(indices,rawindices);
       free(rawindices);
-      streamGatherOp(s_out,indices,s,STREAM_GATHER_FETCH);
+      myGather(s_out,indices,s);
     }
 //    printf("The scrambled FFT of the given data is\n");
 //    streamPrint(s); 
