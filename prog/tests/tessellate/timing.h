@@ -1,3 +1,4 @@
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -33,6 +34,8 @@ int64 GetTimeTSC() {
    return t;
 }
 #endif
+int64 stop;
+int64 start;
 
 extern int64 GetTime(void);
 extern unsigned int GetTimeMillis(void);
@@ -45,6 +48,7 @@ extern int64 CyclesToUsecs(int64 cycles);
  */
 extern int64 start, mid, mid2, stop;
 #endif
+#ifdef _WIN32
 int64
 GetTime(void)
 {
@@ -94,14 +98,30 @@ void SetupMillisTimer(void) {
   }
 
 }
-int64 stop;
-int64 start;
 void CleanupMillisTimer(void) {
   if ((int64)timeEndPeriod((unsigned int)timerRes) == (int64)TIMERR_NOCANDO) {
     std::cerr << "WARNING: bad return value of call to timeEndPeriod.\n";
   }
 }
+#else
+#include <unistd.h>
+#include <sys/time.h>
+#include <string.h>
+void SetupMillisTimer(void) {}
+void CleanupMillisTimer(void) {}
+int64 GetTime (void) {
+  struct timeval tv;
+  timerRes = 1000;
+  gettimeofday(&tv,NULL);
+  int64 temp = tv.tv_usec;
+  temp+=tv.tv_sec*1000000;
+  return temp;
+}
+unsigned int GetTimeMillis () {
+  return (unsigned int)(GetTime ()/1000);
+}
 
+#endif
 
 
 /*
