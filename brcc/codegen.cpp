@@ -426,7 +426,7 @@ generate_c_fp30_code(char *fpcode, const char *name)
   assert (name);
 
   if (fpcode == NULL) {
-     fp << "\nstatic const char __" << name << "_fp30[] = NULL;\n";
+     fp << "\nstatic const char *__" << name << "_fp30 = NULL;\n";
      return strdup(fp.str().c_str());
   }
 
@@ -461,7 +461,7 @@ generate_c_ps20_code(char *fpcode, const char *name)
   assert (name);
 
   if (fpcode == NULL) {
-     fp << "\nstatic const char __" << name << "_ps20[] = NULL;\n";
+     fp << "\nstatic const char *__" << name << "_ps20 = NULL;\n";
      return strdup(fp.str().c_str());
   }
 
