@@ -8,45 +8,50 @@ class SplitDominatorDFSTraversal :
   public SplitNodeTraversal
 {
 public:
-  SplitDominatorDFSTraversal( std::vector<SplitNode*>& ioNodeList )
-    : _id(1), _parent(0), _nodeList(ioNodeList)
+  SplitDominatorDFSTraversal( std::vector<SplitNode*>& ioNodeList, std::vector<SplitNode*>& ioDagOrderList )
+    : _id(1), _parent(0), _nodeList(ioNodeList), _dagOrderNodeList(ioDagOrderList)
   {}
 
   void traverse( SplitNode* inNode )
   {
-//    std::cerr << "dominator DFS ";
-//    inNode->dump( std::cerr );
-//    std::cerr << std::endl;
 
     if( _parent ) {
       inNode->_graphParents.push_back( _parent );
-      _parent->_spanningChildren.push_back( inNode );
     }
 
     if( inNode->_spanningNodeID > 0 )
       return;
 
+//    std::cerr << "dominator DFS id (" << _id << ") : ";
+//    inNode->dump( std::cerr );
+//    std::cerr << std::endl;
+
     inNode->_spanningParent = _parent;
+//    _parent->_spanningChildren.push_back( inNode );
+
     inNode->_spanningNodeID = _id++;
     inNode->_spanningSemidominatorID = inNode->_spanningNodeID;
     _nodeList.push_back( inNode );
 
 //    std::cerr << "{";
-    SplitDominatorDFSTraversal subTraversal( _id, inNode, _nodeList );
+    SplitDominatorDFSTraversal subTraversal( _id, inNode, _nodeList, _dagOrderNodeList );
     inNode->traverseChildren( subTraversal );
 //    std::cerr << "}";
+
+    _dagOrderNodeList.push_back( inNode );
 
     _id = subTraversal._id;
   }
 
 private:
-  SplitDominatorDFSTraversal( size_t inID, SplitNode* inParent, std::vector<SplitNode*>& ioNodeList )
-    : _id(inID), _parent(inParent), _nodeList(ioNodeList)
+  SplitDominatorDFSTraversal( size_t inID, SplitNode* inParent, std::vector<SplitNode*>& ioNodeList, std::vector<SplitNode*>& ioDagOrderList )
+    : _id(inID), _parent(inParent), _nodeList(ioNodeList), _dagOrderNodeList(ioDagOrderList)
   {}
 
   size_t _id;
   SplitNode* _parent;
   std::vector<SplitNode*>& _nodeList;
+  std::vector<SplitNode*>& _dagOrderNodeList;
 };
 
 void SplitTree::buildDominatorTree()
@@ -62,7 +67,7 @@ void SplitTree::buildDominatorTree()
 
   // build the immediate dominator info...
   // step 1 - dfs
-  SplitDominatorDFSTraversal dominatorDFS( _rdsNodeList );
+  SplitDominatorDFSTraversal dominatorDFS( _rdsNodeList, _dagOrderNodeList );
   dominatorDFS( _outputList );
 
 //  std::cerr << "steps 2,3" << std::endl;
@@ -79,7 +84,8 @@ void SplitTree::buildDominatorTree()
     // step 2
     for( std::vector<SplitNode*>::iterator j = w->_graphParents.begin(); j != w->_graphParents.end(); ++j )
     {
-      SplitNode* u = (*j)->eval();
+      SplitNode* v = *j;
+      SplitNode* u = v->eval();
 
 //      std::cerr << "u is ";
 //      u->dump( std::cerr );
@@ -88,7 +94,7 @@ void SplitTree::buildDominatorTree()
       if( u->_spanningSemidominatorID < w->_spanningSemidominatorID )
         w->_spanningSemidominatorID = u->_spanningSemidominatorID;
     }
-    _rdsNodeList[ w->_spanningSemidominatorID-1 ]->_spanningBucket.push_back( w );
+    _rdsNodeList[ w->_spanningSemidominatorID-1 ]->_spanningBucket.insert( w );
 
     SplitNode* parent = w->_spanningParent;
     if( parent )
@@ -97,12 +103,11 @@ void SplitTree::buildDominatorTree()
 
 //      std::cerr << "step 3" << std::endl;
       // step 3
-      SplitNode* parent = w->_spanningParent;
-      for( std::vector<SplitNode*>::iterator k = parent->_spanningBucket.begin(); k != parent->_spanningBucket.end(); ++k )
+      for( NodeSet::iterator k = parent->_spanningBucket.begin(); k != parent->_spanningBucket.end(); ++k )
       {
         SplitNode* v = *k;
         SplitNode* u = v->eval();
-        v->_pdtDominator = (u->_spanningSemidominatorID < v->_spanningSemidominatorID) ? u : w->_spanningParent;
+        v->_pdtDominator = (u->_spanningSemidominatorID < v->_spanningSemidominatorID) ? u : parent;
       }
       parent->_spanningBucket.clear();
     }
@@ -125,9 +130,9 @@ void SplitTree::buildDominatorTree()
   // and the list of MR nodes...
   // we iterate in reverse order, because the
   // roots are at the beginning of the list...
-  {for( size_t i = 0; i < _rdsNodeList.size(); i++ )
+  {for( size_t i = 0; i < _dagOrderNodeList.size(); i++ )
   {
-    SplitNode* n = _rdsNodeList[_rdsNodeList.size() - (i+1)];
+    SplitNode* n = _dagOrderNodeList[i];
 
     // we add it to the partial tree if it is multiply-referenced
     // or has some multiply-referenced descendants (which would
@@ -136,8 +141,7 @@ void SplitTree::buildDominatorTree()
     // (that is, those that should never be saved)
     if( n->_graphParents.size() > 1 /*&& !n->isTrivial()*/ )
     {
-      // MR list computation has been move elsewhere...
-//      _multiplyReferencedNodes.push_back( n );
+      _multiplyReferencedNodes.push_back( n );
       if( n->_pdtDominator )
         n->_pdtDominator->_pdtChildren.push_back( n );
     }
@@ -148,7 +152,7 @@ void SplitTree::buildDominatorTree()
     }
   }}
 
-  dumpDominatorTree();
+//  dumpDominatorTree();
 }
 
 void SplitTree::dumpDominatorTree()

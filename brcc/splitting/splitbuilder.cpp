@@ -233,7 +233,7 @@ SplitNode* SplitTreeBuilder::addIndexof( const std::string& inName )
   SplitNode* variable = findVariable( inName );
   assert( variable );
 
-  variable->dump( std::cerr );
+//  variable->dump( std::cerr );
 
   IndexofableSplitNode* stream = variable->isIndexofable();
   assert( stream );

@@ -7,6 +7,8 @@
 #include "splittypes.h"
 #include "splitcompiler.h"
 
+#include <set>
+
 class GatherArgumentSplitNode;
 class StreamArgumentSplitNode;
 class SplitTreeBuilder;
@@ -21,6 +23,28 @@ class SplitNode
 public:
   size_t _consideredForMergeCount;
   bool _isMagic;
+  bool _isMRNodeWorthConsidering;
+
+  enum MarkBit
+  {
+    kMarkBit_Printed = 0x01,
+    kMarkBit_Merged = 0x02,
+    kMarkBit_PartitionCost = 0x04,
+    kMarkBit_SubPrinted = 0x08
+  };
+
+  void mark( MarkBit inMarkBit ) {
+    _markBits |= inMarkBit;
+  }
+
+  void unmark( MarkBit inMarkBit ) {
+    _markBits &= ~inMarkBit;
+  }
+
+  bool isMarked( MarkBit inMarkBit ) {
+    return (_markBits & inMarkBit) != 0;
+  }
+
 
   SplitNode();
   virtual ~SplitNode() {}
@@ -34,6 +58,8 @@ public:
 
   void rdsUnmark() {
     _rdsSplitHere = false;
+    _mergeSplitHere = false;
+    _consideredForMergeCount = 0;
   }
 
   void rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream );
@@ -95,7 +121,6 @@ public:
   virtual SplitNode* getValueNode() { return this; }
 
   // TIM: total break in protection... :)
-  bool marked;
   SplitBasicType inferredType;
 
   void getChildren( std::vector<SplitNode*>& outResult ) {
@@ -123,21 +148,27 @@ private:
 
   SplitNode* eval();
   void link( SplitNode* w );
+  void compress();
   
   NodeList _graphParents;
   NodeList _graphChildren;
 
+  unsigned int _markBits;
 
   SplitNode* _pdtDominator;
   NodeList _pdtChildren;
   
   SplitNode* _spanningParent;
-  NodeList _spanningChildren;
+//  NodeList _spanningChildren;
 
   size_t _spanningNodeID;
   size_t _spanningSemidominatorID;
-  SplitNode* _spanningForestRoot;
-  NodeList _spanningBucket;
+
+  SplitNode* _linkEvalAncestor;
+  SplitNode* _linkEvalLabel;
+
+  typedef std::set< SplitNode* > NodeSet;
+  NodeSet _spanningBucket;
 
   bool _rdsFixedMarked;
   bool _rdsFixedUnmarked;
@@ -180,7 +211,7 @@ public:
   virtual void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter );
   virtual void printAnnotationInfo( std::ostream& inStream );
 
-  virtual const char* getComponentTypeName() { return "sampler"; }
+  virtual const char* getComponentTypeName() { return "s"; }
 
   virtual bool isTrivial() { return true; }
 };
@@ -194,7 +225,7 @@ public:
   virtual void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter );
   virtual void printAnnotationInfo( std::ostream& inStream );
 
-  virtual const char* getComponentTypeName() { return "constant"; }
+  virtual const char* getComponentTypeName() { return "c"; }
 
   virtual bool isTrivial() { return true; }
 };
@@ -208,7 +239,7 @@ public:
     virtual void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter );
     virtual void printAnnotationInfo( std::ostream& inStream );
 
-    virtual const char* getComponentTypeName() { return "texcoord"; }
+    virtual const char* getComponentTypeName() { return "t"; }
 
     virtual bool isTrivial() { return true; }
 };

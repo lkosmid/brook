@@ -3,17 +3,15 @@
 
 #include "splitnode.h"
 
-void SplitMarkTraversal::traverse( SplitNode* inNode )
+void SplitUnmarkTraversal::traverse( SplitNode* inNode )
 {
-  inNode->marked = value;
-  inNode->traverseChildren( *this );
+  inNode->unmark( (SplitNode::MarkBit)_markBit );
 }
 
 void SplitArgumentTraversal::traverse( SplitNode* inNode )
 {
-  if( inNode->marked ) return;
-  inNode->marked = true;
-
+  if( inNode->isMarked( SplitNode::kMarkBit_SubPrinted ) ) return;
+  inNode->mark( SplitNode::kMarkBit_SubPrinted );
 
   bool traverseChildren = true;
 
@@ -68,8 +66,8 @@ void SplitArgumentTraversal::traverse( SplitNode* inNode )
 
 void SplitStatementTraversal::traverse( SplitNode* inNode )
 {
-  if( inNode->marked ) return;
-  inNode->marked = true;
+  if( inNode->isMarked( SplitNode::kMarkBit_SubPrinted ) ) return;
+  inNode->mark( SplitNode::kMarkBit_SubPrinted );
 
 
   if( !inNode->needsTemporaryExpression() ) return;
@@ -145,8 +143,8 @@ void SplitStatementTraversal::traverse( SplitNode* inNode )
 
 void SplitAnnotationTraversal::traverse( SplitNode* inNode )
 {
-  if( inNode->marked ) return;
-  inNode->marked = true;
+  if( inNode->isMarked( SplitNode::kMarkBit_SubPrinted ) ) return;
+  inNode->mark( SplitNode::kMarkBit_SubPrinted );
 
 
   if( inNode->isMarkedAsOutput() )

@@ -8,6 +8,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 #include <vector>
 
 class FunctionDef;
@@ -73,6 +74,10 @@ private:
   //typedef std::vector< SplitNode* > NodeList;
   NodeList _outputList;
   NodeList _multiplyReferencedNodes;
+
+  NodeList _dagOrderNodeList;
+
+  typedef std::set< SplitNode* > NodeSet;
 
   SplitNode* _outputPositionInterpolant;
   SplitNode* _resultValue;

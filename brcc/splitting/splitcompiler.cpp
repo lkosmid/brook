@@ -15,6 +15,8 @@ void SplitCompiler::compile(
   inTree.printShaderFunction( inOutputs, bodyStream );
   printFooterCode( bodyStream );
 
+//  std::cerr << "\n###about to compile: \n" << bodyStream.str() << "\n###" << std::endl;
+
   std::ostringstream assemblerStream;
   compileShader( bodyStream.str(), assemblerStream, outHeuristics );
   std::string assemblerCode = assemblerStream.str();

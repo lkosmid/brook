@@ -11,7 +11,6 @@ SplitNode::SplitNode()
   _spanningParent = 0;
   _spanningNodeID = 0;
   _spanningSemidominatorID = 0;
-  _spanningForestRoot = 0;
 
   _pdtDominator = 0;
 
@@ -24,20 +23,30 @@ SplitNode::SplitNode()
 
   _consideredForMergeCount = 0;
   _isMagic = false;
+  _isMRNodeWorthConsidering = false;
+
+  _linkEvalAncestor = NULL;
+  _linkEvalLabel = this;
+
+  _markBits = 0;
 }
 
 void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream )
 {
-  if( marked ) return;
-  marked = true;
+  if( isMarked( kMarkBit_Printed ) ) return;
+  mark( kMarkBit_Printed );
 
   for( size_t i = 0; i < _graphChildren.size(); i++ )
     _graphChildren[i]->rdsPrint( inTree, inCompiler, inStream );
 
   if( isMarkedAsSplit() ) {
-    std::cerr << "*** ";
-    dump( std::cerr );
-    std::cerr << std::endl;
+
+    std::cerr << "printing node " << (void*)this << std::endl;
+    std::cerr << "printing node with temporary id " << this->_temporaryID << std::endl;
+
+//    std::cerr << "*** ";
+//    dump( std::cerr );
+//    std::cerr << std::endl;
 
     std::vector<SplitNode*> dummy;
     dummy.push_back( this );
@@ -69,84 +78,40 @@ void SplitNode::traverseChildren( SplitNodeTraversal& ioTraversal )
 
 SplitNode* SplitNode::eval()
 {
-  if( _spanningForestRoot )
-  {
-    // v is somewhere in a forest...
-    SplitNode* n = this;
-    SplitNode* minNode = n;
-    while( n->_spanningParent != _spanningForestRoot )
-    {
-      n = n->_spanningParent;
-      if( n->_spanningSemidominatorID < minNode->_spanningSemidominatorID )
-        minNode = n;
-    }
-    return minNode;
-  }
-  else // this is a root
+  if( _linkEvalAncestor == NULL )
     return this;
+
+  compress();
+  return _linkEvalLabel;
 }
 
 void SplitNode::link( SplitNode* w )
 {
-  // if this is in the forest
-  if( _spanningForestRoot )
-  {
-    w->_spanningForestRoot = _spanningForestRoot;
-  }
-  else
-  {
-    // this is the new root
-    w->_spanningForestRoot = this;
-  }
+  w->_linkEvalAncestor = this;
+}
+
+void SplitNode::compress()
+{
+  if( _linkEvalAncestor->_linkEvalAncestor == NULL ) return;
+
+  _linkEvalAncestor->compress();
+  if( _linkEvalAncestor->_linkEvalLabel->_spanningSemidominatorID < _linkEvalLabel->_spanningSemidominatorID )
+    _linkEvalLabel = _linkEvalAncestor->_linkEvalLabel;
+  _linkEvalAncestor = _linkEvalAncestor->_linkEvalAncestor;
 }
 
 void SplitNode::printTemporaryName( std::ostream& inStream )
 {
   inStream << "__temp" << (unsigned int)(this);
 }
-/*
-void SplitNode::printSubFunction( const std::string& inFunctionName, std::ostream& inStream )
-{
-  SplitMarkTraversal markTraversal(false);
-  SplitArgumentTraversal argumentTraversal(inStream);
-  SplitStatementTraversal statementTraversal(inStream);
-  
-  inStream << "float4 " << inFunctionName << "( " << std::endl;
-  markTraversal(this);
-  argumentTraversal(this);
-  inStream << " ) : COLOR0\n{\n";
-
-  SplitStatementTraversal printTraversal(inStream);
-  markTraversal(this);
-  statementTraversal(this);
-
-  inStream << "\treturn float4(";
-  printTemporaryName( inStream );
-  switch( inferredType )
-  {
-  case kSplitBasicType_Float:
-    inStream << ", 0, 0, 0";
-    break;
-  case kSplitBasicType_Float2:
-    inStream << ", 0, 0";
-    break;
-  case kSplitBasicType_Float3:
-    inStream << ", 0";
-    break;
-  default:
-    break;
-  }
-  inStream << ");\n";
-  inStream << "}\n";
-}*/
 
 void InputSplitNode::printTemporaryExpression( std::ostream& inStream ) {
   if( argumentIndex >= 0 ) // standard arg
-    inStream << "arg" << (argumentIndex+1);
+    inStream << "a" << (argumentIndex+1);
   else if( argumentIndex < -1 ) // temporary "arg"
-    inStream << "temp" << (-argumentIndex - 1);
+    inStream << "t" << (-argumentIndex - 1);
   else // global "arg"
-    inStream << "global";
+    inStream << "g";
 
   inStream << getComponentTypeName() << componentIndex;
 }

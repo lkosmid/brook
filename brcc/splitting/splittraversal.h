@@ -22,17 +22,17 @@ public:
   virtual void traverse( SplitNode* inNode ) = 0;
 };
 
-class SplitMarkTraversal :
+class SplitUnmarkTraversal :
   public SplitNodeTraversal
 {
 public:
-  SplitMarkTraversal( bool inValue )
-    : value(inValue) {}
+  SplitUnmarkTraversal( unsigned int inMarkBit )
+    : _markBit(inMarkBit) {}
 
   void traverse( SplitNode* inNode );
 
 private:
-  bool value;
+  unsigned int _markBit;
 };
 
 class SplitArgumentCounter

@@ -35,7 +35,7 @@ void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::
   {
     outHeuristics.valid = false;
     outHeuristics.cost = 0.0f;
-    outHeuristics.recompute = false;
+    outHeuristics.recompute = true;
     return;
   }
 
@@ -46,9 +46,12 @@ void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::
   int constantCount = usage.constantRegisterCount;
   int temporaryCount = usage.temporaryRegisterCount;
 
-  static const float passCost = 15.7f;
-  static const float textureInstructionCost = 1.36f;
+  static const float passCost = 100.0f;
+  static const float textureInstructionCost = 2.0f;
   static const float arithmeticInstructionCost = 1.0f;
+//  static const float passCost = 15.7f;
+//  static const float textureInstructionCost = 1.36f;
+//  static const float arithmeticInstructionCost = 1.0f;
   static const float samplerCost = 0.0f;
   static const float interpolantCost = 0.0f;
   static const float constantCost = 0.0f;
@@ -62,19 +65,19 @@ void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::
     + constantCost*constantCount
     + temporaryCost*temporaryCount;
 
-  bool shouldRecompute = false;
+  bool shouldRecompute = true;
   if( textureInstructionCount > 8 )
-    shouldRecompute = true;
+    shouldRecompute = false;
   if( arithmeticInstructionCount > 32 )
-    shouldRecompute = true;
+    shouldRecompute = false;
   if( samplerCount > 8 )
-    shouldRecompute = true;
+    shouldRecompute = false;
   if( interpolantCount > 4 )
-    shouldRecompute = true;
+    shouldRecompute = false;
   if( constantCount > 4 )
-    shouldRecompute = true;
+    shouldRecompute = false;
   if( temporaryCount > 8 )
-    shouldRecompute = true;
+    shouldRecompute = false;
 
   outHeuristics.valid = true;
   outHeuristics.cost = shaderCost;
