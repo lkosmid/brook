@@ -19,7 +19,8 @@ namespace brook {
 
     DX9Rect getTextureSubRect( int l, int t, int r, int b );
     DX9Rect getSurfaceSubRect( int l, int t, int r, int b );
-    void getTopLeftPixel( float4& outResult );
+    DX9Rect getInterlacedTextureSubRect( int l, int t, int r, int b, int ix, int iy );
+    void getPixelAt( int x, int y, float4& outResult );
 
 	  LPDIRECT3DTEXTURE9 getTextureHandle();
 	  LPDIRECT3DSURFACE9 getSurfaceHandle();

@@ -162,8 +162,18 @@ DX9Rect DX9Texture::getSurfaceSubRect( int l, int t, int r, int b ) {
   return result;
 }
 
-void DX9Texture::getTopLeftPixel( float4& outResult ) {
-	HRESULT result;
+DX9Rect DX9Texture::getInterlacedTextureSubRect( int l, int t, int r, int b, int ix, int iy )
+{
+  DX9Rect result;
+  result.left = (float)(l) / (float)(width);
+  result.top = (float)(b) / (float)(height);
+  result.right = (float)(r) / (float)(width);
+  result.bottom = (float)(t) / (float)(height);
+  return result;
+}
+
+void DX9Texture::getPixelAt( int x, int y, float4& outResult ) {
+  HRESULT result;
 
 	result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
 	DX9CheckResult( result );
@@ -176,13 +186,13 @@ void DX9Texture::getTopLeftPixel( float4& outResult ) {
 	if( pitch % 4 != 0 )
 		throw 1;
 	int pitchFloats = pitch / 4;
-	const float* inputLine = (const float*)info.pBits;
+	const float* inputLine = ((const float*)info.pBits) + y*pitchFloats;
 
 	float* output = (float*)&outResult;
 
   DX9Trace( "pixel was: %f %f %f %f", outResult.x, outResult.y, outResult.z, outResult.w );
 
-	const float* inputPixel = inputLine;
+	const float* inputPixel = inputLine + x*internalComponents;
 	const float* input = inputPixel;
 
   for( int c = 0; c < components; c++ )

@@ -36,16 +36,30 @@ namespace brook {
     float left, top, right, bottom;
   };
 
+  inline void DX9Spew( const char* inFormat, va_list args )
+  {
+    static FILE* file = fopen( "./DX9RuntimeLog.txt", "w" );
+    vfprintf( file, inFormat, args );
+    fflush( file );
+  }
+
+  inline void DX9Print( const char* inFormat, ... )
+  {
+    va_list args;
+    va_start( args, inFormat );
+    DX9Spew( inFormat, args );
+    va_end(args);
+  }
+
   inline void DX9Trace( const char* inFormat, ... )
   {
     static FILE* file = fopen( "./DX9RuntimeLog.txt", "w" );
 
     va_list args;
     va_start( args, inFormat );
-    vfprintf( file, inFormat, args );
-    fprintf( file, "\n" );
-    fflush( file );
+    DX9Spew( inFormat, args );
     va_end(args);
+    DX9Print( "\n" );
   }
 
   inline void DX9Fail( const char* inFormat, ... )
