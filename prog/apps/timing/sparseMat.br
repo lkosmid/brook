@@ -62,6 +62,7 @@ kernel void float4Tofloat1(float4 a<>, out float b<>) {
 ///////////////////////////////////////////////////////////////////////////////////
 
 
+#if 0
 static void fillArray(float *a, int n, float val) {
 	int i;
 	for (i=0;i<n;i++)
@@ -76,6 +77,7 @@ static void printArray(float* a, int n) {
   printf("\n");
 }
 
+#endif
 
 static int fequals(float a, float b, float tol) {
   return (fabs(a - b) < tol);
@@ -138,7 +140,7 @@ static void createMatrix(int length, float* A, float* Aind) {
 
 static void spMatVecf4(int strmDim, float* A, float* Aind, float* x, float* y, int num_iter, int* innerTime) {
 
-  int i = 0, j = 0;
+  int i = 0;
 
   float  flush[4];
   float  flush1Strm<1>;

@@ -362,7 +362,7 @@ float2 * getTwiddleFactor(int N) {
    int i;
    float2 *ret;
    float theta = 2*M_PI/N;
-   float wtemp = sin(0.5*theta);
+   // float wtemp = sin(0.5*theta);
    ret  = (float2 *)malloc(sizeof(float2)*N);
    ret[0].x=1;ret[0].y=0;   
    ret[1].x=cos(theta);

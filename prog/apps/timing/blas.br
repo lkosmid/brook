@@ -117,13 +117,14 @@ void convert1d_to_2d(int length, int* dim1, int* dim2) {
 }
 
 
+#if 0
 static void printArray(float* a, int n) {
   int i;
   for (i=0;i<n;i++)
     printf("%.2f ", a[i]);
   printf("\n");
 }
-
+#endif
 
 static int fequals(float a, float b, float tol) {
   return (fabs(a - b) < tol);
