@@ -7,8 +7,9 @@
 
 
 
-
+#ifdef _WIN32
 #pragma warning(disable:4244)
+#endif
 #include "streamholder.h"
 #include <stdio.h>
 #include <stdlib.h>
