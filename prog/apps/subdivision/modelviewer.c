@@ -160,12 +160,14 @@ int	Projection;		/* ORTHO or PERSP			*/
 int	ProjMenu;		/* id of the projection pop-up menu	*/
 float	Red, Green, Blue;	/* star colors				*/
 float	Scale;			/* scaling factor			*/
-int	ObjList;		/* list to hold the 3d object		*/
+int	ObjList[3];		/* list to hold the 3d object		*/
+int whichObj=0;
 int	TransformMode;		/* ROTATE or SCALE			*/
 int	TransformModeMenu;	/* id of the transform mode menu	*/
 float	Xrot, Yrot;		/* rotation angles in degrees		*/
 int	Xmouse, Ymouse;		/* mouse values				*/
-char * model="data";
+typedef char *str ;
+str model[3]={"data","data.cracks","data.conservative"};
 
 
 /**
@@ -226,8 +228,15 @@ main( int argc, char *argv[] )
 			continue;
 		}else {
 		  if (i==1) {
-		    model=argv[i];
+		    model[0]=argv[i];
 		  }
+		  if (i==2) {
+		    model[1]=argv[i];
+		  }
+		  if (i==3) {
+		    model[2]=argv[i];
+		  }
+
 		}
 /*
 		fprintf( stderr, "Unknown argument: '%s'\n", argv[i] );
@@ -354,7 +363,7 @@ Display( void )
 
 	/* draw the object:						*/
 
-	glCallList( ObjList );
+	glCallList( ObjList[whichObj] );
 
 
 	/* possibly draw the axes:					*/
@@ -640,9 +649,13 @@ InitGraphics( void )
 
 
 	/* create the display structures that will not change:		*/
-
+	whichObj=0;
 	InitLists();
-
+	whichObj=1;
+	InitLists();
+	whichObj=2;
+	InitLists();
+	
 
 	/* setup the callback routines:					*/
 
@@ -706,7 +719,7 @@ InitLists( void )
 	float x, y, z;
 	int test;
 	/* create the object:						*/
-	FILE * datafile = fopen(model, "r");
+	FILE * datafile = fopen(model[whichObj], "r");
 	if(datafile == NULL){
 		fprintf(stderr, "Can't open datafile\n");;
 		exit(1);
@@ -717,8 +730,8 @@ InitLists( void )
 		exit(1);
 	}
 	fprintf(stderr, "Num Verts = %d\n", num_verts);
-	ObjList = glGenLists( 1 );
-	glNewList( ObjList, GL_COMPILE );
+	ObjList[whichObj] = glGenLists( 1 );
+	glNewList( ObjList[whichObj], GL_COMPILE );
 	glColor3f(1.0, 1.0, 1.0);
 	glBegin(GL_TRIANGLES);
 	{
@@ -739,7 +752,7 @@ InitLists( void )
 
 	fclose(datafile);
 
-	datafile = fopen(model, "rb");
+	datafile = fopen(model[whichObj], "rb");
 
 	glColor3f(1.0, 0.0, 0.0);
 	glPointSize(10.0f);
@@ -818,8 +831,17 @@ Keyboard( unsigned char c, int x, int y )
 		case 'r':
 		case 'R':
 			TransformMode = ROTATE;
+			break;	
+		      case '1':
+			whichObj=0;
 			break;
-
+		      case '2':
+			whichObj=1;
+			break;
+		      case '3':
+			whichObj=2;
+			break;
+		
 		case 's':
 		case 'S':
 			TransformMode = SCALE;
