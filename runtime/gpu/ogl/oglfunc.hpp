@@ -63,6 +63,8 @@ typedef void (APIENTRYP PFNGLPROGRAMLOCALPARAMETER4FVARBPROC) (GLenum target, GL
 
 #ifndef GL_ARB_fragment_program
 #define GL_FRAGMENT_PROGRAM_ARB           0x8804
+#define GL_MAX_TEXTURE_COORDS_ARB                  0x8871
+#define GL_MAX_TEXTURE_IMAGE_UNITS_ARB             0x8872
 #endif
 
 #ifndef GL_NV_texture_rectangle

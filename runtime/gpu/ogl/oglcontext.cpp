@@ -10,6 +10,9 @@ OGLContext::init (const int   (*viAttribList)[4][64],
                   const float (*vfAttribList)[4][16],
                   const int   (*vpiAttribList)[4][16]) {
   int i;
+
+  int image_units;
+  int tex_coords;
   
   _wnd = new OGLWindow();
 
@@ -20,8 +23,12 @@ OGLContext::init (const int   (*viAttribList)[4][64],
 
   glEnable(GL_FRAGMENT_PROGRAM_ARB);
 
-  glGetIntegerv(GL_MAX_TEXTURE_UNITS, &i);
-  _slopTextureUnit = (unsigned int) (i-1);
+  glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &image_units);
+  glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &tex_coords);
+  
+  GPUAssert (tex_coords <= image_units,
+             "So sad, you have more texture coordinates that textures");
+  _slopTextureUnit = (unsigned int) (image_units - 1);
 
   // Check to see if we are running on hardware with
   // multiple outputs
