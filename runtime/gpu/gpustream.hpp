@@ -47,7 +47,6 @@ namespace brook {
         }
 
         float4 getIndexofConstant() const { return _indexofConstant; }
-        float4 getGatherConstant() const { return _gatherConstant; }
 
         unsigned int getTextureWidth() const {return _textureWidth; }
         unsigned int getTextureHeight() const {return _textureHeight; }
@@ -70,6 +69,7 @@ namespace brook {
         ~GPUStreamData();
 
     private:
+      friend class GPUStream;
 
         class Field
         {
@@ -97,7 +97,7 @@ namespace brook {
         std::vector<Field> _fields;
         unsigned int _elementSize;
 
-        float4 _indexofConstant, _gatherConstant;
+        float4 _indexofConstant;
         unsigned int _textureWidth, _textureHeight;
         GPUInterpolant _defaultInterpolant;
         GPURegion _outputRegion;
@@ -180,9 +180,7 @@ namespace brook {
             return _data->getIndexofConstant();
         }
 
-        float4 getGatherConstant() const {
-            return _data->getGatherConstant();
-        }
+        float4 getGatherConstant() const;
 
         unsigned int getTextureWidth() const {
             return _data->getTextureWidth();

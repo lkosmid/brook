@@ -1,0 +1,59 @@
+// domain_gather.br
+
+// test that gathering from a domain works
+
+#include <stdio.h>
+
+kernel void gatherFetch( float2 index<>, float2 g[][], out float2 result<> )
+{
+	result = g[ index ];
+}
+
+int main()
+{
+	int i, j;
+	float x, y;
+	float2 indexStream< 100 >;
+	float2 gatherStream< 20, 20 >;
+	float2 resultStream< 100 >;
+	
+	float2 index_data[ 100 ];
+	float2 gather_data[ 20 ][ 20 ];
+	float2 result_data[ 100 ];
+
+	// initialize index data
+	for( i = 0; i < 100; i++ )
+	{
+		index_data[ i ].x = (float)( i % 10 );
+		index_data[ i ].y = (float)( i / 10 );
+	}
+	
+	// initialize gather data
+	for( i = 0; i < 20; i++ )
+	for( j = 0; j < 20; j++ )
+	{
+		gather_data[ i ][ j ].x = (float)i;
+		gather_data[ i ][ j ].y = (float)j;
+	}
+	
+	streamRead( indexStream, index_data );
+	streamRead( gatherStream, gather_data );
+	
+	gatherFetch( indexStream, gatherStream.domain( int2( 7, 0 ), int2( 17, 10 ) ), resultStream );
+	
+	streamWrite( resultStream, result_data );
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+		{
+			x = result_data[ j*10 + i ].x;
+			y = result_data[ j*10 + i ].y;
+			
+			printf( "<%f %f> ", x, y );
+		}
+		printf( "\n" );
+	}
+	
+	return 0;
+}

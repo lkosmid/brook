@@ -372,8 +372,31 @@ OGLContext::getStreamIndexofConstant( TextureHandle inTexture ) const {
 
 
 float4
-OGLContext::getStreamGatherConstant( TextureHandle inTexture ) const {
-  return float4(1.0f, 1.0f, 0.005f, 0.005f);
+OGLContext::getStreamGatherConstant(
+                                    unsigned int inRank, const unsigned int* inDomainMin,
+                                    const unsigned int* inDomainMax, const unsigned int* inExtents ) const {
+  float scaleX = 1.0f;
+  float scaleY = 1.0f;
+  float offsetX = 0.0f;
+  float offsetY = 0.0f;
+  if( inRank == 1 )
+  {
+    unsigned int base = inDomainMin[0];
+
+    offsetX = base + 0.5f;
+  }
+  else
+  {
+    unsigned int baseX = inDomainMin[1];
+    unsigned int baseY = inDomainMin[0];
+    unsigned int width = inExtents[1];
+    unsigned int height = inExtents[0];
+
+    offsetX = baseX + 0.5f;
+    offsetY = baseY + 0.5f;
+  }
+  return float4( scaleX, scaleY, offsetX, offsetY );
+//  return float4(1.0f, 1.0f, 0.5f, 0.5f);
 }
 
 

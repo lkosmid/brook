@@ -80,7 +80,9 @@ namespace brook
     }
 
     virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const;
-    virtual float4 getStreamGatherConstant( TextureHandle inTexture ) const;
+    virtual float4 getStreamGatherConstant(
+      unsigned int inRank, const unsigned int* inDomainMin,
+      const unsigned int* inDomainMax, const unsigned int* inExtents ) const;
 
     virtual void
       get1DInterpolant( const float4 &start, 
@@ -357,15 +359,37 @@ namespace brook
     return float4( (float)textureWidth, (float)textureHeight, 0, 0 );
   }
 
-  float4 GPUContextDX9Impl::getStreamGatherConstant( TextureHandle inTexture ) const
+  float4 GPUContextDX9Impl::getStreamGatherConstant(
+    unsigned int inRank, const unsigned int* inDomainMin,
+    const unsigned int* inDomainMax, const unsigned int* inExtents ) const
   {
-    DX9Texture* texture = (DX9Texture*)inTexture;
-    int textureWidth = texture->getWidth();
-    int textureHeight = texture->getHeight();
-    float scaleX = 1.0f / (textureWidth);
-    float scaleY = 1.0f / (textureHeight);
-    float offsetX = 1.0f / (1 << 15);//0.5f / width;
-    float offsetY = 1.0f / (1 << 15);//0.5f / height;
+    float scaleX = 1.0f;
+    float scaleY = 1.0f;
+    float offsetX = 0.0f;
+    float offsetY = 0.0f;
+    if( inRank == 1 )
+    {
+      unsigned int base = inDomainMin[0];
+      unsigned int width = inExtents[0];
+
+      scaleX = 1.0f / width;
+      offsetX = base + (0.5f / width);
+    }
+    else
+    {
+      unsigned int baseX = inDomainMin[1];
+      unsigned int baseY = inDomainMin[0];
+      unsigned int width = inExtents[1];
+      unsigned int height = inExtents[0];
+
+      scaleX = 1.0f / width;
+      scaleY = 1.0f / height;
+      offsetX = (baseX + 0.5f) / width;
+      offsetY = (baseY + 0.5f) / height;
+    }
+
+//    float offsetX = 1.0f / (1 << 15);//0.5f / width;
+//    float offsetY = 1.0f / (1 << 15);//0.5f / height;
 
     return float4( scaleX, scaleY, offsetX, offsetY );
   }

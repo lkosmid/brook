@@ -41,7 +41,9 @@ namespace brook {
     getMaximumOutputCount() const { return 1; }
 
     virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const = 0;
-    virtual float4 getStreamGatherConstant( TextureHandle inTexture ) const = 0;
+    virtual float4 getStreamGatherConstant(
+      unsigned int inRank, const unsigned int* inDomainMin,
+      const unsigned int* inDomainMax, const unsigned int* inExtents ) const = 0;
 
     virtual float4 getATLinearizeConstant(
         unsigned int texWidth, unsigned int texHeight,

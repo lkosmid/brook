@@ -193,7 +193,6 @@ namespace brook
       }
     
     _indexofConstant = _context->getStreamIndexofConstant( getIndexedFieldTexture( 0 ) );
-    _gatherConstant = _context->getStreamGatherConstant( getIndexedFieldTexture( 0 ) );
     
     return true;
   }
@@ -437,6 +436,11 @@ namespace brook
             ((float*)&result)[r] = (float)domainMin[d];
         }
         return result;
+    }
+
+    float4 GPUStream::getGatherConstant() const
+    {
+      return _data->_context->getStreamGatherConstant( getRank(), _domainMin, _domainMax, getExtents() );
     }
 
   Stream* GPUStream::Domain(int inMin, int inMax)
