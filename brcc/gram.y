@@ -46,7 +46,7 @@
 #include "stemnt.h"
 #include "location.h"
 #include "project.h"
-
+#include "brtexpress.h"
 extern int err_cnt;
 int yylex(YYSTYPE *lvalp);
 
@@ -119,7 +119,7 @@ extern int err_top_level;
 %left  <binOp>      PLUS MINUS
 %left  <binOp>      STAR DIV MOD
 %right              CAST
-%right <loc>        UNARY NOT B_NOT SIZEOF INCR DECR  
+%right <loc>        UNARY NOT B_NOT SIZEOF INDEXOF INCR DECR  
 %left               HYPERUNARY
 %left  <loc>        ARROW DOT LPAREN LBRCKT
 
@@ -162,7 +162,7 @@ extern int err_top_level;
 %type  <value>       bitwise_xor_expr cast_expr equality_expr
 %type  <value>       relational_expr shift_expr additive_expr mult_expr
 %type  <value>       unary_expr unary_minus_expr unary_plus_expr
-%type  <value>       sizeof_expr addr_expr indirection_expr
+%type  <value>       sizeof_expr indexof_expr addr_expr indirection_expr
 %type  <value>       preinc_expr predec_expr constructor_expr
 
 %type  <value>       func_call cond_expr
@@ -930,6 +930,7 @@ constructor_expr: FLOAT2 LPAREN assign_expr COMMA assign_expr RPAREN
 
 unary_expr:  postfix_expr
           |  sizeof_expr
+          |  indexof_expr
           |  unary_minus_expr
           |  unary_plus_expr
           |  log_neg_expr
@@ -953,6 +954,21 @@ sizeof_expr:  SIZEOF LPAREN type_name RPAREN   %prec HYPERUNARY
             delete $1;
         }
         ;
+indexof_expr: INDEXOF unary_expr
+        {
+           Variable * v;
+           if ($2->etype==ET_Variable) {
+              $$ = new BrtIndexofExpr((Variable *)$2,*$1);
+           }else {
+              err_cnt++;
+              (*$1).printLocation(*gProject->Parse_TOS->yyerrstream);
+              *gProject->Parse_TOS->yyerrstream << "Error: Indexof must operate on an identifier\n";
+              $$ = new BrtIndexofExpr(new Variable(new Symbol,*$1),*$1);
+           }
+           
+        }
+;
+
 
 unary_minus_expr:  MINUS cast_expr    %prec UNARY
         {

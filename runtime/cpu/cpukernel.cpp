@@ -3,9 +3,7 @@
 #include "cpu.hpp"
 static void nothing (const std::vector<void*>&args,
                      unsigned int start,
-                     unsigned int end,
-                     unsigned int dims,
-                     const unsigned int *extents){}
+                     unsigned int end){}
 extern unsigned int knownTypeSize(__BRTStreamType);
 namespace brook{
     CPUKernel::CPUKernel(const void * source []){
@@ -83,13 +81,9 @@ namespace brook{
     }
     void CPUKernel::Map(){
        Stream * rep=writeOnly;
-       if (!readOnly.empty())rep=readOnly.back();
-       if (rep)
-          (*func)(args,
-                  0,
-                  extent,
-                  rep->getDimension(),
-                  rep->getExtents());//can do some fancy forking algorithm here
+       (*func)(args,
+               0,
+               extent);//can do some fancy forking algorithm here
        Cleanup();
     }
     void CPUKernel::Release() {

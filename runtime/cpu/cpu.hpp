@@ -22,13 +22,9 @@ namespace brook {
        virtual ~CPUKernel();
        typedef void callable(const std::vector<void *>&args,
                              unsigned int start, 
-                             unsigned int end,
-                             unsigned int dim,
-                             const unsigned int *extents);
+                             unsigned int end);
        typedef void combinable (const std::vector<void*>&args,
-                                unsigned int start,
-                                unsigned int dim,
-                                const unsigned int *extents);
+                                unsigned int start);
        callable * func;
        std::vector<void *> args;
        class ReductionArg {public:

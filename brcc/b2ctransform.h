@@ -12,14 +12,12 @@
 #endif
 #include <map>
 #include <string>
-enum FunctionProperties {
-   FP_NONE=0x0,
-   FP_INDEXOF=0x1,
-   FP_LINEARINDEXOF=0x2
-};
-class functionProperties{public:
-   unsigned int p;
-   functionProperties() {p=FP_NONE;}
+#include <set>
+class functionProperties:public std::set<unsigned int>{public:
+   bool contains (unsigned int i) {
+      return find(i)!=end();
+   }
+   bool notcontains(unsigned int i) {return !contains(i);}
 };
 extern std::map<std::string,functionProperties> FunctionProp;
 

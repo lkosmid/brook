@@ -35,4 +35,22 @@ class BrtStreamInitializer : public Expression
   Location l;
 };
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+class BrtIndexofExpr : public Expression
+{
+  public:
+    BrtIndexofExpr( Variable *operand, const Location& l );
+   ~BrtIndexofExpr();
+
+    int precedence() const { return 15; }
+
+    Expression *dup0() const;
+    void print(std::ostream& out) const;
+
+    void findExpr( fnExprCallback cb );
+
+    Variable  *expr;          // want the size of this expression.
+};
+
+
 #endif  /* BRTEXPRESS_H */

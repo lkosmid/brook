@@ -75,7 +75,9 @@ enum ExpressionType
     ET_ConstructorExpr,      // float2(x, y)
 
     ET_BrtStreamInitializer, // __BrtCreateStream(...)
-    ET_BrtGatherExpr,        // For inside kernels
+    ET_BrtGatherExpr,        // For inside kernel
+    ET_BrtIndexofExpr,
+
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

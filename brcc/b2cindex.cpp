@@ -4,26 +4,47 @@
 #endif
 
 #include "ctool.h"
+#include "brtexpress.h"
 #include "brook2cpp.h"
 
 
 std::map <std::string, functionProperties> FunctionProp;
 static std::string currentName;
+static std::map<std::string,unsigned int> currentArgs;
 static bool indofchanged=false;
+unsigned int getArgOf(FunctionDef * fDef, std::string name) {
+   
+}
 Expression *indexOfKeyword (Expression* e) {
-   if (e->etype==ET_Variable) {
-      Variable * v = static_cast<Variable*>(e);
-      if (v->name->name=="indexof") {
-         FunctionProp[currentName].p|=FP_INDEXOF;
-      }else if (v->name->name=="linearindexof") {
-         FunctionProp[currentName].p|=FP_LINEARINDEXOF;
+   if (e->etype==ET_BrtIndexofExpr) {
+      Variable * v = static_cast<BrtIndexofExpr*>(e)->expr;
+      SymEntry * se = v->name->entry;
+      if (se&&currentArgs.find(v->name->name)!=currentArgs.end()
+          &&((se->uVarDecl
+              &&se->uVarDecl->isStream())
+             ||!se->uVarDecl)) {
+         
+         FunctionProp[currentName].insert(currentArgs[v->name->name]);
+      }else {
+         std::cerr << "Error ";
+         v->location.printLocation(std::cerr);
+         std::cerr<< ": Argument to indexof not a stream\n";
+         exit(1);
       }
    }
    return e;
 }
+void addCurrentArgs(FunctionDef * fd) {
+   FunctionType * f = static_cast<FunctionType*>(fd->decl->form);
+   currentArgs.clear();
+   for (unsigned int i=0;i<f->nArgs;++i) {
+      currentArgs[f->args[i]->name->name]=i;
+   }
+}
 FunctionDef * needIndexOf (FunctionDef * fd) {
    if (fd->decl->storage==ST_Kernel) {
       currentName = fd->FunctionName()->name;
+      addCurrentArgs (fd);
       fd->findExpr (&indexOfKeyword);
    }
    return NULL;
@@ -34,12 +55,31 @@ Expression * callIndexOf(Expression * e) {
       if (fc->function->etype==ET_Variable) {
          Variable*  v= static_cast<Variable *>(fc->function);
          if (FunctionProp.find(v->name->name)!=FunctionProp.end()){
-            if ((FunctionProp[currentName].p&FunctionProp[v->name->name].p)!=FunctionProp[v->name->name].p) {
-               indofchanged=true;
-               FunctionProp[currentName].p|=FunctionProp[v->name->name].p;
-               //printf ("found %s is linked to %s",currentName.c_str(),v->name->name.c_str());
+            functionProperties::iterator i=FunctionProp[v->name->name].begin();
+            functionProperties::iterator end=FunctionProp[v->name->name].end();
+            for (;i!=end;++i) {
+               unsigned int j=*i;
+               
+               bool appropriate=fc->args[j]->etype==ET_Variable;
+               if (appropriate) {
+                  Variable * v=static_cast<Variable*>(fc->args[j]);
+                  if (currentArgs.find(v->name->name)!=currentArgs.end()) {
+                     unsigned int newarg=currentArgs[v->name->name];
+                     if (!FunctionProp[currentName].contains(newarg)) {
+                        FunctionProp[currentName].insert(newarg);
+                        indofchanged=true;
+                     }
+                  }else {
+                     appropriate=false;
+                  }
+               }
+               if (!appropriate) {
+                  std::cerr<< "Error ";
+                  fc->location.printLocation(std::cerr);
+                  std::cerr<<": Variable not passed in to function requiring index of stream\n";
+               }
             }
-         }
+         } 
       }
    }
    return e;
@@ -47,6 +87,7 @@ Expression * callIndexOf(Expression * e) {
 FunctionDef * recursiveNeedIndexOf(FunctionDef*  fd) {
    if (fd->decl->storage==ST_Kernel) {
       currentName = fd->FunctionName()->name;
+      addCurrentArgs (fd);
       fd->findExpr(&callIndexOf);
    }
    return NULL;
@@ -68,25 +109,38 @@ Expression * changeFunctionCallToPassIndexOf(Expression* e) {
             functionProperties fp = FunctionProp[v->name->name];
             static Decl *IndexOf=getIndexOfDecl("indexof",BT_Float4);
             static Decl *LinearIndexOf=getIndexOfDecl("linearindexof",BT_Int);
-            if (fp.p!=FP_NONE) {
-               if (fp.p&FP_INDEXOF) {
-                  Symbol * s = new Symbol;
-                  s->name="indexof";
-                  s->entry=mk_vardecl("indexof",IndexOf);
-                  fc->addArg(new Variable(s,e->location));                  
+            functionProperties::iterator i=fp.begin();
+            functionProperties::iterator end=fp.end();
+            for (;i!=end;++i) {
+               unsigned int j=*i;
+               bool appropriate=fc->args[j]->etype==ET_Variable;
+               Variable * v=NULL;
+               if (appropriate) {
+                  v=static_cast<Variable*>(fc->args[j]);
+                  SymEntry * se=  v->name->entry;
+                  if (se&&se->uVarDecl)
+                     if (!se->uVarDecl->isStream())
+                        appropriate=false;                    
                }
-               if (fp.p&FP_LINEARINDEXOF) {
+               if (appropriate) {
                   Symbol * s = new Symbol;
-                  s->name="linearindexof";
-                  s->entry=mk_vardecl("linearindexof",IndexOf);
-                  fc->addArg(new Variable(s,e->location));
+                  s->name="__indexof_"+v->name->name;
+                  s->entry=mk_vardecl(s->name,IndexOf);
+                  fc->addArg(new Variable(s,e->location));                  
+               }else {
+                  std::cerr << "Error ";
+                  fc->location.printLocation(std::cerr);
+                  std::cerr<< ": Argument "<<j+1<<" to function using indexof";
+                  std::cerr<< " not a stream identifier\n";
+                  exit(1);
+                  
                }
             }
          }
       }
    }
    return e;
-}
+   }
 FunctionDef * changeFunctionCallForIndexOf (FunctionDef * fd) {
    if (fd->decl->storage==ST_Kernel) {
       fd->findExpr(&changeFunctionCallToPassIndexOf);

@@ -321,6 +321,7 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"if"       { SETPOS_TOKEN(IF); return(IF); }
 <INITIAL>"return"   { SETPOS_TOKEN(RETURN); return(RETURN); }
 <INITIAL>"sizeof"   { SETPOS_TOKEN(SIZEOF); return(SIZEOF); }
+<INITIAL>"indexof"  { SETPOS_TOKEN(INDEXOF); return(INDEXOF); }
 <INITIAL>"switch"   { SETPOS_TOKEN(SWITCH); return(SWITCH); }
 <INITIAL>"while"    { SETPOS_TOKEN(WHILE); return(WHILE); }
 

@@ -100,3 +100,60 @@ BrtStreamInitializer::print(std::ostream& out) const {
   t->printInitializer(out);
 }
 
+
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BrtIndexofExpr::BrtIndexofExpr( Variable *operand, const Location& l )
+         : Expression( ET_BrtIndexofExpr, l )
+{
+    expr = operand;
+    type = new BaseType(BT_Float4);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BrtIndexofExpr::~BrtIndexofExpr()
+{
+    // delete sizeofType;
+    delete expr;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+Expression*
+BrtIndexofExpr::dup0() const
+{
+    BrtIndexofExpr *ret ;
+    ret = new BrtIndexofExpr(static_cast<Variable*>(expr->dup()), location);
+    ret->type = type;
+    return ret;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BrtIndexofExpr::print(std::ostream& out) const
+{
+  std::string bak = expr->name->name;
+  expr->name->name="__indexof_"+bak;
+  expr->print(out);
+  expr->name->name=bak;
+
+#ifdef    SHOW_TYPES
+    if (type != NULL)
+    {
+        out << "/* ";
+        type->printType(out,NULL,true,0);
+        out << " */";
+    }
+#endif
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BrtIndexofExpr::findExpr( fnExprCallback cb )
+{
+   if (expr != NULL) {
+     Expression* e=(cb)(expr);
+     assert (e->etype==ET_Variable);
+     expr = (Variable *) e;
+     expr->findExpr(cb);
+   }
+}

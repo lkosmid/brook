@@ -411,17 +411,14 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
              out << ","<<std::endl<<long_name;
           myArgs[i].printCPU(out,PrintCPUArg::HEADER);
        }
-//       fprintf (stderr, "Check %s %d\n",origname.c_str(),FunctionProp[origname].p);
-       if (FunctionProp[origname].p&FP_INDEXOF) {
-          if (i!=0)
-             out << ","<<std::endl<<long_name;
-          out << "const __BrtFloat4 &indexof";
-       }
-       if (FunctionProp[origname].p&FP_LINEARINDEXOF) {
-          if (i!=0)
-             out << ","<<std::endl<<long_name;
-          out << "const __BrtInt1 &linearindexof";
-          
+       //       fprintf (stderr, "Check %s %d\n",origname.c_str(),FunctionProp[origname].p);
+       for (unsigned int j=0;j<myArgs.size();++j,++i) {
+          if (FunctionProp[origname].contains(j)) {
+             if (i!=0)
+                out << ","<<std::endl<<long_name;
+             out << "const __BrtFloat4 &__indexof_";
+             out << myArgs[j].getDecl()->name->name;
+          }
        }
     }
     out << ")";    
@@ -448,12 +445,9 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
 
     std::string whiteOut= whiteout(myvoid + enhanced_name+" (");
     out << " (const std::vector<void *>&args,"<<std::endl;
-    out << whiteOut << "unsigned int mapbegin,"<<std::endl;
-    out << whiteOut << "unsigned int dim,"<<std::endl;
-    out << whiteOut << "const unsigned int * extents) {"<<std::endl;
+    out << whiteOut << "unsigned int mapbegin) {"<<std::endl;
     indent(out,1);
     out << "unsigned int i= mapbegin;";
-
     initializeIndexOf(out);
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
@@ -478,29 +472,39 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
 }
 void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
    std::string name = this->fDef->decl->name->name;
-   if (FunctionProp[name].p&FP_INDEXOF) {
+   functionProperties::iterator it=FunctionProp[name].begin();
+   functionProperties::iterator end=FunctionProp[name].end();
+   for (;it!=end;++it) {
       out << ","<<std::endl;
       indent(out,3);
-      out << "indexof";
+      out << "indexof"<<*it;
    }
-   if (FunctionProp[name].p&FP_LINEARINDEXOF) {
-      out << ","<<std::endl;
-      indent(out,3);
-      out << "i";
-      
-   }   
 }
+
 void BRTCPUKernelCode::initializeIndexOf(std::ostream&out)const {
-   if (FunctionProp[this->fDef->decl->name->name].p&FP_INDEXOF){
+   std::string name = this->fDef->decl->name->name;
+   functionProperties::iterator it=FunctionProp[name].begin();
+   functionProperties::iterator end=FunctionProp[name].end();
+   for (;it!=end;++it) {
       indent(out,1);
-      out << "__BrtFloat4 indexof = computeIndexOf(mapbegin,dim,extents);"<<std::endl;
+      out << "unsigned int dim"<<*it<<"=";
+      PrintAccessStream(out,*it,"getDimension");
+      out << ";"<<std::endl<<"const unsigned int * extents"<<*it<<"=";
+      PrintAccessStream(out,*it,"getExtents");
+      out << ";"<<std::endl<<"__BrtFloat4 indexof"<<*it;
+      out << " = computeIndexOf(mapbegin, dim"<<*it<<", extents"<<*it<<");";
+      out <<std::endl;
    }
 }
 
 void BRTCPUKernelCode::incrementIndexOf(std::ostream&out)const {
-   if (FunctionProp[this->fDef->decl->name->name].p&FP_INDEXOF){
+   std::string name = this->fDef->decl->name->name;
+   functionProperties::iterator it=FunctionProp[name].begin();
+   functionProperties::iterator end=FunctionProp[name].end();
+   for (;it!=end;++it) {
       indent(out,2);
-      out << "incrementIndexOf (indexof,dim,extents);"<<std::endl;
+      out<<"incrementIndexOf (indexof"<<*it<<",dim"<<*it<<",extents"<<*it<<");";
+      out<<std::endl;
    }
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -546,9 +550,7 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
     std::string long_name (whiteout(myvoid + enhanced_name.name+" ("));
     out << "const std::vector<void *>&args,"<<std::endl;
     out << long_name<<"unsigned int mapbegin, "<<std::endl;
-    out << long_name<< "unsigned int mapend,"<<std::endl;
-    out << long_name<< "unsigned int dim,"<<std::endl;
-    out << long_name<< "const unsigned int *extents) {"<<std::endl;
+    out << long_name<< "unsigned int mapend) {"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);

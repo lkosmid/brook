@@ -99,12 +99,12 @@ class BRTCPUKernelCode : public BRTKernelCode
     void printCombineCode(std::ostream& out)const;
     void printCode(std::ostream& out) const;
 	
-	static void printInnerFunction(std::ostream&out,
-								   std::string fullname,
-								   FunctionDef*fDef,
-								   std::vector<PrintCPUArg>&args,
-								   bool shadowOutput,
-								   std::string origname);
+    static void printInnerFunction(std::ostream&out,
+                                   std::string fullname,
+                                   FunctionDef*fDef,
+                                   std::vector<PrintCPUArg>&args,
+                                   bool shadowOutput,
+                                   std::string origname);
 
 };
 
