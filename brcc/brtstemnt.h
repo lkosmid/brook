@@ -36,13 +36,11 @@ class BRTGPUKernelDef : public BRTKernelDef
     void printCode(std::ostream& out) const;
 };
 
-void compileCpp(class BRTCPUKernelDef *cpuDef);
 class BRTCPUKernelDef : public BRTKernelDef
 {
   public:
     BRTCPUKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {
        Brook2Cpp_ConvertKernel(this);
-       compileCpp(this);
     }
    ~BRTCPUKernelDef() { /* Nothing, ~FunctionDef() does all the work */ }
 
