@@ -304,7 +304,7 @@ public:
        LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const BRT_TYPE &b)const{ \
       return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
                                                 VALUE>::type, \
-		 LUB<TEMPL_TYPESIZE,tsize>::size>() opgets b; \
+		 LUB<TEMPL_TYPESIZE,tsize>::size>(*this) opgets b; \
     }
     BROOK_BINARY_OP(*,*=,LCM);
     BROOK_BINARY_OP(/,/=,LCM);
