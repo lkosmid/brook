@@ -1,13 +1,17 @@
 // fractal.br
 // tests kernel splitting of an iterative construct
 
+#include <stdio.h>
+
 kernel void mandelbrotIterate(
 	float4 x<>, float4 y<>,
 	float4 cx<>, float4 cy<>,
 	out float4 outX<>, out float4 outY<> )
 {
-	outX = x*x - y*y + cx;
-	outY = 2*x*y + cy;
+	float4 tx = x*x - y*y + cx;
+	float4 ty = 2*x*y + cy;
+	outX = tx;
+	outY = ty;
 }
 
 kernel void mandelbrot( float4 cx<>, float4 cy<>, out float4 outInside<> )
@@ -61,4 +65,73 @@ kernel void mandelbrot( float4 cx<>, float4 cy<>, out float4 outInside<> )
 	
 	outInside = (x*x + y*y) < 4;
 	
+}
+
+#define WIDTH 640
+#define HEIGHT 480
+#define STREAM_WIDTH (WIDTH/4)
+#define STREAM_HEIGHT HEIGHT
+#define DATA_SIZE (WIDTH*HEIGHT)
+
+void main()
+{
+	float4 inputX<STREAM_HEIGHT,STREAM_WIDTH>;
+	float* inputX_data;
+	float4 inputY<STREAM_HEIGHT,STREAM_WIDTH>;
+	float* inputY_data;
+	float4 output<STREAM_HEIGHT,STREAM_WIDTH>;
+	float* output_data;
+	unsigned char* image_data;
+	int i, j;
+	float x, y;
+	FILE* outputFile;
+	
+	inputX_data = (float*)malloc( DATA_SIZE * sizeof(float) );
+	inputY_data = (float*)malloc( DATA_SIZE * sizeof(float) );
+	output_data = (float*)malloc( DATA_SIZE * sizeof(float) );
+	image_data = (unsigned char*)malloc( DATA_SIZE * sizeof(unsigned char) );
+	
+	
+	outputFile = fopen( "output.pgm", "wb" );
+	fprintf( outputFile, "P5\n" );
+	fprintf( outputFile, "%d\n", WIDTH ); // w
+	fprintf( outputFile, "%d\n", HEIGHT ); // h
+	fprintf( outputFile, "255\n" );
+	
+	for( j = 0; j < HEIGHT; j++ )
+	{
+		y = 3.0f * (float)(j) * (1.0f / (HEIGHT-1)) - 1.5f;
+	
+		for( i = 0; i < WIDTH; i++ )
+		{
+			x = 4.0f * (float)(i) * (1.0f / (WIDTH-1)) - 2.0f;
+		
+			inputX_data[j*WIDTH+i] = x;
+			inputY_data[j*WIDTH+i] = y;
+		}
+	}
+	
+	streamRead( inputX, inputX_data );
+	streamRead( inputY, inputY_data );
+	mandelbrot( inputX, inputY, output );
+	streamWrite( output, output_data );
+	
+	for( i = 0; i < DATA_SIZE; i++ )
+		image_data[i] = output_data[i] != 0 ? 0 : 255;
+	
+	fwrite( image_data, DATA_SIZE, 1, outputFile );
+	/*
+	for( j = 0; j < HEIGHT; j++ )
+	{
+		for( i = 0; i < WIDTH; i++ )
+		{
+			if( output_data[j*WIDTH+i] != 0 )
+				printf( "*" );
+			else
+				printf( "." );
+		}
+		printf( "\n" );
+	}*/
+	
+	fclose( outputFile );
 }

@@ -22,6 +22,15 @@ public:
   bool valid; // whether this shader can be compiled
   int cost; // the cost of this shader (if valid)
   bool recompute; // should we recompute this shader, rather than save it?
+
+  // resource usage...
+  int arithmeticInstructionCount;
+  int textureInstructionCount;
+  int samplerRegisterCount;
+  int interpolantRegisterCount;
+  int constantRegisterCount;
+  int temporaryRegisterCount;
+  int outputRegisterCount;
 };
 
 class SplitCompiler

@@ -34,6 +34,21 @@ void SplitCompilerHLSL::compileShader(
   bool shouldValidate = inConfiguration.validateShaders;
 
   char* assemblerBuffer = compile_fxc( inHighLevelCode.c_str(), CODEGEN_PS20, &usage, shouldValidate );
+/*
+  std::cout << "size is " << inHighLevelCode.length() << std::endl;
+
+  char* assemblerBuffer = NULL;
+  if( inHighLevelCode.length() < 65536 )
+  {
+    usage.arithmeticInstructionCount = 12;
+    usage.textureInstructionCount = 2;
+    usage.constantRegisterCount = 2;
+    usage.interpolantRegisterCount = 1;
+    usage.outputRegisterCount = 1;
+    usage.samplerRegisterCount = 2;
+    usage.temporaryRegisterCount = 3;
+    char* assemblerBuffer = strdup("fibble");
+  }*/
 
   if( assemblerBuffer == NULL )
   {
@@ -50,6 +65,14 @@ void SplitCompilerHLSL::compileShader(
   int constantCount = usage.constantRegisterCount;
   int temporaryCount = usage.temporaryRegisterCount;
   int outputCount = usage.outputRegisterCount;
+
+  outHeuristics.arithmeticInstructionCount = arithmeticInstructionCount;
+  outHeuristics.textureInstructionCount = textureInstructionCount;
+  outHeuristics.samplerRegisterCount = samplerCount;
+  outHeuristics.interpolantRegisterCount = interpolantCount;
+  outHeuristics.constantRegisterCount = constantCount;
+  outHeuristics.temporaryRegisterCount = temporaryCount;
+  outHeuristics.outputRegisterCount = outputCount;
 
   if( !shouldValidate )
   {
@@ -88,10 +111,17 @@ void SplitCompilerHLSL::compileShader(
     + outputCost*outputCount;
 
   bool shouldRecompute = true;
-  if( textureInstructionCount*2 > inConfiguration.maximumTextureInstructionCount )
+//  if( textureInstructionCount*2 > inConfiguration.maximumTextureInstructionCount )
+//    shouldRecompute = false;
+//  if( arithmeticInstructionCount*2 > inConfiguration.maximumArithmeticInstructionCount )
+//    shouldRecompute = false;
+
+
+  if( textureInstructionCount*4 > inConfiguration.maximumTextureInstructionCount*3 )
     shouldRecompute = false;
-  if( arithmeticInstructionCount*2 > inConfiguration.maximumArithmeticInstructionCount )
+  if( arithmeticInstructionCount*4 > inConfiguration.maximumArithmeticInstructionCount*3 )
     shouldRecompute = false;
+
 //  if( samplerCount > 8 )
 //    shouldRecompute = false;
 //  if( interpolantCount > 4 )

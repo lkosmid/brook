@@ -97,7 +97,7 @@ private:
   bool exhaustiveSplitIsValid( int& outScore );
 
   void rdsSearch();
-  int rdsCompileConfiguration();
+  int rdsCompileConfiguration( bool inLastTime = false );
   void rdsSubdivide();
   void rdsSubdivide( SplitNode* t, SplitShaderHeuristics& outHeuristics );
   void rdsDecideSave( SplitNode* n, const SplitShaderHeuristics& inHeuristics );
@@ -111,7 +111,7 @@ private:
   typedef std::set< SplitPassInfo* > PassSet;
 
   PassSet _passes;
-  void rdsMergePasses();
+  void rdsMergePasses( bool inLastTime = false );
   SplitPassInfo* rdsCreatePass( SplitNode* inNode );
   SplitPassInfo* rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB );
   void rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream );

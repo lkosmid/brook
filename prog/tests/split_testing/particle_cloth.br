@@ -91,6 +91,8 @@ kernel void advanceParticlesSplit(
 	forceSum = float3(0,0,0);
 	
 	// sum neighbor forces
+	
+	// direct neighbors
 	getNeighborForce( inPosition, inVelocity,
 		inPositions, inVelocities,
 		inIndex, float2(-1,0), float2( 1024, 1024 ),
@@ -116,6 +118,35 @@ kernel void advanceParticlesSplit(
 		inPositions, inVelocities,
 		inIndex, float2(0,-1), float2( 1024, 1024 ),
 		0.1, 0.2, 1.0 / 1024.0,
+		force );
+	forceSum = forceSum + force;
+	
+	// 2-away neighbors
+	getNeighborForce( inPosition, inVelocity,
+		inPositions, inVelocities,
+		inIndex, float2(-2,0), float2( 1024, 1024 ),
+		0.01, 0.02, 2.0 / 1024.0,
+		force );
+	forceSum = forceSum + force;
+
+	getNeighborForce( inPosition, inVelocity,
+		inPositions, inVelocities,
+		inIndex, float2(0,2), float2( 1024, 1024 ),
+		0.01, 0.02, 2.0 / 1024.0,
+		force );
+	forceSum = forceSum + force;
+
+	getNeighborForce( inPosition, inVelocity,
+		inPositions, inVelocities,
+		inIndex, float2(2,0), float2( 1024, 1024 ),
+		0.01, 0.02, 2.0 / 1024.0,
+		force );
+	forceSum = forceSum + force;
+
+	getNeighborForce( inPosition, inVelocity,
+		inPositions, inVelocities,
+		inIndex, float2(0,-2), float2( 1024, 1024 ),
+		0.01, 0.02, 2.0 / 1024.0,
 		force );
 	forceSum = forceSum + force;
 	

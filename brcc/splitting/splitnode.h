@@ -208,6 +208,8 @@ private:
   typedef std::set< SplitNode* > NodeSet;
   NodeSet _spanningBucket;
 
+  NodeSet _parentSplits;
+
   bool _rdsFixedMarked;
   bool _rdsFixedUnmarked;
   bool _isOutput;

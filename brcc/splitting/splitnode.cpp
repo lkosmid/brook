@@ -565,6 +565,21 @@ FunctionCallSplitNode::FunctionCallSplitNode( const std::string& inName, const s
     assert( _arguments.size() == 2 );
     inferredType = _arguments[0]->inferredType;
   }
+  else if( _name == "length" )
+  {
+    assert( _arguments.size() == 1 );
+    inferredType = kSplitBasicType_Float;
+  }
+  else if( _name == "sin" || _name == "cos" )
+  {
+    assert( _arguments.size() == 1 );
+    inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "fmod" )
+  {
+    assert( _arguments.size() == 2 );
+    inferredType = _arguments[0]->inferredType;
+  }
 }
 
 void FunctionCallSplitNode::printTemporaryExpression( std::ostream& inStream )

@@ -17,7 +17,34 @@
 //#define SPLIT_SEARCH_EXHAUSTIVE
 
 // uncomment this to turn on the greedy merging that improves RDS
-#define SPLIT_SEARCH_MERGE
+//#define SPLIT_SEARCH_MERGE
+
+// uncomment this line for RDS + an after-the-fact merge
+#define SPLIT_SEARCH_MERGE_AFTER
+
+static unsigned long timeSplitCounter;
+static unsigned long timePrintingCounter;
+static unsigned long timeCompilingCounter;
+
+#ifdef _WIN32
+#include <windows.h>
+#include <mmsystem.h>
+
+#pragma comment(lib,"winmm")
+
+static unsigned long getTime()
+{
+  DWORD result = timeGetTime();
+  return (unsigned long)result;
+}
+#else
+
+static unsigned long getTime()
+{
+  return 0;
+}
+
+#endif
 
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler )
   : _resultValue(NULL), _compiler(inCompiler), _pseudoRoot(NULL)
@@ -46,13 +73,20 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
 
 //  preRdsMagic();
 
+  timeSplitCounter = 0;
+  timePrintingCounter = 0;
+  timeCompilingCounter = 0;
+
+  unsigned long splitStart = getTime();
+
 #ifdef SPLIT_SEARCH_EXHAUSTIVE
-
   exhaustiveSearch();
-
 #else
   rdsSearch();
 #endif
+
+  unsigned long splitStop = getTime();
+  timeSplitCounter += splitStop - splitStart;
 
   // TIM: we need to split somewhere
   for( size_t i = 0; i < _outputList.size(); i++ )
@@ -84,6 +118,10 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
   }
 
   unmark( SplitNode::kMarkBit_Printed );
+
+  std::cout << "time split " << timeSplitCounter << std::endl;
+  std::cout << "time compile " << timeCompilingCounter << std::endl;
+  std::cout << "time print " << timePrintingCounter << std::endl;
 
   dumpPassConfiguration( std::cout );
 
@@ -133,6 +171,14 @@ void SplitTree::dumpPassConfiguration( std::ostream& inStream )
     inStream << "cost = " << heuristics.cost << std::endl;
 
     totalCost += heuristics.cost;
+
+    inStream << "textureInstCount = " << heuristics.textureInstructionCount << std::endl;
+    inStream << "arithInstCount = " << heuristics.arithmeticInstructionCount << std::endl;
+    inStream << "samplerCount = " << heuristics.samplerRegisterCount << std::endl;
+    inStream << "interpCount = " << heuristics.interpolantRegisterCount << std::endl;
+    inStream << "constCount = " << heuristics.constantRegisterCount << std::endl;
+    inStream << "tempCount = " << heuristics.temporaryRegisterCount << std::endl;
+    inStream << "outputCount = " << heuristics.outputRegisterCount << std::endl;
 
     inStream << "</pass>" << std::endl;
   }
@@ -243,7 +289,7 @@ bool SplitTree::exhaustiveSplitIsValid( int& outScore )
   return true;
 }
 
-void SplitTree::rdsMergePasses()
+void SplitTree::rdsMergePasses( bool inLastTime )
 {
   for( PassSet::iterator k = _passes.begin(); k != _passes.end(); ++k )
     delete *k;
@@ -263,7 +309,11 @@ void SplitTree::rdsMergePasses()
     rdsAccumulatePassDescendents( *j );
   }
 
-#ifdef SPLIT_SEARCH_MERGE
+#if defined(SPLIT_SEARCH_MERGE) || defined(SPLIT_SEARCH_MERGE_AFTER)
+
+#if defined(SPLIT_SEARCH_MERGE_AFTER)
+  if( inLastTime ) {
+#endif
 
   // now that we have all the passes, lets start building up potential merges...
   bool didMerge = true;
@@ -324,6 +374,10 @@ void SplitTree::rdsMergePasses()
         (*i)->_assignedPass = bestMerged;
     }
   }
+
+#if defined(SPLIT_SEARCH_MERGE_AFTER)
+  }
+#endif
 
 #endif
 }
@@ -390,6 +444,9 @@ void SplitTree::rdsAccumulatePassAncestorsRec( SplitNode* inNode, SplitPassInfo*
       std::inserter( unionResult, unionResult.begin() ) );
     unionResult.insert( inNode );
 
+    // TIM: bad - assume there is only one output
+    (*ioPass->outputs.begin())->_parentSplits.insert( inNode );
+
     ioPass->ancestors.swap( unionResult );
   }
   else
@@ -450,6 +507,9 @@ SplitPassInfo* SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB
 
   // TIM: TODO: check basic validity
 
+  // if there is an ancestor of one pass
+  // that is also a descendent of the other
+  // then we can't merge
   NodeSet intersectionResult;
   std::set_intersection( inA->descendents.begin(), inA->descendents.end(),
     inB->ancestors.begin(), inB->ancestors.end(),
@@ -466,15 +526,37 @@ SplitPassInfo* SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB
   if( intersectionResult.size() != 0 )
     return NULL;
 
-//  dumpFile << "passed early check" << std::endl;
+  // further, if one of the nodes would be made suprfluous
+  // by the merge, we won't consider it...
 
-  // we can merge two passes as long as
+  // basically, if for any split node in the combined pass,
+  // if all it's parent splits are being generated in
+  // the same pass, then we fail the merge
+
+
+//  dumpFile << "passed early check" << std::endl;
 
   NodeSet mergedOutputs;
   std::set_union(
     inA->outputs.begin(), inA->outputs.end(),
     inB->outputs.begin(), inB->outputs.end(),
     std::inserter( mergedOutputs, mergedOutputs.begin() ) );
+
+  for( NodeSet::iterator n = mergedOutputs.begin(); n != mergedOutputs.end(); ++n )
+  {
+    SplitNode* node = *n;
+
+    if( node->_parentSplits.size() == 0 ) continue;
+
+    bool okay = false;
+    for( NodeSet::iterator p = node->_parentSplits.begin(); p != node->_parentSplits.end(); ++p )
+    {
+      if( mergedOutputs.find( *p ) == mergedOutputs.end() )
+        okay = true; // parent wasn't there, it's worth saving...
+    }
+    if( !okay )
+      return NULL;
+  }
 
   // now we need to generate a shader for all of these outputs...
 
@@ -705,14 +787,14 @@ void SplitTree::rdsSearch()
 
   // use the resulting configuration
   // for one final compile pass
-  int finalCost = rdsCompileConfiguration();
+  int finalCost = rdsCompileConfiguration( true );
 //  dumpFile << "final cost is " << finalCost << std::endl;
 }
 
-int SplitTree::rdsCompileConfiguration()
+int SplitTree::rdsCompileConfiguration( bool inLastTime )
 {
   rdsSubdivide();
-  rdsMergePasses();
+  rdsMergePasses( inLastTime );
 
   return getPartitionCost();
 }
@@ -1042,8 +1124,13 @@ bool SplitTree::rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeurist
 
 bool SplitTree::rdsCompile( const NodeSet& inNodes, SplitShaderHeuristics& outHeuristics )
 {
+  unsigned long startCompile = getTime();
+
   std::ostringstream nullStream;
   _compiler.compile( *this, inNodes, nullStream, outHeuristics );
+
+  unsigned long stopCompile = getTime();
+  timeCompilingCounter += stopCompile - startCompile;
 
   return outHeuristics.valid;
 }
@@ -1059,6 +1146,8 @@ int SplitTree::getPartitionCost()
 
 void SplitTree::printShaderFunction( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const
 {
+  unsigned long startPrint = getTime();
+
   SplitArgumentTraversal printArguments(inStream,_outputPositionInterpolant);
   SplitStatementTraversal printStatements(inStream,_outputPositionInterpolant);
 
@@ -1081,6 +1170,9 @@ void SplitTree::printShaderFunction( const std::set<SplitNode*>& inOutputs, std:
   printStatements( inOutputs );
 
   inStream << "}" << std::endl;
+
+  unsigned long stopPrint = getTime();
+  timePrintingCounter += stopPrint - startPrint;
 }
 
 void SplitTree::printArgumentAnnotations( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const
