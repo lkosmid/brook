@@ -276,9 +276,6 @@ public:
 protected:
     VALUE f[size];
 public:
-    template <class T> operator T () const{
-      return InitializeClass<T>()(getAt(0),getAt(1),getAt(2),getAt(3));
-    }        
     const VALUE &getAt (unsigned int i) const{return f[i%size];}
     VALUE &getAt (unsigned int i) {return f[i%size];}
     const typename BracketType<VALUE>::type &operator [] (unsigned int i)const {return BracketOp<VALUE>()(*this,i);}
@@ -289,9 +286,22 @@ public:
     const vec<VALUE,tsize>& cast() const{
         return *this;
     }
-    template<class T> T castTo() {
-        return InitializeClass<T>()(getAt(0),getAt(1),getAt(2),getAt(3));
+    template<class BRT_TYPE> BRT_TYPE castTo() {
+        return InitializeClass<BRT_TYPE>()(getAt(0),
+					   getAt(1),
+					   getAt(2),
+					   getAt(3));
     }
+#define BROOK_UNARY_OP(op) vec<VALUE,tsize> operator op ()const { \
+      return vec<VALUE, tsize > (op getAt(0),  \
+                                 op getAt(1),  \
+                                 op getAt(2),  \
+                                 op getAt(3)); \
+    }
+    BROOK_UNARY_OP(+)
+    BROOK_UNARY_OP(-)
+    BROOK_UNARY_OP(!)    
+#undef BROOK_UNARY_OP
     vec<VALUE,4> swizzle4(MASKS x,MASKS y,MASKS z,MASKS w)const {
         return vec<VALUE,4>(getAt(x),
                             getAt(y),
@@ -307,12 +317,44 @@ public:
     vec<VALUE, 1> swizzle1(MASKS x)const {
         return vec<VALUE,1>(getAt(x));
     }
-#define ASSIGN_OP(op) template <class T> \
-         vec<VALUE,tsize>& operator op (const T & in) {  \
-        f[0] op GetAt<T>(in,0);  \
-        if (tsize>1) f[1] op GetAt<T>(in,1);  \
-        if (tsize>2) f[2] op GetAt<T>(in,2);  \
-        if (tsize>3) f[3] op GetAt<T>(in,3);  \
+    vec() {
+      //for (unsigned int i=0;i<size;++i) 
+      //      f[i]=VALUE();
+    }
+#define TEMPLATIZED_FUNCTIONS
+    template <class BRT_TYPE> 
+      vec (const BRT_TYPE &inx, 
+	   const BRT_TYPE &iny, 
+	   const BRT_TYPE &inz, 
+	   const BRT_TYPE& inw) {
+        f[0]=inx;
+        if (size>1) f[1]=iny;
+        if (size>2) f[2]=inz;
+        if (size>3) f[3]=inw;
+    }
+    template <class BRT_TYPE> vec (const BRT_TYPE& inx, 
+				   const BRT_TYPE& iny, 
+				   const BRT_TYPE& inz) {
+        f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
+    }
+    template <class BRT_TYPE>vec (const BRT_TYPE& inx, const BRT_TYPE& iny) {
+        f[0]=inx;
+        if (size>1) f[1]=iny;
+        if (size>2) f[2]=VALUE();
+        if (size>3) f[3]=VALUE();
+    }
+    template <class BRT_TYPE> vec (const BRT_TYPE& scalar) {
+        (*this)=scalar;
+    }
+    template <class BRT_TYPE> operator BRT_TYPE () const{
+      return InitializeClass<BRT_TYPE>()(getAt(0),getAt(1),getAt(2),getAt(3));
+    }        
+#define ASSIGN_OP(op) template <class BRT_TYPE> \
+         vec<VALUE,tsize>& operator op (const BRT_TYPE & in) {  \
+        f[0] op GetAt<BRT_TYPE>(in,0);  \
+        if (tsize>1) f[1] op GetAt<BRT_TYPE>(in,1);  \
+        if (tsize>2) f[2] op GetAt<BRT_TYPE>(in,2);  \
+        if (tsize>3) f[3] op GetAt<BRT_TYPE>(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -322,8 +364,8 @@ public:
     ASSIGN_OP(*=);
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
-    template <class T>
-      vec<VALUE,4> mask4 (const T&in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+    template <class BRT_TYPE>
+      vec<VALUE,4> mask4 (const BRT_TYPE&in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
@@ -333,59 +375,44 @@ public:
                     getAt(Z),
                     getAt(W));
     }
-    template <class T>
-      vec<VALUE,3> mask3 (const T&in,MASKS X,MASKS Y,MASKS Z) {
+    template <class BRT_TYPE>
+      vec<VALUE,3> mask3 (const BRT_TYPE&in,MASKS X,MASKS Y,MASKS Z) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         if (tsize>Z)f[Z]=in.getAt(2);
         return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
-    template <class T> 
-      vec<VALUE,2> mask2 (const T&in,MASKS X,MASKS Y) {
+    template <class BRT_TYPE> 
+      vec<VALUE,2> mask2 (const BRT_TYPE&in,MASKS X,MASKS Y) {
         if (tsize>X)f[X]=in.getAt(0);
         if (tsize>Y)f[Y]=in.getAt(1);
         return vec<VALUE,2>(getAt(X),getAt(Y));
     }
-    template <class T> 
-      vec<VALUE,1> mask1 (const T&in,MASKS X) {
+    template <class BRT_TYPE> 
+      vec<VALUE,1> mask1 (const BRT_TYPE&in,MASKS X) {
         if (tsize>X)f[X]=in.getAt(0);
         return vec<VALUE,1>(getAt(X));
     }    
-    vec() {
-      //for (unsigned int i=0;i<size;++i) 
-      //      f[i]=VALUE();
-    }
-    template <class T> 
-      vec (const T &inx, const T &iny, const T &inz, const T& inw) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=inz;
-        if (size>3) f[3]=inw;
-    }
-    template <class T> vec (const T& inx, const T& iny, const T& inz) {
-        f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
-    }
-    template <class T>vec (const T& inx, const T& iny) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=VALUE();
-        if (size>3) f[3]=VALUE();
-    }
-    template <class T> vec (const T& scalar) {
-        (*this)=scalar;
-    }
-    template <class T> 
-      vec<typename T::TYPE,tsize> questioncolon(const T &b, const T &c)const {
-        return vec<GCCTYPENAME T::TYPE,tsize>
+    template <class BRT_TYPE> 
+      vec<typename BRT_TYPE::TYPE,tsize> questioncolon(const BRT_TYPE &b, 
+						const BRT_TYPE &c)const {
+        return vec<GCCTYPENAME BRT_TYPE::TYPE,tsize>
             (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
              singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
              singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
     }
-#define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class T>            \
-    vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME T::TYPE,VALUE>::type, \
-        LUB<size,tsize>::size> operator op (const T &b)const { \
-      return vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME T::TYPE,VALUE>::type,LUB<size,tsize>::size> \
+#if defined (_MSC_VER) && (_MSC_VER <= 1200)
+#define TEMPL_TYPESIZE sizeof(BRT_TYPE)/sizeof(BRT_TYPE::TYPE)
+#else
+#define TEMPL_TYPESIZE BRT_TYPE::size
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class BRT_TYPE>          \
+    vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const BRT_TYPE &b)const{ \
+      return vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
                  getAt(1) op b.getAt(1), \
                  getAt(2) op b.getAt(2), \
@@ -405,16 +432,7 @@ public:
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)            
 #undef BROOK_BINARY_OP    
-#define BROOK_UNARY_OP(op) vec<VALUE,tsize> operator op ()const { \
-      return vec<VALUE, tsize > (op getAt(0),  \
-                                 op getAt(1),  \
-                                 op getAt(2),  \
-                                 op getAt(3)); \
-    }
-    BROOK_UNARY_OP(+)
-    BROOK_UNARY_OP(-)
-    BROOK_UNARY_OP(!)    
-#undef BROOK_UNARY_OP
+#undef TEMPLATIZED_FUNCTIONS
 };
 
 
