@@ -3,7 +3,7 @@
  * If it is, it returns the single bit passed into the index (ex 1,2,4,...,128)
  */
 kernel float test(float vol<>,float index<>){
-  return (vol>.5)?index:0;
+  return (vol>.39)?index:0;
 }
 
 /** This kernel is for the experimental dataset and evaluates
