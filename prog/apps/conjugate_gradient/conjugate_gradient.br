@@ -370,8 +370,7 @@ int main(int argc, char** argv) {
     sum(tmpStrm, resNew);
 
 	  it++;
-    if( (it % 10) == 1 )
-  	  printf("iteration %d.  Current residual norm: %f\n", it, resNew);
+    printf("iteration %d.  Current residual norm: %f\n", it, resNew);
   }      
 
 
