@@ -237,9 +237,7 @@ INITBASECLASS(unsigned char);
 #endif
 
 
-#if 1
-#include "vc6vector.hpp"
-#else 
+//#include "vc6vector.hpp"
 
 template <class VALUE, unsigned int tsize> class vec{
 public:
@@ -490,4 +488,3 @@ MATRIXXY_CLASS(__BrtChar,1,2);
 MATRIXXY_CLASS(__BrtChar,1,1);
 
 #undef MATRIXXY_CLASS
-#endif
