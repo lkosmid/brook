@@ -82,6 +82,7 @@ string preprocessTemplates (string s, vector<string3> replacementList) {
   s=findReplace (s,"template <class BRT_TYPE>","");
   //s=findReplace(s,"typename","");
   s=findReplace(s,"GCCTYPENAME","typename");
+  s=findReplace(s,"INTERNALTYPENAME","");
   s=findReplace(s,"MSC_VER","ARRGH");
   for (unsigned int i=0;i<replacementList.size();++i) {
     
@@ -136,13 +137,14 @@ int main (int argc, char ** argv) {
     vectoronly=findBetween(post,"VECTOR_TEMPLATIZED_FUNCTIONS",firstpost,post);
     operonly=findBetween(post,"OPERATOR_TEMPLATIZED_FUNCTIONS",post,lastpost);
   }
-  o << pre<<"\n";
-  o << removeTypenames (preprocessTemplates(general,generalTypes))<<"\n";
-  o << firstpost<<"\n";
-  o << removeTypenames(preprocessTemplates(vectoronly,vectorTypes))<<"\n";
-  o << post <<"\n";
-  o << removeTypenames(preprocessTemplates(operonly,operTypes))<<"\n";
+  o << findReplace(pre,"BRTVECTOR_HPP","VC6VECTOR_HPP") <<std::endl;
+  o << removeTypenames (preprocessTemplates(general,generalTypes))<<std::endl;
+  o << firstpost<<std::endl;
+  o << removeTypenames(preprocessTemplates(vectoronly,vectorTypes))<<std::endl;
+  o << post <<std::endl;
+  o << removeTypenames(preprocessTemplates(operonly,operTypes))<<std::endl;
   o << lastpost;
+  o << std::endl << "#undef __MY_VC6_HEADER" <<std::endl;
   o.close();
 
 }
