@@ -34,6 +34,7 @@ static void  FloatMath (const Float1  &a,
 
 void handcputest(float *a, float *b, float4 c, float * d, float * e, unsigned int size) {
    unsigned int total=size*size;
+   total*=10;
    {
      unsigned int i;
       Float1 * aaa=(Float1*)a;

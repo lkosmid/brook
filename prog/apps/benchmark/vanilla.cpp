@@ -135,7 +135,7 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
    fprintf (stderr,"Native Float Math took %lf seconds\n",GetElapsedTime());
 
 
-
+   total*=10;
 
    {
       __BrtFloat1 * aaa=(__BrtFloat1*)a;
