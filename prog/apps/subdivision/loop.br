@@ -14,8 +14,10 @@ typedef struct SplitTri_t {
   float4 C;
   float4 AC;
 }SplitTri;
-//Stores the neighbors of a given triangle
-// the unused 'w' components act as holders
+//Stores the neighbors of a given triangle The w component indicates if
+//the line length is short enough for the triangle to be produced.
+//this could be altered to any per-edge qualifier
+// for the intermediate split neighbors the unused 'w' components act as holders
 // for the recomputed neighbor list when a triangle is split
 typedef struct Neighbor_t {
   float4 AB;// w = AB->B.x
@@ -32,74 +34,77 @@ typedef struct Neighbor_t {
 
 int counterMax = 3;
 int low_texture_ram=0;
+
+//returns a 2 if only b1, 4 if only b2 and 8 if both
+//this acts as sort of a bitwise holder class that should work with 24 bitfloat
 kernel float triCombine(float b1<>, float b2<>) {
    return (b1&&b2)?8:(b1?2:(b2?4:0));
 }
-// from a triangle and its neighbors, determines whether that edge is small
-// enough
+
+//if the model is missing a neighbor then all 3 components will be zero
+//i.e. if a model has 4 or 5 neighbors only
 kernel float isNeighbor(float4 neigh) {
    return neigh.z!=0;
 }
 kernel float isNotNeighbor(float4 neigh) {
   return neigh.z==0;
 }
+//The function that recomputes whether the given edges are large enough
+//to warrant a split. This could and probably should be done in "image space"
 kernel void smallEnough(Tri t<>, Neighbor u<>, 
                         out Tri v<>, 
                         out Neighbor n<>, 
                         float epsilon) {
   v.A.xyz = t.A.xyz;
-  v.A.w = (//t.A.w!=0 &&
-                  dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon)?1.0:0.0;
+  v.A.w = (dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon)?1.0:0.0;
   v.B.xyz = t.B.xyz;
-  v.B.w = (float)(//t.B.w!=0 &&
-                  (dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon))?1.0:0.0;
+  v.B.w = (dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon)?1.0:0.0;
   v.C.xyz = t.C.xyz;
-  v.C.w = (//t.C.w!=0 &&
-                  (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)>epsilon))?1.0:0.0;
+  v.C.w = (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)>epsilon)?1.0:0.0;
   n.AB.xyz = u.AB.xyz;
-  n.AB.w = triCombine(//u.AB.w,
-                      (dot(t.A.xyz-u.AB.xyz,t.A.xyz-u.AB.xyz)>epsilon)?1.0:0.0,
+  //for the neighbors that two vertices share, there are two relevant lenghts,
+  // both of which must be saved in the neighbor .w
+  n.AB.w = triCombine((dot(t.A.xyz-u.AB.xyz,t.A.xyz-u.AB.xyz)>epsilon)?1.0:0.0,
                       (dot(t.B.xyz-u.AB.xyz,t.B.xyz-u.AB.xyz)>epsilon)?1.0:0.0);
   n.BC.xyz=u.BC.xyz;
-  n.BC.w = triCombine(//u.BC.w,
-                      (dot(t.B.xyz-u.BC.xyz,t.B.xyz-u.BC.xyz)>epsilon)?1.0:0.0,
+  n.BC.w = triCombine((dot(t.B.xyz-u.BC.xyz,t.B.xyz-u.BC.xyz)>epsilon)?1.0:0.0,
                       (dot(t.C.xyz-u.BC.xyz,t.C.xyz-u.BC.xyz)>epsilon)?1.0:0.0);
   n.AC.xyz=u.AC.xyz;
-  n.AC.w = triCombine(//u.AC.w,
-                      (dot(t.C.xyz-u.AC.xyz,t.C.xyz-u.AC.xyz)>epsilon)?1.0:0.0,
+  n.AC.w = triCombine((dot(t.C.xyz-u.AC.xyz,t.C.xyz-u.AC.xyz)>epsilon)?1.0:0.0,
                       (dot(t.A.xyz-u.AC.xyz,t.A.xyz-u.AC.xyz)>epsilon)?1.0:0.0);
   n.AAC.xyz=u.AAC.xyz;
-  n.AAC.w = (isNotNeighbor(u.AAC)||
+  n.AAC.w = (isNotNeighbor(u.AAC)|| //if missing neighbor, should not stop split
              dot(t.A.xyz-u.AAC.xyz,t.A.xyz-u.AAC.xyz)>epsilon)?1.0:0;
   n.AAB.xyz=u.AAB.xyz;
-  n.AAB.w = (isNotNeighbor(u.AAB)||
+  n.AAB.w = (isNotNeighbor(u.AAB)|| //future split should not stop upon missing neigh
              dot(t.A.xyz-u.AAB.xyz,t.A.xyz-u.AAB.xyz)>epsilon)?1.0:0;
   n.ABB.xyz=u.ABB.xyz;
-  n.ABB.w = (isNotNeighbor(u.ABB)||
+  n.ABB.w = (isNotNeighbor(u.ABB)|| //if missing neighbor, should not stop split
              dot(t.B.xyz-u.ABB.xyz,t.B.xyz-u.ABB.xyz)>epsilon)?1.0:0;
   n.BBC.xyz=u.BBC.xyz;
-  n.BBC.w = (isNotNeighbor(u.BBC)||
+  n.BBC.w = (isNotNeighbor(u.BBC)|| //if missing neighbor, should not stop split
              dot(t.B.xyz-u.BBC.xyz,t.B.xyz-u.BBC.xyz)>epsilon)?1.0:0;
   n.BCC.xyz=u.BCC.xyz;
-  n.BCC.w = (isNotNeighbor(u.BCC)||
+  n.BCC.w = (isNotNeighbor(u.BCC)|| //if missing neighbor, should not stop split
              dot(t.C.xyz-u.BCC.xyz,t.C.xyz-u.BCC.xyz)>epsilon)?1.0:0;
   n.ACC.xyz=u.ACC.xyz;
-  n.ACC.w = (isNotNeighbor(u.ACC)||
+  n.ACC.w = (isNotNeighbor(u.ACC)|| //if missing neighbor, should not stop split
              dot(t.C.xyz-u.ACC.xyz,t.C.xyz-u.ACC.xyz)>epsilon)?1.0:0;
 }
 kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 shouldNotProduce<>){
    if (t.A.w!=0.0f
        ||t.B.w!=0.0f
-       ||t.C.w!=0.0f) {
+       ||t.C.w!=0.0f) { // if either of the 3 vertices are still mobile, continue to split
      shouldProduce = (indexof t).xy;
      push(shouldProduce);
-   }else {
+   }else { //all the vertices are pinned by edges (either neighbor or triangle) that are too short
      shouldNotProduce = (indexof t).xy;
      push(shouldNotProduce);
    }
 }
 
 kernel void computeNeighbors(Tri tgather[][], Neighbor ugather[][], float2 i<>, out Neighbor v<>) {
+  // FIXME! on ATI, gathering from a potentially sentinel value will mess up card
   Neighbor u = ugather[i];
   float eAAB=isNeighbor(u.AAB);
   float eAAC=isNeighbor(u.AAC);
@@ -180,6 +185,9 @@ kernel void computeNeighbors(Tri tgather[][], Neighbor ugather[][], float2 i<>, 
                       .25);
   v.BCC.w = BC_C.z;  
 }
+
+//Splay the triangles into a vertex list of float3's.
+//these are the final triangles
 kernel void copyFinalTriangles (Tri tri<>,
                                  out float3 triList<>) {
   float whichVertex=round(fmod((indexof triList).x,3));
@@ -189,11 +197,13 @@ kernel void copyFinalTriangles (Tri tri<>,
   else if (whichVertex>=1.5&&whichVertex<2.5)
     triList=tri.C.xyz;
 }
+//Same as copy final triangles but with a dependent texture lookup
 kernel void writeFinalTriangles (Tri triangles[][],
                                  float2 indices<>,
                                  out float3 triList<>) {
   copyFinalTriangles(triangles[indices],triList);
 }
+//since we don't have proper float4 constructors, we need to manufacture one
 kernel float4 addN(float3 inxyz, float inw) {
    float4 x = float4(inxyz.x,
                      inxyz.y,
@@ -201,12 +211,19 @@ kernel float4 addN(float3 inxyz, float inw) {
                      inw);
    return x;
 } 
+//nothing happens
 kernel float4 identity(float4 a, float b){return a;}
+//you fail to obtain anything
 kernel float3 ident3(float3 a, float b) {return a;}
+
+//this function takes as input an index that tells which triangle must be split
+//the output is 6 new vertices that make up the 4 new triangles and 12 neighbors 
+// (stored in 9 float4s)
 kernel void splitTriangles (Tri triangles[][], 
                             Neighbor neighbors[][],
                             float2 i<>,
                             out SplitTri splittri<>) {
+  // FIXME! on ATI, gathering from a potentially sentinel value will mess up function
   Tri tri=triangles[i];
   Neighbor oldneighbors=neighbors[i];
   float eAAB=isNeighbor(oldneighbors.AAB);
@@ -288,7 +305,9 @@ kernel void splitTriangles (Tri triangles[][],
         +tri.B.xyz*cnon;
 }
 
-
+//moves the 6 split values into 4 individual triangles (with a result of 12 vertices)
+//moves the 12 split neighbors into 4 individual neighbor lists
+//uses fmod with x or y to determine which direction should matter wrt fmod.
 kernel void linearReorgSplitTriangles (SplitTri splittri<>,
                                        Neighbor newnei<>,
                                        out Tri tri<>,
@@ -374,6 +393,7 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
   smallEnough(tri,neighbor,tri,neighbor,epsilon);
 }
 
+//simple growable array, similar to std::vector (I hate C parsers)
 struct VertexArray{
   float3 * v;
   unsigned int size;
@@ -406,6 +426,11 @@ void pushBackVertexArray(struct VertexArray * v,
   v->v[v->size-1]=f;
 }                   
 static int toi(float f) {return (int)f;}
+
+
+//the main controller function...takes in neighbors and triangles
+//Note smallEnough must have been run on the input for this to work
+//small enough is run from main or from within linearReorgSplitTriangles
 void subdivide (Neighbor (*neighbors)<>,
                 Tri (*triangles)<>,
                 struct VertexArray *output,
@@ -416,20 +441,30 @@ void subdivide (Neighbor (*neighbors)<>,
   {
     float2 shouldProduce<0,streamX>;
     float2 shouldNotProduce<0,streamX>;
+    //see whether triangles should be split
     produceTriP(*triangles,shouldProduce,shouldNotProduce);
     assert((int)streamX==toi(streamSize(shouldProduce).x));
     streamY=toi(streamSize(shouldProduce).y);
+    //if some should be split and produced then go here
     if (streamY&&streamX) {
       float stretchX = streamY*4>2048?1:0;      
-      
+      //allocate shared neighbor structs that hold the extra generated floats
       Neighbor sharedNeighbors<streamY,streamX>;
       SplitTri sharedTriangles <streamY,streamX>;
+      //these new neighbor structs are 4x as big as the old ones
+      //input is thus stretched through them based on the fmod
       Neighbor newNeighbors<(stretchX?streamY:streamY*4),
                             (stretchX?streamX*4:streamX)>;
       Tri newTriangles<(stretchX?streamY:streamY*4),
                        (stretchX?streamX*4:streamX)>;
+      //computes the 12 shared neighbor values
       computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
+      //computes the 6 new triangle vertex values
       splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
+      // combines the 12 neighbors and 6 vertices to produce 4 individual 
+      // sets of triangles
+      // with the new triangles getting stretched in the x or y direction depending
+      // on stretchX
       linearReorgSplitTriangles(sharedTriangles,
                                 sharedNeighbors,
                                 newTriangles,
@@ -439,19 +474,23 @@ void subdivide (Neighbor (*neighbors)<>,
       streamSwap(*triangles,newTriangles);
       streamSwap(*neighbors,newNeighbors);
     }
+    // if we have some triangles that are set to be produced
     if (streamSize(shouldNotProduce).y){
       int sizex=3*toi(streamSize(shouldNotProduce).x);
       int sizey=toi(streamSize(shouldNotProduce).y);
       float3 outputTri<sizey,sizex>;
-
+      // write them out to a vertex array
       writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
         if ((!low_texture_ram)&&
             streamSize(shouldProduce).y&&
             streamSize(shouldProduce).x&&
             counter<counterMax) {
+          //if we can afford the ram, we recursively call this function
+          // to evaluate other triangles
           subdivide(neighbors,triangles,output,epsilon,counter+1);
         } 
-        
+        //now we writeback from the card to local memory since we dont have
+        // render to vertex array yet
         sizey = output->size;
         expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
                                                 streamSize(outputTri).y));
@@ -468,6 +507,9 @@ void subdivide (Neighbor (*neighbors)<>,
     }
     
   }
+  // if we really dont have that kind of ram we will already have written out
+  // vertices out to host ram, thus preserving memory. Only recurse if we have 
+  // size in shouldSplit arrays :-)
   if (low_texture_ram&&streamY&&streamX&&counter<counterMax) {
      subdivide(neighbors,triangles,output,epsilon,counter+1);
   } 
