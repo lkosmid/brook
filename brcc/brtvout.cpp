@@ -226,6 +226,29 @@ static Statement * PushToIfStatement(Statement * ste) {
       }
       return newstemnt;
 }
+bool isFilter (Expression * vout) {
+           if (vout&&vout->etype==ET_Constant) {
+             Constant * cons = static_cast<Constant*>(vout);
+             if (cons->ctype==CT_UInt) {
+               if (static_cast<UIntConstant*>(cons)->ulng==1) {
+                 return true;
+               }
+             }
+             if (cons->ctype==CT_Int) {
+               if (static_cast<IntConstant*>(cons)->lng==1) {
+                 return true;
+               }
+             }
+             if (cons->ctype==CT_Char) {
+               if (static_cast<CharConstant*>(cons)->ch==1) {
+                 return true;
+               }
+             }
+           }
+           
+           return false;
+
+}
 static Expression * TransformExprVoutPush (Expression * expression) {
    FunctionType * ft = pushFunctionType;
    Decl * vout_counter = findVoutCounter(ft);
@@ -263,22 +286,40 @@ static Expression * TransformExprVoutPush (Expression * expression) {
          Symbol * stream=new Symbol;
          stream->name="__"+voutname+"_stream";
          stream->entry=mk_paramdecl(stream->name,streamDecl);
-         expression = new AssignExpr
-            (AO_Equal,
-             new Variable(stream,fc->location),
-             new TrinaryExpr(new RelExpr(RO_Equal,
-                                         new FloatConstant(-1,fc->location),
-                                         new AssignExpr(AO_MinusEql,
-                                                        new Variable (counter,
-                                                                      fc->location),
-                                                        new IntConstant(1,
-                                                                        fc->location),
-                                                        fc->location),
-                                         fc->location),
-                             fc->args[0]->dup(),
-                             new Variable(stream->dup(),fc->location),
-                             fc->location),
-             fc->location);         
+         bool filter=isFilter(streamDecl->form->getQualifiers().vout);
+         if (filter) {
+           for (unsigned int i=0;i<ft->nArgs;++i) {
+             if ((ft->args[i]->form->getQualifiers()&TQ_Vout)!=0||(ft->args[i]->form->getQualifiers()&TQ_Out)!=0){
+               if (!isFilter(ft->args[i]->form->getQualifiers().vout)) {
+                 filter=false;
+               }
+             }
+           }
+         }
+         if (filter) {
+           expression = new AssignExpr 
+             (AO_Equal,
+              new Variable(stream,fc->location),
+              fc->args[0]->dup(),
+              fc->location);                                        
+         }else {
+           expression = new AssignExpr
+             (AO_Equal,
+              new Variable(stream,fc->location),
+              new TrinaryExpr(new RelExpr(RO_Equal,
+                                          new FloatConstant(-1,fc->location),
+                                          new AssignExpr(AO_MinusEql,
+                                                         new Variable (counter,
+                                                                       fc->location),
+                                                         new IntConstant(1,
+                                                                         fc->location),
+                                                         fc->location),
+                                          fc->location),
+                              fc->args[0]->dup(),
+                              new Variable(stream->dup(),fc->location),
+                              fc->location),
+              fc->location);         
+         }
       }
    }
    return expression;

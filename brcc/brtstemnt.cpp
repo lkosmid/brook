@@ -261,6 +261,7 @@ void BRTKernelDef::PrintVoutDimensionalShift(std::ostream &out,
       for (;i<2;++i) out << "                 1,";
       out<< "                -1);"<<std::endl; 
 }
+extern bool isFilter(Expression *);
 void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    out << "    __vout_counter+=1.0f;"<<std::endl;
    FunctionType* ft = static_cast<FunctionType*>(decl->form);
@@ -271,26 +272,33 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    std::set<unsigned int >::iterator iter;
    std::set<unsigned int >::iterator inneriter;
    bool limited_vout=false;
+   bool allone=true;
    unsigned int limited_vout_counter=0;
    unsigned int numlimits=0;
    for (iter = beginvout;iter!=endvout;++iter) {
       Decl * decl = ft->args[*iter];
       Expression * vout_limit = decl->form->getQualifiers().vout;
       if (vout_limit) {
-         if (limited_vout||beginvout==iter) {
-            limited_vout=true;
-            numlimits++;
-         }
-         else
-            limited_vout=false;
-      }         
+        bool filter=isFilter(vout_limit);
+        allone=(allone&&filter);
+        
+        if (limited_vout||beginvout==iter) {
+          limited_vout=true;
+          numlimits++;
+        }
+        else
+          limited_vout=false;
+      }
    }
-   
+   if (numlimits>1&&!allone){
+     numlimits=0;
+     limited_vout=false;
+   }
    for (iter = beginvout;iter!=endvout;++iter) {
       Decl * decl = ft->args[*iter];
       Expression * vout_limit = decl->form->getQualifiers().vout;
       
-      if (vout_limit) {
+      if (vout_limit&&limited_vout) {
         if (limited_vout_counter==0) out << "     if (";
         bool useparen=(vout_limit->precedence() < 
                        RelExpr(RO_Less,
