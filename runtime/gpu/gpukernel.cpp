@@ -224,7 +224,7 @@ namespace brook
         _outReversedExtents[r] = 1;
 
     bool requiresBaseAddressTranslation = false;
-    bool shapeMismatch;
+    bool shapeMismatch = false;
 
     if( outputStream->requiresAddressTranslation() )
         requiresBaseAddressTranslation = true;
