@@ -13,7 +13,10 @@
 
 unsigned int debug_vout = 0;
 float absolutezero=0.0f;
-
+#ifdef _WIN32
+// do not let it warn us that we use more than 64K lines of code
+#pragma warning(disable:4049)
+#endif
 unsigned int toui(float f) {
    return (unsigned int)f;
 }
