@@ -19,7 +19,9 @@
 
 // Note: the bitonic sort kernel is written for clarity as an
 // example, not for optimal GPU performance.
-kernel void bitonic(iter float idx1<>, float input[ARRAYSIZE], out float output<>, float stageWidth, float offset) {
+// Note2: we pass in twoOffset rather than calculating 2*offset
+// in the kernel to avoid an apparent code-generation bug in fxc
+kernel void bitonic(iter float idx1<>, float input[ARRAYSIZE], out float output<>, float stageWidth, float offset, float twoOffset) {
 
   float idx2;
         
@@ -29,7 +31,7 @@ kernel void bitonic(iter float idx1<>, float input[ARRAYSIZE], out float output<
   float foo;
   
   // either compared with element above or below 
-  sign = ( fmod(idx1, 2*offset) < offset) ? 1.0 : -1.0;
+  sign = ( fmod(idx1, twoOffset) < offset) ? 1.0 : -1.0;
 
   // "arrow" direction in the bitonic search algorithm  (see above reference)
   dir =  ( fmod( floor(idx1/stageWidth), 2) == 0) ? 1.0 : -1.0;
@@ -98,9 +100,9 @@ int main() {
       // two buffers required since non-sequential gather is performed from src buffer each step.
       // flip src and target streams each iteration
       if (!flip)
-        bitonic( idxStrm, sorted1Strm, sorted2Strm, segWidth, offset);
+        bitonic( idxStrm, sorted1Strm, sorted2Strm, segWidth, offset, 2*offset);
       else
-        bitonic( idxStrm, sorted2Strm, sorted1Strm, segWidth, offset);
+        bitonic( idxStrm, sorted2Strm, sorted1Strm, segWidth, offset, 2*offset);
 
       flip = (flip) ? 0 : 1;
     }
