@@ -1037,7 +1037,7 @@ unsigned int loadModelData(char* file,STri **triangles,Neighbor **neighbors);
 int main (int argc, char**argv) {
   unsigned int i = 0;
   unsigned int vcount=0;
-  float epsilon=.0001;
+  float epsilon=1;
   STri *triangledata = 0;
   Neighbor *neighbordata = 0;
   unsigned int numTriangles;
@@ -1060,7 +1060,7 @@ int main (int argc, char**argv) {
       counterMax = (int)atoi(argv[i]+8);
       match=1;
     }
-    if (strncmp(argv[i],"-cracks",8)==0) {
+    if (strncmp(argv[i],"-cracks",7)==0) {
       noCracks=1;
       match=1;
     }
@@ -1076,7 +1076,7 @@ int main (int argc, char**argv) {
       out4=0;
       match=1;
     }
-    if (strncmp(argv[i],"-eps",4)==0) {
+    if (strncmp(argv[i],"-eps",4)==0&&!match) {
       epsilon = (float)atof(argv[i]+4);
       match=1;
     }
@@ -1088,7 +1088,7 @@ int main (int argc, char**argv) {
   }
   epsilon*=epsilon;
   numTriangles = 
-    loadModelData(argc>1?argv[1]:"dragon.ply",&triangledata,&neighbordata);
+    loadModelData(argc>1?argv[1]:"puma.ply",&triangledata,&neighbordata);
   {
   Neighbor neighbors<bestHeight(numTriangles),bestWidth(numTriangles)>;
   STri triangles<bestHeight(numTriangles),bestWidth(numTriangles)>;
