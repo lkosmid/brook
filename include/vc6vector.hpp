@@ -52,13 +52,13 @@ template <> class GetValueOf <bool> {public:
 #if defined (_MSC_VER) && _MSC_VER <=1200
 template <class T> class Holder {
 public:
-    typename GetValueOf<T>::type getAt (const T&t, int i) {
+    static typename GetValueOf<T>::type getAt (const T&t, int i) {
         return t.getAt(i);
     }
 };
 #define HOLDER(TYP) template <> class Holder<TYP> { \
 public: \
-    inline TYP getAt(TYP t, int i) { \
+    static TYP getAt(TYP t, int i) { \
         return t; \
     } \
 }
@@ -69,7 +69,7 @@ HOLDER(unsigned int);
 HOLDER(int);
 HOLDER(bool);
 template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
-    return Holder<T>().getAt(in,i);
+    return Holder<T>::getAt(in,i);
 }
 #else
 template <class T> static typename GetValueOf<T>::type GetAt (const T& in,int i) {
