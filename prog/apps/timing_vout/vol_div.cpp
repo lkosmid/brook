@@ -246,6 +246,7 @@ int volume_division (int argc, char ** argv) {
    std::vector<int> sizesy;
    // now we begin the actual algorithm
    ::brook::stream v(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
+   ::brook::stream vbak(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
    for (unsigned int rr=0;rr<3;++rr) {
      count=0;
      if (rr!=0)
@@ -310,8 +311,8 @@ int volume_division (int argc, char ** argv) {
             if (streamSize(v).y){
 
               if (use_vout_amplify) {
-                 ::brook::stream triangles=brook::stream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
-                 ::brook::stream trianglesFirst=brook::stream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+                 ::brook::stream triangles=quickAllocStream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
+                 ::brook::stream trianglesFirst=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
 
                 // multiply our width by 4x since we could output up to 4x
                 // of our original values
@@ -396,8 +397,14 @@ int volume_division (int argc, char ** argv) {
 
          int j;
          for (j=0;j<(int)vertexData.size();++j) {
-           streamWrite(vertexData[j],
-                       consolidateVertices(dat,streamSize(vertexData[j])));
+            if (rr!=2) {
+               streamWrite(vertexData[j],
+                           consolidateVertices(dat,streamSize(vertexData[j])));
+            }else {
+               float * k =(float*) malloc(dat.width*dat.height*sizeof(float3)*15);
+               streamWrite(vertexData[j],k);
+               
+            }
            if (j==0){
              stop = GetTimeMillis();
              printf ("Total time %f",(float)(stop-start));
