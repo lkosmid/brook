@@ -9,6 +9,11 @@
 #include "dx9/dx9.hpp"
 #include "nv30gl/nv30gl.hpp"
 #include "cpu/cpu.hpp"
+#include "brtscatterintrinsic.hpp"
+__StreamScatterAssign STREAM_SCATTERASSIGN;
+__StreamScatterAdd STREAM_SCATTER_ADD;
+__StreamScatterMul STREAM_SCATTER_MUL;
+
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";

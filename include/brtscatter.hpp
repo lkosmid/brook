@@ -2,26 +2,7 @@
 #define BRTSCATTER_HPP
 #include "brtvector.hpp"
 #include "brtarray.hpp"
-class __StreamScatterAssign {public:
-   template <class T> void operator () (T& out, const T& in)const{ 
-      out=in;
-   }
-};
-class __StreamScatterAdd {public:
-   template <class T> void operator () (T& out, const T& in)const{ 
-      out+=in;
-   }
-};
-class __StreamScatterMul {public:
-   template <class T> void operator () (T& out, const T& in)const{ 
-      out*=in;
-   }
-};
-
-
-static __StreamScatterAssign STREAM_SCATTER_ASSIGN;
-static __StreamScatterAdd STREAM_SCATTER_ADD;
-static __StreamScatterMul STREAM_SCATTER_MUL;
+#include "brtscatterintrinsic.hpp"
 #define STREAM_SCATTER_FLOAT_MUL STREAM_SCATTER_MUL
 #define STREAM_SCATTER_FLOAT_ADD STREAM_SCATTER_ADD
 #define STREAM_SCATTER_INTEGER_MUL STREAM_SCATTER_MUL
