@@ -12,10 +12,6 @@
 #include "main.h"
 #include "runkernel.h"
 
-/*
- * CPU Backend takes around 170 msecs / iteration at length 1024
- */
-#define NUM_RUNS 100
 
 /*
  * RunKernelKickKernel --
@@ -78,7 +74,7 @@ RunKernelKickBRT(void)
  */
 
 static void
-RunKernel1D(int streamLength)
+RunKernel1D(int streamLength, int nRuns)
 {
    float4 *data;
    float4 s<streamLength>, o<streamLength>;
@@ -95,15 +91,15 @@ RunKernel1D(int streamLength)
 
    start = GetTime();
    streamRead(s, data);
-   for (i = 0; i < NUM_RUNS; i++) {
+   for (i = 0; i < nRuns; i++) {
       RunKernelDouble(s, o);
    }
    streamWrite(o, data);
    stop = GetTime();
-   elapsed = ((int) (stop - start)) / (float) NUM_RUNS;
+   elapsed = ((int) (stop - start)) / (float) nRuns;
 
-   printf("RunKernel1D: Float4*2 took %d usecs at length %d (%.2f MOps/s)\n",
-          (int) elapsed, streamLength, (float) (streamLength / elapsed));
+   printf("   %d\t\t%.2f\t\t%d\n",
+          (int) elapsed, (float) (streamLength / elapsed), nRuns);
 
    for (i = 0; i < streamLength; i++) {
       if (data[i].x != (float) 2*i || data[i].y != data[i].x ||
@@ -124,7 +120,7 @@ RunKernel1D(int streamLength)
  */
 
 static void
-RunKernel2D(int streamLength)
+RunKernel2D(int streamLength, int nRuns)
 {
    float4 *data;
    float4 s<streamLength, streamLength>, o<streamLength, streamLength>;
@@ -145,16 +141,15 @@ RunKernel2D(int streamLength)
 
    start = GetTime();
    streamRead(s, data);
-   for (i = 0; i < NUM_RUNS; i++) {
+   for (i = 0; i < nRuns; i++) {
       RunKernelDouble(s, o);
    }
    streamWrite(o, data);
    stop = GetTime();
-   elapsed = ((int) (stop - start)) / (float) NUM_RUNS;
+   elapsed = ((int) (stop - start)) / (float) nRuns;
 
-   printf("RunKernel2D: Float4*2 took %d usecs at length %d (%.2f MOps/s)\n",
-          (int) elapsed, streamLength,
-          (float) (streamLength*streamLength / elapsed));
+   printf("   %d\t\t%.2f\t\t%d\n",
+          (int) elapsed, (float) (streamLength*streamLength / elapsed), nRuns);
 
    for (i = 0; i < streamLength; i++) {
       for (j = 0; j < streamLength; j++) {
@@ -182,19 +177,40 @@ RunKernel2D(int streamLength)
 void
 RunKernel_Time(int maxLength)
 {
+   static const int runLengths[] = { 50, 75, 100, /*150, 200*/ };
    static const int lengths[] = { 1, 4, 16, 64, 256, 512, 1024, 2048 };
    static const int numLengths = sizeof lengths / sizeof lengths[0];
-   int i;
+   static const int numRunLengths = sizeof runLengths / sizeof runLengths[0];
+   int i, j;
 
    RunKernelKickBRT();
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
-      RunKernel1D(lengths[i]);
+      printf("(* RunKernel1D streamLength %d *)\n", lengths[i]);
+      printf("(* usecs\tMOps/s\t\truns *)\n");
+      for (j = 0; j < numRunLengths; j++) {
+         RunKernel1D(lengths[i], runLengths[j]);
+      }
+      printf("\n");
    }
-   RunKernel1D(maxLength);
+   printf("(* RunKernel1D streamLength %d *)\n", maxLength);
+   printf("(* usecs\tMOps/s\t\truns *)\n");
+   for (j = 0; j < numRunLengths; j++) {
+      RunKernel1D(maxLength, runLengths[j]);
+   }
+   printf("\n");
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
-      RunKernel2D(lengths[i]);
+      printf("(* RunKernel2D streamLength %d *)\n", lengths[i]);
+      printf("(* usecs\tMOps/s\t\truns *)\n");
+      for (j = 0; j < numRunLengths; j++) {
+         RunKernel2D(lengths[i], runLengths[j]);
+      }
+      printf("\n");
    }
-   RunKernel2D(maxLength);
+   printf("(* RunKernel2D streamLength %d *)\n", maxLength);
+   printf("(* usecs\tMOps/s\t\truns *)\n");
+   for (j = 0; j < numRunLengths; j++) {
+      RunKernel2D(maxLength, runLengths[j]);
+   }
 }

@@ -75,13 +75,18 @@ main(int argc, char *argv[])
          exit(1);
       }
    }
-   std::cout << "Running tests with a length of " << length << ".\n";
 
    ReadWrite_Time(length);
-   //RunKernel_Time(length);
+   std::cout << std::endl;
+   RunKernel_Time(length);
+   std::cout << std::endl;
    //Blas_Time(length);
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);
+
+   //char c;
+   //std::cerr << "Press <ENTER> to exit\n";
+   //std::cin >> c;
 
    return 0;
 }

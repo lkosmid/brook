@@ -62,8 +62,8 @@ ReadWrite1D(int length)
    streamWrite(o, output);
    stop = GetTime();
 
-   printf("Read1D: Read / NOP / Write took %d usecs (%.2f MB/sec).\n",
-          (int) (stop - start), numBytes / (float) (stop - start));
+   printf("   %d\t\t%d\t\t%.2f\n",
+          length, (int) (stop - start), numBytes / (float) (stop - start));
 
    for (i = 0; i < length; i++) {
       if (in[i].x != output[i].x ||
@@ -74,6 +74,9 @@ ReadWrite1D(int length)
                  i, in[i].x, output[i].x);
       }
    }
+
+   free(in);
+   free(output);
 }
 
 
@@ -113,8 +116,8 @@ ReadWrite2D(int length)
    streamWrite(o, output);
    stop = GetTime();
 
-   printf("Read2D: Read / NOP / Write took %d usecs (%.2f MB/sec).\n",
-          (int) (stop - start), numBytes / (float) (stop - start));
+   printf("   %d\t\t%d\t\t%.2f\n",
+          length, (int) (stop - start), numBytes / (float) (stop - start));
 
    for (i = 0; i < length; i++) {
       for (j = 0; j < length; j++) {
@@ -128,20 +131,37 @@ ReadWrite2D(int length)
              cur_in.w != cur_out.w) {
             fprintf(stderr, "ReadWrite2D: Mismatch %d, %d.  In: %f, Out: %f\n",
                     i, j, cur_in.x, cur_out.x);
-            exit (1);
          }
       }
    }
+
+   free(in);
+   free(output);
 }
 
 void
-ReadWrite_Time(int length)
+ReadWrite_Time(int maxLength)
 {
+   static const int lengths[] = { 1, 4, 16, 64, 256, 512, 1024, 2048 };
+   static const int numLengths = sizeof lengths / sizeof lengths[0];
    float4 s<1>, o<1>;
+   int i;
 
    /* Prevent kernel cold start costs from inflating ReadWrite1D() */
    ReadWriteNOP(s, o);
 
-   ReadWrite1D(length);
-   ReadWrite2D(length);
+   printf("(* ReadWrite1D: (max length %d) *)\n(* length\tusecs\t\tMB/sec *)\n",
+          maxLength);
+   for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
+      ReadWrite1D(lengths[i]);
+   }
+   ReadWrite1D(maxLength);
+   printf("\n");
+
+   printf("(* ReadWrite2D: (max length %d) *)\n(* length\tusecs\t\tMB/sec *)\n",
+          maxLength);
+   for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
+      ReadWrite2D(lengths[i]);
+   }
+   ReadWrite2D(maxLength);
 }
