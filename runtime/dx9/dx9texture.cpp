@@ -206,7 +206,7 @@ void DX9Texture::getPixelAt( int x, int y, float4& outResult ) {
 	DX9CheckResult( result );
 }
 
-DX9Rect DX9Texture::getReductionTextureSubRect( int xOffset, int axisMin, int otherMin, int axisMax, int otherMax,
+DX9Rect DX9Texture::getReductionTextureSubRect( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax,
   int axisInterlace, int otherInterlace, int axis )
 {
   int rect[4];
@@ -217,12 +217,14 @@ DX9Rect DX9Texture::getReductionTextureSubRect( int xOffset, int axisMin, int ot
   rect[2 + (1-axis)] = otherMax;
   rect[0] += xOffset;
   rect[2] += xOffset;
+  rect[1] += yOffset;
+  rect[3] += yOffset;
   interlace[axis] = axisInterlace;
   interlace[1-axis] = otherInterlace;
   return getInterlacedTextureSubRect( rect[0], rect[1], rect[2], rect[3], interlace[0], interlace[1] );
 }
 
-DX9Rect DX9Texture::getReductionSurfaceSubRect( int xOffset, int axisMin, int otherMin, int axisMax, int otherMax, int axis )
+DX9Rect DX9Texture::getReductionSurfaceSubRect( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int axis )
 {
   int rect[4];
   rect[0 + (axis)] = axisMin;
@@ -231,6 +233,8 @@ DX9Rect DX9Texture::getReductionSurfaceSubRect( int xOffset, int axisMin, int ot
   rect[2 + (1-axis)] = otherMax;
   rect[0] += xOffset;
   rect[2] += xOffset;
+  rect[1] += yOffset;
+  rect[3] += yOffset;
   return getSurfaceSubRect( rect[0], rect[1], rect[2], rect[3] );
 }
 

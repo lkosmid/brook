@@ -13,7 +13,7 @@ namespace brook {
 
   enum {
     kDX9ReductionBufferWidth = 1024,
-    kDX9ReductionBufferHeight = 512
+    kDX9ReductionBufferHeight = 1024
   };
 
   class DX9Kernel : public Kernel {
@@ -47,9 +47,24 @@ namespace brook {
     void ReduceToStream();
     void ReduceToValue();
 
+    void ReduceDimension( int& ioReductionBufferSide,
+      int inReductionTex0, int inReductionTex1,
+      int inDimensionCount, int inDimensionToReduce,
+      int inExtentToReduceTo, int* ioRemainingExtents );
+
     void ReduceDimensionToOne( int& ioReductionBufferSide,
       int inReductionTex0, int inReductionTex1,
       int inDimensionCount, int inDimensionToReduce, int* ioRemainingExtents );
+
+    void BindReductionBaseState();
+    void CopyStreamIntoReductionBuffer( DX9Stream* inStream );
+    void BindReductionPassthroughState();
+    void BindReductionOperationState();
+
+    void DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int dim );
+    void DumpReduceToOneState( int currentSide, int* slop, int core, int other, int dim );
+    void DumpReduceDimensionState( int currentSide, int outputExtent,
+      int remainingExtent, int remainingOtherExtent, int slopBufferCount, int dim );
 
     int argumentSamplerIndex;
     int argumentTexCoordIndex;

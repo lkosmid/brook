@@ -84,9 +84,17 @@ namespace brook {
     DX9Fail( "HRESULT failure - %s(%d): %s\n", fileName, lineNumber, comment );
   }
 
+  inline void DX9AssertImpl( const char* fileName, int lineNumber, const char* comment )
+  {
+    DX9Fail( "DX9 assertion failed - %s(%d): %s\n", fileName, lineNumber, comment );
+  }
+
   #define DX9CheckResult( _result ) \
-    DX9CheckResultImpl( _result, __FILE__, __LINE__ );
+    DX9CheckResultImpl( _result, __FILE__, __LINE__ )
 
   #define DX9AssertResult( _result, _comment ) \
-    DX9CheckResultImpl( _result, __FILE__, __LINE__, _comment );
+    DX9CheckResultImpl( _result, __FILE__, __LINE__, _comment )
+
+  #define DX9Assert( _condition, _message ) \
+    if(_condition) {} else DX9AssertImpl( __FILE__, __LINE__, _message )
 }

@@ -41,8 +41,8 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int e
     height = 1;
     break;
   case 2:
-    width = extents[0];
-    height = extents[1];
+    width = extents[1];
+    height = extents[0];
     break;
   default:
     width = 1;
