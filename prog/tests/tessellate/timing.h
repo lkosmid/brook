@@ -21,19 +21,6 @@ typedef __int64 int64;
 typedef long long int64;
 #endif
 int64 timerRes;
-#ifdef WIN32
-static inline
-int64 GetTimeTSC() {
-   __asm _emit 0x0f __asm _emit 0x31
-}
-#else
-static inline
-int64 GetTimeTSC() {
-   int64 t;
-   __asm__ __volatile__("rdtsc" : "=A" (t));
-   return t;
-}
-#endif
 int64 stop;
 int64 start;
 
@@ -124,39 +111,3 @@ unsigned int GetTimeMillis () {
 #endif
 
 
-/*
- * CyclesToUsecs --
- *
- *      Simple function to convert clock cycles to usecs.  We rely upon
- *      GetTimeMillis() to be fairly accurate over a medium duration Sleep()
- *      and then compute the MHz rating once based on that.
- */
-
-int64
-CyclesToUsecs(int64 cycles)
-{
-   static double Hz;
-
-   if (Hz == 0) {
-      int64 cCount;
-      int msCount;
-
-      cCount = GetTimeTSC();
-      msCount = GetTimeMillis();
-#ifdef WIN32
-      Sleep(100);
-#else
-      usleep(100 * 1000);
-#endif
-      cCount = GetTimeTSC() - cCount;
-      msCount = GetTimeMillis() - msCount;
-      Hz = cCount * 1000 / (double) msCount;
-
-#if 0
-      std::cerr << "Your CPU is roughly "
-                << (int) (Hz / 1000000) << " MHz.\n";
-#endif
-   }
-
-   return (int64) (1000000 * cycles / Hz);
-}
