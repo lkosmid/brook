@@ -14,7 +14,7 @@
 unsigned int debug_vout = 0;
 
 
-#define debugStreamPrint(stream,title) if (debug_vout) {printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n");  }
+#define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
 
 
 kernel void kernelReadItem (float items[][], float2 index, out float item<>) {
@@ -285,11 +285,13 @@ float shiftValuesfloat(float list_stream <>,
       width = size/LENGTH+((size%LENGTH)?1:0);
       if (1) {
         float proper_output_stream<width,LENGTH>;
-        RelativeGatherfloat(proper_output_stream,
-                               logN%2==0?ret_stream:guess_stream,
-                               list_stream,
-                               float2((float)sign,1.0f/(float)floor(.5)),
-                               maxvalue);
+        if (width) {
+          RelativeGatherfloat(proper_output_stream,
+                                 logN%2==0?ret_stream:guess_stream,
+                                 list_stream,
+                                 float2((float)sign,1.0f/(float)floor(.5)),
+                                 maxvalue);
+        }
         streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
@@ -1282,11 +1284,13 @@ float shiftValuesfloat2(float2 list_stream <>,
       width = size/LENGTH+((size%LENGTH)?1:0);
       if (1) {
         float2 proper_output_stream<width,LENGTH>;
-        RelativeGatherfloat2(proper_output_stream,
-                               logN%2==0?ret_stream:guess_stream,
-                               list_stream,
-                               float2((float)sign,1.0f/(float)floor(.5)),
-                               maxvalue);
+        if (width) {
+          RelativeGatherfloat2(proper_output_stream,
+                                 logN%2==0?ret_stream:guess_stream,
+                                 list_stream,
+                                 float2((float)sign,1.0f/(float)floor(.5)),
+                                 maxvalue);
+        }
         streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
@@ -2279,11 +2283,13 @@ float shiftValuesfloat3(float3 list_stream <>,
       width = size/LENGTH+((size%LENGTH)?1:0);
       if (1) {
         float3 proper_output_stream<width,LENGTH>;
-        RelativeGatherfloat3(proper_output_stream,
-                               logN%2==0?ret_stream:guess_stream,
-                               list_stream,
-                               float2((float)sign,1.0f/(float)floor(.5)),
-                               maxvalue);
+        if (width) {
+          RelativeGatherfloat3(proper_output_stream,
+                                 logN%2==0?ret_stream:guess_stream,
+                                 list_stream,
+                                 float2((float)sign,1.0f/(float)floor(.5)),
+                                 maxvalue);
+        }
         streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
@@ -3276,11 +3282,13 @@ float shiftValuesfloat4(float4 list_stream <>,
       width = size/LENGTH+((size%LENGTH)?1:0);
       if (1) {
         float4 proper_output_stream<width,LENGTH>;
-        RelativeGatherfloat4(proper_output_stream,
-                               logN%2==0?ret_stream:guess_stream,
-                               list_stream,
-                               float2((float)sign,1.0f/(float)floor(.5)),
-                               maxvalue);
+        if (width) {
+          RelativeGatherfloat4(proper_output_stream,
+                                 logN%2==0?ret_stream:guess_stream,
+                                 list_stream,
+                                 float2((float)sign,1.0f/(float)floor(.5)),
+                                 maxvalue);
+        }
         streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
