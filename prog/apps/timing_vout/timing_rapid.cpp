@@ -113,6 +113,8 @@ void  Broken()
   printf("Breaking\n");
 }
 extern bool debug_rapid;
+extern int count;
+extern bool firstRound;
 
 extern int  checkPassCorrectness(Traverser *, int , int );
 unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsigned int  bboxwidt1, unsigned int  bboxheit1, BBox  *bboxest1, unsigned int  widt2, unsigned int  heit2, Tri  *t2, unsigned int  bboxwidt2, unsigned int  bboxheit2, BBox  *bboxest2, float3  rX, float3  rY, float3  rZ, float3  trans, float3  csRapidColliderrX, float3  csRapidColliderrY, float3  csRapidColliderrZ, float3  csRapidColliderT, float4  **intersections)
@@ -144,6 +146,9 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
   vector <brook::stream> hitsT;
   int lim = debug_rapid?3:5;
   for (int rr=0;rr<lim;++rr) {
+    count=0;
+    if (rr!=0)
+      firstRound=false;
     Traverser  baseTraverser;
 
     if (rr==0) {

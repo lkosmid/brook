@@ -18,7 +18,6 @@ extern unsigned int doCollide(unsigned int wida, unsigned int heia, Tri * a,
 float3 convertVec(csVector3 v){
   return float3 (v.x,v.y,v.z);
 }
-
 int rapidCollideMain (int argc, char ** argv) {
    float angle=90;
    int i;
