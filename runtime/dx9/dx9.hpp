@@ -29,13 +29,13 @@ namespace brook {
   class DX9Kernel : public Kernel {
   public:
     DX9Kernel(DX9RunTime* runtime, const void* source[]);
-    virtual void PushStream(const Stream *s);
+    virtual void PushStream(Stream *s);
     virtual void PushConstant(const float &val);  
     virtual void PushConstant(const float2 &val);  
     virtual void PushConstant(const float3 &val); 
     virtual void PushConstant(const float4 &val);
-    virtual void PushGatherStream(const Stream *s);
-    virtual void PushOutput(const Stream *s);
+    virtual void PushGatherStream(Stream *s);
+    virtual void PushOutput(Stream *s);
     virtual void Map();
     virtual void Release() {}
 

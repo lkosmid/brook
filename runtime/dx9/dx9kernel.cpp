@@ -30,7 +30,7 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
   DX9Fail("DXKernel failure - no DX9 program string found");
 }
 
-void DX9Kernel::PushStream(const Stream *s) {
+void DX9Kernel::PushStream(Stream *s) {
   DX9Trace("PushInput");
   int arg = argumentStreamIndex++;
 
@@ -77,7 +77,7 @@ void DX9Kernel::PushConstant(const float4 &val) {
   inputConstants[constantIndex] = val;
 }
 
-void DX9Kernel::PushGatherStream(const Stream *s) {
+void DX9Kernel::PushGatherStream(Stream *s) {
   DX9Trace("PushGatherStream");
   int arg = argumentStreamIndex++;
   
@@ -88,7 +88,7 @@ void DX9Kernel::PushGatherStream(const Stream *s) {
   inputTextures[textureUnit] = textureHandle;
 }
 
-void DX9Kernel::PushOutput(const Stream *s) {
+void DX9Kernel::PushOutput(Stream *s) {
   DX9Trace("PushOutput");
   int arg = argumentOutputIndex++;
 

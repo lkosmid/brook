@@ -24,13 +24,13 @@ namespace brook {
   class Kernel {
   public:
     Kernel() {}
-    virtual void PushStream(const Stream *s) = 0;
+    virtual void PushStream(Stream *s) = 0;
     virtual void PushConstant(const float &val) = 0;  
     virtual void PushConstant(const float2 &val) = 0;  
     virtual void PushConstant(const float3 &val) = 0; 
     virtual void PushConstant(const float4 &val) = 0;
-    virtual void PushGatherStream(const Stream *s) = 0;
-    virtual void PushOutput(const Stream *s) = 0;
+    virtual void PushGatherStream(Stream *s) = 0;
+    virtual void PushOutput(Stream *s) = 0;
     virtual void Map() = 0;
     virtual void Release() = 0;
 

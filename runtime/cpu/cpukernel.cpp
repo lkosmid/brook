@@ -19,8 +19,8 @@ namespace brook{
 	}
         extent=0;
     }
-    void CPUKernel::PushStream(const Stream *constStream){
-        Stream * s = const_cast<Stream*>(constStream);
+    void CPUKernel::PushStream(Stream *s){
+      //        Stream * s = const_cast<Stream*>(constStream);
         args.push_back(s->getData(Stream::READ));
 	unsigned int total_size=s->getTotalSize();
 	if (extent==0)
@@ -42,11 +42,10 @@ namespace brook{
     void CPUKernel::PushConstant(const float4 &val){
         args.push_back(const_cast<float4*>(&val));
     }
-    void CPUKernel::PushGatherStream(const Stream *s){
-        args.push_back(const_cast<Stream*>(s));
+    void CPUKernel::PushGatherStream(Stream *s){
+        args.push_back(s);
     }
-    void CPUKernel::PushOutput(const Stream *constStream){
-        Stream * s = const_cast<Stream*>(constStream);
+    void CPUKernel::PushOutput(Stream *s){
         args.push_back(s->getData(Stream::WRITE));
 	unsigned int total_size=s->getTotalSize();
 	if (extent==0)

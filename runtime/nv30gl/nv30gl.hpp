@@ -11,13 +11,13 @@ namespace brook {
   class NV30GLKernel : public Kernel {
   public:
     NV30GLKernel();
-    virtual void PushStream(const Stream *s);
+    virtual void PushStream(Stream *s);
     virtual void PushConstant(const float &val);  
     virtual void PushConstant(const float2 &val);  
     virtual void PushConstant(const float3 &val); 
     virtual void PushConstant(const float4 &val);
-    virtual void PushGatherStream(const Stream *s);
-    virtual void PushOutput(const Stream *s);
+    virtual void PushGatherStream(Stream *s);
+    virtual void PushOutput(Stream *s);
     virtual void Map();
     virtual void Release() {}
     
