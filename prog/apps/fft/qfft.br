@@ -74,11 +74,11 @@ DFTXi (float4 sr<>,
       float4 si<>,
       float2 W<>,
       out float4 s_prime<>, 
-      iter float2 s_index<>) {
+      iter float2 s_index<>,float scale) {
   float2 temp= round(fmod(s_index.x,2))==1;
   float4 r,t;
   r = sr; t = si;
-  s_prime=conjugate2(DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W));
+  s_prime=conjugate2(DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W))*scale;
 } 
 kernel void
 iDFTX (float4 csr<>, 
@@ -121,11 +121,11 @@ rDFTXi (float4 sr<>,
       float4 si<>,
       float2 W<>,
       out float4 s_prime<>, 
-      iter float2 s_index<>) {
+      iter float2 s_index<>,float scale) {
   float2 temp= round(fmod(s_index.x,2))==1;
   float4 r,t;
   r = sr; t = si;
-  s_prime=conjugate2(rDoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W));
+  s_prime=conjugate2(rDoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W))*scale;
 } 
 
 kernel void
@@ -201,18 +201,18 @@ DFTYi (float4 sr<>,
       float4 si<>,
       float2 W<>,
       out float4 s_prime<>, 
-      iter float2 s_index<>) {
+      iter float2 s_index<>, float scale) {
    float4 r = sr; 
    float4 t = si;
    float4 tw= mult_complex2(t,W);
-   s_prime=conjugate2(r+((round(fmod(s_index.y,2))!=1)?tw:-tw));
+   s_prime=conjugate2(r+((round(fmod(s_index.y,2))!=1)?tw:-tw))*scale;
 } 
 kernel void
 rDFTYi (float4 sr<>, 
       float4 si<>,
       float2 W<>,
       out float4 s_prime<>, 
-      iter float2 s_index<>) {
+      iter float2 s_index<>,float scale) {
    float4 r = sr; 
    float4 t = si;
    s_prime=mult_complex2(r-t,W);
@@ -221,7 +221,7 @@ rDFTYi (float4 sr<>,
        //overwrite s_prime
        s_prime=r+t;
    }
-   s_prime = conjugate2(s_prime);
+   s_prime = conjugate2(s_prime)*scale;
 } 
 
 kernel void optBitReverseY (out float4 s_out<>,
@@ -372,7 +372,7 @@ kernel void setOne(float4 indata<>,
   // float4 zero = {0.0,0.0,0.0,0.0};
   //	float zeroit= (abs(negtopos.x)>.95||abs(negtopos.y)>.95)&&(i.x>0&&i.y>0);
   //outdata = zeroit.xxxx?zero:indata/scale;
-  outdata=indata*exp (-dot(negtopos,negtopos));
+  outdata=indata*exp (-dot(negtopos,negtopos))*scale;
 }
 void generatePlan(float4 bitreversal<>,
                   int logN,
@@ -407,8 +407,8 @@ void computeFFT2d(float4 (*input)<>,
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
            int invert=inv&&nPassCounter==0;
            do_backwards
-                 ?(invert?irDFTY:rDFTY)(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,true),*output,s_iter)
-                 :(invert?iDFTY:DFTY)(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,false),*output,s_iter);
+                 ?(invert?irDFTY:rDFTY)(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,do_backwards),*output,s_iter)
+                 :(invert?iDFTY:DFTY)(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,do_backwards),*output,s_iter);
             if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
                streamPrint(*output);
@@ -423,9 +423,9 @@ void computeFFT2d(float4 (*input)<>,
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
            int invert=inv&&nPassCounter==nPass-1;
-           do_backwards
-                 ?(invert?rDFTXi:rDFTX)(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,true),*output,s_iter)
-                 :(invert?DFTXi:DFTX)(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,false),*output,s_iter);
+           invert
+                 ?(do_backwards?rDFTXi:DFTXi)(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,do_backwards),*output,s_iter,(float)((double)1./(M*N)))
+                 :(do_backwards?rDFTX:DFTX)(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,do_backwards),*output,s_iter);
             if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
                streamPrint(*output);
@@ -452,7 +452,7 @@ void blur (float4 freqSpace<>,
            float2 clampsize;
            clampsize.x = (float)(M/4);
            clampsize.y = (float)(N/2);
-           setZero(freqSpace,freqSpace,normalized,negtopos,clampsize,(float)(M*N),7.2,1);
+           setZero(freqSpace,freqSpace,normalized,negtopos,clampsize,1.0/*(float)(M*N)*/,7.2,1);
 }
 void edgeDetect (float4 freqSpace<>,
            int N, int M) {
@@ -479,16 +479,20 @@ void blur2d(float2 *input,
    streamRead(s,input);   
    generatePlan(bitreversal,logN,logM);
    computeFFT2d(&s,&s_out,logN,logM,N,M,bitreversal,0);
+   if (debug_fft) {
+        printf("\nStream Output\n");
+        streamPrint(s_out);
+   }
    {//perform the blur
      if (edgedetect==0)
          blur(s_out,N,M);
      else if (edgedetect==2) 
-         scale2d(s_out,s_out,(float)(N*M));
+       ;//scale2d(s_out,s_out,(float)(N*M));
      else
          edgeDetect(s_out,N,M);
      streamSwap(s,s_out);
    }
-   computeFFT2d(&s,&s_out,logN,logM,N,M,bitreversal,0);
+   computeFFT2d(&s,&s_out,logN,logM,N,M,bitreversal,1);
    if (output)
       streamWrite(s_out,output); 
    if (debug_fft) {
@@ -518,34 +522,40 @@ unsigned char float2char(float x) {
 	return (char)(clamp(x)*255);
 }
 int maino (int argc, char **argv) {
-  int numdat=(argc-1)/2;
-  float4 *data = (float4*)malloc(sizeof(float)*numdat*4);
-  int i,logm,logn,N=numdat,M=2;
+  int N=atoi(argv[1]);
+  int M=atoi(argv[2]);
+  int numdat=N*M;
+  float4 *data = (float4*)malloc(sizeof(float4)*numdat);
+  int i,logm,logn;
   float4 s<N,(M/2)>;
   float4 s_out<N,(M/2)>;
   float4 bitreversal<(M/2>N?M/2:N)>;
-  for (i=1;i<argc;i+=2) {
-    data[(i-1)/2].x=(float)atof(argv[i]);
-    data[(i-1)/2].y=(float)atof(argv[i+1]);
-    data[(i-1)/2].z=(float)atof(argv[i]);
-    data[(i-1)/2].w=(float)atof(argv[i+1]);
+  srand(1024);
+  for (i=0;i<numdat;i++) {
+    data[i].x=(float)(rand()%10);
+    data[i].y=(float)(rand()%10);
+    data[i].z=(float)(rand()%10);
+    data[i].w=(float)(rand()%10);
   }
   /*
   printf("input: ");
   for (i=0;i<numdat;++i) {
     printf ("(%.2f, %.2f)",data[i].x,data[i].y);
     }*/
-  for (i=1,logn=0;i<1;i*=2,++logn);
-  for (i=1,logm=0;i<numdat;i*=2,++logn);
+  for (i=1,logn=0;i<N;i*=2,++logn);
+  for (i=1,logm=0;i<M;i*=2,++logm);
   streamRead(s,data);   
   generatePlan(bitreversal,logn,logm);
-  computeFFT2d(&s,&s_out,logn,logm,N,M,bitreversal,0);
-  streamWrite(s_out,data);
+  computeFFT2d(&s,&s_out,logn,logm,N,M,bitreversal,1);
+  printf ("\nOutput\n");
+  streamPrint(s_out);
+  /*
   printf ("\n outpt: ");
   for (i=0;i<numdat;++i) {
     printf ("%.2f %.2f] ",data[i].x,data[i].y);
-  }
+    }
   free(data);
+  */
   return 0;
 }
 int main (int argc, char ** argv) {
