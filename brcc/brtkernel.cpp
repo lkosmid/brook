@@ -312,6 +312,9 @@ BRTGPUKernelCode::printCodeForType(std::ostream& out,
    }
 }
 
+#if 0
+// These functions no longer seem to be used
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function prints out the type of a variable from a stream passed in
 // it may optionally add indirection.
@@ -342,6 +345,7 @@ static Symbol getSymbol(std::string in) {
   name.name = in;
   return name;
 }
+#endif
 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
