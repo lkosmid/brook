@@ -66,9 +66,9 @@ void readPPM3dSlice(const ppm &fp,
       readindata+=size+size+size;
       fread(readindata, size, 1, fp.fp);
       for (unsigned int i=0;i<size;++i) {
-         data[i]=readindata[i]/255.0f;//because we only support float format!
+         data[i]=readindata[i]/255.0f-.5f;//because we only support float format!
       }
-   }else for (unsigned int i=0;i<size;++i) data[i] = ((float)rand())/RAND_MAX;
+   }else for (unsigned int i=0;i<size;++i) data[i] = ((float)rand())/RAND_MAX-.5f;
 }
 void closePPM (const ppm &fp) {
    fclose (fp.fp);

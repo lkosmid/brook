@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-unsigned int debug_vout = 0;
+unsigned int debug_vout = 1;
 
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }

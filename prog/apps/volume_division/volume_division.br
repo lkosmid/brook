@@ -60,12 +60,50 @@ kernel float evaluateNeighbors (float2 center<>,
    return a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f)?a:0;
     
 }
-kernel void processSlice (float curslice<>, 
-                          float curgather[][],
+kernel void processSlice (float curgather[][],
                           float nextslice[][],
                           vout [1]float4 vertex<>,
                           iter float2 center<>,
-                          iter float2 corner<>) {
+                          iter float2 up<>,
+                          iter float2 forward<>,
+                          iter float2 upforward<>,
+                          float2 slice) {
+  float a=
+    test(curgather[center],2.0f)+
+    test(curgather[up],4.0f)+
+    test(curgather[upforward],8.0f)+
+    test(curgather[forward],16.0f)+
+    test(nextslice[center],32.0f)+
+    test(nextslice[up],64.0f)+
+    test(nextslice[upforward],128.0f)+
+    test(nextslice[forward],256.0);
+  if (a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f)) {
+    vertex=float4(center.x,center.y,slice.x,a);
+    push(vertex);
+  }
+}
+kernel void processSliceNoCompact (float curgather[][],
+                                   float nextslice[][],
+                                   out float4 vertex<>,
+                                   iter float2 center<>,
+                                   iter float2 up<>,
+                                   iter float2 forward<>,
+                                   iter float2 upforward<>,
+                                   float2 slice) {
+  float a=
+    test(curgather[center],2.0f)+
+    test(curgather[up],4.0f)+
+    test(curgather[upforward],8.0f)+
+    test(curgather[forward],16.0f)+
+    test(nextslice[center],32.0f)+
+    test(nextslice[up],64.0f)+
+    test(nextslice[upforward],128.0f)+
+    test(nextslice[forward],256.0);
+  if (a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f)) {
+    vertex=float4(center.x,center.y,slice.x,a);
+  }else {
+    vertex=float4(-1,-1,-1,-1);
+  }
   
 }
                            
@@ -114,29 +152,44 @@ float tof (int a) {
       slice = mallocSlice(dat);
       {
          unsigned int i;
+         float2 sliceZ;
          float cur<(dat.height),(dat.width)>;
          float next<(dat.height),(dat.width)>;
          float4 v<1,(dat.width)>;
-         iter float2 curiter <(dat.height),(dat.width)> = iter (float2(0.0f,0.0f),
-                                                           float2(dat.width,
-                                                                  dat.height));
-         iter float2 nextiter <(dat.height),(dat.width)> = iter (float2(1.0f,1.0f),
-                                                           float2(1.0f+dat.width,
-                                                                  1.0f+dat.height));
+         iter float2 center <(dat.height),(dat.width)> 
+           = iter (float2(0.0f,0.0f),
+                   float2(tof(dat.width),
+                          tof(dat.height)));
+         iter float2 up <(dat.height),(dat.width)> 
+           = iter (float2(0.0f,1.0f),
+                   float2(0.0f+tof(dat.width),
+                          1.0f+tof(dat.height)));
+         iter float2 upforward <(dat.height),(dat.width)> 
+           = iter (float2(1.0f,1.0f),
+                   float2(1.0f+tof(dat.width),
+                          1.0f+tof(dat.height)));
+         iter float2 forward <(dat.height),(dat.width)> 
+           = iter (float2(1.0f,0.0f),
+                   float2(1.0f+tof(dat.width),
+                          tof(dat.height)));
                                                          
          readPPM3dSlice(dat,0,slice);
          streamRead(cur,slice);
+
+         sliceZ.x=sliceZ.y=0.0f;
          for (i=0;i<dat.depth-1;++i) {
             readPPM3dSlice(dat,i+1,slice);
             streamSwap(cur,next);
             streamRead(next,slice);
-            processSlice(cur,cur,next,v,curiter,nextiter);
+            processSlice(cur,next,v,center,up,upforward,forward,sliceZ);
             streamWrite(v,consolidateVertices(dat,streamSize(v)));
+            sliceZ.x++;sliceZ.y++;
          }
-         processSlice(next,next,next,v,curiter,nextiter);
+         processSlice(next,next,v,center,up,upforward,forward,sliceZ);
          streamWrite(v,consolidateVertices(dat,streamSize(v)));         
       }
       free(slice);
+      printVolume(dat);
    }else {
      int width=atoi (argv[1]);
      int depth=atoi (argv[2]);
