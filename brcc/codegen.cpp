@@ -68,12 +68,11 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
        args[i]->form->getBase()->qualifier &= ~TQ_Iter;
        args[i]->form->printBase(cg, 0);
        args[i]->form->getBase()->qualifier = qual;
-       cg << *args[i]->name << " : TEX"
-          << (texcoord < 1) ? texcoord++ : texcoord;
+       cg << *args[i]->name << " : TEX" << texcoord++;
      } else if (args[i]->isStream()) {
        cg << "uniform texobjRECT _tex_" << *args[i]->name << ",\n\t\t";
        cg << "float2 _tex_" << *args[i]->name << "_pos : TEX"
-          << (texcoord < 1) ? texcoord++ : texcoord;
+          << texcoord++;
      } else {
        cg << "uniform ";
        args[i]->print(cg, true);
