@@ -1004,11 +1004,6 @@ comma_expr:  assign_expr
 
 prim_expr:  ident
         {
-            if ($1->entry == NULL)
-            {
-                yywarn("Undeclared variable");
-            }
-
             $$ = new Variable($1,NoLocation);
         }
          |  paren_expr
