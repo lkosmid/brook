@@ -14,12 +14,7 @@
 unsigned int debug_vout = 0;
 
 
-#define debugStreamPrint(stream,title) \
-   if (debug_vout) { \
-      printf ("%s\n",title); \
-      streamPrint(stream,1); \
-      printf ("\n\n"); \
-   }
+#define debugStreamPrint(stream,title) if (debug_vout) printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n");  }
 
 
 kernel void kernelReadItem (float items[][], float2 index, out float item<>) {
