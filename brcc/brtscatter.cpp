@@ -51,8 +51,9 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
                   std::cerr << "Function args must be stream variables";
                   assert (0);
                }
-               char symbolAppend[3]={'1',0,0};
+               char symbolAppend[4]={'1',0,0,0};
                char indexDimension='1';
+               
                if (strm->name->entry) {
                   Decl * uVarDecl;
                   if ((uVarDecl=strm->name->entry->uVarDecl)!=0) {
@@ -69,7 +70,8 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
                if (fc->args[1]->etype==ET_Variable) {
                   Variable * v=static_cast<Variable*>(fc->args[1]);
                   if (v->name->entry&&v->name->entry->uVarDecl) {
-                     BaseTypeSpec typ= v->name->entry->uVarDecl->form->getBase()->typemask;
+                     BaseType * base=v->name->entry->uVarDecl->form->getBase();
+                     BaseTypeSpec typ= base->typemask;
                      if (typ&BT_Float4) {
                         indexDimension='4';
                      }else if (typ&BT_Float3) {
@@ -77,7 +79,10 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
                      }else if (typ&BT_Float2) {
                         indexDimension='2';
                      }
-                    
+                     if ((base->getQualifiers()&TQ_Iter)!=0||
+                         v->name->entry->uVarDecl->form->type==TT_BrtIter) {
+                        symbolAppend[2]='I';
+                     }
                   }
                }
                if (fc->args[3]->etype==ET_Variable) {
