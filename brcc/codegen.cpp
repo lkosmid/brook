@@ -107,7 +107,8 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 
   /* Print the argument list */
   texcoord = 0;
-  for (int i=0; i < nArgs; i++) {
+  int i;
+  for (i=0; i < nArgs; i++) {
      /* Don't put the output in the argument list */
      if (args[i]->form->getQualifiers() & TQ_Out) {
         outArg = args[i];
