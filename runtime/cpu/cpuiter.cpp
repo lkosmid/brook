@@ -29,8 +29,8 @@ namespace brook {
          for (i[0]=0;i[0]<extents[0];++i[0]) {
             for (i[1]=0;i[1]<extents[1];++i[1]) {
                for (unsigned int k=0;k<2;++k) {
-                  float f= lerp (i[k],extents[k],ranges[k],ranges[2+k]);
-                  data[(i[0]*extents[1]+i[1])*2+k]=f;
+                  float f= lerp (i[k],extents[k],ranges[1-k],ranges[3-k]);
+                  data[(i[0]*extents[1]+i[1])*2+1-k]=f;
                }
             }
          }

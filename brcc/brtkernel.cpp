@@ -19,6 +19,7 @@
 #include "brtexpress.h"
 #include "codegen.h"
 #include "main.h"
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::string whiteout (std::string s) {
    for (unsigned int i=0;i<s.length();++i) {
@@ -27,8 +28,14 @@ std::string whiteout (std::string s) {
    return s;
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// checks if a function is a gather stream
 extern bool recursiveIsGather(Type*);
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function finds out which argument to the function def is the
+// one that will decide how other streams stretch. For maps that's the out
+// for reductions that's the input.
 unsigned int getReferenceStream(FunctionDef * fDef) {
    FunctionType * ft= static_cast<FunctionType*>(fDef->decl->form);
    unsigned int ret=0;
@@ -38,9 +45,9 @@ unsigned int getReferenceStream(FunctionDef * fDef) {
          continue;
       if (ft->args[i]->isStream()){
          found=true;
-         ret=i;//consolation prize
+         ret=i;//consolation prize (reduction? maybe)
          if ((ft->args[i]->form->getQualifiers()&TQ_Out)!=0) {
-            return i;//jack pot
+            return i;//jack pot (map!)
          }
       }
    }
@@ -98,7 +105,9 @@ static Variable * NewGatherArg (Variable * v) {
    
 }
 
-
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints the code of an internally callable kernel
+// from within another kernel.
 void BRTPS20KernelCode::printInnerCode (std::ostream&out) const {
    int i;
    std::string myvoid("void  ");
@@ -134,10 +143,17 @@ void BRTPS20KernelCode::printInnerCode (std::ostream&out) const {
    out << ")"<<std::endl;
    fDef->Block::print(out,0);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// Not yet implemented. XXX fixme -- probable should do the same
 void BRTFP30KernelCode::printInnerCode (std::ostream&out) const {
    //nothing happens.
 }
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function converts gathers into scale and bias expressions
+// This function converts function calls' gathers into two args.
+// This function adds the indexof items to function calls requriing indexof
 Expression *
 BRTPS20KernelCode::ConvertGathers (Expression *expr) {
   BrtGatherExpr *gather;
@@ -234,6 +250,7 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
   return expr;
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTPS20KernelCode::printCode(std::ostream& out) const
 {
@@ -260,7 +277,9 @@ BRTPS20KernelCode::printCode(std::ostream& out) const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void printType (std::ostream & out, 
+// This function prints out the type of a variable from a stream passed in
+// it may optionally add indirection.
+static void printType (std::ostream & out, 
                 Type * t, 
                 bool addIndirection, 
                 std::string name ="") {
@@ -303,16 +322,28 @@ bool recursiveIsArrayType(Type * form) {
 bool BRTCPUKernelCode::PrintCPUArg::isGather() {
 	return recursiveIsGather(a->form);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// The cpu args are already translated since all call sites are changed
+// to be postfixed with __cpu_inner
 void BRTCPUKernelCode::printInnerCode (std::ostream&out) const {
-   //nothing happens: you fail to obtain anything
+   //nothing happens: you fail to obtain anything!
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool BRTCPUKernelCode::PrintCPUArg::isArrayType() {
       return recursiveIsArrayType(a->form);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool BRTCPUKernelCode::PrintCPUArg::isStream() {
    return a->isStream();
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function used to do a reinterpret cast to the stream that was on
+// the argument list.  With stream->stream reductions this became obsolete
+// and such arguments are now passed in as the extents, dims, and args, arrays
 void PrintAccessStream(std::ostream &out, 
                        unsigned int index,
                        std::string function, 
@@ -333,7 +364,12 @@ void PrintAccessStream(std::ostream &out,
    out << "("<<permissions<<")";
    
 }  
-void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&out,STAGE s){
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints the header (prototype), tight loop definition, and 
+// cleanup for a dimensionless gather stream.(all gather streams are so marked)
+void BRTCPUKernelCode::
+     PrintCPUArg::printDimensionlessGatherStream(std::ostream&out,STAGE s){
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
         case HEADER:{
@@ -373,6 +409,11 @@ void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&
         }
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints the code that must occur when the output stream
+// has overrun its bounds in the base (last) dimension. each input stream
+// must recalculate its position (not known due to potential stretch)
+// in the ndcube or entire map, as the case may be.
 void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
                                                  bool nDcube,
                                                  unsigned int ref){
@@ -398,6 +439,12 @@ void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
 		out << std::endl;           
         }   
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints out the code that will increment a single variable
+// Only streams must be incremented. output streams are always incremented
+// input streams are only incremented if a ratio point has been hit.
+// simple output streams (no nd cube) may be incremented with a ++ operator
 void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out, 
                                               bool nDcube, 
                                               unsigned int ref) {
@@ -422,7 +469,8 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 	}else {
            indent(out,2);
            if(ref!=index){
-              out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){"<<std::endl;
+              out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){";
+              out << std::endl;
               indent(out,3);
               out << "ratioiter"<<index<<"=0;"<<std::endl;
               indent(out,3);
@@ -434,6 +482,12 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
            }
 	}
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function sets up each argument depending on what type it is.
+// simple outputs for non nD case may just add the starting offset.
+// more complex outputs require the indexOf function call and need
+// the ratio variables to be initialized so they may be later used.
 void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out, 
                                                bool nDcube, 
                                                unsigned int ref) {
@@ -465,6 +519,11 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
 	}
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints out the usage of a particular variable when
+// the inner function is called from the tight loop.
+// most items are dereferenced when passed.
+// input streams and outputs for the nD case must have iterX added to them.
 void BRTCPUKernelCode::PrintCPUArg::Use(std::ostream &out, 
                                         bool nDcube,
                                         unsigned int ref) {
@@ -483,6 +542,10 @@ void BRTCPUKernelCode::PrintCPUArg::Use(std::ostream &out,
    }
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints the Header, tight loop definition and cleanup
+// for any given argument of type ArrayStream (a stream of float2[10] for ex.)
+// Arrays have pass by ref semantics in C++, but are just passed const here.
 void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, 
                                                      STAGE s) {
         Type * t=a->form;
@@ -538,6 +601,12 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out,
 	  break;
         }
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// When combining we do not wish to write to the output stream once more.
+// This is only necessary for a kernel with a reduce.
+// This will print all out variables in the combine functions as locals.
+// so as not to corrupt the legitimate output.
 void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
        Type * t = a->form;
        bool isStream = (t->type==TT_Stream);        
@@ -555,7 +624,12 @@ void BRTCPUKernelCode::PrintCPUArg::printShadowArg(std::ostream&out,STAGE s) {
          break;
        }
 }  
-   //standard args, not gather or scatter
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints out streams of basic types and basic type constants.
+// It prints the header (function prototype), definition in tight loop, and 
+// cleanup.  Outputs must be passed by reference as indicaed... others are
+// const.
 void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
         TypeQual tq= t->getQualifiers();
@@ -604,7 +678,8 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
         }
 }
     
-   //redirects call
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function redirects the call to the specific printer based on type
 void BRTCPUKernelCode::PrintCPUArg::printCPUVanilla(std::ostream & out,
                                                     STAGE s){
         if(isGather())
@@ -614,9 +689,15 @@ void BRTCPUKernelCode::PrintCPUArg::printCPUVanilla(std::ostream & out,
         else
 	  printNormalArg(out,s);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+oo+
+// only combines are shadowed.
 bool BRTCPUKernelCode::PrintCPUArg::useShadowOutput()const {
    return shadowOutput&&(a->form->getQualifiers()&TQ_Out)!=0;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function calls the appropriate redirect function. Ironic, huh?
 void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out, 
                                              STAGE s) {
       if (useShadowOutput()) {
@@ -627,7 +708,10 @@ void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out,
 }
 
 
-
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function trasnforms the arguments in the decl into a PrintCPUArg
+// class, which has all the utility functions described above...
+// and redirectors and so forth.
 std::vector<BRTCPUKernelCode::PrintCPUArg> 
 BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
     Type * form = fDef->decl->form;
@@ -635,11 +719,17 @@ BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     std::vector<PrintCPUArg> myArgs;
     {for (int i=0;i<func->nArgs;++i) {
-        myArgs.push_back(PrintCPUArg(func->args[i],i,shadowOutput,fDef->decl->isReduce()));
+        myArgs.push_back(PrintCPUArg(func->args[i],
+                                     i,
+                                     shadowOutput,
+                                     fDef->decl->isReduce()));
     }}  
     return myArgs;
 }
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints the function that is called from the inner loop
+// of the CPU. This function may also be called from within other kernels.
 void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
                                            std::string fullname,
                                            FunctionDef *fDef, 
@@ -649,7 +739,7 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
     assert (form->isFunction());
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     std::string myvoid("void  ");
-    out << myvoid;//we don't want to automatically print this for it would say "kernel void" which means Nothing
+    out << myvoid;
     Symbol enhanced_name;
     enhanced_name.name = fullname;
     func->printBefore(out,&enhanced_name,0);
@@ -663,7 +753,6 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
              out << ","<<std::endl<<long_name;
           myArgs[i].printCPU(out,PrintCPUArg::HEADER);
        }
-       //       fprintf (stderr, "Check %s %d\n",origname.c_str(),FunctionProp[origname].p);
        for (unsigned int j=0;j<myArgs.size();++j,++i) {
           if (FunctionProp[origname].contains(j)) {
              if (i!=0)
@@ -676,6 +765,11 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
     out << ")";    
     fDef->Block::print(out,0);
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This prints an altered inner loop for the combine function.
+// This inner loop will use the combiner second input instead of the stream
+// argument to the first reduce function. Other reduce functions are not called
 void BRTCPUKernelCode::printCombineInnerLoop(std::ostream &out)const {
    if (!globals.multiThread) return;//only print if multithreading.
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
@@ -691,6 +785,8 @@ void BRTCPUKernelCode::printCombineInnerLoop(std::ostream &out)const {
 
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This prints the combine caller (if necessary) which sets up locals and calls
+// the combine above.  
 void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
    if (!globals.multiThread) return;//only print if multithreading.
     FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());   
@@ -738,6 +834,11 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
     out << "}"<<std::endl;   
     delete fDef;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints indexof args in headers as necessary for the given 
+// function.
+// The FunctionProp map determines the necessity by looking at the dag.
 void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
    std::string name = this->fDef->decl->name->name;
    functionProperties::iterator it=FunctionProp[name].begin();
@@ -749,18 +850,15 @@ void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
    }
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints indexof definitions as necessary for the given function
+// The FunctionProp map determines the necessity by looking at the dag.
 void BRTCPUKernelCode::initializeIndexOf(std::ostream&out)const {
    std::string name = this->fDef->decl->name->name;
    functionProperties::iterator it=FunctionProp[name].begin();
    functionProperties::iterator end=FunctionProp[name].end();
    for (;it!=end;++it) {
       indent(out,1);
-      /*
-      out << "unsigned int dim"<<*it<<"=";
-      PrintAccessStream(out,*it,"getDimension");
-      out << ";"<<std::endl<<"const unsigned int * extents"<<*it<<"=";
-      PrintAccessStream(out,*it,"getExtents");
-      */
       out << ";"<<std::endl<<"__BrtFloat4 indexof"<<*it;
       out << " = computeIndexOf(mapbegin, ";
       PrintAccessStream(out,*it,"getDimension");
@@ -771,6 +869,9 @@ void BRTCPUKernelCode::initializeIndexOf(std::ostream&out)const {
    }
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints indexof incrementation as necessary for the given func
+// The FunctionProp map determines the necessity by looking at the dag.
 void BRTCPUKernelCode::incrementIndexOf(std::ostream&out)const {
    std::string name = this->fDef->decl->name->name;
    functionProperties::iterator it=FunctionProp[name].begin();
@@ -785,6 +886,12 @@ void BRTCPUKernelCode::incrementIndexOf(std::ostream&out)const {
       out<<std::endl;
    }
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function increments any local variables (given in myArgs) appropriately
+// It merely redirects the calls to the myArgs incrementation functions.
+// Then it checks the output to see if a newline is reached and recomputes
+// indexof if that is the case
 void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
                                           bool nDcube,
                                           std::vector<PrintCPUArg> myArgs
@@ -807,6 +914,10 @@ void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
        indent(out,2);
        out << "}"<<std::endl;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function will print out the tight loop for the given function.
+// This works on maps and reduce to single value.
 void BRTCPUKernelCode::printTightLoop(std::ostream&out, 
                                       FunctionDef * fDef, 
                                       std::vector<PrintCPUArg> myArgs,
@@ -878,9 +989,9 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     out << "}"<<std::endl;     
 }
 
-
-
-
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This function prints the tight loop that is used for stream->stream
+// Reductions.
 void BRTCPUKernelCode::printNdTightLoop(std::ostream&out, 
                                         FunctionDef * fDef, 
                                         std::vector<PrintCPUArg> myArgs,
@@ -955,11 +1066,6 @@ void BRTCPUKernelCode::printNdTightLoop(std::ostream&out,
     }}    
     out << "}"<<std::endl;     
 }
-
-
-
-
-
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const

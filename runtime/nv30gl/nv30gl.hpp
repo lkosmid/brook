@@ -84,7 +84,10 @@ namespace brook {
      HGLRC hpbufferglrc;
      HPBUFFERARB hpbuffer;
 
-     static const int workspace = 2048;
+     enum WORKSPACESIZE{
+        workspace = 2048
+        //visual C++ 6.0 doesn't know about static const int
+     };
 
      void createWindow(void);
      void createWindowGLContext(void);
