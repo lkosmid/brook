@@ -187,11 +187,11 @@ public:
             nothing.name="";
             cgt.printSubtype(out,&nothing,true,0);
             out<<"*)";
-            out <<"reinterpret_cast<CPUStream*>";
+            out <<"reinterpret_cast<brook::CPUStream*>";
             out << "(args["<<index<<"])->getData(), "<<std::endl;
             indent(out,2);
-            out<<"reinterpret_cast<CPUStream*>";
-            out<< "(args["<<index<<"])->getIndices());";
+            out<<"reinterpret_cast<brook::CPUStream*>";
+            out<< "(args["<<index<<"])->getExtents());";
             break;
         }
         case USE:
@@ -230,7 +230,7 @@ public:
             t->printType(out,&s,true,0);
             out << ")"<<std::endl;
             indent(out,2);
-            out <<"reinterpret_cast<CPUStream *>(args["<<index<<"])->getData();";
+            out <<"reinterpret_cast<brook::CPUStream *>(args["<<index<<"])->getData();";
             break;
         }
         case USE:{//obsolete! not allowed to index with float4
