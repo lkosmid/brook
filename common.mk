@@ -125,6 +125,10 @@ $(DEPDIR)/%.depend: %.cpp
 $(DEPDIR)/%.depend: %.br
 	@$(ECHO) "Rebuilding dependencies for $<"
 	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
+
+$(DEPDIR)/%.depend: %.bri
+	@$(ECHO) "Rebuilding dependencies for $<"
+	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
 endif
 
 ##  Compile .brh files  ##
@@ -153,6 +157,17 @@ ifndef COMPILER_ECHOS
 	@$(ECHO) $<
 endif
 	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
+
+##  Compile .bri files ##
+$(OBJDIR)/%.cpp: %.bri
+	$(CC) $(C_CPP_FLAG) $< > $(OBJDIR)/$*.br
+ifndef COMPILER_ECHOES
+	@$(ECHO) $*.br
+endif
+	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $(OBJDIR)/$*.br
+
+##  Keep the generated .br files.
+.PRECIOUS: $(OBJDIR)/%.br
 
 ##  Compile .br files ##
 $(OBJDIR)/%.cpp: %.br

@@ -14,6 +14,7 @@ BINSUFFIX        :=
 SYSTEM_LIBS      := 
 
 CFLAGS           +=  
+C_CPP_FLAG	 := -E
 C_INCLUDE_FLAG   := -I  
 C_DEBUG_FLAG     := -g3 -Wall 
 C_RELEASE_FLAG   := -O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -finline-limit=10000 -frerun-loop-opt 

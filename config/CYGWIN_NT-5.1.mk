@@ -24,6 +24,7 @@ ifndef I_AM_SLOPPY
 CFLAGS           += /WX 
 endif
 
+C_CPP_FLAG	 := /nologo /E
 C_INCLUDE_FLAG   := /I
 C_DEBUG_FLAG     := /Z7 /Yd /GZ 
 C_RELEASE_FLAG   := /Ox /arch:SSE2 /G7 
