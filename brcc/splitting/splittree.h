@@ -70,7 +70,7 @@ private:
   typedef std::map< std::string, SplitNode* > NodeMap;
   NodeMap outputValues;
 
-  typedef std::vector< SplitNode* > NodeList;
+  //typedef std::vector< SplitNode* > NodeList;
   NodeList _outputList;
   NodeList _multiplyReferencedNodes;
 

@@ -14,13 +14,13 @@
 #include <algorithm>
 
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler )
-  : _compiler(inCompiler), _resultValue(NULL)
+  : _resultValue(NULL), _compiler(inCompiler)
 {
   build( inFunctionDef );
 }
 
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler, const std::vector<SplitNode*>& inArguments )
-  : _compiler(inCompiler), _resultValue(NULL)
+  : _resultValue(NULL), _compiler(inCompiler)
 {
   build( inFunctionDef, inArguments );
 }
@@ -342,7 +342,7 @@ bool SplitTree::rdsCompile( SplitNode* inNode )
 
     if( ++errorNumber == 1 )
       throw 1;
-  }//*/
+  }// */
 
   if( heuristics.valid )
     inNode->setHeuristics( heuristics );
@@ -428,7 +428,6 @@ static FunctionType* getFunctionType( FunctionDef* inFunctionDef )
   Decl* functionDecl = inFunctionDef->decl;
   assert( functionDecl->form->type == TT_Function );
   return ((FunctionType*)functionDecl->form);
-  Statement* headStatement = inFunctionDef->head;
 }
 
 void SplitTree::build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>& inArguments )
