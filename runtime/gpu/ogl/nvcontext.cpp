@@ -149,8 +149,10 @@ int
 NVContext::getShaderFormatRank (const char *name) const {
   if( strcmp(name, "arb") == 0 )
     return 1;
-  if( strcmp(name, "fp30") == 0 )
-    return 3;
+// TIM: fp30 uses different constant-setting interface, and thus
+// isn't useful to use
+//  if( strcmp(name, "fp30") == 0 )
+//    return 3;
   if( supportsFP40 &&
       strcmp(name, "fp40") == 0 )
     return 4;
