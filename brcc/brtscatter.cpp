@@ -41,18 +41,19 @@ BRTScatterDef::~BRTScatterDef()
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTScatterDef::print(std::ostream& out, int) const {
-   unsigned int i;
    std::string name = this->decl->name->name;
    std::vector<unsigned int> extraArgs;
    FunctionType * decl = static_cast<FunctionType*> (this->decl->form);   
    Symbol * in=NULL;Symbol* ret=NULL;
-   for (i=0;i<decl->nArgs;++i) {
-      if (decl->args[i]->form->type!=TT_Stream) {
-         extraArgs.push_back(i);
-      } else if ((decl->args[i]->form->getQualifiers()&TQ_Out)!=0) {
-         ret=decl->args[i]->name;
+   unsigned int i;
+
+   for (int j=0;j<decl->nArgs;++j) {
+      if (decl->args[j]->form->type!=TT_Stream) {
+         extraArgs.push_back(j);
+      } else if ((decl->args[j]->form->getQualifiers()&TQ_Out)!=0) {
+         ret=decl->args[j]->name;
       }else {
-         in = decl->args[i]->name;
+         in = decl->args[j]->name;
       }
    }
    out << "class ";

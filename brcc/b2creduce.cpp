@@ -1,6 +1,12 @@
 #ifdef _WIN32
+#if 0
+        /* I don't see any extra warnings without this line using VC7's
+         * cl.exe.  If no one has any complaints, we should nuke this
+         * pragma.  --Jeremy. 12/2/2003
+         */
 #pragma warning(disable:4786)
 //the above warning disables visual studio's annoying habit of warning when using the standard set lib
+#endif
 #endif
 #include "ctool.h"
 #include <map>
@@ -17,7 +23,7 @@ bool reduceNeeded (const FunctionDef * fd) {
    Type * form = fd->decl->form;
    assert (form->isFunction());
    FunctionType* func = static_cast<FunctionType *>(form);
-   for (unsigned int i=0;i<func->nArgs;++i) {
+   for (int i=0;i<func->nArgs;++i) {
       if (func->args[i]->isReduce())
          return true;
    }
@@ -283,7 +289,7 @@ void FindFirstReduceFunctionCall (Statement * s) {
 }
 void addReductionBools (FunctionDef *fDef) {
    FunctionType * t = static_cast<FunctionType*>(fDef->decl->form);
-   for (unsigned int i=0;i<t->nArgs;++i) {
+   for (int i=0;i<t->nArgs;++i) {
       if (t->args[i]->isReduce()) {
          DeclStemnt * ds = new DeclStemnt(fDef->location);
          ds->next = fDef->head;
@@ -325,8 +331,7 @@ void BrookCombine_ConvertKernel(FunctionDef *fDef) {
    if (1) {
       FunctionType*  func=static_cast<FunctionType*>(fDef->decl->form);
       std::vector <Decl *>AdditionalDecl;
-      unsigned int i;
-      for (i=0;i<func->nArgs;++i) {
+      for (int i=0;i<func->nArgs;++i) {
          if (func->args[i]->isReduce()) {
             AdditionalDecl.push_back(func->args[i]->dup());
             AdditionalDecl.back()->name->name=
@@ -334,8 +339,8 @@ void BrookCombine_ConvertKernel(FunctionDef *fDef) {
                AdditionalDecl.back()->name->name;
          }
       }
-      for (i=0;i<AdditionalDecl.size();++i) {
-         func->addArg(AdditionalDecl[i]);
+      for (unsigned int j=0;j<AdditionalDecl.size();++j) {
+         func->addArg(AdditionalDecl[j]);
       }
    }
 }

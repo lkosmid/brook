@@ -954,21 +954,21 @@ sizeof_expr:  SIZEOF LPAREN type_name RPAREN   %prec HYPERUNARY
             delete $1;
         }
         ;
-indexof_expr: INDEXOF unary_expr
-        {
-           Variable * v;
-           if ($2->etype==ET_Variable) {
-              $$ = new BrtIndexofExpr((Variable *)$2,*$1);
-           }else {
-              err_cnt++;
-              (*$1).printLocation(*gProject->Parse_TOS->yyerrstream);
-              *gProject->Parse_TOS->yyerrstream << "Error: Indexof must operate on an identifier\n";
-              $$ = new BrtIndexofExpr(new Variable(new Symbol,*$1),*$1);
-           }
-           
-        }
-;
 
+indexof_expr: INDEXOF unary_expr
+	{
+            if ($2->etype==ET_Variable) {
+	        $$ = new BrtIndexofExpr((Variable *)$2,*$1);
+	    } else {
+               err_cnt++;
+               (*$1).printLocation(*gProject->Parse_TOS->yyerrstream);
+               *gProject->Parse_TOS->yyerrstream
+	       << "Error: Indexof must operate on an identifier\n";
+
+               $$ = new BrtIndexofExpr(new Variable(new Symbol,*$1),*$1);
+            }
+	}
+	;
 
 unary_minus_expr:  MINUS cast_expr    %prec UNARY
         {

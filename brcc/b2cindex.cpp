@@ -34,7 +34,7 @@ Expression *indexOfKeyword (Expression* e) {
 void addCurrentArgs(FunctionDef * fd) {
    FunctionType * f = static_cast<FunctionType*>(fd->decl->form);
    currentArgs.clear();
-   for (unsigned int i=0;i<f->nArgs;++i) {
+   for (int i=0;i<f->nArgs;++i) {
       currentArgs[f->args[i]->name->name]=i;
    }
 }
