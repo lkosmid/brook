@@ -7,11 +7,21 @@
 // float3 (dot(Rotationx,Vec),dot(Rotationy,Vec),dot(Rotationz,Vec));
 typedef struct traverser_t {
   float4 index;//.xy is index into the aTree  .zw is index into bTree
-  float3 Translation; 
-  float3 Rotationx;
-  float3 Rotationy;
-  float3 Rotationz;
+  float4 translation; 
+  float4 rotationX;
+  float4 rotationY;
+  //  float3 RotationZ=Translation.w,RotationX.w, RotationY.w yuck!
 }Traverser;
+kernel float3 getRotationZ(Traverser t<>) {
+  float3 ret;
+  float4 rx=t.rotationX;
+  float4 ry=t.rotationY;
+  float4 tr=t.translation;
+  ret.x=rx.w;
+  ret.y=ry.w;
+  ret.z=tr.w;
+  return ret;
+}
 
 typedef struct transposedbbox_t{
   float4 transp_rotx;
@@ -406,10 +416,10 @@ kernel void Collide (Traverser currentNode<>,
   //push nextNode if currentNode has collision
   TransposedBBox b1=b1Tree[currentNode.index.xy];
   BBox b2=b2Tree[currentNode.index.zw];
-  if (!obb_disjoint(currentNode.Rotationx,
-                    currentNode.Rotationy,
-                    currentNode.Rotationz,
-                    currentNode.Translation,
+  if (!obb_disjoint(currentNode.rotationX.xyz,
+                    currentNode.rotationY.xyz,
+                    getRotationZ(currentNode),
+                    currentNode.translation.xyz,
                     b1.Radius.xyz,
                     b2.Radius.xyz)) {
     if (b1.Radius.w!=0 && b2.Radius.w!=0) {
@@ -445,10 +455,10 @@ kernel void CollideNoCompact (Traverser currentNode<>,
   TransposedBBox b1=b1Tree[currentNode.index.xy];
   BBox b2=b2Tree[currentNode.index.zw];
   float4 sentinel={1,0,1,0};
-  if (!obb_disjoint(currentNode.Rotationx,
-                    currentNode.Rotationy,
-                    currentNode.Rotationz,
-                    currentNode.Translation,
+  if (!obb_disjoint(currentNode.rotationX.xyz,
+                    currentNode.rotationY.xyz,
+                    getRotationZ(currentNode),
+                    currentNode.translation.xyz,
                     b1.Radius.xyz,
                     b2.Radius.xyz)) {
     if (b1.Radius.w!=0 && b2.Radius.w!=0) {
@@ -508,31 +518,37 @@ kernel void updateCurrentNode(float stretchX,
                         rot_transpX,rot_transpY,rot_transpZ);    
     */
     float3 atransp_rotz = cross(a.transp_rotx.xyz,a.transp_roty)*a.transp_rotx.w;
+    float3 outRotX,outRotY,outRotZ,trans;
     matMult(//rot_transpX,rot_transpY,rot_transpZ,
             a.transp_rotx.xyz,a.transp_roty,atransp_rotz,
-            lastNode.Rotationx,lastNode.Rotationy,lastNode.Rotationz,
-            nextNode.Rotationx,nextNode.Rotationy,nextNode.Rotationz);
-            
-    nextNode.Translation=matVecMult(//rot_transpX,rot_transpY,rot_transpZ,
-                                    a.transp_rotx.xyz,a.transp_roty,atransp_rotz,
-                                    lastNode.Translation-a.Translation);
+            lastNode.rotationX.xyz,lastNode.rotationY.xyz,getRotationZ(lastNode),
+            outRotX,outRotY,outRotZ);
+    nextNode.rotationX=float4(outRotX.x,outRotX.y,outRotX.z,outRotZ.x);
+    nextNode.rotationY=float4(outRotY.x,outRotY.y,outRotY.z,outRotZ.y);
+    trans=matVecMult(//rot_transpX,rot_transpY,rot_transpZ,
+                     a.transp_rotx.xyz,a.transp_roty,atransp_rotz,
+                     lastNode.translation.xyz-a.Translation.xyz);
+    nextNode.translation=float4(trans.x,trans.y,trans.z,outRotZ.z);    
   }else {
     BBox b =bTree[bTreeIndex];
     float3 bRotationz = cross(b.Rotationx.xyz,b.Rotationy)*b.Rotationx.w;
-    matMult(lastNode.Rotationx,
-            lastNode.Rotationy,
-            lastNode.Rotationz,
+    float3 outRotX,outRotY,outRotZ,trans;
+    matMult(lastNode.rotationX.xyz,
+            lastNode.rotationY.xyz,
+            getRotationZ(lastNode),
             b.Rotationx.xyz,
             b.Rotationy,
             bRotationz,
-            nextNode.Rotationx,
-            nextNode.Rotationy,
-            nextNode.Rotationz);            
-    nextNode.Translation=lastNode.Translation+matVecMult(lastNode.Rotationx,
-                                                         lastNode.Rotationy,
-                                                         lastNode.Rotationz,
-                                                         b.Translation);
-    
+            outRotX,
+            outRotY,
+            outRotZ);            
+    nextNode.rotationX=float4(outRotX.x,outRotX.y,outRotX.z,outRotZ.x);
+    nextNode.rotationY=float4(outRotY.x,outRotY.y,outRotY.z,outRotZ.y);
+    trans=lastNode.translation.xyz+matVecMult(lastNode.rotationX.xyz,
+                                          lastNode.rotationY.xyz,
+                                          getRotationZ(lastNode),
+                                          b.Translation);
+    nextNode.translation=float4(trans.x,trans.y,trans.z,outRotZ.z);    
   }
   nextNode.index=float4 (aTreeIndex.x,aTreeIndex.y,bTreeIndex.x,bTreeIndex.y);
 
@@ -611,10 +627,9 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
   Traverser baseTraverser;
   Traverser trav<1,1>;
   baseTraverser.index=float4(0,0,0,0);
-  baseTraverser.Translation=trans;
-  baseTraverser.Rotationx=rX;
-  baseTraverser.Rotationy=rY;
-  baseTraverser.Rotationz=rZ;
+  baseTraverser.rotationX=float4(rX.x,rX.y,rX.z,rZ.x);
+  baseTraverser.rotationY=float4(rY.x,rY.y,rY.z,rZ.y);
+  baseTraverser.translation=float4(trans.x,trans.y,trans.z,rZ.z);
   streamRead(trav,&baseTraverser);
   *intersections=(float4*)malloc(alloc_intersections*sizeof(float4));
   /*copyTriangle(widt1*heit1,t1A,t1B,t1C,t1);

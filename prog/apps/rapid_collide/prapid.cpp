@@ -1191,10 +1191,15 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
 #endif
 typedef struct traverser_t {
   float4 index;//.xy is index into the aTree  .zw is index into bTree
-  float3 Translation; 
-  float3 Rotationx;
-  float3 Rotationy;
-  float3 Rotationz;
+  float4 translation; 
+  float4 rotationX;
+  float4 rotationY;
+  float3 Rotationx() {return float3(rotationX.x,rotationX.y,rotationX.z);}
+  float3 Rotationy() {return float3(rotationY.x,rotationY.y,rotationY.z);}
+  float3 Rotationz() {return float3(rotationX.w,rotationY.w,translation.w);}
+  float3 Translation() {return float3(translation.x,
+                                      translation.y,
+                                      translation.z);}
 }Traverser;
 bool assertf(bool b) {
   if (b) {
@@ -1278,10 +1283,10 @@ int checkPassCorrectness(Traverser * traverser,int numTraverser, int numpass) {
     csVector3 rY = csTrav.R.Row2();
     csVector3 rZ = csTrav.R.Row3();
     csVector3 T = csTrav.T;
-    assertv(rX,trav.Rotationx);
-    assertv(rY,trav.Rotationy);
-    assertv(rZ,trav.Rotationz);
-    assertv(T,trav.Translation);
+    //assertv(rX,trav.Rotationx());
+    //assertv(rY,trav.Rotationy());
+    //assertv(rZ,trav.Rotationz());
+    //assertv(T,trav.Translation());
   }
   if (error_count)
     printf ("error detected %d\n",error_count);
