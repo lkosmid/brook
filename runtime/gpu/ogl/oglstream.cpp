@@ -69,7 +69,11 @@ void
 OGLContext::setTextureData(TextureHandle inTexture, 
                            const float* inData,
                            unsigned int inStrideBytes,
-                           unsigned int inComponentCount ) {
+                           unsigned int inComponentCount,
+                           unsigned int inRank,
+                           const unsigned int* inDomainMin,
+                           const unsigned int* inDomainMax,
+                           const unsigned int* inExtents, bool inUsesAddressTranslation ) {
   float *t;
   
   OGLTexture *oglTexture = (OGLTexture *) inTexture;
@@ -108,7 +112,11 @@ void
 OGLContext::getTextureData( TextureHandle inTexture,
                             float* outData,
                             unsigned int inStrideBytes,
-                            unsigned int inComponentCount ) {
+                            unsigned int inComponentCount,
+                            unsigned int inRank,
+                            const unsigned int* inDomainMin,
+                            const unsigned int* inDomainMax,
+                            const unsigned int* inExtents, bool inUsesAddressTranslation ) {
    float *t = outData;
 
    OGLTexture *oglTexture = (OGLTexture *) inTexture;

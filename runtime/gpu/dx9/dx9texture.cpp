@@ -99,21 +99,25 @@ DX9Texture* DX9Texture::create( GPUContextDX9* inContext, int inWidth, int inHei
   return NULL;
 }
 
-void DX9Texture::setData( const float* inData, unsigned int inStride, unsigned int inCount  )
+void DX9Texture::setData( const float* inData, unsigned int inStride, unsigned int inCount,
+                         unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
+                         const unsigned int* inExtents, bool inUsesAddressTranslation  )
 {
   DX9PROFILE("DX9Texture::setData")
 
-	setShadowData( inData, inStride, inCount  );
+	setShadowData( inData, inStride, inCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation );
   markShadowDataChanged();
 }
 
-void DX9Texture::getData( float* outData, unsigned int inStride, unsigned int inCount  )
+void DX9Texture::getData( float* outData, unsigned int inStride, unsigned int inCount,
+                         unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
+                         const unsigned int* inExtents, bool inUsesAddressTranslation  )
 {
   DX9PROFILE("DX9Texture::getData")
 
   if( dirtyFlags & kShadowDataDirty )
     flushCachedToShadow();
-  getShadowData( outData, inStride, inCount  );
+  getShadowData( outData, inStride, inCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation );
 }
 
 void DX9Texture::markCachedDataChanged()
@@ -130,6 +134,12 @@ void DX9Texture::validateCachedData()
 {
   if( !(dirtyFlags & kCachedDataDirty) ) return;
   flushShadowToCached();
+}
+
+void DX9Texture::validateShadowData()
+{
+  if( !(dirtyFlags & kShadowDataDirty) ) return;
+  flushCachedToShadow();
 }
 
 void DX9Texture::flushCachedToShadow()
@@ -150,116 +160,424 @@ void DX9Texture::flushShadowToCached()
   dirtyFlags &= ~kCachedDataDirty;
 }
 
-void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned int inCount  )
+void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned int inCount,
+                               unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
+                               const unsigned int* inExtents, bool inUsesAddressTranslation )
 {
   DX9PROFILE("DX9Texture::getShadowData")
 
-  HRESULT result;
+  if( !inUsesAddressTranslation )
+  {
+    HRESULT result;
 
-	D3DLOCKED_RECT info;
-	result = shadowSurface->LockRect( &info, NULL, D3DLOCK_READONLY );
-	DX9AssertResult( result, "LockRect failed" );
+    RECT rectToLock;
+    bool isWholeBuffer;
+    findRectForCopy( inRank, inDomainMin, inDomainMax, inExtents,
+      inUsesAddressTranslation, rectToLock, isWholeBuffer );
 
-	int pitch = info.Pitch;
-	if( pitch % 4 != 0 )
-		throw 1;
-	int pitchFloats = pitch / 4;
-	const float* inputLine = (const float*)info.pBits;
+    int domainWidth = rectToLock.right - rectToLock.left;
+    int domainHeight = rectToLock.bottom - rectToLock.top;
 
-	char* outputPixel = (char*)outData;
-  unsigned int count = 0;
+    D3DLOCKED_RECT info;
+    result = shadowSurface->LockRect( &info, &rectToLock, D3DLOCK_READONLY );
+    DX9AssertResult( result, "LockRect failed" );
 
-	for( int y = 0; y < height; y++ )
-	{
-		const float* inputPixel = inputLine;
-		for( int x = 0; x < width; x++ )
-		{
-      count++;
-      if( count > inCount ) break;
-      const float* input = inputPixel;
-      float* output = (float*)outputPixel;
-			for( int c = 0; c < components; c++ )
-			{
-				*output++ = *input++;
-			}
-      inputPixel += internalComponents;
-      outputPixel += inStride;
-		}
-		inputLine += pitchFloats;
-	}
+    copyData( outData, domainWidth*inStride, inStride,
+      info.pBits, info.Pitch, internalComponents*sizeof(float),
+      domainWidth, domainHeight, components*sizeof(float) );
 
-	result = shadowSurface->UnlockRect();
-	DX9AssertResult( result, "UnlockRect failed" );
+    result = shadowSurface->UnlockRect();
+    DX9AssertResult( result, "UnlockRect failed" );
+  }
+  else // using address translation
+  {
+    HRESULT result;
+
+    RECT rectToLock;
+    bool isWholeBuffer;
+    size_t baseX, baseY;
+    findRectForCopyAT( inRank, inDomainMin, inDomainMax, inExtents,
+      inUsesAddressTranslation, rectToLock, isWholeBuffer,
+      width, height, baseX, baseY );
+
+    int rectWidth = rectToLock.right - rectToLock.left;
+    int rectHeight = rectToLock.bottom - rectToLock.top;
+
+    D3DLOCKED_RECT info;
+    result = shadowSurface->LockRect( &info, &rectToLock, D3DLOCK_READONLY );
+    DX9AssertResult( result, "LockRect failed" );
+
+    if( isWholeBuffer )
+    {
+      copyAllDataAT( outData, width*inStride, inStride,
+        info.pBits, info.Pitch, internalComponents*sizeof(float),
+        width, height, components*sizeof(float), inRank, inExtents  );
+    }
+    else
+    {
+      getDataAT( outData, inRank, inDomainMin, inDomainMax, inExtents, components*sizeof(float),
+        info.pBits, info.Pitch, rectWidth, rectHeight, internalComponents*sizeof(float), baseX, baseY );
+    }
+
+    result = shadowSurface->UnlockRect();
+    DX9AssertResult( result, "UnlockRect failed" );
+  }
 }
 
-void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsigned int inCount  )
+void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsigned int inCount,
+                               unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
+                               const unsigned int* inExtents, bool inUsesAddressTranslation )
 {
   DX9PROFILE("DX9Texture::setShadowData")
 
-  HRESULT result;
-	D3DLOCKED_RECT info;
+  if( !inUsesAddressTranslation )
+  {
+    RECT rectToLock;
+    bool isWholeBuffer;
 
-	result = shadowSurface->LockRect( &info, NULL, 0 );
-	DX9AssertResult( result, "LockRect failed" );
+    findRectForCopy( inRank, inDomainMin, inDomainMax, inExtents,
+      inUsesAddressTranslation, rectToLock, isWholeBuffer );
 
-	int pitch = info.Pitch;
-	if( pitch % 4 != 0 )
-		throw 1;
-	int pitchFloats = pitch / 4;
-	float* outputLine = (float*)info.pBits;
+    int domainWidth = rectToLock.right - rectToLock.left;
+    int domainHeight = rectToLock.bottom - rectToLock.top;
 
-	const char* inputPixel = (const char*)inData;
-  unsigned int count = 0;
+    if( !isWholeBuffer )
+    {
+      // we are only writing to a portion of the buffer,
+      // and so we must be sure to validate the rest of it
+      validateShadowData();
+    }
 
-	for( int y = 0; y < height; y++ )
-	{
-		float* outputPixel = outputLine;
-		for( int x = 0; x < width; x++ )
-		{
-      count++;
-      if( count > inCount ) break;
-      const float* input = (const float*)inputPixel;
-      float* output = outputPixel;
-			for( int c = 0; c < components; c++ )
-			{
-				*output++ = *input++;
-			}
-      inputPixel += inStride;
-      outputPixel += internalComponents;
-		}
-		outputLine += pitchFloats;
-	}
+    HRESULT result;
+	  D3DLOCKED_RECT info;
 
-	result = shadowSurface->UnlockRect();
-	DX9AssertResult( result, "UnlockRect failed" );
+	  result = shadowSurface->LockRect( &info, &rectToLock, 0 );
+	  DX9AssertResult( result, "LockRect failed" );
+
+    copyData( info.pBits, info.Pitch, internalComponents*sizeof(float),
+      inData, domainWidth*inStride, inStride,
+      domainWidth, domainHeight, components*sizeof(float) );
+
+	  result = shadowSurface->UnlockRect();
+	  DX9AssertResult( result, "UnlockRect failed" );
+  }
+  else // using address translation
+  {
+    RECT rectToLock;
+    bool isWholeBuffer;
+    size_t baseX, baseY;
+
+    findRectForCopyAT( inRank, inDomainMin, inDomainMax, inExtents,
+      inUsesAddressTranslation, rectToLock, isWholeBuffer,
+      width, height, baseX, baseY );
+
+    int rectWidth = rectToLock.right - rectToLock.left;
+    int rectHeight = rectToLock.bottom - rectToLock.top;
+
+    if( !isWholeBuffer )
+    {
+      // we are only writing to a portion of the buffer,
+      // and so we must be sure to validate the rest of it
+      validateShadowData();
+    }
+
+    HRESULT result;
+    D3DLOCKED_RECT info;
+
+    result = shadowSurface->LockRect( &info, &rectToLock, 0 );
+    DX9AssertResult( result, "LockRect failed" );
+
+    if( isWholeBuffer )
+    {
+      copyAllDataAT( info.pBits, info.Pitch, internalComponents*sizeof(float),
+        inData, width*inStride, inStride,
+        width, height, components*sizeof(float), inRank, inExtents  );
+    }
+    else
+    {
+      setDataAT( inData, inRank, inDomainMin, inDomainMax, inExtents, components*sizeof(float),
+        info.pBits, info.Pitch, rectWidth, rectHeight, internalComponents*sizeof(float), baseX, baseY );
+    }
+
+    result = shadowSurface->UnlockRect();
+    DX9AssertResult( result, "UnlockRect failed" );
+  }
 }
 
 void DX9Texture::getPixelAt( int x, int y, float4& outResult ) {
-  HRESULT result;
 
-	result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
-	DX9AssertResult( result, "Failed to copy floating-point render target to plain surface" );
+  unsigned int domainMin[2] = { y, x };
+  unsigned int domainMax[2] = { y+1, x+1 };
+  unsigned int extents[2] = { height, width };
 
-	D3DLOCKED_RECT info;
-	result = shadowSurface->LockRect( &info, NULL, D3DLOCK_READONLY );
-	DX9AssertResult( result, "LockRect failed" );
+  getData( (float*) &outResult, components*sizeof(float), 2,
+    2, domainMin, domainMax, extents, false );
+}
 
-	int pitch = info.Pitch;
-	if( pitch % 4 != 0 )
-		throw 1;
-	int pitchFloats = pitch / 4;
-	const float* inputLine = ((const float*)info.pBits) + y*pitchFloats;
+void DX9Texture::findRectForCopy( unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
+  const unsigned int* inExtents, bool inUsesAddressTranslation, RECT& outRect, bool& outFullBuffer )
+{
+  RECT rect;
+  if( inRank == 1 )
+  {
+    rect.left = inDomainMin[0];
+    rect.top = 0;
+    rect.right = inDomainMax[0];
+    rect.bottom = 1;
+  }
+  else
+  {
+    rect.left = inDomainMin[1];
+    rect.top = inDomainMin[0];
+    rect.right = inDomainMax[1];
+    rect.bottom = inDomainMax[0];
+  }
+  outRect = rect;
 
-	float* output = (float*)&outResult;
+  int domainWidth = rect.right - rect.left;
+  int domainHeight = rect.bottom - rect.top;
 
-	const float* inputPixel = inputLine + x*internalComponents;
-	const float* input = inputPixel;
+  if( domainWidth != width || domainHeight != height )
+  {
+    outFullBuffer = false;
+  }
+  else
+    outFullBuffer = true;
+}
 
-  for( int c = 0; c < components; c++ )
-	{
-	  *output++ = *input++;
-	}
+void DX9Texture::copyData( void* toBuffer, size_t toRowStride, size_t toElementStride,
+  const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
+  size_t columnCount, size_t rowCount, size_t elementSize )
+{
+  char* outputLine = (char*)toBuffer;
+  const char* inputLine = (const char*)fromBuffer;
 
-	result = shadowSurface->UnlockRect();
-	DX9AssertResult( result, "UnlockRect failed" );
+  size_t componentCount = elementSize / sizeof(float);
+
+  for( size_t y = 0; y < rowCount; y++ )
+  {
+    char* outputPixel = outputLine;
+    const char* inputPixel = inputLine;
+    for( size_t x = 0; x < columnCount; x++ )
+    {
+      // TIM: for now we assume floating-point components
+      float* output = (float*) outputPixel;
+      const float* input = (const float*) inputPixel;
+      for( size_t c = 0; c < componentCount; c++ )
+        *output++ = *input++;
+
+      inputPixel += fromElementStride;
+      outputPixel += toElementStride;
+    }
+    inputLine += fromRowStride;
+    outputLine += toRowStride;
+  }
+}
+
+void DX9Texture::findRectForCopyAT( unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
+  const unsigned int* inExtents, bool inUsesAddressTranslation, RECT& outRect, bool& outFullBuffer,
+  size_t inWidth, size_t inHeight, size_t& outBaseX, size_t& outBaseY )
+{
+  size_t r;
+  size_t rank = inRank;
+
+  size_t stride = 1;
+  size_t minIndex = 0;
+  size_t maxIndex = 0;
+  bool wholeBuffer = true;
+  for( r = 0; r < rank; r++ )
+  {
+    size_t d = rank - (r+1);
+
+    size_t domainMin = inDomainMin[d];
+    size_t domainMax = inDomainMax[d];
+    size_t domainExtent = domainMax - domainMin;
+    size_t streamExtent = inExtents[d];
+
+    if( streamExtent != domainExtent )
+      wholeBuffer = false;
+
+    minIndex += domainMin * stride;
+    maxIndex += domainMax * stride;
+    stride *= streamExtent;
+  }
+
+  size_t minX, minY, maxX, maxY;
+
+  minX = minIndex % inWidth;
+  minY = minIndex / inWidth;
+  maxX = maxIndex % inWidth;
+  maxY = maxIndex / inWidth;
+
+  RECT rect;
+  rect.left = (minY == maxY) ? minX : 0;
+  rect.top = minY;
+  rect.right = (minY == maxY) ? maxX : inWidth;
+  rect.bottom = maxY;
+
+  outRect = rect;
+  outFullBuffer = wholeBuffer;
+  outBaseX = minX;
+  outBaseY = minY;
+}
+
+void DX9Texture::copyAllDataAT( void* toBuffer, size_t toRowStride, size_t toElementStride,
+  const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
+  size_t columnCount, size_t rowCount, size_t elementSize, size_t inRank, const unsigned int* inExtents )
+{
+  size_t elementCount = 1;
+  for( size_t r = 0; r < inRank; r++ )
+    elementCount *= inExtents[r];
+
+  char* outputLine = (char*)toBuffer;
+  const char* inputLine = (const char*)fromBuffer;
+
+  size_t componentCount = elementSize / sizeof(float);
+
+  size_t copiedElementCount = 0;
+  for( size_t y = 0; y < rowCount; y++ )
+  {
+    char* outputPixel = outputLine;
+    const char* inputPixel = inputLine;
+    for( size_t x = 0; x < columnCount; x++ )
+    {
+
+      // TIM: for now we assume floating-point components
+      float* output = (float*) outputPixel;
+      const float* input = (const float*) inputPixel;
+      for( size_t c = 0; c < componentCount; c++ )
+        *output++ = *input++;
+
+      inputPixel += fromElementStride;
+      outputPixel += toElementStride;
+
+      copiedElementCount++;
+      if( copiedElementCount == elementCount )
+        return;
+    }
+    inputLine += fromRowStride;
+    outputLine += toRowStride;
+  }
+}
+
+void DX9Texture::getDataAT( void* streamData, unsigned int streamRank,
+  const unsigned int* streamDomainMin, const unsigned int* streamDomainMax,
+  const unsigned int* streamExtents, size_t streamElementStride,
+  const void* textureData, size_t textureLineStride, size_t textureWidth, size_t textureHeight,
+  size_t textureElementStride, size_t textureBaseX, size_t textureBaseY )
+{
+  size_t r;
+  size_t rank = streamRank;
+  size_t domainMin[4] = {0,0,0,0};
+  size_t domainMax[4] = {1,1,1,1};
+  size_t domainExtents[4] = {1,1,1,1};
+  size_t extents[4] = {1,1,1,1};
+  size_t strides[4] = {0,0,0,0};
+
+  size_t stride = 1;
+  for( r = 1; r <= rank; r++ )
+  {
+    size_t d = rank - r;
+
+    domainMin[d] = streamDomainMin[r];
+    domainMax[d] = streamDomainMax[r];
+    extents[d] = streamExtents[r];
+
+    domainExtents[d] = domainMax[d] - domainMin[d];
+    strides[d] = stride;
+    stride *= domainExtents[d];
+  }
+
+  const char* textureBuffer = (const char*) textureData;
+  char* streamBuffer = (char*) streamData;
+
+  size_t x, y, z, w;
+  for( w = domainMin[3]; w < domainMax[3]; w++ )
+  {
+    size_t offsetW = w * strides[3];
+    for( z = domainMin[2]; z < domainMax[2]; z++ )
+    {
+      size_t offsetZ = offsetW + z * strides[2];
+      for( y = domainMin[1]; y < domainMax[1]; y++ )
+      {
+        size_t offsetY = offsetZ + y * strides[1];
+        for( x = domainMin[0]; x < domainMax[0]; x++ )
+        {
+          size_t offsetX = offsetY + x * strides[0];
+          size_t streamOffset = offsetX * streamElementStride;
+
+          size_t textureX = (offsetX % textureWidth) - textureBaseX;
+          size_t textureY = (offsetX / textureWidth) - textureBaseY;
+          size_t textureOffset = textureY * textureLineStride + textureX * textureElementStride;
+
+          const float* textureElement = (const float*) (textureBuffer + textureOffset);
+          float* streamElement = (float*) (streamBuffer + streamOffset);
+
+          for( int c = 0; c < components; c++ )
+            *streamElement++ = *textureElement++;
+        }
+      }
+    }
+  }
+}
+
+void DX9Texture::setDataAT( const void* streamData, unsigned int streamRank,
+                           const unsigned int* streamDomainMin, const unsigned int* streamDomainMax,
+                           const unsigned int* streamExtents, size_t streamElementStride,
+                           void* textureData, size_t textureLineStride, size_t textureWidth, size_t textureHeight,
+                           size_t textureElementStride, size_t textureBaseX, size_t textureBaseY )
+{
+  size_t r;
+  size_t rank = streamRank;
+  size_t domainMin[4] = {0,0,0,0};
+  size_t domainMax[4] = {1,1,1,1};
+  size_t domainExtents[4] = {1,1,1,1};
+  size_t extents[4] = {1,1,1,1};
+  size_t strides[4] = {0,0,0,0};
+
+  size_t stride = 1;
+  for( r = 1; r <= rank; r++ )
+  {
+    size_t d = rank - r;
+
+    domainMin[d] = streamDomainMin[r];
+    domainMax[d] = streamDomainMax[r];
+    extents[d] = streamExtents[r];
+
+    domainExtents[d] = domainMax[d] - domainMin[d];
+    strides[d] = stride;
+    stride *= domainExtents[d];
+  }
+
+  char* textureBuffer = (char*) textureData;
+  const char* streamBuffer = (const char*) streamData;
+
+  size_t x, y, z, w;
+  for( w = domainMin[3]; w < domainMax[3]; w++ )
+  {
+    size_t offsetW = w * strides[3];
+    for( z = domainMin[2]; z < domainMax[2]; z++ )
+    {
+      size_t offsetZ = offsetW + z * strides[2];
+      for( y = domainMin[1]; y < domainMax[1]; y++ )
+      {
+        size_t offsetY = offsetZ + y * strides[1];
+        for( x = domainMin[0]; x < domainMax[0]; x++ )
+        {
+          size_t offsetX = offsetY + x * strides[0];
+          size_t streamOffset = offsetX * streamElementStride;
+
+          size_t textureX = (offsetX % textureWidth) - textureBaseX;
+          size_t textureY = (offsetX / textureWidth) - textureBaseY;
+          size_t textureOffset = textureY * textureLineStride + textureX * textureElementStride;
+
+          float* textureElement = (float*) (textureBuffer + textureOffset);
+          const float* streamElement = (const float*) (streamBuffer + streamOffset);
+
+          for( int c = 0; c < components; c++ )
+            *textureElement++ = *streamElement++;
+        }
+      }
+    }
+  }
 }

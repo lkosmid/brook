@@ -132,8 +132,16 @@ namespace brook
     virtual TextureHandle createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat );
     virtual void releaseTexture( TextureHandle inTexture );
 
-    virtual void setTextureData( TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount );
-    virtual void getTextureData( TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount );
+    virtual void setTextureData( TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount,
+      unsigned int inRank,
+      const unsigned int* inDomainMin,
+      const unsigned int* inDomainMax,
+      const unsigned int* inExtents, bool inUsesAddressTranslation );
+    virtual void getTextureData( TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount,
+      unsigned int inRank,
+      const unsigned int* inDomainMin,
+      const unsigned int* inDomainMax,
+      const unsigned int* inExtents, bool inUsesAddressTranslation );
 
     virtual PixelShaderHandle createPixelShader( const char* inSource );
 
@@ -586,17 +594,27 @@ namespace brook
     delete texture;
   }
 
-  void GPUContextDX9Impl::setTextureData( TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount )
+  void GPUContextDX9Impl::setTextureData(
+    TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount,
+    unsigned int inRank,
+    const unsigned int* inDomainMin,
+    const unsigned int* inDomainMax,
+    const unsigned int* inExtents, bool inUsesAddressTranslation )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
-    texture->setData( inData, inStrideBytes, inComponentCount );
+    texture->setData( inData, inStrideBytes, inComponentCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation );
     texture->markShadowDataChanged();
   }
 
-  void GPUContextDX9Impl::getTextureData( TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount )
+  void GPUContextDX9Impl::getTextureData(
+    TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount,
+    unsigned int inRank,
+    const unsigned int* inDomainMin,
+    const unsigned int* inDomainMax,
+    const unsigned int* inExtents, bool inUsesAddressTranslation )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
-    texture->getData( outData, inStrideBytes, inComponentCount );
+    texture->getData( outData, inStrideBytes, inComponentCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation );
   }
 
   GPUContextDX9Impl::PixelShaderHandle GPUContextDX9Impl::createPixelShader( const char* inSource )

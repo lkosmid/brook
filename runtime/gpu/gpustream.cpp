@@ -193,31 +193,53 @@ namespace brook
     
     return true;
   }
-  
+
   void GPUStreamData::setData( const void* inData )
+  {
+    unsigned int domainMin[4] = {0,0,0,0};
+    const unsigned int* domainMax = getExtents();
+
+    setDomainData( inData, domainMin, domainMax );
+  }
+
+  void GPUStreamData::getData( void* outData )
+  {
+    unsigned int domainMin[4] = {0,0,0,0};
+    const unsigned int* domainMax = getExtents();
+
+    getDomainData( outData, domainMin, domainMax );
+  }
+
+  void GPUStreamData::setDomainData( const void* inData, const unsigned int* inDomainMin, const unsigned int* inDomainMax )
   {
     const unsigned char* data = (const unsigned char*) inData;
     size_t stride = getElementSize();
     size_t fieldCount = _fields.size();
     for( size_t f = 0; f < fieldCount; f++ )
-      {
-        _context->setTextureData( _fields[f].texture, (const float*)data, stride, _totalSize );
-        data += _fields[f].componentCount * sizeof(float);
-      }
+    {
+      _context->setTextureData( _fields[f].texture, (const float*)data, stride, _totalSize,
+        _rank, inDomainMin, inDomainMax, getExtents(), _requiresAddressTranslation );
+      data += _fields[f].componentCount * sizeof(float);
+    }
   }
-  
-  void GPUStreamData::getData( void* outData )
+
+  void GPUStreamData::getDomainData( void* outData, const unsigned int* inDomainMin, const unsigned int* inDomainMax )
   {
     unsigned char* data = (unsigned char*) outData;
     size_t stride = getElementSize();
     size_t fieldCount = _fields.size();
     for( size_t f = 0; f < fieldCount; f++ )
-      {
-        _context->getTextureData( _fields[f].texture, (float*)data, stride, _totalSize );
-        data += _fields[f].componentCount * sizeof(float);
-      }
+    {
+      _context->getTextureData( _fields[f].texture, (float*)data, stride, _totalSize,
+        _rank, inDomainMin, inDomainMax, getExtents(), _requiresAddressTranslation );
+      data += _fields[f].componentCount * sizeof(float);
+    }
   }
-  
+
+  // TIM: map/unmap are going to be broken when applied
+  // to a domain. Thus CPU fallback for domains will
+  // be broken
+
   void* GPUStreamData::map(unsigned int flags)
   {
     if( _cpuData == NULL )
@@ -225,7 +247,7 @@ namespace brook
         _cpuDataSize = _totalSize * getElementSize();
         _cpuData = new unsigned char[ _cpuDataSize ];
       }
-    
+
     if( flags & Stream::READ )
       getData( _cpuData );
     return _cpuData;

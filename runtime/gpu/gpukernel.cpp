@@ -416,7 +416,10 @@ namespace brook
       reduceToStream( outputTexture, 1, 1 );
 
       float4 reductionResult;
-      _context->getTextureData( outputTexture, (float*)&reductionResult, sizeof(reductionResult), 1 );
+      unsigned int domainMin = 0;
+      unsigned int domainMax = 1;
+      unsigned int extents = 1;
+      _context->getTextureData( outputTexture, (float*)&reductionResult, sizeof(reductionResult), 1, 1, &domainMin, &domainMax, &extents, false );
       if( outputReductionType == __BRTFLOAT )
         *((float*)outputReductionData) = *((float*)&reductionResult);
       else if( outputReductionType == __BRTFLOAT2 )
@@ -1039,7 +1042,10 @@ namespace brook
     if( h == 0 )
       h = bufferHeight;
 
-    _context->getTextureData( inBuffer, (float*)data, sizeof(float4), bufferWidth*bufferHeight );
+    unsigned int domainMin[2] = { 0, 0 };
+    unsigned int domainMax[2] = { bufferHeight, bufferWidth };
+    unsigned int extents[2] = { bufferHeight, bufferWidth };
+    _context->getTextureData( inBuffer, (float*)data, sizeof(float4), bufferWidth*bufferHeight, 2, domainMin, domainMax, extents, false );
 
     float4* line = data;
     for( int y = 0; y < h; y++ )

@@ -161,14 +161,22 @@ namespace brook {
     setTextureData( TextureHandle inTexture, 
                     const float* inData, 
                     unsigned int inStrideBytes, 
-                    unsigned int inElemCount ) = 0;
+                    unsigned int inElemCount,
+                    unsigned int inRank,
+                    const unsigned int* inDomainMin,
+                    const unsigned int* inDomainMax,
+                    const unsigned int* inExtents, bool inUsesAddressTranslation ) = 0;
     
     /* Fetch the texture data */
     virtual void 
     getTextureData( TextureHandle inTexture, 
                     float* outData, 
                     unsigned int inStrideBytes, 
-                    unsigned int inElemCount ) = 0;
+                    unsigned int inElemCount,
+                    unsigned int inRank,
+                    const unsigned int* inDomainMin,
+                    const unsigned int* inDomainMax,
+                    const unsigned int* inExtents, bool inUsesAddressTranslation ) = 0;
     
     /* Create a pixel shader */
     virtual PixelShaderHandle 

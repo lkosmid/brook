@@ -44,6 +44,7 @@ main (int argc, char *argv[]) {
    streamGatherOp(e,indexstream,d,fetch);
    streamWrite(e, data_e);
 
+   printf("gatherOp test:\n");
    for (i=0; i<20; i++) {
       for (j=0; j<10; j++) {
          printf("{%3.2f,%3.2f} ", data_e[i][j].x,data_e[i][j].y);
@@ -54,6 +55,7 @@ main (int argc, char *argv[]) {
    iterator_test(d,ian,e);
    streamWrite(e, data_e);
 
+   printf("iterator test:\n");
    for (i=0; i<20; i++) {
       for (j=0; j<10; j++) {
          printf("{%3.2f,%3.2f} ", data_e[i][j].x,data_e[i][j].y);

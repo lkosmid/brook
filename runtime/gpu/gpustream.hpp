@@ -25,6 +25,9 @@ namespace brook {
 
         void setData( const void* inData );
         void getData( void* outData );
+
+        void setDomainData( const void* inData, const unsigned int* inDomainMin, const unsigned int* inDomainMax );
+        void getDomainData( void* outData, const unsigned int* inDomainMin, const unsigned int* inDomainMax );
         void* map(unsigned int flags);
         void unmap(unsigned int flags);
 
@@ -126,11 +129,11 @@ namespace brook {
             const unsigned int* inDomainMax );
 
         virtual void Read( const void* inData ) {
-            _data->setData( inData );
+            _data->setDomainData( inData, _domainMin, _domainMax );
         }
 
         virtual void Write( void* outData ) {
-            _data->getData( outData );
+            _data->getDomainData( outData, _domainMin, _domainMax );
         }
 
         virtual Stream* Domain(int min, int max);
