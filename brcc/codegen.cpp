@@ -1095,7 +1095,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
  *      Takes CG code and runs it through the CG compiler (and parses the
  *      results) to produce the corresponding fragment program.
  */
-
+static std::set<std::string> cg_warnings;
 static char *
 compile_cg_code (char *cgcode) {
 
@@ -1109,7 +1109,6 @@ compile_cg_code (char *cgcode) {
              argv[0]);
      return NULL;
   }
-
   /* Tolerate CRLF or LF line endings. */
   endline = strstr (fpcode, "\nEND\n");
   if (!endline) {
@@ -1128,7 +1127,27 @@ compile_cg_code (char *cgcode) {
      fprintf(stderr, "***Summary information from cgc:\n");
      fwrite (endline, strlen(endline), 1, stderr);
   }
-  return fpcode;
+  if (!strstr(fpcode,"warning"))
+    return fpcode;
+  std::string parse_fpcode(fpcode);
+  free(fpcode);
+  unsigned int wherewarn;
+  while ((wherewarn = parse_fpcode.find("warning"))!=std::string::npos) {
+    std::string warnung=parse_fpcode.substr(0,parse_fpcode.find("\n"));
+    if (cg_warnings.find(warnung)==cg_warnings.end()) {
+      printf("%s\n",warnung.c_str());
+      cg_warnings.insert(warnung);
+    }
+    parse_fpcode=parse_fpcode.substr(wherewarn+7);
+    wherewarn=parse_fpcode.find("\n");
+    if (wherewarn==std::string::npos) {
+      wherewarn=parse_fpcode.find("\n");
+    }    
+    if (wherewarn!=std::string::npos) {
+      parse_fpcode=parse_fpcode.substr(wherewarn+1);
+    }
+  }
+  return strdup(parse_fpcode.c_str());
 }
 
 /*
