@@ -1,5 +1,7 @@
 
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "nv30gl.hpp"
 
@@ -739,7 +741,6 @@ NV30GLKernel::ReduceStream() {
    while (ratiox != 1) {
       int half = ratiox/2;
       int remainder = ratiox%2;
-      int ratioxp = half*2;
    
       compute_st(half*nx, h, false,
                  0.0f, 0.0f, 0.0f, 1.0f,
@@ -848,7 +849,6 @@ NV30GLKernel::ReduceStream() {
    while (ratioy != 1) {
       int half = ratioy/2;
       int remainder = ratioy%2;
-      int ratioyp = half*2;
    
       compute_st(nx, half*ny, false,
                  0.0f, 0.0f, 0.0f, 1.0f,

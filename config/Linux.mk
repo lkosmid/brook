@@ -10,6 +10,9 @@ SHARED_LIBSUFFIX := .so
 STATIC_LIBSUFFIX := .a
 BINSUFFIX        := 
 
+
+SYSTEM_LIBS      := 
+
 CFLAGS           += 
 C_INCLUDE_FLAG   := -I  
 C_DEBUG_FLAG     := -g3 -Wall 
@@ -18,17 +21,18 @@ C_STATIC_FLAG    :=
 C_OUTPUT_FLAG    := -o 
 C_COMPILE_FLAG   := -c 
 
-LDFLAGS           += -lpthread
+LDFLAGS           += -lpthread -L/usr/X11R6/lib 
 LD_LIBDIR_FLAG    := -L
 LD_SHARED_FLAG    := -shared   
 LD_OUTPUT_FLAG    := -o 
-LD_LIBLINK_PREFIX := $(ROOTDIR)/$(BIN)/lib
-LD_LIBLINK_SUFFIX := .a
+LD_LIBLINK_PREFIX := -l
+LD_LIBLINK_SUFFIX := 
 LD_DEBUG_FLAG     := 
 
-LIBRARIES         +=
-#GL m c
+LIBRARIES        +=
 ARFLAGS		 := -rc 
 AR_OUTPUT_FLAG	 := 
-RUNTIME_LIBS     := brook cpu
+
+RUNTIME_LIBS     := brook cpu nv30gl X11 Xmu Xt GL GLU
+
 RANLIB           := ranlib

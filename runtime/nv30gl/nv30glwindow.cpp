@@ -1,11 +1,21 @@
 
-#include <windows.h>
 #include <assert.h>
 #include <stdio.h>
-#include <GL/gl.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "glext.h"
+#ifdef WIN32
+#include <windows.h>
+#include <GL/gl.h>
 #include "wglext.h"
+#else
+#include <X11/Xlib.h>
+#include <GL/gl.h>
+#include <GL/glx.h>
+#define GLX_FLOAT_COMPONENTS_NV         0x20B0
+#endif
+
+#include "nv30glext.h"
 
 #include "nv30gl.hpp"
 
@@ -19,6 +29,7 @@ const char window_name[] = "Brook NV30GL Render Window";
 void
 NV30GLRunTime::createWindow (void) {
   
+#ifdef WIN32
   HINSTANCE hinstance;
   WNDCLASS wc;
   DWORD window_style;
@@ -64,7 +75,9 @@ NV30GLRunTime::createWindow (void) {
 		       NULL, NULL, hinstance, NULL );
   
   assert (hwnd);
+#endif
 }
+
 
 
 // This function creates a default
@@ -72,6 +85,7 @@ NV30GLRunTime::createWindow (void) {
 // by Brook but is needed to construct
 // a pbuffer
 
+#ifdef WIN32
 static BOOL
 bSetupPixelFormat( HDC hdc )
 {
@@ -113,9 +127,11 @@ bSetupPixelFormat( HDC hdc )
     }
     return TRUE;
 }
+#endif
 
 void
 NV30GLRunTime::createWindowGLContext(void) {
+#ifdef WIN32
   HDC hdc;
 
   assert(hwnd);
@@ -127,12 +143,14 @@ NV30GLRunTime::createWindowGLContext(void) {
   assert(hglrc_window);
  
   assert(wglMakeCurrent( hdc, hglrc_window ));
+#endif
 }
 
 
 void
 NV30GLRunTime::createPBuffer (void) {
 
+#ifdef WIN32
   int pixelformat;
   int piAttribList[] = {0,0};
   float fAttributes[] = {0, 0};
@@ -194,57 +212,67 @@ NV30GLRunTime::createPBuffer (void) {
   }
 
   CHECK_GL();
-}
 
-#if 0
 
-void clearoutput(float x, float y, float z, float w) {
-  glClearColor(x, y, z, w);
-  glClear(GL_COLOR_BUFFER_BIT);
-}
+#else
 
-void hidewindow(HWND hwnd) {
-  ShowWindow(hwnd, SW_HIDE);
-}
+  /* GLX Pbuffer creation */
 
-void makecurrentwindow(HDC hdc, HGLRC hglrc) {
-  assert(wglMakeCurrent(hdc, hglrc ));
-}
-
-void makecurrentpbuffer(HDC hpbufferdc, HGLRC hpbufferglrc) {
-  assert(wglMakeCurrent( hpbufferdc, hpbufferglrc ));
-  glDrawBuffer (GL_FRONT);
-  glReadBuffer (GL_FRONT);
-  CHECK_GL();
-}
-
-static int pbufferbound        = 0;
-static int isfront             = 1;
-const  int wglfront_back[2]    = {WGL_FRONT_ARB, WGL_BACK_ARB};
-const  int front_back[2]       = {GL_FRONT, GL_BACK};
-
-void swappbuffer(void) {
-  if (pbufferbound) {
-    assert(wglReleaseTexImageARB(hpbuffer, wglfront_back[isfront]));
-    CHECK_GL();
+  Display   *pDisplay = XOpenDisplay(NULL); 
+  int iScreen = DefaultScreen(pDisplay);
+  
+  GLXFBConfig *glxConfig;
+  int iConfigCount;   
+  
+  int pfAttribList[] = 
+    {
+      GLX_RED_SIZE,               32,
+      GLX_GREEN_SIZE,             32,
+      GLX_BLUE_SIZE,              32,
+      GLX_ALPHA_SIZE,             32,
+      GLX_STENCIL_SIZE,           0,
+      GLX_DEPTH_SIZE,             0,
+      GLX_FLOAT_COMPONENTS_NV,    true,
+      GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT,
+      0,
+    };
+  
+  glxConfig = glXChooseFBConfig(pDisplay, 
+				iScreen, 
+				pfAttribList, 
+				&iConfigCount);
+  if (!glxConfig) {
+    fprintf(stderr, "NV30GL:  glXChooseFBConfig() failed\n");
+    exit(1);
   }
   
-  glDrawBuffer(front_back[isfront]);
-  glReadBuffer(front_back[isfront]);
-  CHECK_GL();
-
-  isfront = !isfront;
-}
-
-void bindpbuffer(void) {
-  assert(wglBindTexImageARB(hpbuffer, wglfront_back[isfront]));
-  pbufferbound = 1;
-  CHECK_GL();
-}
-
-void releasepbuffer(void) {
-  assert(wglReleaseTexImageARB(hpbuffer, wglfront_back[isfront]));
-  pbufferbound = 0;
-}
+  int pbAttribList[] =  {
+    GLX_PRESERVED_CONTENTS, true,
+    GLX_PBUFFER_WIDTH, workspace,
+    GLX_PBUFFER_HEIGHT, workspace,
+    0,
+  };
+  
+  glxPbuffer = glXCreatePbuffer(pDisplay, 
+				glxConfig[0], 
+				pbAttribList);
+  
+  if (!glxPbuffer) {
+    fprintf(stderr, "NV30GL: glXCreatePbuffer() failed\n");
+    exit(1);
+  }
+  
+  glxContext = glXCreateNewContext(pDisplay, 
+				   glxConfig[0], 
+				   GLX_RGBA_TYPE, 
+				   0, true);
+  if (!glxConfig) {
+    fprintf(stderr, "NV30GL: glXCreateContextWithConfig() failed\n");
+    exit (1);
+  }
+  
+  glXMakeCurrent(pDisplay, glxPbuffer, glxContext);
 
 #endif
+
+}

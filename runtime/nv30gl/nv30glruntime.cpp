@@ -17,12 +17,9 @@ NV30GLRunTime::NV30GLRunTime() {
   // Create a window glcontext
   createWindowGLContext();
   
-  // Initialize gl extension function pointers
   initglfunc();
 
-  // Create our floating point workspace
   createPBuffer();
-
 
   // Initial GL State
   glDrawBuffer(GL_FRONT);

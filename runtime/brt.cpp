@@ -5,26 +5,22 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
-#ifdef _WIN32
- #define GPU_ROUTINES
-#else
- #ifdef GPU_ROUTINES
-  #undef GPU_ROUTINES
- #endif
+
+
+#ifdef WIN32
+#include "dx9/dx9.hpp"
 #endif
 
-#ifdef GPU_ROUTINES
-//so far the following runtimes only have Windows backends
-#include "dx9/dx9.hpp"
 #include "nv30gl/nv30gl.hpp"
-#endif
 #include "cpu/cpu.hpp"
 #include "brtscatterintrinsic.hpp"
+
 __StreamScatterAssign STREAM_SCATTER_ASSIGN;
 __StreamScatterAdd STREAM_SCATTER_ADD;
 __StreamScatterMul STREAM_SCATTER_MUL;
 __StreamGatherInc STREAM_GATHER_INC;
 __StreamGatherFetch STREAM_GATHER_FETCH;
+
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
@@ -43,20 +39,24 @@ namespace brook {
       fprintf (stderr,"No runtime requested. Using CPU\n");
       return new CPURunTime();
     }
-#ifdef GPU_ROUTINES
+
+#ifdef WIN32
     if (!strcmp(env, DX9_RUNTIME_STRING))
     {
       RunTime* result = DX9RunTime::create();
       if( result != NULL ) return result;
-      fprintf(stderr, "Unable to initialize DX9 runtime, falling back to CPU");
+      fprintf(stderr, 
+	      "Unable to initialize DX9 runtime, falling back to CPU\n");
       return new CPURunTime();
     }
+#endif
 
     if (!strcmp(env, NV30GL_RUNTIME_STRING))
       return new NV30GLRunTime();
-#endif
-	if (strcmp(env,CPU_RUNTIME_STRING)) 
-		fprintf (stderr, "Unknown runtime requested: %s falling back to CPU", env);
+
+    if (strcmp(env,CPU_RUNTIME_STRING)) 
+      fprintf (stderr, 
+	       "Unknown runtime requested: %s falling back to CPU\n", env);
     return new CPURunTime();
   }
 }

@@ -122,7 +122,7 @@ $(OBJDIR)/%$(OBJSUFFIX): %.c
 ifndef COMPILER_ECHOS
 	@$(ECHO) $<
 endif
-	$(CC) $(CFLAGS) $(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
+	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
 ##  Compile .cpp files ##
 $(OBJDIR)/%$(OBJSUFFIX): %.cpp
@@ -172,7 +172,7 @@ ifdef BINARY
 	@rm -rf $(BINDIR)/$(BINARY_NAME).pdb $(DEPDIR)
 	@rm -rf $(BINARY_NAME).output
 endif
-	@rm -rf *~ .#* $(SLOP)
+	@rm -rf *~ .#* #* $(SLOP)
 
 ## Regression testing ##
 

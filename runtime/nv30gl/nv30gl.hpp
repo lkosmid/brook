@@ -8,11 +8,30 @@
 #include <GL/gl.h>
 #include "wglext.h"
 #else
+#include <X11/Xlib.h>
+#define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
-#include "glxext.h"
+#include <GL/glx.h>
 #endif
 
-#include "glext.h"
+#include "nv30glext.h"
+
+#ifdef WIN32   
+extern PFNWGLCREATEPBUFFERARBPROC      wglCreatePbufferARB;
+extern PFNWGLGETPBUFFERDCARBPROC       wglGetPbufferDCARB;
+extern PFNWGLCHOOSEPIXELFORMATARBPROC  wglChoosePixelFormatARB;
+extern PFNWGLBINDTEXIMAGEARBPROC       wglBindTexImageARB;
+extern PFNWGLRELEASETEXIMAGEARBPROC    wglReleaseTexImageARB;
+extern PFNGLMULTITEXCOORD2FARBPROC     glMultiTexCoord2fARB;
+extern PFNGLMULTITEXCOORD4FARBPROC     glMultiTexCoord4fARB;
+extern PFNGLACTIVETEXTUREARBPROC       glActiveTextureARB;
+extern PFNGLGENPROGRAMSNVPROC          glGenProgramsNV;
+extern PFNGLLOADPROGRAMNVPROC          glLoadProgramNV;
+extern PFNGLBINDPROGRAMNVPROC          glBindProgramNV;
+extern PFNGLPROGRAMNAMEDPARAMETER4FNVPROC
+                            glProgramNamedParameter4fNV;
+#endif 
+
 
 namespace brook {
 
@@ -38,20 +57,6 @@ void __check_gl(int line, char *file);
 #define NV30GL_MAX_TEXCOORDS 8
 
    extern const char* NV30GL_RUNTIME_STRING;
-   
-   extern PFNWGLCREATEPBUFFERARBPROC      wglCreatePbufferARB;
-   extern PFNWGLGETPBUFFERDCARBPROC       wglGetPbufferDCARB;
-   extern PFNWGLCHOOSEPIXELFORMATARBPROC  wglChoosePixelFormatARB;
-   extern PFNWGLBINDTEXIMAGEARBPROC       wglBindTexImageARB;
-   extern PFNWGLRELEASETEXIMAGEARBPROC    wglReleaseTexImageARB;
-   extern PFNGLACTIVETEXTUREARBPROC       glActiveTextureARB;
-   extern PFNGLGENPROGRAMSNVPROC          glGenProgramsNV;
-   extern PFNGLLOADPROGRAMNVPROC          glLoadProgramNV;
-   extern PFNGLBINDPROGRAMNVPROC          glBindProgramNV;
-   extern PFNGLPROGRAMNAMEDPARAMETER4FNVPROC
-          glProgramNamedParameter4fNV;
-   extern PFNGLMULTITEXCOORD2FARBPROC     glMultiTexCoord2fARB;
-   extern PFNGLMULTITEXCOORD4FARBPROC     glMultiTexCoord4fARB;
 
    class NV30GLKernel : public Kernel {
    public:

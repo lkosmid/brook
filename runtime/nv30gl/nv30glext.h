@@ -1,5 +1,5 @@
-#ifndef __glext_h_
-#define __glext_h_
+#ifndef __nv30glext_h_
+#define __nv30glext_h_
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +55,8 @@ extern "C" {
 /*************************************************************/
 
 /* Header file version number, required by OpenGL ABI for Linux */
-#define GL_GLEXT_VERSION 6
+//Removed to not to colide with the one in user include
+//#define GL_GLEXT_VERSION 6
 
 #ifndef GL_VERSION_1_2
 #define GL_CONSTANT_COLOR                 0x8001

@@ -6,13 +6,13 @@
 
 #include "nv30gl.hpp"
 
-static const int nerrors = 6;
+static const unsigned int nerrors = 6;
 
 static char error_txt[][32] = {
     "GL_INVALID_ENUM",
     "GL_INVALID_VALUE",
     "GL_INVALID_OPERATION",
-    "GL_STACK_OVERFLOW",
+    "GL_STACK_OVERFLOW", 
     "GL_STACK_UNDERFLOW",
     "GL_OUT_OF_MEMORY" };
 
