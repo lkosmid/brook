@@ -99,7 +99,7 @@ void Reduction_Time(int length) {
   do_reduction(512, simReduceReg, 1, &usec);
 
   printf("(* size *)  (* usec *)\n");
-  for (size = 32; size<=length; size+=32) {
+  for (size = 8; size<=length; size+=8) {
     do_reduction(size, simReduceReg, iterations, &usec);
     printf("%8d    %.5f    (* reduce *)\n", 4*size*size, (float)usec / (float)iterations );
   }
@@ -110,7 +110,7 @@ void Reduction_Time(int length) {
   simReduceReg = 1;
 
   printf("(* size *)  (* usec *)\n");
-  for (size = 32; size<=length; size+=32) {
+  for (size = 8; size<=length; size+=8) {
     do_reduction(size, simReduceReg, iterations, &usec);
     printf("%8d    %.5f    (* reduce *)\n", 4*size*size, (float)usec / (float)iterations );
   }
