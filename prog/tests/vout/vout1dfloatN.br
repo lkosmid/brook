@@ -46,13 +46,13 @@ kernel void calculateIndexModulus1d (float4 index,
    which= floor(fmod(index.x,modulus)-offset);
 }
 kernel float getSentinel1d () {
-  return 1.0f/floor(0.5);
+   return 18446321861244485632.0f;//1.0f/floor(0.5);
 }
 kernel float isSentinel1d(float a<>) {
-  return isinf(a);
+   return a==getSentinel1d();//isinf(a);
 }
 float isSentinel1d_float(float a) {
-  return isinf(a);
+  return a==18446321861244485632.0f;
 }
 #define isSentinel1d_float2(output) isSentinel1d_float(output.x)
 #define isSentinel1d_float3(output) isSentinel1d_float(output.x)
@@ -60,10 +60,10 @@ float isSentinel1d_float(float a) {
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat1d (float input <>, 
                                    reduce float output<>) {
-   output=isinf(input.x)?output:input;
+   output=isSentinel1d(input.x)?output:input;
 }
 kernel void isFiniteKernelfloat1d(float inp<>, out float outp<>) {
-   outp=!isinf(inp.x);
+   outp=!isSentinel1d(inp.x);
 }
 
 int finiteValueProduced1dfloat (float input<>) {
@@ -950,10 +950,10 @@ unsigned int totalCombineVoutfloat1d (float list_stream<>,
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat21d (float2 input <>, 
                                    reduce float2 output<>) {
-   output=isinf(input.x)?output:input;
+   output=isSentinel1d(input.x)?output:input;
 }
 kernel void isFiniteKernelfloat21d(float2 inp<>, out float outp<>) {
-   outp=!isinf(inp.x);
+   outp=!isSentinel1d(inp.x);
 }
 
 int finiteValueProduced1dfloat2 (float2 input<>) {
@@ -1840,10 +1840,10 @@ unsigned int totalCombineVoutfloat21d (float2 list_stream<>,
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat31d (float3 input <>, 
                                    reduce float3 output<>) {
-   output=isinf(input.x)?output:input;
+   output=isSentinel1d(input.x)?output:input;
 }
 kernel void isFiniteKernelfloat31d(float3 inp<>, out float outp<>) {
-   outp=!isinf(inp.x);
+   outp=!isSentinel1d(inp.x);
 }
 
 int finiteValueProduced1dfloat3 (float3 input<>) {
@@ -2730,10 +2730,10 @@ unsigned int totalCombineVoutfloat31d (float3 list_stream<>,
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat41d (float4 input <>, 
                                    reduce float4 output<>) {
-   output=isinf(input.x)?output:input;
+   output=isSentinel1d(input.x)?output:input;
 }
 kernel void isFiniteKernelfloat41d(float4 inp<>, out float outp<>) {
-   outp=!isinf(inp.x);
+   outp=!isSentinel1d(inp.x);
 }
 
 int finiteValueProduced1dfloat4 (float4 input<>) {

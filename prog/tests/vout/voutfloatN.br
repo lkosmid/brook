@@ -71,15 +71,26 @@ kernel void calculateIndexModulus (float4 index,
                 + fmod(index.x,modulus),
                 modulus)-offset);
 }
+
 kernel float getSentinel2d () {
-  return 1.0f/floor(0.5);
+  return 18446321861244485632.0f;//1.0f/floor(0.5);
 }
 kernel float isSentinel2d(float a<>) {
-  return isinf(a);
+  return a==getSentinel2d();//isinf(a);
 }
 float isSentinel2d_float(float a) {
-  return isinf(a);
+  return a==18446321861244485632.0f;
+  }/*
+kernel float getSentinel2d () {
+  return -4.0f;//1.0f/floor(0.5);
 }
+kernel float isSentinel2d(float a<>) {
+  return a==getSentinel2d();//isinf(a);
+}
+float isSentinel2d_float(float a) {
+  return a==-4.0f;
+}
+   */
 #define isSentinel2d_float2(output) isSentinel2d_float(output.x)
 #define isSentinel2d_float3(output) isSentinel2d_float(output.x)
 #define isSentinel2d_float4(output) isSentinel2d_float(output.x)
