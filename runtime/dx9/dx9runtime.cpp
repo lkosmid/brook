@@ -72,7 +72,7 @@ Kernel * DX9RunTime::CreateKernel(const void* source[]) {
   return new DX9Kernel( this, source );
 }
 
-Stream * DX9RunTime::CreateStream(const char type[], int dims, int extents[]) {
+Stream * DX9RunTime::CreateStream(__BRTStreamType type, int dims, int extents[]) {
   // XXX: TO DO
   return new DX9Stream( this, type, dims, extents );
 }
