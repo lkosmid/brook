@@ -1,10 +1,10 @@
 #include <brook.hpp>
 
-typedef struct Tri_t{
+typedef struct STri_t{
    float4 A; // the last value of A indicates whether the edge AB is small
    float4 B; // enough to stop subdividing.  B.w also indicates if BC is small
    float4 C; // enough. C.w indicates if AC is small enough to stop subdividing
-} Tri;
+} STri;
 #define tri_vertex_t float4
 //Stores the neighbors of a given triangle
 // the unused 'w' components act as holders

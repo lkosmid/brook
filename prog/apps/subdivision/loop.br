@@ -10,11 +10,11 @@ AAB/__\/__\/__\BCC
     \/__\/__\/
    AAC  AC  ACC
 **/
-typedef struct Tri_t{
+typedef struct STri_t{
    float4 A; // the last value of A indicates whether the edge AB is small
    float4 B; // enough to stop subdividing.  B.w also indicates if BC is small
    float4 C; // enough. C.w indicates if AC is small enough to stop subdividing
-} Tri;
+} STri;
 
 //When a triangle is split, the new triangle really only has six unique new
 //values.  These are copied into the final 12 new triangle slots.
@@ -48,8 +48,8 @@ int counterMax = 2;
 extern float neighboreps;
 int low_texture_ram=0;
 int subdivisiondepth=0;
-void recomputeNeighbors(Tri*, Neighbor *, unsigned int);
-void checkNeighbors(Tri * tri, Neighbor * in, Neighbor * out, unsigned int);
+void recomputeNeighbors(STri*, Neighbor *, unsigned int);
+void checkNeighbors(STri * tri, Neighbor * in, Neighbor * out, unsigned int);
 
 
 //returns a 2 if only b1, 4 if only b2 and 8 if both
@@ -68,8 +68,8 @@ kernel float isNotNeighbor(float4 neigh) {
 }
 //The function that recomputes whether the given edges are large enough
 //to warrant a split. This could and probably should be done in "image space"
-kernel void smallEnough(Tri t<>, Neighbor u<>, 
-                        out Tri v<>, 
+kernel void smallEnough(STri t<>, Neighbor u<>, 
+                        out STri v<>, 
                         out Neighbor n<>, 
                         float epsilon) {
   v.A.xyz = t.A.xyz;
@@ -108,7 +108,7 @@ kernel void smallEnough(Tri t<>, Neighbor u<>,
   n.ACC.w = (isNotNeighbor(u.ACC)|| //if missing neighbor, should not stop split
              dot(t.C.xyz-u.ACC.xyz,t.C.xyz-u.ACC.xyz)>epsilon)?1.0:0;
 }
-kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 shouldNotProduce<>){
+kernel void produceTriP(STri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 shouldNotProduce<>){
    if (t.A.w!=0.0f
        ||t.B.w!=0.0f
        ||t.C.w!=0.0f) { // if either of the 3 vertices are still mobile, continue to split
@@ -120,7 +120,7 @@ kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 
    }
 }
 
-kernel void computeNeighbors(Tri tgather[][], 
+kernel void computeNeighbors(STri tgather[][], 
                              Neighbor ugather[][], 
                              float2 i<>, 
                              out Neighbor v<>) {
@@ -133,7 +133,7 @@ kernel void computeNeighbors(Tri tgather[][],
   float eBBC=isNeighbor(u.BBC);
   float eBCC=isNeighbor(u.BCC);
   float eACC=isNeighbor(u.ACC);
-  Tri t = tgather[ind];
+  STri t = tgather[ind];
   float3 AB_B, AC_A, BC_C;
   float3 zero3=0;
   AB_B=lerp(t.B.xyz,u.AB.xyz,.5);
@@ -209,7 +209,7 @@ kernel void computeNeighbors(Tri tgather[][],
 
 //Splay the triangles into a vertex list of float3's.
 //these are the final triangles
-kernel void copyFinalTriangles (Tri tri<>,
+kernel void copyFinalTriangles (STri tri<>,
                                  out float3 triList<>) {
   float whichVertex=round(fmod((indexof triList).x,3));
   triList = tri.A.xyz;
@@ -219,7 +219,7 @@ kernel void copyFinalTriangles (Tri tri<>,
     triList=tri.C.xyz;
 }
 //Same as copy final triangles but with a dependent texture lookup
-kernel void writeFinalTriangles (Tri triangles[][],
+kernel void writeFinalTriangles (STri triangles[][],
                                  float2 indices<>,
                                  out float3 triList<>) {
   float2 zero2=0;
@@ -242,13 +242,13 @@ kernel float3 ident3(float3 a, float b) {return a;}
 //this function takes as input an index that tells which triangle must be split
 //the output is 6 new vertices that make up the 4 new triangles and 12 neighbors 
 // (stored in 9 float4s)
-kernel void splitTriangles (Tri triangles[][], 
+kernel void splitTriangles (STri triangles[][], 
                             Neighbor neighbors[][],
                             float2 i<>,
                             out SplitTri splittri<>) {
   float2 zero2=0;
   float2 index = (i>=0&&i<2048)?i:zero2;
-  Tri tri=triangles[index];
+  STri tri=triangles[index];
   Neighbor oldneighbors=neighbors[index];
   float eAAB=isNeighbor(oldneighbors.AAB);
   float eAAC=isNeighbor(oldneighbors.AAC);
@@ -347,7 +347,7 @@ void __printnew_cpu_inner() {
 //uses fmod with x or y to determine which direction should matter wrt fmod.
 kernel void linearReorgSplitTriangles (SplitTri splittri<>,
                                        Neighbor newnei<>,
-                                       out Tri tri<>,
+                                       out STri tri<>,
                                        out Neighbor neighbor<>,
                                        float epsilon,
                                        float stretchX) {
@@ -470,7 +470,7 @@ static int toi(float f) {return (int)f;}
 //Note smallEnough must have been run on the input for this to work
 //small enough is run from main or from within linearReorgSplitTriangles
 void subdivide (Neighbor (*neighbors)<>,
-                Tri (*triangles)<>,
+                STri (*triangles)<>,
                 struct VertexArray *output,
                 float epsilon,
                 int counter) {
@@ -502,7 +502,7 @@ void subdivide (Neighbor (*neighbors)<>,
         //input is thus stretched through them based on the fmod
         Neighbor newNeighbors<(stretchX?streamY:streamY*4),
           (stretchX?streamX*4:streamX)>;
-        Tri newTriangles<(stretchX?streamY:streamY*4),
+        STri newTriangles<(stretchX?streamY:streamY*4),
           (stretchX?streamX*4:streamX)>;
         //computes the 12 shared neighbor values
         computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
@@ -521,12 +521,12 @@ void subdivide (Neighbor (*neighbors)<>,
         streamSwap(*triangles,newTriangles);
         streamSwap(*neighbors,newNeighbors);
         if (debugLoop) {
-          Tri * tri;
+          STri * tri;
           Neighbor * neigh;
           Neighbor * checknei;
           unsigned int totalsize;
           totalsize = ((unsigned int)streamSize(*triangles).x)*(unsigned int)streamSize(*triangles).y;
-          tri = (Tri*)malloc (sizeof(Tri)*totalsize);
+          tri = (STri*)malloc (sizeof(STri)*totalsize);
           neigh = (Neighbor*)malloc (sizeof(Neighbor)*totalsize);
           checknei = (Neighbor*)malloc (sizeof(Neighbor)*totalsize);
           streamWrite(*neighbors,neigh);
@@ -579,16 +579,16 @@ void subdivide (Neighbor (*neighbors)<>,
 }
 
 extern unsigned int  loadModelData(const char * filename, 
-                                   Tri **tris, 
+                                   STri **tris, 
                                    Neighbor **nei);
 
-Tri *  createTriangles (unsigned int howMany) {
-  Tri * ret;  
-  ret=(Tri*)malloc(sizeof(Tri)*howMany);
-  memset(ret,0,sizeof(Tri)*howMany);
+STri *  createTriangles (unsigned int howMany) {
+  STri * ret;  
+  ret=(STri*)malloc(sizeof(STri)*howMany);
+  memset(ret,0,sizeof(STri)*howMany);
   return ret;
 }
-Neighbor *  createNeighbors (Tri * tri, unsigned int howMany) {
+Neighbor *  createNeighbors (STri * tri, unsigned int howMany) {
   Neighbor * ret;  
   ret=(Neighbor*)malloc(sizeof(Neighbor)*howMany);
   memset(ret,0,sizeof(Neighbor)*howMany);
@@ -631,13 +631,13 @@ unsigned int bestWidth(unsigned int totalSize){
    return wid;
 }
 extern void computeFunctionCallPattern(float epsilon,
-                                       int argc, char ** argv, int numTri,Tri*triangles,Neighbor *neigh);
-unsigned int loadModelData(char* file,Tri **triangles,Neighbor **neighbors);
+                                       int argc, char ** argv, int numTri,STri*triangles,Neighbor *neigh);
+unsigned int loadModelData(char* file,STri **triangles,Neighbor **neighbors);
 int main (int argc, char**argv) {
   unsigned int i = 0;
   unsigned int vcount=0;
   float epsilon=.0001;
-  Tri *triangledata = 0;
+  STri *triangledata = 0;
   Neighbor *neighbordata = 0;
   unsigned int numTriangles;
   neighboreps=epsilon/1024.0f;
@@ -671,7 +671,7 @@ int main (int argc, char**argv) {
     loadModelData(argc>1?argv[1]:"dragon.ply",&triangledata,&neighbordata);
   {
   Neighbor neighbors<bestHeight(numTriangles),bestWidth(numTriangles)>;
-  Tri triangles<bestHeight(numTriangles),bestWidth(numTriangles)>;
+  STri triangles<bestHeight(numTriangles),bestWidth(numTriangles)>;
   struct VertexArray v;
   streamRead(triangles,triangledata);
   streamRead(neighbors,neighbordata);

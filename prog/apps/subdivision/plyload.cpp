@@ -3,7 +3,7 @@
 #include <vector>
 #include <brook.hpp>
 using std::vector;
-void LoadPly (const char * file,vector<Tri> &ret) {
+void LoadPly (const char * file,vector<STri> &ret) {
   int i;
   float ver;char mchar;
   int numvertex,numface,propertycount=0;
@@ -41,7 +41,7 @@ void LoadPly (const char * file,vector<Tri> &ret) {
     }
     for (int i=count;i<num;++i) {
       fscanf(fp,"%d",&c);
-      ret.push_back(Tri());
+      ret.push_back(STri());
       ret.back().A = vertices[a];
       ret.back().B = vertices[b];
       ret.back().C = vertices[c];

@@ -11,11 +11,11 @@ bool eq(float a, float b) {
 bool ne(float4 a, float4 b){
 	return !(eq(a.x, b.x) && eq(a.y, b.y) && eq(a.z, b.z));
 }
-void LoadPly (const char * file,vector<Tri> &ret);
+void LoadPly (const char * file,vector<STri> &ret);
 bool operator ==(const float4 &a, const float4 &b) {
    return eq(a.x,b.x)&&eq(a.y,b.y)&&eq(a.z,b.z);
 }
-void checkEdgeNeighbor(const float4 &a, const float4 &b, float4 &c,const Tri &t){ 
+void checkEdgeNeighbor(const float4 &a, const float4 &b, float4 &c,const STri &t){ 
    if ((t.A==a&&t.B==b)||(t.A==b&&t.B==a))
       c = t.C;
    if ((t.A==a&&t.C==b)||(t.A==b&&t.C==a))
@@ -24,7 +24,7 @@ void checkEdgeNeighbor(const float4 &a, const float4 &b, float4 &c,const Tri &t)
       c = t.A;
 }
 
-void checkEdgeNeighbor2(const float4 &a, const float4 &alreadyhave, const float4 &b, float4 &c, const Tri &t){ 
+void checkEdgeNeighbor2(const float4 &a, const float4 &alreadyhave, const float4 &b, float4 &c, const STri &t){ 
 	if (((t.A==a&&t.B==b)||(t.A==b&&t.B==a))&&(ne(t.C,alreadyhave)))
       c = t.C;
 	if (((t.A==a&&t.C==b)||(t.A==b&&t.C==a))&&(ne(t.B,alreadyhave)))
@@ -32,7 +32,7 @@ void checkEdgeNeighbor2(const float4 &a, const float4 &alreadyhave, const float4
 	if (((t.B==a&&t.C==b)||(t.B==b&&t.C==a))&&(ne(t.A,alreadyhave)))
       c = t.A;
 }
-void checkNeighbors (Tri * t, Neighbor * a, Neighbor* b, unsigned int tListsize) {
+void checkNeighbors (STri * t, Neighbor * a, Neighbor* b, unsigned int tListsize) {
   for (unsigned int i=0;i<tListsize;++i) {
     if (isinf_float(b[i].AB.x)||isinf_float(a[i].AB.x))
       continue;
@@ -50,11 +50,11 @@ void checkNeighbors (Tri * t, Neighbor * a, Neighbor* b, unsigned int tListsize)
   }
 }
 
-void recomputeNeighbors (Tri * tList, Neighbor* neigh, unsigned int tListsize) {
+void recomputeNeighbors (STri * tList, Neighbor* neigh, unsigned int tListsize) {
    for (unsigned int i=0;i<tListsize;++i) {
       unsigned int j;
       float4 zero4(0,0,0,0);
-      Tri t = tList[i];
+      STri t = tList[i];
       t.A.w=0;
       t.B.w=0;
       t.C.w=0;
@@ -63,7 +63,7 @@ void recomputeNeighbors (Tri * tList, Neighbor* neigh, unsigned int tListsize) {
       if (1) {
         for (j=0;j<tListsize;++j) {
           //check for AB, BC, AC
-          Tri nei=tList[j];
+          STri nei=tList[j];
 					if(j==i)
 						continue;
           checkEdgeNeighbor(t.A,t.B,n.AB,nei);
@@ -71,7 +71,7 @@ void recomputeNeighbors (Tri * tList, Neighbor* neigh, unsigned int tListsize) {
           checkEdgeNeighbor(t.B,t.C,n.BC,nei);         
         }
         for (j=0;j<tListsize;++j) {
-          Tri nei=tList[j];
+          STri nei=tList[j];
 					if(j==i)
 						continue;
           checkEdgeNeighbor2(t.A,t.C,n.AC,n.AAC,nei);
@@ -119,14 +119,14 @@ void recomputeNeighbors (Tri * tList, Neighbor* neigh, unsigned int tListsize) {
    }
 }
 unsigned int loadModelData(const char * filename,
-                           Tri ** tri,
+                           STri ** tri,
                            Neighbor ** neigh) {
-   std::vector<Tri>tList;
+   std::vector<STri>tList;
    if (strcmp(filename,"dabunny")==0) 
      LoadPly("bunny.ply",tList);
    else
      LoadPly(filename,tList);
-   *tri = (Tri*)malloc(sizeof(Tri)*tList.size());
+   *tri = (STri*)malloc(sizeof(STri)*tList.size());
    *neigh =(Neighbor*)malloc(sizeof(Neighbor)*tList.size());
    for (unsigned int i=0;i<tList.size();++i) {
      float eps=.015625;
@@ -162,7 +162,7 @@ extern void computeFunctionCallPattern(float epsilon,
                                        int argc, 
                                        char ** argv, 
                                        int numTri,
-                                       Tri*triangles,
+                                       STri*triangles,
                                        Neighbor *neigh){
   printf ("Compute Function Call Pattern with eps = %f\n",epsilon);
   std::string filename = "sum-subdiv";
@@ -182,7 +182,7 @@ extern void computeFunctionCallPattern(float epsilon,
   int produceTriP=0;
   int splitTriangles=0;
   int writeFinalTriangles=0;
-  vector <Tri> trivec;
+  vector <STri> trivec;
   for (i=0;i<numTri;++i) {
     trivec.push_back(triangles[i]);
   }
@@ -190,11 +190,11 @@ extern void computeFunctionCallPattern(float epsilon,
     produceTriP+=trivec.size();
     EstablishGuess+=2*trivec.size();
     UpdateGuess+=2*(myLog(trivec.size())-1)*trivec.size();
-    vector <Tri> split;
-    vector <Tri> nosplit;
+    vector <STri> split;
+    vector <STri> nosplit;
     //do vout stage on CPU;
     for (unsigned int j=0;j<trivec.size();++j) {
-      Tri t = trivec[j];
+      STri t = trivec[j];
       float3 ab(t.A.x-t.B.x,t.A.y-t.B.y,t.A.z-t.B.z);
       float3 ac(t.A.x-t.C.x,t.A.y-t.C.y,t.A.z-t.C.z);
       float3 bc(t.B.x-t.C.x,t.B.y-t.C.y,t.B.z-t.C.z);
@@ -213,7 +213,7 @@ extern void computeFunctionCallPattern(float epsilon,
         float4 b2c(.5f*(t.B.x+t.C.x),
                    .5f*(t.B.y+t.C.y),
                    .5f*(t.B.z+t.C.z),0);
-        Tri u;
+        STri u;
         u.A=t.A;
         u.B=a2b;
         u.C=a2c;
