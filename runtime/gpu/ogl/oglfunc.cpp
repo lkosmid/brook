@@ -46,7 +46,8 @@ void brook::initglfunc(void) {
    checkextension("GL_ARB_multitexture");
    
    if (!hasextension("GL_NV_texture_rectangle") &&
-       !hasextension("GL_ARB_texture_rectangle")) {
+       !hasextension("GL_ARB_texture_rectangle") &&
+       !hasextension("GL_EXT_texture_rectangle")) {
       const char *card = (const char *) glGetString(GL_RENDERER);
       fprintf (stderr, "Texture Rectangle extension not found for "
                "graphics card: \n %s\n", card);
