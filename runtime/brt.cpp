@@ -214,15 +214,15 @@ namespace brook {
      unsigned int index[4] = {0, 0, 0, 0};
      unsigned int largestaddr = 1;
      
-     for (i=((int)dim)-1; i>=1; --i) {
+     for (i=((int)dim)-1; i>=0; --i) {
        largestaddr *= extents[i];
      }
 
      for (i=((int)dim)-1; i>=0; --i) {
+       largestaddr /= extents[dim-i-1];
        index[i] = linear_index / largestaddr;
-       index[i] -= domain_min[i];
+       index[i] -= domain_min[dim-i-1];
        linear_index -= largestaddr * index[i];
-       largestaddr /= extents[i];
      } 
 
      return __BrtFloat4((float) index[0], 
