@@ -265,7 +265,7 @@ generate_shader_code (Decl **args, int nArgs,
  */
 
 static char *
-compile_cg_code (char *cgcode) {
+compile_cg_code (char *cgcode, const char * name) {
 
   char *argv[16] = { "cgc", "-profile", "fp30", 
                      "-DUSERECT", "-quiet", NULL };
@@ -292,7 +292,7 @@ compile_cg_code (char *cgcode) {
   endline += strlen("\nEND");
   *endline = '\0';
   endline++;
-  fprintf(stderr, "***Summary information from cgc:\n");
+  fprintf(stderr, "***Summary information from cgc executed on %s:\n",name);
   fwrite (endline, strlen(endline), 1, stderr);
   return fpcode;
 }
@@ -305,7 +305,7 @@ compile_cg_code (char *cgcode) {
  */
 
 static char *
-compile_hlsl_code (char *hlslcode) {
+compile_hlsl_code (char *hlslcode, const char * name) {
 
   char *argv[] = { "fxc", "/Tps_2_0", "/nologo", 0, 0, NULL };
   char *fpcode,  *errcode;
@@ -322,6 +322,7 @@ compile_hlsl_code (char *hlslcode) {
                             strlen(globals.shaderoutputname) + 1);
   sprintf (argv[3], "/Fc%s.ps", globals.shaderoutputname);
   argv[4] = globals.shaderoutputname;
+  fprintf (stderr, "***Summary information from fxc executed on %s\n",name);
   errcode = Subprocess_Run(argv, NULL);
   if (!globals.keepFiles) remove(globals.shaderoutputname);
   if (errcode == NULL) {
@@ -330,7 +331,7 @@ compile_hlsl_code (char *hlslcode) {
      remove(argv[3]+3);
      return NULL;
   }
-
+  
   if (globals.verbose)
     fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
             errcode);
@@ -515,7 +516,8 @@ CodeGen_GenerateCode(Type *retType, const char *name,
         }
      }
 
-     fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
+     fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode,
+                                                                    name);
      free(shadercode);
   } else {
      fpcode = NULL;
