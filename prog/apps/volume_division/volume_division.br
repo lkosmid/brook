@@ -201,40 +201,42 @@ kernel float4 interp (float4 a, float4 b) {
   return lerp (0,1,1-(.39-a)/(b-a));  
 }
 kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>, 
-                                            float4 vertices1<>,
+                                            float4 verticesinf<>,
                                             float3 volumeTriangles[][],
                                             float curgather[][],
                                             float nextgather[][]) {
-  float2 why={0,1};
-  float2 eks={1,0};
   float isovalue=.39;
+  float3 onehalf=.5;
   float4 curiso,nextiso;
+  float4 vertices1=verticesinf;
+  if (!(vertices1.x<256&&vertices1.x>=0)) {
+    vertices1=0;
+  }
+  {
   float4 whichVolumeTriangle={round(fmod((indexof trianglesA).x,3)),vertices1.w,0,0};
   float3 vertices=vertices1.xyz;
   float mod5=round(fmod((indexof trianglesA).y,5));
   if (mod5+.5>5)
      mod5=0;
-  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0)) {
-    whichVolumeTriangle.y=0;
-  }
   if (whichVolumeTriangle.x+.5>3) whichVolumeTriangle.x=0;
   whichVolumeTriangle.x+=mod5*3; 
 
   {
     float3 config = volumeTriangles[whichVolumeTriangle].xyz;
+    float3 ishalf;
     float low,high,tmp;
-
-    if (config.z==.5) {
+    ishalf = (float3)(config==onehalf);
+    if (ishalf.z) {
       float2 lhGather = vertices.xy+config.xy;
       low = curgather[lhGather];
       high = nextgather[lhGather];
-      config.z =(isovalue-low)/(high-low);
     }else {
       float2 lowGather,highGather;
-      if (config.x==.5) {
+      if (ishalf.x) {
         lowGather=float2(vertices.x,vertices.y+config.y);
         highGather=float2(vertices.x+1.0f,vertices.y+config.y);
-      } else if (config.y==.5) {
+      } 
+      if (ishalf.y) {
         lowGather=float2(vertices.x+config.x,vertices.y);
         highGather=float2(vertices.x+config.x,vertices.y+1.0f);
       }
@@ -245,16 +247,14 @@ kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>,
         low = nextgather[lowGather];
         high= nextgather[highGather];
       }
-      tmp = (isovalue-low)/(high-low);
-      if (config.x==.5) {
-        config.x=tmp;
-      }else if (config.y==.5){
-        config.y=tmp;
-      }
-    }    
+    }
+    {
+      float3 tmp =(isovalue-low)/(high-low); 
+      config=ishalf?tmp:config;
+    }
     trianglesA=vertices+config;
   }
-  
+  }  
 }/*
 kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>, 
                                       float4 vertices1<>,
