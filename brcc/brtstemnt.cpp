@@ -285,7 +285,7 @@ public:
 	    cgt.printSubtype(out,&nothing,true,0);
 	    out<<"*)reinterpret_cast<CPUStream*>(args["<<index<<"])->getData(), "<<std::endl;
 	    indent(out,2);
-	    out<<"reinterpret_cast<CPUStream*>(args["<<index<<"])->getIndices());"<<std::endl;
+	    out<<"reinterpret_cast<CPUStream*>(args["<<index<<"])->getIndices());";
 	    break;
 	}
 	case USE:
@@ -316,11 +316,12 @@ public:
 	    out << " = (";
 	    s=(t->type==TT_Base)?getSymbol("*"):getSymbol("(*)");
 	    t->printType(out,&s,true,0);
-	    out << ")reinterpret_cast<CPUStream *>(args["<<index<<"])->getData();"<<std::endl;
+	    out << ")"<<std::endl;
+	    indent(out,2);
+	    out <<"reinterpret_cast<CPUStream *>(args["<<index<<"])->getData();";
 	    break;
 	}
 	case USE:{
-	    indent(out,3);
 	    out <<"arg"<<index;
 	    break;
 	}
@@ -352,10 +353,8 @@ public:
 	    out << ")args["<<index<<"];";
 	    if (isStream)
 		    out<<" arg"<<index<<+"+=mapbegin;";
-	    out<<std::endl;	    
 	    break;
 	case USE:
-		indent(out,3);
 		out <<"*arg"<<index;
 		if (isStream)
 		    out <<"++";
@@ -427,7 +426,9 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	func->printBefore(out,&enhanced_name,0);
 	out << "(const std::vector<void *>&args, unsigned int mapbegin, unsigned int mapend) {"<<std::endl;
 	{for (unsigned int i=0;i<myArgs.size();++i) {
+	    indent(out,1);
 	    myArgs[i].printInternalDef(out);
+	    out << std::endl;
 	}}
 	indent(out,1);
 	out << "for (unsigned int i=mapbegin;i<mapend;++i) {"<<std::endl;
@@ -435,6 +436,7 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	{for (unsigned int i=0;i<myArgs.size();++i) {
 	    if (i!=0)
 		out <<","<<std::endl;
+	    indent(out,3);
 	    myArgs[i].printInternalUse(out);
 	}}
 	out<< ");"<<std::endl;
