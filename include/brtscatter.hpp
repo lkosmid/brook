@@ -88,6 +88,12 @@ void streamScatterOpIndexDet(const T* data,
                       op);
    }
 }
+
+#define streamScatterOp1 streamScatterOp
+#define streamScatterOp2 streamScatterOp
+#define streamScatterOp3 streamScatterOp
+#define streamScatterOp4 streamScatterOp
+
                             
 template <class Functor> void streamScatterOp (const __BRTStream &s, 
                                                const __BRTStream &index,

@@ -35,6 +35,33 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
          Variable * name = static_cast<Variable*>(fc->function);
          if (name->name->name=="streamScatterOp") {
             if (fc->nArgs()>3) {
+               Variable * strm=NULL;
+               if (fc->args[0]->etype==ET_Variable) {
+                  strm = static_cast<Variable*>(fc->args[0]);
+               }else if (fc->args[2]->etype==ET_Variable) {
+                  strm = static_cast<Variable*>(fc->args[2]);
+               }else {
+                  std::cerr << "Error:";
+                  fc->location.printLocation(std::cerr);
+                  std::cerr << "Function args must be stream variables";
+                  assert (0);
+               }
+               char symbolAppend[2]={'1',0};
+               if (strm->name->entry) {
+                  Decl * uVarDecl;
+                  if ((uVarDecl=strm->name->entry->uVarDecl)!=0) {
+                     BaseTypeSpec typ=uVarDecl->form->getBase()->typemask;
+                     if (typ&BT_Float4) {
+                        symbolAppend[0]='4';
+                     }else if (typ&BT_Float3) {
+                        symbolAppend[0]='3';
+                     }else if (typ%BT_Float2) {
+                        symbolAppend[0]='2';
+                     }
+                  }
+               }
+               name->name= new Symbol(*name->name);
+               name->name->name+=symbolAppend;
                if (fc->args[3]->etype==ET_Variable) {
                   Variable *v=static_cast<Variable*>(fc->args[3]);
                   convertNameToScatter(v);
