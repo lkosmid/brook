@@ -1,29 +1,8 @@
-#line 1 "brtvector.hpp"
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
-
-#line 1 "brtvector.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 
 unsigned int debug_vout = 0;
+#define sentinelStream brook::sentinelStream
 unsigned int toui(float f) {
    return (unsigned int)f;
 }
@@ -91,7 +70,6 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
-#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -1096,7 +1074,6 @@ unsigned int totalCombineVoutfloat (float list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -2101,7 +2078,6 @@ unsigned int totalCombineVoutfloat2 (float2 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -3106,7 +3082,6 @@ unsigned int totalCombineVoutfloat3 (float3 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -4111,19 +4086,3 @@ unsigned int totalCombineVoutfloat4 (float4 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 1075 "brtvector.hpp"
-#line 1075 "brtvector.hpp"
-
-#line 1075 "brtvector.hpp"
-
-#line 1075 "brtvector.hpp"
-
-#line 1075 "brtvector.hpp"
-
-#line 1075 "brtvector.hpp"
-
-
-
-
-
-

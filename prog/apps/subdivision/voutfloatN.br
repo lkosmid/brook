@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 unsigned int debug_vout = 0;
-
+#define sentinelStream brook::sentinelStream
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
 
