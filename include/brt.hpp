@@ -394,9 +394,8 @@ namespace brook {
   };
 
 
-#if 0
   /* For vout */
-  inline static void maxDimension(int * out, 
+  inline static void maxDimension(unsigned int * out, 
                                   const unsigned int * in,
                                   int dims) {
     for (int i=0;i<dims;++i) {
@@ -405,7 +404,6 @@ namespace brook {
   }
   float getSentinel();
   ::brook::Stream* sentinelStream(int dim);
- #endif
 
 
   void readItem(brook::StreamInterface *s, void * p, ... );
