@@ -46,6 +46,11 @@ namespace brook{
     }
 
     stride=getElementSize();
+
+	fprintf (stderr, "******************************\n");
+	fprintf (stderr, "mallocing: %d * %d\n", stride, totalsize);
+	fflush (stderr);
+
     if (stride) {
       data = malloc(stride*totalsize);
     } else {
@@ -53,6 +58,9 @@ namespace brook{
     }
 
     malloced_size = stride*totalsize;
+
+	fprintf (stderr, "******************************\n\n");
+	fflush (stderr);
 
     isDerived = false;
   }
@@ -70,6 +78,11 @@ namespace brook{
     stride      = a.stride;
     totalsize   = a.totalsize;
     
+
+	fprintf (stderr, "******************************\n");
+	fprintf (stderr, "Derived mallocing\n");
+	fflush  (stderr);
+
     pos         = (unsigned int *) malloc (sizeof(unsigned int) * dims);
     domain_min  = (unsigned int *) malloc (sizeof(int) * dims);
     domain_max  = (unsigned int *) malloc (sizeof(int) * dims);
@@ -78,6 +91,8 @@ namespace brook{
       domain_min[i] = a.domain_min[i] + min[i];
       domain_max[i] = a.domain_min[i] + max[i]; 
     }
+
+	fprintf (stderr, "******************************\n");
 
     isDerived = true;
   }
@@ -99,7 +114,10 @@ namespace brook{
     stride    = s->getElementSize();
     totalsize = s->getTotalSize();
     
-    extents    = (unsigned int *) malloc (dims*sizeof(unsigned int));
+	fprintf (stderr, "\n\n Shadow Stream\n");
+	fflush (stderr);
+
+	extents    = (unsigned int *) malloc (dims*sizeof(unsigned int));
     domain_min = (unsigned int *) malloc (dims*sizeof(unsigned int));
     domain_max = (unsigned int *) malloc (dims*sizeof(unsigned int));
     pos        = (unsigned int *) malloc (dims*sizeof(unsigned int));
@@ -112,11 +130,34 @@ namespace brook{
 
     shadow = s;
     this->flags = flags;
+
+	isDerived = true;
   }
 
   CPUStreamShadow::~CPUStreamShadow() {
+
+	fprintf (stderr, "\n\n 0x%p: Stream Shadow Destructor\n", this);
+	fflush (stderr);
+	
+#if 0 
+	assert(extents);
     free(extents);
-    shadow->releaseData(flags);
+	extents = NULL;
+
+	assert(pos);
+	free(pos);
+	pos = NULL;
+	
+    assert (domain_min);
+	free(domain_min);
+	domain_min = NULL;
+
+    assert(domain_max);
+    free(domain_max);
+    domain_max = NULL;
+#endif
+    
+	shadow->releaseData(flags);
   }
 
 
@@ -168,11 +209,29 @@ namespace brook{
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   CPUStream::~CPUStream() {
-    free(domain_min);
+
+	fprintf (stderr, "\n\n 0x%p: CPU Stream Destructor\n", this);
+
+    assert (domain_min);
+	free(domain_min);
+	domain_min = NULL;
+
+    assert(domain_max);
     free(domain_max);
-    free(pos);
+    domain_max = NULL;
+
+	assert(pos);
+	free(pos);
+	pos = NULL;
+
     if (!isDerived) {
+	  assert(extents);
       free(extents);
+	  extents = NULL;
+
+	  assert(data);
+      free(data);
+	  data = NULL;
     }
   }   
 }
