@@ -27,13 +27,12 @@
  *      the latter and latch the result.
  *
  *      XXX This still sometimes calculates a cur_R less than 0.  If we get
- *      a value less than 0, we truncate to 1 so that dividing by cur_R
- *      won't cause exceptions.
+ *      a value less than 1, we ignore it and keep the last computed value.
  */
 
 #define UPDATE_CUR_R(numEntries, data, s, o)                    \
    do {                                                         \
-      int cur_kW, i;                                            \
+      int kW, newR, i;                                          \
       float4 *scratch;                                          \
                                                                 \
       curNEntries = numEntries;                                 \
@@ -45,14 +44,15 @@
       for (i = 0; i < 20; i++)                                  \
          RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
       streamWrite(o, scratch);                                  \
-      cur_kW = (int) CyclesToUsecs(GetTimeTSC() - start);       \
+      kW = (int) CyclesToUsecs(GetTimeTSC() - start);           \
       start = GetTimeTSC();                                     \
       streamRead(s, data);                                      \
       for (i = 0; i < 20; i++)                                  \
          RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
       streamWrite(o, scratch);                                  \
-      cur_R = (int) CyclesToUsecs(GetTimeTSC() - start - cur_kW);  \
-      if (cur_R < 1) cur_R = 1;                                 \
+      newR = (int) CyclesToUsecs(GetTimeTSC() - start) - kW;    \
+      if (newR > 1) cur_R = newR;                               \
+      else printf("(* Length %d computed bogus R %d *)\n", numEntries, newR); \
    } while(0)
 
 
@@ -67,14 +67,15 @@
  *
  *      XXX A sufficiently unlucky card could decide to punt the stream back
  *      to system memory while we were running the kernel on the tiny
- *      stream.  If so, them's the breaks.  We clamp any value less than 1
- *      to 1 to avoid divide overflows.  In practice, I haven't had a
+ *      stream.  If so, them's the breaks.  We ignore any value less than
+ *      one to avoid divide overflows.  In practice, I haven't had a
  *      problem with low values (unlike cur_R).  --Jeremy.
  *
  */
 
 #define UPDATE_CUR_W(numEntries, data, s, o, tiny)              \
    do {                                                         \
+      int newW;                                                 \
       float4 *scratch;                                          \
                                                                 \
       curNEntries = numEntries;                                 \
@@ -87,8 +88,9 @@
       streamWrite(tiny, scratch);                               \
       start = GetTimeTSC();                                     \
       streamWrite(o, scratch);                                  \
-      cur_W = (int) CyclesToUsecs(GetTimeTSC() - start);        \
-      if (cur_W < 1) cur_W = 1;                                 \
+      newW = (int) CyclesToUsecs(GetTimeTSC() - start);         \
+      if (newW > 1) cur_W = newW;                               \
+      else printf("(* Length %d computed bogus W %d *)\n", numEntries, newW); \
    } while (0)
 
 typedef void (*RunKernelWrapperFn)(char *logName, int length, int nRuns);
@@ -113,7 +115,7 @@ static const int numIterations = sizeof iterations / sizeof iterations[0];
  */
 
 static int curNEntries;
-static int cur_R, cur_W;
+static int cur_R = 1, cur_W = 1;
 
 /*
  * RunKernelKickKernel --

@@ -8,7 +8,7 @@ SLOP = graphs
 
 RUNTIME=nv30gl
 RUNSIZE=512
-RUNTESTS=rw runk2d
+RUNTESTS=rw2d runk2d
 
 include $(ROOTDIR)/common.mk
 

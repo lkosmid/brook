@@ -27,7 +27,8 @@ struct timingEntry {
 };
 
 static const struct timingEntry tests[] = {
-   { "rw",      ReadWrite_Time },
+   { "rw1d",    ReadWrite1D_Time },
+   { "rw2d",    ReadWrite2D_Time },
    { "runk1d",  RunKernel1D_Time },
    { "runk2d",  RunKernel2D_Time },
    //{ "blas",    Blas_Time },

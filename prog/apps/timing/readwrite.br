@@ -18,6 +18,15 @@
 #define CHECK_MISMATCH 0
 #endif
 
+static const int lengths[] = {
+   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+   21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+   40, 41, 42, 43, 44, 45, 46, 48, 49, 50, 61, 62, 63, 64, 65, 66,
+   67, 68, 69, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 256,
+   300, 350, 400, 450, 512, 1024, 2048
+};
+static const int numLengths = sizeof lengths / sizeof lengths[0];
+
 /*
  * ReadWriteNOP --
  *
@@ -150,13 +159,10 @@ ReadWrite2D(const char *logName, int length)
    free(output);
 }
 
+
 void
-ReadWrite_Time(int maxLength)
+ReadWrite1D_Time(int maxLength)
 {
-   static const int lengths[] = {
-      1, 4, 16, 32, 64, 96, 128, 192, 256, 386, 512, 640, 768, 896, 1024, 2048
-   };
-   static const int numLengths = sizeof lengths / sizeof lengths[0];
    float4 s<1>, o<1>;
    int i;
 
@@ -170,6 +176,17 @@ ReadWrite_Time(int maxLength)
    }
    ReadWrite1D("RW1D", maxLength);
    printf("\n");
+}
+
+
+void
+ReadWrite2D_Time(int maxLength)
+{
+   float4 s<1>, o<1>;
+   int i;
+
+   /* Prevent kernel cold start costs from inflating ReadWrite1D() */
+   ReadWriteNOP(s, o);
 
    printf("(* ReadWrite2D: max length %d *)\n"
           "(* length\t usecs\t\tMB/sec *)\n", maxLength);

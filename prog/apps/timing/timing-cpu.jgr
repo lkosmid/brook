@@ -4,46 +4,19 @@
  *	tests.
  *)
 
-newgraph 	(* Read/Write bandwidth for 1D streams *)
-
-yaxis label : MB/sec
-xaxis label : Stream Length
-
-border
-title : 1D Stream Read/Write Bandwidth
-
-newcurve
-  marktype circle
-  linetype solid
-  pts shell : awk '/RW1D/ { print $1, $3 }' graphs/graph-cpu.pts
-
-newpage
 newgraph 	(* Read/Write bandwidth for 2D streams *)
 
 yaxis label : MB/sec
 xaxis label : Stream Length
 
 border
-title : 2D Stream Read/Write Bandwidth
+title : 2D streamRead() + MemcpyKernel + streamWrite() Bandwidth
 
 newcurve
   marktype circle
   linetype solid
-  pts shell : awk '/RW2D/ { print $1, $3 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel MFLOPS for 1D streams *)
-
-yaxis label : MFLOPS
-xaxis label : Stream Length
-
-border
-title : 1D Stream MFLOPS (streamRead + 50 runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts shell : awk '/RunK1D [0-9]+ R50/ { print $6, $2 }' graphs/graph-cpu.pts
+  pts 0 0
+  pts shell : awk '/RW2D/ { print $1*$1, $3 }' graphs/graph-cpu.pts
 
 newpage
 newgraph 	(* RunKernel MFLOPS for 2D streams *)
@@ -52,250 +25,160 @@ yaxis label : MFLOPS
 xaxis label : Stream Length
 
 border
-title : 2D Stream MFLOPS (streamRead + 50 runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts shell : awk '/RunK2D [0-9]+ R50/ { print $6, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 1D 1 x 1 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 1D Length 1 MFLOPS (streamRead + # runs + streamWrite)
+title : 2D Stream MFLOPS (streamRead + 150 runs + streamWrite)
 
 newcurve
   marktype circle
   linetype solid
   pts 0 0
-  pts shell : awk '/RunK1D 1 R/ { print $3, $2 }' graphs/graph-cpu.pts
+  pts shell : awk '/RunK2D [0-9]+ R150/ { print $7, $2 }' graphs/graph-cpu.pts
 
 newpage
-newgraph 	(* RunKernel Ramp 1D 4 x 4 *)
+newgraph 	(* RunKernel Knee 2D Total *)
 
-yaxis label : MFLOPS
-xaxis label : # of runs
+yaxis label : Time (msecs)
+xaxis label : Stream Length
 
 border
-title : 1D Length 4 MFLOPS (streamRead + # runs + streamWrite)
+title : 2D Kernel overhead (stream length vs. elapsed time)
 
 newcurve
+  label : streamRead() + 50 Iterations + streamWrite()
+  marktype circle
+  linetype solid
+  pts shell : awk '/RunK2D [0-9] R50/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts 
+  pts shell : awk '/RunK2D [0-1][0-9] R50/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
+
+newcurve
+  label : streamRead() + 75 Iterations + streamWrite()
+  marktype box
+  linetype solid
+  pts shell : awk '/RunK2D [0-9] R75/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts 
+  pts shell : awk '/RunK2D [0-1][0-9] R75/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
+
+newcurve
+  label : streamRead() + 150 Iterations + streamWrite()
+  marktype triangle
+  linetype solid
+  pts 0 0
+  pts shell : awk '/RunK2D [0-9] R150/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts 
+  pts shell : awk '/RunK2D [0-1][0-9] R150/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
+
+legend bottom
+
+newpage
+newgraph 	(* RunKernel Throughput based on length *)
+
+yaxis label : MFLOPS
+xaxis label : Stream Length (In Each Dimension)
+
+border
+title : 2D Kernel Throughput (stream length vs. MFLOPS)
+
+newcurve
+  label : streamRead() + 150 Iterations + streamWrite()
+  marktype circle
+  linetype solid
+  (* pts 0 0 *)
+  pts shell : awk '/RunK2D [0-9][0-9] R150/ { print $7, $2 }' graphs/graph-cpu.pts 
+
+newcurve
+  label : streamRead() + 75 Iterations + streamWrite()
+  marktype box
+  linetype solid
+  (* pts 0 0 *)
+  pts shell : awk '/RunK2D [0-9][0-9] R75/ { print $7, $2 }' graphs/graph-cpu.pts 
+
+newcurve
+  label : streamRead() + 50 Iterations + streamWrite()
+  marktype triangle
+  linetype solid
+  pts shell : awk '/RunK2D [0-9][0-9] R50/ { print $7, $2 }' graphs/graph-cpu.pts 
+
+legend bottom
+
+newpage
+newgraph 	(* RunKernel R/k/W breakdown *)
+
+yaxis label : Time (usecs)
+xaxis label : Stream Length
+
+border
+title : 2D Kernel streamRead() / k() / streamWrite() breakdown
+
+newcurve
+  label : streamRead()
+  marktype circle
+  linetype solid
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, $9 }' graphs/graph-cpu.pts 
+
+newcurve
+  label : streamRead() + 1 iteration
+  marktype box
+  linetype solid
+  (* pts 0 0 *)
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, $1 - $10 }' graphs/graph-cpu.pts 
+
+newcurve
+  label : streamRead() + 1 iteration + streamWrite()
+  marktype triangle
+  linetype solid
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, $1 }' graphs/graph-cpu.pts 
+
+legend bottom
+
+newpage
+newgraph 	(* RunKernel R/W Bandwidth *)
+
+yaxis label : MB/s
+xaxis label : Stream Length
+
+border
+title : 2D Kernel streamRead() and streamWrite() Bandwidth
+
+newcurve
+  label : MAX(streamRead(), 1000)
   marktype circle
   linetype solid
   pts 0 0
-  pts shell : awk '/RunK1D 4 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 1D 16 x 16 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 1D Length 16 MFLOPS (streamRead + # runs + streamWrite)
+  pts shell : awk '/RunK2D [0-9]+ R1 / {                                \
+     if (16*$7*$7/$9 > 1000) {                                          \
+        print $7*$7, 1000 }                                             \
+     else { print $7*$7, 16*$7*$7/$9 }                                  \
+  }' graphs/graph-cpu.pts 
 
 newcurve
-  marktype circle
+  label : streamWrite()
+  marktype box
   linetype solid
-  pts 0 0
-  pts shell : awk '/RunK1D 16 R/ { print $3, $2 }' graphs/graph-cpu.pts
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, 16*$7*$7/$10 }' graphs/graph-cpu.pts 
+
+legend bottom
 
 newpage
-newgraph 	(* RunKernel Ramp 1D 64 x 64 *)
+newgraph 	(* RunKernel Compute k vs. average k *)
 
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 1D Length 64 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK1D 64 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 1D 256 x 256 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
+yaxis label : Time (usecs)
+xaxis label : Stream Length
 
 border
-title : 1D Length 256 MFLOPS (streamRead + # runs + streamWrite)
+title : 2D Kernel Computed k vs. Averaged k
 
 newcurve
+  label : MAX(( R + k + W ) - R - W, 0)
   marktype circle
   linetype solid
-  pts 0 0
-  pts shell : awk '/RunK1D 256 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 1D 512 x 512 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 1D Length 512 MFLOPS (streamRead + # runs + streamWrite)
+  pts shell : awk '/RunK2D [0-9]+ R1 / {                                   \
+     if ($9 > $1) { print $7*$7, 0 } else { print $7*$7, ($1 - $9 - $10) } \
+  }' graphs/graph-cpu.pts 
 
 newcurve
-  marktype circle
+  label : (R + 150*k + W) / 150
+  marktype box
   linetype solid
-  pts 0 0
-  pts shell : awk '/RunK1D 512 R/ { print $3, $2 }' graphs/graph-cpu.pts
+  pts shell : awk '/RunK2D [0-9]+ R150 / {                              \
+     print $7*$7, $1/150                                                \
+  }' graphs/graph-cpu.pts 
 
-newpage
-newgraph 	(* RunKernel Ramp 1D 1024 x 1024 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 1D Length 1024 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK1D 1024 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 1D 2048 x 2048 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 1D Length 2048 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK1D 2048 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 2D 1 x 1 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 2D 1x1 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D 1 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 2D 4 x 4 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 2D 4x4 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D 4 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 2D 16 x 16 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 2D 16x16 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D 16 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 2D 64 x 64 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 2D 64x64 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D 64 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 2D 256 x 256 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 2D 256x256 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D 256 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 2D 512 x 512 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 2D 512x512 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D 512 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 2D 1024 x 1024 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 2D 1024x1024 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D 1024 R/ { print $3, $2 }' graphs/graph-cpu.pts
-
-newpage
-newgraph 	(* RunKernel Ramp 2D 2048 x 2048 *)
-
-yaxis label : MFLOPS
-xaxis label : # of runs
-
-border
-title : 2D 2048x2048 MFLOPS (streamRead + # runs + streamWrite)
-
-newcurve
-  marktype circle
-  linetype solid
-  pts 0 0
-  pts shell : awk '/RunK2D 2048 R/ { print $3, $2 }' graphs/graph-cpu.pts
+legend bottom
 

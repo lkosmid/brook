@@ -8,6 +8,7 @@
 #ifndef __READWRITE_H_
 #define __READWRITE_H_
 
-extern void ReadWrite_Time(int streamLength);
+extern void ReadWrite1D_Time(int streamLength);
+extern void ReadWrite2D_Time(int streamLength);
 
 #endif
