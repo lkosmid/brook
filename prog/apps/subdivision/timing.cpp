@@ -157,7 +157,6 @@ void CleanupMillisTimer(void) {
   if (streamsummary) {
     WriteSummary();
     fclose(streamsummary);
-    fclose(streamlog);
   }
 
   streamlog=0;
