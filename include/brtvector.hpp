@@ -377,16 +377,16 @@ template <class BRT_TYPE>
     dot (const BRT_TYPE &b) const{
       return vec<INTERNALTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<BRT_TYPE>(b,0) + 
                                      getAt(1) * GetAt<BRT_TYPE>(b,1) + 
                                      getAt(2) * GetAt<BRT_TYPE>(b,2) + 
                                      getAt(3) * GetAt<BRT_TYPE>(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<BRT_TYPE>(b,0) + 
                                       getAt(1) * GetAt<BRT_TYPE>(b,1) +
                                       getAt(2) * GetAt<BRT_TYPE>(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<BRT_TYPE>(b,0) + 
                                       getAt(1) * GetAt<BRT_TYPE>(b,1)):
                  getAt(0) * GetAt<BRT_TYPE>(b,0));

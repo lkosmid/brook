@@ -1102,16 +1102,16 @@ public:
     dot (const vec<float,1>  &b) const{
       return vec< LCM<float,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<float,1> >(b,0) + 
                                      getAt(1) * GetAt<vec<float,1> >(b,1) + 
                                      getAt(2) * GetAt<vec<float,1> >(b,2) + 
                                      getAt(3) * GetAt<vec<float,1> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<float,1> >(b,0) + 
                                       getAt(1) * GetAt<vec<float,1> >(b,1) +
                                       getAt(2) * GetAt<vec<float,1> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<float,1> >(b,0) + 
                                       getAt(1) * GetAt<vec<float,1> >(b,1)):
                  getAt(0) * GetAt<vec<float,1> >(b,0));
@@ -1229,16 +1229,16 @@ public:
     dot (const vec<int,1>  &b) const{
       return vec< LCM<int,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<int,1> >(b,0) + 
                                      getAt(1) * GetAt<vec<int,1> >(b,1) + 
                                      getAt(2) * GetAt<vec<int,1> >(b,2) + 
                                      getAt(3) * GetAt<vec<int,1> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<int,1> >(b,0) + 
                                       getAt(1) * GetAt<vec<int,1> >(b,1) +
                                       getAt(2) * GetAt<vec<int,1> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<int,1> >(b,0) + 
                                       getAt(1) * GetAt<vec<int,1> >(b,1)):
                  getAt(0) * GetAt<vec<int,1> >(b,0));
@@ -1356,16 +1356,16 @@ public:
     dot (const vec<char,1>  &b) const{
       return vec< LCM<char,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<char,1> >(b,0) + 
                                      getAt(1) * GetAt<vec<char,1> >(b,1) + 
                                      getAt(2) * GetAt<vec<char,1> >(b,2) + 
                                      getAt(3) * GetAt<vec<char,1> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<char,1> >(b,0) + 
                                       getAt(1) * GetAt<vec<char,1> >(b,1) +
                                       getAt(2) * GetAt<vec<char,1> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<char,1> >(b,0) + 
                                       getAt(1) * GetAt<vec<char,1> >(b,1)):
                  getAt(0) * GetAt<vec<char,1> >(b,0));
@@ -1483,16 +1483,16 @@ public:
     dot (const vec<float,2>  &b) const{
       return vec< LCM<float,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<float,2> >(b,0) + 
                                      getAt(1) * GetAt<vec<float,2> >(b,1) + 
                                      getAt(2) * GetAt<vec<float,2> >(b,2) + 
                                      getAt(3) * GetAt<vec<float,2> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<float,2> >(b,0) + 
                                       getAt(1) * GetAt<vec<float,2> >(b,1) +
                                       getAt(2) * GetAt<vec<float,2> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<float,2> >(b,0) + 
                                       getAt(1) * GetAt<vec<float,2> >(b,1)):
                  getAt(0) * GetAt<vec<float,2> >(b,0));
@@ -1610,16 +1610,16 @@ public:
     dot (const vec<int,2>  &b) const{
       return vec< LCM<int,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<int,2> >(b,0) + 
                                      getAt(1) * GetAt<vec<int,2> >(b,1) + 
                                      getAt(2) * GetAt<vec<int,2> >(b,2) + 
                                      getAt(3) * GetAt<vec<int,2> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<int,2> >(b,0) + 
                                       getAt(1) * GetAt<vec<int,2> >(b,1) +
                                       getAt(2) * GetAt<vec<int,2> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<int,2> >(b,0) + 
                                       getAt(1) * GetAt<vec<int,2> >(b,1)):
                  getAt(0) * GetAt<vec<int,2> >(b,0));
@@ -1737,16 +1737,16 @@ public:
     dot (const vec<char,2>  &b) const{
       return vec< LCM<char,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<char,2> >(b,0) + 
                                      getAt(1) * GetAt<vec<char,2> >(b,1) + 
                                      getAt(2) * GetAt<vec<char,2> >(b,2) + 
                                      getAt(3) * GetAt<vec<char,2> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<char,2> >(b,0) + 
                                       getAt(1) * GetAt<vec<char,2> >(b,1) +
                                       getAt(2) * GetAt<vec<char,2> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<char,2> >(b,0) + 
                                       getAt(1) * GetAt<vec<char,2> >(b,1)):
                  getAt(0) * GetAt<vec<char,2> >(b,0));
@@ -1864,16 +1864,16 @@ public:
     dot (const vec<float,3>  &b) const{
       return vec< LCM<float,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<float,3> >(b,0) + 
                                      getAt(1) * GetAt<vec<float,3> >(b,1) + 
                                      getAt(2) * GetAt<vec<float,3> >(b,2) + 
                                      getAt(3) * GetAt<vec<float,3> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<float,3> >(b,0) + 
                                       getAt(1) * GetAt<vec<float,3> >(b,1) +
                                       getAt(2) * GetAt<vec<float,3> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<float,3> >(b,0) + 
                                       getAt(1) * GetAt<vec<float,3> >(b,1)):
                  getAt(0) * GetAt<vec<float,3> >(b,0));
@@ -1991,16 +1991,16 @@ public:
     dot (const vec<int,3>  &b) const{
       return vec< LCM<int,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<int,3> >(b,0) + 
                                      getAt(1) * GetAt<vec<int,3> >(b,1) + 
                                      getAt(2) * GetAt<vec<int,3> >(b,2) + 
                                      getAt(3) * GetAt<vec<int,3> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<int,3> >(b,0) + 
                                       getAt(1) * GetAt<vec<int,3> >(b,1) +
                                       getAt(2) * GetAt<vec<int,3> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<int,3> >(b,0) + 
                                       getAt(1) * GetAt<vec<int,3> >(b,1)):
                  getAt(0) * GetAt<vec<int,3> >(b,0));
@@ -2118,16 +2118,16 @@ public:
     dot (const vec<char,3>  &b) const{
       return vec< LCM<char,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<char,3> >(b,0) + 
                                      getAt(1) * GetAt<vec<char,3> >(b,1) + 
                                      getAt(2) * GetAt<vec<char,3> >(b,2) + 
                                      getAt(3) * GetAt<vec<char,3> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<char,3> >(b,0) + 
                                       getAt(1) * GetAt<vec<char,3> >(b,1) +
                                       getAt(2) * GetAt<vec<char,3> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<char,3> >(b,0) + 
                                       getAt(1) * GetAt<vec<char,3> >(b,1)):
                  getAt(0) * GetAt<vec<char,3> >(b,0));
@@ -2245,16 +2245,16 @@ public:
     dot (const vec<float,4>  &b) const{
       return vec< LCM<float,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<float,4> >(b,0) + 
                                      getAt(1) * GetAt<vec<float,4> >(b,1) + 
                                      getAt(2) * GetAt<vec<float,4> >(b,2) + 
                                      getAt(3) * GetAt<vec<float,4> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<float,4> >(b,0) + 
                                       getAt(1) * GetAt<vec<float,4> >(b,1) +
                                       getAt(2) * GetAt<vec<float,4> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<float,4> >(b,0) + 
                                       getAt(1) * GetAt<vec<float,4> >(b,1)):
                  getAt(0) * GetAt<vec<float,4> >(b,0));
@@ -2372,16 +2372,16 @@ public:
     dot (const vec<int,4>  &b) const{
       return vec< LCM<int,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<int,4> >(b,0) + 
                                      getAt(1) * GetAt<vec<int,4> >(b,1) + 
                                      getAt(2) * GetAt<vec<int,4> >(b,2) + 
                                      getAt(3) * GetAt<vec<int,4> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<int,4> >(b,0) + 
                                       getAt(1) * GetAt<vec<int,4> >(b,1) +
                                       getAt(2) * GetAt<vec<int,4> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<int,4> >(b,0) + 
                                       getAt(1) * GetAt<vec<int,4> >(b,1)):
                  getAt(0) * GetAt<vec<int,4> >(b,0));
@@ -2499,16 +2499,16 @@ public:
     dot (const vec<char,4>  &b) const{
       return vec< LCM<char,
                                            VALUE>::type, 1> 
-                ((LUB<TEMPL_TYPTESIZE,
+                ((LUB<TEMPL_TYPESIZE,
                      tsize>::size)==4?(getAt(0) * GetAt<vec<char,4> >(b,0) + 
                                      getAt(1) * GetAt<vec<char,4> >(b,1) + 
                                      getAt(2) * GetAt<vec<char,4> >(b,2) + 
                                      getAt(3) * GetAt<vec<char,4> >(b,3)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==3?(getAt(0) * GetAt<vec<char,4> >(b,0) + 
                                       getAt(1) * GetAt<vec<char,4> >(b,1) +
                                       getAt(2) * GetAt<vec<char,4> >(b,2)):
-                 (LUB<TEMPL_TYPTESIZE,
+                 (LUB<TEMPL_TYPESIZE,
                      tsize>::size)==2?(getAt(0) * GetAt<vec<char,4> >(b,0) + 
                                       getAt(1) * GetAt<vec<char,4> >(b,1)):
                  getAt(0) * GetAt<vec<char,4> >(b,0));
