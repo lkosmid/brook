@@ -120,6 +120,40 @@ float4 * bitReversedIndices (int logN, int logM) {
   }
   return s_array;
 }
+kernel void UntangleFrag(float4 input[][], out float4 output<>, float2 NNo2) {
+    float4 H1 = input[indexof(output)];
+    float2 outputindex = {(indexof output).x,NNo2.x-(indexof output).y};
+    float4 HN = input[outputindex];
+    float4 F,G;
+    float4 HPLUS = .5*(H1+HN);
+    float4 HMINUS = .5*(H1-HN);
+    F.xz = HPLUS.xz;
+    F.yw = HMINUS.yw; 
+    G.xz = -HMINUS.xz;
+    G.yw = HPLUS.yw;
+    if ((indexof output).y>NNo2.y)
+        output = G;
+    else
+        output = F;
+}
+
+kernel void DoubleFrag(float4 input[][], out float4 output<>, float2 NNo2,
+	iter float2 where<>) {
+    float4 H1 = input[where];
+    float2 outputindex = {where.x,where.y+NNo2.y};
+    float4 HN = input[outputindex];
+    float4 F,G;
+    float4 HPLUS = .5*(H1+HN);
+    float4 HMINUS = .5*(H1-HN);
+    F.xz = HPLUS.xz;
+    F.yw = HMINUS.yw; 
+    G.xz = -HMINUS.xz;
+    G.yw = HPLUS.yw;
+    if ((indexof output).y>NNo2.y)
+        output = G;
+    else
+        output = F;
+}
 
 #define FFT_HORIZONTAL 0
 #define FFT_VERTICAL 1
@@ -136,6 +170,7 @@ void computeFFT2d(float2 *input,
                   int twod){
    float4 s<N,(M/2)>;
    float4 s_out<N,(M/2)>;
+   float4 s_out_final<N,M>;
    float4 * rawindices=0;
    float4 indicesXo2YXp1o2Xm2<(M/2>N?M/2:N)>;
    iter float2 iter1 <N,(M/2)> =iter(float2(0,0),float2(tof(M/4),tof(N)));
@@ -157,15 +192,6 @@ void computeFFT2d(float2 *input,
    for (thereAndBack=0;thereAndBack<DOTIMES;++thereAndBack) {
    if (1==N*M) streamSwap(s_out,s);
    else {
-      nPass=nBits=logM;
-         for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTX(s,getW(nPassCounter,M,1),s_out,iter1,iter2,s_iter);
-            if (debug_fft==2) {
-               printf ("\nX STAGE %d\n",nPassCounter);
-               streamPrint(s_out);
-            }
-            streamSwap(s,s_out);
-         }
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
             DFTY(s,getW(nPassCounter,N,0),s_out,iter3,iter4,s_iter);
@@ -176,6 +202,18 @@ void computeFFT2d(float2 *input,
 
             streamSwap(s,s_out);
          }
+         UntangleFrag(s,s_out,float2((float)N,(float)(N/2)));
+         streamSwap(s,s_out);
+         nPass=nBits=logM;
+         for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
+            DFTX(s,getW(nPassCounter,M,1),s_out,iter1,iter2,s_iter);
+            if (debug_fft==2) {
+               printf ("\nX STAGE %d\n",nPassCounter);
+               streamPrint(s_out);
+            }
+            streamSwap(s,s_out);
+         }
+         DoubleFrag(s,s_out_final,float2((float)N,(float)(N/2)),iter1);
    }
    if (1) {
             bitReverseXo2Y(s_out,indicesXo2YXp1o2Xm2,s);      
@@ -193,6 +231,7 @@ void computeFFT2d(float2 *input,
 
 
 }
+
 
 #define PrintResults(sstart, sstop, name) \
      printf("%9d    %6d        %6.2f        (* %s *)\\n", \
