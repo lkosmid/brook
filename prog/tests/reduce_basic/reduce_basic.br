@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-reduce void SUM( float4 a<>, reduce float4 b ) {
+reduce void SUM( float4 a<>, reduce float4 b<> ) {
 	b = b + a;
 }
 

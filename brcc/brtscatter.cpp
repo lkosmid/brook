@@ -50,7 +50,7 @@ BRTScatterDef::print(std::ostream& out, int) const {
    for (int j=0;j<decl->nArgs;++j) {
       if (decl->args[j]->form->type!=TT_Stream) {
          extraArgs.push_back(j);
-      } else if ((decl->args[j]->form->getQualifiers()&TQ_Out)!=0) {
+      } else if ((decl->args[j]->form->getQualifiers()&TQ_Reduce)!=0) {
          ret=decl->args[j]->name;
       }else {
          in = decl->args[j]->name;
@@ -71,7 +71,10 @@ BRTScatterDef::print(std::ostream& out, int) const {
       indent(out,1);
       out << name << "(";
       for (i=0;i<extraArgs.size();++i) {
+         if (i!=0)
+            out << ", ";
          decl->args[extraArgs[i]]->print(out,1);
+
       }
       out << "): ";
       for (i=0;i<extraArgs.size();++i) {

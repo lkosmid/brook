@@ -7,7 +7,7 @@ void __printf_cpu_inner (float f) {
    printf("%f\n",f);
 }
 reduce void foo (float4 a<>, float4 c,
-		 float d[10][10], reduce float4 e) {
+		 float d[10][10], reduce float4 e<>) {
   e.x = a.x+e.x+d[c.xy]+d[c.yx];
   e.y = a.y+e.y;
   e.z = (.0625+a.z)*.125*(.0625+e.z);

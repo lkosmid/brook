@@ -12,6 +12,7 @@
 #include "brtreduce.h"
 #include "brtdecl.h"
 #include "brtexpress.h"
+#include "brtscatter.h"
 #include "project.h"
 #include "codegen.h"
 #include "main.h"
@@ -86,9 +87,12 @@ BRTKernelDef::print(std::ostream& out, int) const
    PRINT_IF_NEEDED(fp30, FP30);
    PRINT_IF_NEEDED(ps20, PS20);
    PRINT_IF_NEEDED(cpu, CPU);
-
+   
    printStub(out);
 #undef PRINT_IF_NEEDED
+   if (decl->isReduce()) {
+      //      BRTScatterDef(*BRTCPUReduceCode(*this).fDef).print(out,0);
+   }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -121,10 +125,10 @@ BRTKernelDef::printStub(std::ostream& out) const
    for (i = 0; i < fType->nArgs; i++) {
       if (i) out << ",\n\t\t";
 
-      if (recursiveIsStream(fType->args[i]->form) || recursiveIsGather(fType->args[i]->form)) {
-         out << "const __BRTStream& " << *fType->args[i]->name;
-      } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
+      if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
          out << "_T"<<num_templates++<<" &" << fType->args[i]->name->name;
+      }else if (recursiveIsStream(fType->args[i]->form) || recursiveIsGather(fType->args[i]->form)) {
+         out << "const __BRTStream& " << *fType->args[i]->name;
       }else {
          out << "const ";
          Symbol name;name.name = fType->args[i]->name->name;
@@ -156,13 +160,13 @@ BRTKernelDef::printStub(std::ostream& out) const
       if (recursiveIsStream(fType->args[i]->form) &&
           (fType->args[i]->form->getQualifiers()&TQ_Out)!=0) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
+      } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
+         out << "  k->PushReduce(&" << *fType->args[i]->name;
+         out << ", __BRTReductionType(&" << *fType->args[i]->name <<"));\n";
       } else if (recursiveIsStream(fType->args[i]->form)) {
          out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
       } else if (recursiveIsGather(fType->args[i]->form)) {
          out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
-      } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
-         out << "  k->PushReduce(&" << *fType->args[i]->name;
-         out << ", __BRTReductionType(&" << *fType->args[i]->name <<"));\n";
       } else {
          out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
       }

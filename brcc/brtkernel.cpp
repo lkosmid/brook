@@ -24,6 +24,8 @@ unsigned int getReferenceStream(FunctionDef * fDef) {
    unsigned int ret=0;
    bool found=false;
    for (unsigned int i=0;i<ft->nArgs;++i) {
+      if (ft->args[i]->isReduce())
+         continue;
       if (ft->args[i]->isStream()){
          found=true;
          ret=i;//consolation prize
