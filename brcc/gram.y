@@ -31,7 +31,7 @@
 #define   alloca  __builtin_alloca
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 /* Don't complain about switch() statements that only have a 'default' */
 #pragma warning( disable : 4065 )
 #endif

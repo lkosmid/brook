@@ -11,7 +11,7 @@ extern "C" {
 #include <assert.h>
 #include <fcntl.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <process.h>
 #include <io.h>
 #else
@@ -51,7 +51,7 @@ Subprocess_Run(char *argv[], char *input)
   int output_alloc, output_pos;
 
   // Create the pipe
-#ifdef WIN32
+#ifdef _WIN32
   if(_pipe(hStdOutPipe, 512, O_TEXT | O_NOINHERIT) == -1) {
     fprintf (stderr, "Unable to create pipe\n");
     return NULL;
@@ -111,7 +111,7 @@ Subprocess_Run(char *argv[], char *input)
        fprintf(stderr, "Write close error\n");
   }
 
-#if WIN32
+#if _WIN32
   if ((pid = _spawnvp(P_NOWAIT, argv[0], argv)) == -1) {
     if (debug) fprintf( stderr, "Unable to start %s\n", argv[0]);
     return NULL;
@@ -133,7 +133,7 @@ Subprocess_Run(char *argv[], char *input)
 #endif
 
 
-#if WIN32
+#if _WIN32
   // Restore the pipes for us.
   if(_dup2(hStdOut, _fileno(stdout)) != 0) {
     fprintf (stderr, "Unable to restore stdout\n");
@@ -167,7 +167,7 @@ Subprocess_Run(char *argv[], char *input)
   if (debug) fprintf(stderr, "Sending the input to %s\n", argv[0]);
 
   if (input) {
-#if WIN32
+#if _WIN32
      _write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
 #else
      {
@@ -214,7 +214,7 @@ Subprocess_Run(char *argv[], char *input)
     char buf[1024];
 
     if (debug) fprintf(stderr, "Reading pipe from %s...\n", argv[0]);
-#ifdef WIN32
+#ifdef _WIN32
     ret = _read(hStdOutPipe[READ_HANDLE], buf, 1023);
 #else
     ret = read(hStdOutPipe[READ_HANDLE], buf, 1023);
@@ -240,7 +240,7 @@ Subprocess_Run(char *argv[], char *input)
   }
   output[output_pos] = '\0';
 
-#if WIN32
+#if _WIN32
   _cwait(&ret, pid, WAIT_CHILD);
 #else
   waitpid(pid, &ret, 0);
