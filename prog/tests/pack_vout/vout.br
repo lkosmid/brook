@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 /* vc7 floating point paranoia.  This program is in serious violation. */
 #pragma warning(disable:4244)
 
