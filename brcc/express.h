@@ -442,6 +442,9 @@ class TrinaryExpr : public Expression
 
     void findExpr( fnExprCallback cb );
 
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
+
     Expression *_condExpr;
     Expression *_trueExpr;
     Expression *_falseExpr;

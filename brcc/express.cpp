@@ -1379,6 +1379,17 @@ TrinaryExpr::findExpr( fnExprCallback cb )
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* TrinaryExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  SplitNode* condition = _condExpr->buildSplitTree( ioBuilder );
+  SplitNode* consequent = _trueExpr->buildSplitTree( ioBuilder );
+  SplitNode* alternate = _falseExpr->buildSplitTree( ioBuilder );
+
+  return ioBuilder.addConditional( condition, consequent, alternate );
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 AssignExpr::AssignExpr( AssignOp _op, Expression *lExpr, Expression *rExpr,
 			const Location& l )
            : BinaryExpr( BO_Assign, lExpr, rExpr, l )

@@ -205,6 +205,12 @@ SplitNode* SplitTreeBuilder::addIndexof( const std::string& inName )
   return stream->getIndexofNode();
 }
 
+SplitNode* SplitTreeBuilder::addConditional( SplitNode* inCondition, SplitNode* inConsequent, SplitNode* inAlternate )
+{
+  SplitNode* result = new ConditionalSplitNode( inCondition, inConsequent, inAlternate );
+  return result;
+}
+
 SplitNode* SplitTreeBuilder::findVariable( const std::string& inName )
 {
   NodeMap::iterator i = nodeMap.find( inName );

@@ -582,3 +582,36 @@ void FunctionCallSplitNode::printExpression( std::ostream& inStream )
   }
   inStream << " )";
 }
+
+ConditionalSplitNode::ConditionalSplitNode( SplitNode* inCondition, SplitNode* inConsequent, SplitNode* inAlternate )
+  : _condition(inCondition), _consequent(inConsequent), _alternate(inAlternate)
+{
+  // TIM: not sure of what the type-matching rules for ?: are...
+  inferredType = _consequent->inferredType;
+  if( inferredType < inAlternate->inferredType )
+    inferredType = inAlternate->inferredType;
+
+  addChild( _condition );
+  addChild( _consequent );
+  addChild( _alternate );
+}
+
+void ConditionalSplitNode::printTemporaryExpression( std::ostream& inStream )
+{
+  _condition->printTemporaryName( inStream );
+  inStream << " ? ";
+  _consequent->printTemporaryName( inStream );
+  inStream << " : ";
+  _alternate->printTemporaryName( inStream );
+}
+
+void ConditionalSplitNode::printExpression( std::ostream& inStream )
+{
+  inStream << "(";
+  _condition->printExpression( inStream );
+  inStream << ") ? (";
+  _consequent->printExpression( inStream );
+  inStream << ") : (";
+  _alternate->printExpression( inStream );
+  inStream << ")";
+}

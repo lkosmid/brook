@@ -32,6 +32,7 @@ public:
   SplitNode* addConstructor( BaseType* inType, const std::vector<SplitNode*>& inArguments );
   SplitNode* addConstructor( SplitBasicType inType, SplitNode* inX = 0, SplitNode* inY = 0, SplitNode* inZ = 0, SplitNode* inW = 0 );
   SplitNode* addIndexof( const std::string& inName );
+  SplitNode* addConditional( SplitNode* inCondition, SplitNode* inConsequent, SplitNode* inAlternate );
   SplitNode* findVariable( const std::string& inName );
   SplitNode* assign( const std::string& inName, SplitNode* inValue );
 

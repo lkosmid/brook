@@ -494,4 +494,19 @@ private:
   std::vector<SplitNode*> _arguments;
 };
 
+class ConditionalSplitNode :
+  public SplitNode
+{
+public:
+  ConditionalSplitNode( SplitNode* inCondition, SplitNode* inConsequent, SplitNode* inAlternate );
+
+  virtual void printTemporaryExpression( std::ostream& inStream );
+  virtual void printExpression( std::ostream& inStream );
+
+private:
+  SplitNode* _condition;
+  SplitNode* _consequent;
+  SplitNode* _alternate;
+};
+
 #endif
