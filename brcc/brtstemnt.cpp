@@ -109,8 +109,8 @@ BRTGPUKernelDef::printCode(std::ostream& out) const
 void
 BRTCPUKernelDef::printCode(std::ostream& out) const
 {
-   out << "#error \"Don't know how to generate CPU kernel code for "
-       << FunctionName()->name << "().\"\n";
+//   out << "#error \"Don't know how to generate CPU kernel code for "
+//       << FunctionName()->name << "().\"\n";
 
    /* We've already transformed everything, so just print ourselves */
    FunctionDef::print(out, 0);

@@ -43,9 +43,7 @@ class BRTCPUKernelDef : public BRTKernelDef
 {
   public:
     BRTCPUKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {
-#ifdef BROOK_CPU
        compileCpp(this);
-#endif
     }
    ~BRTCPUKernelDef() { /* Nothing, ~FunctionDef() does all the work */ }
 

@@ -60,12 +60,7 @@ parse_args (int argc, char *argv[]) {
   while ((opt = getopt(argc, argv, "co:p:vw:")) != EOF) {
      switch(opt) {
      case 'c':
-#ifdef BROOK_CPU
 	globals.cpuKernel = true;
-#else
-        std::cerr << "***Support for CPU hosted kernels is not available.\n";
-        exit(1);
-#endif
 	break;
      case 'o':
 	if (outputprefix) usage();
