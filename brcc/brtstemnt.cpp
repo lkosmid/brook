@@ -210,14 +210,17 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	if (j!=0)
 	    out << ", ";
 	Type * form = func->args[j]->form;
-	if (form->type==TT_Stream) {
-	    form = static_cast<ArrayType *>(form)->subType;
-	}else if (form->type==TT_Array) {
+	bool copy_on_write=false;
+	if (form->type==TT_Stream||form->type==TT_Array) {
+	    if (copy_on_write&&form->type==TT_Array) {
 		form = new CPUGatherType(*static_cast<ArrayType *>(form));
+	    }else {
+		form = static_cast<ArrayType *>(form)->subType;
+	    }
 	}
 	
 	TypeQual tq= form->getQualifiers();
-	if (0/*kernels only allowed to modify out params*/) {
+	if (!copy_on_write) {
 		if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
 			out << "const ";//kernels are only allowed to touch out params
 		}
