@@ -196,19 +196,19 @@ public:
     BROOK_UNARY_OP(!)    
 #undef BROOK_UNARY_OP
     vec<VALUE,4> swizzle4(int x,int y,int z,int w)const {
-        return vec<VALUE,4>(getAt(x),
-                            getAt(y),
-                            getAt(z),
-                            getAt(w));
+        return vec<VALUE,4>(unsafeGetAt(x),
+                            unsafeGetAt(y),
+                            unsafeGetAt(z),
+                            unsafeGetAt(w));
     }
     vec<VALUE,3> swizzle3(int x,int y,int z)const {
-        return vec<VALUE,3>(getAt(x),getAt(y),getAt(z));
+        return vec<VALUE,3>(unsafeGetAt(x),unsafeGetAt(y),unsafeGetAt(z));
     }
     vec<VALUE,2> swizzle2(int x,int y)const {
-        return vec<VALUE,2>(getAt(x),getAt(y));
+        return vec<VALUE,2>(unsafeGetAt(x),unsafeGetAt(y));
     }
     vec<VALUE, 1> swizzle1(int x)const {
-        return vec<VALUE,1>(getAt(x));
+        return vec<VALUE,1>(unsafeGetAt(x));
     }
     vec() {}
 #define GENERAL_TEMPLATIZED_FUNCTIONS
@@ -225,13 +225,13 @@ public:
     template <class BRT_TYPE> vec (const BRT_TYPE& inx, 
 				   const BRT_TYPE& iny, 
 				   const BRT_TYPE& inz) {
-        f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
+        f[0]=inx;
+        if(size>1)f[1]=iny;
+        if(size>2)f[2]=inz;
     }
     template <class BRT_TYPE> vec (const BRT_TYPE& inx, const BRT_TYPE& iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
-        if (size>2) f[2]=VALUE();
-        if (size>3) f[3]=VALUE();
     }
     template <class BRT_TYPE> vec (const BRT_TYPE& scalar) {
         (*this)=scalar;
@@ -258,31 +258,31 @@ public:
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE>
       vec<VALUE,4> mask4 (const BRT_TYPE&in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
+        f[X]=in.getAt(0);
+        f[Y]=in.getAt(1);
+        f[Z]=in.getAt(2);
+        f[W]=in.getAt(3);
         return vec<VALUE,4>(unsafeGetAt(X),
-                    unsafeGetAt(Y),
-                    unsafeGetAt(Z),
-                    unsafeGetAt(W));
+                            unsafeGetAt(Y),
+                            unsafeGetAt(Z),
+                            unsafeGetAt(W));
     }
     template <class BRT_TYPE>
       vec<VALUE,3> mask3 (const BRT_TYPE&in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
+        f[X]=in.getAt(0);
+        f[Y]=in.getAt(1);
+        f[Z]=in.getAt(2);
         return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
     template <class BRT_TYPE> 
       vec<VALUE,2> mask2 (const BRT_TYPE&in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
+        f[X]=in.getAt(0);
+        f[Y]=in.getAt(1);
         return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
     template <class BRT_TYPE> 
       vec<VALUE,1> mask1 (const BRT_TYPE&in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
+        f[X]=in.getAt(0);
         return vec<VALUE,1>(unsafeGetAt(X));
     }    
     template <class BRT_TYPE> 
