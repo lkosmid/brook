@@ -371,7 +371,6 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
               out << "0, mapbegin, mapend, ";
            out << "extents["<<index<<"], ";
            out << "dim, extents["<<ref<<"]);"<<std::endl;
-           indent(out,1);
 	}
 }
 void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, 
@@ -633,6 +632,9 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
     unsigned int reference_stream = getReferenceStream(this->fDef);
     indent(out,1);
     out << "unsigned int dim=dims["<<reference_stream<<"];"<<std::endl;
+    indent(out,1);
+    out << "unsigned int newline=extents["<<reference_stream<<"][dim-1];";
+    out << std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].InitialSet(out,false,reference_stream);
     }}
@@ -722,7 +724,11 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
         out << std::endl;
     }}
     unsigned int reference_stream = getReferenceStream(this->fDef);
+    indent(out,1);
     out << "unsigned int dim=dims["<<reference_stream<<"];"<<std::endl;
+    indent(out,1);
+    out << "unsigned int newline=extents["<<reference_stream<<"][dim-1];";
+    out << std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].InitialSet(out,false,reference_stream);
     }}
@@ -748,7 +754,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
           myArgs[i].Increment(out,false,reference_stream);
        }}
        indent(out,2);
-       out << "if (i%extents["<<reference_stream<<"][dim-1]==0) {"<<std::endl;
+       out << "if (i%newline==0) {"<<std::endl;
        {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].ResetNewLine(out,false,reference_stream);
        }}       
@@ -777,7 +783,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
        myArgs[i].Increment(out,false,reference_stream);
     }}
     indent(out,2);
-    out << "if (i%extents["<<reference_stream<<"][dim-1]==0) {"<<std::endl;
+    out << "if (i%newline==0) {"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
        myArgs[i].ResetNewLine(out,false,reference_stream);
     }}       
