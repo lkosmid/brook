@@ -201,6 +201,7 @@ void computeFFT2d(float2 *input,
    iter float2 s_iter <N,(M/2)> =iter(float2(0,0),float2(tof(M/2),tof(N)));
    float indicesY<N>;
    int nPass,nBits,nPassCounter,thereAndBack;
+   printf ("Going with a %d by %d texture of float2s\n or rather a %d by %d texture of float4s\n",N,M,N,(M/2));
    rawindices=bitReversedIndices(logN,logM);
    streamRead(indicesXo2YXp1o2Xm2,rawindices);
 
@@ -271,7 +272,7 @@ void computeFFT2d(float2 *input,
           (float)(DOTIMES*10.*(logN+logM)*M*N) / (float) (sstop - sstart), name);
 
 void doOptFFT(int logN) {
-   int logM = logN-1; 
+   int logM = logN; 
    int i,N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
