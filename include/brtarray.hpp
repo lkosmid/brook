@@ -1,19 +1,13 @@
-template <class VALUE, unsigned int dims, bool copy_data> class BrtArray;
+template <class VALUE, unsigned int dims, bool copy_data> class __BrtArray;
 
-template <class VALUE, unsigned int dims, bool copy_data> class ConstXSpecified {
+template <class VALUE, unsigned int dims, bool copy_data> class __ConstXSpecified {
 	unsigned int indices [dims+1];
-	const BrtArray<VALUE,dims,copy_data> *const parent;
+	const __BrtArray<VALUE,dims,copy_data> *const parent;
 public:
-	ConstXSpecified(const BrtArray<VALUE,dims,copy_data> *const parent):parent(parent) {
+	__ConstXSpecified(const __BrtArray<VALUE,dims,copy_data> *const parent):parent(parent) {
 		indices[dims]=0;		
 	}
-#if 0
-	ConstXSpecified<VALUE,dims,copy_data> operator [] (unsigned int i) {
-		indices[indices[dims]++]=i;
-		return *this;
-	}
-#endif
-	template <class T> ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
+	template <class T> __ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
 		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
 			indices[indices[dims]++]=(int)a.getAt(i);
 		}
@@ -22,21 +16,15 @@ public:
 	
 	operator VALUE () const;
 };
-template <class VALUE, unsigned int dims, bool copy_data> class XSpecified {
+template <class VALUE, unsigned int dims, bool copy_data> class __XSpecified {
 	unsigned int indices [dims+1];
-	BrtArray<VALUE,dims,copy_data> *parent;
+	__BrtArray<VALUE,dims,copy_data> *parent;
 public:
-	XSpecified(BrtArray<VALUE,dims,copy_data> * parent) {
+	__XSpecified(__BrtArray<VALUE,dims,copy_data> * parent) {
 		indices[dims]=0;
 		this->parent=parent;
 	}
-#if 0
-	XSpecified<VALUE,dims,copy_data> operator [] (unsigned int i){
-		indices[indices[dims]++]=i;
-		return *this;
-	}
-#endif
-	template <class T> XSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
+	template <class T> __XSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
 		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
 			indices[indices[dims]++]=(int)a.getAt(i);
 		}
@@ -51,7 +39,7 @@ public:
 	VALUE &operator -= (const VALUE &f)const;	
 };
 
-template <class VALUE, unsigned int dims, bool copy_data> class BrtArray {
+template <class VALUE, unsigned int dims, bool copy_data> class __BrtArray {
 	unsigned int extents[dims];
 	VALUE * data;
 	unsigned int getSize() const{
@@ -62,7 +50,7 @@ template <class VALUE, unsigned int dims, bool copy_data> class BrtArray {
 			return size;
 	}
 public:
-	BrtArray(VALUE * data, const unsigned int *extents) {
+	__BrtArray(VALUE * data, const unsigned int *extents) {
 		for (unsigned int i=0;i<dims;++i) {
 			this->extents[i]=extents[i];
 		}		
@@ -75,7 +63,7 @@ public:
 		}
 
 	}
-	BrtArray& operator = (const BrtArray<VALUE,dims,copy_data> &c) {
+	__BrtArray& operator = (const __BrtArray<VALUE,dims,copy_data> &c) {
 		for (unsigned int i=0;i<dims;++i) {
 			extents[i]=c.extents[i];
 		}
@@ -87,10 +75,10 @@ public:
 		}
 		return *this;
 	}
-	BrtArray(const BrtArray <VALUE,dims,copy_data>&c) {
+	__BrtArray(const __BrtArray <VALUE,dims,copy_data>&c) {
 		*this=c;
 	}
-	~BrtArray() {
+	~__BrtArray() {
 		if (copy_data)
 			free(this->data);
 	}
@@ -108,36 +96,25 @@ public:
 	VALUE&get (const unsigned int *indices) {
 		return data[this->linearaddresscalc(indices)];
 	}
-#if 0
-	ConstXSpecified<VALUE,dims,copy_data> operator [] (unsigned int i)const {
-		return  ConstXSpecified<VALUE,dims,copy_data>(this,i);
-	}
-#endif
-	template <class T> ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &i) const{
-		ConstXSpecified<VALUE,dims,copy_data> ret(this);
+	template <class T> __ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &i) const{
+		__ConstXSpecified<VALUE,dims,copy_data> ret(this);
 		return ret[i];		
 	}
-
-#if 0
-	XSpecified<VALUE,dims,copy_data> operator [] (unsigned int i){
-		return  XSpecified<VALUE,dims,copy_data>(this,i);
-	}
-#endif
-	template <class T> XSpecified<VALUE,dims,copy_data> operator [] (const T &i){
-		XSpecified<VALUE,dims,copy_data> ret(this);
+	template <class T> __XSpecified<VALUE,dims,copy_data> operator [] (const T &i){
+		__XSpecified<VALUE,dims,copy_data> ret(this);
 		return ret[i];		
 	}
 	
 };
 
-template <class VALUE, unsigned int dims, bool copy_data> XSpecified<VALUE,dims,copy_data>::operator VALUE ()const {
+template <class VALUE, unsigned int dims, bool copy_data> __XSpecified<VALUE,dims,copy_data>::operator VALUE ()const {
 	return parent->get(indices);
 }
-template <class VALUE, unsigned int dims, bool copy_data> ConstXSpecified<VALUE,dims,copy_data>::operator VALUE ()const {
+template <class VALUE, unsigned int dims, bool copy_data> __ConstXSpecified<VALUE,dims,copy_data>::operator VALUE ()const {
 	return parent->get(indices);
 }
 
-#define OPXD(op) template <class VALUE, unsigned int dims, bool copy_data>VALUE &XSpecified<VALUE,dims,copy_data>::operator op (const VALUE &f)const{ \
+#define OPXD(op) template <class VALUE, unsigned int dims, bool copy_data>VALUE &__XSpecified<VALUE,dims,copy_data>::operator op (const VALUE &f)const{ \
 	VALUE * v = &parent->get(indices); \
 	(*v) op f; \
 	return *v; \
@@ -148,5 +125,5 @@ OPXD(%=)
 OPXD(+=)
 OPXD(/=)
 OPXD(-=)
-#undef OP1D	
+#undef OPXD	
 
