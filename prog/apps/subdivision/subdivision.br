@@ -1,8 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 kernel float3 eval (float2 param<>, float4 data[][]) {
-  float3 ret = {param.x,param.y,1.0};
+  //  float half=.5;
+  float3 ret = data[param].xyz;//lerp (data[param+1].xyz,data[param].xyz,half.xxx);
   return ret;
+}
+kernel void divide (float4 division<>,
+                    float4 data[][],
+                    float4 triangles[][],
+                    out float4 outvert<>) {
+  outvert=float4(1.0f,1.0f,1.0f,1.0f);;
 }
 kernel void shouldDivide (float4 triangles<>,
                           float4 trianglesGather[][],
@@ -13,24 +21,44 @@ kernel void shouldDivide (float4 triangles<>,
                           iter float2 Pindex<>,
                           float width,
                           float widthminusone,
-                          vout[1] float4 division<>) {
+                          float percentErrorSquared,
+                          vout[1] float4 division<>,
+                          vout[1] float4 nondivision<>) {
   float half=.5;
   float4 A=triangles;
   float4 B=trianglesGather[Bindex];  
-  float4 C = trianglesGather[Pindex];
+  float4 Parametric = trianglesGather[Pindex];
+  
   float2 a={abs(A.w),abs(B.w)};
-  float2 b=C.xy;
-  float2 c=C.zw;
-  C = trianglesGather[Cindex];
-  {
-    float3 AB = lerp (A.xyz,B.xyz,half.xxx);
-    float3 AC = lerp (A.xyz,C.xyz,half.xxx);
-    float3 BC = lerp (B.xyz,C.xyz,half.xxx);
-    float3 ab = eval (lerp(a,b,half.xx),data);
-    float3 ac = eval (lerp(a,b,half.xx),data);
-    float3 bc = eval (lerp(a,b,half.xx),data);
-    
-  }
+  float2 b=Parametric.xy;
+  float2 c=Parametric.zw;
+  float4 C = trianglesGather[Cindex];
+  float3 AB = lerp (A.xyz,B.xyz,half.xxx);
+  float3 AC = lerp (A.xyz,C.xyz,half.xxx);
+  float3 BC = lerp (B.xyz,C.xyz,half.xxx);
+
+  float3 ab = eval (lerp(a,b,half.xx),data);
+  float3 ac = eval (lerp(a,c,half.xx),data);
+  float3 bc = eval (lerp(b,c,half.xx),data);
+  float abABlen= dot(AB-ab,AB-ab);
+  float bcBClen= dot(BC-bc,BC-bc);
+  float acAClen= dot(ac-AC,ac-AC);
+  
+  float ABlen = dot(AB,AB);
+  float BClen = dot(BC,BC);
+  float AClen = dot(AC,AC);
+  division.xy = Aindex.xy;
+  division.z = 0;
+  division.w = (float)(acAClen>AClen*percentErrorSquared||C.w<0);
+  division.w *= 4;
+  division.w+= 2.0f*(float)(bcBClen>BClen*percentErrorSquared||B.w<0);
+  division.w += (float)(abABlen>ABlen*percentErrorSquared||A.w<0);
+  if (division.w>0) {      
+    push(division);
+  }else {
+    nondivision=division;
+    push(nondivision);
+  }          
   
 }
 

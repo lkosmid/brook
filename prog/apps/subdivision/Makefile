@@ -1,7 +1,7 @@
 ROOTDIR = ../../..
-EXECUTABLE = volume_division
+EXECUTABLE = subdivision
 FILES = subdivision voutfloatN vout1dfloatN
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = 
+BRCCFLAGS = -k
 include $(ROOTDIR)/common.mk
 
