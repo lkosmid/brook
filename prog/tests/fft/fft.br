@@ -1,7 +1,6 @@
 #pragma warning(disable:4275)
 #include <complex>
 #include <cmath>
-#include <fftw3.h>
 // NOTE:
 // Please generate the dataset and the twiddle factors by running the data.cc program in this directory
 // and then run this program. This program currently works for power of 2 lengths. 
@@ -18,7 +17,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#ifdef USE_FFTW
 #include <fftw3.h>
+#endif
 //c version from FFT book
 #ifndef M_PI
 #define M_PI 3.1415926536
@@ -28,6 +29,7 @@ typedef int mycomplex;
 typedef int myplan;
 #define mycomplex fftwf_complex
 #define myplan fftwf_plan
+#ifdef USE_FFTW
 void FftwTransform(float2 *data, unsigned long N, int isign) {
   myplan p;
   mycomplex *in;
@@ -50,10 +52,13 @@ void FftwTransform(float2 *data, unsigned long N, int isign) {
   }
   printf ("\n");
   fftwf_free(output);
-  fftwf_free(in); 
-
-
+  fftwf_free(in);
 }
+#else
+#define fftwTransform FftwTransform
+void fftwTransform(float2 *data, unsigned long N, int isign) {}
+#endif
+
 void four1(float data[], unsigned long nn, int isign) {
    unsigned long n, mmax, m, j, istep, i;
    double wtemp, wr, wpr, wpi, wi, theta;
@@ -203,18 +208,6 @@ int TwoPowerX(int nNumber) {
 //          number. For reversing 6 you need atleast 3 bits, if only 2 bits is passed then
 //          we get junk results.
 
-kernel void bitReverse4 (float Num, out float ReversedNumber<>) {
-  float NumberToReverse=Num;
-  float NumberOfBits=4;
-  float nBitIndex;
-  ReversedNumber = 0;
-  for (nBitIndex = NumberOfBits-1; nBitIndex >= 0; --nBitIndex) {
-    if (1 == floor(NumberToReverse / exp2(nBitIndex))) {         
-      ReversedNumber  += exp2(NumberOfBits-1-nBitIndex);    
-      NumberToReverse -= exp2(nBitIndex);                      
-    }
-  }
-}
 int BitReverse(int nNumberToReverse, int nNumberOfBits) {
   int nBitIndex;
   int nReversedNumber = 0;
@@ -233,6 +226,15 @@ int BitReverse(int nNumberToReverse, int nNumberOfBits) {
 // OUTPUT: r. `r' contains the bit-reversed stream
 typedef int streamcmplx;
 #define streamcmplx const __BRTStream &
+float * bitReversedIndices (int logN) {
+  int i,N = (1<< logN);
+  float * s_array;
+  s_array = (float*)calloc(N,sizeof(float));
+  for (i=0;i<N;++i) {
+    s_array[i]=(float)BitReverse(i,logN);
+  }
+  return s_array;
+}
 void BitReverseStream(streamcmplx r, streamcmplx s, int nDataLength) {
   int nIndex, B = 1;  
   float2 *s_array;
@@ -379,10 +381,16 @@ int main(int argc, char **argv)
     // Note that 's' now has a bitreversed version of the FFT.
     // Since FFT is an in-place computation 's' contains the
     // the FFT(s) itself.
-    // NOTE: streamBitReverse() isn't yet implemented. Just an emulation 
-    BitReverseStream(s_out, s, nDataLength);
-
-    printf("The FFT of the given data is\n");
+    // NOTE: streamBitReverse() isn't yet implemented. Just an emulation
+    if (1) {
+      float *rawindices=bitReversedIndices(logN);
+      float indices<N>;
+      streamRead(indices,rawindices);
+      streamGatherOp(s_out,indices,s,STREAM_GATHER_FETCH);
+    }
+//    printf("The scrambled FFT of the given data is\n");
+//    streamPrint(s); 
+    printf("\nThe FFT of the given data is\n");
     streamPrint(s_out); 
     printf("\n");
     //    scanf("%d",&N);
