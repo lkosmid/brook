@@ -1,7 +1,6 @@
 ROOTDIR = ../..
 EXECUTABLE = reduce
-FILES = reduce
-BROOK_FILES = reduce
+FILES = sum reduce
 LIBRARIES = gpu
 
 include ../../common.mk

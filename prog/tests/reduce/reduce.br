@@ -1,6 +1,0 @@
-
-kernel void main (stream float a, 
-		  stream float b,
-		  stream out float result) {
-  result = a+b;
-}
