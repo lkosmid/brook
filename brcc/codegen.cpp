@@ -368,9 +368,10 @@ static bool expandOutputArgumentStructureDecl(std::ostream& shader,
                 fprintf (stderr, "Unknown output type\n");
                 exit(1);
               }
+	      shader << " __output_" << outr;
               shader << " : COLOR" << (outr - inFirstOutput);
               shader << ",\n\t\t";
-              shader << "#endif";
+              shader << "#endif\n\t\t";
 
               outPass.addOutput( inArgumentIndex, componentIndex );
             }
