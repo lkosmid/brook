@@ -216,7 +216,7 @@ public:
    //The following function is obsolete for now since static sized
    //arrays are no longer helpful
     void printArrayStream(std::ostream &out, STAGE s) {
-      printGatherStream(out,s);
+      printDimensionlessGatherStream(out,s);
       return;
         Type * t=a->form;
 	//temporarily dissect type.
