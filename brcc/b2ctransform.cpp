@@ -437,6 +437,7 @@ class SwizzleConverter{public:
         return NULL;
     }
 };
+void ConvertToTMaskConverter (Expression * e);
 class MaskConverter{public:
 Expression * operator () (Expression * e) {
     AssignExpr * ae;
@@ -457,6 +458,7 @@ Expression * operator () (Expression * e) {
                             ae->aOp=AO_Equal;
                         }
                         ret = new MaskExpr (lval->leftExpr()->dup(),ae->rValue()->dup(),vmask->name->name,lval->location);
+			ret->findExpr(&ConvertToTMaskConverter);
                     }
                 }
             }
@@ -478,7 +480,6 @@ public:
     }
     virtual void findExpr( fnExprCallback cb ) { next->findExpr(cb); }    
 };
-void COnvertToTMaskConverter (Expression * e);
 template <class ConverterFunctor> void ConvertToT (Expression * expression) {
     if (ArrayBlacklist.find(expression)==ArrayBlacklist.end()) {
         Expression * e = ConverterFunctor()(expression);
@@ -489,7 +490,7 @@ template <class ConverterFunctor> void ConvertToT (Expression * expression) {
             memcpy (&location[0],&expression->location,sizeof(Location));
             memcpy (expression,k,sizeof(Expression));//DANGEROUS but we don't have access to the code
             memcpy (&expression->location,&location[0],sizeof(Location));
-            e->findExpr(ConvertToTMaskConverter);
+            
             
         }
     }
