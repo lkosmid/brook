@@ -39,6 +39,9 @@ template <> class GetValueOf <double> {public:
 template <> class GetValueOf <int> {public:
     typedef int type;
 };
+template <> class GetValueOf <unsigned int> {public:
+    typedef unsigned int type;
+};
 template <> class GetValueOf <char> {public:
     typedef char type;
 };
@@ -68,10 +71,10 @@ template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
     return Holder<T>().getAt(in,i);
 }
 #else
-template <class T> typename static GetValueOf<T>::type GetAt (const T& in,int i) {
+template <class T> static typename GetValueOf<T>::type GetAt (const T& in,int i) {
     return in.getAt(i);
 }
-#define SPECIALGETAT(TYP) template <> typename static TYP GetAt (const TYP& in,int i) {return in;}
+#define SPECIALGETAT(TYP) template <> static TYP GetAt (const TYP& in,int i) {return in;}
 
 SPECIALGETAT(int)
 SPECIALGETAT(unsigned int)
