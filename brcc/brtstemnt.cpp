@@ -254,7 +254,7 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
     
     out << ")";
     //delete func;
-	func = static_cast<FunctionType *>(form);
+	//func = static_cast<FunctionType *>(form);
     Block::print(out,0);
 	//now it's time to print the automated wrapper function.
 	out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
@@ -264,8 +264,8 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	{for (unsigned int i=0;i<func->nArgs;++i) {
 		indent(out,1);//setup args;
 		Type * t = func->args[i]->form;
-		if (t->type==TT_Array) {//gather
-			CPUGatherType * cgt = new CPUGatherType(*static_cast<ArrayType *>(t),copy_on_write);	
+		if (t->type==TT_Array&&dims_specified==false) {//gather
+			CPUGatherType * cgt = static_cast< CPUGatherType*>(t);	
 			Symbol arg1;arg1.name="arg"+tostring(i)		;
 			
 			cgt->printType(out,&arg1,false,0);
