@@ -17,7 +17,7 @@ kernel float eval1 (float3 loc<>) {
 }
 kernel float eval (float3 loc<>) {
   float  power;
-  const float3 offset=8;
+  const float3 offset=0;
   float3 center =loc-offset;
   power = dot(center,center);
   /*

@@ -71,6 +71,7 @@ void readPPM3dSlice(const ppm &fp,
                    unsigned int whichslice,
                    float *data) {
    unsigned int size = fp.width*fp.height;
+   static bool dorandom=false;
    if (fp.fp) {
       char * readindata = (char *) data;
       fseek (fp.fp,fp.start+whichslice*size*sizeof(char),SEEK_SET);
@@ -80,7 +81,19 @@ void readPPM3dSlice(const ppm &fp,
       for (unsigned int i=0;i<size;++i) {
          data[i]=readindata[i]/255.0f-.5f;//because we only support float format!
       }
-   }else for (unsigned int i=0;i<size;++i) data[i] = myrand();
+   }else if (dorandom)for (unsigned int i=0;i<size;++i) data[i] = myrand();
+   else {
+     float rad = (float)(fp.width-1)/2;
+     float offset =(float) (fp.width-1)/2;
+     for (unsigned int j=0;j<fp.height;++j) {
+       for (unsigned int i=0;i<fp.width;++i) {
+         if (fp.width<=3)
+           data[i+j*fp.width]= (i==1&&j==1&&whichslice==1)?1.0f:-1.0f;
+         else
+           data[i+j*fp.width]= ((j-offset)*(j-offset)+(whichslice-offset)*(whichslice-offset)+(i-offset)*(i-offset)<rad*rad)?1.0f:-1.0f;
+       }
+     }
+   }
 }
 void closePPM (const ppm &fp) {
    fclose (fp.fp);
