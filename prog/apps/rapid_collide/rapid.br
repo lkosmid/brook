@@ -72,11 +72,11 @@ kernel void matMult(float3 aX<>, float3 aY<>, float3 aZ<>,
   oY = float3(dot(aY,t_bX), dot(aY,t_bY), dot(aY,t_bZ));
 }
 kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
-                         float3 vec<>) {
+                         float3 v<>) {
   float3 temp;
-  return temp=float3(dot(vec,aX),
-                     dot(vec,aY),
-                     dot(vec,aZ));
+  return temp=float3(dot(v,aX),
+                     dot(v,aY),
+                     dot(v,aZ));
 }
 
 kernel void ISECT(float3 VV<>, float3 D, out float2 isect<>) {
