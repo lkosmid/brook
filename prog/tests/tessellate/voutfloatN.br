@@ -255,7 +255,7 @@ float shiftValuesfloat(struct StreamHolder list_stream,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-
+   float maxshift;
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
@@ -1273,7 +1273,7 @@ float shiftValuesfloat2(struct StreamHolder list_stream,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-
+   float maxshift;
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
@@ -2297,7 +2297,7 @@ float shiftValuesfloat3(struct StreamHolder list_stream,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-
+   float maxshift;
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
@@ -3321,7 +3321,7 @@ float shiftValuesfloat4(struct StreamHolder list_stream,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-
+   float maxshift;
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
