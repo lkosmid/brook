@@ -14,10 +14,13 @@
 #include <string>
 #include <set>
 class functionProperties:public std::set<unsigned int>{public:
+   std::set<std::string>callees;
    bool contains (unsigned int i) {
       return find(i)!=end();
    }
    bool notcontains(unsigned int i) {return !contains(i);}
+   bool calls (std::string s) {return callees.find(s)!=callees.end();}
+   bool notcalls(std::string s) {return !calls(s);}
 };
 extern std::map<std::string,functionProperties> FunctionProp;
 

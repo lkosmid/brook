@@ -38,7 +38,7 @@ extern "C" {
  *      This function takes a parsed kernel function as input and produces
  *      the CG code reflected, plus the support code required.
  */
-static void generate_shader_subroutines(std::ostream&  out) {
+static void generate_shader_subroutines(std::ostream&  out, const char * nam) {
    TransUnit * tu = gProject->units.back();
    Statement *ste, *prev;
    for (ste=tu->head, prev=NULL; ste; prev = ste, ste=ste->next) {
@@ -46,7 +46,10 @@ static void generate_shader_subroutines(std::ostream&  out) {
          FunctionDef * fd = static_cast<FunctionDef *> (ste);
 //TIM: I'm unsure why we don't output the reductions
 //         if (fd->decl->isKernel()&&!fd->decl->isReduce()) {
-         if (fd->decl->isKernel()) {
+         if (FunctionProp[nam].calls(fd->decl->name->name) 
+             || fd->decl->name->name==std::string(nam) 
+             || (fd->decl->isKernel()&&globals.keepFiles)) {
+            //fd->decl->isKernel()) {
             BRTPS20KernelCode(*fd).printInnerCode(out);
          }
       }
@@ -691,7 +694,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
   shader << "\n\n";
 
   generate_shader_structure_definitions(shader);
-  generate_shader_subroutines(shader);
+  generate_shader_subroutines(shader,functionName);
 
   // Find if it is a reduction
   for (i=0; i < nArgs; i++) {

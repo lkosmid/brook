@@ -6,7 +6,7 @@
 #pragma warning(disable:4786)
 //the above warning disables visual studio's annoying habit of warning when using the standard set lib
 #endif
-
+#include <algorithm>
 #include "ctool.h"
 #include "brtexpress.h"
 #include "b2ctransform.h"
@@ -50,11 +50,36 @@ FunctionDef * needIndexOf (FunctionDef * fd) {
    }
    return NULL;
 }
+static void CalleesClosure () {
+   bool changed=true;
+   while (changed) {
+      changed=false;
+      std::map<std::string,functionProperties>::iterator i;
+      for (i=FunctionProp.begin();i!=FunctionProp.end();++i) {
+         unsigned int len = (*i).second.callees.size();
+         std::set<std::string>::iterator j;
+         std::set<std::string>output((*i).second.callees);
+         for (j=(*i).second.callees.begin();j!=(*i).second.callees.end();++j) {
+            if (*j!=(*i).first) {
+               std::set<std::string> * othset=&FunctionProp[*j].callees;
+               for (std::set<std::string>::iterator k=othset->begin();
+                    k!=othset->end();
+                    ++k) {
+                  output.insert(*k);
+               }
+            }
+         }
+         changed = changed||(len!=output.size());
+         (*i).second.callees.swap(output);
+      }
+   }
+}
 Expression * callIndexOf(Expression * e) {
    if (e->etype==ET_FunctionCall) {
       FunctionCall*fc = static_cast<FunctionCall * > (e);
       if (fc->function->etype==ET_Variable) {
          Variable*  v= static_cast<Variable *>(fc->function);
+         FunctionProp[currentName].callees.insert(v->name->name);
          if (FunctionProp.find(v->name->name)!=FunctionProp.end()){
             functionProperties::iterator i=FunctionProp[v->name->name].begin();
             functionProperties::iterator end=FunctionProp[v->name->name].end();
@@ -90,6 +115,7 @@ FunctionDef * recursiveNeedIndexOf(FunctionDef*  fd) {
       currentName = fd->FunctionName()->name;
       addCurrentArgs (fd);
       fd->findExpr(&callIndexOf);
+      CalleesClosure();
    }
    return NULL;
 }
