@@ -473,7 +473,7 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
     out << whiteOut << "const std::vector<unsigned int>&dims,"<<std::endl;
     out << whiteOut << "unsigned int mapbegin) {"<<std::endl;
     indent(out,1);
-    out << "unsigned int i= mapbegin;<<std::endl";
+    out << "unsigned int i= mapbegin;"<<std::endl;
     initializeIndexOf(out);
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
