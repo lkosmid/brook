@@ -46,6 +46,8 @@ inline float isnan_flt (float x) {
 #endif
 }
 
+#include "logger.hpp"
+
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
@@ -69,6 +71,8 @@ namespace brook {
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   RunTime* RunTime::CreateInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation ) {
     const char *env = inRuntimeName != NULL ? inRuntimeName : getenv(RUNTIME_ENV_VAR);
+
+    BROOK_LOG(0) << "Brook Runtime starting up" << std::endl;
 
     if (!env) {
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
