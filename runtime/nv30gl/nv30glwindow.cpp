@@ -230,8 +230,7 @@ NV30GLRunTime::createPBuffer (int ncomponents) {
 
   static Display   *pDisplay;
   static int iScreen;
-  
-  GLXFBConfig *glxConfig[4];
+  static GLXFBConfig *glxConfig[4];
 
   static const int pbAttribList[] =  {
      GLX_PRESERVED_CONTENTS, true,
@@ -241,7 +240,14 @@ NV30GLRunTime::createPBuffer (int ncomponents) {
   };
   
   static int first;
- 
+
+  if (first) {
+    // XXX: For some reson, I can't deal 
+    // with changing the pbuffer size on Linux...
+    pbuffer_ncomp = ncomponents;
+    return;
+  }
+
   if (!first) {
      int iConfigCount;   
      int pfAttribList[] = 
@@ -261,25 +267,25 @@ NV30GLRunTime::createPBuffer (int ncomponents) {
      iScreen  = DefaultScreen(pDisplay);
 
      for (int i=0; i<4; i++) {
-         for (int j=0; j<4; j++)
-            pfAttribList[1+j*2] = (j<=i)?32:0;
-
-        glxConfig[i] = glXChooseFBConfig(pDisplay, 
-                                         iScreen, 
-                                         pfAttribList, 
-                                         &iConfigCount);
-
-        if (!glxConfig[i]) {
-           fprintf(stderr, "NV30GL:  glXChooseFBConfig() failed\n");
-           exit(1);
-        }        
+       for (int j=0; j<4; j++)
+	 pfAttribList[1+j*2] = (j<=i)?32:0;
+       
+       glxConfig[i] = glXChooseFBConfig(pDisplay, 
+					iScreen, 
+					pfAttribList, 
+					&iConfigCount);
+       
+       if (!glxConfig[i][0]) {
+	 fprintf(stderr, "NV30GL:  glXChooseFBConfig() failed\n");
+	 exit(1);
+       }        
      }
   }
-
+  
      
   if (first) {
-     glXMakeCurrent(pDisplay, glxPbuffer, NULL);
-     glXDestroyPbuffer(pDisplay, glxPbuffer);
+    glXMakeCurrent(pDisplay, None, NULL);
+    glXDestroyPbuffer(pDisplay, glxPbuffer);
   }
 
   glxPbuffer = glXCreatePbuffer(pDisplay, 
@@ -293,7 +299,7 @@ NV30GLRunTime::createPBuffer (int ncomponents) {
   
   if (!first) {
      glxContext = glXCreateNewContext(pDisplay, 
-                                      glxConfig[0][0], 
+                                      glxConfig[ncomponents-1][0], 
                                       GLX_RGBA_TYPE, 
                                       0, true);
      if (!glxConfig) {
@@ -303,7 +309,6 @@ NV30GLRunTime::createPBuffer (int ncomponents) {
   }
      
   glXMakeCurrent(pDisplay, glxPbuffer, glxContext);
-
 
 #endif
 
