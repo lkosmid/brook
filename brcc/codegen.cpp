@@ -1242,8 +1242,9 @@ compile_cg_code (const char *cgcode, bool generateARB) {
                      "-DUSERECT", "-quiet", NULL };
   char *fpcode, *endline, *startline;
   char* tempCode = strdup( cgcode );
-
-  argv[2] = generateARB ? "arbfp1" : "fp30";
+  char arbfp[]="arbfp1";
+  char fp30[]="fp30";
+  argv[2] = generateARB ? arbfp : fp30;
   fpcode = Subprocess_Run(argv, tempCode);
   free( tempCode );
   if (fpcode == NULL) {
@@ -1691,7 +1692,7 @@ generateReductionTechniques(Decl** args, int nArgs, const char* name,
                             std::vector<technique_info>& ioTechniques)
 {
   bool isReduction = false;
-  int outputCount = getShaderOutputCount( nArgs, args, isReduction );
+  /*  int outputCount =*/getShaderOutputCount( nArgs, args, isReduction );
 
   if( !isReduction )
   {
