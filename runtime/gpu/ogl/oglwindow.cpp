@@ -180,7 +180,8 @@ create_window (void) {
       wc.lpszMenuName = NULL;
       wc.lpszClassName = window_name;
 
-      assert (RegisterClass( &wc ));
+      ATOM result = RegisterClass( &wc );
+      assert (result);
     }
 
   window_style = ( WS_CLIPSIBLINGS | WS_CLIPCHILDREN );

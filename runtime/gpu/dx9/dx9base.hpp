@@ -34,7 +34,7 @@ namespace brook
   #define DX9WARN GPUWARN
 
   #define DX9AssertResult( _result, _message ) \
-    if(SUCCEEDED(_result)) {} else GPUAssertImpl( __FILE__, __LINE__, _message )
+    if(SUCCEEDED(_result)) {} else GPUError( _message )
 
   #define DX9Assert( _condition, _message ) \
     GPUAssert( _condition, _message )

@@ -458,9 +458,9 @@ namespace brook
     // or validating input texture data)
     _context->beginScene();
 
-    //#ifdef BROOK_DX9_TRACE_REDUCE
+#ifdef BROOK_GPU_ENABLE_REDUCTION_LOG
     dumpReductionState( ioState );
-    //#endif
+#endif
   }
 
   void GPUKernel::executeReductionStep( ReductionState& ioState )
@@ -716,9 +716,9 @@ namespace brook
 
     ioState.whichBuffer = nextBuffer;
 
-//#ifdef BROOK_DX9_TRACE_REDUCE
+#ifdef BROOK_GPU_ENABLE_REDUCTION_LOG
     dumpReductionState( ioState );
-//#endif
+#endif
   }
 
 
@@ -762,9 +762,9 @@ namespace brook
 
     ioState.slopCount = 0;
 
-//#ifdef BROOK_DX9_TRACE_REDUCE
+#ifdef BROOK_GPU_ENABLE_REDUCTION_LOG
     dumpReductionState( ioState );
-//#endif
+#endif
   }
 
   void GPUKernel::endReduction( ReductionState& ioState )

@@ -26,7 +26,7 @@ endif
 
 C_INCLUDE_FLAG   := /I
 C_DEBUG_FLAG     := /Zi /Yd /GZ /Fd$(OBJDIR)\\
-C_RELEASE_FLAG   := /Ogisyb2 /Gs /arch:SSE2 /G7 
+C_RELEASE_FLAG   := /Ogisyb2 /Gs /arch:SSE2 /G7 /DNDEBUG 
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := /Fo
 C_COMPILE_FLAG   := /c

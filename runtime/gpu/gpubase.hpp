@@ -14,14 +14,48 @@
 #include "../profiler.hpp"
 #include "../logger.hpp"
 
-#define GPUPROFILE( __name ) BROOK_PROFILE( __name )
+// uncomment to enable the hacky runtime profiler
+//#define BROOK_GPU_ENABLE_PROFILER
 
-#define GPULOG( __level ) \
-  BROOK_LOG( __level ) << "GPU - "
+// uncomment to enable to hacky runtime logging code
+//#define BROOK_GPU_ENABLE_LOGGER
 
-#define GPULOGPRINT( __level ) \
-  BROOK_LOG_PRINT( __level )
+// uncomment to enable GPUAssert checks
+//#define BROOK_GPU_ENABLE_ASSERTS
 
+// uncomment to enable logging of reduction state
+//#define BROOK_GPU_ENABLE_REDUCTION_LOG
+
+// uncomment to enable file/line numbers on asserts/error
+//#define BROOK_GPU_ENABLE_ERROR_LINE_NUMBERS
+
+// enable logger/asserts in debug builds
+#if !defined(BROOK_NDEBUG)
+#  define BROOK_GPU_ENABLE_LOGGER
+#  define BROOK_GPU_ENABLE_ASSERTS
+#  define BROOK_GPU_ENABLE_ERROR_LINE_NUMBERS
+#endif
+
+// profiler
+#if defined(BROOK_GPU_ENABLE_PROFILER)
+#  define GPUPROFILE( __name ) BROOK_PROFILE( __name )
+#else
+#  define GPUPROFILE( __name ) while(0) {}
+#endif
+
+// logger
+#if defined(BROOK_GPU_ENABLE_LOGGER)
+#  define GPULOG( __level ) \
+     BROOK_LOG( __level ) << "GPU - "
+
+#  define GPULOGPRINT( __level ) \
+     BROOK_LOG_PRINT( __level )
+#else
+# define GPULOG( __level ) while(0) ::std::cerr
+# define GPULOGPRINT( __level ) while(0) ::std::cerr
+#endif
+
+// warning messages
 #define GPUWARN \
   std::cerr << "Brook Runtime (gpu) - "
 
@@ -34,19 +68,21 @@ inline void GPUAssertImpl( const char* fileName,
   exit(1);
 }
 
+#if defined(BROOK_GPU_ENABLE_ERROR_LINE_NUMBERS)
 #define GPUError( _message ) \
   GPUAssertImpl( __FILE__, __LINE__, _message )
-
-#ifndef BROOK_NDEBUG
-
-#define GPUAssert( _condition, _message ) \
-  if(_condition) {} else GPUAssertImpl( __FILE__, __LINE__, _message )
-
 #else
+#define GPUError( _message ) \
+  GPUAssertImpl( "", "", _message )
+#endif
 
-#define GPUAssert( _condition, _message ) \
-  do {} while(false)
-
+// asserts
+#if defined(BROOK_GPU_ENABLE_ASSERTS)
+#  define GPUAssert( _condition, _message ) \
+     if(_condition) {} else GPUError( _message )
+#else
+#  define GPUAssert( _condition, _message ) \
+     do {} while(false)
 #endif
 
 namespace brook
