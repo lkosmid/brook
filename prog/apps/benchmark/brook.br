@@ -2,6 +2,7 @@
 #define ksize 500
 const int size=ksize;
 extern void cputest (float *a, float *b, float4 c, float *d, float * e, unsigned int total);
+extern void handcputest (float *a, float *b, float4 c, float *d, float * e, unsigned int total);
 extern void InitTime();
 extern void UpdateTime();
 double GetElapsedTime();
@@ -92,6 +93,7 @@ int main () {
   fprintf (stderr,"Elapsed Float time %lf\n",GetElapsedTime());
   
   cputest((float*)&data_a[0],(float*)&data_b[0],c,(float*)&data_d[0],(float*)&data_e[0],ksize);
+  handcputest((float*)&data_a[0],(float*)&data_b[0],c,(float*)&data_d[0],(float*)&data_e[0],ksize);
   streamWrite(e, data_e);
   printf ("\n\n");
   for (i=0; i<1; i++) {
