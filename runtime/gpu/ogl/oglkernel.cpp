@@ -4,7 +4,7 @@
 #include "oglcheckgl.hpp"
 #include "ogltexture.hpp"
 #include "oglwindow.hpp"
-
+#include "nvcontext.hpp"
 using namespace brook;
 
 static const char passthrough_vertex[] = 
@@ -17,12 +17,42 @@ static const char passthrough_pixel[] =
 "TEX oColor, tex0, texture[0], RECT;\n"
 "END\n";
 
-OGLPixelShader::OGLPixelShader(unsigned int _id):
+OGLPixelShader::OGLPixelShader(unsigned int _id, const char * program_string):
   id(_id), largest_constant(0) {
   unsigned int i;
   
-  for (i=0; i<(unsigned int) MAXCONSTANTS; i++)
-    constants[i] = float4(0.0f, 0.0f, 0.0f, 0.0f);;
+  for (i=0; i<(unsigned int) MAXCONSTANTS; i++) {
+    constants[i] = float4(0.0f, 0.0f, 0.0f, 0.0f);
+  }
+  
+  if (NVContext::isVendorContext()) {//only they rely on named constants
+    if (strstr(program_string,"#profile fp30")) {
+      while (*program_string&&(program_string=strstr(program_string,"#semantic main."))!=NULL) {
+        const char *name;
+        unsigned int len=0;
+        program_string += strlen("#semantic main.");         
+        /* set name to the ident */
+        name = program_string;
+        do{program_string++; len++;}while (*program_string!='\0'&&*program_string != ' ');
+        std::string const_name(name,len);
+        do program_string++; while (*program_string !=':');
+        do program_string++; while (*program_string ==' ');
+        if (*program_string!='C') continue;
+        program_string++;
+        char * ptr=NULL;
+        unsigned int constreg = strtol (program_string,&ptr,10);
+        if(ptr){
+          if (constreg > (unsigned int)MAXCONSTANTS) {
+            fprintf (stderr, "NV30GL: Too many constant registers\n");
+            exit(1);
+          }       
+          program_string=ptr;
+          constant_names[constreg] = const_name;
+        }             
+      }
+    }
+  }
+  
 }
   
 
@@ -63,7 +93,7 @@ OGLContext::getPassthroughPixelShader() {
                           strlen(passthrough_pixel), 
                           (GLubyte *) passthrough_pixel);
     //fprintf (stderr, "Mallocing PixelShader\n");
-    _passthroughPixelShader = new OGLPixelShader(id);
+    _passthroughPixelShader = new OGLPixelShader(id,passthrough_pixel);
     //fprintf (stderr, "Checking GL\n");
     CHECK_GL();
   }
@@ -121,7 +151,7 @@ OGLContext::createPixelShader( const char* shader )
     exit(1);
   }
 
-  return (GPUContext::PixelShaderHandle) new OGLPixelShader(id);
+  return (GPUContext::PixelShaderHandle) new OGLPixelShader(id,shader);
 }
 
 void 
@@ -136,7 +166,18 @@ OGLContext::bindConstant( PixelShaderHandle ps,
   bindPixelShader(ps);
   glProgramLocalParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, inIndex,
                                 (const float *) &inValue);
-
+  CHECK_GL();
+  std::string::size_type len=oglps->constant_names[inIndex].length();
+  if (len){
+    glProgramNamedParameter4fvNV(oglps->id,
+                                 len,
+                                 (const GLubyte *)oglps->constant_names[inIndex].c_str(),
+                                 &inValue.x);
+    GLenum err=glGetError();
+    //errors come if a constant is passed into a kernel but optimized out of that kernel.
+    // they are "safe" to ignore
+    assert (err==GL_NO_ERROR||err==GL_INVALID_VALUE);
+  }
   GPUAssert(inIndex < (unsigned int) OGLPixelShader::MAXCONSTANTS, 
             "Too many constants used in kernel");
 
@@ -144,7 +185,6 @@ OGLContext::bindConstant( PixelShaderHandle ps,
     oglps->largest_constant = inIndex+1;
 
   oglps->constants[inIndex] = inValue;
-  CHECK_GL();
 }
 
 

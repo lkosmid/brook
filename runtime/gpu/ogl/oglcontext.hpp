@@ -1,7 +1,7 @@
 // oglcontext.hpp
 #ifndef OGLCONTEXT_HPP
 #define OGLCONTEXT_HPP
-
+#include <string>
 #include "../gpucontext.hpp"
 
 #include "oglfunc.hpp"
@@ -14,10 +14,11 @@ namespace brook {
   class OGLPixelShader
   {
   public:
-    OGLPixelShader(unsigned int id);
+    OGLPixelShader(unsigned int id,const char * program_string);
     static const unsigned int MAXCONSTANTS = 256;
     unsigned int id;
     float4 constants[256];
+    std::string constant_names[256];
     unsigned int largest_constant;
   };
 
