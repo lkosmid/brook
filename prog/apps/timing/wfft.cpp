@@ -46,21 +46,41 @@ brook::stream &getW(int k, int N, bool vertical) {
    }else {
       rW = (*rawW).second;
    }
-   if (vertical) {
-      ret = new brook::stream (flawt2,1,N/2,-1);
-   }else {
-      ret = new brook::stream (flawt2,N/2,1,-1);
-   }
-   if (k!=0) {
-      //else we stay the same
-      float2 *stridedW = new float2 [N/2];
-      for (int i=0;i<N/2;++i) {
-         stridedW[i]=rW[i-(i%(1<<k))];
+   if (0) {
+      if (vertical) {
+         ret = new brook::stream (flawt2,1,N/2,-1);
+      }else {
+         ret = new brook::stream (flawt2,N/2,1,-1);
       }
-      streamRead(*ret,stridedW);
-      delete []stridedW;
+      if (k!=0) {
+         //else we stay the same
+         float2 *stridedW = new float2 [N/2];
+         for (int i=0;i<N/2;++i) {
+            stridedW[i]=rW[i-(i%(1<<k))];
+         }
+         streamRead(*ret,stridedW);
+         delete []stridedW;
+      }else {
+         streamRead(*ret,rW);
+      }
    }else {
-      streamRead(*ret,rW);
+      int thissize = (N/2)/(1<<k);
+      if (vertical) {
+         ret = new brook::stream (flawt2,1,thissize,-1);
+      }else {
+         ret = new brook::stream (flawt2,thissize,1,-1);
+      }
+      if (k!=0) {
+         //else we stay the same
+         float2 *stridedW = new float2 [thissize];
+         for (int i=0;i<thissize;++i) {
+            stridedW[i]=rW[i*(1<<k)];
+         }
+         streamRead(*ret,stridedW);
+         delete []stridedW;
+      }else {
+         streamRead(*ret,rW);
+      }
    }
    Ws[DualInt(k,vertical?myabs(N):-myabs(N))]=ret;   
    return *ret;
