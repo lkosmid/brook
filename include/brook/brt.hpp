@@ -27,7 +27,7 @@ typedef struct fixed2 {
    fixed2(float _x, float _y, float _z, float _w) { x = (unsigned char)(_x*255); y = (unsigned char)(_y*255); }
   fixed2(unsigned char _x, unsigned char _y) { x = _x;y=_y;}
   fixed2(void) {}
-  unsigned char x,y,pad2,pad3;
+  unsigned char x,y;//,pad2,pad3;
   operator __BrtFloat2() const{return __BrtFloat2(((float)x)/255.0f,((float)y)/255.0f);}
   template <class T> T castToArg(const T &dummy) const{return T(((float)x)/255.0f,((float)y)/255.0f);}
 } fixed2;
@@ -39,7 +39,7 @@ typedef struct fixed3 {
   fixed3(void) {}
   operator __BrtFloat3() const{return __BrtFloat3(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f);}
   template <class T> T castToArg(const T&dummy) const {return T(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f);}
-  unsigned char x,y,z,pad3;
+  unsigned char x,y,z;//,pad3;
 } fixed3;
 
 typedef struct fixed4 {
@@ -72,7 +72,7 @@ typedef struct shortfixed2 {
    shortfixed2(float _x, float _y, float _z, float _w) { x = (unsigned short)(.5+_x*65535); y = (unsigned short)(.5+_y*65535); }
   shortfixed2(unsigned short _x, unsigned short _y) { x = _x;y=_y;}
   shortfixed2(void) {}
-  unsigned short x,y,pad2,pad3;
+  unsigned short x,y;//,pad2,pad3;
   operator __BrtFloat2() const{return __BrtFloat2(((float)x)/65535.0f,((float)y)/65535.0f);}
   template <class T> T castToArg(const T &dummy) const{return T(((float)x)/65535.0f,((float)y)/65535.0f);}
 } shortfixed2;
@@ -85,7 +85,7 @@ typedef struct shortfixed3 {
   shortfixed3(void) {}
   operator __BrtFloat3() const{return __BrtFloat3(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f);}
   template <class T> T castToArg(const T&dummy) const {return T(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f);}
-  unsigned short x,y,z,pad3;
+  unsigned short x,y,z;//,pad3;
 } shortfixed3;
 
 typedef struct shortfixed4 {
