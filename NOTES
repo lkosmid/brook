@@ -1,5 +1,15 @@
 			    Brook GPU Release Notes
 
+Release v0.4 (X/XX/04)
+
+   * Corrected Indexof precedence
+ 
+   * Allow casts in variable declarations
+
+   * Regression test failures summarized at end of make regression
+
+   * Fixed Variable Output bugs for 0-sized streams; improved search performance
+
 Release v0.3 (1/29/04)
 
    * Support typedef structures for stream types.
@@ -44,18 +54,12 @@ Known Issues In BRCC
      fragile.  They're only legal in three places: variable declaration
      initializers, iterator stream constructors, and as bare statements.
 
-   * Casts are not correctly parsed in variable declaration initializers (as
-     fallout of the above floatN constructors).
-
    * The preprocessor is not run on .br files, though it is run on the
      resulting C++ output.  This can make it hard to use #defines and macros
      in conjunction with kernels or stream constructs.
    
    * GatherOps and ScatterOps require the CPU runtime and programs using
      them must compile for at least the CPU target.
-
-   * The 'indexof' operator has very low precedence and is generally only
-     useful with parentheses.
      
 Known Issues in the Runtimes
 
