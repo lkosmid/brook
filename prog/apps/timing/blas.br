@@ -1,0 +1,413 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+
+#include "main.h"
+#include "blas.h"
+
+#define MAX_DIM     2048
+
+#define DO_VERIFY   1 
+
+#define EPS 1e-3f
+
+
+// SDOT related kernels ////////////////////////////////////////////////////////////
+
+kernel void multKernel(float4 x<>, float4 y<>, out float4 result<>) {
+  result = x * y;
+}
+
+
+// reduction: might be best to reduce mostly on GPU, then read back more 
+// than a single float4.  Need to play around with things.
+reduce void sumReduceKernel(float4 x<>, reduce float4 result<>) {
+  result += x;
+}
+
+
+
+// SAXPY related kernels ////////////////////////////////////////////////////////////
+
+kernel void saxpyKernel(float4 x<>, float4 y<>, float alpha, out float4 result<>) {
+  result = (alpha * x) + y;
+}
+
+
+// SGEMV related kernels ////////////////////////////////////////////////////////////
+
+// A is (m/4)-by-n
+// x is (n/4)-by-1
+// result is (m/4)-by-(n/4)
+kernel void denseMatVecKernel(iter float2 it1<>, iter float2 it2<>,
+                              iter float2 it3<>, iter float2 it4<>,
+                              float4 A[][], float4 x<>, out float4 result<>) {
+
+  float4 data1 = A[it1.xy];
+  float4 data2 = A[it2.xy];
+  float4 data3 = A[it3.xy];
+  float4 data4 = A[it4.xy];
+    
+  result  = x.x * data1;
+  result += x.y * data2;
+  result += x.z * data3;
+  result += x.w * data4;
+  
+}
+
+
+ kernel void denseMatVecScaleAddKernel(float4 y<>, float4 Ax<>, out float4 result<>,
+                                       float alpha, float beta) {
+  result = (alpha * Ax) + (beta * y);
+ }
+
+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+void fillArray(float *a, int n, float val) {
+	int i;
+	for (i=0;i<n;i++)
+		a[i] = val;
+}
+
+
+// length is in stream elements
+void convert1d_to_2d(int length, int* dim1, int* dim2) {
+
+  if (length <= MAX_DIM) {
+    *dim1 = 1;
+    *dim2 = length;
+  } else {
+
+    *dim1 = length / MAX_DIM;
+
+    // may need to pad to fit in a 2d texture
+    if (length % MAX_DIM > 0)
+      *dim1++;
+
+    *dim2 = MAX_DIM;
+  }
+}
+
+
+void printArray(float* a, int n) {
+  int i;
+  for (i=0;i<n;i++)
+    printf("%.2f ", a[i]);
+  printf("\n");
+}
+
+
+int fequals(float a, float b, float tol) {
+  return (fabs(a - b) < tol);
+}
+
+
+void saxpy_2d(int dim1, int dim2, float *x, float *y, float alpha) {
+
+  float4 xStrm<dim1, dim2>;
+  float4 yStrm<dim1, dim2>;
+
+  streamRead(xStrm, x);
+  streamRead(yStrm, y);
+
+  saxpyKernel(xStrm, yStrm, alpha, yStrm);
+
+  streamWrite(yStrm, y);
+}
+
+
+void do_saxpy(int length) {
+
+  int i;
+  float *x, *y, *tmp;
+  float alpha;
+  int paddedLength, dim1, dim2;
+
+  printf("TimeBlas - saxpy: Running saxpy test. (vector size = %d)\n", length);
+
+  assert(length % 4 == 0);
+  assert(length/4 <= MAX_DIM * MAX_DIM);
+
+
+  convert1d_to_2d(length/4, &dim1, &dim2);
+  paddedLength = 4 * dim1 * dim2;
+  x = (float*)malloc(sizeof(float) * paddedLength);
+  y = (float*)malloc(sizeof(float) * paddedLength);
+  tmp = (float*)malloc(sizeof(float)*paddedLength);
+
+  fillArray(x, length, 1.0f);
+  fillArray(y, length, 1.0f);
+  fillArray(x+length, paddedLength-length, 0.0f);
+  fillArray(y+length, paddedLength-length, 0.0f);
+
+  for (i=0;i<length;i++)
+    tmp[i] = y[i];
+
+  alpha = 2.0f;
+
+  start = GetTime();
+  saxpy_2d(dim1, dim2, x, y, alpha);
+  stop = GetTime();
+
+  // Computation of ax + y requires:
+  // N mults
+  // N adds
+  // ----------------
+  // 2N float operations
+  printf("TimeBlas - saxpy: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f*length)/(float)(stop-start) );
+
+  if (DO_VERIFY) {
+
+    // printArray(y, length);
+
+    // verify results
+    for (i=0;i<length;i++)
+      assert( fequals(y[i], alpha*x[i] + tmp[i], EPS) );
+   }
+
+  free(x);
+  free(y);
+  free(tmp);
+}
+
+
+
+void sdot(int strmSize, float* x, float* y, float* result) {
+   
+  float4 sums;
+  float4 xStrm<strmSize>;
+  float4 yStrm<strmSize>;
+  float4 tmpStrm<strmSize>;
+
+  streamRead(xStrm, x);
+  streamRead(yStrm, y);
+
+  multKernel(xStrm, yStrm, tmpStrm);
+  sumReduceKernel(tmpStrm, sums);
+ 
+  *result = sums.x + sums.y + sums.z + sums.w;
+}
+
+
+void sdot_2d(int dim1, int dim2, float* x, float* y, float* result) {
+  float4 sums;
+  float4 xStrm<dim1, dim2>;
+  float4 yStrm<dim1, dim2>;
+  float4 tmpStrm<dim1, dim2>;
+
+  streamRead(xStrm, x);
+  streamRead(yStrm, y);
+
+  multKernel(xStrm, yStrm, tmpStrm);
+  sumReduceKernel(tmpStrm, sums);
+ 
+  *result = sums.x + sums.y + sums.z + sums.w;
+}
+
+
+
+void do_sdot(int length) {
+
+  float *x, *y;
+  float result;
+  float val;
+  int i;
+  int paddedLength, dim1, dim2;
+
+  printf("TimeBlas - sdot: Running sdot test. (vector size = %d)\n", length);
+
+  assert(length % 4 == 0);
+  assert(length/4 <= MAX_DIM * MAX_DIM);
+
+  convert1d_to_2d(length/4, &dim1, &dim2);
+  paddedLength = 4 * dim1 * dim2;
+  x = (float*)malloc(sizeof(float) * paddedLength);
+  y = (float*)malloc(sizeof(float) * paddedLength);
+
+  fillArray(x, length, 1.0f);
+  fillArray(y, length, 1.0f);
+  fillArray(x+length, paddedLength-length, 0.0f);
+  fillArray(y+length, paddedLength-length, 0.0f);
+
+  start = GetTime();
+  sdot_2d( dim1, dim2, x, y, &result);
+  stop = GetTime();
+
+  // Computation of xTy requires:
+  // N mults
+  // N-1 adds
+  // ----------------
+  // 2N-1 float operations
+  printf("TimeBlas - sdot: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f*length - 1.0f)/(float)(stop-start) );
+
+
+  if (DO_VERIFY) {
+
+    // printf("sdot = %.2f\n", result);
+
+    // verify results
+    val = 0.0f;
+    for (i=0;i<length;i++)
+      val += x[i] * y[i];
+
+    assert(fequals(val, result, EPS));
+  }
+
+
+  free(x);
+  free(y);
+}
+
+
+kernel void testKernel(iter float2 it1<>, iter float2 it2<>,
+                       iter float2 it3<>, iter float2 it4<>,
+                       float4 A[][], float4 x<>, out float4 result<>) {
+
+  float4 data1 = A[it1.xy];
+  float4 data2 = A[it2.xy];
+  float4 data3 = A[it3.xy];
+  float4 data4 = A[it4.xy];
+    
+  result  = x.x * data1;
+  result += x.y * data2;
+  result += x.z * data3;
+  result += x.w * data4;
+}
+
+
+
+void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
+                 float* x, float* y, float* A, float alpha, float beta) {
+
+  float4 xStrm<1,dim>;
+  float4 yStrm<1, dim>;
+  float4 AStrm<dim, wideDim>;
+
+  float4 tmpStrm<dim, dim>;
+  float4 resultStrm<dim, 1>;
+
+  //float4 test[100];
+
+  iter float2 it1<dim, dim> = iter( float2(0.0f, 0.0f), float2(fWideDim, fDim) );
+  iter float2 it2<dim, dim> = iter( float2(1.0f, 0.0f), float2(fWideDim+1.0f, fDim));
+  iter float2 it3<dim, dim> = iter( float2(2.0f, 0.0f), float2(fWideDim+2.0f, fDim));
+  iter float2 it4<dim, dim> = iter( float2(3.0f, 0.0f), float2(fWideDim+3.0f, fDim));
+
+  streamRead(xStrm, x);
+  streamRead(yStrm, y);
+  streamRead(AStrm, A);
+
+  denseMatVecKernel(it1, it2, it3, it4, AStrm, xStrm, tmpStrm);
+  sumReduceKernel(tmpStrm, resultStrm);
+  denseMatVecScaleAddKernel(yStrm, resultStrm, resultStrm, alpha, beta);
+
+  streamWrite(resultStrm, y);
+}
+
+
+void sgemv(int dim, float* x, float* y, float* A, float alpha, float beta) {
+
+  float fDim;
+  float fWideDim;
+
+  fDim = (float)dim;
+  fWideDim = (float)(4*dim);
+
+  // Hack, to get around no casts in initializers rule
+  sgemv_inner(dim, 4*dim, fDim, fWideDim, x, y, A, alpha, beta);
+}
+
+
+void do_sgemv(int length) {
+
+  float *x, *y, *A, *tmp;
+  float alpha, beta;
+
+  float val[4];
+  int i,j,k, base;
+
+  printf("TimeBlas - sgemv: Running sgemv test. (vector & matrix size = %d)\n", length);
+
+  assert(length % 4 == 0);
+  assert(length/4 <= MAX_DIM);
+
+  x = (float*)malloc(sizeof(float) * length);
+  y = (float*)malloc(sizeof(float) * length);
+  tmp = (float*)malloc(sizeof(float) * length);
+  A = (float*)malloc(sizeof(float) * length * length);
+
+  // x is length/4 elements
+  // y is length/4 elements
+  // A is a gather stream.  It is length/4 by length elements
+
+  fillArray(x, length, 1.0f);
+  fillArray(y, length, 1.0f);
+
+  // KAYVON: Remember, this needs to be packed in the weird way. (If
+  // we flood with all the same value, I guess it doesn't matter
+  // A[0][0] A[1][0] A[2][0] A[3][0]   A[0][1] A[0][2] ...
+  for (i=0;i<length/4;i++)
+    for (j=0;j<4;j++)
+      for (k=0;k<length;k++)
+        A[4*i*length + 4*k+j] = (float)(4*i + j);
+
+
+  // printArray(A, length * length);
+
+
+  alpha = 2.0f;
+  beta = 3.0f;
+
+  for (i=0;i<length;i++)
+    tmp[i] = y[i];
+
+  start = GetTime();
+  sgemv(length/4, x, y, A, alpha, beta);
+  stop = GetTime();
+
+  // Computation of aAx + by for general dense matrix:
+  // 2N + N^2 mults
+  // N + N(N-1) adds
+  // ----------------
+  // 2 * (N^2 + N) float operations
+  printf("TimeBlas - sgemv: Computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (2.0f * (length*length + length))/(float)(stop-start) );
+
+  if (DO_VERIFY) {
+
+    // printArray(y, length);
+
+    // verify results
+    for (i=0;i<length/4;i++) {
+      
+      for (k=0;k<4;k++)
+        val[k] = 0.0f;
+
+      for (j=0;j<length;j++) {
+        base = 4*i*length + 4*j;        
+        for (k=0;k<4;k++)
+          val[k] += A[base+k] * x[j];
+      }
+
+      for (k=0;k<4;k++) {
+        //printf("%.2f ", alpha*val[k] + beta*tmp[4*i+k]);
+        assert( (alpha*val[k] + beta*tmp[4*i+k]) == y[4*i + k]);
+      }
+    }
+  }
+
+  free(x);
+  free(y);
+  free(A);
+}
+
+
+void Blas_Time(int streamLength) {
+
+  do_sdot(streamLength);
+  do_saxpy(streamLength);
+  do_sgemv(streamLength);
+
+}
