@@ -113,11 +113,11 @@ main(int argc, char *argv[])
    }
 
    SetupMillisTimer();
-   doFFT(length);
-   //ReadWrite_Time(length);
-   //std::cout << std::endl;
-   //RunKernel_Time(length);
-   //std::cout << std::endl;
+
+   ReadWrite_Time(length);
+   std::cout << std::endl;
+   RunKernel_Time(length);
+   std::cout << std::endl;
    // Blas_Time(argc, argv);
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);
@@ -125,6 +125,8 @@ main(int argc, char *argv[])
    //Matmult4x4_1wayPretransposed_Time(length);
    //Matmult4x4_4way_Time(length);
    //Matmult4x4_4wayPretransposed_Time(length);
+   //doFFT(length);
+   //std::cout << std::endl;
 
    //char c;
    //std::cerr << "Press <ENTER> to exit\n";
