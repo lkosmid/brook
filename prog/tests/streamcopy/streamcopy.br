@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 
 	if (!fequals(src[k], dst[k])) {
 	  if (verbose) 
-	    printf("[stream size %dx%x] pixel (%d,%d): expected %f obtained %f\n",
+	    printf("[stream size %dx%d] pixel (%d,%d): expected %f obtained %f\n",
 		    i, j, (k/4) % i, (k/4) / i, src[k], dst[j]);
 	  success = 0;
 	}
