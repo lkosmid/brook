@@ -66,9 +66,15 @@ endif
 endif
 endif
 
+SUBDIRS_RELINK := $(addsuffix .relink, $(SUBDIRS))
+
 all: $(SUBDIRS)
+relink: $(SUBDIRS_RELINK)
 ifdef BINARY
 all: arch
+relink:
+	rm -rf $(BINDIR)/$(BINARY)
+	$(MAKE)
 endif
 
 release:
@@ -76,8 +82,11 @@ release:
 
 ifdef EXECUTABLE
 run:
-	 $(BINDIR)/$(BINARY)
+	$(BINDIR)/$(BINARY)
 endif
+
+%.relink:
+	$(MAKE) -C $* --no-print-directory relink
 
 $(SUBDIRS):
 	$(MAKE) -C $@ --no-print-directory
