@@ -27,8 +27,7 @@ DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int in
     dxFormat = D3DFMT_A32B32G32R32F;
     break;
   default:
-    DX9Trace("Invalid component count in DX9Texture - %d", inComponents);
-    assert(false);
+    DX9Fail("Invalid component count in DX9Texture - %d", inComponents);
   }
 
 	result = device->CreateTexture( width, height, 1, D3DUSAGE_RENDERTARGET, dxFormat, D3DPOOL_DEFAULT, &textureHandle, NULL );
@@ -36,15 +35,8 @@ DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int in
 	result = textureHandle->GetSurfaceLevel( 0, &surfaceHandle );
 	DX9CheckResult( result );
 
-#ifdef DX9TEXTURE_SHADOWTEXTURE
-  result = device->CreateTexture( width, height, 1, 0, dxFormat, D3DPOOL_SYSTEMMEM, &shadowTexture, NULL );
-  DX9CheckResult( result );
-  result = shadowTexture->GetSurfaceLevel( 0, &shadowSurface );
-  DX9CheckResult( result );
-#else
 	result = device->CreateOffscreenPlainSurface( width, height, dxFormat, D3DPOOL_SYSTEMMEM, &shadowSurface, NULL );
 	DX9CheckResult( result );
-#endif
 }
 
 DX9Texture::~DX9Texture()
@@ -99,13 +91,8 @@ void DX9Texture::getData( float* outData )
 {
 	HRESULT result;
 
-#ifdef DX9TEXTURE_SHADOWTEXTURE
-  result = device->UpdateTexture( textureHandle, shadowTexture );
-  DX9CheckResult( result );
-#else
 	result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
 	DX9CheckResult( result );
-#endif
 
 	D3DLOCKED_RECT info;
 	result = shadowSurface->LockRect( &info, NULL, D3DLOCK_READONLY );

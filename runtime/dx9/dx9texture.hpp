@@ -3,9 +3,6 @@
 
 #include "dx9base.hpp"
 
-// TIM: attempt to get things working on refrast
-// #define DX9TEXTURE_SHADOWTEXTURE
-
 class DX9RunTime;
 
 class DX9Texture
@@ -32,8 +29,5 @@ private:
 	LPDIRECT3DTEXTURE9 textureHandle;
 	LPDIRECT3DSURFACE9 surfaceHandle;
 	
-#ifdef DX9TEXTURE_SHADOWTEXTURE
-  IDirect3DTexture9* shadowTexture;
-#endif
 	LPDIRECT3DSURFACE9 shadowSurface;
 };
