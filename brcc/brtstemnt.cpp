@@ -8,6 +8,7 @@
 #include <cassert>
 #include <sstream>
 #include "brtdecl.h"
+#include "brtexpress.h"
 #include "brtstemnt.h"
 #include "project.h"
 #include "codegen.h"
@@ -164,6 +165,31 @@ BRTKernelDef::CheckSemantics() const
 
    return true;
 }
+
+static Expression *
+ConvertGathers (Expression *expr) {
+  BrtGatherExpr *gather;
+  if (expr->etype == ET_IndexExpr) {
+ 
+    //std::cerr << "Found Index Expr: ";
+    //expr->print(std::cerr);
+    //std::cerr << std::endl;
+    
+    gather = new BrtGatherExpr((IndexExpr *) expr);
+    
+    //delete expr;  // IAB: XXX For some reason I can delete expr!!!
+    
+    return gather;
+  }
+  return expr;
+}
+
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BRTGPUKernelDef::BRTGPUKernelDef(const FunctionDef& fDef) 
+   : BRTKernelDef(fDef) {
+   findExpr(ConvertGathers);
+};
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void

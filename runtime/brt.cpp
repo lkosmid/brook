@@ -1,5 +1,4 @@
 // brt.cpp
-#include <brook.hpp>
 #include <brt.hpp>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +22,7 @@ namespace brook {
     char *env = getenv(RUNTIME_ENV_VAR);
 
     if (!env) 
-      return new DX9GLRunTime();
+      return new DX9RunTime();
 
     if (!strcmp(env, DX9_RUNTIME_STRING))
       return new DX9RunTime();

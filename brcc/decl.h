@@ -509,6 +509,8 @@ class Decl
     bool    isKernel() const { return (storage == ST_Kernel); }
     bool    isStream() const {
        return (form->type == TT_Stream || form->type == TT_BrtStream); }
+    bool    isArray() const {
+       return (form->type == TT_Array); }
 
     void    clear();
 

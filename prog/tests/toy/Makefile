@@ -1,6 +1,6 @@
 ROOTDIR = ../..
 EXECUTABLE = toy
-FILES = toy_byhand
+FILES = toy
 LIBRARIES = brook
 
 include ../../common.mk

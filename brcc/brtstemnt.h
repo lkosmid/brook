@@ -29,7 +29,7 @@ class BRTKernelDef : public FunctionDef
 class BRTGPUKernelDef : public BRTKernelDef
 {
   public:
-    BRTGPUKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {};
+    BRTGPUKernelDef(const FunctionDef& fDef);
    ~BRTGPUKernelDef() { /* Nothing, ~FunctionDef() does all the work */ }
 
     /* Just pass ourselves (as a FunctionDef descendant) to our constructor */

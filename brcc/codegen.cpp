@@ -140,11 +140,6 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
   Decl *outArg = NULL;
   int texcoord, constreg, i;
   
-  if (globals.target != TARGET_FP30) {
-    fprintf (stderr, "Only FP30 target supported\n");
-    exit(1);
-  }
-
   hlsl << "#define _WORKSPACE " << globals.workspace << std::endl;
   hlsl << "#define _WORKSPACE_INV " << std::setprecision(9.9) <<
     1.0 / globals.workspace << std::endl;
@@ -162,6 +157,9 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
     if (args[i]->isStream()) {
       hlsl << "sampler _tex_" << *args[i]->name;
       hlsl << " : register (s" << texcoord++ << ");\n";
+    } else if (args[i]->isArray()) {
+       hlsl << "sampler " << *args[i]->name;
+       hlsl << " : register (s" << texcoord++ << ");\n";
     } else {
       args[i]->print(hlsl, true);
       hlsl << " : register (c" << constreg++ << ");\n";
@@ -327,11 +325,30 @@ compile_hlsl_code (char *hlslcode) {
   fseek(fp, 0, SEEK_SET);
   fpcode = (char *) malloc (flen+1);
   
-  // Have to do it this way to fix the /r/n's
+  // Have to do it this way to fix the \r\n's
   int pos = 0;
   int i;
-  while ((i = fgetc(fp)) != EOF)
+  bool incomment = false;
+
+  while ((i = fgetc(fp)) != EOF) {
+     
+#if 1
+     // don't copy the comment lines
+     if (incomment) {
+        if (i == (int) '\n')
+           incomment = false;
+        continue;
+     }  else if (pos > 0 && 
+              fpcode[pos-1] == '/' &&
+              i == (int) '/') {
+        incomment = true;
+        fpcode[--pos] = '\0';
+        continue;
+     }
+#endif
+
     fpcode[pos++] = (char) i;
+  }  
   fpcode[pos] = '\0';
 
   free(argv[3]);
@@ -579,7 +596,7 @@ CodeGen_HLSLGenerateCode(Type *retType, const char *name,
   char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   hlslcode = generate_hlsl_code(args, nArgs, body);
-  //std::cerr << "\n***Produced this cgcode:\n" << hlslcode << "\n";
+  std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
 
   fpcode = compile_hlsl_code(hlslcode);
   free(hlslcode);

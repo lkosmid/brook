@@ -4,6 +4,20 @@
 #include "express.h"
 #include "brtdecl.h"
 
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+class BrtGatherExpr : public Expression
+{
+public:
+   BrtGatherExpr (const IndexExpr *expr);
+   ~BrtGatherExpr () {/* do nothing*/}
+
+   void print (std::ostream& out) const;
+
+   Expression *base;
+   ExprVector dims;
+};
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class BrtStreamInitializer : public Expression
 {
