@@ -1,6 +1,6 @@
 ROOTDIR = ..
 STATIC_LIBRARY = brook
-FILES = brt
+FILES = brt voutfloatN
 
 include ../config/DetectOS.mk
 
