@@ -5,8 +5,8 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
-
-
+#include <math.h>
+#include <float.h>
 #ifdef BUILD_DX9
 #include "dx9/dx9.hpp"
 #endif
@@ -23,6 +23,28 @@ __StreamScatterAdd STREAM_SCATTER_ADD;
 __StreamScatterMul STREAM_SCATTER_MUL;
 __StreamGatherInc STREAM_GATHER_INC;
 __StreamGatherFetch STREAM_GATHER_FETCH;
+inline float finite_flt (float x) {
+#ifdef _WIN32
+   return (float) _finite(x);
+#else
+#ifdef __APPLE__
+   return (float) __isfinitef(x);
+#else
+   return (float) finite(x);
+#endif
+#endif
+}
+inline float isnan_flt (float x) {
+#ifdef _WIN32
+   return (float) _isnan(x);
+#else
+#ifdef __APPLE__
+   return (float) __isnanf(x);
+#else
+   return (float) isnan(x);
+#endif
+#endif
+}
 
 namespace brook {
 
@@ -64,6 +86,30 @@ namespace brook {
 	       "Unknown runtime requested: %s falling back to CPU\n", env);
     return new CPURunTime();
   }
+  void StreamInterface::readItem (void * output, unsigned int * index){
+     unsigned int linearindex = index[0];
+     unsigned int dim = getDimension();
+     const unsigned int * extents = getExtents();
+     for (unsigned int i=1;i<dim;++i) {
+        linearindex*=extents[i];
+        linearindex+=index[i];
+     }
+     __BRTStreamType type = getStreamType();
+     unsigned int size;
+     switch (type) {
+     case __BRTFLOAT:
+     case __BRTFLOAT2:
+     case __BRTFLOAT3:
+     case __BRTFLOAT4:
+        size=type*sizeof(float);
+     default:    
+        size=sizeof(float);
+     }
+     char * data = (char*)getData(READ);
+     data+=linearindex*size;
+     memcpy (output,data,size);
+     releaseData(READ);
+  }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -82,9 +128,49 @@ __BRTStream::__BRTStream(__BRTStreamType type, ...)
   }
   va_end(args);
 
-  stream = brook::RunTime::GetInstance()->CreateStream( type, extents.size(), &extents[0] );
+  stream = brook::RunTime::GetInstance()->CreateStream( type, (int)extents.size(), &extents[0] );
 }
-
+__BRTStream::__BRTStream(int * extents,int dims,__BRTStreamType type) {
+   stream = brook::RunTime::GetInstance()->CreateStream(type,dims,extents);
+}
+void streamPrint(brook::StreamInterface * s, bool flatten) {
+   unsigned int dims = s->getDimension();
+   const unsigned int * extent = s->getExtents();
+   unsigned int tot = s->getTotalSize();
+   __BRTStreamType typ = s->getStreamType();
+   float * data = (float *)s->getData(brook::StreamInterface::READ);
+   for (unsigned int i=0;i<tot;++i) {
+      if (typ!=1)printf( "{");
+      for (unsigned int j=0;j<(unsigned int)typ;++j) {
+         float x = data[i*typ+j];
+         if (finite_flt(x))
+            printf("%.2g",x);
+         else if (isnan_flt(x))
+            printf("NaN");
+         else 
+            printf ("inf");
+         if (j!=0) printf(",");
+         printf(" ");
+      }
+      if (typ!=1)
+         printf("}");
+      if (!flatten)
+         if ((i+1)%extent[dims-1]==0)
+            printf("\n");
+   }
+   s->releaseData(brook::StreamInterface::READ);
+}
+void readItem (brook::StreamInterface *s, void * p,...) {
+   unsigned int dims = s->getDimension();
+   std::vector<unsigned int> index;
+   va_list args;
+   va_start(args,p);
+   for (unsigned int i=0;i<dims;++i) {
+      index.push_back(va_arg(args,int));
+   }
+   va_end(args);
+   s->readItem(p,&index[0]);
+}
 __BRTStream::__BRTStream( const __BRTIter& i )
   : stream(0)
 {
@@ -124,7 +210,7 @@ __BRTIter::__BRTIter(__BRTStreamType type, ...)
   va_end(args);
 
   iter = brook::RunTime::GetInstance()->CreateIter( type, 
-                                                    extents.size(), 
+                                                    (int)extents.size(), 
                                                     &extents[0],
                                                     &ranges[0]);
 }

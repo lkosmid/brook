@@ -73,6 +73,7 @@ namespace brook {
     enum USAGEFLAGS {NONE=0x0,READ=0x1,WRITE=0x2,READWRITE=0x3};
     virtual void * getData (unsigned int flags)=0;
     virtual void releaseData(unsigned int flags)=0;
+    virtual void readItem(void * p,unsigned int * index);
     virtual const unsigned int * getExtents() const=0;
     virtual unsigned int getDimension() const {return 0;}
     virtual __BRTStreamType getStreamType ()const=0;
@@ -110,19 +111,24 @@ namespace brook {
 
 }
 
-class __BRTStream;
-class __BRTIter;
+struct __BRTStream;
+struct __BRTIter;
 
-class __BRTStream {
+struct __BRTStream {
 public:
   __BRTStream(__BRTStreamType , ...);
+  __BRTStream(int * extents, int dims, __BRTStreamType);
   __BRTStream( const __BRTIter& );
   ~__BRTStream()
   {
     if( stream != 0 )
       stream->Release();
   }
-
+  void swap(__BRTStream*s) {
+     brook::Stream *k = s->stream;
+     s->stream=stream;
+     stream=k;
+  }
   operator brook::Stream*() const {
     return stream;
   }
@@ -140,7 +146,7 @@ private:
   brook::Stream* stream;
 };
 
-class __BRTIter {
+struct __BRTIter {
 public:
   __BRTIter(__BRTStreamType , ...);
   ~__BRTIter()
@@ -187,16 +193,24 @@ private:
   __BRTKernel( const __BRTKernel& ); // no copy constructor
   brook::Kernel* kernel;
 };
-
+inline static void maxDimension(int * out, 
+                                const unsigned int * in,
+                                int dims) {
+   for (int i=0;i<dims;++i) {
+      if (in[i]>(unsigned int)out[i])out[i]=in[i];
+   }
+}
 inline static void streamRead( brook::Stream *s, void *p) {
   s->Read(p);
 }
-
+void streamPrint(brook::StreamInterface*s, bool flatten=false);
 inline static void streamWrite( brook::Stream *s, void *p) {
   s->Write(p);
 }
-
-
+void readItem(brook::StreamInterface *s, void * p, ... );
+inline static void streamSwap(__BRTStream &x, __BRTStream&y) {
+   x.swap(&y);
+}
 #endif
 
 
