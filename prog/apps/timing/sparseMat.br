@@ -1,0 +1,360 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+
+#include "main.h"
+#include "blas.h"
+
+#define EPS                     1e-3f
+#define MAX_NZ_PER_ROW          8
+
+
+#define DO_VERIFY               1 
+
+
+#define USE_VIRTUAL_ADDRESSING  1
+
+
+
+
+kernel void flush4(float4 input<>, out float4 result<>) {
+  result = input;
+}
+
+kernel void flush1(float input<>, out float result<>) {
+  result = input;
+}
+
+
+
+/*** Kernels needed for Sparse Matrix-Dense Vector multiplication ****/
+
+kernel void sparseMatVecfloat1( float index<>, float x[][], float A<>, out float result<> )
+{
+  // if we wanted to go 4-wide here, we'd have to fetch 4 different x elements.  We also must
+  // then do math to determine the component in the float4 that is desired.  The float4 packing
+  // in the case of general-sparse matrices doesn't seem provide any computation speedup, just
+  // mem savings.
+  result = x[index][0] * A;
+}
+
+kernel void sparseMatVecfloat4( float4 index<>, float x[], float4 A<>, out float4 result<> )
+{
+  result.x = x[index.x] * A.x;
+  result.y = x[index.y] * A.y;    
+  result.z = x[index.z] * A.z;
+  result.w = x[index.w] * A.w;
+}
+
+reduce void sumRows(float a<>, reduce float result<>) {
+  result += a;
+}
+
+
+reduce void sumRowsfloat4(float4 a<>, reduce float result<>) {
+  //result += (a.x + a.y + a.z + a.w);
+  result += a.x;
+  result += a.y;
+  result += a.z;
+  result += a.w;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+static void fillArray(float *a, int n, float val) {
+	int i;
+	for (i=0;i<n;i++)
+		a[i] = val;
+}
+
+
+static void printArray(float* a, int n) {
+  int i;
+  for (i=0;i<n;i++)
+    printf("%.2f ", a[i]);
+  printf("\n");
+}
+
+
+static int fequals(float a, float b, float tol) {
+  return (fabs(a - b) < tol);
+}
+
+
+// hackish cube root function
+static int intCubeRoot(int x) {
+
+  int i = 0;
+
+  assert(x >= 0 && x < 100*100*100);
+
+  while (i*i*i <= x)
+    i++;
+
+  return i-1;
+  
+}
+
+
+static void createMatrix(int length, float* A, float* Aind) {
+
+  int i,j, colIdx, nnz;
+  int offset = intCubeRoot(length);
+  int offsets[MAX_NZ_PER_ROW];
+
+  offsets[0] = -1 * offset * offset;
+  offsets[1] = -1 * offset;
+  offsets[2] = -1;
+  offsets[3] =  0;
+  offsets[4] =  1;
+  offsets[5] =  offset;
+  offsets[6] =  offset * offset;
+
+
+  for (i=0;i<length;i++) {
+    nnz = 0;
+
+    for (j=0; j<MAX_NZ_PER_ROW; j++) {
+        colIdx = i + offsets[j];
+        if (colIdx >= 0 && colIdx < length) {
+          A[i*MAX_NZ_PER_ROW + nnz] = (j == 3) ? 6.0f : -1.0f;
+          Aind[i*MAX_NZ_PER_ROW + nnz] = (float)colIdx;
+          nnz++;
+        }
+    }
+     
+    while (nnz < MAX_NZ_PER_ROW) {
+        A[i*MAX_NZ_PER_ROW + nnz] = 0.0f;
+        Aind[i*MAX_NZ_PER_ROW + nnz] = 0.0f;
+        nnz++;
+    }
+  }
+}
+
+
+
+
+
+static void spMatVecf4(int strmDim, float* A, float* Aind, float* x, float* y, int num_iter, int* innerTime) {
+
+  int i = 0, j = 0;
+
+  float  flush[4];
+  float  flush1Strm<1>;
+  float4 flushStrm<1>;
+
+  float4 AStrm<strmDim, (MAX_NZ_PER_ROW/4) >;
+  float4 AindStrm<strmDim, (MAX_NZ_PER_ROW/4) >;
+  float4 productsStrm<strmDim, (MAX_NZ_PER_ROW/4) >;
+  float  xStrm<strmDim>;
+  float  yStrm<strmDim, 1>;   // 2D for the multiD reduction
+
+  int millisStart, millisStop;
+
+  streamRead(AStrm, A);
+  streamRead(AindStrm, Aind);
+  streamRead(xStrm, x);
+
+  flush4(AStrm, flushStrm);
+  flush4(AindStrm, flushStrm);
+  flush1(xStrm, flush1Strm);
+
+  streamWrite(flushStrm, flush);
+
+  millisStart = GetTimeMillis();
+
+
+  for (i=1;i<=num_iter;i++) {
+    sparseMatVecfloat4( AindStrm, xStrm, AStrm, productsStrm );
+    sumRowsfloat4( productsStrm, yStrm );
+  }
+
+  /*
+  streamWrite(productsStrm, A);
+  for (i=0;i<strmDim;i++) {
+    for (j=0;j<8;j++)
+      printf("%.2f ", A[8*i + j]);
+    printf("\n");
+  }
+  */
+
+
+  flush1(yStrm, flush1Strm);
+  streamWrite(flush1Strm, flush);
+
+  millisStop = GetTimeMillis();
+
+  streamWrite(yStrm, y);
+
+  *innerTime = millisStop - millisStart;
+}
+
+
+
+static void spMatVecf1(int strmDim, float* A, float* Aind, float* x, float* y, int num_iter, int* innerTime) {
+
+  float flush[1];
+  float flushStrm<1>;
+
+  float AStrm<strmDim, MAX_NZ_PER_ROW>;
+  float AindStrm<strmDim, MAX_NZ_PER_ROW>;
+  float productsStrm<strmDim, MAX_NZ_PER_ROW>;
+  float xStrm<strmDim, 1>;
+  float yStrm<strmDim, 1>;
+
+  int millisStart, millisStop;
+  int i;
+
+  streamRead(AStrm, A);
+  streamRead(AindStrm, Aind);
+  streamRead(xStrm, x);
+
+  flush1(AStrm, flushStrm);
+  flush1(AindStrm, flushStrm);
+  flush1(xStrm, flushStrm);
+  streamWrite(flushStrm, flush);
+
+  millisStart = GetTimeMillis();
+
+  // (A^num_iter)x
+  for (i=1;i<=num_iter;i++) {
+    sparseMatVecfloat1( AindStrm, xStrm, AStrm, productsStrm );
+    sumRows( productsStrm, xStrm );
+  }
+
+  flush1(xStrm, flushStrm);
+  streamWrite(flushStrm, flush);
+
+  millisStop = GetTimeMillis();
+
+  streamWrite(xStrm, y);
+
+  *innerTime = millisStop - millisStart;
+}
+
+
+
+static void do_spMatVec(int length, int num_iter, int* timing, float* flops) {
+
+  int i,j, base;
+  float val;
+  float *x, *y, *A, *Aind;
+  int millisStart, millisStop;
+  int innerTime;
+   
+  assert(length % 4 == 0);
+
+  x = (float*)malloc(sizeof(float)*length);
+  y = (float*)malloc(sizeof(float)*length);
+  A = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
+  Aind = (float*)malloc(sizeof(float)*length*MAX_NZ_PER_ROW);
+
+
+  createMatrix(length, A, Aind);
+
+  /*
+  for (i=0;i<length;i++) {
+    for (j=0;j<8;j++)
+      printf("%.2f ", A[8*i + j]);
+    printf("\n");
+  }
+  */
+
+  for (i=0;i<length;i++)
+    x[i] = 2.0f;
+
+  millisStart = GetTimeMillis();
+
+  if (USE_VIRTUAL_ADDRESSING)
+    spMatVecf4(length, A, Aind, x, y, num_iter, &innerTime);
+  else
+    spMatVecf1(length, A, Aind, x, y, num_iter, &innerTime);
+
+  millisStop = GetTimeMillis();
+  
+  timing[0] = millisStop - millisStart;
+  timing[1] = innerTime;
+
+  flops[0] = (float)num_iter * (2.0f * MAX_NZ_PER_ROW - 1.0f) * length / (float)timing[0] / 1000.0f;
+  flops[1] = (float)num_iter * (2.0f * MAX_NZ_PER_ROW - 1.0f) * length / (float)timing[1] / 1000.0f;
+
+
+  if (DO_VERIFY) {
+
+    //printArray(y, length);
+
+    for (i=0;i<length;i++) {
+      val = 0.0f;
+      base = i*MAX_NZ_PER_ROW;
+      for (j=0;j<MAX_NZ_PER_ROW;j++)
+        val += A[base + j] * x[(int)Aind[base+j]];
+  
+      if ( !fequals(val, y[i], EPS) ) {
+        printf("ERROR: %d)  %.4f %.4f\n", i, val, y[i]);
+      }
+      
+      //assert(fequals(val, y[i], EPS));
+    }
+  }
+
+  free(x);
+  free(y);
+  free(A);
+  free(Aind);
+
+}
+
+
+kernel void startupKernel(float a<>, out float b<>) {
+  b = a;
+}
+
+static void startup() {
+
+  float a[1];
+  float aStrm<1>;
+  float bStrm<1>;
+
+  streamRead(aStrm, a);
+  startupKernel(aStrm, bStrm);
+  streamWrite(bStrm, a);
+}
+
+
+
+static void printData(char* str, int length, int iterations, int ms[2], float flops[2]) {
+  printf("%8d %4d %10d %7.4f %10d %7.4f %s\n", length, iterations, ms[0], flops[0], ms[1], flops[1], str);
+}
+
+
+// command line args: length iter skip
+void SparseMat_Time(int length) {
+
+  int i;
+  int skip, iterations, num_iter;
+
+  int    ms[2];
+  float  flops[2]; 
+  
+  // loop skip*(i+1) times, for i=0 to num_iter
+  // ex: skip = 5, num_iter = 3 
+  // so tests will be run using...
+  // 5, 10, and 15 iterations
+  
+  num_iter = 1;
+  skip = 1;
+
+  startup();
+
+  if (length < 2048) {
+    for (i=0; i<num_iter;i++) {
+      iterations = skip*(i+1);
+      do_spMatVec(length, iterations, ms, flops);
+      printData("spMat", length, iterations, ms, flops);
+    }
+  }
+
+}
+

@@ -13,7 +13,7 @@
 #include "runkernel.h"
 #include "blas.h"
 #include "fft2d.h"
-//#include "sparse.h"
+#include "sparseMat.h"
 #include "matmult4x4.h"
 #include "reduction.h"
 
@@ -33,8 +33,7 @@ static const struct timingEntry tests[] = {
    { "runk2d",  RunKernel2D_Time },
    { "runkvs",  RunKernel_GPUvsCPU },
    { "blas",    Blas_Time },
-   //{ "spMV",    SpMatVec_Time },
-   //{ "conj",    ConjGrad_Time },
+   { "sparseMat", SparseMat_Time},
    { "mm4_1w",  Matmult4x4_1way_Time },
    { "mm4_1w_t",Matmult4x4_1wayPretransposed_Time},
    { "mm4_4w",  Matmult4x4_4way_Time },
