@@ -1,0 +1,31 @@
+// toy.br
+// An ad-hoc regression test to cover all the
+// earliest features of the language, including
+// streams, gathers, and constants.
+
+#include <stdio.h>
+kernel void FiniteTest(float a, out float4 e<>, float inf) {
+   e.x = isfinite(a);
+   e.y = isnan(a);
+   e.z = isinf(a);
+   e.w = (a==inf);
+} 
+kernel void foo (float a<>, out float4 e<>, float one, float nil, float inf) {
+   if ((indexof a).x==3) {
+      FiniteTest (one/nil,e,inf);
+   }else {
+      FiniteTest(a,e,inf);
+   }
+}
+
+int main () {
+
+  float a<4>;
+  float4 e<4>;
+  float data_a[4]={1.0/floor(.5),0.0/floor(.5),-1.0/floor(.5),1.0/floor(.5)};
+  streamRead(a, data_a);
+  foo(a,e,1.0f,0.0f,1.0f/floor(.5));
+  streamPrint(e);
+  printf("\n");
+  return 0;
+}
