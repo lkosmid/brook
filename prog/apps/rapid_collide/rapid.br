@@ -47,24 +47,6 @@ typedef struct tri_t {
   float3 C;
 } Tri;
 
-kernel float TrianglesHaveContact (float3 mRx,
-                                   float3 mRy,
-                                   float3 mRz,
-                                   float3 mT,
-                                   Tri a<>, 
-                                   Tri b<>) {
-  return 1;
-}
-kernel float obb_disjoint (float3 Bx<>,
-                           float3 By<>,
-                           float3 Bz<>,
-                           float3 T,
-                           float3 a,
-                           float3 b) {
-  
-  return 1;
-}
-
 kernel float modTwo(float who) {
   float tmp = fmod(who,2.0);
   return (tmp>.5&&tmp<1.5)?1.0:0.0;
@@ -96,6 +78,166 @@ kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
                      dot(vec,aY),
                      dot(vec,aZ));
 }
+
+kernel void ISECT(float3 VV<>, float3 D, out float2 isect<>) {
+  isect[0] = VV[0] + (VV[1]-VV[0])*D[0]/(D[0]-D[1]);
+  isect[1] = VV[1] + (VV[2]-VV[0])*D[0]/(D[0]-D[2]);
+}
+kernel float COMPUTE_INTERVALS (float3 VV<>,
+                                float3 D<>,
+                                float D0D1<>, float D0D2<>,
+                                out float2 isect<>) {
+  float ret = 0;
+  if (D0D1 > 0.0f)					
+    /* here we know that D0D2<=0.0 */			
+    /* that is D0, D1 are on the same side, */		
+    /* D2 on the other or on the plane */		
+    ISECT (VV.zxy, D.zxy, isect)	;
+  else if (D0D2 > 0.0f)					
+    /* here we know that d0d1 <= 0.0 */			
+    ISECT (VV.yxz, D.yxz, isect)	;
+  else if (D[1] * D[2] > 0.0f || D[0] != 0.0f)		
+    /* here we know that d0d1<=0.0 or that D0!=0.0 */	
+    ISECT (VV, D, isect)	;
+  else if (D[1] != 0.0f)					
+    ISECT (VV.yxz, D.yxz, isect)	;
+  else if(D[2]!=0.0f)                                     
+    ISECT (VV.zxy, D.zxy, isect)	;
+  else							
+    /* triangles are coplanar */			
+    ret =1;
+  return ret;
+
+}
+kernel void sort2(float2 input, out float2 output<>) {
+  if (input.x>input.y) {
+    output.y = input.x;
+    output.x = input.y;
+  }else {
+    output=input;
+  }
+}
+kernel float coplanar_tri_tri(float3 N<>,
+                              float3 V0<>,float3 V1<>,float3 V2<>,
+                              float3 U0<>,float3 U1<>,float3 U2<>) {
+  return 0;
+}
+kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
+                         float3 U0<>, float3 U1<>, float3 U2<>) {
+
+  float3 E1,E2;
+  float3 N1,N2;
+  float d1,d2;
+  float3 du;
+  float3 dv;
+  float3 D;
+  float2 isect1;
+  float2 isect2;
+  float du0du1;
+  float du0du2;
+  float dv0dv1;
+  float dv0dv2;
+  float index;
+  float3 vp;
+  float3 up;
+  float EPSILON=.000001;
+  float b,c,max;
+  float ret=0;
+  E1 = V1-V0;
+  E2 = V2-V0;
+  N1 = cross(E1,E2);
+  d1 = -dot(N1,V0);
+  du = float3(dot(N1,U0)+d1,
+              dot(N1,U1)+d1,
+              dot(N1,U2)+d1);
+  du*=(float3)(abs(du)>=EPSILON);
+  du0du1 = du[0] *du[1];
+  du0du2 = du[0] *du[2];
+  
+  if (du0du1<= 0.0f||du0du2<= 0.0f) {
+    E1 = U1-U0;
+    E2 = U2-U0;
+    N2 = cross(E1,E2);
+    d2 = -dot(N2,U0);
+    dv = float3(dot(N2,V0)+d2,
+                dot(N2,V1)+d2,
+                dot(N2,V2)+d2);
+    dv *= (float3)(abs(dv)>=EPSILON);
+    dv0dv1 = dv[0]*dv[1];
+    dv0dv2 = dv[0]*dv[2];
+    if (dv0dv1<= 0.0f || dv0dv2 <=0.0f) {
+      
+      D = cross(N2,N1);
+      // compute and index to the largest component of D 
+      max = abs  (D [0]);
+      index = 0;
+      vp=float3(V0.x,V1.x,V2.x);
+      up=float3(U0.x,U1.x,U2.x);
+      b = abs  (D [1]);
+      c = abs  (D [2]);
+      if (b > max) {
+        max = b;
+        index = 1;
+        vp=float3(V0.y,V1.y,V2.y);
+        up=float3(U0.y,U1.y,U2.y);
+      }
+      if (c > max) {
+        max = c;
+        index = 2;
+        vp=float3(V0.z,V1.z,V2.z);
+        up=float3(U0.z,U1.z,U2.z);
+      }
+      /*      
+      vp[0] = V0 [index];
+      vp[1] = V1 [index];
+      vp[2] = V2 [index];
+      
+      up[0] = U0 [index];
+      up[1] = U1 [index];
+      up[2] = U2 [index];
+      */
+      // this is the simplified projection onto L
+      // compute interval for triangle 1 
+      if (COMPUTE_INTERVALS (vp,dv,dv0dv1,dv0dv2,isect1)
+          ||COMPUTE_INTERVALS (up,du,du0du1,du0du2,isect2)) {
+        ret= coplanar_tri_tri (N1, V0,V1,V2, U0,U1,U2);
+      }else {
+        // compute interval for triangle 2
+        sort2 (isect1,isect1);
+        sort2 (isect2,isect2);
+        
+        ret= (float) !(isect1 [1] < isect2 [0] || isect2 [1] < isect1 [0]);    
+      }
+      
+    }
+  }
+  return ret;
+}
+
+
+kernel float TrianglesHaveContact (float3 mRx,
+                                   float3 mRy,
+                                   float3 mRz,
+                                   float3 mT,
+                                   Tri t1<>, 
+                                   Tri t2<>) {
+  float3 i1 = matVecMult(mRx,mRy,mRz,t1.A)+mT;
+  float3 i2 = matVecMult(mRx,mRy,mRz,t1.B)+mT;
+  float3 i3 = matVecMult(mRx,mRy,mRz,t1.C)+mT;
+  return tri_contact(i1,i2,i3,t2.A,t2.B,t2.C);
+
+}
+kernel float obb_disjoint (float3 Bx<>,
+                           float3 By<>,
+                           float3 Bz<>,
+                           float3 T,
+                           float3 a,
+                           float3 b) {
+  
+  return 1;
+}
+
+
 kernel void CheckTriangleCollide(float3 mRx,
                                  float3 mRy,
                                  float3 mRz,
@@ -106,10 +248,11 @@ kernel void CheckTriangleCollide(float3 mRx,
                                  vout [1] float4 hits<>) {
   Tri t1 = t1List[collisions.xy];
   Tri t2 = t2List[collisions.zw];
-
-
-  hits= collisions;
-  
+  if (TrianglesHaveContact(mRx,mRy,mRz,mT,
+                           t1,t2)) {
+    hits= collisions;
+    push(hits);
+  }
 }
 kernel float GetBBSize (float3 Radius ) {
   return Radius.x;
@@ -143,8 +286,10 @@ kernel void Collide (float3 mRx,
       push(collisions);
     }else {
       nextNode.xy = (indexof currentNode).xy;
-      if (b1.Radius.w!=0 || (!b1.Radius.w && (GetBBSize(b1.Radius)>
-                                              GetBBSize(b2.Radius)))) {
+      if (b1.Radius.w!=0 
+          || (b1.Radius.w==0 && (GetBBSize(b1.Radius.xyz)
+                                 >
+                                 GetBBSize(b2.Radius.xyz)))) {
         nextNode.zw = b1.Children;       
       }else {
         nextNode.zw = -b2.Children-1;
@@ -232,3 +377,17 @@ int main(int argc , char * argv[] ) {
   
   return 0;
 }
+
+kernel void test (float3 mRx,
+                                   float3 mRy,
+                                   float3 mRz,
+                                   float3 mT,
+                                   Tri t1<>, 
+                                   Tri t2<>, out float blah<>) {
+  float3 i1 = matVecMult(mRx,mRy,mRz,t1.A)+mT;
+  float3 i2 = matVecMult(mRx,mRy,mRz,t1.B)+mT;
+  float3 i3 = matVecMult(mRx,mRy,mRz,t1.C)+mT;
+  blah= tri_contact(i1,i2,i3,t2.A,t2.B,t2.C);
+
+}
+
