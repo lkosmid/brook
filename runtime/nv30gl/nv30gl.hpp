@@ -148,6 +148,10 @@ void __check_gl(int line, char *file);
      unsigned int ncomp;
      GLuint id;
      void *cacheptr;
+
+     NV30GLStream *prev;
+     NV30GLStream *next;
+
      NV30GLRunTime *runtime;
      virtual ~NV30GLStream ();
   };
@@ -186,6 +190,8 @@ void __check_gl(int line, char *file);
                              int dims, int e[],float r[]);
      ~NV30GLRunTime();
 
+
+     NV30GLStream *streamlist;
 
 #ifdef _WIN32
      HWND hwnd;

@@ -38,6 +38,8 @@ NV30GLRunTime::NV30GLRunTime() {
                    passthrough_id, strlen(passthrough), 
                    (const GLubyte*) passthrough);
   CHECK_GL();
+  
+  streamlist = NULL;
 
 }
 

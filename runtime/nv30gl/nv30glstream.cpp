@@ -61,6 +61,16 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
   for (i=0; i<dims; i++)
     this->extents[i] = extents[i];
   this->dims = dims;
+  
+  next = NULL;
+  prev = NULL;
+  if (rt->streamlist == NULL)
+     rt->streamlist = this;
+  else {
+     rt->streamlist->prev = this;
+     next = rt->streamlist;
+     rt->streamlist = this;
+  }
 }
 
 
@@ -202,4 +212,11 @@ void NV30GLStream::Write(void *p) {
 NV30GLStream::~NV30GLStream () {
   glDeleteTextures (1, &id);
   CHECK_GL();
+
+  if (prev)
+     prev->next = next;
+  if (next)
+     next->prev = prev;
+  if (runtime->streamlist == this)
+     runtime->streamlist = next;
 }
