@@ -82,7 +82,8 @@ release:
 
 ifdef EXECUTABLE
 run:
-	$(BINDIR)/$(BINARY)
+	echo Running $(BINDIR)/$(BINARY) $(RUNARG)
+	$(BINDIR)/$(BINARY) $(RUNARG)
 endif
 
 %.relink:
