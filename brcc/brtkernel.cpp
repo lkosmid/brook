@@ -420,6 +420,8 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
     fDef->decl->form->printBefore(out,&enhanced_name,0);
     out << " (const std::vector<void *>&args, unsigned int mapbegin) {";
     out << std::endl;
+    indent(out,1);
+    out << "unsigned int i= mapbegin;";
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
@@ -433,6 +435,7 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
         indent(out,3);
         myArgs[i].printCPU(out,PrintCPUArg::USE);
     }}
+    printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
@@ -440,7 +443,20 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
     out << "}"<<std::endl;   
 
 }
-
+void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
+   std::string name = this->fDef->decl->name->name;
+   if (FunctionProp[name].p&FP_INDEXOF) {
+      out << ","<<std::endl;
+      indent(out,3);
+      out << "i";
+   }
+   if (FunctionProp[name].p&FP_LINEARINDEXOF) {
+      out << ","<<std::endl;
+      indent(out,3);
+      out << "i";
+      
+   }   
+}
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const
@@ -494,6 +510,7 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
 
     if (reduceneeded) {
        indent(out,1); out << "if (mapbegin!=0&&mapbegin<mapend) {"<<std::endl;
+       indent(out,2); out << "unsigned int i=mapbegin;"<<std::endl;
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
        out << std::endl;
        {for (unsigned int i=0;i<myArgs.size();++i) {
@@ -502,6 +519,7 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
           indent(out,3);
           myArgs[i].printCPU(out,PrintCPUArg::USE);
        }}
+       printIndexOfCallingArgs(out);
        out << ");"<<std::endl;
        indent(out,2); out << "mapbegin+=1;"<<std::endl;;
        indent(out,1); out <<"}"<<std::endl;
@@ -517,6 +535,7 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
         indent(out,3);
         myArgs[i].printCPU(out,PrintCPUArg::USE);
     }}
+    printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;
     indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
