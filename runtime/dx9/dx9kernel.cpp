@@ -39,8 +39,8 @@ bool DX9Kernel::initialize( const void* inSource[] )
 
     if( strncmp( nameString, PIXEL_SHADER_NAME_STRING, strlen(PIXEL_SHADER_NAME_STRING) ) == 0 )
     {
-      if( programString == NULL ) continue;
-      return initialize( programString );
+      if( programString != NULL )
+        return initialize( programString );
     }
 
     i += 2;
