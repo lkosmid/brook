@@ -1,14 +1,12 @@
 #include <stdio.h>
 
 kernel void foo (float a<>, float b<>, float4 c,
-		 float d[10][10], vout []float e<>, vout[]float f<>) {
+		 float d[10][10], vout [4]float e<>) {
   e = a+b;
   push(e);
   if (round(fmod( (indexof a).x,2))!=1) {
     e = 2;
     push (e);
-    f= a+b;
-    push(f);
   }
   if (round(fmod((indexof a).y,3))!=1) {
      e=3;
@@ -51,7 +49,7 @@ int main (int argc, char * argv[]) {
   streamRead(b, data_b);
   streamRead(d, data_d);
 
-  foo(a,b,c,d,e,f);
+  foo(a,b,c,d,e);
   //foo(a,b,c,d_broken,e);
   
   streamPrint(e);
