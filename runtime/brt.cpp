@@ -69,8 +69,6 @@ namespace brook {
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*******************************\n");
       fprintf (stderr,"*                             *\n");
       fprintf (stderr,"* BRT_RUNTIME env variable is *\n");
@@ -80,6 +78,9 @@ namespace brook {
       fprintf (stderr,"* CPU Backend:                *\n");
       fprintf (stderr,"* BRT_RUNTIME = cpu           *\n");
       fprintf (stderr,"*                             *\n");
+      fprintf (stderr,"* CPU Multithreaded Backend:  *\n");
+      fprintf (stderr,"* BRT_RUNTIME = cpumt         *\n");
+      fprintf (stderr,"*                             *\n");
       fprintf (stderr,"* NVIDIA NV30 Backend:        *\n");
       fprintf (stderr,"* BRT_RUNTIME = nv30gl        *\n");
       fprintf (stderr,"*                             *\n");
@@ -87,8 +88,6 @@ namespace brook {
       fprintf (stderr,"* BRT_RUNTIME = dx9           *\n");
       fprintf (stderr,"*                             *\n");
       fprintf (stderr,"*******************************\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n\n");
