@@ -23,7 +23,7 @@ namespace brook {
     char *env = getenv(RUNTIME_ENV_VAR);
 
     if (!env) 
-      return new NV30GLRunTime();
+      return new DX9GLRunTime();
 
     if (!strcmp(env, DX9_RUNTIME_STRING))
       return new DX9RunTime();
