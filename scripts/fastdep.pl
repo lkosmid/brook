@@ -142,8 +142,11 @@ foreach $file ( @files ) {
     print "$obj: $deps\n";
   }
 
-  if ($file =~ /(.*)\.cpp$/) {
-     $brfile = "$1.br";
-     print "$file: $brfile \$(ROOTDIR)/bin/brcc\$(BINSUFFIX)\n" if -e ($brfile);
+  if ($file =~ /(.*)\.br$/) {
+     $basefile = $1;
+
+     print "$obj: $obj_prefix$basefile.cpp\n";
+     print "$obj_prefix$basefile.cpp: \$(ROOTDIR)/bin/brcc\$(BINSUFFIX)\n";
+     print "$obj_prefix$basefile.cpp: $file\n";
   }
 }
