@@ -3,6 +3,7 @@
 #include "oglcontext.hpp"
 #include "oglwindow.hpp"
 #include "ogltexture.hpp"
+#include "oglwritequery.hpp"
 
 using namespace brook;
 
@@ -91,3 +92,9 @@ void OGLContext::shareLists( HGLRC inContext )
 {
   _wnd->shareLists( inContext );
 }
+
+IWriteQuery *OGLContext::createWriteQuery(void)
+{
+   return new OGLWriteQuery();
+}
+

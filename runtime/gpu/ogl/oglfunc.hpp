@@ -86,6 +86,54 @@ typedef void (APIENTRYP PFNGLPROGRAMLOCALPARAMETER4FVARBPROC) (GLenum target, GL
 #define RUNTIME_BONUS_GL_FNS_3
 #endif
 
+
+#ifndef GL_ARB_occlusion_query
+#define GL_QUERY_RESULT_ARB                 0x8866
+#define GL_QUERY_RESULT_AVAILABLE_ARB       0x8867
+#define GL_SAMPLES_PASSED_ARB               0x8914
+
+typedef void (APIENTRY * PFNGLGENQUERIESARBPROC) (GLsizei n, GLuint *ids);
+typedef void (APIENTRY * PFNGLDELETEQUERIESARBPROC) (GLsizei n, const GLuint *ids);
+typedef GLboolean (APIENTRY * PFNGLISQUERYARBPROC) (GLuint id);
+typedef void (APIENTRY * PFNGLBEGINQUERYARBPROC) (GLenum target, GLuint id);
+typedef void (APIENTRY * PFNGLENDQUERYARBPROC) (GLenum target);
+typedef void (APIENTRY * PFNGLGETQUERYIVARBPROC) (GLenum target, GLenum pname, GLint *params);
+typedef void (APIENTRY * PFNGLGETQUERYOBJECTIVARBPROC) (GLuint id, GLenum pname, GLint *params);
+typedef void (APIENTRY * PFNGLGETQUERYOBJECTUIVARBPROC) (GLuint id, GLenum pname, GLuint *params);
+
+#define RUNTIME_BONUS_GL_FNS_OQ \
+   XXX(PFNGLGENQUERIESARBPROC,          glGenQueriesARB)        \
+   XXX(PFNGLDELETEQUERIESARBPROC,       glDeleteQueriesARB)     \
+   XXX(PFNGLBEGINQUERYARBPROC,          glBeginQueryARB)        \
+   XXX(PFNGLENDQUERYARBPROC,            glEndQueryARB)          \
+   XXX(PFNGLGETQUERYOBJECTIVARBPROC,    glGetQueryObjectivARB)  \
+   XXX(PFNGLGETQUERYOBJECTUIVARBPROC,   glGetQueryObjectuivARB)
+#elif !GL_GLEXT_PROTOTYPES
+typedef void (APIENTRY * PFNGLGENQUERIESARBPROC) (GLsizei n, GLuint *ids);
+typedef void (APIENTRY * PFNGLDELETEQUERIESARBPROC) (GLsizei n, const GLuint *ids);
+typedef GLboolean (APIENTRY * PFNGLISQUERYARBPROC) (GLuint id);
+typedef void (APIENTRY * PFNGLBEGINQUERYARBPROC) (GLenum target, GLuint id);
+typedef void (APIENTRY * PFNGLENDQUERYARBPROC) (GLenum target);
+typedef void (APIENTRY * PFNGLGETQUERYIVARBPROC) (GLenum target, GLenum pname, GLint *params);
+typedef void (APIENTRY * PFNGLGETQUERYOBJECTIVARBPROC) (GLuint id, GLenum pname, GLint *params);
+typedef void (APIENTRY * PFNGLGETQUERYOBJECTUIVARBPROC) (GLuint id, GLenum pname, GLuint *params);
+
+#define RUNTIME_BONUS_GL_FNS_OQ \
+   XXX(PFNGLGENQUERIESARBPROC,          glGenQueriesARB)        \
+   XXX(PFNGLDELETEQUERIESARBPROC,       glDeleteQueriesARB)     \
+   XXX(PFNGLBEGINQUERYARBPROC,          glBeginQueryARB)        \
+   XXX(PFNGLENDQUERYARBPROC,            glEndQueryARB)          \
+   XXX(PFNGLGETQUERYOBJECTIVARBPROC,    glGetQueryObjectivARB)  \
+   XXX(PFNGLGETQUERYOBJECTUIVARBPROC,   glGetQueryObjectuivARB)
+#else
+#define RUNTIME_BONUS_GL_FNS_OQ
+#endif
+
+
+#define RUNTIME_BONUS_GL_FNS \
+   RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3 \
+   RUNTIME_BONUS_GL_FNS_OQ
+
 #ifndef GL_ARB_fragment_program
 #define GL_FRAGMENT_PROGRAM_ARB           0x8804
 #define GL_MAX_TEXTURE_COORDS_ARB                  0x8871
@@ -111,9 +159,6 @@ typedef void (APIENTRYP PFNGLDRAWBUFFERSATIPROC) (GLsizei n, const GLenum *bufs)
 #endif
 #define RUNTIME_BONUS_GL_FNS_ATI \
    XXX(PFNGLDRAWBUFFERSATIPROC,        glDrawBuffersATI)
-
-#define RUNTIME_BONUS_GL_FNS \
-   RUNTIME_BONUS_GL_FNS_1 RUNTIME_BONUS_GL_FNS_2 RUNTIME_BONUS_GL_FNS_3
 
 /***** WGL API *****/
 #ifdef WIN32
