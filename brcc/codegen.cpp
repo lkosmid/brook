@@ -400,7 +400,7 @@ generate_c_fp_code(char *fpcode, const char *name)
 
   assert (name);
 
-  fp << "\nstatic const char *__" << name << "_fp[] = {" << std::endl;
+  fp << "\nstatic const void *__" << name << "_fp[] = {" << std::endl;
 
   fp << "\"fp30\", \"";
   while ((i = *fpcode++) != '\0') {
@@ -431,7 +431,7 @@ generate_c_ps20_code(char *fpcode, const char *name)
 
   assert (name);
 
-  fp << "\nstatic const char *__" << name << "_fp[] = {" << std::endl;
+  fp << "\nstatic const void *__" << name << "_fp[] = {" << std::endl;
 
   fp << "\"ps20\", \"";
   while ((i = *fpcode++) != '\0') {

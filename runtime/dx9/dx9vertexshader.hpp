@@ -3,18 +3,20 @@
 
 #include "dx9base.hpp"
 
-class DXContext;
+namespace brook {
 
-class DX9VertexShader
-{
-public:
-	static DX9VertexShader* create( DX9RunTime* inContext, const char* inSource );
-	~DX9VertexShader();
+  class DX9VertexShader
+  {
+  public:
+	  static DX9VertexShader* create( DX9RunTime* inContext, const char* inSource );
+	  ~DX9VertexShader();
 
-	IDirect3DVertexShader9* getHandle();
+	  IDirect3DVertexShader9* getHandle();
 
-private:
-	DX9VertexShader( DX9RunTime* inContext, const char* inSource );
+  private:
+	  DX9VertexShader( DX9RunTime* inContext, const char* inSource );
 
-	IDirect3DVertexShader9* shaderHandle;
-};
+	  IDirect3DVertexShader9* shaderHandle;
+  };
+
+}

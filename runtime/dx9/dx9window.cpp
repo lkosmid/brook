@@ -1,6 +1,8 @@
 // dx9window.cpp
 #include "dx9window.hpp"
 
+using namespace brook;
+
 const char* DX9Window::kWindowClassName = "DX9Window_Class";
 
 DX9Window::DX9Window()

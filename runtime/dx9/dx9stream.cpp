@@ -2,6 +2,8 @@
 
 #include <dx9texture.hpp>
 
+using namespace brook;
+
 static const char* kKnownTypeNames[] =
 {
   "float",
@@ -21,7 +23,7 @@ static int kKnownTypeComponentCounts[] =
 };
 
 DX9Stream::DX9Stream (DX9RunTime* runtime, const char type[], int dims, int extents[])
-  : __BrookStream(type, dims, extents), runtime(runtime)
+  : runtime(runtime)
 {
   DX9Trace("DX9Stream::DX9Stream");
   // XXX: TO DO
@@ -73,15 +75,14 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, const char type[], int dims, int exte
   outputRect = DX9Rect( -1, -1, 1, 1 );
 }
 
-void DX9Stream::streamRead(void *p) {
-  DX9Trace("streamRead");
-  texture->setData( (float*)p );
+void DX9Stream::Read(const void *p) {
+  DX9Trace("Read");
+  texture->setData( (const float*)p );
 }
 
-void DX9Stream::streamWrite(void *p) {
-  DX9Trace("streamWrite");
+void DX9Stream::Write(void *p) {
+  DX9Trace("Write");
   texture->getData( (float*)p );
-  DX9Trace("streamWrite - done");
 }
 
 DX9Stream::~DX9Stream () {

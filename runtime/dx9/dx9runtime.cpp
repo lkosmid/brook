@@ -4,6 +4,12 @@
 #include "dx9window.hpp"
 #include "dx9vertexshader.hpp"
 
+using namespace brook;
+
+namespace brook {
+  const char* DX9_RUNTIME_STRING = "dx9";
+}
+
 static const char* kPassthroughVertexShaderSource =
 "vs.1.1\n"
 "dcl_position v0\n"
@@ -62,11 +68,11 @@ DX9RunTime::DX9RunTime() {
   passthroughVertexShader = DX9VertexShader::create( this, kPassthroughVertexShaderSource );
 }
 
-__BrookKernel * DX9RunTime::LoadKernel(const char* source[]) {
+Kernel * DX9RunTime::CreateKernel(const void* source[]) {
   return new DX9Kernel( this, source );
 }
 
-__BrookStream * DX9RunTime::CreateStream(const char type[], int dims, int extents[]) {
+Stream * DX9RunTime::CreateStream(const char type[], int dims, int extents[]) {
   // XXX: TO DO
   return new DX9Stream( this, type, dims, extents );
 }
@@ -75,16 +81,6 @@ DX9RunTime::~DX9RunTime() {
   // Does nothing
   // TIM: finalize D3D
 }
-
-// TIM: this all needs to move somewhere else... I think...
-
-typedef unsigned short UInt16;
-
-struct DX9Vertex
-{
-  float4 position;
-  float2 texcoords[8]; // TIM: TODO: named constant
-};
 
 void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
 {

@@ -3,6 +3,8 @@
 
 #include <dx9.hpp>
 
+using namespace brook;
+
 DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents )
 	: width(inWidth), height(inHeight), components(inComponents), internalComponents(inComponents)
 {

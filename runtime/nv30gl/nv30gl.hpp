@@ -1,43 +1,53 @@
 #ifndef NV30GL_H
 #define NV30GL_H
 
-#include <brook.hpp>
-
 #include <windows.h>
+#include "../brt.hpp"
 
-#define NV30GL_RUNTIME_STRING "nv30gl"
+namespace brook {
 
-class NV30GLKernel : public __BrookKernel {
-public:
-  NV30GLKernel();
-  virtual void SetInput(const int arg, const __BrookStream *s);
-  virtual void SetConstantFloat(const int arg, const float &val);  
-  virtual void SetConstantFloat2(const int arg, const float2 &val);  
-  virtual void SetConstantFloat3(const int arg, const float3 &val); 
-  virtual void SetConstantFloat4(const int arg, const float4 &val);
-  virtual void SetGatherInput(const int arg, const __BrookStream *s);
-  virtual void SetOutput(const __BrookStream *s);
-  virtual void Exec(void);
-  virtual ~NV30GLKernel();
-};
+  extern const char* NV30GL_RUNTIME_STRING;
 
-class NV30GLStream : public __BrookStream {
-public:
-  NV30GLStream (const char type[], int dims, int extents[]);
-  virtual void streamRead(void *p);
-  virtual void streamWrite(void *p);
-  virtual ~NV30GLStream ();
-};
+  class NV30GLKernel : public Kernel {
+  public:
+    NV30GLKernel();
+    virtual void PushStream(const Stream *s);
+    virtual void PushConstant(const float &val);  
+    virtual void PushConstant(const float2 &val);  
+    virtual void PushConstant(const float3 &val); 
+    virtual void PushConstant(const float4 &val);
+    virtual void PushGatherStream(const Stream *s);
+    virtual void PushOutput(const Stream *s);
+    virtual void Map();
+    virtual void Release();
+    
+  private:
+    virtual ~NV30GLKernel();
+  };
 
-class NV30GLRunTime : public __BrookRunTime {
-public:
-  NV30GLRunTime();
-  virtual __BrookKernel *LoadKernel(const char*[]);
-  virtual __BrookStream *CreateStream(const char type[], int dims, int extents[]);
-  virtual ~NV30GLRunTime();
+  class NV30GLStream : public Stream {
+  public:
+    NV30GLStream (const char type[], int dims, int extents[]);
+    virtual void Read(const void* inData);
+    virtual void Write(void* outData);
+    virtual void Release();
 
-private: 
-  HWND hwnd;
-};
+  private:
+    virtual ~NV30GLStream ();
+  };
+
+  class NV30GLRunTime : public RunTime {
+  public:
+    NV30GLRunTime();
+    virtual Kernel* CreateKernel(const void*[]);
+    virtual Stream* CreateStream(const char type[], int dims, int extents[]);
+    virtual ~NV30GLRunTime();
+
+  private: 
+    HWND hwnd;
+    HGLRC hglrc_window;
+    HGLRC hglrc_workspace;
+  };
+}
 
 #endif

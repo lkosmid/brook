@@ -91,22 +91,21 @@ BRTKernelDef::printStub(std::ostream& out) const
    }
    out << ") {\n";
 
-   out << "  static __BRTKernel *__k;\n\n"
-       << "  if (!__k) __k = __BRTKernelDef("
-       << *FunctionName() << "_fp);\n\n";
+   out << "  static __BRTKernel k("
+       << "__" << *FunctionName() << "_fp);\n\n";
 
    for (i=0; i < fType->nArgs; i++) {
       if (fType->args[i]->isStream()) {
          if (fType->args[i]->form->getQualifiers() & TQ_Out) {
-            out << "  __k->PushOutput(" << *fType->args[i]->name << ");\n";
+            out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
          } else {
-            out << "  __k->PushStream(" << *fType->args[i]->name << ");\n";
+            out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
          }
       } else {
-         out << "  __k->PushConstant(" << *fType->args[i]->name << ");\n";
+         out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
       }
    }
-   out << "  __k->Map();\n";
+   out << "  k->Map();\n";
    out << "\n}\n\n";
 }
 

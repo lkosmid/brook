@@ -63,6 +63,16 @@ BrtStreamType::printType( std::ostream& out, Symbol *name,
   out << "__BRTStream ";
   if (name) 
     out << *name;
+
+  // TIM: add initializer as constructor
+  out << "(\"";
+  base->printBase(out, 0);
+  out << "\",";
+  for (unsigned int i=0; i<dims.size(); i++) {
+    dims[i]->print(out);
+    out << ",";
+  }
+  out << "-1)";
 }
 
 void

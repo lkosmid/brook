@@ -1,9 +1,5 @@
 #include <brook.h>
 
-extern int printf(const char *fmt, ...);
-extern void streamRead(float a<>, ...);
-extern void streamWrite(float a<>, ...);
-
 kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], out float e<>) {
   /*e = a+b+d[c.xz];*/
@@ -22,6 +18,7 @@ int main () {
   float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
   float data_d[10][10];
   float data_e[10][10];
+  float d_broken = 0.0f;
 
   int i,j;
 
@@ -36,7 +33,8 @@ int main () {
   streamRead(b, data_b);
   streamRead(d, data_d);
 
-  foo(a,b,c,d,e);
+/*  foo(a,b,c,d,e); */
+  foo(a,b,c,d_broken,e);
 
   streamWrite(e, data_e);
   

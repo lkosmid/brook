@@ -3,25 +3,28 @@
 
 #include "dx9base.hpp"
 
-class DX9Window
-{
-public:
-	static DX9Window* create();
-	~DX9Window();
+namespace brook {
 
-	void show();
-	void hide();
+  class DX9Window
+  {
+  public:
+	  static DX9Window* create();
+	  ~DX9Window();
 
-	HWND getWindowHandle();
+	  void show();
+	  void hide();
 
-private:
-	DX9Window();
-	LRESULT handleMessage( UINT inMessage, WPARAM wParam, LPARAM lParam );
-	void finalize();
+	  HWND getWindowHandle();
 
-	HWND windowHandle;
+  private:
+	  DX9Window();
+	  LRESULT handleMessage( UINT inMessage, WPARAM wParam, LPARAM lParam );
+	  void finalize();
 
-	static const char* kWindowClassName;
-	static void registerWindowClass();
-	static LRESULT WINAPI windowCallback( HWND inWindowHandle, UINT inMessage, WPARAM wParam, LPARAM lParam );
-};
+	  HWND windowHandle;
+
+	  static const char* kWindowClassName;
+	  static void registerWindowClass();
+	  static LRESULT WINAPI windowCallback( HWND inWindowHandle, UINT inMessage, WPARAM wParam, LPARAM lParam );
+  };
+}

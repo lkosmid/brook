@@ -154,8 +154,10 @@ ConvertToBrtStreams(Statement *s)
       decl->form = brtStream;
       assert (decl->initializer == NULL);
 
-      decl->initializer = new BrtStreamInitializer(brtStream,
-						   declStemnt->location);
+// TIM: we don't want any initializer for stream types...
+// they are initialized by their constructor...
+//      decl->initializer = new BrtStreamInitializer(brtStream,
+//						   declStemnt->location);
   }
 }
 

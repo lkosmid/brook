@@ -1,38 +1,40 @@
 #include <nv30gl.hpp>
 
+using namespace brook;
+
 NV30GLKernel::NV30GLKernel() {
   // XXX: TODO
 }
 
-void NV30GLKernel::SetInput(const int arg, const __BrookStream *s) {
+void NV30GLKernel::PushStream(const Stream *s) {
   // XXX: TODO
 }
 
-void NV30GLKernel::SetConstantFloat(const int arg, const float &val) {
+void NV30GLKernel::PushConstant(const float &val) {
   // XXX: TODO
 }
 
-void NV30GLKernel::SetConstantFloat2(const int arg, const float2 &val) {
+void NV30GLKernel::PushConstant(const float2 &val) {
   // XXX: TODO
 }
 
-void NV30GLKernel::SetConstantFloat3(const int arg, const float3 &val) {
+void NV30GLKernel::PushConstant(const float3 &val) {
   // XXX: TODO
 }
 
-void NV30GLKernel::SetConstantFloat4(const int arg, const float4 &val) {
+void NV30GLKernel::PushConstant(const float4 &val) {
   // XXX: TODO
 }
 
-void NV30GLKernel::SetGatherInput(const int arg, const __BrookStream *s) {
+void NV30GLKernel::PushGatherStream(const Stream *s) {
   // XXX: TODO
 }
 
-void NV30GLKernel::SetOutput(const __BrookStream *s) {
+void NV30GLKernel::PushOutput(const Stream *s) {
   // XXX: TODO
 }
 
-void NV30GLKernel::Exec(void) {
+void NV30GLKernel::Map() {
   // XXX: TODO
 }
 

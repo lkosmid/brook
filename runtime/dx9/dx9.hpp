@@ -1,101 +1,112 @@
-#ifndef DX9_H
-#define DX9_H
+// dx9.hpp
+#pragma once
 
-#include <brook.hpp>
+#include "../brt.hpp"
 #include "dx9base.hpp"
 
-#define DX9_RUNTIME_STRING "dx9"
+namespace brook {
 
-// TIM: 'helper' struct for defining the bounds
-// of a stream in its texture:
-struct DX9Rect
-{
-  DX9Rect() {}
-  DX9Rect( float inLeft, float inTop, float inRight, float inBottom )
-    : left(inLeft), top(inTop), right(inRight), bottom(inBottom) {}
-  
-  operator float*() { return (float*)this; }
+  extern const char* DX9_RUNTIME_STRING;
+
+  // TIM: 'helper' struct for defining the bounds
+  // of a stream in its texture:
+  struct DX9Rect
+  {
+    DX9Rect() {}
+    DX9Rect( float inLeft, float inTop, float inRight, float inBottom )
+      : left(inLeft), top(inTop), right(inRight), bottom(inBottom) {}
     
-  operator const float*() const { return (const float*)this; }
+    operator float*() { return (float*)this; }
+      
+    operator const float*() const { return (const float*)this; }
 
-  float left, top, right, bottom;
-};
+    float left, top, right, bottom;
+  };
 
-class DX9Kernel : public __BrookKernel {
-public:
-  DX9Kernel(DX9RunTime* runtime, const char* source[]);
-  virtual void SetInput(const int arg, const __BrookStream *s);
-  virtual void SetConstantFloat(const int arg, const float &val);  
-  virtual void SetConstantFloat2(const int arg, const float2 &val);  
-  virtual void SetConstantFloat3(const int arg, const float3 &val); 
-  virtual void SetConstantFloat4(const int arg, const float4 &val);
-  virtual void SetGatherInput(const int arg, const __BrookStream *s);
-  virtual void SetOutput(const __BrookStream *s);
-  virtual void Exec(void);
-  virtual ~DX9Kernel();
+  class DX9Kernel : public Kernel {
+  public:
+    DX9Kernel(DX9RunTime* runtime, const void* source[]);
+    virtual void PushStream(const Stream *s);
+    virtual void PushConstant(const float &val);  
+    virtual void PushConstant(const float2 &val);  
+    virtual void PushConstant(const float3 &val); 
+    virtual void PushConstant(const float4 &val);
+    virtual void PushGatherStream(const Stream *s);
+    virtual void PushOutput(const Stream *s);
+    virtual void Map();
+    virtual void Release() {}
 
-private:
-  IDirect3DDevice9* getDevice();
-  void initialize( const char* source );
-  int mapArgumentToTextureUnit( int arg );
-  int mapArgumentToConstantIndex( int arg );
+  private:
+    virtual ~DX9Kernel();
+    IDirect3DDevice9* getDevice();
+    void initialize( const char* source );
+    int mapArgumentToTextureUnit( int arg );
+    int mapArgumentToConstantIndex( int arg );
 
-  DX9RunTime* runtime;
-  DX9PixelShader* pixelShader;
-  DX9Rect inputRects[8]; // TIM: TODO: named constant?
-  float4 inputConstants[8];
-  IDirect3DTexture9* inputTextures[8];
-  DX9Rect outputRect;
-  IDirect3DSurface9* outputSurface;
-};
+    DX9RunTime* runtime;
+    DX9PixelShader* pixelShader;
+    DX9Rect inputRects[8]; // TIM: TODO: named constant?
+    float4 inputConstants[8];
+    IDirect3DTexture9* inputTextures[8];
+    int argumentIndex;
+    DX9Rect outputRect;
+    IDirect3DSurface9* outputSurface;
+  };
 
-class DX9Stream : public __BrookStream {
-public:
-  DX9Stream (DX9RunTime* runtime,const char type[], int dims, int extents[]);
-  virtual void streamRead(void *p);
-  virtual void streamWrite(void *p);
-  virtual ~DX9Stream ();
+  class DX9Stream : public Stream {
+  public:
+    DX9Stream (DX9RunTime* runtime,const char type[], int dims, int extents[]);
+    virtual void Read(const void* inData);
+    virtual void Write(void* outData);
+    virtual void Release() {}
 
-  IDirect3DTexture9* getTextureHandle();
-  IDirect3DSurface9* getSurfaceHandle();
-  const DX9Rect& getInputRect() { return inputRect; }
-  const DX9Rect& getOutputRect() { return outputRect; }
+    IDirect3DTexture9* getTextureHandle();
+    IDirect3DSurface9* getSurfaceHandle();
+    const DX9Rect& getInputRect() { return inputRect; }
+    const DX9Rect& getOutputRect() { return outputRect; }
 
-private:
-  IDirect3DDevice9* getDevice();
+  private:
+    virtual ~DX9Stream ();
+    IDirect3DDevice9* getDevice();
 
-  DX9RunTime* runtime;
-  DX9Texture* texture;
-  DX9Rect inputRect;
-  DX9Rect outputRect;
-};
+    DX9RunTime* runtime;
+    DX9Texture* texture;
+    DX9Rect inputRect;
+    DX9Rect outputRect;
+  };
 
-class DX9RunTime : public __BrookRunTime {
-public:
-  DX9RunTime();
-  virtual __BrookKernel *LoadKernel(const char*[]);
-  virtual __BrookStream *CreateStream(const char type[], int dims, int extents[]);
-  virtual ~DX9RunTime();
+  class DX9RunTime : public RunTime {
+  public:
+    DX9RunTime();
+    virtual Kernel* CreateKernel(const void*[]);
+    virtual Stream* CreateStream(const char type[], int dims, int extents[]);
+    virtual ~DX9RunTime();
 
-  IDirect3DDevice9* getDevice() { return device; }
-  DX9VertexShader* getPassthroughVertexShader() {
-    return passthroughVertexShader;
-  }
+    IDirect3DDevice9* getDevice() { return device; }
+    DX9VertexShader* getPassthroughVertexShader() {
+      return passthroughVertexShader;
+    }
 
-  void execute( const DX9Rect& outputRect, const DX9Rect* inputRects );
+    void execute( const DX9Rect& outputRect, const DX9Rect* inputRects );
 
-private:
-  void initializeVertexBuffer();
+  private:
+    void initializeVertexBuffer();
 
-  DX9Window* window;
-  DX9VertexShader* passthroughVertexShader;
-  IDirect3D9* direct3D;
-  IDirect3DDevice9* device;
-  IDirect3DVertexBuffer9* vertexBuffer;
-  IDirect3DIndexBuffer9* indexBuffer;
-  IDirect3DVertexDeclaration9* vertexDecl;
-};
+    DX9Window* window;
+    DX9VertexShader* passthroughVertexShader;
+    IDirect3D9* direct3D;
+    IDirect3DDevice9* device;
+    IDirect3DVertexBuffer9* vertexBuffer;
+    IDirect3DIndexBuffer9* indexBuffer;
+    IDirect3DVertexDeclaration9* vertexDecl;
+  };
 
+  // more helper types used by the runtime
+  typedef unsigned short UInt16;
 
-
-#endif
+  struct DX9Vertex
+  {
+    float4 position;
+    float2 texcoords[8]; // TIM: TODO: named constant
+  };
+}

@@ -1,13 +1,7 @@
 #ifndef BROOK_H
 #define BROOK_H
 
-class __BrookRunTime;
-class __BrookKernel;
-class __BrookStream;
-class __BrookIntArray;
-
-#define __MAXPROGLENGTH (1024*32)
-#define __MAXSTREAMDIMS (8)
+#include <stdlib.h>
 
 typedef struct {
   float x,y;
@@ -21,46 +15,93 @@ typedef struct {
   float x,y,z,w;
 } float4;
 
-class __BrookRunTime {
-public:
-  __BrookRunTime() {}
-  virtual __BrookKernel *LoadKernel(const char*[]) = 0;
-  virtual __BrookStream *CreateStream(const char type[], int dims, int extents[]) = 0;
-  virtual ~__BrookRunTime() {}
-};
+namespace brook {
+  class Kernel;
+  class Stream;
 
-class __BrookKernel {
-public:
-  __BrookKernel() {}
-  virtual void SetInput(const int arg, const __BrookStream *s) = 0;
-  virtual void SetConstantFloat(const int arg, const float &val) = 0;  
-  virtual void SetConstantFloat2(const int arg, const float2 &val) = 0;  
-  virtual void SetConstantFloat3(const int arg, const float3 &val) = 0; 
-  virtual void SetConstantFloat4(const int arg, const float4 &val) = 0;
-  virtual void SetGatherInput(const int arg, const __BrookStream *s) = 0;
-  virtual void SetOutput(const __BrookStream *s) = 0;
-  virtual void Exec(void) = 0;
-  virtual ~__BrookKernel() {}
-};
+  static const unsigned int MAXPROGLENGTH = 1024*32;
+  static const unsigned int MAXSTREAMDIMS = 8;
 
-class __BrookStream {
-public:
-  __BrookStream (const char type[], int dims, int extents[]) {}
-  virtual void streamRead(void *p) = 0;
-  virtual void streamWrite(void *p) = 0;
-  virtual ~__BrookStream() {}
-};
+  class Kernel {
+  public:
+    Kernel() {}
+    virtual void PushStream(const Stream *s) = 0;
+    virtual void PushConstant(const float &val) = 0;  
+    virtual void PushConstant(const float2 &val) = 0;  
+    virtual void PushConstant(const float3 &val) = 0; 
+    virtual void PushConstant(const float4 &val) = 0;
+    virtual void PushGatherStream(const Stream *s) = 0;
+    virtual void PushOutput(const Stream *s) = 0;
+    virtual void Map() = 0;
+    virtual void Release() = 0;
 
-inline static void streamRead(__BrookStream *s, void *p) {
-  s->streamRead(p);
+  protected:
+    virtual ~Kernel() {}
+  };
+
+  class Stream {
+  public:
+    Stream () {}
+    virtual void Read(const void* inData) = 0;
+    virtual void Write(void* outData) = 0;
+    virtual void Release() = 0;
+
+  protected:
+    virtual ~Stream() {}
+  };
 }
 
-inline static void streamWrite(__BrookStream *s, void *p) {
-  s->streamWrite(p);
+
+class __BRTStream {
+public:
+  __BRTStream(const char* type, ...);
+  ~__BRTStream()
+  {
+    if( stream != NULL )
+      stream->Release();
+  }
+
+  operator brook::Stream*() const {
+    return stream;
+  }
+
+  brook::Stream* operator->() const {
+    return stream;
+  }
+
+private:
+  __BRTStream( const __BRTStream& ); // no copy constructor
+  brook::Stream* stream;
+};
+
+class __BRTKernel {
+public:
+  __BRTKernel(const void* code[]);
+  ~__BRTKernel()
+  {
+    if( kernel != NULL )
+      kernel->Release();
+  }
+
+  operator brook::Kernel*() const {
+    return kernel;
+  }
+
+  brook::Kernel* operator->() const {
+    return kernel;
+  }
+
+private:
+  __BRTKernel( const __BRTKernel& ); // no copy constructor
+  brook::Kernel* kernel;
+};
+
+inline static void streamRead( brook::Stream *s, void *p) {
+  s->Read(p);
 }
 
-__BrookStream* CreateStream(const char type[], ... );
-
-__BrookRunTime* __brt();
+inline static void streamWrite( brook::Stream *s, void *p) {
+  s->Write(p);
+}
 
 #endif

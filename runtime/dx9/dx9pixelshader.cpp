@@ -3,6 +3,8 @@
 
 #include "dx9.hpp"
 
+using namespace brook;
+
 DX9PixelShader::DX9PixelShader( DX9RunTime* inContext, const char* inSource )
 {
 	LPDIRECT3DDEVICE9 device = inContext->getDevice();

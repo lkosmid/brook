@@ -1,30 +1,39 @@
 #include <nv30gl.hpp>
-#include <brtcommon.hpp>
+// TIM: missing include file?
+//#include <brtcommon.hpp>
+#include "../common.h"
+
+using namespace brook;
+
+namespace brook {
+  const char* NV30GL_RUNTIME_STRING = "nv30gl";
+}
 
 NV30GLRunTime::NV30GLRunTime() {
-  BrtLog("NV30GLRunTime()");
+// TIM: missing include file?
+//  BrtLog("NV30GLRunTime()");
 
   // Create a window
-  hwnd = createwindow();
+//  hwnd = createwindow();
 
   // Create a window glcontext
-  hglrc_window = createglcontext();
+//  hglrc_window = createglcontext();
 
   // Create our floating point workspace
-  hglrc_workspace = createpbuffer();
+//  hglrc_workspace = createpbuffer();
 
   
 
 }
 
-__BrookKernel * NV30GLRunTime::LoadKernel(const char*[]) {
+Kernel * NV30GLRunTime::CreateKernel(const void*[]) {
   // XXX: TO DO
-  return (__BrookKernel *) 0;
+  return (Kernel *) 0;
 }
 
-__BrookStream * NV30GLRunTime::CreateStream(const char type[], int dims, int extents[]) {
+Stream * NV30GLRunTime::CreateStream(const char type[], int dims, int extents[]) {
   // XXX: TO DO
-  return (__BrookStream *) 0;
+  return (Stream *) 0;
 }
 
 NV30GLRunTime::~NV30GLRunTime() {

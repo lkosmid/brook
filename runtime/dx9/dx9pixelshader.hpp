@@ -3,18 +3,20 @@
 
 #include "dx9base.hpp"
 
-class DXContext;
+namespace brook {
 
-class DX9PixelShader
-{
-public:
-	static DX9PixelShader* create( DX9RunTime* inContext, const char* inSource );
-	~DX9PixelShader();
+  class DX9PixelShader
+  {
+  public:
+	  static DX9PixelShader* create( DX9RunTime* inContext, const char* inSource );
+	  ~DX9PixelShader();
 
-	LPDIRECT3DPIXELSHADER9 getHandle();
+	  LPDIRECT3DPIXELSHADER9 getHandle();
 
-private:
-	DX9PixelShader( DX9RunTime* inContext, const char* inSource );
+  private:
+	  DX9PixelShader( DX9RunTime* inContext, const char* inSource );
 
-	LPDIRECT3DPIXELSHADER9 shaderHandle;
-};
+	  LPDIRECT3DPIXELSHADER9 shaderHandle;
+  };
+
+}

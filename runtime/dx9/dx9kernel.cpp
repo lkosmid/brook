@@ -3,18 +3,20 @@
 #include "dx9pixelshader.hpp"
 #include "dx9vertexshader.hpp"
 
-static const char* PIXEL_SHADER_NAME_STRING = "ps2.0";
+using namespace brook;
 
-DX9Kernel::DX9Kernel(DX9RunTime* runtime, const char* source[])
-  : runtime(runtime)
+static const char* PIXEL_SHADER_NAME_STRING = "ps20";
+
+DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
+  : runtime(runtime), argumentIndex(0)
 {
   DX9Trace("DX9Kernel::DX9Kernel");
   
   int i = 0;
   while( source[i] != NULL )
   {
-    const char* nameString = source[i];
-    const char* programString = source[i+1];
+    const char* nameString = (const char*)source[i];
+    const char* programString = (const char*)source[i+1];
 
     if( strncmp( nameString, PIXEL_SHADER_NAME_STRING, strlen(PIXEL_SHADER_NAME_STRING) ) == 0 )
     {
@@ -28,9 +30,9 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const char* source[])
   DX9Fail("DXKernel failure - no DX9 program string found");
 }
 
-void DX9Kernel::SetInput(const int arg, const __BrookStream *s) {
+void DX9Kernel::PushStream(const Stream *s) {
   DX9Trace("SetInput");
-  HRESULT result;
+  int arg = argumentIndex++;
 
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DTexture9* textureHandle = stream->getTextureHandle();
@@ -40,60 +42,43 @@ void DX9Kernel::SetInput(const int arg, const __BrookStream *s) {
   inputRects[textureUnit] = stream->getInputRect();
 }
 
-void DX9Kernel::SetConstantFloat(const int arg, const float &val) {
-  DX9Trace("SetConstantFloat");
-
+void DX9Kernel::PushConstant(const float &val) {
   float4 value;
   value.x = val;
   value.y = 0;
   value.z = 0;
   value.w = 1;
-
-  int constantIndex = mapArgumentToConstantIndex( arg );
-  inputConstants[constantIndex] = value;
+  PushConstant( value );
 }
 
-void DX9Kernel::SetConstantFloat2(const int arg, const float2 &val) {
-  DX9Trace("SetConstantFloat2");
-
+void DX9Kernel::PushConstant(const float2 &val) {
   float4 value;
   value.x = val.x;
   value.y = val.y;
   value.z = 0;
   value.w = 1;
-
-  int constantIndex = mapArgumentToConstantIndex( arg );
-  inputConstants[constantIndex] = value;
+  PushConstant( value );
 }
 
-void DX9Kernel::SetConstantFloat3(const int arg, const float3 &val) {
-  DX9Trace("SetConstantFloat3");
-
+void DX9Kernel::PushConstant(const float3 &val) {
   float4 value;
   value.x = val.x;
   value.y = val.y;
   value.z = val.z;
   value.w = 1;
-
-  int constantIndex = mapArgumentToConstantIndex( arg );
-  inputConstants[constantIndex] = value;
+  PushConstant( value );
 }
 
-void DX9Kernel::SetConstantFloat4(const int arg, const float4 &val) {
-  DX9Trace("SetConstantFloat4");
-
-  float4 value;
-  value.x = val.x;
-  value.y = val.y;
-  value.z = val.z;
-  value.w = val.w;
-
+void DX9Kernel::PushConstant(const float4 &val) {
+  DX9Trace("PushConstant");
+  int arg = argumentIndex++;
   int constantIndex = mapArgumentToConstantIndex( arg );
-  inputConstants[constantIndex] = value;
+  inputConstants[constantIndex] = val;
 }
 
-void DX9Kernel::SetGatherInput(const int arg, const __BrookStream *s) {
-  DX9Trace("SetGatherInput");
+void DX9Kernel::PushGatherStream(const Stream *s) {
+  DX9Trace("PushGatherStream");
+  int arg = argumentIndex++;
   
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DTexture9* textureHandle = stream->getTextureHandle();
@@ -102,8 +87,9 @@ void DX9Kernel::SetGatherInput(const int arg, const __BrookStream *s) {
   inputTextures[textureUnit] = textureHandle;
 }
 
-void DX9Kernel::SetOutput(const __BrookStream *s) {
-  DX9Trace("SetOutput");
+void DX9Kernel::PushOutput(const Stream *s) {
+  DX9Trace("PushOutput");
+  int arg = argumentIndex++;
 
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DSurface9* surfaceHandle = stream->getSurfaceHandle();
@@ -112,8 +98,8 @@ void DX9Kernel::SetOutput(const __BrookStream *s) {
   outputRect = stream->getOutputRect();
 }
 
-void DX9Kernel::Exec(void) {
-  DX9Trace("Exec");
+void DX9Kernel::Map() {
+  DX9Trace("Map");
   HRESULT result;
 
   DX9VertexShader* vertexShader = runtime->getPassthroughVertexShader();
