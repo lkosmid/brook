@@ -847,6 +847,7 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
     std::string myvoid("void  ");
     //out << myvoid;
     func->printBase(out,0);
+    out << " ";
     Symbol enhanced_name;
     enhanced_name.name = fullname;
     func->printBefore(out,&enhanced_name,0);
