@@ -11,6 +11,7 @@ static float lerp (unsigned int i, unsigned int end,float lower,float upper) {
 DX9Iter* DX9Iter::create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
   int inDimensionCount, int* inExtents, float* inRanges )
 {
+  DX9PROFILE("DX9Iter::create")
   DX9Iter* result = new DX9Iter( inRuntime, inElementType );
   if( result->initialize( inDimensionCount, inExtents, inRanges ) )
     return result;
@@ -28,8 +29,9 @@ bool DX9Iter::initialize( int inDimensionCount, int* inExtents, float* inRanges 
   dimensionCount = inDimensionCount;
   if( (dimensionCount <= 0) || (dimensionCount > 2) )
   {
-    DX9Warn( "Invalid dimension for iterator stream %d.\n"
-      "Dimension must be greater than 0 and less than 3.", inDimensionCount );
+    DX9WARN << "Invalid dimension for iterator stream "
+      << inDimensionCount << ".\n"
+      << "Dimension must be greater than 0 and less than 3.";
     return false;
   }
 
@@ -48,8 +50,8 @@ bool DX9Iter::initialize( int inDimensionCount, int* inExtents, float* inRanges 
     componentCount = 4;
     break;
   default:
-    DX9Warn( "Unknown iterator element type.\n"
-      "Element type must be one of float, float2, float3, float4." );
+    DX9WARN << "Unknown iterator element type.\n"
+      "Element type must be one of float, float2, float3, float4.";
     return false;
     break;
   }
@@ -60,8 +62,8 @@ bool DX9Iter::initialize( int inDimensionCount, int* inExtents, float* inRanges 
     int extent = inExtents[i];
     if( extent <= 0 )
     {
-      DX9Warn( "Invalid iterator extent %d in dimension %d.\n"
-        "The extent must be greater than 0.", extent, i );
+      DX9WARN << "Invalid iterator extent " << extent << " in dimension " << i << ".\n"
+        << "The extent must be greater than 0.";
       return false;
     }
 
@@ -102,8 +104,8 @@ bool DX9Iter::initialize( int inDimensionCount, int* inExtents, float* inRanges 
 
     if( componentCount != 2 )
     {
-      DX9Warn( "Invalid element type for 2D iterator.\n"
-        "2D iterators can only be of type float2." );
+      DX9WARN << "Invalid element type for 2D iterator.\n"
+        << "2D iterators can only be of type float2.";
       return false;
     }
     float minX = ranges[0];
@@ -117,6 +119,7 @@ bool DX9Iter::initialize( int inDimensionCount, int* inExtents, float* inRanges 
 
 void* DX9Iter::getData (unsigned int flags)
 {
+  DX9PROFILE("DX9Iter::getData")
   DX9Assert( !(flags & Stream::WRITE),
     "Attempted to write to an iterator.\n"
     "Iterators are strictly read-only." );

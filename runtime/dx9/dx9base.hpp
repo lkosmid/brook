@@ -12,16 +12,7 @@
 #include <brt.hpp>
 
 #include "../profiler.hpp"
-
-// uncomment this line to have the DX9
-// runtime spit out
-// lots of debug trace information
-// #define BROOK_DX9_TRACE
-
-// uncomment this line and the one above
-// to make the DX9 runtime spit out
-// temporary results during reductions
-// #define BROOK_DX9_TRACE_REDUCE
+#include "../logger.hpp"
 
 namespace brook {
 
@@ -74,51 +65,20 @@ namespace brook {
     float4 vertices[4];
   };
 
-  inline void DX9Spew( const char* inFormat, va_list args )
-  {
-    static FILE* file = fopen( "./DX9RuntimeLog.txt", "w" );
-    vfprintf( file, inFormat, args );
-    fflush( file );
-  }
+  #define DX9PROFILE( __name ) BROOK_PROFILE( __name )
 
-#if defined(BROOK_DX9_TRACE)
-  inline void DX9Print( const char* inFormat, ... )
-  {
-    va_list args;
-    va_start( args, inFormat );
-    DX9Spew( inFormat, args );
-    va_end(args);
-  }
+  #define DX9LOG( __level ) \
+    BROOK_LOG( __level ) << "DX9 - "
 
-  inline void DX9Trace( const char* inFormat, ... )
-  {
-    static FILE* file = fopen( "./DX9RuntimeLog.txt", "w" );
+  #define DX9LOGPRINT( __level ) \
+    BROOK_LOG_PRINT( __level )
 
-    va_list args;
-    va_start( args, inFormat );
-    DX9Spew( inFormat, args );
-    va_end(args);
-    DX9Print( "\n" );
-  }
-#else
-  inline void DX9Print(...) {}
-  inline void DX9Trace(...) {}
-#endif
-
-  inline void DX9Warn( const char* inFormat, ... )
-  {
-    va_list args;
-    va_start( args, inFormat );
-    fprintf( stderr, "Brook Runtime (DirectX 9) Error:\n" );
-    vfprintf( stderr, inFormat, args );
-    fprintf( stderr, "\n" );
-    fflush( stderr );
-    va_end(args);
-  }
+  #define DX9WARN \
+    std::cerr << "Brook Runtime (dx9) - "
 
   inline void DX9AssertImpl( const char* fileName, int lineNumber, const char* comment )
   {
-    DX9Warn( "%s(%d): %s", fileName, lineNumber, comment );
+    DX9WARN << fileName << "(" << lineNumber << "): " << comment << std::endl;
     exit(1);
   }
 

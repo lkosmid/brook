@@ -8,7 +8,7 @@ DX9Stream* DX9Stream::create( DX9RunTime* inRuntime,
   int inFieldCount, const __BRTStreamType* inFieldTypes,
   int inDimensionCount, const int* inExtents )
 {
-  BROOK_PROFILE("DX9Stream::create")
+  DX9PROFILE("DX9Stream::create")
   
   DX9Stream* result = new DX9Stream( inRuntime );
   if( result->initialize( inFieldCount, inFieldTypes, inDimensionCount, inExtents ) )
@@ -33,13 +33,13 @@ bool DX9Stream::initialize(
   {
     if( runtime->isAddressTranslationOn() )
     {
-      DX9Warn("Unable to create stream with %d dimensions.\n"
-        "Dimensions must be greater than 0 and less than 5.", dimensionCount );
+      DX9WARN << "Unable to create stream with " << dimensionCount << " dimensions.\n"
+        << "Dimensions must be greater than 0 and less than 5.";
     }
     else
     {
-      DX9Warn("Unable to create stream with %d dimensions.\n"
-        "Dimensions must be greater than 0 and less than 3.", dimensionCount );
+      DX9WARN << "Unable to create stream with " << dimensionCount << " dimensions.\n"
+        << "Dimensions must be greater than 0 and less than 3.";
     }
     return false;
   }
@@ -50,9 +50,10 @@ bool DX9Stream::initialize(
     int extent = inExtents[d];
     if( (extent <= 0) || (!runtime->isAddressTranslationOn() && extent > kDX9MaximumTextureSize) )
     {
-      DX9Warn("Unable to create stream with extent %d in dimension %d.\n"
-        "Extent must be greater than 0 and less than or equal to %d.",
-        extent, d, kDX9MaximumTextureSize );
+      DX9WARN << "Unable to create stream with extent " << extent
+        << " in dimension " << d << ".\n"
+        << "Extent must be greater than 0 and less than or equal to "
+        << kDX9MaximumTextureSize << ".";
       return false;
     }
     extents.push_back(extent);
@@ -75,8 +76,9 @@ bool DX9Stream::initialize(
     }
     if( trialWidth > kDX9MaximumTextureSize )
     {
-      DX9Warn("Unable to create stream since total size of %d exceeds limit of %d.\n",
-        totalSize, kDX9MaximumTextureSize*kDX9MaximumTextureSize );
+      DX9WARN << "Unable to create stream since total size of "
+        << totalSize << " exceeds limit of "
+        << kDX9MaximumTextureSize*kDX9MaximumTextureSize << ".\n";
       return false;
     }
 
@@ -120,15 +122,15 @@ bool DX9Stream::initialize(
       fieldComponentCount=4;
       break;
     default:
-      DX9Warn( "Invalid element type for stream.\n",
-        "Only float, float2, float3 and float4 elements are supported." );
+      DX9WARN << "Invalid element type for stream.\n"
+        << "Only float, float2, float3 and float4 elements are supported.";
       return false;
     }
 
     DX9Texture* fieldTexture = DX9Texture::create( runtime, textureWidth, textureHeight, fieldComponentCount );
     if( fieldTexture == NULL )
     {
-      DX9Warn( "Texture allocation failed during sream initialization." );
+      DX9WARN << "Texture allocation failed during sream initialization.";
       return false;
     }
 
@@ -156,7 +158,7 @@ bool DX9Stream::initialize(
 }
 
 DX9Stream::~DX9Stream () {
-  DX9Trace("~DX9Stream");
+  DX9LOG(2) << "~DX9Stream";
   int fieldCount = (int)fields.size();
   for( int f = 0; f < fieldCount; f++ )
   {
@@ -165,7 +167,7 @@ DX9Stream::~DX9Stream () {
 }
 
 void DX9Stream::Read(const void *p) {
-  BROOK_PROFILE("DX9Stream::Read")
+  DX9PROFILE("DX9Stream::Read")
 
   if( systemDataBuffer != 0 && !gpuDataChanged )
   {
@@ -181,7 +183,7 @@ void DX9Stream::Read(const void *p) {
 }
 
 void DX9Stream::Write(void *p) {
-  BROOK_PROFILE("DX9Stream::Write")
+  DX9PROFILE("DX9Stream::Write")
 
   if( systemDataBuffer != 0 && !gpuDataChanged )
   {
@@ -352,6 +354,7 @@ void DX9Stream::releaseData(unsigned int flags)
 
 void DX9Stream::validateSystemData()
 {
+  DX9PROFILE("DX9Stream::validateSystemData")
   if( !gpuDataChanged ) return;
   this->WriteImpl( systemDataBuffer );
   gpuDataChanged = false;
@@ -365,6 +368,7 @@ void DX9Stream::markSystemDataChanged()
 
 void DX9Stream::validateGPUData()
 {
+  DX9PROFILE("DX9Stream::validateGPUData")
   if( systemDataChanged )
   {
     this->ReadImpl( systemDataBuffer );

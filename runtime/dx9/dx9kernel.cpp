@@ -11,6 +11,7 @@ static const char* PIXEL_SHADER_NAME_STRING = "ps20";
 
 DX9Kernel* DX9Kernel::create( DX9RunTime* inRuntime, const void* inSource[] )
 {
+  DX9PROFILE("DX9Kernel::create")
   DX9Kernel* result = new DX9Kernel( inRuntime );
   if( result->initialize( inSource ) )
     return result;
@@ -45,7 +46,7 @@ bool DX9Kernel::initialize( const void* inSource[] )
     i += 2;
   }
 
-  DX9Warn("Unable to find pixel shader 2.0 code.");
+  DX9WARN << "Unable to find pixel shader 2.0 code.";
   return false;
 }
 
@@ -54,7 +55,7 @@ bool DX9Kernel::initialize( const char** inProgramStrings )
   // must have least one shader
   if( *inProgramStrings == NULL )
   {
-    DX9Warn( "No attached ps20 pixel shaders found" );
+    DX9WARN << "No attached ps20 pixel shaders found";
     return false;
   }
 
@@ -89,7 +90,7 @@ bool DX9Kernel::initialize( const char** inProgramStrings )
     pass.pixelShader = DX9PixelShader::create( runtime, programString );
     if( pass.pixelShader == NULL )
     {
-      DX9Warn( "Failed to create a kernel pass pixel shader" );
+      DX9WARN << "Failed to create a kernel pass pixel shader";
       return false;
     }
 
@@ -165,6 +166,7 @@ DX9Kernel::~DX9Kernel()
 }
 
 void DX9Kernel::PushStream(Stream *s) {
+  DX9PROFILE("DX9Kernel::PushStream")
   int arg = argumentIndex++;
   DX9Stream* stream = (DX9Stream*)s;
 
@@ -196,14 +198,16 @@ void DX9Kernel::PushStream(Stream *s) {
 
 void DX9Kernel::PushIter(class Iter * v)
 {
+  DX9PROFILE("DX9Kernel::PushIter")
   int arg = argumentIndex++;
   DX9Iter* iterator = (DX9Iter*)v;
   PushTexCoord( iterator->getRect() );
 }
 
 void DX9Kernel::PushReduce(void * val, __BRTStreamType type) {
+  DX9PROFILE("DX9Kernel::PushReduce")
   int arg = argumentIndex++;
-  DX9Trace("PushReduce");
+  DX9LOG(1) << "PushReduce";
   
   outputReductionDatas.push_back(val);
   outputReductionTypes.push_back(type);
@@ -243,11 +247,13 @@ void DX9Kernel::PushConstant(const float3 &val) {
 }
 
 void DX9Kernel::PushConstant(const float4 &val) {
+  DX9PROFILE("DX9Kernel::PushConstant")
   argumentIndex++;
   PushConstantImpl(val);
 }
 
 void DX9Kernel::PushGatherStream(Stream *s) {
+  DX9PROFILE("DX9Kernel::PushGatherStream")
   argumentIndex++;
   DX9Stream* stream = (DX9Stream*)s;
 
@@ -268,7 +274,8 @@ void DX9Kernel::PushGatherStream(Stream *s) {
 }
 
 void DX9Kernel::PushOutput(Stream *s) {
-  DX9Trace("PushOutput");
+  DX9PROFILE("DX9Kernel::PushOutput")
+  DX9LOG(1) << "PushOutput";
   int arg = argumentIndex++;
 
   DX9Stream* stream = (DX9Stream*)s;
@@ -316,6 +323,7 @@ void DX9Kernel::PushOutput(Stream *s) {
 
 void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
 {
+  DX9PROFILE("DX9Kernel::mapPass")
   HRESULT result;
   int i;
 
@@ -393,7 +401,8 @@ void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )
 }
 
 void DX9Kernel::Map() {
-  DX9Trace("Map");
+  DX9PROFILE("DX9Kernel::Map")
+  DX9LOG(1) << "Map";
 
   if( runtime->isAddressTranslationOn() )
   {
@@ -447,7 +456,8 @@ void DX9Kernel::Map() {
 }
 
 void DX9Kernel::Reduce() {
-  DX9Trace("Reduce");
+  DX9PROFILE("DX9Kernel::Reduce")
+  DX9LOG(1) << "Reduce";
 
   DX9Assert( outputReductionTypes.size() == 1,
     "Must have one and only one reduction output for now" );
@@ -489,6 +499,7 @@ void DX9Kernel::Reduce() {
 
 void DX9Kernel::PushSamplers( DX9Stream* s )
 {
+  DX9PROFILE("DX9Kernel::PushSamplers")
   int textureCount = s->getSubstreamCount();
   for( int i = 0; i < textureCount; i++ )
   {
@@ -498,6 +509,7 @@ void DX9Kernel::PushSamplers( DX9Stream* s )
 
 void DX9Kernel::PushTexCoord( const DX9FatRect& r )
 {
+  DX9PROFILE("DX9Kernel::PushTexCoord")
   inputTextureRects.push_back(r);
 }
 
@@ -509,6 +521,7 @@ int DX9Kernel::PushConstantImpl(const float4 &val) {
 
 void DX9Kernel::ClearInputs()
 {
+  DX9PROFILE("DX9Kernel::ClearInputs")
   argumentIndex = 0;
   hasPushedOutputIndexof = false;
   mustMatchShapeStream = NULL;
@@ -554,6 +567,7 @@ void DX9Kernel::matchStreamShape( DX9Stream* inStream )
 
 void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
 {
+  DX9PROFILE("DX9Kernel::ReduceToStream")
   DX9Texture* outputBuffer = inOutputBuffer;
   int outputWidth = outputBuffer->getWidth();
   int outputHeight = outputBuffer->getHeight();
@@ -624,6 +638,7 @@ void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
 
 void DX9Kernel::bindReductionPassShader( int inFactor )
 {
+  DX9PROFILE("DX9Kernel::bindReductionPassShader")
   ReductionPass& reductionPass = reductionPasses[ inFactor - 2 ];
   DX9Assert( reductionPass.standardPasses.size() == 1, "Must have single-pass completion for reductions" );
   HRESULT result = device->SetPixelShader( reductionPass.standardPasses[0].pixelShader->getHandle() );
@@ -632,6 +647,7 @@ void DX9Kernel::bindReductionPassShader( int inFactor )
 
 void DX9Kernel::beginReduction( ReductionState& ioState )
 {
+  DX9PROFILE("DX9Kernel::beginReduction")
   HRESULT result;
 
   ioState.inputTexture->validateCachedData();
@@ -674,7 +690,8 @@ void DX9Kernel::beginReduction( ReductionState& ioState )
 
 void DX9Kernel::executeReductionStep( ReductionState& ioState )
 {
-  DX9Trace( "Reduction Step" );
+  DX9PROFILE("DX9Kernel::executeReductionStep")
+  DX9LOG(3) << "Reduction Step";
 
   HRESULT result;
 
@@ -817,7 +834,8 @@ void DX9Kernel::executeReductionStep( ReductionState& ioState )
 
 void DX9Kernel::executeSlopStep( ReductionState& ioState )
 {
-  DX9Trace( "Slop Step" );
+  DX9PROFILE("DX9Kernel::executeSlopStep")
+  DX9LOG(3) << "Slop Step";
 
   HRESULT result;
 
@@ -859,6 +877,7 @@ void DX9Kernel::executeSlopStep( ReductionState& ioState )
 
 void DX9Kernel::endReduction( ReductionState& ioState )
 {
+  DX9PROFILE("DX9Kernel::endReduction")
   int outputWidth = ioState.targetExtents[0];
   int outputHeight = ioState.targetExtents[1];
 
@@ -879,7 +898,7 @@ void DX9Kernel::endReduction( ReductionState& ioState )
 
   ioState.outputTexture->markCachedDataChanged();
 
-  DX9Trace( "************ Result *************" );
+  DX9LOG(3) << "************ Result *************";
   dumpReductionBuffer( outputBuffer, 1, 1 );
 
   ClearInputs();
@@ -887,19 +906,19 @@ void DX9Kernel::endReduction( ReductionState& ioState )
 
 void DX9Kernel::dumpReductionState( ReductionState& ioState )
 {
-  DX9Trace( "********************* Reduction Dump *************" );
+  DX9LOG(3) << "********************* Reduction Dump *************";
   int dim = ioState.currentDimension;
   int buffer = ioState.whichBuffer;
  
   if( buffer == -1 )
   {
-    DX9Trace( "Input" );
+    DX9LOG(3) << "Input";
     dumpReductionBuffer( ioState.inputTexture,
       ioState.currentExtents[0], ioState.currentExtents[1] );
   }
   else
   {
-    DX9Trace( "Buffer" );
+    DX9LOG(3) << "Buffer";
     ioState.reductionBuffers[buffer]->markCachedDataChanged();
     dumpReductionBuffer( ioState.reductionBuffers[buffer],
       ioState.currentExtents[0], ioState.currentExtents[1] );
@@ -912,7 +931,7 @@ void DX9Kernel::dumpReductionState( ReductionState& ioState )
     slopExtents[1] = ioState.currentExtents[1];
     slopExtents[dim] = ioState.targetExtents[dim];
 
-    DX9Trace( "Slop" );
+    DX9LOG(3) << "Slop";
     ioState.slopBuffer->markCachedDataChanged();
     dumpReductionBuffer( ioState.slopBuffer, slopExtents[0], slopExtents[1] );
   }
@@ -941,12 +960,15 @@ void DX9Kernel::dumpReductionBuffer( DX9Texture* inBuffer, int inWidth, int inHe
     for( int x = 0; x < w; x++ )
     {
       if( x > 0 && x % 5 == 0 )
-        DX9Print( "\n\t" );
+        DX9LOGPRINT(3) << "\n\t";
 
       float4 value = *pixel++;
-      DX9Print( "{%4.2f %4.2f %4.2f %4.2f} ", value.x, value.y, value.z, value.w );
+      DX9LOGPRINT(3) << "{" << value.x
+        << " " << value.y
+        << " " << value.z
+        << " " << value.w << "}";
     }
     line += bufferWidth;
-    DX9Print( "\n" );
+    DX9LOGPRINT(3) << std::endl;
   }
 }

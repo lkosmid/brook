@@ -30,12 +30,12 @@ bool DX9PixelShader::initialize( const char* inSource )
 	if( errorBuffer != NULL )
   {
     const char* errorMessage = (const char*)errorBuffer->GetBufferPointer();
-    DX9Warn( "Pixel shader failed to compile:\n%s", errorMessage );
+    DX9WARN << "Pixel shader failed to compile:\n" << errorMessage;
     return false;
   }
   else if( FAILED(result) )
   {
-    DX9Warn( "Pixel shader failed to compile." );
+    DX9WARN << "Pixel shader failed to compile.";
     return false;
   }
 
@@ -45,7 +45,7 @@ bool DX9PixelShader::initialize( const char* inSource )
 
 	if( FAILED(result) )
   {
-    DX9Warn( "Failed to allocate pixel shader." );
+    DX9WARN << "Failed to allocate pixel shader.";
     return false;
   }
   return true;
@@ -53,6 +53,7 @@ bool DX9PixelShader::initialize( const char* inSource )
 
 DX9PixelShader* DX9PixelShader::create( DX9RunTime* inContext, const char* inSource )
 {
+  DX9PROFILE("DX9PixelShader::create")
 	DX9PixelShader* result = new DX9PixelShader( inContext );
   if( result->initialize( inSource ) )
     return result;

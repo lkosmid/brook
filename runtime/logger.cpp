@@ -53,10 +53,17 @@ namespace internal {
         instance.stream = &(std::cerr);
     }
 
-    std::ostream& result = *instance.stream;
+    return *instance.stream;
+  }
+
+  void Logger::printPrefix() {
+    Logger& instance = getInstance();
     if( instance.prefix )
-      result << instance.prefix;
-    return result;
+      getStream() << instance.prefix;
+  }
+
+  void Logger::printSuffix() {
+    getStream() << std::endl;
   }
 
   void Logger::setLevel( int inLevel ) {

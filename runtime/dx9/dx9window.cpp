@@ -19,6 +19,7 @@ DX9Window::~DX9Window()
 
 DX9Window* DX9Window::create()
 {
+  DX9PROFILE("DX9Window::create")
 	DX9Window* result = new DX9Window();
 	return result;
 }

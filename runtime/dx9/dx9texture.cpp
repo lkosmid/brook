@@ -41,15 +41,16 @@ bool DX9Texture::initialize()
     dxFormat = D3DFMT_A32B32G32R32F;
     break;
   default:
-    DX9Warn( "Invalid component count %d for texture.\n",
-      "Only 1,2,3 and 4-component floating point textures are supported." );
+    DX9WARN << "Invalid component count %d for texture." << std::endl
+      << "Only 1,2,3 and 4-component floating point textures are supported.";
     return false;
   }
 
 	result = device->CreateTexture( width, height, 1, D3DUSAGE_RENDERTARGET, dxFormat, D3DPOOL_DEFAULT, &textureHandle, NULL );
   if( FAILED( result ) )
   {
-    DX9Warn( "Unable to create floating-point render target texture of size %d x %d.", width, height );
+    DX9WARN << "Unable to create floating-point render target texture of size "
+      << width << " by " << height << ".";
     return false;
   }
 	result = textureHandle->GetSurfaceLevel( 0, &surfaceHandle );
@@ -58,7 +59,8 @@ bool DX9Texture::initialize()
 	result = device->CreateOffscreenPlainSurface( width, height, dxFormat, D3DPOOL_SYSTEMMEM, &shadowSurface, NULL );
   if( FAILED( result ) )
   {
-    DX9Warn( "Unable to create floating-point plain surface of size %d x %d.", width, height );
+    DX9WARN << "Unable to create floating-point plain surface of size "
+      << width << " by " << height << ".";
     return false;
   }
 	return true;
@@ -66,7 +68,7 @@ bool DX9Texture::initialize()
 
 DX9Texture::~DX9Texture()
 {
-  DX9Trace("~DX9Texture");
+  DX9LOG(2) << "~DX9Texture";
   if( shadowSurface != NULL )
     shadowSurface->Release();
   if( surfaceHandle != NULL )
@@ -79,6 +81,7 @@ DX9Texture::~DX9Texture()
 
 DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents  )
 {
+  DX9PROFILE("DX9Texture::create")
   DX9Texture* result = new DX9Texture( inContext, inWidth, inHeight, inComponents );
   if( result->initialize() )
     return result;
@@ -88,7 +91,7 @@ DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight
 
 void DX9Texture::setData( const float* inData, unsigned int inStride, unsigned int inCount  )
 {
-  BROOK_PROFILE("DX9Texture::setData")
+  DX9PROFILE("DX9Texture::setData")
 
 	setShadowData( inData, inStride, inCount  );
   markShadowDataChanged();
@@ -96,7 +99,7 @@ void DX9Texture::setData( const float* inData, unsigned int inStride, unsigned i
 
 void DX9Texture::getData( float* outData, unsigned int inStride, unsigned int inCount  )
 {
-  BROOK_PROFILE("DX9Texture::getData")
+  DX9PROFILE("DX9Texture::getData")
 
   if( dirtyFlags & kShadowDataDirty )
     flushCachedToShadow();
@@ -121,7 +124,7 @@ void DX9Texture::validateCachedData()
 
 void DX9Texture::flushCachedToShadow()
 {
-  BROOK_PROFILE("DX9Texture::flushCachedToShadow")
+  DX9PROFILE("DX9Texture::flushCachedToShadow")
 
   HRESULT result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
 	DX9AssertResult( result, "Failed to copy floating-point render target to plain surface." );
@@ -130,7 +133,7 @@ void DX9Texture::flushCachedToShadow()
 
 void DX9Texture::flushShadowToCached()
 {
-  BROOK_PROFILE("DX9Texture::flushShadowToCached")
+  DX9PROFILE("DX9Texture::flushShadowToCached")
 
   HRESULT result = device->UpdateSurface( shadowSurface, NULL, surfaceHandle, NULL );
 	DX9AssertResult( result, "Failed to copy floating-point plain surface to render target." );
@@ -139,7 +142,7 @@ void DX9Texture::flushShadowToCached()
 
 void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned int inCount  )
 {
-  BROOK_PROFILE("DX9Texture::getShadowData")
+  DX9PROFILE("DX9Texture::getShadowData")
 
   HRESULT result;
 
@@ -181,7 +184,7 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
 
 void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsigned int inCount  )
 {
-  BROOK_PROFILE("DX9Texture::setShadowData")
+  DX9PROFILE("DX9Texture::setShadowData")
 
   HRESULT result;
 	D3DLOCKED_RECT info;

@@ -44,6 +44,7 @@ static const char* kPassthroughPixelShaderSource =
 
 DX9RunTime* DX9RunTime::create( bool inAddressTranslation, void* inContextValue )
 {
+  DX9PROFILE("DX9RunTime::create")
   DX9RunTime* result = new DX9RunTime( inAddressTranslation );
   if( result->initialize( inContextValue ) )
     return result;
@@ -81,7 +82,7 @@ bool DX9RunTime::initialize( void* inContextValue )
     window = DX9Window::create();
     if( window == NULL )
     {
-      DX9Warn("Could not create offscreen window.");
+      DX9WARN << "Could not create offscreen window.";
       return false;
     }
     HWND windowHandle = window->getWindowHandle();
@@ -89,7 +90,7 @@ bool DX9RunTime::initialize( void* inContextValue )
 	  direct3D = Direct3DCreate9( D3D_SDK_VERSION );
     if( direct3D == NULL )
     {
-      DX9Warn("Could not create Direct3D interface.");
+      DX9WARN << "Could not create Direct3D interface.";
       return false;
     }
 
@@ -106,7 +107,7 @@ bool DX9RunTime::initialize( void* inContextValue )
 		  D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &device );
     if( FAILED(result) )
     {
-      DX9Warn("Could not create Direct3D device.");
+      DX9WARN << "Could not create Direct3D device.";
       return false;
     }
   }
@@ -118,14 +119,14 @@ bool DX9RunTime::initialize( void* inContextValue )
   passthroughVertexShader = DX9VertexShader::create( this, kPassthroughVertexShaderSource );
   if( passthroughVertexShader == NULL )
   {
-    DX9Warn("Could not create passthrough vertex shader.");
+    DX9WARN << "Could not create passthrough vertex shader.";
     return false;
   }
 
   passthroughPixelShader = DX9PixelShader::create( this, kPassthroughPixelShaderSource );
   if( passthroughPixelShader == NULL )
   {
-    DX9Warn("Could not create passthrough pixel shader.");
+    DX9WARN << "Could not create passthrough pixel shader.";
     return false;
   }
 
@@ -183,6 +184,7 @@ Iter* DX9RunTime::CreateIter(
 
 void DX9RunTime::execute( const DX9FatRect& outputRect, int inputRectCount, const DX9FatRect* inputRects )
 {
+  DX9PROFILE("DX9RunTime::execute")
   HRESULT result;
   initializeVertexBuffer();
 
