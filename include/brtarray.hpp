@@ -5,6 +5,7 @@
 template <class VALUE, unsigned int dims, bool copy_data> class __BrtArray {
 	unsigned int extents[dims];
 	VALUE * data;
+	brook::Stream * s;
 	unsigned int getSize() const{
 			unsigned int size=1;
 			for (unsigned int i=0;i<dims;++i) {
@@ -12,8 +13,7 @@ template <class VALUE, unsigned int dims, bool copy_data> class __BrtArray {
 			}
 			return size;
 	}
-public:
-	__BrtArray(VALUE * data, const unsigned int *extents) {
+	void init(VALUE * data, const unsigned int *extents) {
 		for (unsigned int i=0;i<dims;++i) {
 			this->extents[i]=extents[i];
 		}		
@@ -26,6 +26,16 @@ public:
 		}
 
 	}
+
+public:
+	__BrtArray(VALUE * data, const unsigned int *extents):s(0) {
+		init(data,extents);
+	}
+	__BrtArray(brook::Stream * stm):s(0) {
+		init(stm->getData(brook::Stream::READ),stm->getExtents());
+		if (copy_data) stm->releaseData(brook::Stream::READ);
+		else this->s=stm;
+	}
 	__BrtArray& operator = (const __BrtArray<VALUE,dims,copy_data> &c) {
 		for (unsigned int i=0;i<dims;++i) {
 			extents[i]=c.extents[i];
@@ -35,15 +45,26 @@ public:
 			unsigned int size = getSize();
 			this->data = (VALUE *)malloc(sizeof(VALUE)*size);
 			memcpy(this->data,c.data,sizeof(VALUE)*size);
+		}else {
+                   brook::Stream * tmpstr=this->s;
+                   if (c.s) {
+                      this->s=c.s;
+                      this->data=this->s->getData(brook::Stream::READ);
+                   }
+                   if (tmpstr) {
+                      tmpstr->releaseData(brook::Stream::READ);
+                   }
 		}
 		return *this;
 	}
-	__BrtArray(const __BrtArray <VALUE,dims,copy_data>&c) {
+	__BrtArray(const __BrtArray <VALUE,dims,copy_data>&c):s(0){
 		*this=c;
 	}
 	~__BrtArray() {
 		if (copy_data)
 			free(this->data);
+		if (s)
+			s->releaseData(brook::Stream::READ);
 	}
 	template <class T> unsigned int indexOf (const T &index) const{
            unsigned int i=T::size-1;

@@ -10,7 +10,7 @@
 #include "nv30gl/nv30gl.hpp"
 #include "cpu/cpu.hpp"
 #include "brtscatterintrinsic.hpp"
-__StreamScatterAssign STREAM_SCATTERASSIGN;
+__StreamScatterAssign STREAM_SCATTER_ASSIGN;
 __StreamScatterAdd STREAM_SCATTER_ADD;
 __StreamScatterMul STREAM_SCATTER_MUL;
 

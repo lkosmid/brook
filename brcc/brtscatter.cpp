@@ -13,6 +13,7 @@
 #include "brtdecl.h"
 #include "brtexpress.h"
 #include "project.h"
+#include "brtkernel.h"
 using std::endl;
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BRTScatterDef::BRTScatterDef(const FunctionDef& fDef)
@@ -57,23 +58,35 @@ BRTScatterDef::print(std::ostream& out, int) const {
       }
    }
    out << "class ";
+   std::string classname=name;
    if (extraArgs.empty())
-      out << "__"; 
-   out <<name << "{ public:"<<endl;
+      classname="__"+classname+"_scatterclass";
+   else
+      classname="__"+classname+"_scatter";
+   out << classname << "{ public:"<<endl;
    FunctionDef * fdef = static_cast<FunctionDef *>(this->dup());
    Brook2Cpp_ConvertKernel(fdef);
    decl = static_cast<FunctionType*> (fdef->decl->form);   
    for (i=0;i<extraArgs.size();++i) {
-      decl->args[extraArgs[i]]->print(out,1,1);
+      BRTCPUKernelCode::PrintCPUArg(decl->args[extraArgs[i]],
+                                    extraArgs[i],
+                                    false,
+                                    true).printCPU(out,
+                                                   BRTCPUKernelCode::
+                                                   PrintCPUArg::HEADER);
       out << ";"<<endl;
    }
    if (extraArgs.size()) {
       indent(out,1);
-      out << name << "(";
+      out << classname << "(";
       for (i=0;i<extraArgs.size();++i) {
          if (i!=0)
             out << ", ";
-         decl->args[extraArgs[i]]->print(out,1);
+         BRTCPUKernelCode::PrintCPUArg(decl->args[extraArgs[i]],
+                                       extraArgs[i],
+                                       false,
+                                       true).printCPU(out,BRTCPUKernelCode::
+                                                      PrintCPUArg::HEADER);
 
       }
       out << "): ";
@@ -94,7 +107,7 @@ BRTScatterDef::print(std::ostream& out, int) const {
    }
    out << "}";
    if (extraArgs.empty())
-      out << name;
+      out << "__"+name+"_scatter";
    out << ";"<<endl;
 
    delete fdef;

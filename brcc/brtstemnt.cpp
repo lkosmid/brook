@@ -91,7 +91,7 @@ BRTKernelDef::print(std::ostream& out, int) const
    printStub(out);
 #undef PRINT_IF_NEEDED
    if (decl->isReduce()) {
-      //      BRTScatterDef(*BRTCPUReduceCode(*this).fDef).print(out,0);
+      BRTScatterDef(*BRTCPUReduceCode(*this).fDef).print(out,0);
    }
 }
 
