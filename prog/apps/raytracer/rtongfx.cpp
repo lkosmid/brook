@@ -19,9 +19,12 @@ extern void TraceRays( float lookfromX, float lookfromY, float lookfromZ,
 		       float gridminX, float gridminY, float gridminZ,
 		       float gridmaxX, float gridmaxY, float gridmaxZ,
 		       float griddimX, float griddimY, float griddimZ,
+		       int numvox,
 		       float gridvsizeX, float gridvsizeY, float gridvsizeZ,
-		       int* grid_trilist_offset, int* grid_trilist,
-		       int numtris, int numvox, int trilistsize,
+		       int* grid_trilist_offset,
+		       int* grid_trilist,
+		       int trilistsize,
+		       int numtris, 
 		       float* triv0, float* triv1, float* triv2,
 		       float* trin0, float* trin1, float* trin2,
 		       float* tric0, float* tric1, float* tric2,
@@ -30,8 +33,9 @@ extern void TraceRays( float lookfromX, float lookfromY, float lookfromZ,
   
 
 //variables
-float W = 512.0f;
-float H = 512.0f;
+float W = 256;
+float H = 256;
+
 float scale = 1.0f;
 
 ppmImage img((int)W, (int)H);
@@ -90,6 +94,8 @@ void CreateCamera(){
 
 
 int main(int argc, char **argv){
+
+  // grid_bitmap is unused in the rest of the application
   ReadVoxFile( infile, grid_dim, grid_min, grid_max, grid_vsize, grid_bitmap,
 	       grid_trilist_offset, grid_trilist_size, grid_trilist, numtris,
                v0, v1, v2, n0, n1, n2, c0, c1, c2 );
@@ -110,9 +116,12 @@ int main(int argc, char **argv){
 	     grid_min.x, grid_min.y, grid_min.z,
 	     grid_max.x, grid_max.y, grid_max.z,
 	     (float)grid_dim.x, (float)grid_dim.y, (float)grid_dim.z,
+	     grid_dim.x*grid_dim.y*grid_dim.z,
 	     grid_vsize.x, grid_vsize.y, grid_vsize.z,
-	     grid_trilist_offset, grid_trilist,
-	     numtris, grid_dim.x*grid_dim.y*grid_dim.z, grid_trilist_size,
+	     grid_trilist_offset,
+	     grid_trilist,
+	     grid_trilist_size,
+	     numtris, 
 	     (float*)v0, (float*)v1, (float*)v2,
 	     (float*)n0, (float*)n1, (float*)n2,
 	     (float*)c0, (float*)c1, (float*)c2,
