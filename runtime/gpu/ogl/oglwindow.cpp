@@ -374,7 +374,7 @@ OGLWindow::bindPbuffer(unsigned int width,
   /* If the pbuffer of the right size is already active,
   ** return immediately
   */
-  if (currentPbufferComponents == numComponents &&
+  if (currentPbufferComponents >= numComponents &&
       currentPbufferOutputs >= numOutputs &&
       currentPbufferWidth >= width &&
       currentPbufferHeight >= height)
