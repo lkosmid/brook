@@ -12,7 +12,6 @@ namespace brook {
   class GPUKernel : public Kernel {
   public:
     typedef GPUContext::TextureHandle TextureHandle;
-    typedef GPUContext::TextureHandle TextureHandle;
     typedef GPUContext::PixelShaderHandle PixelShaderHandle;
     typedef GPUContext::VertexShaderHandle VertexShaderHandle;
 
