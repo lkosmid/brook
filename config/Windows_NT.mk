@@ -17,7 +17,7 @@ SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32 Winmm
 # /w34505: Enabled warning 4505 (unreferenced static function) at level 3
 # I turned it off for now since gcc should pick this up.
 
-CFLAGS   += /nologo /MDd /W3 /DBUILD_OGL /DBUILD_DX9 /DWIN32 /DWINDOWS /EHsc /Zm500
+CFLAGS   += /nologo /W3 /DBUILD_OGL /DBUILD_DX9 /DWIN32 /DWINDOWS /EHsc /Zm500
 
 ifndef I_AM_SLOPPY
 # /WX: Make warnings fatal
@@ -25,8 +25,8 @@ CFLAGS           += /WX
 endif
 
 C_INCLUDE_FLAG   := /I
-C_DEBUG_FLAG     := /Zi /Yd /GZ /Fd$(OBJDIR)\\
-C_RELEASE_FLAG   := /Ogisyb2 /Gs /arch:SSE2 /G7 /DNDEBUG 
+C_DEBUG_FLAG     := /MLd /Zi /Yd /GZ /Fd$(OBJDIR)\\
+C_RELEASE_FLAG   := /ML /Ogisyb2 /Gs /arch:SSE2 /G7 /DNDEBUG 
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := /Fo
 C_COMPILE_FLAG   := /c
