@@ -1,6 +1,10 @@
 #ifndef BRT_HPP
 #define BRT_HPP
 
+extern "C" {
+#include <assert.h>
+};
+
 //vector is needed by the output of the compilation
 typedef struct {
   float x,y;
@@ -32,6 +36,7 @@ namespace brook {
   public:
     Kernel() {}
     virtual void PushStream(Stream *s) = 0;
+    virtual void PushIter(...) { assert(0); };
     virtual void PushConstant(const float &val) = 0;  
     virtual void PushConstant(const float2 &val) = 0;  
     virtual void PushConstant(const float3 &val) = 0; 
@@ -87,6 +92,12 @@ public:
 private:
   __BRTStream( const __BRTStream& ); // no copy constructor
   brook::Stream* stream;
+};
+
+class __BRTIter {
+public:
+  __BRTIter(...) { assert(0); };
+  ~__BRTIter() { assert(0); };
 };
 
 class __BRTKernel {

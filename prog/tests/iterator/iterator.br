@@ -3,32 +3,29 @@
  *
  *      Simple demo / regression test for iterator pseudo-streams.
  */
+
 #include <stdio.h>
 
 /* This kernel should make a matrix of 1 and a diagonal of 0's*/
 kernel void
-iterator_test (float d_prime<>, float d[10][10], out float e<>)
+iterator_test (float d<>, iter float iterator<>, out float e<>)
 {
-  e = ((d_prime == d[indexof(d_prime)]) &&
-       (d_prime == d[indexof(d_prime)]) &&
-       (d_prime == d[(indexof d_prime ).xy]) &&
-       (d_prime != d[(indexof d_prime ).yx]));
+   e = iterator + d;
 }
 
 int
 main (int argc, char *argv[]) {
-   float2 iter<200, 100> = BRTIter(0.0f, 0.0f, 200.0f, 100.0f);
-   float d<10, 10>;
-   float e<10, 10>;
+   iter float2 ian<200, 100> = BRTIter(0.0f, 0.0f, 200.0f, 100.0f);
+   iter float tim<10> = BRTIter(0.0f, 200.0f);
+   float d<10>;
+   float e<10>;
 
-   float data_d[10][10];
-   float data_e[10][10];
-   int i,j;
+   float data_d[10];
+   float data_e[10];
+   int i;
 
    for (i=0; i<10; i++) {
-      for (j=0; j<10; j++) {
-         data_d[i][j] = ((float) i) / 100.0f;
-      }
+      data_d[i] = ((float) i) / 100.0f;
    }
 
    streamRead(d, data_d);
@@ -36,10 +33,8 @@ main (int argc, char *argv[]) {
    streamWrite(e, data_e);
 
    for (i=0; i<10; i++) {
-     for (j=0; j<10; j++) {
-       printf("%3.2f ", data_e[i][j]);
-     }
-     printf("\n");
+      printf("%3.2f ", data_e[i]);
    }
+   printf("\n");
    return 0;
 }
