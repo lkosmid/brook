@@ -88,7 +88,7 @@ namespace brook {
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* BRT_RUNTIME env variable is    *\n");
       fprintf (stderr,"* not set. Defaulting to CPU     *\n");
-      fprintf (stderr,"* rutime.                        *\n");
+      fprintf (stderr,"* runtime.                       *\n");
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* CPU Backend:                   *\n");
       fprintf (stderr,"* BRT_RUNTIME = cpu              *\n");
