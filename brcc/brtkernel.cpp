@@ -524,7 +524,7 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
     }}
     initializeIndexOf(out);
     if (reduceneeded) {
-       indent(out,1); out << "if (mapbegin!=0&&mapbegin<mapend) {"<<std::endl;
+       indent(out,1); out << "if (mapbegin<mapend) {"<<std::endl;
        indent(out,2); out << "unsigned int i=mapbegin;"<<std::endl;
        
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
