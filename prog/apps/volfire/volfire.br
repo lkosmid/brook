@@ -1,0 +1,178 @@
+/* This code is heavily based on Yury Uralsky's Volumetric Fire shader
+on www.cgshaders.org.  The noise function has been changed slightly
+and a few other changes have been made during the port to Brook.  The
+largest of these changes being that we are not actually rendering, but
+only doing the simulation, so we don't have a vertex program.
+Therefore we need to force the user to provide some of the information
+and we need to generate some of it ourselves in the code below. */
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+kernel float noise4(float4 vec, float p[], float4 g[])
+{
+    float4 b0, b1, r0, r1;
+    float4 u, v, u0, v0, u1, v1;
+    float i0, i1, i00, i10, i01, i11;
+    float i000, i100, i010, i110, i001, i101, i011, i111;
+    float4 temp;
+    float4 s;
+    float2 a;
+
+    r0 = modf(vec, b0);
+    b1 = b0 + 1;
+    r1 = r0 - 1;
+    b0 = fmod(b0, 256.);  //hardcoded texture size probably not the best idea...
+    b1 = fmod(b1, 256.);
+
+    // our streams (texture) are 1d, so we only need certain parts of
+    // the coordinates space
+
+    i0 = p[b0.x];
+    i1 = p[b1.x];
+
+    i00 = p[i0 + b0.y];
+    i10 = p[i1 + b0.y];
+    i01 = p[i0 + b1.y];
+    i11 = p[i1 + b1.y];
+
+    i000 = p[i00 + b0.z];
+    i100 = p[i10 + b0.z];
+    i010 = p[i01 + b0.z];
+    i110 = p[i11 + b0.z];
+    i001 = p[i00 + b1.z];
+    i101 = p[i10 + b1.z];
+    i011 = p[i01 + b1.z];
+    i111 = p[i11 + b1.z];
+
+    // sample 16 neighbors and calculate 16 dot-products
+
+    // sample at x = 0
+    u0.x = dot(g[i000 + b0.w], r0);
+    temp = float4(0., 1., 0., 0.);
+    temp = temp > 0. ? r1:r0;
+    u0.y = dot(g[i010 + b0.w], temp);
+    temp = float4(0., 0., 0., 1.);
+    temp = temp > 0. ? r1:r0;
+    u0.z = dot(g[i000 + b1.w], temp);
+    temp = float4(0., 1., 0., 1.);
+    temp = temp > 0. ? r1:r0;
+    u0.w = dot(g[i010 + b1.w], temp);
+    temp = float4(0., 0., 1., 0.);
+    temp = temp > 0. ? r1:r0;
+    v0.x = dot(g[i001 + b0.w], temp);
+    temp = float4(0., 1., 1., 0.);
+    temp = temp > 0. ? r1:r0;
+    v0.y = dot(g[i011 + b0.w], temp);
+    temp = float4(0., 0., 1., 1.);
+    temp = temp > 0. ? r1:r0;
+    v0.z = dot(g[i001 + b1.w], temp);
+    temp = float4(0., 1., 1., 1.);
+    temp = temp > 0. ? r1:r0;
+    v0.w = dot(g[i011 + b1.w], temp);
+
+    // sample at x = 1
+    temp = float4(1., 0., 0., 0.);
+    temp = temp > 0. ? r1:r0;
+    u1.x = dot(g[i100 + b0.w], temp);
+    temp = float4(1., 1., 0., 0.);
+    temp = temp > 0. ? r1:r0;
+    u1.y = dot(g[i110 + b0.w], temp);
+    temp = float4(1., 0., 0., 1.);
+    temp = temp > 0. ? r1:r0;
+    u1.z = dot(g[i100 + b1.w], temp);
+    temp = float4(1., 1., 0., 1.);
+    temp = temp > 0. ? r1:r0;
+    u1.w = dot(g[i110 + b1.w], temp);
+    temp = float4(1., 0., 1., 0.);
+    temp = temp > 0. ? r1:r0;
+    v1.x = dot(g[i101 + b0.w], temp);
+    temp = float4(1., 1., 1., 0.);
+    temp = temp > 0. ? r1:r0;
+    v1.y = dot(g[i111 + b0.w], temp);
+    temp = float4(1., 0., 1., 1.);
+    temp = temp > 0. ? r1:r0; 
+    v1.z = dot(g[i101 + b1.w], temp);
+    v1.w = dot(g[i111 + b1.w], r1);
+
+    // now, perform quadro-cubic interpolation between these 16 noise samples
+
+    s = r0*r0*(3-2*r0);
+
+    // interpolation in 4d-space requires 15 1d interpolations,
+    // but thanks to parallel nature of lerp instruction and some swizzling
+    // we can do the same with only 5 lerp instructions
+
+    // lerp between two pairs of 8 values along x axis
+
+    u = lerp(u0, u1, s.x);
+    v = lerp(v0, v1, s.x);
+
+    // lerp between two pairs of 4 values (resulted from the previous lerp) along z axis
+
+    u = lerp(u, v, s.z);
+
+    // now, lerp between two pairs of 2 values along y axis
+
+    a = lerp(u.xz, u.yw, s.y);
+
+    // finally, lerp along w axis
+
+    return abs(lerp(a.x, a.y, s.w));
+}
+
+// turbulence in 4 dimensions - add 5 octaves of gradient noise at different
+// frequencies
+
+kernel float turbulence4(float4 vec, float p[], float4 g[])
+{
+    float n, i;
+
+    n = noise4(vec, p, g) +
+        0.5 * noise4(vec * 2.0, p, g) +
+        0.25 * noise4(vec * 4.0, p, g) +
+        0.125 * noise4(vec * 8.0, p, g) +
+        0.0625 * noise4(vec * 16.0, p, g);
+
+    return n;
+}
+
+
+kernel void fireFP(float  p[],       // permutations texture
+                   float4 g[],       // random gradient 4d vectors texture
+                   float4 firetex[][], // color texture
+                   float turb_scale, // turbulence scale
+                   float z_pos,      // what slice do you want?
+                   float time,       // the time factor 
+                   iter float4 it<>, // hold position information
+                   out float4 fire<>)
+{
+
+    //normally, we would be dealing with actual vertex data...
+    //but we are going to hack it.
+
+    float2 uv;
+    float4 v;
+    float4 frag_pos;
+	
+    frag_pos = it;
+    uv.x = frag_pos.x;
+    uv.y = z_pos;
+    uv += uv;
+    uv *= uv;
+
+    v = frag_pos;
+    v.y += (10000.0f - time);
+
+    uv.x = sqrt(uv.x + uv.y);    // radial mapping
+
+    // perturb texture coordinates with turbulence() function
+    uv.y = frag_pos.y + sqrt(frag_pos.y) * turb_scale * turbulence4(v * 1.5, p, g);    
+
+    fire = firetex[uv];
+}
+
+
