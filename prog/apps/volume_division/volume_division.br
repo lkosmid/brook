@@ -12,10 +12,10 @@ float __printf_cpu_inner (float a, float b, float c, float d) {
   printf ("%f %f -> %f %f\n",a,b,c,d);
   return 1;
 }
-kernel float eval (float3 loc<>) {
+kernel float eval1 (float3 loc<>) {
    return (float) (loc.x==loc.y&&loc.y==loc.z&&loc.z==1);
 }
-kernel float eval2 (float3 loc<>) {
+kernel float eval (float3 loc<>) {
   float  power;
   const float3 offset=8;
   float3 center =loc-offset;
@@ -43,7 +43,7 @@ kernel float eval2 (float3 loc<>) {
   */
   {
 
-     const float  density =8*8;
+     const float  density =7*7;
     //printf (power,loc.z,density,power-density);
     return density-power;
   }
@@ -164,7 +164,7 @@ kernel void processTriangles(vout[3] float3 triangles<>,
 
    if (whichVolumeTriangle.x+.5>15.0f) whichVolumeTriangle.x=0;
    firstTrianglePos=volumeTriangles[whichVolumeTriangle];
-   if (1||abs(firstTrianglePos.x-.5)<.75) {
+   if (abs(firstTrianglePos.x-.5)<.75) {
      triangles=vertices.xyz+firstTrianglePos;
      push(triangles);
      whichVolumeTriangle.x+=1;
@@ -277,6 +277,12 @@ int toi (float a) {
      }else if (strcmp(argv[i],"-noamplify")==0) {
        match=1;
        use_vout_amplify=0;
+     }else if (strcmp(argv[i],"-filter")==0) {
+       match=1;
+       use_vout_filter=1;
+     }else if (strcmp(argv[i],"-amplify")==0) {
+       match=1;
+       use_vout_amplify=1;
      }
      if (match) {
        for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
