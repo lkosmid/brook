@@ -4,16 +4,17 @@
 kernel float test(float vol){
   return vol>0;
 }
-kernel void processSlice (float prevslice[][], 
-                          float curslice<>, 
+kernel void processVirtualSlice(vout[1] float vertex<>,
+                                iter float2 center<>,
+                                iter float2 corner<>) {
+  
+}
+kernel void processSlice (float curslice<>, 
                           float curgather[][],
                           float nextslice[][],
                           vout [1]float vertex<>,
-                          iter float below<>,
-                          iter float above<>,
-                          iter float left<>,
-                          iter float right<>,
-                          iter float center<>) {
+                          iter float center<>,
+                          iter float corner<>) {
   
 }
 int main (int argc, char ** argv) {
@@ -37,18 +38,12 @@ int main (int argc, char ** argv) {
       slice = mallocSlice(dat);
       {
          unsigned int i;
-         float prev <(dat.height),(dat.width)>;
          float cur<(dat.height),(dat.width)>;
          float next<(dat.height),(dat.width)>;
          float v<1,(dat.width)>;
          readPPM3dSlice(dat,0,slice);
          streamRead(cur,slice);
-         readPPM3dSlice(dat,1,slice);
-         streamRead(next,slice);
- 
-         processSlice(cur,cur,cur,next,v);
-         streamWrite(v,consolidateVertices(dat,streamSize(v)));
-         for (i=1;i<dat.depth-1;++i) {
+         for (i=0;i<dat.depth-1;++i) {
             readPPM3dSlice(dat,i+1,slice);
             streamSwap(cur,next);
             streamSwap(next,prev);
