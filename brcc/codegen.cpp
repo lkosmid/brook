@@ -1603,10 +1603,22 @@ CodeGen_GenerateCode(Type *retType, const char *name,
 void
 CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
                          CodeGenTarget target, std::ostream& inStream ) {
-  SplitTree* splitTree = new SplitTree( inFunctionDef );
 
   std::ostringstream shaderStream;
-  SplitCompilerHLSL compiler;
+
+  std::auto_ptr<SplitCompiler> compiler;
+  switch( target )
+  {
+  case CODEGEN_PS20:
+    compiler = std::auto_ptr<SplitCompiler>( new SplitCompilerHLSL() );
+    break;
+  case CODEGEN_FP30:
+  case CODEGEN_ARB:
+    compiler = std::auto_ptr<SplitCompiler>( new SplitCompilerCg( target ) );
+    break;
+  }
+
+  SplitTree splitTree( inFunctionDef, *compiler );
 
   std::string targetName = CodeGen_TargetName( target );
   std::string functionName = inFunctionDef->FunctionName()->name;
@@ -1617,7 +1629,7 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
     shaderStream << "\tusing namespace ::brook::desc;" << std::endl;
     shaderStream << "\tstatic const gpu_kernel_desc " << mangledName << "_desc = gpu_kernel_desc()" << std::endl;
 
-    splitTree->printTechnique( SplitTechniqueDesc(), compiler, shaderStream );
+    splitTree.printTechnique( SplitTechniqueDesc(), shaderStream );
 
     shaderStream << ";" << std::endl;
     shaderStream << "\tstatic const void* " << mangledName << " = &" << mangledName << "_desc;" << std::endl;
@@ -1632,66 +1644,4 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
     inStream << "static const void* " << mangledName << " = 0;" << std::endl;
     throw 1;
   }
-
-  /*
-
-  std::string functionName = inFunctionDef->FunctionName()->name;
-
-  std::stringstream shaderStream;
-  std::string assemblerString;
-
-  shaderStream << "#ifdef USERECT\n";
-  shaderStream << "#define _stype   samplerRECT\n";
-  shaderStream << "#define _sfetch  texRECT\n";
-  shaderStream << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
-  shaderStream << "#define __sample2(s,i) texRECT((s),(i))\n";
-  shaderStream << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
-  shaderStream << "#else\n";
-  shaderStream << "#define _stype   sampler\n";
-  shaderStream << "#define _sfetch  tex2D\n";
-  shaderStream << "#define __sample1(s,i) tex1D((s),(i))\n";
-  shaderStream << "#define __sample2(s,i) tex2D((s),(i))\n";
-  shaderStream << "#define _computeindexof(a,b) (b)\n";
-  shaderStream << "#endif\n\n";
-
-  splitTree->printShaderFunction( shaderStream );
-  std::string shaderString = shaderStream.str();
-
-  if( globals.verbose )
-    std::cerr << "***Produced this shader:\n" << shaderString << std::endl;
-
-  if( globals.keepFiles ) {
-    std::ofstream fileStream;
-    fileStream.open( globals.shaderoutputname );
-    if (fileStream.fail()) {
-      std::cerr << "***Unable to open " << globals.shaderoutputname << std::endl;
-    } else {
-      fileStream << shaderString;
-      fileStream.close();
-    }
-  }
-
-  if( globals.verbose ) {
-    std::cerr << "Generating " << CodeGen_TargetName(target)
-      << " code for " << functionName << "." << std::endl;
-  }
-
-  switch (target) {
-  case CODEGEN_PS20:
-  case CODEGEN_ARB:
-     assemblerString = compile_fxc(shaderString.c_str(), target);
-     break;
-  case CODEGEN_FP30:
-     assemblerString = compile_cgc(shaderString.c_str(), target);
-     break;
-  default:
-     std::cerr << "Unknown compile target.\n";
-     exit(1);
-  }
-
-  if( globals.verbose )
-    std::cerr << "***Produced this assembly:\n" << assemblerString << std::endl;
-
-  std::vector<std::string> passStrings;
-  passStrings.push_back( assemblerString );*/
 }

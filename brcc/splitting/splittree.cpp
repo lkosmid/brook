@@ -12,7 +12,8 @@
 
 #include <algorithm>
 
-SplitTree::SplitTree( FunctionDef* inFunctionDef )
+SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler )
+  : _compiler(inCompiler)
 {
   build( inFunctionDef );
 }
@@ -21,13 +22,13 @@ SplitTree::~SplitTree()
 {
 }
 
-void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, const SplitCompiler& inCompiler, std::ostream& inStream )
+void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream )
 {
   // TIM: hack to make temporaries have a shared position stream
-  _outputPositionInterpolant = new InputInterpolantSplitNode( 0, 0, kSplitBasicType_Float2 );
+  _outputPositionInterpolant = new InputInterpolantSplitNode( -1, 0, kSplitBasicType_Float2 );
 
-  rdsSearch( inCompiler );
-  rdsSubdivide( inCompiler );
+  rdsSearch();
+  rdsSubdivide();
 
   // TIM: we need to split somewhere
   for( size_t i = 0; i < _outputList.size(); i++ )
@@ -54,7 +55,7 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, const
   }
 
   for( size_t i = 0; i < _outputList.size(); i++ )
-    _outputList[i]->rdsPrint( *this, inCompiler, inStream );
+    _outputList[i]->rdsPrint( *this, _compiler, inStream );
   inStream << "\t)";
 }
 
@@ -66,7 +67,7 @@ public:
   }
 };
 
-void SplitTree::rdsSearch( const SplitCompiler& inCompiler )
+void SplitTree::rdsSearch()
 {
   std::cerr << "search" << std::endl;
 
@@ -79,13 +80,13 @@ void SplitTree::rdsSearch( const SplitCompiler& inCompiler )
     unmark( _outputList );
     m->_rdsFixedUnmarked = false;
     m->_rdsFixedMarked = true;
-    rdsSubdivide( inCompiler );
+    rdsSubdivide();
     float costSave = 0.0f; // getPartitionCost();
 
     unmark( _outputList );
     m->_rdsFixedMarked = false;
     m->_rdsFixedUnmarked = true;
-    rdsSubdivide( inCompiler );
+    rdsSubdivide();
     float costRecompute = 0.0f; // getPartitionCost();
 
     if( costSave < costRecompute ) {
@@ -98,8 +99,8 @@ void SplitTree::rdsSearch( const SplitCompiler& inCompiler )
 class SplitRDSMergeTraversal : public SplitNodeTraversal
 {
 public:
-  SplitRDSMergeTraversal( SplitTree& inTree, SplitNode* inRoot, const SplitCompiler& inCompiler )
-    : _tree(inTree), _root(inRoot), _compiler(inCompiler) {}
+  SplitRDSMergeTraversal( SplitTree& inTree, SplitNode* inRoot )
+    : _tree(inTree), _root(inRoot) {}
 
   void traverse( SplitNode* inNode )
   {
@@ -107,31 +108,30 @@ public:
       return;
 
     inNode->traverseChildren( *this );
-    _tree.rdsMerge( inNode, _compiler );
+    _tree.rdsMerge( inNode );
   }
 
 private:
   SplitTree& _tree;
   SplitNode* _root;
-  const SplitCompiler& _compiler;
 };
 
-void SplitTree::rdsSubdivide( const SplitCompiler& inCompiler )
+void SplitTree::rdsSubdivide()
 {
   for( size_t i = 0; i < _outputList.size(); i++ )
-    rdsSubdivide( _outputList[i], inCompiler );
+    rdsSubdivide( _outputList[i] );
 }
 
-void SplitTree::rdsSubdivide( SplitNode* t, const SplitCompiler& inCompiler )
+void SplitTree::rdsSubdivide( SplitNode* t )
 {
   std::cerr << "subdivide" << std::endl;
 
-  if( rdsCompile( t, inCompiler ) ) return;
+  if( rdsCompile( t ) ) return;
 
   for( size_t i = 0; i < t->_pdtChildren.size(); i++ )
   {
     SplitNode* k = t->_pdtChildren[i];
-    rdsSubdivide( k, inCompiler );
+    rdsSubdivide( k );
     if( k->_graphParents.size() <= 1 ) continue;
     
     // if it's multiply-referenced
@@ -147,11 +147,11 @@ void SplitTree::rdsSubdivide( SplitNode* t, const SplitCompiler& inCompiler )
     }
   }
 
-  SplitRDSMergeTraversal merge( *this, t, inCompiler );
+  SplitRDSMergeTraversal merge( *this, t );
   merge( t );
 }
 
-void SplitTree::rdsMerge( SplitNode* n, const SplitCompiler& inCompiler )
+void SplitTree::rdsMerge( SplitNode* n )
 {
   std::cerr << "merge" << std::endl;
 
@@ -180,7 +180,7 @@ void SplitTree::rdsMerge( SplitNode* n, const SplitCompiler& inCompiler )
       for( size_t i = 0; i < childCount; i++ )
         n->_graphChildren[i]->_mergeSplitHere = (subsetBitfield & (1 << i)) == 0;
 
-      if( rdsCompile( n, inCompiler ) ) {
+      if( rdsCompile( n ) ) {
         std::cerr << "subset " << subsetBitfield << " was valid" << std::endl;
         validSubsets.push_back( subsetBitfield );
       }
@@ -218,7 +218,7 @@ void SplitTree::rdsMerge( SplitNode* n, const SplitCompiler& inCompiler )
   // and then return
 }
 
-bool SplitTree::rdsCompile( SplitNode* inNode, const SplitCompiler& inCompiler )
+bool SplitTree::rdsCompile( SplitNode* inNode )
 {
   try
   {
@@ -226,7 +226,7 @@ bool SplitTree::rdsCompile( SplitNode* inNode, const SplitCompiler& inCompiler )
     outputVector.push_back( inNode );
 
     std::ostringstream nullStream;
-    inCompiler.compile( *this, outputVector, nullStream );
+    _compiler.compile( *this, outputVector, nullStream );
 
     return true;
   }

@@ -1268,6 +1268,13 @@ DeclStemnt::findExpr( fnExprCallback cb )
     }
 }
 
+// TIM: adding DAG-building for kernel splitting support
+void DeclStemnt::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  for( DeclVector::iterator i = decls.begin(); i != decls.end(); ++i )
+    (*i)->buildSplitTree( ioBuilder );
+}
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 TypedefStemnt::TypedefStemnt(const Location& l)
               : DeclStemnt( l, ST_TypedefStemnt )

@@ -348,7 +348,6 @@ class TextureFetchSplitNode :
 {
 public:
   TextureFetchSplitNode( InputSamplerSplitNode* inSampler, SplitNode* inTextureCoordinate );
-  TextureFetchSplitNode( SplitNode* inStream, const std::vector<SplitNode*>& inIndices, SplitTreeBuilder& ioBuilder );
   virtual void printTemporaryExpression( std::ostream& inStream );
   virtual void printExpression( std::ostream& inStream );
 
@@ -373,8 +372,11 @@ public:
     : arguments(inArguments)
   {
     inferredType = inType;
-    for( size_t i = 0; i < inArguments.size(); i++ )
-      addChild( inArguments[i] );
+    for( size_t i = 0; i < arguments.size(); i++ )
+    {
+      arguments[i] = arguments[i]->getValueNode();
+      addChild( arguments[i] );
+    }
   }
 
   virtual void printTemporaryExpression( std::ostream& inStream );

@@ -381,6 +381,9 @@ class DeclStemnt : public Statement
 
     void findExpr( fnExprCallback cb );
 
+    // TIM: adding DAG-building for kernel splitting support
+    virtual void buildSplitTree( SplitTreeBuilder& ioBuilder );
+
     // The type(s).
     DeclVector    decls;
 };

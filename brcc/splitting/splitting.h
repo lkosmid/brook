@@ -8,6 +8,7 @@
 #include "splittraversal.h"
 #include "splittechniquedesc.h"
 #include "splitcompiler.h"
+#include "splitcompilercg.h"
 #include "splitcompilerhlsl.h"
 
 #endif

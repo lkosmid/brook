@@ -16,7 +16,17 @@ class SplitNode;
 class SplitCompiler
 {
 public:
-  virtual void compile( const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const = 0;
+  void compile( const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const;
+
+  // TIM: complete hack, even for me
+  virtual bool mustScaleAndBiasGatherIndices() const { return false; }
+
+protected:
+  virtual void printHeaderCode( std::ostream& inStream ) const {};
+  virtual void printFooterCode( std::ostream& inStream ) const {};
+  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& inAssemblerStream ) const = 0;
+
+  void printStringConstant( const std::string& inString, const std::string& inPrefix, std::ostream& inStream ) const;
 };
 
 class SplitCompilerError

@@ -122,11 +122,18 @@ void SplitNode::printSubFunction( const std::string& inFunctionName, std::ostrea
 }*/
 
 void InputSplitNode::printTemporaryExpression( std::ostream& inStream ) {
-  inStream << "arg" << argumentIndex << getComponentTypeName() << componentIndex;
+  if( argumentIndex >= 0 ) // standard arg
+    inStream << "arg" << (argumentIndex+1);
+  else if( argumentIndex < -1 ) // temporary "arg"
+    inStream << "temp" << (-argumentIndex - 1);
+  else // global "arg"
+    inStream << "global";
+
+  inStream << getComponentTypeName() << componentIndex;
 }
 
 void InputSplitNode::printExpression( std::ostream& inStream ) {
-  inStream << "arg" << argumentIndex << getComponentTypeName() << componentIndex;
+  printTemporaryExpression( inStream );
 }
 
 void InputSamplerSplitNode::printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter )
@@ -464,29 +471,6 @@ TextureFetchSplitNode::TextureFetchSplitNode( InputSamplerSplitNode* inSampler, 
   inferredType = inSampler->inferredType;
 
   addChild( textureCoordinate );
-  addChild( sampler );
-}
-
-
-TextureFetchSplitNode::TextureFetchSplitNode( SplitNode* inStream, const std::vector<SplitNode*>& inIndices, SplitTreeBuilder& ioBuilder )
-{
-  GatherArgumentSplitNode* stream = inStream->isGatherArgument();
-  assert(stream);
-
-  sampler = stream->getSampler();
-
-  // TIM: for now
-  assert( inIndices.size() == 1 );
-  SplitNode* index = inIndices[0]->getValueNode();
-
-  SplitNode* scaled = ioBuilder.addBinaryOp( BO_Mult, index, stream->getScale() );
-  SplitNode* biased = ioBuilder.addBinaryOp( BO_Plus, scaled, stream->getBias() );
-
-  textureCoordinate = biased;
-
-  inferredType = stream->inferredType;
-
-  addChild( biased );
   addChild( sampler );
 }
 

@@ -48,6 +48,7 @@
 class Constant;
 class Expression;
 class EnumConstant;
+class SplitTreeBuilder;
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
@@ -602,6 +603,9 @@ class Decl
                        bool showBase, int level) const;
 
     void    findExpr( fnExprCallback cb );
+
+    // TIM: adding DAG-building for kernel splitting support
+    virtual void buildSplitTree( SplitTreeBuilder& ioBuilder );
 
     bool lookup( Symbol* sym ) const;
 

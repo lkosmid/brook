@@ -18,10 +18,10 @@ class SplitCompiler;
 class SplitTree
 {
 public:
-  SplitTree( FunctionDef* inFunctionDef );
+  SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler );
   virtual ~SplitTree();
 
-  void printTechnique( const SplitTechniqueDesc& inTechniqueDesc, const SplitCompiler& inCompiler, std::ostream& inStream );
+  void printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream );
 
   void printShaderFunction( std::ostream& inStream );
 
@@ -29,19 +29,23 @@ public:
   void printShaderFunction( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const;
   void printArgumentAnnotations( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const;
 
-  void rdsMerge( SplitNode* n, const SplitCompiler& inCompiler );
+  void rdsMerge( SplitNode* n );
+
+  const SplitCompiler& getComplier() {
+    return _compiler;
+  }
 
 private:
   void build( FunctionDef* inFunctionDef );
 
   void buildDominatorTree();
 
-  void rdsSearch( const SplitCompiler& inCompiler );
-  void rdsSubdivide( const SplitCompiler& inCompiler );
-  void rdsSubdivide( SplitNode* t, const SplitCompiler& inCompiler );
+  void rdsSearch();
+  void rdsSubdivide();
+  void rdsSubdivide( SplitNode* t );
   std::vector<SplitNode*> _rdsNodeList;
 
-  bool rdsCompile( SplitNode* inNode, const SplitCompiler& inCompiler );
+  bool rdsCompile( SplitNode* inNode );
 
   friend class SplitTreeBuilder;
   typedef std::map< std::string, SplitNode* > NodeMap;
@@ -51,6 +55,8 @@ private:
   std::vector<SplitNode*> _multiplyReferencedNodes;
 
   SplitNode* _outputPositionInterpolant;
+
+  const SplitCompiler& _compiler;
 };
 
 #endif

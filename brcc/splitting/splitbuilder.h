@@ -12,6 +12,7 @@
 #include "splittypes.h"
 
 class SplitTree;
+class SplitCompiler;
 
 class SplitTreeBuilder
 {
@@ -19,6 +20,7 @@ public:
   SplitTreeBuilder( SplitTree& ioTree );
 
   SplitNode* addArgument( Decl* inDeclaration, int inArgumentIndex );
+  void addVariable( const std::string& inName, Type* inForm );
 
   SplitNode* addConstant( Constant* inConstant );
   SplitNode* addConstant( int inValue );
@@ -35,6 +37,7 @@ private:
   typedef std::map< std::string, SplitNode* > NodeMap;
   NodeMap nodeMap;
   SplitTree& tree;
+  const SplitCompiler& compiler;
 };
 
 #endif

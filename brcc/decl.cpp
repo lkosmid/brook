@@ -41,6 +41,7 @@
 #include "token.h"
 #include "gram.h"
 #include "project.h"
+#include "splitting/splitting.h"
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static
@@ -1735,6 +1736,23 @@ Decl::findExpr( fnExprCallback cb )
        initializer = (cb)(initializer);
        initializer->findExpr(cb);
     }
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+void Decl::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  std::string nameString = name->name;
+
+  SplitNode* value = NULL;
+  if( initializer )
+    value = initializer->buildSplitTree( ioBuilder );
+
+  if( form )
+    ioBuilder.addVariable( nameString, form );
+
+  if( value )
+    ioBuilder.assign( nameString, value->getValueNode() );
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

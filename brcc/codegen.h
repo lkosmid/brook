@@ -7,6 +7,8 @@
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
 
+#include "decl.h"
+
 typedef enum {
    CODEGEN_PS20,
    CODEGEN_FP30,

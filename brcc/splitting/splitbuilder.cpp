@@ -2,6 +2,8 @@
 #include "splitbuilder.h"
 
 #include "splitnode.h"
+#include "splittree.h"
+#include "splitcompiler.h"
 
 static SplitBasicType getInferredType( BaseType* inType )
 {
@@ -26,7 +28,7 @@ static SplitBasicType getInferredType( BaseType* inType )
 }
 
 SplitTreeBuilder::SplitTreeBuilder( SplitTree& ioTree )
-: tree(ioTree)
+: tree(ioTree), compiler(ioTree.getComplier())
 {
 }
 
@@ -68,6 +70,12 @@ SplitNode* SplitTreeBuilder::addArgument( Decl* inDeclaration, int inArgumentInd
   return result;
 }
 
+void SplitTreeBuilder::addVariable( const std::string& inName, Type* inForm )
+{
+  // TIM: TODO: actually create something to represent the binding... :(
+  nodeMap[inName] = NULL;
+}
+
 
 SplitNode* SplitTreeBuilder::addConstant( Constant* inConstant )
 {
@@ -95,7 +103,24 @@ SplitNode* SplitTreeBuilder::addBinaryOp( BinaryOp inOperation, SplitNode* inLef
 
 SplitNode* SplitTreeBuilder::addGather( SplitNode* inStream, const std::vector<SplitNode*> inIndices )
 {
-  SplitNode* result = new TextureFetchSplitNode( inStream->getValueNode(), inIndices, *this );
+  GatherArgumentSplitNode* stream = inStream->isGatherArgument();
+  assert(stream);
+  InputSamplerSplitNode* sampler = stream->getSampler();
+
+  // TIM: for now
+  assert( inIndices.size() == 1 );
+  SplitNode* index = inIndices[0]->getValueNode();
+
+  SplitNode* textureCoordinate = index;
+
+  if( compiler.mustScaleAndBiasGatherIndices() )
+  {
+    SplitNode* scaled = addBinaryOp( BO_Mult, index, stream->getScale() );
+    SplitNode* biased = addBinaryOp( BO_Plus, scaled, stream->getBias() );
+    textureCoordinate = biased;
+  }
+
+  SplitNode* result = new TextureFetchSplitNode( sampler, textureCoordinate );
   return result;
 }
 

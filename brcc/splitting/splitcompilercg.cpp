@@ -1,13 +1,13 @@
-// splitcompilerhlsl.cpp
-#include "splitcompilerhlsl.h"
+// splitcompilercg.cpp
+#include "splitcompilercg.h"
 
 #include "splitting.h"
-#include "../fxc.h"
+#include "../cgc.h"
 
 #include <string>
 #include <sstream>
 
-void SplitCompilerHLSL::printHeaderCode( std::ostream& inStream ) const
+void SplitCompilerCg::printHeaderCode( std::ostream& inStream ) const
 {
   inStream
     << "#ifdef USERECT\n"
@@ -26,11 +26,11 @@ void SplitCompilerHLSL::printHeaderCode( std::ostream& inStream ) const
 
 }
 
-void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode ) const
+void SplitCompilerCg::compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode ) const
 {
-  char* assemblerBuffer = compile_fxc( inHighLevelCode.c_str(), CODEGEN_PS20 );
+  char* assemblerBuffer = compile_cgc( inHighLevelCode.c_str(), _target );
   if( assemblerBuffer == NULL )
-    throw SplitCompilerError( "HLSL compilation failed" );
+    throw SplitCompilerError( "Cg compilation failed" );
 
   outLowLevelCode << assemblerBuffer;
   free( assemblerBuffer );
