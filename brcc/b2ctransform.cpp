@@ -263,9 +263,9 @@ class BaseType1:public BaseType {public:
         //this->printQual(out,qualifier);
 	int special = BT_Char|BT_Int|BT_Float|BT_Float2|BT_Float3|BT_Float4|BT_Long;
 	if ((typemask&special)!=0){
-		if (qualifier &TQ_Const)
+		if ((qualifier &TQ_Const)!=0)
 			out << "const ";
-		if (qualifier &TQ_Volatile)
+		if ((qualifier &TQ_Volatile)!=0)
 			out << "volatile ";
 		
 		if (typemask & BT_Char)
@@ -281,7 +281,7 @@ class BaseType1:public BaseType {public:
 		else
 			out << "__BrtInt1 ";
 		
-		if (qualifier &TQ_Out){
+		if ((qualifier &TQ_Out)!=0){
 			//out << "&";
 		}
 		
@@ -400,7 +400,7 @@ class NewIndexExpr :public IndexExpr {public:
             if (v->name->entry->type==ParamDeclEntry)
                if (v->name->entry->uVarDecl)
                   if (v->name->entry->uVarDecl->form)
-                     if (0==(v->name->entry->uVarDecl->form->getQualifiers()&TQ_Reduce))
+                     if ((v->name->entry->uVarDecl->form->getQualifiers()&TQ_Reduce)==0)
                         if (v->name->entry->uVarDecl->form->type==TT_Array)
                            isGather=true;
    }

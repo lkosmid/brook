@@ -82,13 +82,13 @@ static
 void
 printQual( std::ostream& out, TypeQual qualifier )
 {
-    if (qualifier & TQ_Out)
+    if ((qualifier & TQ_Out)!=0)
         out << "out ";
 
-    if (qualifier & TQ_Const)
+    if ((qualifier & TQ_Const)!=0)
         out << "const ";
 
-    if (qualifier & TQ_Volatile)
+    if ((qualifier & TQ_Volatile)!=0)
         out << "volatile ";
 }
 

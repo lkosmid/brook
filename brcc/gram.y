@@ -74,7 +74,7 @@ extern int err_top_level;
 %token <loc>        INVALID
 
 /* the reserved words */
-%token <typeQual>   CONST VOLATILE OUT REDUCE
+%token <typeQual>   CONST VOLATILE OUT REDUCE VOUT
 %token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF KERNEL
 %token <base>       VOID CHAR SHORT INT LONG DOUBLE SGNED UNSGNED
 /* IMPORTANT: Keep all the FLOATN's next to each other in order! */
@@ -1465,7 +1465,7 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
                 $$ = new BaseType();
             }
 
-            if (($$->qualifier & $1) != TQ_None)
+            if (TQ_None != ($$->qualifier & $1))
                 yywarn("qualifier already specified");  
                               
             $$->qualifier |= $1;
@@ -1502,7 +1502,7 @@ comp_decl_specs_reentrance:  type_spec_reentrance { possibleType = false; } opt_
                 $$ = new BaseType();
             }
 
-            if (($$->qualifier & $1) != TQ_None)
+            if (TQ_None != ($$->qualifier & $1))
                 yywarn("qualifier already specified");
             $$->qualifier |= $1;
         }
@@ -1614,13 +1614,19 @@ type_qual_token: CONST
                | VOLATILE
                | OUT
                | REDUCE
+               | VOUT LBRCKT opt_const_expr RBRCKT
+        {
+           TypeQual r($1);
+           r.vout=$3;
+           $$ = r
+        }
         ;
 
 type_qual_list: type_qual_token
               | type_qual_list type_qual_token
         {
             $$ = $1 | $2;
-            if (($2 & $1) != TQ_None)
+            if (TQ_None != ($2 & $1))
                 yywarn("qualifier already specified");                               
         }
         ;

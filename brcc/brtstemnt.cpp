@@ -132,13 +132,13 @@ BRTKernelDef::printStub(std::ostream& out) const
 
    for (i=0; i < fType->nArgs; i++) {
       if (recursiveIsStream(fType->args[i]->form) &&
-          (fType->args[i]->form->getQualifiers()&TQ_Out)) {
+          (fType->args[i]->form->getQualifiers()&TQ_Out)!=0) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
       } else if (recursiveIsStream(fType->args[i]->form)) {
          out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
       } else if (recursiveIsGather(fType->args[i]->form)) {
          out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
-      } else if (fType->args[i]->form->getQualifiers()&TQ_Reduce) {
+      } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
          out << "  k->PushReduce(&" << *fType->args[i]->name;
          out << ", sizeof(";
          Symbol name;name.name="";
@@ -165,7 +165,7 @@ BRTKernelDef::CheckSemantics() const
    for (int i = 0; i < fType->nArgs; i++) {
       BaseTypeSpec baseType;
 
-      if (fType->args[i]->form->getQualifiers() & TQ_Out) {
+      if ((fType->args[i]->form->getQualifiers() & TQ_Out)!=0) {
          if (outArg) {
             std::cerr << "Multiple outputs not supported: ";
             outArg->print(std::cerr, true);

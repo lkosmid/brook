@@ -238,6 +238,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->typeQual = TQ_Out;
                       return(err_tok = OUT);
                     }
+<INITIAL>"vout"     {
+                      lvalp->typeQual = TQ_Vout;
+                      return(err_tok = VOUT);
+                    }
 <INITIAL>"reduce"      {
                       lvalp->typeQual = TQ_Reduce;
                       return(err_tok = REDUCE);

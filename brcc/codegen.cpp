@@ -52,7 +52,7 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
   texcoord = 0;
   for (i=0; i < nArgs; i++) {
      /* Don't put the output in the argument list */
-     if (args[i]->form->getQualifiers() & TQ_Out) {
+     if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
         outArg = args[i];
         continue;
      }
@@ -153,7 +153,7 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
   texcoord = 0;
   for (i=0; i < nArgs; i++) {
     /* Don't put the output in the argument list */
-    if (args[i]->form->getQualifiers() & TQ_Out) {
+    if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
       outArg = args[i];
       continue;
     }
@@ -179,7 +179,7 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
   texcoord = 0;
   for (i=0; i < nArgs; i++) {
      /* Don't put the output in the argument list */
-     if (args[i]->form->getQualifiers() & TQ_Out) {
+     if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
         outArg = args[i];
         continue;
      }
@@ -408,7 +408,7 @@ append_argument_information (const char *commentstring, char *fpcode,
      char type;
      int dimension = FloatDimension(args[i]->form->getBase()->typemask);
 
-     if (args[i]->form->getQualifiers() & TQ_Out) {
+     if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
         type = 'o';
      } else if (args[i]->isStream()) {
         type = 's';

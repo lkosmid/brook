@@ -86,14 +86,54 @@ const BaseTypeSpec BT_SignMask     = 0x00030000;
 const BaseTypeSpec BT_TypeError    = 0x10000000;
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-typedef unsigned short TypeQual;
+struct TypeQual{
+   unsigned short tq;
+   Expression * vout;
+   bool operator == (unsigned int x)const {return x==tq;}
+   bool operator == (const TypeQual &x)const {return x.tq==tq;}
+   bool operator !=(const TypeQual &x)const {return tq!=x.tq;}
+   bool operator !=(const unsigned int x) const {return tq!=x;}
 
-const TypeQual TQ_None         = 0x0000;
-const TypeQual TQ_Const        = 0x0001;
-const TypeQual TQ_Volatile     = 0x0002;
-const TypeQual TQ_Out          = 0x0004;
-const TypeQual TQ_Reduce       = 0x0008;
+   void init (unsigned short t){tq=t;vout=NULL;}
+   void init (unsigned short t,Expression * e){tq=t;vout=e;}
+   TypeQual operator &(unsigned int x)const {TypeQual ret(*this);ret&=x;return ret;}
+   TypeQual operator |(unsigned int x)const {TypeQual ret(*this);ret|=x;return ret;}
+   TypeQual operator &(const TypeQual &x)const {TypeQual ret(*this);ret&=x;return ret;}
+   TypeQual operator |(const TypeQual &x)const {TypeQual ret(*this);ret|=x;return ret;}
+   TypeQual& operator |=(unsigned int x){tq|=x;return *this;}
+   TypeQual& operator &=(unsigned int x){tq&=x;return *this;}
+   TypeQual operator ~()const {
+      TypeQual ret(*this);
+      ret.tq=~ret.tq;
+      return ret;
+   }
+   TypeQual& operator |=(const TypeQual &x){
+      tq|=x.tq;
+      if (x.vout&&!vout) {
+         vout=x.vout;
+      }
+      return *this;
+   }
+   TypeQual& operator &=(const TypeQual &x){
+      tq&=x.tq;
+      return *this;
+   }
 
+   
+   static TypeQual ReturnNone() {TypeQual ret;ret.init(0x0000);return ret;}
+   static TypeQual ReturnConst() {TypeQual ret;ret.init(0x0001);return ret;}
+   static TypeQual ReturnVolatile() {TypeQual ret;ret.init(0x0002);return ret;}
+   static TypeQual ReturnOut() {TypeQual ret;ret.init(0x0004);return ret;}
+   static TypeQual ReturnReduce() {TypeQual ret;ret.init(0x0008);return ret;}   
+   static TypeQual ReturnVout() {TypeQual ret;ret.init(0x0010);return ret;}
+};
+
+const TypeQual TQ_None=TypeQual::ReturnNone();
+const TypeQual TQ_Const=TypeQual::ReturnConst();
+const TypeQual TQ_Volatile=TypeQual::ReturnVolatile();
+const TypeQual TQ_Out=TypeQual::ReturnOut();
+const TypeQual TQ_Reduce=TypeQual::ReturnReduce();
+const TypeQual TQ_Vout=TypeQual::ReturnVout();
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 enum StorageType
 {
