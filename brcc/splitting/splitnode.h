@@ -16,6 +16,7 @@ class SplitArgumentCounter;
 class SplitTree;
 class SplitCompiler;
 class IndexofableSplitNode;
+class SplitPassInfo;
 
 class SplitNode
 {
@@ -32,11 +33,15 @@ public:
   bool _wasConsideredRecompute;
   bool _wasSavedRecompute;
 
+  SplitPassInfo* _assignedPass;
+
   enum MarkBit
   {
     kMarkBit_Printed = 0x01,
     kMarkBit_Merged = 0x02,
-    kMarkBit_SubPrinted = 0x04
+    kMarkBit_SubPrinted = 0x04,
+    kMarkBit_Ancestor = 0x08,
+    kMarkBit_Descendent = 0x10
   };
 
   void mark( MarkBit inMarkBit ) {
@@ -132,6 +137,14 @@ public:
 
   SplitNode* getIndexedGraphChild( size_t inIndex ) {
     return _graphChildren[inIndex];
+  }
+
+  size_t getGraphParentCount() {
+    return _graphParents.size();
+  }
+
+  SplitNode* getIndexedGraphParent( size_t inIndex ) {
+    return _graphParents[inIndex];
   }
 
   size_t getPDTChildCount() {

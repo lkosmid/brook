@@ -17,6 +17,31 @@ class SplitTechniqueDesc;
 class SplitCompiler;
 class SplitShaderHeuristics;
 
+class SplitPassInfo
+{
+public:
+  SplitPassInfo()
+  {
+    cost = 0.0f;
+    ancestorVisited = false;
+    descendentVisited = false;
+    printVisited = false;
+  }
+
+  typedef std::set< SplitNode* > NodeSet;
+
+  NodeSet outputs;
+
+  NodeSet ancestors;
+  NodeSet descendents;
+
+  float cost;
+
+  bool ancestorVisited;
+  bool descendentVisited;
+  bool printVisited;
+};
+
 class SplitTree
 {
 public:
@@ -29,8 +54,8 @@ public:
   void printShaderFunction( std::ostream& inStream );
 
   // print a shader function def for the given subset of outputs
-  void printShaderFunction( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const;
-  void printArgumentAnnotations( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const;
+  void printShaderFunction( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const;
+  void printArgumentAnnotations( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const;
 
   const SplitCompiler& getComplier() {
     return _compiler;
@@ -44,11 +69,12 @@ public:
     return _outputPositionInterpolant;
   }
 
-private:
   friend class SplitTreeBuilder;
   typedef std::map< std::string, SplitNode* > NodeMap;
   typedef std::vector< SplitNode* > NodeList;
   typedef std::set< SplitNode* > NodeSet;
+
+private:
 
   void build( FunctionDef* inFunctionDef );
   void build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>& inArguments );
@@ -72,12 +98,27 @@ private:
   bool rdsMergeSome( SplitNode* n, const NodeList& inUnsavedChildren, size_t inSubsetSize, SplitShaderHeuristics& outHeuristics );
   void rdsMergeRec( SplitNode* n );
 
+
+  typedef std::set< SplitPassInfo* > PassSet;
+
+  PassSet _passes;
+  void rdsMergePasses();
+  SplitPassInfo* rdsCreatePass( SplitNode* inNode );
+  SplitPassInfo* rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB );
+  void rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream );
+
+  void rdsAccumulatePassAncestors( SplitPassInfo* ioPass );
+  void rdsAccumulatePassAncestorsRec( SplitNode* inNode, SplitPassInfo* ioPass );
+  void rdsAccumulatePassDescendents( SplitPassInfo* ioPass );
+  void rdsAccumulatePassDescendentsRec( SplitNode* inNode, SplitPassInfo* ioPass );
+
   void unmark( int inMarkBit ) const;
 
   NodeList _rdsNodeList;
 
   bool rdsCompile( SplitNode* inNode );
   bool rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeuristics );
+  bool rdsCompile( const NodeSet& inNodes, SplitShaderHeuristics& outHeuristics );
 
   float getPartitionCost();
 

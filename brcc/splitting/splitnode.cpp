@@ -4,6 +4,7 @@
 #include <kerneldesc.hpp>
 
 #include <sstream>
+#include <set>
 
 SplitNode::SplitNode()
   : inferredType(kSplitBasicType_Unknown)
@@ -30,6 +31,8 @@ SplitNode::SplitNode()
   _markBits = 0;
 
   _isPDTNode = false;
+
+  _assignedPass = NULL;
 }
 
 void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream )
@@ -49,8 +52,8 @@ void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompil
 //    dump( std::cerr );
 //    std::cerr << std::endl;
 
-    std::vector<SplitNode*> dummy;
-    dummy.push_back( this );
+    std::set<SplitNode*> dummy;
+    dummy.insert( this );
     SplitShaderHeuristics unused;
     inCompiler.compile( inTree, dummy, inStream, unused, true );
   }

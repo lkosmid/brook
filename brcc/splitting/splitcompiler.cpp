@@ -7,7 +7,7 @@
 #include <sstream>
 
 void SplitCompiler::compile(
-  const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics, bool forReal ) const
+  const SplitTree& inTree, const NodeSet& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics, bool forReal ) const
 {
   std::ostringstream bodyStream;
 

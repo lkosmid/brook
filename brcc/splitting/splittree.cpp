@@ -31,11 +31,11 @@ SplitTree::~SplitTree()
 {
 }
 
-//static std::ofstream dumpFile;
+static std::ofstream dumpFile;
 
 void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream )
 {
-//  dumpFile.open( "dump.txt" );
+  dumpFile.open( "dump.txt" );
 
 //  preRdsMagic();
 
@@ -48,7 +48,6 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
     assert( _outputList[i]->_splitHere );
   }
 
-//  std::cerr << "printing!!!" << std::endl;
   // assign "registers" to all split nodes
   {for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i ) {
     (*i)->setTemporaryID( 0 );
@@ -65,6 +64,22 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
   }}
   int temporaryCount = temporaryID-1;
 
+  // now we go through the passes and print them?
+  inStream << "\t.technique( gpu_technique_desc()" << std::endl;
+  if( temporaryCount )
+  {
+    inStream << "\t\t.temporaries(" << temporaryCount << ")" << std::endl;
+  }
+
+  unmark( SplitNode::kMarkBit_Printed );
+
+  for( PassSet::iterator p = _passes.begin(); p != _passes.end(); ++p )
+    rdsPrintPass( *p, inStream );
+
+  inStream << "\t)";
+
+/*
+
   // go recursively through the nodes
   // and print out anything that we split at...
   inStream << "\t.technique( gpu_technique_desc()" << std::endl;
@@ -77,9 +92,305 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
 
   _pseudoRoot->rdsPrint( *this, _compiler, inStream );
 
-  inStream << "\t)";
+  inStream << "\t)";*/
 
-//  dumpFile.close();
+  dumpFile.close();
+}
+
+void SplitTree::rdsMergePasses()
+{
+  for( PassSet::iterator k = _passes.begin(); k != _passes.end(); ++k )
+    delete *k;
+  _passes.clear();
+
+  // first collect the set of passes...
+  for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
+  {
+    SplitNode* node = *i;
+    if( node->isMarkedAsSplit() )
+      _passes.insert( rdsCreatePass( node ) );
+  }
+
+  for( PassSet::iterator j = _passes.begin(); j != _passes.end(); ++j )
+  {
+    rdsAccumulatePassAncestors( *j );
+    rdsAccumulatePassDescendents( *j );
+  }
+
+  // now that we have all the passes, lets start building up potential merges...
+  bool didMerge = false;
+  do {
+
+    float bestScore = 0;
+    SplitPassInfo* bestA = 0;
+    SplitPassInfo* bestB = 0;
+    SplitPassInfo* bestMerged = 0;
+
+    for( PassSet::iterator i = _passes.begin(); i != _passes.end(); )
+    {
+      SplitPassInfo* a = *i++;
+
+      for( PassSet::iterator j = i; j != _passes.end(); ++j )
+      {
+        SplitPassInfo* b = *j;
+
+        SplitPassInfo* merged = rdsMergePasses( a, b );
+        if( merged == NULL ) continue;
+
+        float score = (a->cost + b->cost) - merged->cost;
+
+        if( score > bestScore || bestMerged == NULL )
+        {
+          if( bestMerged != NULL )
+            delete bestMerged;
+
+          bestScore = score;
+          bestMerged = merged;
+          bestA = a;
+          bestB = b;
+        }
+      }
+    }
+
+    if( bestMerged != NULL )
+    {
+      _passes.erase( bestA );
+      _passes.erase( bestB );
+
+      delete bestA;
+      delete bestB;
+
+      _passes.insert( bestMerged );
+
+      // TIM: finalize the merge by making the outputs of
+      // the chosen merged pass know which pass outputs them
+      for( NodeSet::iterator i = bestMerged->outputs.begin(); i != bestMerged->outputs.end(); ++i )
+        (*i)->_assignedPass = bestMerged;
+    }
+
+  } while( didMerge );
+}
+
+SplitPassInfo* SplitTree::rdsCreatePass( SplitNode* inNode )
+{
+  dumpFile << "CREATE MERGE PASS " << inNode->getTemporaryID() << std::endl << "% ";
+//  inNode->dump( dumpFile );
+//  dumpFile << std::endl;
+
+  SplitPassInfo* result = new SplitPassInfo();
+
+  result->outputs.insert( inNode );
+
+  SplitShaderHeuristics heuristics;
+  rdsCompile( inNode, heuristics );
+  assert( heuristics.valid );
+
+  result->cost = heuristics.cost;
+
+  dumpFile << "CREATED " << (void*)result << std::endl;
+
+  inNode->_assignedPass = result;
+
+  return result;
+}
+
+void SplitTree::rdsAccumulatePassAncestors( SplitPassInfo* ioPass )
+{
+  if( ioPass->ancestorVisited ) return;
+  ioPass->ancestorVisited = true;
+
+  unmark( SplitNode::kMarkBit_Ancestor );
+
+  for( NodeSet::iterator i = ioPass->outputs.begin(); i != ioPass->outputs.end(); ++i )
+  {
+    SplitNode* node = *i;
+    size_t parentCount = node->getGraphParentCount();
+    for( size_t j = 0; j < parentCount; j++ )
+      rdsAccumulatePassAncestorsRec( node->getIndexedGraphParent(j), ioPass );
+  }
+}
+
+void SplitTree::rdsAccumulatePassAncestorsRec( SplitNode* inNode, SplitPassInfo* ioPass )
+{
+  if( inNode->isMarked( SplitNode::kMarkBit_Ancestor ) ) return;
+  inNode->mark( SplitNode::kMarkBit_Ancestor );
+
+  if( inNode->isMarkedAsSplit() )
+  {
+    SplitPassInfo* pass = inNode->_assignedPass;
+    assert( pass );
+
+    rdsAccumulatePassAncestors( pass );
+
+    NodeSet unionResult;
+    std::set_union( ioPass->ancestors.begin(), ioPass->ancestors.end(),
+      pass->ancestors.begin(), pass->ancestors.end(),
+      std::inserter( unionResult, unionResult.begin() ) );
+    unionResult.insert( inNode );
+
+    ioPass->ancestors.swap( unionResult );
+  }
+  else
+  {
+    size_t parentCount = inNode->getGraphParentCount();
+    for( size_t i = 0; i < parentCount; i++ )
+      rdsAccumulatePassAncestorsRec( inNode->getIndexedGraphParent(i), ioPass );
+  }
+}
+
+void SplitTree::rdsAccumulatePassDescendents( SplitPassInfo* ioPass )
+{
+  if( ioPass->descendentVisited ) return;
+  ioPass->descendentVisited = true;
+
+  unmark( SplitNode::kMarkBit_Descendent );
+
+  for( NodeSet::iterator i = ioPass->outputs.begin(); i != ioPass->outputs.end(); ++i )
+  {
+    SplitNode* node = *i;
+    size_t childCount = node->getGraphChildCount();
+    for( size_t j = 0; j < childCount; j++ )
+      rdsAccumulatePassDescendentsRec( node->getIndexedGraphChild(j), ioPass );
+  }
+}
+
+void SplitTree::rdsAccumulatePassDescendentsRec( SplitNode* inNode, SplitPassInfo* ioPass )
+{
+  if( inNode->isMarked( SplitNode::kMarkBit_Descendent ) ) return;
+  inNode->mark( SplitNode::kMarkBit_Descendent );
+
+  if( inNode->isMarkedAsSplit() )
+  {
+    SplitPassInfo* pass = inNode->_assignedPass;
+    assert( pass );
+
+    rdsAccumulatePassDescendents( pass );
+
+    NodeSet unionResult;
+    std::set_union( ioPass->descendents.begin(), ioPass->descendents.end(),
+      pass->descendents.begin(), pass->descendents.end(),
+      std::inserter( unionResult, unionResult.begin() ) );
+    unionResult.insert( inNode );
+
+    ioPass->descendents.swap( unionResult );
+  }
+  else
+  {
+    size_t childCount = inNode->getGraphChildCount();
+    for( size_t i = 0; i < childCount; i++ )
+      rdsAccumulatePassDescendentsRec( inNode->getIndexedGraphChild(i), ioPass );
+  }
+}
+
+SplitPassInfo* SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB )
+{
+  dumpFile << "MERGE PASSES " << (void*)inA << " , " << (void*)inB << std::endl;
+
+  // TIM: TODO: check basic validity
+
+  NodeSet intersectionResult;
+  std::set_intersection( inA->descendents.begin(), inA->descendents.end(),
+    inB->ancestors.begin(), inB->ancestors.end(),
+    std::inserter( intersectionResult, intersectionResult.begin() ) );
+
+  if( intersectionResult.size() != 0 )
+    return NULL;
+
+  intersectionResult.clear();
+  std::set_intersection( inB->descendents.begin(), inB->descendents.end(),
+    inA->ancestors.begin(), inA->ancestors.end(),
+    std::inserter( intersectionResult, intersectionResult.begin() ) );
+
+  if( intersectionResult.size() != 0 )
+    return NULL;
+
+  dumpFile << "passed early check" << std::endl;
+
+  // we can merge two passes as long as
+
+  NodeSet mergedOutputs;
+  std::set_union(
+    inA->outputs.begin(), inA->outputs.end(),
+    inB->outputs.begin(), inB->outputs.end(),
+    std::inserter( mergedOutputs, mergedOutputs.begin() ) );
+
+  // now we need to generate a shader for all of these outputs...
+
+  SplitShaderHeuristics heuristics;
+  if( !rdsCompile( mergedOutputs, heuristics ) )
+    return NULL;
+
+  SplitPassInfo* result = new SplitPassInfo();
+  result->outputs.swap( mergedOutputs );
+  
+  result->cost = heuristics.cost;
+
+  NodeSet tempX;
+  NodeSet tempY;
+
+  // calculate ancestors of the merged set...
+  std::set_union( inA->ancestors.begin(), inA->ancestors.end(),
+    inB->ancestors.begin(), inB->ancestors.end(),
+    std::inserter( tempX, tempX.begin() ) );
+  
+  std::set_difference( tempX.begin(), tempX.end(),
+    inA->outputs.begin(), inA->outputs.end(),
+    std::inserter( tempY, tempY.begin() ) );
+
+  tempX.swap( tempY );
+
+  std::set_difference( tempX.begin(), tempX.end(),
+    inB->outputs.begin(), inB->outputs.end(),
+    std::inserter( tempY, tempY.begin() ) );
+
+  result->ancestors.swap( tempY );
+
+  tempY.clear();
+  tempX.clear();
+
+  // calculate descendents of the merged set
+  std::set_union( inA->descendents.begin(), inA->descendents.end(),
+    inB->descendents.begin(), inB->descendents.end(),
+    std::inserter( tempX, tempX.begin() ) );
+
+  std::set_difference( tempX.begin(), tempX.end(),
+    inA->outputs.begin(), inA->outputs.end(),
+    std::inserter( tempY, tempY.begin() ) );
+
+  tempX.swap( tempY );
+
+  std::set_difference( tempX.begin(), tempX.end(),
+    inB->outputs.begin(), inB->outputs.end(),
+    std::inserter( tempY, tempY.begin() ) );
+
+  result->descendents.swap( tempY );
+
+  dumpFile << "CREATED " << (void*)result << std::endl;
+
+  return result;
+}
+
+void SplitTree::rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream )
+{
+  assert( inPass );
+
+  if( inPass->printVisited ) return;
+  inPass->printVisited = true;
+
+  for( NodeSet::iterator j = inPass->descendents.begin(); j != inPass->descendents.end(); ++j )
+    rdsPrintPass( (*j)->_assignedPass, inStream );
+
+//  dumpFile << "PRINT PASS " << (void*)inPass << std::endl;
+//  for( NodeSet::iterator i = inPass->outputs.begin(); i != inPass->outputs.end(); ++i )
+//  {
+//    SplitNode* node = *i;
+//    dumpFile << "% ";
+//    node->dump( dumpFile );
+//    dumpFile << std::endl;
+//  }
+
+  SplitShaderHeuristics unused;
+  _compiler.compile( *this, inPass->outputs, inStream, unused, true );
 }
 
 void SplitTree::unmark( int inMarkBit ) const
@@ -267,8 +578,9 @@ void SplitTree::rdsSearch()
 
 float SplitTree::rdsCompileConfiguration()
 {
-
   rdsSubdivide();
+  rdsMergePasses();
+
   return getPartitionCost();
 }
 
@@ -579,17 +891,23 @@ bool SplitTree::rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeurist
     return true;
   }
 
-  std::vector<SplitNode*>  outputVector;
-  outputVector.push_back( inNode );
+  NodeSet outputSet;
+  outputSet.insert( inNode );
 
+  return rdsCompile( outputSet, outHeuristics );
+}
+
+bool SplitTree::rdsCompile( const NodeSet& inNodes, SplitShaderHeuristics& outHeuristics )
+{
   std::ostringstream nullStream;
-  _compiler.compile( *this, outputVector, nullStream, outHeuristics );
+  _compiler.compile( *this, inNodes, nullStream, outHeuristics );
 
   return outHeuristics.valid;
 }
 
 float SplitTree::getPartitionCost()
 {
+  /*
   // TIM: print it out for my edification :)
   for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
   {
@@ -614,12 +932,16 @@ float SplitTree::getPartitionCost()
     assert( valid );
 
     totalCost += heuristics.cost;
-  }
+  }*/
+
+  float totalCost = 0;
+  for( PassSet::iterator i = _passes.begin(); i != _passes.end(); ++i )
+    totalCost += (*i)->cost;
 
   return totalCost;
 }
 
-void SplitTree::printShaderFunction( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const
+void SplitTree::printShaderFunction( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const
 {
   SplitArgumentTraversal printArguments(inStream,_outputPositionInterpolant);
   SplitStatementTraversal printStatements(inStream,_outputPositionInterpolant);
@@ -627,9 +949,9 @@ void SplitTree::printShaderFunction( const std::vector<SplitNode*>& inOutputs, s
   for( size_t i = 0; i < _dagOrderNodeList.size(); i++ )
     _dagOrderNodeList[i]->unmarkAsOutput();
   _outputPositionInterpolant->unmarkAsOutput();
-  {for( size_t i = 0; i < inOutputs.size(); i++ ){
-    inOutputs[i]->markAsOutput();
-  }}
+
+  for( NodeSet::const_iterator j = inOutputs.begin(); j != inOutputs.end(); ++j )
+    (*j)->markAsOutput();
 
   // create the wrapper for the function
   inStream << "void main(" << std::endl;
@@ -645,7 +967,7 @@ void SplitTree::printShaderFunction( const std::vector<SplitNode*>& inOutputs, s
   inStream << "}" << std::endl;
 }
 
-void SplitTree::printArgumentAnnotations( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const
+void SplitTree::printArgumentAnnotations( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const
 {
   SplitAnnotationTraversal printAnnotations(inStream,_outputPositionInterpolant);
 

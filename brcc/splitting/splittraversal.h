@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <vector>
+#include <set>
 
 class SplitNode;
 
@@ -16,6 +17,11 @@ public:
 
   void operator()( const std::vector<SplitNode*>& inNodes ) {
     for( std::vector<SplitNode*>::const_iterator i = inNodes.begin(); i != inNodes.end(); ++i )
+      traverse( *i );
+  }
+
+  void operator()( const std::set<SplitNode*>& inNodes ) {
+    for( std::set<SplitNode*>::const_iterator i = inNodes.begin(); i != inNodes.end(); ++i )
       traverse( *i );
   }
 
