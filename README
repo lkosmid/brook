@@ -1,78 +1,129 @@
 				 Brook GPU
 
-(Last Revised 19 December 2003)
+(Last Revised 14 October 2004)
 
 Hardware Prerequisites
 
-   * The DirectX 9 backend requires a recent ATI video card.  9800s and
-     9700s should both work.  Older cards may work.  The most important
-     requirement is support for floating point render targets.  The
-     DirectX 9 backend only compiles for Windows targets.
+   * The DirectX 9 runtime will work on ATI r3xx and r4xx video cards
+     such as the Radeon 9800 and Radeon X800, as well as NVIDIA nv4x
+     cards such as the GeForce 6800. Some nv3x (GeForce FX and
+     Quadro FX) cards may also work, but have not been extensively tested.
 
-   * The nv30 OpenGL backend requires (logically enough) an NVIDIA card that
-     is at least an nv30 (GeForceFX / QuadroFX or better).  The nv30 OpenGL 
-     backend compiles for both Windows and Linux targets.
+   * The OpenGL runtime will work on r3xx, r4xx, nv3x and nv4x video
+     cards. This runtime is compatible with both Windows and Linux
+     targets, although compatibility may not be identical across
+     platforms.
 
-   * The CPU backend should run on any platform (even non-PC) where the
-     build environment works.
-
+   * The CPU runtime should work on any platform for which the build
+     environment works.
 
 Software Prerequisites
 
-   * The compiler and CPU runtime should build on any host with the standard
-     GNU toolchain:
-   	- make
-	- g++ & gcc
-	- flex
-	- bison
-	- bin-utils
-        - perl (for Makefile dependencies)
+   * Running Brook applications requires up-to-date drivers for your
+     video card, as well as the latest version of DirectX 9 (if you
+     plan to use the DirectX Brook runtime).
 
-   * Alternatively, running with the GPU runtimes requires the following:
-   	- Microsoft Visual C++ version 6 or 7 (preferably 7)
-          (cl.exe must execute from the command line)
-	- Microsoft DirectX 9 SDK
-	  (http://msdn.microsoft.com/library/default.asp?url=/downloads/list/directx.asp)
-	- NVIDIA's Cg Compiler (at least version 1.1)
-	  (http://developer.nvidia.com/object/cg_toolkit.html)
-	- Up-to-date ATI or NVIDIA video drivers
-	- The following GNU tools from cygwin (http://www.cygwin.com):
-		- make
-		- flex
-		- bison
-                - perl
+        * Drivers for ATI video cards can be found at:
+          (http://www.ati.com/support/driver.html)
 
-     BRCC will look for cgc and fxc (the HLSL compiler from the DirectX 9
-     SDK) in the path.  Following the default installations, cgc.exe is in
-     C:\Program Files\NVIDIA Corporation\Cg\bin and fxc.exe is in
-     C:\DX90SDK\Utilities.
+        * Drivers for NVIDIA video cards can be found at:
+          (http://www.nvidia.com/content/drivers/drivers.asp)
 
-     Additionally, compiling the DirectX runtime requires your INCLUDE and
-     LIB paths include the DirectX 9 directories.  With the default
-     installations, these are C:\DX90SDK\Include and C:\DX90SDK\Lib.
+     In addition, the environment variable BRT_RUNTIME must be set
+     to indicate which runtime should be used for running applications.
+     Valid settings are:
 
+        * "cpu" to use the CPU runtime
 
-Compiling Brook GPU
+        * "dx9" to use the DirectX 9 runtime
 
-	Everything, including all the test programs and sample applications,
-   can be built by typing:
+        * "ogl" to use the OpenGL runtime
 
-   	make
+   * Developing Brook applications requires a built BRCC compiler and
+     Brook runtime static library, as well as the command-line shader
+     compilers cgc and (on Windows) fxc.
 
-   at the top level.  You can run make from within any subdirectory to build
-   just that directory.
+        * The required version of cgc is 1.3b2. The Cg Toolkit (including
+          cgc) can be obtained from:
+          (http://developer.nvidia.com/object/cg_toolkit.html)
 
+        * The required version of fxc is that included with the "Summer 2004"
+          update of the DirectX 9 SDK, available at:
+          (http://msdn.microsoft.com/library/default.asp?url=/downloads/list/directx.asp)
+          The fxc compiler is in the Utilties/ directory of the SDK install.
 
-Building And Running Brook Programs
+     Both of these tools must be in your PATH environment variable in order
+     to be available to the BRCC compiler. In addition, your build system
+     must have the 'include' directory of the brook distribution in your
+     system include path.
 
-	There are some toy programs used for testing the compiler and runtime
-   in prog/tests/ and more interesting programs in prog/apps/ that can be
-   used as examples.  Basically, BRCC converts .br files into .cpp files
-   which are then compiled and linked against the runtime brook.lib.  At
-   runtime, brook.lib selects the backend based on the environment variable
-   BRT_RUNTIME.  The CPU backend is chosen by default and the values "dx9"
-   and 'nv30gl' select their respective backends.
-      
+   * In order to build BRCC and the Brook runtime on Windows using Cygwin
+     you will need:
+
+        * A standard cygwin install with the following additional packages:
+          - Devel / Make
+          - Devel / Bison
+          - Devel / Flex
+          - Interpreters / Perl
+
+        * The Microsoft command-line compiler cl.exe and linker
+          link.exe available with Visual Studio 7.1, or as a free
+          download. These tools must be in your PATH (available from
+          the command line). The versions from Visual Studio 6.0 or
+          7.0 may work, but are not officially supported.
+
+        * Windows platform headers and libs. These are included with
+          Microsoft Visual Studio, and are also available for free
+          download as the Windows Platform SDK. The appropriate include
+          and lib directories must be in your INCLUDE and LIB
+          environment variables, respectively.
+
+        * The Microsoft DirectX 9 SDK must be installed (details above)
+          and it's Include/ and Lib/ directories must be added to the
+          INCLUDE and LIB environment variables.
+
+     With these tools installed you should be able to build BRCC, the runtime
+     and the applications by executing 'make' at the top level of the Brook
+     distribution.
+
+   * In order to build BRCC and the runtime with Microsoft Visual Studio 7.1
+     you will need:
+
+        * A standard install of Visual Studio 7.1 (7.0 version may work),
+          including the C++ development tools and platform SDK.
+
+        * An installation of the Microsoft DirectX 9 SDK, as detailed above.
+          The installer should automatically add the appropriate headers
+          and libs to Visual Studio's paths.
+
+        * Flex and Bison must be installed (typically as part of a Cygwin
+          installation, as detailed abovie) and must be added to the
+          Visual Studio paths for executable commands.
+
+     Once these prerequisites are met, it should be possible to open brook.sln
+     at the top level of the repository and build both BRCC and the runtime.
+
+   * In order to build BRCC and the runtime on other platforms, you will
+     need the standard GNU toolchain including:
+        - g++ and gcc
+        - flex
+        - bison
+        - bin-utils
+        - perl (for our dependency-tracking script)
+
+     With these tools installed the system can be built by executing 'make'
+     at the top level of the Brook distribution.
+
+Building and Runnint Example Brook Programs
+
+   This distribution includeds various programs that test the Brook
+   compiler and runtime infrastructure. Various regression tests can
+   be found in prog/tests, and on command-line build configurations
+   the regression can be run by executing 'make regression'.
+
+   A small number of larger, more interesting programs reside in
+   prog/apps and demonstrate how the various features of the Brook
+   language can be used to perform useful work.      
 
 For more information, read the Brook GPU project pages at:
 	
@@ -85,3 +136,5 @@ Revision History
 
 12/19/03:  Added text about OS for different backends
            Linux support for nv30gl
+
+10/14/04:  Revised text to reflect upcoming 0.4 release.
