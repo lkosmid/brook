@@ -240,9 +240,7 @@ void LocalVariableSplitNode::assign( SplitNode* inValue )
   SplitNode* value = inValue->getValueNode();
   if( value->inferredType != inferredType )
   {
-    std::vector<SplitNode*> constructorArgs;
-    constructorArgs.push_back( value );
-    value = new ConstructorSplitNode( inferredType, constructorArgs );
+    value = new CastSplitNode( inferredType, value );
   }
   if( _value )
     removeChild( _value );
@@ -276,9 +274,7 @@ void AssignableArgumentSplitNode::assign( SplitNode* inValue )
   SplitNode* value = inValue->getValueNode();
   if( value->inferredType != inferredType )
   {
-    std::vector<SplitNode*> constructorArgs;
-    constructorArgs.push_back( value );
-    value = new ConstructorSplitNode( inferredType, constructorArgs );
+    value = new CastSplitNode( inferredType, value );
   }
   if( _assignedValue )
     removeChild( _assignedValue );
@@ -300,8 +296,25 @@ IteratorArgumentSplitNode::IteratorArgumentSplitNode( const std::string& inName,
   _value = new InputInterpolantSplitNode( argumentIndex, 0, inferredType );
 }
 
+OutputArgumentSplitNode::OutputArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex, SplitTreeBuilder& ioBuilder )
+  : IndexofableSplitNode( inName, inType, inArgumentIndex )
+{
+  SplitNode* interpolant = ioBuilder.getOutputInterpolant();
+  indexofConstant = new InputConstantSplitNode( argumentIndex, ::brook::desc::kOutputConstant_Indexof, kSplitBasicType_Float4 );
+
+  // compute the indexof expression...
+  // TIM: for now we are *really* bad and assume it is always the ps2.0 way :)
+
+  _indexofValue = ioBuilder.addConstructor( kSplitBasicType_Float4,
+    ioBuilder.addBinaryOp( "+",
+      ioBuilder.addBinaryOp( "*", interpolant, ioBuilder.addMember(indexofConstant,"xy") ),
+      ioBuilder.addMember( indexofConstant, "zw" ) ),
+    ioBuilder.addConstant( 0 ),
+    ioBuilder.addConstant( 0 ) );
+}
+
 StreamArgumentSplitNode::StreamArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex, SplitTreeBuilder& ioBuilder )
-  : AssignableArgumentSplitNode( inName, inType, inArgumentIndex )
+  : IndexofableSplitNode( inName, inType, inArgumentIndex )
 {
   sampler = new InputSamplerSplitNode( argumentIndex, 0, inferredType );
   interpolant = new InputInterpolantSplitNode( argumentIndex, 0, kSplitBasicType_Float2 );
@@ -311,7 +324,7 @@ StreamArgumentSplitNode::StreamArgumentSplitNode( const std::string& inName, Spl
   // compute the indexof expression...
   // TIM: for now we are *really* bad and assume it is always the ps2.0 way :)
 
-  indexofNode = ioBuilder.addConstructor( kSplitBasicType_Float4,
+  _indexofValue = ioBuilder.addConstructor( kSplitBasicType_Float4,
     ioBuilder.addBinaryOp( "+",
       ioBuilder.addBinaryOp( "*", interpolant, ioBuilder.addMember(indexofConstant,"xy") ),
       ioBuilder.addMember( indexofConstant, "zw" ) ),
@@ -531,6 +544,19 @@ void ConstructorSplitNode::printExpression( std::ostream& inStream )
   inStream << " )";
 }
 
+void CastSplitNode::printTemporaryExpression( std::ostream& inStream )
+{
+  inStream << "(" << inferredType << ")( ";
+  _value->printTemporaryName( inStream );
+  inStream << " )";
+}
+
+void CastSplitNode::printExpression( std::ostream& inStream )
+{
+  inStream << "(" << inferredType << ")( ";
+  _value->printExpression( inStream );
+  inStream << " )";
+}
 
 FunctionCallSplitNode::FunctionCallSplitNode( const std::string& inName, const std::vector<SplitNode*>& inArguments )
   : _name(inName), _arguments(inArguments)
@@ -556,6 +582,21 @@ FunctionCallSplitNode::FunctionCallSplitNode( const std::string& inName, const s
   {
     assert( _arguments.size() == 2 );
     inferredType = kSplitBasicType_Float3;
+  }
+  else if( _name == "abs" )
+  {
+    assert( _arguments.size() == 1 );
+    inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "min" )
+  {
+    assert( _arguments.size() == 2 );
+    inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "max" )
+  {
+    assert( _arguments.size() == 2 );
+    inferredType = _arguments[0]->inferredType;
   }
 }
 

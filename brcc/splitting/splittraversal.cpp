@@ -122,6 +122,13 @@ void SplitStatementTraversal::traverse( SplitNode* inNode )
   stream << "\t";
   if( inNode->needsTemporaryVariable() )
   {
+    if( inNode->inferredType == kSplitBasicType_Unknown )
+    {
+      std::cerr << "unknown intermediate type for: ";
+      inNode->dump( std::cerr );
+      std::cerr << std::endl;
+    }
+
     // if it needs us to declare the var, do it...
     stream << inNode->inferredType;
     stream << " ";
@@ -131,6 +138,7 @@ void SplitStatementTraversal::traverse( SplitNode* inNode )
   inNode->printTemporaryExpression( stream );
   stream << ";";
 //  stream << " // ";
+//  inNode->dump( stream );
 //  inNode->printExpression( stream );
   stream << std::endl;
 }

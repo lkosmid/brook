@@ -42,6 +42,7 @@
 #include "codegen.h"
 
 #include "gram.h"
+#include "splitting/splitting.h"
 
 //#define PRINT_LOCATION
 
@@ -1108,6 +1109,18 @@ ReturnStemnt::findExpr( fnExprCallback cb )
        result = (cb)(result);
        result->findExpr(cb);
     }
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+void ReturnStemnt::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  SplitNode* resultValue = result->buildSplitTree( ioBuilder );
+  if( resultValue )
+    std::cerr << "return of a non-NULL\n";
+  else
+    std::cerr << "return of a NULL\n";
+  ioBuilder.setResultValue( resultValue );
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

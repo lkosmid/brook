@@ -273,7 +273,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   du = float3(dot(N1,U0)+d1,
               dot(N1,U1)+d1,
               dot(N1,U2)+d1);
-  du=abs(du)>=EPSILON?du:z3ro;
+//  du=abs(du)>=EPSILON?du:z3ro;
   du0du1 = du.x *du.y;
   du0du2 = du.x *du.z;
   
@@ -285,7 +285,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   dv = float3(dot(N2,V0)+d2,
               dot(N2,V1)+d2,
               dot(N2,V2)+d2);
-  dv = abs(dv)>=EPSILON?dv:z3ro;
+//  dv = abs(dv)>=EPSILON?dv:z3ro;
   dv0dv1 = dv.x*dv.y;
   dv0dv2 = dv.x*dv.z;
   ret= (ret&&(dv0dv1<= 0.0f || dv0dv2 <=0.0f))?1:0;

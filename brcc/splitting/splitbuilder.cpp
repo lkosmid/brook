@@ -6,6 +6,8 @@
 #include "splitcompiler.h"
 #include "../brtkernel.h"
 
+#include <assert.h>
+
 static SplitBasicType getInferredType( BaseType* inType )
 {
   switch(inType->typemask)
@@ -29,8 +31,12 @@ static SplitBasicType getInferredType( BaseType* inType )
 }
 
 SplitTreeBuilder::SplitTreeBuilder( SplitTree& ioTree )
-: tree(ioTree), compiler(ioTree.getComplier())
+  : tree(ioTree), compiler(ioTree.getComplier()), _resultValue(NULL)
 {
+}
+
+SplitNode* SplitTreeBuilder::getOutputInterpolant() {
+  return tree.getOutputPositionInterpolant();
 }
 
 SplitNode* SplitTreeBuilder::addArgument( Decl* inDeclaration, int inArgumentIndex )
@@ -52,7 +58,7 @@ SplitNode* SplitTreeBuilder::addArgument( Decl* inDeclaration, int inArgumentInd
   }
   else if( (quals & TQ_Out) != 0 ) // output arg
   {
-    result = new OutputArgumentSplitNode( name, inferredType, inArgumentIndex );
+    result = new OutputArgumentSplitNode( name, inferredType, inArgumentIndex, *this );
   }
   else if( type->isStream() ) // non-reduce stream
   {
@@ -133,23 +139,35 @@ SplitNode* SplitTreeBuilder::addConstant( int inValue )
 
 SplitNode* SplitTreeBuilder::addMember( SplitNode* inValue, const std::string& inName )
 {
-  SplitNode* result = new BrtMemberSplitNode( inValue->getValueNode(), inName );
+  assert( inValue );
+  SplitNode* value = inValue->getValueNode();
+
+  SplitNode* result = new BrtMemberSplitNode( value, inName );
   return result;
 }
 
 SplitNode* SplitTreeBuilder::addUnaryOp( const std::string& inOperation, SplitNode* inOperand )
 {
-  return new UnaryOpSplitNode( inOperation, inOperand->getValueNode() );
+  assert( inOperand );
+  SplitNode* operand = inOperand->getValueNode();
+
+  return new UnaryOpSplitNode( inOperation, operand );
 }
 
 SplitNode* SplitTreeBuilder::addBinaryOp( const std::string& inOperation, SplitNode* inLeft, SplitNode* inRight )
 {
+  assert( inLeft );
+  assert( inRight );
   SplitNode* result = new BrtBinaryOpSplitNode( inOperation, inLeft->getValueNode(), inRight->getValueNode() );
   return result;
 }
 
 SplitNode* SplitTreeBuilder::addGather( SplitNode* inStream, const std::vector<SplitNode*> inIndices )
 {
+  assert( inStream );
+  for( size_t i = 0; i < inIndices.size(); i++ )
+    assert( inIndices[i] );
+
   GatherArgumentSplitNode* stream = inStream->isGatherArgument();
   assert(stream);
   InputSamplerSplitNode* sampler = stream->getSampler();
@@ -171,8 +189,18 @@ SplitNode* SplitTreeBuilder::addGather( SplitNode* inStream, const std::vector<S
   return result;
 }
 
+SplitNode* SplitTreeBuilder::addCast( BaseType* inType, SplitNode* inValue )
+{
+  SplitBasicType inferredType = getInferredType( inType );
+  SplitNode* result = new CastSplitNode( inferredType, inValue->getValueNode() );
+  return result;
+}
+
 SplitNode* SplitTreeBuilder::addConstructor( BaseType* inType, const std::vector<SplitNode*>& inArguments )
 {
+  for( size_t a = 0; a < inArguments.size(); a++ )
+    assert( inArguments[a] );
+
   std::vector<SplitNode*> argumentValues;
   for( std::vector<SplitNode*>::const_iterator i = inArguments.begin(); i != inArguments.end(); ++i )
     argumentValues.push_back( (*i)->getValueNode() );
@@ -184,6 +212,8 @@ SplitNode* SplitTreeBuilder::addConstructor( BaseType* inType, const std::vector
 
 SplitNode* SplitTreeBuilder::addConstructor( SplitBasicType inType, SplitNode* inX, SplitNode* inY, SplitNode* inZ, SplitNode* inW )
 {
+  assert( inX );
+
   std::vector<SplitNode*> argumentValues;
   if( inX )
     argumentValues.push_back( inX->getValueNode() );
@@ -201,13 +231,21 @@ SplitNode* SplitTreeBuilder::addConstructor( SplitBasicType inType, SplitNode* i
 SplitNode* SplitTreeBuilder::addIndexof( const std::string& inName )
 {
   SplitNode* variable = findVariable( inName );
-  StreamArgumentSplitNode* stream = variable->isStreamArgument();
-  return stream->getIndexofNode();
+  assert( variable );
+
+  variable->dump( std::cerr );
+
+  IndexofableSplitNode* stream = variable->isIndexofable();
+  assert( stream );
+  return stream->getIndexofValue();
 }
 
 SplitNode* SplitTreeBuilder::addConditional( SplitNode* inCondition, SplitNode* inConsequent, SplitNode* inAlternate )
 {
-  SplitNode* result = new ConditionalSplitNode( inCondition, inConsequent, inAlternate );
+  assert( inCondition );
+  assert( inConsequent );
+  assert( inAlternate );
+  SplitNode* result = new ConditionalSplitNode( inCondition->getValueNode(), inConsequent->getValueNode(), inAlternate->getValueNode() );
   return result;
 }
 
@@ -225,6 +263,8 @@ SplitNode* SplitTreeBuilder::findVariable( const std::string& inName )
 
 SplitNode* SplitTreeBuilder::assign( const std::string& inName, SplitNode* inValue )
 {
+  assert( inValue );
+
   std::cerr << "assign to " << inName << std::endl;
 
   NodeMap::iterator i = nodeMap.find(inName);
@@ -236,7 +276,7 @@ SplitNode* SplitTreeBuilder::assign( const std::string& inName, SplitNode* inVal
 
   SplitNode* variable = (*i).second;
 
-  variable->assign( inValue->getValueNode() );
+  variable->assign( inValue->getValueNode()->getValueNode() );
 
   return variable;
 }
@@ -245,17 +285,16 @@ SplitNode* SplitTreeBuilder::addFunctionCall( Expression* inFunction, const std:
 {
   // we have to inline the function, applied to those arguments...
 
-
-  std::cerr << "AAA" << std::endl;
   // first find the function by name...
   assert(inFunction->etype == ET_Variable);
   Variable* variable = (Variable*)inFunction;
+  std::string functionName = variable->name->name;
   SymEntry* entry = variable->name->entry;
-  std::cerr << "BBB" << std::endl;
 
   if( entry != NULL && entry->IsFctDecl() )
   {
-    std::cerr << "before call" << std::endl;
+    std::cerr << functionName << " {" << std::endl;
+
     FunctionDef* function = entry->u2FunctionDef;
 
     BRTGPUKernelCode* kernelCode = new BRTPS20KernelCode( *function );
@@ -266,18 +305,21 @@ SplitNode* SplitTreeBuilder::addFunctionCall( Expression* inFunction, const std:
     SplitTree subfunctionTree( function, compiler, inArguments );
 
     // TIM: is that enough?
-    std::cerr << "after call" << std::endl;
+    std::cerr << "} " << functionName << std::endl;
 
     delete kernelCode;
-    return NULL;
+    SplitNode* resultValue = subfunctionTree.getResultValue();
+    if( resultValue == NULL )
+      std::cerr << "result was NULL\n";
+    else
+      std::cerr << "result was non-NULL\n";
+    return resultValue;
   }
   else
   {
     // let's assume that it's a built-in function
     std::string name = variable->name->name;
-    std::cerr << "CCC" << std::endl;
     SplitNode* result = new FunctionCallSplitNode( name, inArguments );
-    std::cerr << "DDD" << std::endl;
     return result;
   }
 }

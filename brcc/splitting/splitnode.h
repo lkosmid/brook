@@ -14,6 +14,7 @@ class SplitArgumentCounter;
 class SplitTree;
 class SplitCompiler;
 class OutputSplitNode;
+class IndexofableSplitNode;
 
 class SplitNode
 {
@@ -85,6 +86,7 @@ public:
   virtual GatherArgumentSplitNode* isGatherArgument() { return 0; }
   virtual StreamArgumentSplitNode* isStreamArgument() { return 0; }
   virtual OutputSplitNode* isOutputNode() { return 0; }
+  virtual IndexofableSplitNode* isIndexofable() { return 0; }
 
   // whacky stuff to let arguments pass their value off to another node:
   virtual SplitNode* getValueNode() { return this; }
@@ -252,11 +254,17 @@ public:
 
   void assign( SplitNode* inValue );
   virtual SplitNode* getValueNode() {
-    return _value ? _value : this;
+    return _value ? _value->getValueNode() : this;
   }
 
   void printTemporaryExpression( std::ostream& inStream );
   void printExpression( std::ostream& inStream );
+
+  virtual void dump( std::ostream& inStream ) {
+    inStream << "var{";
+    printExpression( inStream );
+    inStream << "}";
+  }
 
 private:
   std::string _name;
@@ -295,6 +303,23 @@ protected:
   SplitNode* _assignedValue;
 };
 
+class IndexofableSplitNode : public AssignableArgumentSplitNode
+{
+public:
+  IndexofableSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex )
+    : AssignableArgumentSplitNode( inName, inType, inArgumentIndex ), _indexofValue(0)
+  {}
+
+  virtual IndexofableSplitNode* isIndexofable() { return this; }
+
+  virtual SplitNode* getIndexofValue() {
+    return _indexofValue;
+  }
+
+protected:
+  SplitNode* _indexofValue;
+};
+
 class ReduceArgumentSplitNode : public AssignableArgumentSplitNode
 {
 public:
@@ -315,29 +340,37 @@ private:
   InputInterpolantSplitNode* _value;
 };
 
-class OutputArgumentSplitNode : public AssignableArgumentSplitNode
+class OutputArgumentSplitNode : public IndexofableSplitNode
 {
 public:
-  OutputArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex )
-    : AssignableArgumentSplitNode( inName, inType, inArgumentIndex ) {}
+  OutputArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex, SplitTreeBuilder& ioBuilder );
+
+private:
+  InputConstantSplitNode* indexofConstant;
 };
 
-class StreamArgumentSplitNode : public AssignableArgumentSplitNode
+class StreamArgumentSplitNode : public IndexofableSplitNode
 {
 public:
   StreamArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex, SplitTreeBuilder& ioBuilder );
   
   virtual SplitNode* getValueNode() { return _assignedValue ? _assignedValue : value; }
-  virtual SplitNode* getIndexofNode() { return indexofNode; }
 
   virtual StreamArgumentSplitNode* isStreamArgument() { return this; }
+
+  // print an expression to get this node's value
+  virtual void dump( std::ostream& inStream ) {
+    inStream << "stream{";
+    printExpression( inStream );
+    inStream << "}";
+  }
 
 private:
   InputSamplerSplitNode* sampler;
   InputInterpolantSplitNode* interpolant;
   InputConstantSplitNode* indexofConstant;
   SplitNode* value;
-  SplitNode* indexofNode;
+//  SplitNode* indexofNode;
 };
 
 class GatherArgumentSplitNode : public ArgumentSplitNode
@@ -478,6 +511,24 @@ public:
 
 private:
   std::vector<SplitNode*> arguments;
+};
+
+class CastSplitNode :
+  public SplitNode
+{
+public:
+  CastSplitNode( SplitBasicType inType, SplitNode* inValue )
+    : _value(inValue->getValueNode())
+  {
+    inferredType = inType;
+    addChild(_value);
+  }
+
+  virtual void printTemporaryExpression( std::ostream& inStream );
+  virtual void printExpression( std::ostream& inStream );
+
+private:
+  SplitNode* _value;
 };
 
 class FunctionCallSplitNode :

@@ -1606,9 +1606,7 @@ CastExpr::findExpr( fnExprCallback cb )
 SplitNode* CastExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
 {
   SplitNode* expression = expr->buildSplitTree( ioBuilder );
-  std::vector<SplitNode*> constructorArguments;
-  constructorArguments.push_back( expression );
-  return ioBuilder.addConstructor( type->getBase(), constructorArguments );
+  return ioBuilder.addCast( type->getBase(), expression );
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

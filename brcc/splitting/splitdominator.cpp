@@ -53,6 +53,8 @@ void SplitTree::buildDominatorTree()
 
   for( NodeMap::iterator i = outputValues.begin(); i != outputValues.end(); ++i )
     _outputList.push_back( (*i).second );
+  if( _resultValue )
+    _outputList.push_back( _resultValue );
 
 //  std::cerr << "step 1" << std::endl;
 

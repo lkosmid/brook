@@ -36,6 +36,14 @@ public:
     return _compiler;
   }
 
+  SplitNode* getResultValue() {
+    return _resultValue;
+  }
+
+  SplitNode* getOutputPositionInterpolant() {
+    return _outputPositionInterpolant;
+  }
+
 private:
   void build( FunctionDef* inFunctionDef );
   void build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>& inArguments );
@@ -59,6 +67,7 @@ private:
   std::vector<SplitNode*> _multiplyReferencedNodes;
 
   SplitNode* _outputPositionInterpolant;
+  SplitNode* _resultValue;
 
   const SplitCompiler& _compiler;
 };

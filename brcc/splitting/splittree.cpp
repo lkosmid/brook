@@ -9,17 +9,18 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <fstream>
 
 #include <algorithm>
 
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler )
-  : _compiler(inCompiler)
+  : _compiler(inCompiler), _resultValue(NULL)
 {
   build( inFunctionDef );
 }
 
 SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler, const std::vector<SplitNode*>& inArguments )
-  : _compiler(inCompiler)
+  : _compiler(inCompiler), _resultValue(NULL)
 {
   build( inFunctionDef, inArguments );
 }
@@ -30,9 +31,6 @@ SplitTree::~SplitTree()
 
 void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream )
 {
-  // TIM: hack to make temporaries have a shared position stream
-  _outputPositionInterpolant = new InputInterpolantSplitNode( -1, 0, kSplitBasicType_Float2 );
-
   rdsSearch();
   rdsSubdivide();
 
@@ -172,6 +170,23 @@ void SplitTree::rdsMerge( SplitNode* n )
 
   size_t childCount = n->_graphChildren.size();
 
+  if( childCount > 4 )
+  {
+    std::cerr << "many children!!!!";
+    
+    std::ofstream dump("dump.txt");
+    dump << "problem node: ";
+    n->dump( dump );
+    dump << "children:\n";
+    for( size_t i = 0; i < childCount; i++ )
+    {
+      n->_graphChildren[i]->dump( dump );
+      dump << std::endl;
+    }
+    dump.close();
+    assert(false);
+  }
+
 /*  std::cerr << "children are:" << std::endl;
   for( size_t i = 0; i < childCount; i++ )
   {
@@ -184,20 +199,20 @@ void SplitTree::rdsMerge( SplitNode* n )
     std::vector<size_t> validSubsets;
     std::vector<SplitShaderHeuristics> validHeuristics;
 
-//    std::cerr << "childCount = " << d << " out of " << childCount << std::endl;
+    std::cerr << "childCount = " << d << " out of " << childCount << std::endl;
 
     SplitSubsetGenerator generator( d, childCount );
     while( generator.hasMore() )
     {
       size_t subsetBitfield = generator.getNext();
 
-//      std::cerr << "subset = " << subsetBitfield << std::endl;
+      std::cerr << "subset = " << subsetBitfield << std::endl;
 
       for( size_t i = 0; i < childCount; i++ )
         n->_graphChildren[i]->_mergeSplitHere = (subsetBitfield & (1 << i)) == 0;
 
      if( rdsCompile( n ) ) {
-//        std::cerr << "subset " << subsetBitfield << " was valid" << std::endl;
+        std::cerr << "subset " << subsetBitfield << " was valid" << std::endl;
         validSubsets.push_back( subsetBitfield );
         validHeuristics.push_back( n->getHeuristics() );
       }
@@ -224,7 +239,7 @@ void SplitTree::rdsMerge( SplitNode* n )
 
     // mark children according to that subset
     // and we are done!!!
-//    std::cerr << "subset " << bestSubset << " was chosen" << std::endl;
+    std::cerr << "subset " << bestSubset << " was chosen" << std::endl;
     for( size_t i = 0; i < childCount; i++ )
       n->_graphChildren[i]->_rdsSplitHere = (bestSubset & (1 << i)) == 0;
 
@@ -233,7 +248,7 @@ void SplitTree::rdsMerge( SplitNode* n )
     return;
   }
 
-//  std::cerr << "empty subset was chosen" << std::endl;
+  std::cerr << "empty subset was chosen" << std::endl;
   {for( size_t i = 0; i < childCount; i++ ){
     n->_graphChildren[i]->_rdsSplitHere = true;
   }}
@@ -266,17 +281,17 @@ bool SplitTree::rdsCompile( SplitNode* inNode )
   std::ostringstream nullStream;
   _compiler.compile( *this, outputVector, nullStream, heuristics );
 
-  /* TIM: if you want to see the output at the point of failure...
+  /*/ TIM: if you want to see the output at the point of failure...
   static size_t errorNumber = 0;
   if( !heuristics.valid )
   {
-    std::cerr << "****" << std::endl;
-    inNode->dump( std::cerr );
-    std::cerr << "****" << std::endl;
+//    std::cerr << "****" << std::endl;
+//    inNode->dump( std::cerr );
+//    std::cerr << "****" << std::endl;
 
-    if( ++errorNumber == 2 )
+    if( ++errorNumber == 1 )
       throw 1;
-  }*/
+  }//*/
 
   if( heuristics.valid )
     inNode->setHeuristics( heuristics );
@@ -367,6 +382,9 @@ static FunctionType* getFunctionType( FunctionDef* inFunctionDef )
 
 void SplitTree::build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>& inArguments )
 {
+  // TIM: hack to make temporaries have a shared position stream
+  _outputPositionInterpolant = new InputInterpolantSplitNode( -1, 0, kSplitBasicType_Float2 );
+
   FunctionType* functionType = getFunctionType( inFunctionDef );
 
   SplitTreeBuilder builder( *this );
@@ -390,6 +408,8 @@ void SplitTree::build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>
     statement = statement->next;
   }
 
+  _resultValue = builder.getResultValue();
+
   // we were called with arguments
   // thus we don't deal with creating
   // output nodes, or with building
@@ -398,6 +418,9 @@ void SplitTree::build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>
 
 void SplitTree::build( FunctionDef* inFunctionDef )
 {
+  // TIM: hack to make temporaries have a shared position stream
+  _outputPositionInterpolant = new InputInterpolantSplitNode( -1, 0, kSplitBasicType_Float2 );
+
   FunctionType* functionType = getFunctionType( inFunctionDef );
   Statement* headStatement = inFunctionDef->head;
 
@@ -417,6 +440,8 @@ void SplitTree::build( FunctionDef* inFunctionDef )
     statement = statement->next;
   }
 
+  _resultValue = builder.getResultValue();
+
   for( i = 0; i < functionType->nArgs; i++ )
   {
     Decl* argumentDecl = functionType->args[i];
@@ -425,7 +450,7 @@ void SplitTree::build( FunctionDef* inFunctionDef )
 
     if( (argumentType->getQualifiers() & TQ_Out) != 0 )
     {
-      SplitNode* outputValue = builder.findVariable( name );
+      SplitNode* outputValue = builder.findVariable( name )->getValueNode();
       // TIM: we assume here that each output is single-valued... :(
       SplitNode* outputNode = new OutputSplitNode( outputValue, i, 0 );
       outputValues[name] = outputNode;
