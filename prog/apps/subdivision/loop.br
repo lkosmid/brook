@@ -448,7 +448,74 @@ kernel void linearReorgSplitTriangles (SplitTri splittri<>,
   smallEnough(tri,neighbor,tri,neighbor,epsilon);
 }
 
+struct VertexArray{
+  float3 * v;
+  unsigned int size;
+  unsigned int alloc;
+};
+void initVertexArray(struct VertexArray *v) {
+  v->v=0;v->size=0;v->alloc=0;
+}
+void destroyVertexArray(struct VertexArray *v) {
+  if (v->v) free(v->v);
+}
+void expandVertexArray(struct VertexArray * v,
+                       unsigned int more) {
+  v->size+=more;
+  while(v->size>v->alloc) {
+    v->alloc*=2;
+    v->v = (float3*)realloc(v->v,v->alloc*sizeof(float3));
+  }
+}                   
+void pushBackVertexArray(struct VertexArray * v,
+                         float3 f) {
+  if (++v->size>v->alloc) {
+    v->alloc*=2;
+    v->v = (float3*)realloc(v->v,v->alloc*sizeof(float3));
+  }
+  v->v[v->size-1]=f;
+}                   
+int toi(float f) {return (int)f;}
+void subdivide (Neighbor (*neighbors)<>,
+                Tri (*triangles)<>,
+                struct VertexArray *output,
+                float epsilon) {
+  {
+    float2 shouldProduce<2048,0>;
+    float2 shouldNotProduce<2048,0>;
+    produceTriP(*triangles,shouldProduce,shouldNotProduce);
+    {
+      int sizey=3*toi(streamSize(shouldNotProduce).x);
+      float3 outputTri<2048,sizey>;
+      writeFinalTriangles(*triangles,shouldNotProduce,outputTri);
+      if (streamSize(shouldProduce).x) {
+        subdivide(neighbors,triangles,output,epsilon);
+      } 
+      sizey = output->size;
+      expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
+                                              streamSize(outputTri).y));
+      streamWrite(outputTri,output->v+sizey);    
+      
+    }
+  }
+  /*
+    if (streamSize(triangles).y)
+      subdivide(neighbors,triangles,output,epsilon); // subdivide here if your card runs out of ram
+  */
+  // prevents all writing at the end
+}
+               
 int main () {
+  float epsilon=.01;
+  Neighbor neighbors<2048,1>;
+  Tri triangles<2048,1>;
+  struct VertexArray v;
+  initVertexArray(&v);
+  // initialize neighbors and triangles
+  smallEnough(triangles,neighbors,triangles,neighbors,epsilon);
+  subdivide(&neighbors,&triangles,&v,epsilon);
+  
+
    return 0;
 }
 
