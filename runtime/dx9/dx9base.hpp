@@ -110,6 +110,7 @@ namespace brook {
     vfprintf( stderr, inFormat, args );
     fflush( stderr );
     va_end(args);
+    assert(false);
     exit(-1);
   }
 

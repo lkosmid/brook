@@ -63,7 +63,7 @@ generate_shader_code (Decl **args, int nArgs,
   shader << "#ifdef USERECT\n";
   shader << "#define _stype   samplerRECT\n";
   shader << "#define _sfetch  texRECT\n";
-  shader << "#define _gather1(a,b,c) texRECT((a),(b))\n";
+  shader << "#define _gather1(a,b,c) texRECT((a),float2(b,0))\n";
   shader << "#define _gather2(a,b,c) texRECT((a),(b))\n";
   shader << "#define _computeindexof(a,b) (a)\n";
   shader << "#else\n";
@@ -135,7 +135,7 @@ generate_shader_code (Decl **args, int nArgs,
          shader << "uniform _stype _tex_" << *args[i]->name;
          shader << " : register (s" << samplerreg++ << "),\n\t\t";
          if( FunctionProp[funtionName].contains(i) ) {
-           shader << "uniform float4 " << *args[i]->name << "_invscalebias"
+           shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
                   << " : register (c" << constreg++ << "),\n\t\t";
          }
          shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
@@ -145,7 +145,7 @@ generate_shader_code (Decl **args, int nArgs,
       
       shader << "uniform _stype " << *args[i]->name;
       shader << " : register (s" << samplerreg++ << "),\n\t\t";
-      shader << "uniform float4 " << *args[i]->name << "_scalebias"
+      shader << "uniform float4 _const_" << *args[i]->name << "_scalebias"
                 << " : register (c" << constreg++ << ")";
     
     } else {
@@ -224,8 +224,8 @@ generate_shader_code (Decl **args, int nArgs,
                   << "_computeindexof( "
                   << "_tex_" << *args[i]->name << "_pos, "
                   << "float4( _tex_" << *args[i]->name << "_pos*"
-                  << *args[i]->name << "_invscalebias.xy + "
-                  << *args[i]->name << "_invscalebias.zw,0,0));\n";
+                  << "_const_" << *args[i]->name << "_invscalebias.xy + "
+                  << "_const_" << *args[i]->name << "_invscalebias.zw,0,0));\n";
          }
      }
   }

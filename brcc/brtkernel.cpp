@@ -75,7 +75,7 @@ BRTGPUKernelCode::BRTGPUKernelCode(const FunctionDef& _fDef)
 
 static Variable * NewGatherArg (Variable * v) {
    Symbol * s = new Symbol;
-   s->name = v->name->name+"_scalebias";
+   s->name = "_const_"+v->name->name+"_scalebias";
    return new Variable(s,v->location);
    
 }
@@ -99,7 +99,7 @@ void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
       Type * t = ft->args[i]->form;
       if (recursiveIsGather(t)) {
          out << "_stype "<<nam->name <<","<<std::endl;
-         out << blank << "float4 "<<nam->name<<"_scalebias";
+         out << blank << "float4 _const_"<<nam->name<<"_scalebias";
       }else {
          if (ft->args[i]->isStream()) {
             t = static_cast<ArrayType *>(t)->subType;
