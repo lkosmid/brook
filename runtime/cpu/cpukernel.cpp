@@ -25,7 +25,7 @@ struct BrtThread {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static unsigned int getNumThreads() {
-   char * env = getenv ("BRT_NUM_THREADS");
+   static char * env = getenv ("BRT_NUM_THREADS");
    if (!env)
       return 4;
    unsigned int ret = atoi(env);

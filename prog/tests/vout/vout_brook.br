@@ -58,12 +58,28 @@ int main () {
   streamPrint(e);
   for (i=0;i<40;++i) {
      for (j=0;j<10;++j) {
+       int k;
         data_nil[i*10+j]=1.0;
         streamRead(nil,data_nil);
         CountValuesfloat(&nil,&test,40,10,-1);
         streamWrite(test,data_out);
         data_nil[i*10+j]=0.0;
-        
+
+        for (k=0;k<10*40;++k) {
+          if (k<i*10+j) {
+            if (data_out[k]!=0) {
+              printf ("Test %d %d not zero at %d %d\n",i,j,k/10,k%10);
+              break;            
+            }
+          }else{
+            if (data_out[k]!=1) {
+              printf ("Test %d %d not one at %d %d\n",i,j,k/10,k%10);
+              break;
+              
+            }
+          }
+                      
+        }
      }
   }
   return 0;

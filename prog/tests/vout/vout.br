@@ -36,10 +36,10 @@ kernel void getIndexAt(float4 inputindex,
    index.x=inputindex.x+shiftRight;
    index.y=inputindex.y+floor(index.x/maxvalue.x);
    index.x=round(fmod(round(index.x),maxvalue.x));
-   if (index.x<-.50)
+   if (index.x<=-.50)
       index.x+=maxvalue.x;//only necessary if shiftRight<0
    if (index.x+.25 >= maxvalue.x)
-      index.x = maxvalue.x-1.0;
+     index.x = 0;//if fmod fails us
    outputindex=index;
    //   printf(maxvalue.x,maxvalue.y,outputindex.x,outputindex.y);
 }

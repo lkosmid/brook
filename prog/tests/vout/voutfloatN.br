@@ -1,25 +1,13 @@
-#line 1 "brtvector.hpp"
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 #pragma warning(disable:4244)
 #include "streamholder.h"
 #include <stdio.h>
@@ -58,10 +46,10 @@ kernel void getIndexAt(float4 inputindex,
    index.x=inputindex.x+shiftRight;
    index.y=inputindex.y+floor(index.x/maxvalue.x);
    index.x=round(fmod(round(index.x),maxvalue.x));
-   if (index.x<-.50)
+   if (index.x<=-.50)
       index.x+=maxvalue.x;//only necessary if shiftRight<0
    if (index.x+.25 >= maxvalue.x)
-      index.x = maxvalue.x-1.0;
+     index.x = 0;//if fmod fails us
    outputindex=index;
    //   printf(maxvalue.x,maxvalue.y,outputindex.x,outputindex.y);
 }
@@ -95,7 +83,6 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
-#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -1123,7 +1110,6 @@ unsigned int totalCombineVoutfloat (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -2151,7 +2137,6 @@ unsigned int totalCombineVoutfloat2 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -3179,7 +3164,6 @@ unsigned int totalCombineVoutfloat3 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -4207,16 +4191,10 @@ unsigned int totalCombineVoutfloat4 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 1102 "brtvector.hpp"
-#line 1102 "brtvector.hpp"
 
-#line 1102 "brtvector.hpp"
 
-#line 1102 "brtvector.hpp"
 
-#line 1102 "brtvector.hpp"
 
-#line 1102 "brtvector.hpp"
 
 
 
