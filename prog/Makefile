@@ -4,12 +4,5 @@ REGRESSIONDIRS := toy read_write sum input_output gather_direct \
 		  scatter indexof
 
 SUBDIRS := $(REGRESSIONDIRS) benchmark iterator
-#scatter indexof
-#above tests are cpu only uncomment when dx9 is ready
 
-include ../common.mk
-
-
-
-
-
+include $(ROOTDIR)/common.mk
