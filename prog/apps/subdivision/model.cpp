@@ -49,6 +49,7 @@ void checkNeighbors (Tri * t, Neighbor * a, Neighbor* b, unsigned int tListsize)
     }
   }
 }
+
 void recomputeNeighbors (Tri * tList, Neighbor* neigh, unsigned int tListsize) {
    for (unsigned int i=0;i<tListsize;++i) {
       unsigned int j;
@@ -91,14 +92,29 @@ void recomputeNeighbors (Tri * tList, Neighbor* neigh, unsigned int tListsize) {
         n.ABB=zero4;
       if (n.AAB==n.AB)
         n.AAB=zero4;
+      if (n.AAB==n.AC)
+        n.AAB=zero4;
+      if (n.AAC==n.AB)
+        n.AAC=zero4;
       if (n.AAC==n.AC)
         n.AAC=zero4;
       if (n.ACC==n.AC)
         n.ACC=zero4;
+      if (n.ACC==n.BC)
+        n.ACC=zero4;
+      if (n.BCC==n.AC)
+        n.BCC=zero4;
+      if (n.BCC==n.BC)
+        n.BCC=zero4;
+      if (n.BBC==n.AB)
+        n.BBC=zero4;
       if (n.BBC==n.BC)
         n.BBC=zero4;
-      if (n.BCC==n.BC)
-        n.BBC=zero4;
+      if (n.ABB==n.AB)
+        n.ABB=zero4;
+      if (n.ABB==n.BC)
+        n.ABB=zero4;
+
       neigh[i]=n;
    }
 }
