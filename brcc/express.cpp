@@ -33,6 +33,8 @@
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+#include <iomanip>
+#include <iostream>
 
 #include "config.h"
 #include "express.h"
@@ -471,7 +473,8 @@ FloatConstant::dup0() const
 void
 FloatConstant::print(std::ostream& out) const
 {
-    out << doub;
+    out << std::setiosflags(std::ios::showpoint | std::ios::fixed)
+        << doub << "f";
 
 #ifdef    SHOW_TYPES
     if (type != NULL)
