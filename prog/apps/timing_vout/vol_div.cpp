@@ -395,9 +395,10 @@ int volume_division (int argc, char ** argv) {
                sizesx.push_back(toi(streamSize(v).x));
                sizesy.push_back(toi(streamSize(v).y));
                streamWrite(v,tris);
-               for (unsigned int i=0;i<sizesx.back()*sizesy.back();++i) {
+               for (int i=0;i<sizesx.back()*sizesy.back();++i) {
                   if (tris[i].w>=0&&tris[i].w<=255.5) {
-                     unsigned int tmp=m_triNum[(unsigned int)tris[i].w];
+                     unsigned int tmp=(unsigned int)m_triNum
+                        [(unsigned int)tris[i].w];
                      total_tri+=tmp;
                      wasted_tri+=5-tmp;
                   }
