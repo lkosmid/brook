@@ -398,7 +398,7 @@ void DX9Texture::findRectForCopyAT( unsigned int inRank, const unsigned int* inD
       wholeBuffer = false;
 
     minIndex += domainMin * stride;
-    maxIndex += domainMax * stride;
+    maxIndex += (domainMax-1) * stride;
     stride *= streamExtent;
   }
 
@@ -412,8 +412,8 @@ void DX9Texture::findRectForCopyAT( unsigned int inRank, const unsigned int* inD
   RECT rect;
   rect.left = (minY == maxY) ? minX : 0;
   rect.top = minY;
-  rect.right = (minY == maxY) ? maxX : inWidth;
-  rect.bottom = maxY;
+  rect.right = (minY == maxY) ? maxX+1 : inWidth;
+  rect.bottom = maxY+1;
 
   outRect = rect;
   outFullBuffer = wholeBuffer;

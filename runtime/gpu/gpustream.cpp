@@ -114,8 +114,12 @@ namespace brook
         unsigned int trialTextureWidth = 2;
         for(; _context->isTextureExtentValid( trialTextureWidth ); trialTextureWidth *= 2 )
         {
-            unsigned int trialTextureHeight =
+            unsigned int neededTextureHeight =
                 (_totalSize + (trialTextureWidth-1)) / trialTextureWidth;
+
+            unsigned int trialTextureHeight = 1;
+            while( trialTextureHeight < neededTextureHeight )
+              trialTextureHeight *= 2;
 
             if( !_context->isTextureExtentValid( trialTextureHeight ) )
                 continue;
@@ -212,12 +216,17 @@ namespace brook
 
   void GPUStreamData::setDomainData( const void* inData, const unsigned int* inDomainMin, const unsigned int* inDomainMax )
   {
+    // TIM: pain in the ass
+    unsigned int domainSize =1;
+    for( unsigned int r = 0; r < _rank; r++ )
+      domainSize *= (inDomainMax[r] - inDomainMin[r]);
+
     const unsigned char* data = (const unsigned char*) inData;
     size_t stride = getElementSize();
     size_t fieldCount = _fields.size();
     for( size_t f = 0; f < fieldCount; f++ )
     {
-      _context->setTextureData( _fields[f].texture, (const float*)data, stride, _totalSize,
+      _context->setTextureData( _fields[f].texture, (const float*)data, stride, domainSize,
         _rank, inDomainMin, inDomainMax, getExtents(), _requiresAddressTranslation );
       data += _fields[f].componentCount * sizeof(float);
     }
@@ -225,12 +234,17 @@ namespace brook
 
   void GPUStreamData::getDomainData( void* outData, const unsigned int* inDomainMin, const unsigned int* inDomainMax )
   {
+    // TIM: pain in the ass
+    unsigned int domainSize =1;
+    for( unsigned int r = 0; r < _rank; r++ )
+      domainSize *= (inDomainMax[r] - inDomainMin[r]);
+
     unsigned char* data = (unsigned char*) outData;
     size_t stride = getElementSize();
     size_t fieldCount = _fields.size();
     for( size_t f = 0; f < fieldCount; f++ )
     {
-      _context->getTextureData( _fields[f].texture, (float*)data, stride, _totalSize,
+      _context->getTextureData( _fields[f].texture, (float*)data, stride, domainSize,
         _rank, inDomainMin, inDomainMax, getExtents(), _requiresAddressTranslation );
       data += _fields[f].componentCount * sizeof(float);
     }

@@ -35,6 +35,7 @@ namespace brook {
     */
     virtual bool
     isFastSetPath( unsigned int inStrideBytes, 
+                   int inWidth, int inHeight,
                    unsigned int inElemCount ) const;
 
     /* Same as isFastGetPath, but for
@@ -42,6 +43,7 @@ namespace brook {
     */
     virtual bool
     isFastGetPath( unsigned int inStrideBytes, 
+                   int inWidth, int inHeight,
                    unsigned int inElemCount ) const;
 
     /* Perform a copy into the packed 
@@ -78,6 +80,22 @@ namespace brook {
     ** for float textures.
     */
     int nativeFormat()       const { return _nativeFormat; }
+
+    // TIM: these are really janky functions...
+
+    void getRectToCopy(
+      unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
+      int& outMinX, int& outMinY, int& outMaxX, int& outMaxY, size_t& outBaseOffset, bool& outFullStream, bool inUsesAddressTranslation );
+
+    void setATData(
+      const float* inStreamData, unsigned int inStrideBytes, unsigned int inRank,
+      const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
+      float* ioTextureData );
+
+    void getATData(
+      float* outStreamData, unsigned int inStrideBytes, unsigned int inRank,
+      const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
+      const float* inTextureData );
 
 
   private:

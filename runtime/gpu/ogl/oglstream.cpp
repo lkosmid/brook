@@ -78,31 +78,68 @@ OGLContext::setTextureData(TextureHandle inTexture,
   
   OGLTexture *oglTexture = (OGLTexture *) inTexture;
   
+  int minX, minY, maxX, maxY;
+  size_t baseOffset;
+  bool fullStream;
+  oglTexture->getRectToCopy( inRank, inDomainMin, inDomainMax, inExtents,
+    minX, minY, maxX, maxY, baseOffset, fullStream, inUsesAddressTranslation );
+  int rectW = maxX - minX;
+  int rectH = maxY - minY;
+
   bool fastPath = oglTexture->isFastSetPath( inStrideBytes, 
-                                             inComponentCount);
+                                             rectW, rectH,
+                                             inComponentCount );
+  fastPath = fastPath && !inUsesAddressTranslation;
 
   glBindTexture (GL_TEXTURE_RECTANGLE_NV, oglTexture->id());
  
   if (fastPath) {
-    glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 
-                    oglTexture->width(), 
-                    oglTexture->height(), 
+    glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, minX, minY, 
+                    rectW, //oglTexture->width(), 
+                    rectH, //oglTexture->height(), 
                     oglTexture->nativeFormat(),
                     GL_FLOAT, inData);
     return;
   }
   
+  // TIM: could improve this in the domain case
+  // by only allocating as much memory as the
+  // domain needs
   t = (float *) malloc (oglTexture->bytesize());
-  oglTexture->copyToTextureFormat(inData, 
-                                  inStrideBytes, 
-                                  inComponentCount,
-                                  t);
+  if( !fullStream && inUsesAddressTranslation )
+  {
+    // TIM: hack to get the texture data into our buffer
+    int texW = oglTexture->width();
+    int texH = oglTexture->height();
+    unsigned int texDomainMin[] = {0,0};
+    unsigned int texDomainMax[] = { texH, texW };
+    unsigned int texExtents[] = { texH, texW };
+    getTextureData( oglTexture, t, inStrideBytes, texW*texH, 2,
+      texDomainMin, texDomainMax, texExtents, false );
 
-  glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 
-                  oglTexture->width(), 
-                  oglTexture->height(), 
-                  oglTexture->nativeFormat(),
-                  GL_FLOAT, t);
+    oglTexture->setATData(
+      inData, inStrideBytes, inRank, inDomainMin, inDomainMax, inExtents, t );
+
+    glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 
+      texW, //oglTexture->width(), 
+      texH, //oglTexture->height(),  
+      oglTexture->nativeFormat(),
+      GL_FLOAT, t);
+
+  }
+  else
+  {
+    oglTexture->copyToTextureFormat(inData, 
+                                    inStrideBytes, 
+                                    inComponentCount,
+                                    t);
+
+    glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, minX, minY, 
+                    maxX - minX, //oglTexture->width(), 
+                    maxY - minY, //oglTexture->height(),  
+                    oglTexture->nativeFormat(),
+                    GL_FLOAT, t);
+  }
   
   free(t);
   CHECK_GL();
@@ -120,8 +157,17 @@ OGLContext::getTextureData( TextureHandle inTexture,
    float *t = outData;
 
    OGLTexture *oglTexture = (OGLTexture *) inTexture;
+
+   int minX, minY, maxX, maxY;
+   size_t baseOffset;
+   bool fullStream;
+   oglTexture->getRectToCopy( inRank, inDomainMin, inDomainMax, inExtents,
+     minX, minY, maxX, maxY, baseOffset, fullStream, inUsesAddressTranslation );
+   int rectW = maxX - minX;
+   int rectH = maxY - minY;
    
    bool fastPath = oglTexture->isFastGetPath( inStrideBytes, 
+                                              rectW, rectH,
                                               inComponentCount); 
    if (!fastPath)
      t = (float *) malloc (oglTexture->bytesize());
@@ -129,18 +175,27 @@ OGLContext::getTextureData( TextureHandle inTexture,
    copy_to_pbuffer(oglTexture);
    CHECK_GL();
    
-   glReadPixels (0, 0,
-                 oglTexture->width(),
-                 oglTexture->height(), 
-                 oglTexture->nativeFormat(),
-                 GL_FLOAT, t);
+   // read back the whole thing, 
+   glReadPixels (minX, minY,
+              rectW,
+              rectH, 
+              oglTexture->nativeFormat(),
+              GL_FLOAT, t);
    CHECK_GL();
 
    if (!fastPath) {
-     oglTexture->copyFromTextureFormat(t, 
-                                       inStrideBytes, 
-                                       inComponentCount,
-                                       outData);
+     if( !inUsesAddressTranslation || fullStream)
+     {
+       oglTexture->copyFromTextureFormat(t, 
+         inStrideBytes, 
+         inComponentCount,
+         outData);
+     }
+     else
+     {
+       oglTexture->getATData(outData, inStrideBytes,
+         inRank, inDomainMin, inDomainMax, inExtents, t );
+     }
      free(t);
    }
   CHECK_GL();

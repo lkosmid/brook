@@ -65,16 +65,18 @@ OGLTexture::~OGLTexture () {
 
 bool
 OGLTexture::isFastSetPath( unsigned int inStrideBytes, 
+                           int inWidth, int inHeight,
                            unsigned int inElemCount ) const {
    return (inStrideBytes == _elemsize*sizeof(float) &&
-           inElemCount   == _width*_height);
+           inElemCount   == inWidth*inHeight);
 }
 
 bool
 OGLTexture::isFastGetPath( unsigned int inStrideBytes, 
+                          int inWidth, int inHeight,
                            unsigned int inElemCount ) const {
    return (inStrideBytes == _elemsize*sizeof(float) &&
-           inElemCount   == _width*_height);
+           inElemCount   == inWidth*inHeight);
 }
 
 
@@ -173,3 +175,166 @@ OGLTexture::copyFromTextureFormat(const float *src,
    }
 }
 
+void OGLTexture::getRectToCopy(
+  unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
+  int& outMinX, int& outMinY, int& outMaxX, int& outMaxY, size_t& outBaseOffset, bool& outFullStream, bool inUsesAddressTranslation )
+{
+  size_t r;
+  size_t rank = inRank;
+  size_t domainMin[4] = {0,0,0,0};
+  size_t domainMax[4] = {1,1,1,1};
+  size_t domainExtents[4] = {0,0,0,0};
+  size_t minIndex = 0;
+  size_t maxIndex = 0;
+  size_t stride = 1;
+
+  bool fullStream = true;
+  for( r = 0; r < rank; r++ )
+  {
+    size_t d = rank - (r+1);
+
+    domainMin[r] = inDomainMin[d];
+    domainMax[r] = inDomainMax[d];
+    domainExtents[r] = domainMax[r] - domainMin[r];
+    size_t streamExtent = inExtents[d];
+    if( streamExtent != domainExtents[r] )
+      fullStream = false;
+
+    minIndex += domainMin[r]*stride;
+    maxIndex += (domainMax[r]-1)*stride;
+    stride *= streamExtent;
+  }
+
+  if( inUsesAddressTranslation )
+  {
+    size_t minX = minIndex % _width;
+    size_t minY = minIndex / _width;
+    size_t maxX = maxIndex % _width;
+    size_t maxY = maxIndex / _width;
+
+    size_t baseOffset = minX;
+
+    if( minY != maxY )
+    {
+      minX = 0;
+      maxX = _width-1;
+    }
+
+    outMinX = minX;
+    outMinY = minY;
+    outMaxX = maxX+1;
+    outMaxY = maxY+1;
+    outBaseOffset = baseOffset;
+  }
+  else
+  {
+    outMinX = domainMin[0];
+    outMinY = domainMin[1];
+    outMaxX = domainMax[0];
+    outMaxY = domainMax[1];
+    outBaseOffset = 0;
+  }
+  outFullStream = fullStream;
+}
+
+void OGLTexture::setATData(
+  const float* inStreamData, unsigned int inStrideBytes, unsigned int inRank,
+  const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
+  float* ioTextureData )
+{
+  // TIM: get all the fun information out of our streams
+  size_t r;
+  size_t rank = inRank;
+  size_t domainMin[4] = {0,0,0,0};
+  size_t domainMax[4] = {1,1,1,1};
+  size_t strides[4] = {0,0,0,0};
+  size_t stride = 1;
+
+  for( r = 0; r < rank; r++ )
+  {
+    size_t d = rank - (r+1);
+
+    domainMin[r] = inDomainMin[d];
+    domainMax[r] = inDomainMax[d];
+    size_t streamExtent = inExtents[d];
+    strides[r] = stride;
+    stride *= streamExtent;
+  }
+
+  size_t streamComponents = inStrideBytes / sizeof(float);
+
+  const float* streamElement = inStreamData;
+  size_t x, y, z, w;
+  for( w = domainMin[3]; w < domainMax[3]; w++ )
+  {
+    size_t offsetW = w*strides[3];
+    for( z = domainMin[2]; z < domainMax[2]; z++ )
+    {
+      size_t offsetZ = offsetW + z*strides[2];
+      for( y = domainMin[1]; y < domainMax[1]; y++ )
+      {
+        size_t offsetY = offsetZ + y*strides[1];
+        for( x = domainMin[0]; x < domainMax[0]; x++ )
+        {
+          size_t streamIndex = offsetY + x*strides[0];
+
+          float* textureElement = ioTextureData + streamIndex*_elemsize;
+
+          for( size_t c = 0; c < streamComponents; c++ )
+            *textureElement++ = *streamElement++;
+        }
+      }
+    }
+  }
+}
+
+void OGLTexture::getATData(
+  float* outStreamData, unsigned int inStrideBytes, unsigned int inRank,
+  const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
+  const float* inTextureData )
+{
+  // TIM: get all the fun information out of our streams
+  size_t r;
+  size_t rank = inRank;
+  size_t domainMin[4] = {0,0,0,0};
+  size_t domainMax[4] = {1,1,1,1};
+  size_t strides[4] = {0,0,0,0};
+  size_t stride = 1;
+
+  for( r = 0; r < rank; r++ )
+  {
+    size_t d = rank - (r+1);
+
+    domainMin[r] = inDomainMin[d];
+    domainMax[r] = inDomainMax[d];
+    size_t streamExtent = inExtents[d];
+    strides[r] = stride;
+    stride *= streamExtent;
+  }
+
+  size_t streamComponents = inStrideBytes / sizeof(float);
+
+  float* streamElement = outStreamData;
+  size_t x, y, z, w;
+  for( w = domainMin[3]; w < domainMax[3]; w++ )
+  {
+    size_t offsetW = w*strides[3];
+    for( z = domainMin[2]; z < domainMax[2]; z++ )
+    {
+      size_t offsetZ = offsetW + z*strides[2];
+      for( y = domainMin[1]; y < domainMax[1]; y++ )
+      {
+        size_t offsetY = offsetZ + y*strides[1];
+        for( x = domainMin[0]; x < domainMax[0]; x++ )
+        {
+          size_t streamIndex = offsetY + x*strides[0];
+
+          const float* textureElement = inTextureData + streamIndex*_elemsize;
+
+          for( size_t c = 0; c < streamComponents; c++ )
+            *streamElement++ = *textureElement++;
+        }
+      }
+    }
+  }
+}
