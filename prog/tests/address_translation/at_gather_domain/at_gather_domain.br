@@ -1,0 +1,88 @@
+// at_gather_domain.br
+
+// test address-translation code for
+// fetching elements of a gather stream
+// that has a domain operator applied
+
+#include <stdio.h>
+
+// arbitrary weird stream sizes:
+
+#define RESULT_SIZE 1337
+
+#define GATHER_SIZE 10780
+#define GATHER_START 8900
+#define GATHER_END 10237
+
+kernel void clear1( out float result<> ) { result = -1; }
+
+kernel void getIndexStream1( out float result<> ) {
+	result = (indexof result).x;
+}
+
+kernel void gather1( float g[], out float result<> )
+{
+	float i = (indexof result).x;
+	result = g[i];
+}
+
+void checkItem( const char* streamName, const char* dimName, int expected, float actual, int x )
+{
+	if( (int)actual != expected )
+	{
+		printf("FAIL: %s[%d].%s : expected %d got %f\n", streamName, x, dimName, expected, actual );
+		exit(0);
+	}
+//	else
+//		printf("%s[%d].%s : %f\n", streamName, x, dimName, actual );
+}
+
+void checkGather( float* inData )
+{
+	float* data = inData;
+	int x;
+	
+	for( x = 0; x < GATHER_SIZE; x++ )
+	{	
+		checkItem( "gather", "x", x, *data++, x );
+	}
+}
+
+void checkResult( float* inData )
+{
+	float* data = inData;
+	int x;
+	int xg;
+	
+	for( x = 0; x < RESULT_SIZE; x++ )
+	{
+		// swizzle the index
+		xg = x + GATHER_START;
+		
+		checkItem( "result", "x", xg, *data++, x );
+		
+//		if( x > 5 ) exit(0);
+	}
+}
+
+int main( int argc, char** argv )
+{
+	float result< RESULT_SIZE >;
+	float g< GATHER_SIZE >;
+	
+	float* data_result = (float*)malloc( RESULT_SIZE*sizeof(float) );
+	float* data_g = (float*)malloc( GATHER_SIZE*sizeof(float) );
+	
+	getIndexStream1( g );
+	streamWrite( g, data_g );
+	checkGather( data_g );
+	
+	clear1( result );
+	gather1( g.domain( GATHER_START, GATHER_END ), result );
+	streamWrite( result, data_result );
+	checkResult( data_result );
+
+	printf( "pass\n" );
+
+	return 0;
+}

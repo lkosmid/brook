@@ -1328,7 +1328,17 @@ namespace brook
         return stream->getATTextureShapeConstant();
         break;
     case kGatherConstant_ATDomainMin:
-        return stream->getATDomainMinConstant();
+        {
+            float4 result = stream->getATDomainMinConstant();
+            // extra biasing for the round-to-nearest
+            // step that is done for gather indices, but
+            // not general stream indices:
+            result.x += 0.5f;
+            result.y += 0.5f;
+            result.z += 0.5f;
+            result.w += 0.5f;
+            return result;
+        }
         break;
       break;
     }

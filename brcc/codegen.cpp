@@ -909,13 +909,13 @@ generate_shader_support(std::ostream& shader)
 #endif
 
     shader << "float2 __gatherindex1( float1 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0,0,0), domainConst, linearizeConst, reshapeConst ); }\n";
+    shader << "\treturn __calculatetexpos( float4(floor(index+domainConst.x),0,0,0), 0, linearizeConst, reshapeConst ); }\n";
     shader << "float2 __gatherindex2( float2 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0,0), domainConst, linearizeConst, reshapeConst ); }\n";
+    shader << "\treturn __calculatetexpos( float4(floor(index+domainConst.xy),0,0), 0, linearizeConst, reshapeConst ); }\n";
     shader << "float2 __gatherindex3( float3 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0), domainConst, linearizeConst, reshapeConst ); }\n";
+    shader << "\treturn __calculatetexpos( float4(floor(index+domainConst.xyz),0), 0, linearizeConst, reshapeConst ); }\n";
     shader << "float2 __gatherindex4( float4 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst ) {\n";
-    shader << "\treturn __calculatetexpos( index, domainConst, linearizeConst, reshapeConst ); }\n";
+    shader << "\treturn __calculatetexpos( floor(index+domainConst), 0, linearizeConst, reshapeConst ); }\n";
   }
 
   shader << "\n\n";
