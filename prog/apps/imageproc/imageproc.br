@@ -19,13 +19,13 @@ kernel void process_img( float img[][],  float mask[3][3],
     float2 t8 = float2(1.0f, 1.0f);
 
     o_img  = img[it+t0] * mask[0][0];
-    o_img += img[it+t1] * mask[0][1];
-    o_img += img[it+t2] * mask[0][2];
-    o_img += img[it+t3] * mask[1][0];
+    o_img += img[it+t1] * mask[1][0];
+    o_img += img[it+t2] * mask[2][0];
+    o_img += img[it+t3] * mask[0][1];
     o_img += img[it+t4] * mask[1][1];
-    o_img += img[it+t5] * mask[1][2];
-    o_img += img[it+t6] * mask[2][0];
-    o_img += img[it+t7] * mask[2][1];
+    o_img += img[it+t5] * mask[2][1];
+    o_img += img[it+t6] * mask[0][2];
+    o_img += img[it+t7] * mask[1][2];
     o_img += img[it+t8] * mask[2][2];
 }
 
