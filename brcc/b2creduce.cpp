@@ -178,7 +178,7 @@ static Expression * ConvertPlusTimesGets(Expression * e) {
       if (ae->lValue()->etype==ET_Variable) {
          Variable *v= static_cast<Variable*>(ae->lValue());
          SymEntry * s = v->name->entry;
-         if (s->uVarDecl) {
+         if (s&&s->uVarDecl) {
             if (s->uVarDecl->form){ 
                if (s->uVarDecl->isReduce()) {
                   AssignExpr * ab = static_cast<AssignExpr*>(ae->dup());
