@@ -221,8 +221,8 @@ namespace brook {
      for (i=((int)dim)-1; i>=0; --i) {
        largestaddr /= extents[dim-i-1];
        index[i] = linear_index / largestaddr;
-       index[i] -= domain_min[dim-i-1];
        linear_index -= largestaddr * index[i];
+       index[i] -= domain_min[dim-i-1];
      } 
 
      return __BrtFloat4((float) index[0], 
