@@ -1,5 +1,14 @@
+# ROOTDIR reflects the root of the current source tree.  It determines where
+# built binaries are left.
 ifndef ROOTDIR
 ROOTDIR := .
+endif
+
+# BROOKDIR reflects where the root of a brook tree can be found.
+# Brook-using applications outside the main brook source tree can define
+# BROOKDIR and include this common.mk and everything should work.
+ifndef BROOKDIR
+BROOKDIR := $(ROOTDIR)
 endif
 
 BIN        := bin
@@ -8,18 +17,20 @@ INC        := include
 DEP        := depends
 BINDIR     := $(ROOTDIR)/$(BIN)
 OBJDIR 	   := $(BUILT)
-INCLUDEDIR := $(ROOTDIR)/$(INC)
+INCLUDEDIR := $(BROOKDIR)/$(INC)
 DEPDIR     := $(DEP)
-FASTDEPS   := $(ROOTDIR)/scripts/fastdep.pl
+FASTDEPS   := $(BROOKDIR)/scripts/fastdep.pl
 
 ECHO	 := echo
 MKDIR    := mkdir
 
-INCLUDEFILES := $(ROOTDIR)/$(INC)/*.h
-MAKEFILEDEPS := $(ROOTDIR)/common.mk Makefile $(INCLUDEFILES)
+INCLUDEFILES := $(BROOKDIR)/$(INC)/*.h
+MAKEFILEDEPS := $(BROOKDIR)/common.mk Makefile $(INCLUDEFILES)
 
-include $(ROOTDIR)/config/DetectOS.mk
-include $(ROOTDIR)/config/$(OS).mk
+include $(BROOKDIR)/config/DetectOS.mk
+include $(BROOKDIR)/config/$(OS).mk
+
+BRCC = $(BROOKDIR)/bin/brcc$(BINSUFFIX)
 
 CFLAGS    += $(C_INCLUDE_FLAG). $(C_INCLUDE_FLAG)$(INCLUDEDIR)
 
@@ -29,7 +40,7 @@ else
 CFLAGS    +=  $(C_DEBUG_FLAG) $(SPACE)
 endif
 
-LDFLAGS   += $(LD_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)
+LDFLAGS   += $(LD_LIBDIR_FLAG)$(BROOKDIR)/$(BIN)
 
 TEMP1     := $(addprefix $(LD_LIBLINK_PREFIX), $(LIBRARIES))
 LDFLAGS   += $(addsuffix $(LD_LIBLINK_SUFFIX), $(TEMP1))
@@ -134,7 +145,7 @@ endif
 ##  Compile .brhi files  ##
 $(OBJDIR)/%.hpp: %.brhi
 	$(CC) $(C_CPP_FLAG) $< > $(OBJDIR)/$*.brh
-	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $(OBJDIR)/$*.brh
+	$(BRCC) $(BRCCFLAGS) -o $(OBJDIR)/$* $(OBJDIR)/$*.brh
 
 
 ##  Compile .brh files  ##
@@ -142,7 +153,7 @@ $(OBJDIR)/%.hpp: %.brh
 ifndef COMPILER_ECHOES
 	@$(ECHO) $<
 endif
-	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $<
+	$(BRCC) $(BRCCFLAGS) -o $(OBJDIR)/$* $<
 
 ##  Compile .c files  ##
 $(OBJDIR)/%$(OBJSUFFIX): %.c
@@ -170,7 +181,7 @@ $(OBJDIR)/%.cpp: %.bri
 ifndef COMPILER_ECHOES
 	@$(ECHO) $*.br
 endif
-	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $(OBJDIR)/$*.br
+	$(BRCC) $(BRCCFLAGS) -o $(OBJDIR)/$* $(OBJDIR)/$*.br
 
 ##  Keep the generated .br files.
 .PRECIOUS: $(OBJDIR)/%.br
@@ -180,7 +191,7 @@ $(OBJDIR)/%.cpp: %.br
 ifndef COMPILER_ECHOES
 	@$(ECHO) $<
 endif
-	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $<
+	$(BRCC) $(BRCCFLAGS) -o $(OBJDIR)/$* $<
 
 ##  Keep the generated .cpp files.
 .PRECIOUS: $(OBJDIR)/%.cpp
@@ -208,7 +219,8 @@ ifdef SUBDIRS
 endif
 ifdef BINARY
 	rm -rf $(OBJDIR) $(BINDIR)/$(BINARY)
-	rm -rf $(BINDIR)/$(BINARY_NAME).pdb $(DEPDIR)
+	rm -rf $(BINDIR)/$(BINARY_NAME).pdb $(BINDIR)/$(BINARY_NAME).map
+	rm -rf $(DEPDIR)
 	rm -rf $(BINARY_NAME).output
 endif
 	rm -rf *~ *.pdb .#* #*

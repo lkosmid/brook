@@ -146,7 +146,7 @@ foreach $file ( @files ) {
      $basefile = $1;
 
      print "$obj: $obj_prefix$basefile.cpp\n";
-     print "$obj_prefix$basefile.cpp: \$(ROOTDIR)/bin/brcc\$(BINSUFFIX)\n";
+     print "$obj_prefix$basefile.cpp: \$(BROOKDIR)/bin/brcc\$(BINSUFFIX)\n";
      print "$obj_prefix$basefile.cpp: $file\n";
   }
 
@@ -154,7 +154,7 @@ foreach $file ( @files ) {
      $basefile = $1;
 
      print "$obj: $obj_prefix$basefile.cpp\n";
-     print "$obj_prefix$basefile.cpp: \$(ROOTDIR)/bin/brcc\$(BINSUFFIX)\n";
+     print "$obj_prefix$basefile.cpp: \$(BROOKDIR)/bin/brcc\$(BINSUFFIX)\n";
      print "$obj_prefix$basefile.cpp: $obj_prefix$basefile.br\n";
      print "$obj_prefix$basefile.br: $file\n";
   }
