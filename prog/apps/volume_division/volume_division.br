@@ -1,0 +1,49 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "ppm3d.h"
+
+int main (int argc, char ** argv) {
+   float * volumetrics=NULL;
+   if (argc<2) {
+      printf ("Usage: volume_division <FILE.pnm>\n      volume_divison <width>\n");
+      exit (1);
+   }
+   
+   {
+      struct ppm dat;
+      float * slice;
+      
+      if (atoi(argv[1])==0) {
+         dat = openPPM (argv[1]);
+         if (!dat.fp)
+            exit(1);
+      }else {
+         dat = randomPPM(atoi(argv[1]),atoi(argv[1]),atoi(argv[1]));
+      }
+      slice = mallocSlice(dat);
+      {
+         int i;
+         float prev <(dat.height),(dat.width)>;
+         float cur<(dat.height),(dat.width)>;
+         float next<(dat.height),(dat.width)>;
+         float v<1,(dat.width)>;
+         readPPM3dSlice(dat,0,slice);
+         streamRead(cur,dat);
+         readPPM3dSlice(dat,1,slice);
+         streamRead(next,dat);
+ 
+         processSlice(cur,cur,next,v);
+         for (i=1;i<dat.depth-1;++i) {
+            readPPM3dSlice(dat,i+1,slice);
+            streamSwap(cur,next);
+            streamSwap(next,prev);
+            streamRead(next,slice);
+            processSlice(prev,cur,next,v);
+         }
+         processSlice(prev,cur,cur,v);
+         
+      }
+      free(slice);
+   }
+   return 0;
+}

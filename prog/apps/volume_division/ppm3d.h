@@ -1,0 +1,77 @@
+#include <vector>
+struct ppm {
+   FILE * fp;
+   unsigned int start;
+   unsigned int width;
+   unsigned int height;
+   unsigned int depth;
+   std::vector<float4> vertices;
+   ppm () {fp=NULL;start=width=height=0;}
+   void init (unsigned int width,unsigned int height,unsigned int depth) {
+      this->width=width;
+      this->height=height;
+      this->depth=depth;
+   }
+};
+ppm randomPPM (unsigned int width,unsigned int height, unsigned int depth) {
+   ppm p;
+   p.init (width,height,depth);
+   return p;
+}
+ppm openPPM (char * name) {
+   int nbyte;
+   ppm ret;
+   ret.fp = fopen (name,"rb");
+   if (ret.fp) {
+      ret.width=ret.height=ret.depth=256;
+      fscanf (ret.fp, "P5\n %d %d %d\n", &ret.width, &ret.depth, &nbyte);
+      ret.height=ret.width;
+      ret.start = ftell(ret.fp);
+   }
+   return ret;
+}
+float * mallocSlice (const ppm &fp) {
+   return (float*)malloc(sizeof(float)*fp.width*fp.height);
+}
+void readPPM3dSlice(const ppm &fp, 
+                   unsigned int whichslice,
+                   float *data) {
+   int size = fp.width*fp.height;
+   if (fp.fp) {
+      char * readindata = (char *) data;
+      fseek (fp.fp,fp.start+whichslice*size*sizeof(char),SEEK_SET);
+      assert (sizeof(float)==4*sizeof(char));
+      readindata+=size+size+size;
+      fread(readindata, size, 1, fp.fp);
+      for (unsigned int i=0;i<size;++i) {
+         data[i]=readindata[i]/255.0f;//because we only support float format!
+      }
+   }else for (unsigned int i=0;i<size;++i) data[i] = ((float)rand())/RAND_MAX;
+}
+void closePPM (const ppm &fp) {
+   fclose (fp.fp);
+}
+unsigned int findNaN(std::vector<float4> v) {
+   unsigned int half = v.size()/4;
+   unsigned int pos = v.size()/2;
+   while (half) {
+      if (isinf_float(v[pos].x)==0) {
+         pos+=half;
+      }else {
+         if (isinf_float(v[pos-half].x)) {
+            pos-=half;
+         }
+      }
+   }
+   if (!isinf_float(v[pos].x))
+      pos+=1;
+   return pos;
+}
+void consolidateVertices(ppm &fp, float3 v<>) {
+   float4 ss = streamSize(v);
+   unsigned int size = (unsigned int)ss.x*(unsigned int)ss.y;
+   unsigned int nanloc= findNan(fp.vertices);
+   unsigned int newguys = size-(fp.vertices.size()-nanloc);
+   fp.vertices.insert(fp.vertices.end(),newguys,0);
+   streamWrite(v,&fp.vertices[nanloc]);
+}
