@@ -835,7 +835,7 @@ float shiftValues(float list_stream<>,
       RelativeGather(proper_output_stream,
                      logN%2==0?ret_stream:guess_stream,
                      list_stream,
-                     float2(sign,31337.),
+                     float2(sign,31337.0f),
                      maxvalue);
       streamSwap(*output_stream,proper_output_stream);
       debugStreamPrint(*output_stream, "Final Value");
@@ -914,7 +914,7 @@ unsigned int  voutCombine(float outleft_stream<>,
               startsecond,
               endsecond,
               maxrightvalue,
-              31337.);
+              31337.0f);
       streamSwap (*output,output_stream);
    }
    return totalsize;
