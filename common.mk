@@ -22,7 +22,14 @@ MAKEFILEDEPS := $(ROOTDIR)/common.mk Makefile $(INCLUDEFILES)
 include $(ROOTDIR)/config/DetectOS.mk
 include $(ROOTDIR)/config/$(OS).mk
 
-CFLAGS    += $(C_INCLUDE_FLAG). $(C_INCLUDE_FLAG)$(INCLUDEDIR) $(C_DEBUG_FLAG)
+CFLAGS    += $(C_INCLUDE_FLAG). $(C_INCLUDE_FLAG)$(INCLUDEDIR)
+
+ifdef RELEASE
+CFLAGS    +=  $(C_RELEASE_FLAG)
+else
+CFLAGS    +=  $(C_DEBUG_FLAG)
+endif
+
 LDFLAGS   += $(LD_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)
 
 TEMP1     := $(addprefix $(LD_LIBLINK_PREFIX), $(LIBRARIES))
@@ -63,6 +70,9 @@ all: $(SUBDIRS)
 ifdef BINARY
 all: arch
 endif
+
+release:
+	$(MAKE) RELEASE=1
 
 ifdef EXECUTABLE
 run:

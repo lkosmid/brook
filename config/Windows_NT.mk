@@ -21,11 +21,12 @@ CFLAGS           += /nologo /MDd /W3 /DBUILD_NV30GL /DBUILD_DX9 /DWIN32 /DWINDOW
 
 ifndef I_AM_SLOPPY
 # /WX: Make warnings fatal
-CFLAGS           += /WX
+CFLAGS           += /WX 
 endif
 
 C_INCLUDE_FLAG   := /I
 C_DEBUG_FLAG     := /Z7 /Yd /GZ 
+C_RELEASE_FLAG   := /Ox 
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := /Fo
 C_COMPILE_FLAG   := /c
