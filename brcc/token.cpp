@@ -202,7 +202,11 @@ char *toksym(int tok, int white)
           return("out ");
         else
           return("out");
-
+    case REDUCE:
+        if (white)
+	  return ("reduce ");
+	else
+	  return ("reduce");
     case REGISTR:
         if (white)
           return("register ");
