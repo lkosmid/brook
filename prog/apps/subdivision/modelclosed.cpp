@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <list>
 #include <vector>
+#include <assert.h>
 using namespace std;
 struct Vec {
   double x,y,z;
@@ -12,7 +13,7 @@ struct Vec {
     return x==e.x&&y==e.y&&z==e.z;
   }  
   void print ()const{
-    printf ("%lf, %lf, %lf",x,y,z);
+    printf ("%lf, %lf, %lf\n",x,y,z);
   }
   bool operator <(const Vec &v)const{
     if (x<v.x)
@@ -109,6 +110,6 @@ int main (int argc, char** argv) {
     }
   }
 
-  printf ("%d Edges Left\n",edges.size());
+  fprintf (stderr,"%d Edges Left\n",edges.size());
   return 0;
 }

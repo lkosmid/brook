@@ -135,7 +135,7 @@ kernel void max6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, floa
 }
 
 
-kernel float add6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, float3 f<>){
+kernel float3 add6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, float3 f<>){
    float3 td,te,tf,oa,ob,oc,od,oe,of;
    oa = min3(a,b);//least
    ob = max3(a,b);//second least
