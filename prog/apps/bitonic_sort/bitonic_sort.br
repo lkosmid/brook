@@ -1,11 +1,11 @@
 /***************************************************************************
-  Bitonic Sort
+  Parallel Bitonic Sort
 
   Sorts ARRAYSIZE numbers in O(ARRAYSIZE * lg^2(ARRAYSIZE) ) time.
   ARRAYSIZE should be a power of two
 
-  Note: the bitonic sort kernel is written for clarity as an
-  example, not for performance.
+  A good explaination of the parallel sorting algorithm cna be found at:
+  http://www.iti.fh-flensburg.de/lang/algorithmen/sortieren/bitonic/bitonicen.htm
 
 ****************************************************************************/
 
@@ -17,6 +17,8 @@
 #define ARRAYSIZE 32
 
 
+// Note: the bitonic sort kernel is written for clarity as an
+// example, not for optimal GPU performance.
 kernel void bitonic(iter float idx1<>, float input[ARRAYSIZE], out float output<>, float stageWidth, float offset) {
 
   float idx2;
@@ -26,18 +28,19 @@ kernel void bitonic(iter float idx1<>, float input[ARRAYSIZE], out float output<
 
   float foo;
   
+  // either compared with element above or below 
   sign = ( fmod(idx1, 2*offset) < offset) ? 1.0 : -1.0;
+
+  // "arrow" direction in the bitonic search algorithm  (see above reference)
   dir =  ( fmod( floor(idx1/stageWidth), 2) == 0) ? 1.0 : -1.0;
 
-  
+  // comparing elements idx1 and idx2
   idx2 = idx1 + sign*offset;
 
   min = (input[idx1] < input[idx2]) ? input[idx1] : input[idx2];
   max = (input[idx1] > input[idx2]) ? input[idx1] : input[idx2];
 
-  
-  output = (sign == dir) ? min : max;
-  
+  output = (sign == dir) ? min : max;  
 }
 
 
@@ -48,13 +51,13 @@ int main() {
   int lg_arraySize;
   int flip = 0;
   int stage, step;
-  float stageWidth, offset;
+  float segWidth, offset;
   float* array;
 
   float sorted1Strm<ARRAYSIZE>;
   float sorted2Strm<ARRAYSIZE>;
 
-  float rangeEnd = ARRAYSIZE;  // assigning to float variable first, to get around compiler for ensuring iter constructor
+  float rangeEnd = ARRAYSIZE;  // HACK: assigning to float variable first, to get around compiler for ensuring iter constructor
   iter float idxStrm<ARRAYSIZE> = iter(0.0, rangeEnd);
 
 
@@ -81,10 +84,11 @@ int main() {
 
   streamRead(sorted1Strm, array);
 
-
+  // lg(ARRAYSIZE) stages
   for (stage=1; stage<=lg_arraySize; stage++) {
 
-    stageWidth = (float)pow(2, stage);  // width of each sorted segment (2, 4, 8, ...)
+    // width of each sorted segment to be sorted in parallel (2, 4, 8, ...)
+    segWidth = (float)pow(2, stage);  
 
     for (step=1; step<=stage; step++) {
 
@@ -92,16 +96,17 @@ int main() {
       offset = (float)pow(2, stage-step);  
 
       // two buffers required since non-sequential gather is performed from src buffer each step.
-      // flip buffers eahc iteration
+      // flip src and target streams each iteration
       if (!flip)
-        bitonic( idxStrm, sorted1Strm, sorted2Strm, stageWidth, offset);
+        bitonic( idxStrm, sorted1Strm, sorted2Strm, segWidth, offset);
       else
-        bitonic( idxStrm, sorted2Strm, sorted1Strm, stageWidth, offset);
+        bitonic( idxStrm, sorted2Strm, sorted1Strm, segWidth, offset);
 
       flip = (flip) ? 0 : 1;
     }
   }
 
+  // want to write out the last stream used as on output
   if (flip)
     streamWrite(sorted2Strm, array);
   else
