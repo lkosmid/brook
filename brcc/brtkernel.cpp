@@ -379,6 +379,7 @@ void BRTCPUKernelCode::printInnerCode (std::ostream & out) const {
   enhanced_name.name = "__"+fDef->decl->name->name+"_cpu_inner";
 
   ft->printBase(out,0);
+  out << " ";
   ft->printBefore(out,&enhanced_name,0);
   out << "(";
 
