@@ -1123,7 +1123,7 @@ compile_cg_code (const char *cgcode) {
 
   char *argv[16] = { "cgc", "-profile", "fp30",
                      "-DUSERECT", "-quiet", NULL };
-  char *fpcode, *endline;
+  char *fpcode, *endline, *startline;
 
   char* tempCode = strdup( cgcode );
   fpcode = Subprocess_Run(argv, tempCode);
@@ -1133,45 +1133,47 @@ compile_cg_code (const char *cgcode) {
              argv[0]);
      return NULL;
   }
-  /* Tolerate CRLF or LF line endings. */
-  endline = strstr (fpcode, "\nEND\n");
-  if (!endline) {
-     endline = strstr (fpcode, "\nEND\r\n");
+
+  // cgc has this annoying feature that it outputs warnings
+  // and errors to stdout rather than stderr.  So lets 
+  // figure out where the fragment code really starts...
+  startline = strstr (fpcode, "!!FP1.0");
+  if (startline) {
+
+    // Find where the fragment code really ends
+    /* Tolerate CRLF or LF line endings. */
+    endline = strstr (startline, "\nEND\n");
+    if (!endline) {
+      endline = strstr (startline, "\nEND\r\n");
+    }
   }
-  if (!endline) {
-     fprintf(stderr, "Unable to parse returned CG Code: [35;1m%s[0m\n",
-             fpcode);
-     return NULL;
+   
+  if (!startline || !endline ) {
+      fprintf(stderr, "Unable to parse returned CG Code: [35;1m%s[0m\n",
+	      fpcode);
+      return NULL;
   }
 
+  // Trim off the execess cgc commentary
   endline += strlen("\nEND");
   *endline = '\0';
   endline++;
+
+  // Print any warning messages
+  if (startline != fpcode) {
+    fprintf (stderr, "cgc warnings:\n");
+    fwrite (fpcode, startline-fpcode, 1, stderr);
+  }
+
+  // Print the commentary
   if (globals.verbose) {
      fprintf(stderr, "***Summary information from cgc:\n");
      fwrite (endline, strlen(endline), 1, stderr);
   }
-  if (!strstr(fpcode,"warning"))
-    return fpcode;
-  std::string parse_fpcode(fpcode);
-  free(fpcode);
-  unsigned int wherewarn;
-  while ((wherewarn = parse_fpcode.find("warning"))!=std::string::npos) {
-    std::string warnung=parse_fpcode.substr(0,parse_fpcode.find("\n"));
-    if (cg_warnings.find(warnung)==cg_warnings.end()) {
-      fprintf(stderr,"%s\n",warnung.c_str());
-      cg_warnings.insert(warnung);
-    }
-    parse_fpcode=parse_fpcode.substr(wherewarn+7);
-    wherewarn=parse_fpcode.find("\n");
-    if (wherewarn==std::string::npos) {
-      wherewarn=parse_fpcode.find("\n");
-    }    
-    if (wherewarn!=std::string::npos) {
-      parse_fpcode=parse_fpcode.substr(wherewarn+1);
-    }
-  }
-  return strdup(parse_fpcode.c_str());
+
+  // Trim off the warning messages
+  memcpy (fpcode, startline, endline - startline);
+  return fpcode;
 }
 
 /*
