@@ -5,6 +5,11 @@
  *      backends.  Each one knows how to build itself from a function
  *      definition and then how to emit C++ for itself.
  */
+#ifdef _WIN32
+#pragma warning(disable:4786)
+//the above warning disables visual studio's annoying habit of warning when using the standard set lib
+#endif
+
 #include <cstring>
 #include <cassert>
 #include <sstream>
@@ -414,14 +419,20 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const{
                         myArgs,
                         true,
                         this->fDef->decl->name->name);    
-    Symbol enhanced_name;
-    enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
-    out << "void  ";
-    fDef->decl->form->printBefore(out,&enhanced_name,0);
-    out << " (const std::vector<void *>&args, unsigned int mapbegin) {";
-    out << std::endl;
+    std::string enhanced_name= "__"+fDef->decl->name->name + "_cpu";
+    std::string myvoid ("void  ");
+    out << myvoid;
+    out << enhanced_name;
+
+    std::string whiteOut= whiteout(myvoid + enhanced_name+" (");
+    out << " (const std::vector<void *>&args,"<<std::endl;
+    out << whiteOut << "unsigned int mapbegin,"<<std::endl;
+    out << whiteOut << "unsigned int dim,"<<std::endl;
+    out << whiteOut << "const unsigned int * extents) {"<<std::endl;
     indent(out,1);
     out << "unsigned int i= mapbegin;";
+
+    initializeIndexOf(out);
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
@@ -448,7 +459,7 @@ void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
    if (FunctionProp[name].p&FP_INDEXOF) {
       out << ","<<std::endl;
       indent(out,3);
-      out << "i";
+      out << "indexof";
    }
    if (FunctionProp[name].p&FP_LINEARINDEXOF) {
       out << ","<<std::endl;
@@ -457,7 +468,19 @@ void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
       
    }   
 }
+void BRTCPUKernelCode::initializeIndexOf(std::ostream&out)const {
+   if (FunctionProp[this->fDef->decl->name->name].p&FP_INDEXOF){
+      indent(out,1);
+      out << "__BrtFloat4 indexof = computeIndexOf(mapbegin,dim,extents);"<<std::endl;
+   }
+}
 
+void BRTCPUKernelCode::incrementIndexOf(std::ostream&out)const {
+   if (FunctionProp[this->fDef->decl->name->name].p&FP_INDEXOF){
+      indent(out,2);
+      out << "incrementIndexOf (indexof,dim,extents);"<<std::endl;
+   }
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const
 {
@@ -501,16 +524,19 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
     std::string long_name (whiteout(myvoid + enhanced_name.name+" ("));
     out << "const std::vector<void *>&args,"<<std::endl;
     out << long_name<<"unsigned int mapbegin, "<<std::endl;
-    out << long_name<< "unsigned int mapend) {"<<std::endl;
+    out << long_name<< "unsigned int mapend,"<<std::endl;
+    out << long_name<< "unsigned int dim,"<<std::endl;
+    out << long_name<< "const unsigned int *extents) {"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
     }}
-
+    initializeIndexOf(out);
     if (reduceneeded) {
        indent(out,1); out << "if (mapbegin!=0&&mapbegin<mapend) {"<<std::endl;
        indent(out,2); out << "unsigned int i=mapbegin;"<<std::endl;
+       
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
        out << std::endl;
        {for (unsigned int i=0;i<myArgs.size();++i) {
@@ -522,11 +548,12 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
        printIndexOfCallingArgs(out);
        out << ");"<<std::endl;
        indent(out,2); out << "mapbegin+=1;"<<std::endl;;
+       incrementIndexOf(out);
        indent(out,1); out <<"}"<<std::endl;
     }
     indent(out,1);
-    out << "for (unsigned int i=mapbegin";
-    out <<";i<mapend;++i) {"<<std::endl;
+    out << "for (unsigned int i=mapbegin;i<mapend;++i) {";
+    out << std::endl;
     indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner (";
     out<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
@@ -537,6 +564,7 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
     }}
     printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;
+    incrementIndexOf(out);
     indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);

@@ -72,6 +72,8 @@ class BRTCPUKernelCode : public BRTKernelCode
     BRTKernelCode *dup0() const { 
        return new BRTCPUKernelCode(*this->fDef); 
     }
+    void incrementIndexOf(std::ostream &out)const;
+    void initializeIndexOf(std::ostream &out)const;
     void printIndexOfCallingArgs(std::ostream & out)const;
     void printCombineCode(std::ostream& out)const;
     void printCode(std::ostream& out) const;

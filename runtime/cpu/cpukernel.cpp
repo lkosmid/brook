@@ -1,7 +1,11 @@
 #include <iostream>
 #include<assert.h>
 #include "cpu.hpp"
-static void nothing (const std::vector<void*>&args,unsigned int start,unsigned int end){}
+static void nothing (const std::vector<void*>&args,
+                     unsigned int start,
+                     unsigned int end,
+                     unsigned int dims,
+                     const unsigned int *extents){}
 extern unsigned int knownTypeSize(__BRTStreamType);
 namespace brook{
     CPUKernel::CPUKernel(const void * source []){
@@ -78,8 +82,15 @@ namespace brook{
 	extent=0;
     }
     void CPUKernel::Map(){
-	(*func)(args,0,extent);//can do some fancy forking algorithm here
-	Cleanup();
+       Stream * rep=writeOnly;
+       if (!readOnly.empty())rep=readOnly.back();
+       if (rep)
+          (*func)(args,
+                  0,
+                  extent,
+                  rep->getDimension(),
+                  rep->getExtents());//can do some fancy forking algorithm here
+       Cleanup();
     }
     void CPUKernel::Release() {
 	delete this;
