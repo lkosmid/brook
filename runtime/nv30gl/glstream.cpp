@@ -237,8 +237,8 @@ GLStream::Read(const void *data)
       if (ncomp[i] == 2) {
          float4 *t = (float4 *) malloc (sizeof(float)*4*width*height);
          for (unsigned int j=0; j<width*height; j++) {
-            t[j].x = ((float2 *) (p+stride[i]))[j].x;
-            t[j].y = ((float2 *) (p+stride[i]))[j].y;
+            t[j].x = *(p+elemsize*j+stride[i]);
+            t[j].y = *(p+elemsize*j+stride[i]+1);
             t[j].z = 0.0f;
             t[j].w = 0.0f;
          }
