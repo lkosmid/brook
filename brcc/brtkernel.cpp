@@ -19,7 +19,27 @@
 #include "codegen.h"
 #include "main.h"
 
-
+unsigned int getReferenceStream(FunctionDef * fDef) {
+   FunctionType * ft= static_cast<FunctionType*>(fDef->decl->form);
+   unsigned int ret=0;
+   bool found=false;
+   for (unsigned int i=0;i<ft->nArgs;++i) {
+      if (ft->args[i]->isStream()){
+         found=true;
+         ret=i;//consolation prize
+         if ((ft->args[i]->form->getQualifiers()&TQ_Out)!=0) {
+            return i;//jack pot
+         }
+      }
+   }
+   if (!found) {
+      std::cerr << "Error ";
+      fDef->location.printLocation(std::cerr);
+      std::cerr << " No stream present in kernel or reduce."<<std::endl;
+      return 0;
+   }
+   return ret;
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::ostream&
 operator<< (std::ostream& o, const BRTKernelCode& k) {
@@ -311,7 +331,7 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
            out << "unsigned int ratioiter"<<index<<" = 0;"<<std::endl;
            indent (out,1);
            out << "unsigned int iter"<<index<<" = getIndexOf(";
-           if (nDcube) 
+           if (!nDcube) 
               out << "mapbegin,";
            else
               out << "0, mapbegin, mapend, ";
@@ -582,7 +602,11 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
-    }}    
+    }}
+    unsigned int reference_stream = getReferenceStream(this->fDef);
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+          myArgs[i].InitialSet(out,false,reference_stream);
+    }}
     indent(out,2);out<< "__" <<fDef->decl->name->name<<"_cpu_inner (";
     out << std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
@@ -663,23 +687,12 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     out << long_name << "const std::vector<unsigned int>&dims,"<<std::endl;
     out << long_name<<"unsigned int mapbegin, "<<std::endl;
     out << long_name<< "unsigned int mapend) {"<<std::endl;
-    int reference_stream=-1;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
-        if ((reference_stream==-1||
-             (myArgs[i].getDecl()->form->getQualifiers()&TQ_Out)!=0)&&
-            myArgs[i].isStream()){
-           reference_stream=i;
-        }
     }}
-    if (reference_stream==-1) {
-       std::cerr << "Error ";
-       fDef->location.printLocation(out);
-       std::cerr << " No stream present in kernel or reduce."<<std::endl;
-       return;
-    }
+    unsigned int reference_stream = getReferenceStream(this->fDef);
     {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].InitialSet(out,false,reference_stream);
     }}

@@ -139,9 +139,14 @@ template <> inline __BRTStreamType __BRTReductionType(const float2*e) {
 template <> inline __BRTStreamType __BRTReductionType(const float*e) {
    return __BRTFLOAT;
 }
-inline unsigned int getIndexOf(unsigned int i, ...) {
+inline unsigned int getIndexOf(unsigned int i, 
+                               const unsigned int *extent,
+                               unsigned int dim,
+                               const unsigned int *refextent) {
    return i;
 }
+
+
 
 #endif
 
