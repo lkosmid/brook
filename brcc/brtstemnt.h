@@ -16,7 +16,8 @@ class BRTKernelDef : public FunctionDef
     BRTKernelDef(const FunctionDef& fDef);
 
     /* Pass ourselves (as a FunctionDef) to our own constructor */
-    Statement *dup0() const { return new BRTKernelDef(*static_cast<const FunctionDef*>(this)); };
+    Statement *dup0() const { 
+       return new BRTKernelDef(*static_cast<const FunctionDef*>(this)); };
     void print(std::ostream& out, int level) const;
 
     void printStub(std::ostream& out) const;

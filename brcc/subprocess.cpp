@@ -162,7 +162,7 @@ Subprocess_Run(char *argv[], char *input)
   }
 
   /* Feed the cg code to the compiler */
-  if (debug) fprintf(stderr, "Sending the intput to %s\n", argv[0]);
+  if (debug) fprintf(stderr, "Sending the input to %s\n", argv[0]);
 
   if (input) {
 #if WIN32
@@ -193,7 +193,7 @@ Subprocess_Run(char *argv[], char *input)
   while (1) {
     char buf[1024];
 
-    if (debug) fprintf(stderr, "Reading pipe from cgc...\n");
+    if (debug) fprintf(stderr, "Reading pipe from %s...\n", argv[0]);
 #ifdef WIN32
     ret = _read(hStdOutPipe[READ_HANDLE], buf, 1023);
 #else
@@ -201,7 +201,7 @@ Subprocess_Run(char *argv[], char *input)
 #endif
 
     if (ret == 0) {
-      if (debug) fprintf(stderr, "Got everything from cgc.\n");
+      if (debug) fprintf(stderr, "Got everything from %s.\n", argv[0]);
       break;
     } else if (ret == -1) {
       fprintf (stderr, "Error reading output compiler pipe.\n");

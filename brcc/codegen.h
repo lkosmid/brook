@@ -8,14 +8,8 @@
 #define __CODEGEN_H__
 
 extern char *
-CodeGen_FP30GenerateCode(Type *retType, const char *name,
-                         Decl **args, int nArgs, const char *body);
-
-extern char *
-CodeGen_PS20GenerateCode(Type *retType, const char *name,
-                         Decl **args, int nArgs, const char *body);
-
-extern char *
-CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs);
+CodeGen_GenerateCode(Type *retType, const char *name,
+                     Decl **args, int nArgs, const char *body,
+                     bool ps20_not_fp30);
 
 #endif

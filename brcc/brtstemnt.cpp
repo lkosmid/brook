@@ -20,37 +20,39 @@
 
 //FIXME eventually we'll want to code-transform to do the following 2 functions
 bool recursiveIsGather(Type * form) {
-  bool ret=(form->type==TT_Array)&&(form->getQualifiers()&TQ_Reduce)==0;
-  bool isarray=ret;
-  Type * t=form;
-  while (isarray) {
-    t =static_cast<ArrayType *>(t)->subType;
-    isarray= (t->type==TT_Array);
-  }
-  return ret&&t->type!=TT_Stream;
+   bool ret=(form->type==TT_Array)&&(form->getQualifiers()&TQ_Reduce)==0;
+   bool isarray=ret;
+   Type * t=form;
+   while (isarray) {
+      t =static_cast<ArrayType *>(t)->subType;
+      isarray= (t->type==TT_Array);
+   }
+   return ret&&t->type!=TT_Stream;
 }
+
+
 bool recursiveIsStream(Type* form) {
-	return (form->type==TT_Stream);
+   return (form->type==TT_Stream);
 }
 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BRTKernelDef::BRTKernelDef(const FunctionDef& fDef)
-            : FunctionDef(fDef.location)
+   : FunctionDef(fDef.location)
 {
    LabelVector::const_iterator j;
-
+   
    type = ST_BRTKernel;
    decl = fDef.decl->dup();
-
+   
    for (Statement *stemnt=fDef.head; stemnt; stemnt=stemnt->next) {
       add(stemnt->dup());
    }
-
+   
    for (j=fDef.labels.begin(); j != fDef.labels.end(); j++) {
       addLabel((*j)->dup());
    }
-
+   
    if (!CheckSemantics()) {
       assert(false);
    }
@@ -60,36 +62,41 @@ BRTKernelDef::BRTKernelDef(const FunctionDef& fDef)
 void
 BRTKernelDef::print(std::ostream& out, int) const
 {
-#define PRINT_IF_NEEDED(var, type) \
-   if (globals.target & TARGET_##type) {                                \
-      BRTKernelCode *var;                                               \
-      var = decl->isReduce() ? new BRT##type##ReduceCode(*this) :       \
-                                new BRT##type##KernelCode(*this);       \
-      out << *var << std::endl;                                         \
-      delete var;                                                       \
-   } else {                                                             \
-      out << "static const char *__"                                    \
-          << *FunctionName() << "_" #var " = NULL;\n";                  \
-   }
-
    if (Project::gDebug) {
       out << "/* BRTKernelDef:" ;
       location.printLocation(out) ;
       out << " */" << std::endl;
    }
 
-   PRINT_IF_NEEDED(fp30, FP30);
-   PRINT_IF_NEEDED(ps20, PS20);
-   PRINT_IF_NEEDED(cpu, CPU);
-   
+#define PRINT_CODE(a,b) \
+   if (globals.target & TARGET_##a##) {                         \
+      BRTKernelCode *var;                                       \
+      var = decl->isReduce() ? new BRT##a##ReduceCode(*this) :  \
+                               new BRT##a##KernelCode(*this);   \
+      out << *var << std::endl;                                 \
+      delete var;                                               \
+   } else {                                                     \
+      out << "static const char *__"                            \
+          << *FunctionName() << "_" << #b << "= NULL;\n";       \
+   }
+
+   PRINT_CODE(PS20, ps20);
+   PRINT_CODE(FP30, fp30);
+   PRINT_CODE(CPU,  cpu);
+
+#undef PRINT_CODE
+
    printStub(out);
-#undef PRINT_IF_NEEDED
+
    if (decl->isReduce()) {
      BRTCPUReduceCode crc(*this);
       BRTScatterDef sd(*crc.fDef);
       sd.print(out,0);
    }
 }
+
+
+
 bool incrementBoolVec(std::vector<bool> &vec) {
    if (vec.empty()) return false;
    bool carry =true;

@@ -32,122 +32,13 @@ static const char fp30_assist[] =
 #include "fp30_assist.cg.bin"
 ;
 
-
-/*
- * generate_cg_code --
- *
- *      This function takes a parsed kernel function as input and produces
- *      the CG code reflected, plus the support code required.
- */
-
-static char *
-generate_cg_code (Decl **args, int nArgs, const char *body) {
-  const char xyzw[] = "xyzw";
-  std::ostringstream cg;
-  Decl *outArg = NULL;
-  int texcoord, i;
-
-  cg << "#define _WORKSPACE " << globals.workspace << std::endl;
-  cg << "#define _WORKSPACE_INV " 
-     << std::setprecision((std::streamsize) 9.9) 
-     << 1.0 / globals.workspace << std::endl;
-
-  cg << fp30_assist;
-
-  cg << "fragout_float main (\n\t\t";
-
-  /* Print the argument list */
-  texcoord = 0;
-  for (i=0; i < nArgs; i++) {
-     TypeQual qual = args[i]->form->getQualifiers();
-
-     /* Don't put the output in the argument list */
-     if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
-        outArg = args[i];
-        continue;
-     }
-
-     if (i) cg <<  ",\n\t\t";
-
-     if ((qual & TQ_Iter) != 0) {
-       args[i]->form->getBase()->qualifier &= ~TQ_Iter;
-       args[i]->form->printBase(cg, 0);
-       args[i]->form->getBase()->qualifier = qual;
-       cg << *args[i]->name << " : TEX" << texcoord++;
-     } else if (args[i]->isStream()) {
-       cg << "uniform texobjRECT _tex_" << *args[i]->name << ",\n\t\t";
-       cg << "float2 _tex_" << *args[i]->name << "_pos : TEX"
-          << texcoord++;
-     } else {
-       cg << "uniform ";
-       args[i]->print(cg, true);
-     }
-  }
-  cg << ") {\n";
-
-  /* Declare the stream variables */
-  for (i=0; i < nArgs; i++) {
-     TypeQual qual = args[i]->form->getQualifiers();
-     if ((qual & TQ_Iter) != 0) continue;
-
-     if (args[i] == outArg) {
-        cg << "\t";
-        outArg->form->getBase()->qualifier &= ~TQ_Out;
-        args[i]->form->printBase(cg, 0);
-        outArg->form->getBase()->qualifier = qual;
-        cg << " " << *args[i]->name << ";\n";
-     } else if (args[i]->isStream()) {
-        cg << "\t";
-        args[i]->form->printBase(cg, 0);
-        cg << " " << *args[i]->name << ";\n";
-     }
-  }
-
-  /* Declare the output variable */
-  cg << "\tfragout_float  _OUT;\n";
-
-  /* Perform stream fetches */
-  for (i=0; i < nArgs; i++) {
-     TypeQual qual = args[i]->form->getQualifiers();
-
-     if (args[i] == outArg) continue;
-     if ((qual & TQ_Iter) != 0) continue;
-
-     if (args[i]->isStream()) {
-        int dimension = FloatDimension(args[i]->form->getBase()->typemask);
-        assert(dimension > 0);
-
-        cg << "\t" << *args[i]->name << " = f" << (char) (dimension + '0')
-           << "texRECT (_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
-           << "_pos);\n";
-     }
-  }
-
-  /* Include the body of the kernel */
-  cg << body << std::endl;
-
-  /* Return the result */
-  if (outArg) {
-     int dimension = FloatDimension(outArg->form->getBase()->typemask);
-
-     for (i=0; i < dimension; i++) {
-        cg << "\t_OUT.col." << xyzw[i] << "= " << *outArg->name << "."
-           << xyzw[i] << ";\n";
-     }
-
-     cg << "\treturn _OUT;\n}\n";
-  }
-
-  return strdup(cg.str().c_str());
-}
-
 /*
  * generate_hlsl_code --
  *
  *      This function takes a parsed kernel function as input and produces
  *      the CG code reflected, plus the support code required.
  */
-static void generate_hlsl_subroutines(std::ostream&  out) {
+static void generate_shader_subroutines(std::ostream&  out) {
    TransUnit * tu = gProject->units.back();
    Statement *ste, *prev;
    for (ste=tu->head, prev=NULL; ste; prev = ste, ste=ste->next) {
@@ -161,85 +52,114 @@ static void generate_hlsl_subroutines(std::ostream&  out) {
 }
 
 static char *
-generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtionName) {
+generate_shader_code (Decl **args, int nArgs, 
+                    const char *body, const char* funtionName) {
   const char xyzw[] = "xyzw";
-  std::ostringstream hlsl;
+  std::ostringstream shader;
   Decl *outArg = NULL;
   bool isReduction = false;
-  int texcoord, constreg, i;
-  generate_hlsl_subroutines(hlsl);
-  // Add the workspace variable
-  constreg = 0;
-  hlsl << "float4 _workspace    : register (c"
-       << constreg++ << ");\n";
+  int texcoord, constreg, samplerreg, i;
 
-  /* Print out the texture stream */
-  texcoord = 0;
+  shader << "#ifdef USERECT\n";
+  shader << "#define _stype   samplerRECT\n";
+  shader << "#define _sfetch  texRECT\n";
+  shader << "#define _gather1(a,b,c) texRECT((a),(b))\n";
+  shader << "#define _gather2(a,b,c) texRECT((a),(b))\n";
+  shader << "#define _computeindexof(a,b) (a)\n";
+  shader << "#else\n";
+  shader << "#define _stype   sampler\n";
+  shader << "#define _sfetch  tex2D\n";
+  shader << "#define _gather1(a,b,c) tex1D((a),(c))\n";
+  shader << "#define _gather2(a,b,c) tex2D((a),(c))\n";
+  shader << "#define _computeindexof(a,b) (b)\n";
+  shader << "#endif\n\n";
+
+  generate_shader_subroutines(shader);
+
+  // Find the output
   for (i=0; i < nArgs; i++) {
-     TypeQual qual = args[i]->form->getQualifiers();
-
-    /* Don't put the output in the argument list */
+    TypeQual qual = args[i]->form->getQualifiers();
+    
     if ((qual & TQ_Out) != 0) {
       outArg = args[i];
       continue;
     }
-
+    
+    /* Flag if it is a reduction */
     if ((qual & TQ_Reduce) != 0) {
       outArg = args[i];
       isReduction = true;
     }
-
-    if ((qual & TQ_Iter) != 0) {
-       /* Do nothing.  No samplers for iterators */
-    } else if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
-       hlsl << "sampler _tex_" << *args[i]->name;
-       hlsl << " : register (s" << texcoord++ << ");\n";
-       if( FunctionProp[funtionName].contains(i) )
-       {
-          hlsl << "float4 " << *args[i]->name << "_invscalebias"
-               << " : register (c" << constreg++ << ");\n";
-       }
-    } else if (args[i]->isArray()) {
-       hlsl << "sampler " << *args[i]->name;
-       hlsl << " : register (s" << texcoord++ << ");\n";
-       hlsl << "float4 " << *args[i]->name << "_scalebias"
-            << " : register (c" << constreg++ << ");\n";
-    } else {
-       args[i]->print(hlsl, true);
-       hlsl << " : register (c" << constreg++ << ");\n";
-    }
   }
-  hlsl << "\n";
 
-  hlsl << "float4 main (\n\t\t";
+  shader << "float4 main (";
+
+  constreg = 0;
+  texcoord = 0;
+  samplerreg = 0;
+
+  // Add the workspace variable
+  shader << "   uniform float4 _workspace    : register (c"
+       << constreg++ << "), \n\t\t";
 
   /* Print the argument list */
-  texcoord = 0;
+
   bool first=false;
+
   for (i=0; i < nArgs; i++) {
-     TypeQual qual = args[i]->form->getQualifiers();
+    TypeQual qual = args[i]->form->getQualifiers();
+    
+    /* Don't put the output in the argument list */
+    if ((qual & TQ_Out) != 0) {
+      continue;
+    }
+    
+    /* Print the "," */
+    if (first) shader <<  ",\n\t\t";
+    first=true;
 
-     /* Don't put the output in the argument list */
-     if ((qual & TQ_Out) != 0) {
-        outArg = args[i];
-        continue;
-     }
+    if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
 
-     if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
-       if (first) hlsl <<  ",\n\t\t";
-       first=true;
-       if ((qual & TQ_Iter) != 0) {
-          args[i]->form->getBase()->qualifier &= ~TQ_Iter;
-          args[i]->form->printBase(hlsl, 0);
-          args[i]->form->getBase()->qualifier = qual;
-          hlsl << *args[i]->name << " : TEXCOORD" << texcoord++;
-       } else {
-          hlsl << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
-               << texcoord++;
-       }
-     }
+      if ((qual & TQ_Iter) != 0) {
+        
+        // Just output a texcoord for an iterator
+        args[i]->form->getBase()->qualifier &= ~TQ_Iter;
+        args[i]->form->printBase(shader, 0);
+        args[i]->form->getBase()->qualifier = qual;
+          shader << *args[i]->name << " : TEXCOORD" << texcoord++; 
+
+      } else {
+
+        // Output a sampler, texcoord, and scale_bias for 
+        // a stream
+         shader << "uniform _stype _tex_" << *args[i]->name;
+         shader << " : register (s" << samplerreg++ << "),\n\t\t";
+         if( FunctionProp[funtionName].contains(i) ) {
+           shader << "uniform float4 " << *args[i]->name << "_invscalebias"
+                  << " : register (c" << constreg++ << "),\n\t\t";
+         }
+         shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
+                << texcoord++;
+      }
+    } else if (args[i]->isArray()) {
+      
+      shader << "uniform _stype " << *args[i]->name;
+      shader << " : register (s" << samplerreg++ << "),\n\t\t";
+      shader << "uniform float4 " << *args[i]->name << "_scalebias"
+                << " : register (c" << constreg++ << ")";
+    
+    } else {
+      
+      shader << "uniform ";
+      args[i]->print(shader, true);
+      shader << " : register (c" << constreg++ << ")";
+    }
   }
-  hlsl << ") : COLOR0 {\n";
+  shader << ") : COLOR0 {\n";
+
+
+  /* Declare the output variable */
+  shader << "float4 _OUT;\n\t\t";
 
   /* Declare the stream variables */
   for (i=0; i < nArgs; i++) {
@@ -247,19 +167,16 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtio
 
      if (args[i] == outArg) {
         outArg->form->getBase()->qualifier &= ~TQ_Out;
-        hlsl << "\t";
-        args[i]->form->printBase(hlsl, 0);
-        hlsl << " " << *args[i]->name << ";\n";
+        shader << "\t";
+        args[i]->form->printBase(shader, 0);
+        shader << " " << *args[i]->name << ";\n";
         outArg->form->getBase()->qualifier = qual;
      } else if (args[i]->isStream() && ((qual & TQ_Iter) == 0)) {
-        hlsl << "\t";
-        args[i]->form->printBase(hlsl, 0);
-        hlsl << " " << *args[i]->name << ";\n";
+        shader << "\t";
+        args[i]->form->printBase(shader, 0);
+        shader << " " << *args[i]->name << ";\n";
      }
   }
-
-  /* Declare the output variable */
-  hlsl << "\tfloat4  _OUT;\n";
 
   /* Perform stream fetches */
   for (i=0; i < nArgs; i++) {
@@ -268,44 +185,71 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtio
      if (args[i] == outArg && !isReduction) continue;
      if ((qual & TQ_Iter) != 0) continue; /* No texture fetch for iterators */
 
-     if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
-        int dimension = FloatDimension(args[i]->form->getBase()->typemask);
-        assert(dimension > 0);
-
-        hlsl << "\t" << *args[i]->name << " = tex2D"
-             << "(_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
-             << "_pos);\n";
-
-        if( FunctionProp[funtionName].contains(i) )
-        {
-          hlsl << "\t" << "float4 __indexof_" << *args[i]->name << " = "
-            << "float4( _tex_" << *args[i]->name << "_pos*"
-            << *args[i]->name << "_invscalebias.xy + "
-            << *args[i]->name << "_invscalebias.zw,0,0);\n";
-        }
+     if (args[i]->isStream() || 
+         (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
+       
+       int dimension = FloatDimension(args[i]->form->getBase()->typemask);
+       assert(dimension > 0);
+       
+       shader << "\t" << *args[i]->name << " = _sfetch"
+              << "(_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
+              << "_pos)";
+       
+       assert (args[i]->form);
+       BaseType *b = args[i]->form->getBase();
+       switch (b->typemask) {
+       case BT_Float:
+         shader << ".x";
+         break;
+       case BT_Float2:
+         shader << ".xy";
+         break;
+       case BT_Float3:
+         shader << ".xyz";
+         break;
+       case BT_Float4:
+         shader << ".xyzw";
+         break;
+       default:
+         fprintf(stderr, "Strange array base type:");
+         b->printBase(std::cerr, 0);
+         abort();
+       }
+       
+       shader << ";\n";
+       
+       if( FunctionProp[funtionName].contains(i) )
+         {
+           shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "
+                  << "__computeindexof( "
+                  << "_tex_" << *args[i]->name << "_pos, "
+                  << "float4( _tex_" << *args[i]->name << "_pos*"
+                  << *args[i]->name << "_invscalebias.xy + "
+                  << *args[i]->name << "_invscalebias.zw,0,0);\n";
+         }
      }
   }
 
   /* Include the body of the kernel */
-  hlsl << body << std::endl;
+  shader << body << std::endl;
 
   /* Return the result */
-  if (outArg) {
-     int dimension = FloatDimension(outArg->form->getBase()->typemask);
+  assert (outArg);
 
-     for (i=0; i < dimension; i++) {
-        hlsl << "\t_OUT." << xyzw[i] << "= " << *outArg->name << "."
-           << xyzw[i] << ";\n";
-     }
-     for (;i < 4; i++) {
-        hlsl << "\t_OUT." << xyzw[i] << "= " << *outArg->name << "."
-           << xyzw[dimension-1] << ";\n";
-     }
-
-     hlsl << "\treturn _OUT;\n}\n";
+  int dimension = FloatDimension(outArg->form->getBase()->typemask);
+  
+  for (i=0; i < dimension; i++) {
+    shader << "\t_OUT." << xyzw[i] << " = " << *outArg->name << "."
+       << xyzw[i] << ";\n";
   }
+  for (; i < 4; i++) {
+    shader << "\t_OUT." << xyzw[i] << " = " << *outArg->name << "."
+       << xyzw[dimension-1] << ";\n";
+  }
+  
+  shader << "\treturn _OUT;\n}\n";
 
-  return strdup(hlsl.str().c_str());
+  return strdup(shader.str().c_str());
 }
 
 
@@ -319,7 +263,8 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtio
 static char *
 compile_cg_code (char *cgcode) {
 
-  char *argv[16] = { "cgc", "-profile", "fp30", "-quiet", NULL };
+  char *argv[16] = { "cgc", "-profile", "fp30", 
+                     "-DUSERECT", "-quiet", NULL };
   char *fpcode, *endline;
 
   fpcode = Subprocess_Run(argv, cgcode);
@@ -381,12 +326,16 @@ compile_hlsl_code (char *hlslcode) {
      return NULL;
   }
 
+  if (globals.verbose)
+    fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
+            errcode);
+
   fp = fopen(argv[3]+3, "rt");
   if (fp == NULL) {
     fprintf (stderr, "Unable to open compiler output file %s\n", 
              argv[3]+3);
-     fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
-             errcode);
+    fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
+            errcode);
     return NULL;
   }
 
@@ -449,7 +398,8 @@ compile_hlsl_code (char *hlslcode) {
 
 static char *
 append_argument_information (const char *commentstring, char *fpcode,
-                             Decl **args, int nArgs, const char *body, const char* functionName)
+                             Decl **args, int nArgs, const char *body,
+                             const char* functionName)
 {
   std::ostringstream fp;
 
@@ -487,41 +437,7 @@ append_argument_information (const char *commentstring, char *fpcode,
 
 
 /*
- * generate_c_fp30_code --
- *
- *      Spits out the compiled fp code as a string available to the emitted
- *      C code.
- */
-
-static char *
-generate_c_fp30_code(char *fpcode, const char *name)
-{
-  std::ostringstream fp;
-  int i;
-
-  assert (name);
-
-  if (fpcode == NULL) {
-     fp << "\nstatic const char *__" << name << "_fp30 = NULL;\n";
-     return strdup(fp.str().c_str());
-  }
-
-  fp << "\nstatic const char __" << name << "_fp30[] = {" << std::endl;
-
-  fp << "\"";
-  while ((i = *fpcode++) != '\0') {
-    if (i == '\n')
-      fp << "\\n\"\n\"";
-    else
-      fp << (char) i;
-  }
-  fp << "\"};\n";
-
-  return strdup(fp.str().c_str());
-}
-
-/*
- * generate_c_ps20_code --
+ * generate_c_code --
  *
  *      Spits out the compiled pixel shader
  *      code as a string available to the emitted
@@ -529,7 +445,7 @@ generate_c_fp30_code(char *fpcode, const char *name)
  */
 
 static char *
-generate_c_ps20_code(char *fpcode, const char *name)
+generate_c_code(char *fpcode, const char *name, const char *id)
 {
   std::ostringstream fp;
   int i;
@@ -537,11 +453,13 @@ generate_c_ps20_code(char *fpcode, const char *name)
   assert (name);
 
   if (fpcode == NULL) {
-     fp << "\nstatic const char *__" << name << "_ps20 = NULL;\n";
+    fp << "\nstatic const char *__" << name 
+       << "_" << id << " = NULL;\n";
      return strdup(fp.str().c_str());
   }
 
-  fp << "\nstatic const char __" << name << "_ps20[] = {" << std::endl;
+  fp << "\nstatic const char __" << name 
+     << "_" << id << "[] = {" << std::endl;
 
   fp << "\"";
   while ((i = *fpcode++) != '\0') {
@@ -555,168 +473,55 @@ generate_c_ps20_code(char *fpcode, const char *name)
   return strdup(fp.str().c_str());
 }
 
-
 /*
- * CodeGen_GenerateHeader --
- *
- *      Takes a kernel function's prototype and emits the C header
- *      information to call it.
- */
-
-char *
-CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs)
-{
-  std::ostringstream fp;
-
-  assert (globals.houtputname);
-  assert (retType);
-  assert (name);
-  assert (args);
-
-  fp << "#ifndef _HEADER_" << name << std::endl;
-  fp << "#define _HEADER_" << name << std::endl << std::endl;
-
-  retType->printType(fp, NULL, true, 0);
-  fp << " " << name << " (";
-
-  for (int i = 0; i < nArgs; i++) {
-     if (i) fp << ", ";
-
-     if (args[i]->isStream()) {
-        fp << "stream ";
-     } else {
-        args[i]->form->printBase(fp, 0);
-        args[i]->form->printBefore(fp, NULL, 0);
-     }
-  }
-  fp << ");\n\n";
-
-#if 0
-  /*
-   *  I don't know anything about reduce kernels and these hardcoded
-   * parameter positional meanings don't mean anything to me.  So, I'm
-   * ignoring them for now.  -Jeremy.
-   */
-
-  /*
-   * We really should check to make sure that
-   * the kernel is legal reduction.
-   */
-
-  fp << retType << " " << name << "_reduce (";
-  fp << "stream arg_src,";
-  fp << arglist->args[2]->type << " *arg_out";
-
-  for (i=3; i<arglist->len; i++) {
-    struct argtype *arg = arglist->args[i];
-    if (i) fp << ",";
-
-    if (arg->modifier & MODIFIER_STREAM ||
-	arg->modifier & MODIFIER_GATHER)
-      fp << "stream";
-    else
-      fp << arg->type;
-   }
-  fp << ");\n\n";
-  fp << "#endif _HEADER_" << name << std::endl;
-#endif
-
-  return strdup(fp.str().c_str());
-}
-
-
-/*
- * CodeGen_FP30GenerateCode --
- *
- *      Takes a parsed kernel and crunches it down to C code:
- *              . Creates and annotates equivalent CG
- *              . Compiles the CG to fp30 assembly
- *              . Spits out the fragment program as a C string
- *
- *      Note: The caller is responsible for free()ing the returned string.
- */
-
-char *
-CodeGen_FP30GenerateCode(Type *retType, const char *name,
-                         Decl **args, int nArgs, const char *body)
-{
-  char *cgcode, *fpcode, *fpcode_with_brccinfo, *c_code;
-
-  cgcode = generate_cg_code(args, nArgs, body);
-  if (cgcode) {
-     if (globals.verbose)
-       std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
-     fpcode = compile_cg_code(cgcode);
-     free(cgcode);
-  } else {
-     fpcode = NULL;
-  }
-
-  if (fpcode) {
-    if (globals.verbose)
-      std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
-     fpcode_with_brccinfo =
-       append_argument_information("##", fpcode, args, nArgs, body, name);
-     free(fpcode);
-     if (globals.verbose)
-       std::cerr << "***Produced this instrumented fpcode:\n"
-                 << fpcode_with_brccinfo << "\n";
-  } else {
-     fpcode_with_brccinfo = NULL;
-  }
-
-  c_code = generate_c_fp30_code(fpcode_with_brccinfo, name);
-  free(fpcode_with_brccinfo);
-  if (globals.verbose)
-    std::cerr << "***Produced this C code:\n" << c_code;
-
-  return c_code;
-}
-
-
-/*
- * CodeGen_PS20GenerateCode --
+ * CodeGen_GenerateCode --
  *
  *      Takes a parsed kernel and crunches it down to C code:
  *              . Creates and annotates equivalent HLSL
- *              . Compiles the HLSL to ps20 assembly
+ *              . Compiles the HLSL to ps20/fp30 assembly
  *              . Spits out the fragment program as a C string
  *
  *      Note: The caller is responsible for free()ing the returned string.
  */
 
 char *
-CodeGen_PS20GenerateCode(Type *retType, const char *name,
-                         Decl **args, int nArgs, const char *body)
+CodeGen_GenerateCode(Type *retType, const char *name,
+                     Decl **args, int nArgs, const char *body, 
+                     bool ps20_not_fp30)
 {
-  char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
+  char *shadercode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
-  hlslcode = generate_hlsl_code(args, nArgs, body, name);
-  if (hlslcode) {
+  shadercode = generate_shader_code(args, nArgs, body, name);
+  if (shadercode) {
      if (globals.verbose)
-       std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
-     fpcode = compile_hlsl_code(hlslcode);
-     free(hlslcode);
+       std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
+     if (ps20_not_fp30)
+       fpcode = compile_hlsl_code(shadercode);
+     else
+       fpcode = compile_cg_code(shadercode);
+     free(shadercode);
   } else {
      fpcode = NULL;
   }
 
   if (fpcode) {
     if (globals.verbose)
-      std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
+      std::cerr << "***Produced this assembly:\n" << fpcode << "\n";
 
      fpcode_with_brccinfo =
-       append_argument_information("//", fpcode, args, nArgs, body, name);
+       append_argument_information(ps20_not_fp30?"//":"##",
+                                   fpcode, args, nArgs, body, name);
      free(fpcode);
 
      if (globals.verbose)
-       std::cerr << "***Produced this instrumented fpcode:\n"
+       std::cerr << "***Produced this instrumented assembly:\n"
                  << fpcode_with_brccinfo << "\n";
   } else {
      fpcode_with_brccinfo = NULL;
   }
 
-  c_code = generate_c_ps20_code(fpcode_with_brccinfo, name);
+  c_code = generate_c_code(fpcode_with_brccinfo, name,
+                            ps20_not_fp30?"ps20":"fp30");
   free(fpcode_with_brccinfo);
 
   if (globals.verbose)

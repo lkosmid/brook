@@ -67,37 +67,12 @@ operator<< (std::ostream& o, const BRTKernelCode& k) {
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void
-BRTFP30KernelCode::printCode(std::ostream& out) const
-{
-   FunctionType *fType;
-   std::ostringstream wrapOut;
-   char *fpcode;
-
-   fDef->Block::print(wrapOut, 0);
-   if (globals.verbose) {
-      std::cerr << "***Wrapping\n";
-      fDef->decl->print(std::cerr, true);
-      std::cerr << std::endl << wrapOut.str() << "\n***\n";
-   }
-
-   assert (fDef->decl->form->type == TT_Function);
-   fType = (FunctionType *) fDef->decl->form;
-
-   fpcode = CodeGen_FP30GenerateCode(fType->subType,
-                                     fDef->FunctionName()->name.c_str(),
-                                     fType->args, fType->nArgs,
-                                     wrapOut.str().c_str());
-   out << fpcode;
-   free(fpcode);
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-BRTPS20KernelCode::BRTPS20KernelCode(const FunctionDef& _fDef)
+BRTGPUKernelCode::BRTGPUKernelCode(const FunctionDef& _fDef)
    : BRTKernelCode(_fDef)
 {
    fDef->findExpr(ConvertGathers);
 }
+
 static Variable * NewGatherArg (Variable * v) {
    Symbol * s = new Symbol;
    s->name = v->name->name+"_scalebias";
@@ -105,10 +80,11 @@ static Variable * NewGatherArg (Variable * v) {
    
 }
 
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function prints the code of an internally callable kernel
 // from within another kernel.
-void BRTPS20KernelCode::printInnerCode (std::ostream&out) const {
+void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
    int i;
    std::string myvoid("void  ");
    FunctionType * ft = static_cast<FunctionType *>(fDef->decl->form);
@@ -122,7 +98,7 @@ void BRTPS20KernelCode::printInnerCode (std::ostream&out) const {
       Symbol * nam = ft->args[i]->name;
       Type * t = ft->args[i]->form;
       if (recursiveIsGather(t)) {
-         out << "sampler "<<nam->name <<","<<std::endl;
+         out << "_stype "<<nam->name <<","<<std::endl;
          out << blank << "float4 "<<nam->name<<"_scalebias";
       }else {
          if (ft->args[i]->isStream()) {
@@ -145,39 +121,38 @@ void BRTPS20KernelCode::printInnerCode (std::ostream&out) const {
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-// Not yet implemented. XXX fixme -- probable should do the same
-void BRTFP30KernelCode::printInnerCode (std::ostream&out) const {
-   //nothing happens.
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function converts gathers into scale and bias expressions
 // This function converts function calls' gathers into two args.
 // This function adds the indexof items to function calls requriing indexof
 Expression *
-BRTPS20KernelCode::ConvertGathers (Expression *expr) {
+BRTGPUKernelCode::ConvertGathers (Expression *expr) {
   BrtGatherExpr *gather;
+
+  /* Check function calls inside of kernels */
   if (expr->etype == ET_FunctionCall) {
+
      //now we have to convert gathers that are passed into functions
      FunctionCall * fc = static_cast<FunctionCall*>(expr);
      if (fc->function->etype==ET_Variable) {
         Variable * function = static_cast<Variable*>(fc->function);
-        if (function->name->entry&&function->name->entry->uVarDecl) {
-           if (function->name->entry->uVarDecl->isKernel()&&
+        if (function->name->entry && function->name->entry->uVarDecl) {
+           if (function->name->entry->uVarDecl->isKernel() &&
                !function->name->entry->uVarDecl->isReduce()) {
+
               std::set<unsigned int>::iterator iter=
                  FunctionProp[function->name->name].begin();
               std::set<unsigned int>::iterator iterend = 
                  FunctionProp[function->name->name].end();
-              for (;iter!=iterend;++iter) {
-                 if (fc->args[*iter]->etype!=ET_Variable) {
+
+              for ( ; iter!=iterend; ++iter) {
+                 if (fc->args[*iter]->etype != ET_Variable) {
                     std::cerr<<"Error: ";
                     fc->args[*iter]->location.printLocation(std::cerr);
                     std::cerr<< "Argument "<<*iter+1<<" not a stream where";
                     std::cerr<< "indexof used in subfunction";
-                 }else {
+                 } else {
                     Variable * v = static_cast<Variable*>(fc->args[*iter]);
-                    if (v->name->entry&&
+                    if (v->name->entry &&
                         v->name->entry->uVarDecl){
                        if (v->name->entry->uVarDecl->isStream()) {
                           Decl * indexofDecl 
@@ -188,7 +163,7 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
                           indexofS->entry = mk_vardecl(indexofS->name,
                                                        indexofDecl);
                           fc->addArg(new Variable(indexofS,v->location));
-                       }else {
+                       } else {
                           std::cerr<< "Error: ";
                           v->location.printLocation(std::cerr);
                           std::cerr<<" Argument "<<*iter+1<<" not a stream";
@@ -197,6 +172,7 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
                     }
                  }
               }
+
               int i;
               for (i=0;i<fc->nArgs();++i) {
                  if (fc->args[i]->etype==ET_Variable){
@@ -214,6 +190,9 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
      }
      return expr;
   }
+
+
+  /* Convert gather expressions: a[i][j] */
   if (expr->etype == ET_IndexExpr) {
     
     if (globals.verbose) {
@@ -235,6 +214,7 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
     
     if (v->name->entry->type != ParamDeclEntry)
       return expr;
+
     // XXX Daniel: BrtGatherExpr asserts that it is
     //             indeed an array, not a TT_Stream
     if (v->name->entry->uVarDecl)
@@ -252,7 +232,22 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
+BRTFP30KernelCode::printCode(std::ostream& out) const
+{
+   printCodeForType(out, false);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
 BRTPS20KernelCode::printCode(std::ostream& out) const
+{
+   printCodeForType(out, true);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BRTGPUKernelCode::printCodeForType(std::ostream& out, 
+                                   bool ps20_not_fp30) const
 {
    FunctionType *fType;
    std::ostringstream wrapOut;
@@ -260,18 +255,19 @@ BRTPS20KernelCode::printCode(std::ostream& out) const
 
    fDef->Block::print(wrapOut, 0);
    if (globals.verbose) {
-      std::cerr << "***Wrapping\n";
+      std::cerr << "***Wrapping***\n";
       fDef->decl->print(out, true);
-      std::cerr << std::endl << wrapOut.str() << "\n***\n";
+      std::cerr << std::endl << wrapOut.str() << "\n**********\n";
    }
 
    assert (fDef->decl->form->type == TT_Function);
    fType = (FunctionType *) fDef->decl->form;
 
-   fpcode = CodeGen_PS20GenerateCode(fType->subType,
-                                     fDef->FunctionName()->name.c_str(),
-                                     fType->args, fType->nArgs,
-                                     wrapOut.str().c_str());
+   fpcode = CodeGen_GenerateCode(fType->subType,
+                                 fDef->FunctionName()->name.c_str(),
+                                 fType->args, fType->nArgs,
+                                 wrapOut.str().c_str(),
+                                 ps20_not_fp30);
    out << fpcode;
    free(fpcode);
 }

@@ -53,7 +53,7 @@ parse_args (int argc, char *argv[]) {
    * zero initialization from the bss will take care of the rest of the
    * defaults.
    */
-  globals.target       = TARGET_PS20 | TARGET_CPU;
+  globals.target       = 0;
   globals.workspace    = 1024;
   globals.compilername = argv[0];
   globals.multiThread = false;
@@ -71,13 +71,13 @@ parse_args (int argc, char *argv[]) {
 	break;
      case 'p':
 	if (strcasecmp (optarg, "cpu") == 0)
-	  globals.target = TARGET_CPU;
+	  globals.target |= TARGET_CPU;
 	else if (strcasecmp (optarg, "ps20") == 0)
-	  globals.target = TARGET_PS20;
+	  globals.target |= TARGET_PS20;
 	else if (strcasecmp (optarg, "fp30") == 0)
-	  globals.target = TARGET_FP30;
+	  globals.target |= TARGET_FP30;
 	else if (strcasecmp (optarg, "arb") == 0)
-	  globals.target = TARGET_ARB;
+	  globals.target |= TARGET_ARB;
 	else
 	  usage();
 	break;
@@ -96,6 +96,10 @@ parse_args (int argc, char *argv[]) {
      default:
 	usage();
      }
+
+     // The default build targets
+     if (globals.target == 0)
+        globals.target = TARGET_PS20 | TARGET_CPU;
   }
 
   argv += optind;

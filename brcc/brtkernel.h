@@ -37,28 +37,42 @@ class BRTKernelCode : public DupableBRTKernelCode
 };
 
 
-class BRTFP30KernelCode : public BRTKernelCode
+class BRTGPUKernelCode : public BRTKernelCode
+{
+public:
+   BRTGPUKernelCode(const FunctionDef& fDef);
+   ~BRTGPUKernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
+   
+   void printInnerCode(std::ostream&out)const;
+   /* static so it can be passed as a findExpr() callback */
+   static Expression *ConvertGathers(Expression *e);
+   
+   void printCodeForType(std::ostream& out, 
+                         bool ps20_not_fp30) const;
+   
+   virtual BRTKernelCode *dup0() const = 0;
+   virtual void printCode(std::ostream& out) const = 0;
+};
+
+class BRTFP30KernelCode : public BRTGPUKernelCode
 {
   public:
-    BRTFP30KernelCode(const FunctionDef& _fDef) : BRTKernelCode(_fDef) {};
+    BRTFP30KernelCode(const FunctionDef& fDef) : BRTGPUKernelCode(fDef) {}
    ~BRTFP30KernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
-    void printInnerCode(std::ostream&out)const;
+
     BRTKernelCode *dup0() const { return new BRTFP30KernelCode(*this->fDef); }
     void printCode(std::ostream& out) const;
 };
 
 
-class BRTPS20KernelCode : public BRTKernelCode
+class BRTPS20KernelCode : public BRTGPUKernelCode
 {
   public:
-    BRTPS20KernelCode(const FunctionDef& fDef);
+   BRTPS20KernelCode(const FunctionDef& fDef) : BRTGPUKernelCode(fDef) {}
    ~BRTPS20KernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
-
-    BRTKernelCode *dup0() const { return new BRTPS20KernelCode(*this->fDef); }
-    void printCode(std::ostream& out) const;
-    void printInnerCode(std::ostream&out)const;
-    /* static so it can be passed as a findExpr() callback */
-    static Expression *ConvertGathers(Expression *e);
+   
+   BRTKernelCode *dup0() const { return new BRTPS20KernelCode(*this->fDef); }
+   void printCode(std::ostream& out) const;
 };
 
 

@@ -46,11 +46,19 @@ BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr)
 void
 BrtGatherExpr::print (std::ostream& out) const
 {
-   out << "tex" << ndims << "D(";
+   unsigned int i;
+   
+   out << "_gather" << ndims << "(";
    base->print(out);
-//   out << ",float" << ndims << "(";
+
+   out << ",";
+   for (i=0; i<dims.size(); i++) {
+      if (i) out << ",";
+      dims[i]->print(out);
+   }
+
    out << ",(";
-   for (unsigned int i=0; i<dims.size(); i++) {
+   for (i=0; i<dims.size(); i++) {
       if (i) out << ",";
       dims[i]->print(out);
    }
@@ -81,6 +89,38 @@ BrtGatherExpr::print (std::ostream& out) const
                << "GPU runtimes can't handle gathers greater than 2D.\n";
    }
    out << ")";
+
+   // All gather functions return a float4
+   // so we need to create the proper return type
+   assert(base->etype == ET_Variable);
+   Variable *v = (Variable *) base;   
+   assert(v->name);
+   assert(v->name->entry);
+   assert(v->name->entry->IsParamDecl());
+   assert(v->name->entry->uVarDecl);
+   assert(v->name->entry->uVarDecl->form);
+   assert(v->name->entry->uVarDecl->form->isArray());
+   ArrayType *a = (ArrayType *) v->name->entry->uVarDecl->form;
+   BaseType *b = a->getBase();
+   
+   switch (b->typemask) {
+   case BT_Float:
+      out << ".x ";
+      break;
+   case BT_Float2:
+      out << ".xy ";
+      break;
+   case BT_Float3:
+      out << ".xyz ";
+      break;
+   case BT_Float4:
+      out << ".xyzw ";
+      break;
+   default:
+      fprintf(stderr, "Strange array base type:");
+      b->printBase(std::cerr, 0);
+      abort();
+   }
 }
 
 
