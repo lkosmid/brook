@@ -45,26 +45,14 @@ public:
 		if (copy_data)
 			free(this->data);
 	}
-	unsigned int linearaddresscalc (const unsigned int * indices)const {
-		unsigned int total=0;
-		for (unsigned int i=0;i<dims;++i) {
-			total*=extents[i];
-			total+=indices[i];
-		}
-		return total;
-	}
-	const VALUE &get(const unsigned int * indices)const {
-		return data[this->linearaddresscalc(indices)];
-	}
-	VALUE& get (const unsigned int *indices) {
-		return data[this->linearaddresscalc(indices)];
-	}
-   
 	template <class T> int indexOf (const T &index) const{
-           unsigned int total=index.getAt(T::size-1);
-           for (unsigned int i=1;i<T::size&&i<dims;++i) {
-              total*=extents[i];
-              total+=(unsigned int)index.getAt(T::size-i-1);
+           int i=T::size-1;
+           if (dims<T::size)
+              i=dims-1;
+           unsigned int total=(unsigned int) index.getAt(i);
+           for (unsigned int j=1;j<=i;++j) {
+              total*=extents[j];
+              total+=(unsigned int)index.getAt(i-j);
            }
            return total;
 	}
