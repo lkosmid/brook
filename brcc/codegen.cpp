@@ -215,6 +215,7 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtio
 
   /* Print the argument list */
   texcoord = 0;
+  bool first=false;
   for (i=0; i < nArgs; i++) {
      TypeQual qual = args[i]->form->getQualifiers();
 
@@ -225,7 +226,8 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body, const char* funtio
      }
 
      if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
-       if (i) hlsl <<  ",\n\t\t";
+       if (first) hlsl <<  ",\n\t\t";
+       first=true;
        if ((qual & TQ_Iter) != 0) {
           args[i]->form->getBase()->qualifier &= ~TQ_Iter;
           args[i]->form->printBase(hlsl, 0);

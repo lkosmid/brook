@@ -14,17 +14,22 @@
 #include "project.h"
 #include "brtkernel.h"
 using std::endl;
-void convertNameToScatter (Variable * v) {
+static void convertNameToScatter (Variable * v) {
                   if (v->name->name!="STREAM_SCATTER_ASSIGN"&&
                       v->name->name!="STREAM_SCATTER_FLOAT_MUL"&&
                       v->name->name!="STREAM_SCATTER_FLOAT_ADD"&&
                       v->name->name!="STREAM_SCATTER_INTEGER_ADD"&&
-                      v->name->name!="STREAM_SCATTER_INTEGER_MUL") {
+                      v->name->name!="STREAM_SCATTER_INTEGER_MUL"&&
+                      v->name->name!="STREAM_GATHER_FETCH"&&
+                      v->name->name!="STREAM_GATHER_INTEGER_INC"&&
+                      v->name->name!="STREAM_GATHER_FLOAT_INC") {
 
                      if (v->name->name.find("__")!=0||
-                         v->name->name.find("_scatter")==std::string::npos) {
-                        v->name=new Symbol(*v->name);
+                         (v->name->name.find("_scatter")==std::string::npos&&
+                          v->name->name.find("_gather")==std::string::npos)) {
+                        v->name=new Symbol(*v->name);                        
                         v->name->name="__"+v->name->name+"_scatter";
+                        
                      }                     
                   }   
 }
@@ -33,7 +38,8 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
       FunctionCall * fc = static_cast<FunctionCall*>(e);
       if (fc->function->etype==ET_Variable) {
          Variable * name = static_cast<Variable*>(fc->function);
-         if (name->name->name=="streamScatterOp") {
+         if (name->name->name=="streamScatterOp"||
+             name->name->name=="streamGatherOp") {
             if (fc->nArgs()>3) {
                Variable * strm=NULL;
                if (fc->args[0]->etype==ET_Variable) {
