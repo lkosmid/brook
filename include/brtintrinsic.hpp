@@ -133,7 +133,26 @@ inline __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f, \
                                        h.unsafeGetAt(0))); \
 }
 
-
+template <class T> T __normalize_cpu_inner (const T &x) {
+   if (T::size==1) return x/x;
+   if (T::size==2)
+      return x/T (sqrt(x.unsafeGetAt(0)*x.unsafeGetAt(0)
+                       + x.unsafeGetAt(1)*x.unsafeGetAt(1)));
+   if (T::size==3)
+      return x/T (sqrt(x.unsafeGetAt(0)*x.unsafeGetAt(0)
+                       + x.unsafeGetAt(1)*x.unsafeGetAt(1)
+                       + x.unsafeGetAt(2)*x.unsafeGetAt(2)));
+   if (T::size==4)
+      return x/T (sqrt(x.unsafeGetAt(0)*x.unsafeGetAt(0)
+                       + x.unsafeGetAt(1)*x.unsafeGetAt(1)
+                       + x.unsafeGetAt(2)*x.unsafeGetAt(2)
+                       + x.unsafeGetAt(3)*x.unsafeGetAt(3)));
+   T::type size =x.unsafeGetAt(0)*x.unsafeGetAt(0);
+   for (unsigned int i=1;i<T::size;++i) {
+      size+=x.unsafeGetAt(i)*x.unsafeGetAt(i);
+   }
+   return x/T(size);
+}
 inline float degrees_float (float x) {
    return x*180.0f/3.1415926536f;
 }
