@@ -590,6 +590,8 @@ OGLWindow::OGLWindow() {
   }
 
   glFinish();
+
+  initglfunc();
   
   static_window_created = true;
 }

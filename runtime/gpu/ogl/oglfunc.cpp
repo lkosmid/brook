@@ -24,9 +24,14 @@ RUNTIME_BONUS_GL_FNS_ATI
 #undef XXX
 
 
-static void checkextension (const char *ext) {
+static bool hasextension(const char *ext) {
   const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
-  if (!strstr(extensions, ext)) {
+  return (strstr(extensions, ext) != NULL);
+}
+
+
+static void checkextension (const char *ext) {
+   if (!hasextension(ext)) {
       const char *card = (const char *) glGetString(GL_RENDERER);
       fprintf (stderr, "Extension %s not found for graphics card: \n %s\n",
                ext, card);
@@ -37,9 +42,16 @@ static void checkextension (const char *ext) {
 
 void brook::initglfunc(void) {
 
-#define XXX(ext) checkextension(#ext);
-  RUNTIME_REQUIRED_EXTENSIONS;
-#undef XXX
+   checkextension("GL_ARB_fragment_program");
+   checkextension("GL_ARB_multitexture");
+   
+   if (!hasextension("GL_NV_texture_rectangle") &&
+       !hasextension("GL_ARB_texture_rectangle")) {
+      const char *card = (const char *) glGetString(GL_RENDERER);
+      fprintf (stderr, "Texture Rectangle extension not found for "
+               "graphics card: \n %s\n", card);
+      exit(1);
+   }
 
 #ifdef WIN32
 #define  XXX(type, fn) fn = (type) wglGetProcAddress(#fn); \
