@@ -1,0 +1,347 @@
+#include "timing.h"
+#include <stdlib.h>
+#include <stdio.h>
+kernel void floatx8(float s0<>,float s1<>, float s2<>, float s3<>,float s4<>,float s5<>,float s6<>,float s7<>,out float o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void floatx7(float s0<>,float s1<>, float s2<>, float s3<>,float s4<>,float s5<>,float s6<>,out float o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void floatx6(float s0<>,float s1<>, float s2<>, float s3<>,float s4<>,float s5<>,out float o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void floatx5(float s0<>,float s1<>, float s2<>, float s3<>,float s4<>,out float o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void floatx4(float s0<>,float s1<>, float s2<>, float s3<>,out float o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void floatx3(float s0<>,float s1<>, float s2<>, out float o<>) {
+  o=s0+s1+s2;
+}
+kernel void floatx2(float s0<>,float s1<>, out float o<>) {
+  o=s0+s1;
+}
+kernel void floatx1(float s0<>,out float o<>) {
+  o=s0;
+}
+
+kernel void float2x8(float2 s0<>,float2 s1<>, float2 s2<>, float2 s3<>,float2 s4<>,float2 s5<>,float2 s6<>,float2 s7<>,out float2 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void float2x7(float2 s0<>,float2 s1<>, float2 s2<>, float2 s3<>,float2 s4<>,float2 s5<>,float2 s6<>,out float2 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void float2x6(float2 s0<>,float2 s1<>, float2 s2<>, float2 s3<>,float2 s4<>,float2 s5<>,out float2 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void float2x5(float2 s0<>,float2 s1<>, float2 s2<>, float2 s3<>,float2 s4<>,out float2 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void float2x4(float2 s0<>,float2 s1<>, float2 s2<>, float2 s3<>,out float2 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void float2x3(float2 s0<>,float2 s1<>, float2 s2<>, out float2 o<>) {
+  o=s0+s1+s2;
+}
+kernel void float2x2(float2 s0<>,float2 s1<>, out float2 o<>) {
+  o=s0+s1;
+}
+kernel void float2x1(float2 s0<>,out float2 o<>) {
+  o=s0;
+}
+
+
+kernel void float3x8(float3 s0<>,float3 s1<>, float3 s2<>, float3 s3<>,float3 s4<>,float3 s5<>,float3 s6<>,float3 s7<>,out float3 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void float3x7(float3 s0<>,float3 s1<>, float3 s2<>, float3 s3<>,float3 s4<>,float3 s5<>,float3 s6<>,out float3 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void float3x6(float3 s0<>,float3 s1<>, float3 s2<>, float3 s3<>,float3 s4<>,float3 s5<>,out float3 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void float3x5(float3 s0<>,float3 s1<>, float3 s2<>, float3 s3<>,float3 s4<>,out float3 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void float3x4(float3 s0<>,float3 s1<>, float3 s2<>, float3 s3<>,out float3 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void float3x3(float3 s0<>,float3 s1<>, float3 s2<>, out float3 o<>) {
+  o=s0+s1+s2;
+}
+kernel void float3x2(float3 s0<>,float3 s1<>, out float3 o<>) {
+  o=s0+s1;
+}
+kernel void float3x1(float3 s0<>,out float3 o<>) {
+  o=s0;
+}
+
+
+kernel void float4x8(float4 s0<>,float4 s1<>, float4 s2<>, float4 s3<>,float4 s4<>,float4 s5<>,float4 s6<>,float4 s7<>,out float4 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void float4x7(float4 s0<>,float4 s1<>, float4 s2<>, float4 s3<>,float4 s4<>,float4 s5<>,float4 s6<>,out float4 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void float4x6(float4 s0<>,float4 s1<>, float4 s2<>, float4 s3<>,float4 s4<>,float4 s5<>,out float4 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void float4x5(float4 s0<>,float4 s1<>, float4 s2<>, float4 s3<>,float4 s4<>,out float4 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void float4x4(float4 s0<>,float4 s1<>, float4 s2<>, float4 s3<>,out float4 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void float4x3(float4 s0<>,float4 s1<>, float4 s2<>, out float4 o<>) {
+  o=s0+s1+s2;
+}
+kernel void float4x2(float4 s0<>,float4 s1<>, out float4 o<>) {
+  o=s0+s1;
+}
+kernel void float4x1(float4 s0<>,out float4 o<>) {
+  o=s0;
+}
+
+
+
+
+
+
+kernel void fixedx8(fixed s0<>,fixed s1<>, fixed s2<>, fixed s3<>,fixed s4<>,fixed s5<>,fixed s6<>,fixed s7<>,out fixed o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void fixedx7(fixed s0<>,fixed s1<>, fixed s2<>, fixed s3<>,fixed s4<>,fixed s5<>,fixed s6<>,out fixed o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void fixedx6(fixed s0<>,fixed s1<>, fixed s2<>, fixed s3<>,fixed s4<>,fixed s5<>,out fixed o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void fixedx5(fixed s0<>,fixed s1<>, fixed s2<>, fixed s3<>,fixed s4<>,out fixed o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void fixedx4(fixed s0<>,fixed s1<>, fixed s2<>, fixed s3<>,out fixed o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void fixedx3(fixed s0<>,fixed s1<>, fixed s2<>, out fixed o<>) {
+  o=s0+s1+s2;
+}
+kernel void fixedx2(fixed s0<>,fixed s1<>, out fixed o<>) {
+  o=s0+s1;
+}
+kernel void fixedx1(fixed s0<>,out fixed o<>) {
+  o=s0;
+}
+
+kernel void fixed2x8(fixed2 s0<>,fixed2 s1<>, fixed2 s2<>, fixed2 s3<>,fixed2 s4<>,fixed2 s5<>,fixed2 s6<>,fixed2 s7<>,out fixed2 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void fixed2x7(fixed2 s0<>,fixed2 s1<>, fixed2 s2<>, fixed2 s3<>,fixed2 s4<>,fixed2 s5<>,fixed2 s6<>,out fixed2 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void fixed2x6(fixed2 s0<>,fixed2 s1<>, fixed2 s2<>, fixed2 s3<>,fixed2 s4<>,fixed2 s5<>,out fixed2 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void fixed2x5(fixed2 s0<>,fixed2 s1<>, fixed2 s2<>, fixed2 s3<>,fixed2 s4<>,out fixed2 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void fixed2x4(fixed2 s0<>,fixed2 s1<>, fixed2 s2<>, fixed2 s3<>,out fixed2 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void fixed2x3(fixed2 s0<>,fixed2 s1<>, fixed2 s2<>, out fixed2 o<>) {
+  o=s0+s1+s2;
+}
+kernel void fixed2x2(fixed2 s0<>,fixed2 s1<>, out fixed2 o<>) {
+  o=s0+s1;
+}
+kernel void fixed2x1(fixed2 s0<>,out fixed2 o<>) {
+  o=s0;
+}
+
+
+kernel void fixed3x8(fixed3 s0<>,fixed3 s1<>, fixed3 s2<>, fixed3 s3<>,fixed3 s4<>,fixed3 s5<>,fixed3 s6<>,fixed3 s7<>,out fixed3 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void fixed3x7(fixed3 s0<>,fixed3 s1<>, fixed3 s2<>, fixed3 s3<>,fixed3 s4<>,fixed3 s5<>,fixed3 s6<>,out fixed3 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void fixed3x6(fixed3 s0<>,fixed3 s1<>, fixed3 s2<>, fixed3 s3<>,fixed3 s4<>,fixed3 s5<>,out fixed3 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void fixed3x5(fixed3 s0<>,fixed3 s1<>, fixed3 s2<>, fixed3 s3<>,fixed3 s4<>,out fixed3 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void fixed3x4(fixed3 s0<>,fixed3 s1<>, fixed3 s2<>, fixed3 s3<>,out fixed3 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void fixed3x3(fixed3 s0<>,fixed3 s1<>, fixed3 s2<>, out fixed3 o<>) {
+  o=s0+s1+s2;
+}
+kernel void fixed3x2(fixed3 s0<>,fixed3 s1<>, out fixed3 o<>) {
+  o=s0+s1;
+}
+kernel void fixed3x1(fixed3 s0<>,out fixed3 o<>) {
+  o=s0;
+}
+
+
+kernel void fixed4x8(fixed4 s0<>,fixed4 s1<>, fixed4 s2<>, fixed4 s3<>,fixed4 s4<>,fixed4 s5<>,fixed4 s6<>,fixed4 s7<>,out fixed4 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void fixed4x7(fixed4 s0<>,fixed4 s1<>, fixed4 s2<>, fixed4 s3<>,fixed4 s4<>,fixed4 s5<>,fixed4 s6<>,out fixed4 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void fixed4x6(fixed4 s0<>,fixed4 s1<>, fixed4 s2<>, fixed4 s3<>,fixed4 s4<>,fixed4 s5<>,out fixed4 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void fixed4x5(fixed4 s0<>,fixed4 s1<>, fixed4 s2<>, fixed4 s3<>,fixed4 s4<>,out fixed4 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void fixed4x4(fixed4 s0<>,fixed4 s1<>, fixed4 s2<>, fixed4 s3<>,out fixed4 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void fixed4x3(fixed4 s0<>,fixed4 s1<>, fixed4 s2<>, out fixed4 o<>) {
+  o=s0+s1+s2;
+}
+kernel void fixed4x2(fixed4 s0<>,fixed4 s1<>, out fixed4 o<>) {
+  o=s0+s1;
+}
+kernel void fixed4x1(fixed4 s0<>,out fixed4 o<>) {
+  o=s0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+kernel void shortfixedx8(shortfixed s0<>,shortfixed s1<>, shortfixed s2<>, shortfixed s3<>,shortfixed s4<>,shortfixed s5<>,shortfixed s6<>,shortfixed s7<>,out shortfixed o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void shortfixedx7(shortfixed s0<>,shortfixed s1<>, shortfixed s2<>, shortfixed s3<>,shortfixed s4<>,shortfixed s5<>,shortfixed s6<>,out shortfixed o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void shortfixedx6(shortfixed s0<>,shortfixed s1<>, shortfixed s2<>, shortfixed s3<>,shortfixed s4<>,shortfixed s5<>,out shortfixed o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void shortfixedx5(shortfixed s0<>,shortfixed s1<>, shortfixed s2<>, shortfixed s3<>,shortfixed s4<>,out shortfixed o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void shortfixedx4(shortfixed s0<>,shortfixed s1<>, shortfixed s2<>, shortfixed s3<>,out shortfixed o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void shortfixedx3(shortfixed s0<>,shortfixed s1<>, shortfixed s2<>, out shortfixed o<>) {
+  o=s0+s1+s2;
+}
+kernel void shortfixedx2(shortfixed s0<>,shortfixed s1<>, out shortfixed o<>) {
+  o=s0+s1;
+}
+kernel void shortfixedx1(shortfixed s0<>,out shortfixed o<>) {
+  o=s0;
+}
+
+kernel void shortfixed2x8(shortfixed2 s0<>,shortfixed2 s1<>, shortfixed2 s2<>, shortfixed2 s3<>,shortfixed2 s4<>,shortfixed2 s5<>,shortfixed2 s6<>,shortfixed2 s7<>,out shortfixed2 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void shortfixed2x7(shortfixed2 s0<>,shortfixed2 s1<>, shortfixed2 s2<>, shortfixed2 s3<>,shortfixed2 s4<>,shortfixed2 s5<>,shortfixed2 s6<>,out shortfixed2 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void shortfixed2x6(shortfixed2 s0<>,shortfixed2 s1<>, shortfixed2 s2<>, shortfixed2 s3<>,shortfixed2 s4<>,shortfixed2 s5<>,out shortfixed2 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void shortfixed2x5(shortfixed2 s0<>,shortfixed2 s1<>, shortfixed2 s2<>, shortfixed2 s3<>,shortfixed2 s4<>,out shortfixed2 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void shortfixed2x4(shortfixed2 s0<>,shortfixed2 s1<>, shortfixed2 s2<>, shortfixed2 s3<>,out shortfixed2 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void shortfixed2x3(shortfixed2 s0<>,shortfixed2 s1<>, shortfixed2 s2<>, out shortfixed2 o<>) {
+  o=s0+s1+s2;
+}
+kernel void shortfixed2x2(shortfixed2 s0<>,shortfixed2 s1<>, out shortfixed2 o<>) {
+  o=s0+s1;
+}
+kernel void shortfixed2x1(shortfixed2 s0<>,out shortfixed2 o<>) {
+  o=s0;
+}
+
+
+kernel void shortfixed3x8(shortfixed3 s0<>,shortfixed3 s1<>, shortfixed3 s2<>, shortfixed3 s3<>,shortfixed3 s4<>,shortfixed3 s5<>,shortfixed3 s6<>,shortfixed3 s7<>,out shortfixed3 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void shortfixed3x7(shortfixed3 s0<>,shortfixed3 s1<>, shortfixed3 s2<>, shortfixed3 s3<>,shortfixed3 s4<>,shortfixed3 s5<>,shortfixed3 s6<>,out shortfixed3 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void shortfixed3x6(shortfixed3 s0<>,shortfixed3 s1<>, shortfixed3 s2<>, shortfixed3 s3<>,shortfixed3 s4<>,shortfixed3 s5<>,out shortfixed3 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void shortfixed3x5(shortfixed3 s0<>,shortfixed3 s1<>, shortfixed3 s2<>, shortfixed3 s3<>,shortfixed3 s4<>,out shortfixed3 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void shortfixed3x4(shortfixed3 s0<>,shortfixed3 s1<>, shortfixed3 s2<>, shortfixed3 s3<>,out shortfixed3 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void shortfixed3x3(shortfixed3 s0<>,shortfixed3 s1<>, shortfixed3 s2<>, out shortfixed3 o<>) {
+  o=s0+s1+s2;
+}
+kernel void shortfixed3x2(shortfixed3 s0<>,shortfixed3 s1<>, out shortfixed3 o<>) {
+  o=s0+s1;
+}
+kernel void shortfixed3x1(shortfixed3 s0<>,out shortfixed3 o<>) {
+  o=s0;
+}
+
+
+kernel void shortfixed4x8(shortfixed4 s0<>,shortfixed4 s1<>, shortfixed4 s2<>, shortfixed4 s3<>,shortfixed4 s4<>,shortfixed4 s5<>,shortfixed4 s6<>,shortfixed4 s7<>,out shortfixed4 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6+s7;
+}
+kernel void shortfixed4x7(shortfixed4 s0<>,shortfixed4 s1<>, shortfixed4 s2<>, shortfixed4 s3<>,shortfixed4 s4<>,shortfixed4 s5<>,shortfixed4 s6<>,out shortfixed4 o<>) {
+  o=s0+s1+s2+s3+s4+s5+s6;
+}
+kernel void shortfixed4x6(shortfixed4 s0<>,shortfixed4 s1<>, shortfixed4 s2<>, shortfixed4 s3<>,shortfixed4 s4<>,shortfixed4 s5<>,out shortfixed4 o<>) {
+  o=s0+s1+s2+s3+s4+s5;
+}
+kernel void shortfixed4x5(shortfixed4 s0<>,shortfixed4 s1<>, shortfixed4 s2<>, shortfixed4 s3<>,shortfixed4 s4<>,out shortfixed4 o<>) {
+  o=s0+s1+s2+s3+s4;
+}
+kernel void shortfixed4x4(shortfixed4 s0<>,shortfixed4 s1<>, shortfixed4 s2<>, shortfixed4 s3<>,out shortfixed4 o<>) {
+  o=s0+s1+s2+s3;
+}
+kernel void shortfixed4x3(shortfixed4 s0<>,shortfixed4 s1<>, shortfixed4 s2<>, out shortfixed4 o<>) {
+  o=s0+s1+s2;
+}
+kernel void shortfixed4x2(shortfixed4 s0<>,shortfixed4 s1<>, out shortfixed4 o<>) {
+  o=s0+s1;
+}
+kernel void shortfixed4x1(shortfixed4 s0<>,out shortfixed4 o<>) {
+  o=s0;
+}
+
+
+
+
+#define ComputeResults(num,start,end,typesize,i,reps,typenam) printf ("%s w/ %d gath of %d vals: %f s for a BW of %3.2f bytes/s\n",typenam,num,i*i,(float)(end-start)/1000,i*i*(num+1)*typesize*reps*1000./(end-start));
+
+
+#define MAKESTREAM(type,name) ::brook::stream name (::brook::getStreamType((type*)0),i,i,-1)
+#define Test(type,typenam) {type test; MAKESTREAM(type,s0);MAKESTREAM(type,s1);MAKESTREAM(type,s2);MAKESTREAM(type,s3);MAKESTREAM(type,s4);MAKESTREAM(type,s5);MAKESTREAM(type,s6);MAKESTREAM(type,s7); for (j=0;j<reps;++j)type##x8(s0,s1,s2,s3,s4,s5,s6,s7,s0);streamRead(s0.domain(int2(0,0),int2(1,1)),&test); start=GetTimeMillis();for (j=0;j<reps;++j) type##x1(s0,s0); stop=GetTimeMillis(); streamRead(s0.domain(int2(0,0),int2(1,1)),&test); ComputeResults(1,start,stop,sizeof(type),i,reps,typenam);for (j=0;j<reps;++j) type##x2(s0,s1,s0); stop=GetTimeMillis(); streamRead(s0.domain(int2(0,0),int2(1,1)),&test); ComputeResults(2,start,stop,sizeof(type),i,reps,typenam); for (j=0;j<reps;++j) type##x3(s0,s1,s2,s0); stop=GetTimeMillis(); streamRead(s0.domain(int2(0,0),int2(1,1)),&test); ComputeResults(3,start,stop,sizeof(type),i,reps,typenam);  for (j=0;j<reps;++j) type##x4(s0,s1,s2,s3,s0); stop=GetTimeMillis(); streamRead(s0.domain(int2(0,0),int2(1,1)),&test); ComputeResults(4,start,stop,sizeof(type),i,reps,typenam); for (j=0;j<reps;++j) type##x5(s0,s1,s2,s3,s4,s0); stop=GetTimeMillis(); streamRead(s0.domain(int2(0,0),int2(1,1)),&test); ComputeResults(5,start,stop,sizeof(type),i,reps,typenam);  for (j=0;j<reps;++j) type##x6(s0,s1,s2,s3,s4,s5,s0); stop=GetTimeMillis(); streamRead(s0.domain(int2(0,0),int2(1,1)),&test); ComputeResults(6,start,stop,sizeof(type),i,reps,typenam); for (j=0;j<reps;++j) type##x7(s0,s1,s2,s3,s4,s5,s6,s0); stop=GetTimeMillis(); streamRead(s0.domain(int2(0,0),int2(1,1)),&test); ComputeResults(7,start,stop,sizeof(type),i,reps,typenam); for (j=0;j<reps;++j) type##x8(s0,s1,s2,s3,s4,s5,s6,s7,s0); stop=GetTimeMillis(); streamRead(s0.domain(int2(0,0),int2(1,1)),&test); ComputeResults(8,start,stop,sizeof(type),i,reps,typenam);}
+
+#define AllTests()     Test(fixed,"fixed");    Test(fixed2,"fixed2");    Test(fixed3,"fixed3");    Test(fixed4,"fixed4");    Test(shortfixed,"shortfixed");    Test(shortfixed2,"shortfixed2");    Test(shortfixed3,"shortfixed3");    Test(shortfixed4,"shortfixed4");    Test(float,"float");    Test(float2,"float2");    Test(float3,"float3");    Test(float4,"float4");
+int main (int argc, char ** argv) {
+  int minsize= argc>1?atoi(argv[1]):1;
+  int maxsize= argc>2?atoi(argv[2]):(argc>1?atoi(argv[1]):256);
+  int stride = argc>3?atoi(argv[3]):32;
+  int reps = argc>4?atoi(argv[4]):16;
+  int i,j,k;
+  for (i=minsize;i<=maxsize;i+=stride) {
+    AllTests();
+  }
+  return 0;
+}
