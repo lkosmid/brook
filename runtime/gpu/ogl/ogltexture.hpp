@@ -82,6 +82,7 @@ namespace brook {
   private:
     unsigned int _width, _height, _bytesize;
     unsigned int _components;
+    unsigned int _elemsize;
     GPUContext::TextureFormat _format;
     unsigned int _id;
     unsigned int _nativeFormat;

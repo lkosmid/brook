@@ -42,7 +42,7 @@ OGLTexture::OGLTexture (unsigned int width,
    }
 
    _bytesize = _width*_height*sizeFactor[_components-1]*sizeof(float);
-
+   _elemsize = sizeFactor[_components-1];
    _nativeFormat = glFormat[_components-1];
 
    glGenTextures(1, &_id);
@@ -74,14 +74,14 @@ OGLTexture::~OGLTexture () {
 bool
 OGLTexture::isFastSetPath( unsigned int inStrideBytes, 
                            unsigned int inElemCount ) const {
-   return (inStrideBytes == _components*sizeof(float) &&
+   return (inStrideBytes == _elemsize*sizeof(float) &&
            inElemCount   == _width*_height);
 }
 
 bool
 OGLTexture::isFastGetPath( unsigned int inStrideBytes, 
                            unsigned int inElemCount ) const {
-   return (inStrideBytes == _components*sizeof(float) &&
+   return (inStrideBytes == _elemsize*sizeof(float) &&
            inElemCount   == _width*_height);
 }
 
@@ -93,35 +93,39 @@ OGLTexture::copyToTextureFormat(const float *src,
                                 float *dst) const {
    unsigned int i;
    
-   switch (_format) {
-   case GPUContext::kTextureFormat_Float1:
+   switch (_components) {
+   case 1:
       for (i=0; i<srcElemCount; i++) {
-         *dst++ = *src;
+         *dst = *src;
          src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
+         dst += _elemsize;
       }
       break;
-   case GPUContext::kTextureFormat_Float2:
+   case 2:
       for (i=0; i<srcElemCount; i++) {
-         *dst++ = *src;
-         *dst++ = *(src+1);
+         *dst = *src;
+         *(dst+1) = *(src+1);
          src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
+         dst += _elemsize;
       }
       break;
-   case GPUContext::kTextureFormat_Float3:
+   case 3:
       for (i=0; i<srcElemCount; i++) {
-         *dst++ = *src;
-         *dst++ = *(src+1);
-         *dst++ = *(src+2);
+         *dst = *src;
+         *(dst+1) = *(src+1);
+         *(dst+2) = *(src+2);
          src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
+         dst += _elemsize;
       }
       break;
-   case GPUContext::kTextureFormat_Float4:
+   case 4:
       for (i=0; i<srcElemCount; i++) {
-         *dst++ = *src;
-         *dst++ = *(src+1);
-         *dst++ = *(src+2);
-         *dst++ = *(src+3);
+         *dst = *src;
+         *(dst+1) = *(src+1);
+         *(dst+2) = *(src+2);
+         *(dst+3) = *(src+3);
          src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
+         dst += _elemsize;
       }
       break;
    default: 
@@ -137,35 +141,39 @@ OGLTexture::copyFromTextureFormat(const float *src,
                                   float *dst) const {
    unsigned int i;
    
-   switch (_format) {
-   case GPUContext::kTextureFormat_Float1:
+   switch (_components) {
+   case 1:
       for (i=0; i<dstElemCount; i++) {
-         *dst = *src++;
+         *dst = *src;
          dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
+         src += _elemsize;
       }
       break;
-   case GPUContext::kTextureFormat_Float2:
+   case 2:
       for (i=0; i<dstElemCount; i++) {
-         *dst     = *src++;
-         *(dst+1) = *src++;
+         *dst     = *src;
+         *(dst+1) = *(src+1);
          dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
+         src += _elemsize;
       }
       break;
-   case GPUContext::kTextureFormat_Float3:
+   case 3:
       for (i=0; i<dstElemCount; i++) {
-         *dst     = *src++;
-         *(dst+1) = *src++;
-         *(dst+2) = *src++;
+         *dst     = *src;
+         *(dst+1) = *(src+1);
+         *(dst+2) = *(src+2);
          dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
+         src += _elemsize;
       }
       break;
-   case GPUContext::kTextureFormat_Float4:
+   case 4:
       for (i=0; i<dstElemCount; i++) {
-         *dst     = *src++;
-         *(dst+1) = *src++;
-         *(dst+2) = *src++;
-         *(dst+3) = *src++;
+         *dst     = *src;
+         *(dst+1) = *(src+1);
+         *(dst+2) = *(src+2);
+         *(dst+3) = *(src+3);
          dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
+         src += _elemsize;
       }
       break;
    default: 

@@ -287,7 +287,7 @@ OGLContext::getStreamIndexofConstant( TextureHandle inTexture ) const {
 
 float4
 OGLContext::getStreamGatherConstant( TextureHandle inTexture ) const {
-  return float4(0.0f, 0.0f, 0.0f, 0.0f);
+  return float4(1.0f, 1.0f, 0.5f, 0.5f);
 }
 
 
