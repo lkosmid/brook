@@ -40,6 +40,37 @@ namespace brook
     "mov oT7, v8\n"
     ;
 
+  static const char* kPassthroughVertexShader3Source =
+    "vs_3_0\n"
+    "dcl_position v0\n"
+    "dcl_texcoord0 v1\n"
+    "dcl_texcoord1 v2\n"
+    "dcl_texcoord2 v3\n"
+    "dcl_texcoord3 v4\n"
+    "dcl_texcoord4 v5\n"
+    "dcl_texcoord5 v6\n"
+    "dcl_texcoord6 v7\n"
+    "dcl_texcoord7 v8\n"
+    "dcl_position o0\n"
+    "dcl_texcoord0 o1\n"
+    "dcl_texcoord1 o2\n"
+    "dcl_texcoord2 o3\n"
+    "dcl_texcoord3 o4\n"
+    "dcl_texcoord4 o5\n"
+    "dcl_texcoord5 o6\n"
+    "dcl_texcoord6 o7\n"
+    "dcl_texcoord7 o8\n"
+    "mov o0, v0\n"
+    "mov o1, v1\n"
+    "mov o2, v2\n"
+    "mov o3, v3\n"
+    "mov o4, v4\n"
+    "mov o5, v5\n"
+    "mov o6, v6\n"
+    "mov o7, v7\n"
+    "mov o8, v8\n"
+    ;
+
   static const char* kPassthroughPixelShaderSource =
     "ps_2_0\n"
     "dcl t0.xy\n"
@@ -184,11 +215,13 @@ namespace brook
 
     VertexShaderHandle createVertexShader( const char* inSource );
 
-    virtual VertexShaderHandle getPassthroughVertexShader() {
+    virtual VertexShaderHandle getPassthroughVertexShader( const char* inShaderFormat = NULL ) {
+      if( inShaderFormat && strcmp( inShaderFormat, "ps30" ) == 0 )
+         return _passthroughVertexShader3;
       return _passthroughVertexShader;
     }
 
-    virtual PixelShaderHandle getPassthroughPixelShader() {
+    virtual PixelShaderHandle getPassthroughPixelShader( const char* inShaderFormat = NULL ) {
       return _passthroughPixelShader;
     }
 
@@ -229,6 +262,8 @@ namespace brook
     virtual void hackBeginWriteQuery();
     virtual int hackEndWriteQuery();
 
+    virtual void hackRestoreContext() {}
+
   private:
     GPUContextDX9Impl();
     bool initialize( void* inContextValue );
@@ -239,6 +274,7 @@ namespace brook
     D3DFORMAT _adapterFormat;
 
     VertexShaderHandle _passthroughVertexShader;
+    VertexShaderHandle _passthroughVertexShader3;
     PixelShaderHandle _passthroughPixelShader;
     IDirect3DVertexBuffer9* _vertexBuffer;
     IDirect3DVertexDeclaration9* _vertexDecl;
@@ -407,6 +443,7 @@ namespace brook
     GPUAssert( !FAILED(result), "SetRenderState failed" );
 
     _passthroughVertexShader = createVertexShader( kPassthroughVertexShaderSource );
+    _passthroughVertexShader3 = createVertexShader( kPassthroughVertexShader3Source );
     _passthroughPixelShader = createPixelShader( kPassthroughPixelShaderSource );
     _updateWriteMaskPixelShader = createPixelShader( kUpdateWriteMaskPixelShaderSource );
 

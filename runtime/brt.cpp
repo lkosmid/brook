@@ -55,6 +55,11 @@ static int convertGatherIndexToInt( float inIndex ) {
   return (int) (inIndex + 0.5f);
 }
 
+extern "C" void brookRuntimeCleanupCallback()
+{
+   brook::finalize();
+}
+
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
@@ -64,15 +69,44 @@ namespace brook {
     Runtime::GetInstance( inRuntimeName, inContextValue, false );
   }
 
+  void finalize()
+  {
+     Runtime*& runtime = Runtime::GetInstanceRef();
+     if( runtime != NULL )
+     {
+        delete runtime;
+        runtime = NULL;
+     }
+  }
+
   Runtime* createRuntime( bool addressTranslation )
   {
     return Runtime::GetInstance( 0, 0, addressTranslation );
   }
     
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-  Runtime* Runtime::GetInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation ) {
-    static Runtime* sResult = CreateInstance( inRuntimeName, inContextValue, addressTranslation );
-    return sResult;
+  Runtime* Runtime::GetInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation )
+  {
+    Runtime*& runtime = GetInstanceRef();
+    if( runtime == NULL )
+    {
+      runtime = CreateInstance( inRuntimeName, inContextValue, addressTranslation );
+
+      static bool sCleanupRegistered = false;
+      if( !sCleanupRegistered )
+      {
+         atexit( brookRuntimeCleanupCallback );
+         sCleanupRegistered = true;
+      }
+    }
+    return runtime;
+  }
+
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+  Runtime*& Runtime::GetInstanceRef()
+  {
+     static Runtime* sRuntime = NULL;
+     return sRuntime;
   }
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

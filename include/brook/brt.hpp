@@ -309,6 +309,7 @@ namespace brook {
 
   void initialize( const char* inRuntimeName, 
                    void* inContextValue = 0 );
+  void finalize();
   Runtime* createRuntime( bool useAddressTranslation );
 
 

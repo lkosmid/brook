@@ -193,8 +193,8 @@ namespace brook {
     createPixelShader( const char* inSource ) = 0;
 
     /* Handles to the passthrough shaders */
-    virtual VertexShaderHandle getPassthroughVertexShader() = 0;
-    virtual PixelShaderHandle  getPassthroughPixelShader() = 0;
+    virtual VertexShaderHandle getPassthroughVertexShader( const char* inShaderFormat = NULL ) = 0;
+    virtual PixelShaderHandle  getPassthroughPixelShader( const char* inShaderFormat = NULL ) = 0;
 
     /* To use around rendering operations */
     virtual void beginScene() = 0;

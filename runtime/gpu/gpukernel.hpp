@@ -36,7 +36,7 @@ namespace brook {
 
     GPUKernel( GPURuntime* inRuntime );
     bool initialize( const void* inSource[] );
-    bool initialize( const ::brook::desc::gpu_kernel_desc* inDescriptor );
+    bool initialize( const char* inShaderFormat, const ::brook::desc::gpu_kernel_desc* inDescriptor );
     virtual ~GPUKernel();
 
 
@@ -202,6 +202,7 @@ namespace brook {
       }
 
       PixelShaderHandle pixelShader;
+      VertexShaderHandle vertexShader;
 
       InputList constants;
       InputList samplers;

@@ -58,7 +58,7 @@ OGLPixelShader::OGLPixelShader(unsigned int _id, const char * program_string):
 
 
 GPUContext::VertexShaderHandle 
-OGLContext::getPassthroughVertexShader(void) {
+OGLContext::getPassthroughVertexShader( const char* inShaderFormat ) {
 #if 0
   if (!_passthroughVertexShader) {
     GLuint id;
@@ -77,7 +77,7 @@ OGLContext::getPassthroughVertexShader(void) {
 }
 
 GPUContext::PixelShaderHandle 
-OGLContext::getPassthroughPixelShader() {
+OGLContext::getPassthroughPixelShader( const char* inShaderFormat ) {
   
   //fprintf (stderr, "getPassthroughPixelShader: this=0x%p\n", this);
 

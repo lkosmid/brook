@@ -145,8 +145,8 @@ namespace brook {
     isVendorContext () { return false; }
 
     /* These are ARB programs */
-    virtual VertexShaderHandle getPassthroughVertexShader();
-    virtual PixelShaderHandle getPassthroughPixelShader();
+    virtual VertexShaderHandle getPassthroughVertexShader( const char* inShaderFormat = NULL );
+    virtual PixelShaderHandle getPassthroughPixelShader( const char* inShaderFormat = NULL );
 
     /* OGL does not need these */
     void beginScene() { }

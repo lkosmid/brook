@@ -46,6 +46,7 @@ namespace brook
     int bestRank = -1;
     const ::brook::desc::gpu_kernel_desc* 
           bestDescriptor = NULL;
+    const char* bestName = NULL;
     
     size_t i = 0;
     while( inSource[i] != NULL )
@@ -63,6 +64,7 @@ namespace brook
             {
                 bestRank = rank;
                 bestDescriptor = descriptor;
+                bestName = nameString;
             }
           }
         
@@ -70,15 +72,18 @@ namespace brook
       }
 
     if( bestDescriptor != NULL )
-        return initialize( bestDescriptor );
+        return initialize( bestName, bestDescriptor );
     
     GPUWARN << "Unable to find appropriate GPU kernel descriptor.";
     return false;
   }
   
-  bool GPUKernel::initialize( const ::brook::desc::gpu_kernel_desc* inDescriptor )
+  bool GPUKernel::initialize( const char* inShaderFormat, const ::brook::desc::gpu_kernel_desc* inDescriptor )
   {
     using namespace ::brook::desc;
+
+    GPUContext::VertexShaderHandle vertexShader =
+      _context->getPassthroughVertexShader( inShaderFormat );
     
     _techniques.resize( inDescriptor->_techniques.size() );
     
@@ -115,6 +120,8 @@ namespace brook
                 GPUWARN << "Failed to create a kernel pass pixel shader";
                 return false;
               }
+
+            outputPass.vertexShader = vertexShader;
             
             std::vector<gpu_input_desc>::const_iterator k;
             for( k = inputPass.constants.begin(); 
@@ -498,7 +505,7 @@ namespace brook
   void GPUKernel::executePass( const Pass& inPass )
   {
     PixelShaderHandle pixelShader = inPass.pixelShader;
-    VertexShaderHandle vertexShader = _context->getPassthroughVertexShader();
+    VertexShaderHandle vertexShader = inPass.vertexShader;
 
     // Bind all the arguments for this pass
     size_t i;

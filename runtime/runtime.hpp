@@ -39,6 +39,9 @@ namespace brook {
     virtual void hackRestoreContext() { assert(false); throw 1; }
 
   private:
+    friend void brook::finalize();
+
+    static Runtime*& GetInstanceRef();
     static Runtime* CreateInstance( const char* inRuntimeName, 
                                     void* inContextValue, 
                                     bool addressTranslation );
