@@ -70,12 +70,12 @@ public:
            unsigned int i=T::size-1;
            if (dims<T::size)
               i=dims-1;
-           float temp = round_float(index.getAt(i));
+           float temp = (float)floor(.25+index.getAt(i));
            unsigned int total=(temp<0)?0:temp>=extents[0]-1?extents[0]-1:
               (unsigned int)temp;
            for (unsigned int j=1;j<=i;++j) {
               total*=extents[j];
-              temp = round_float(index.getAt(i-j));
+              temp = (float)floor(.25+index.getAt(i-j));
               total+=(temp<0)?0:temp>=extents[j]-1?extents[j]-1:
                  (unsigned int)temp;
            }
