@@ -42,6 +42,10 @@ namespace brook
   {
     //    clearInputs();
     //    clearArguments();
+
+    int bestRank = -1;
+    const ::brook::desc::gpu_kernel_desc* 
+          bestDescriptor = NULL;
     
     size_t i = 0;
     while( inSource[i] != NULL )
@@ -52,13 +56,21 @@ namespace brook
         
         if( descriptor != NULL
             && nameString != NULL
-            && _context->isValidShaderNameString( nameString ) )
+            && _context->getShaderFormatRank( nameString ) >= 0 )
           {
-            return initialize( descriptor );
+            int rank = _context->getShaderFormatRank( nameString );
+            if( rank > bestRank )
+            {
+                bestRank = rank;
+                bestDescriptor = descriptor;
+            }
           }
         
         i += 2;
       }
+
+    if( bestDescriptor != NULL )
+        return initialize( bestDescriptor );
     
     GPUWARN << "Unable to find appropriate GPU kernel descriptor.";
     return false;
@@ -611,12 +623,11 @@ namespace brook
     {
       size_t slopWidth = ioState.slopBufferWidth;
       size_t slopHeight = ioState.slopBufferHeight;
+      size_t slopExtents[2];
       if( slopBuffer == NULL )
       {
-        size_t slopExtents[2];
         slopExtents[dim] = outputExtent;
         slopExtents[1-dim] = otherExtent;
-        size_t slopWidth, slopHeight;
 
         slopBuffer = _runtime->getReductionTempBuffer( kGPUReductionTempBuffer_Slop,
           slopExtents[0], slopExtents[1], &slopWidth, &slopHeight );
@@ -624,6 +635,9 @@ namespace brook
         ioState.slopBufferWidth = slopWidth;
         ioState.slopBufferHeight = slopHeight;
       }
+      slopExtents[0] = resultExtents[0];
+      slopExtents[1] = resultExtents[1];
+      slopExtents[dim] = outputExtent;
 
       if( ioState.slopCount == 0 && slopFactor == 1 )
       {
@@ -636,7 +650,7 @@ namespace brook
 
         size_t offset = remainingFactor-1;
         GPUInterpolant interpolant;
-        _context->getStreamReduceInterpolant( inputBuffer, slopWidth, slopHeight,
+        _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
           offset, remainingFactor+offset, 0, otherExtent, dim, interpolant );
         _inputInterpolants.push_back( interpolant );
 
@@ -664,7 +678,7 @@ namespace brook
           size_t offset = slopFactor - i;
           offset = remainingFactor - offset;
 
-          _context->getStreamReduceInterpolant( inputBuffer, slopWidth, slopHeight,
+          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
             offset, remainingExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
         }
         _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
@@ -688,10 +702,10 @@ namespace brook
         {
           size_t offset = slopFactor - i;
           offset = remainingFactor - offset;
-          _context->getStreamReduceInterpolant( inputBuffer, slopWidth, slopHeight,
+          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
             offset, remainingExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
         }
-        _context->getStreamReduceInterpolant( inputBuffer, slopWidth, slopHeight,
+        _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
           0, outputExtent, 0, otherExtent, dim, _globalInterpolants[slopFactor] );
         _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
 

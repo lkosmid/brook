@@ -60,6 +60,23 @@ namespace brook {
     getStreamOutputRegion( const TextureHandle texture,
                            GPURegion &region) const; 
 
+    virtual void 
+    getStreamReduceInterpolant( const TextureHandle texture,
+                                const unsigned int outputWidth,
+                                const unsigned int outputHeight, 
+                                const unsigned int minX,
+                                const unsigned int maxX, 
+                                const unsigned int minY,
+                                const unsigned int maxY,
+                                GPUInterpolant &interpolant) const; 
+
+    virtual void
+    getStreamReduceOutputRegion( const TextureHandle texture,
+                                const unsigned int minX,
+                                const unsigned int maxX, 
+                                const unsigned int minY,
+                                const unsigned int maxY,
+                                GPURegion &region) const; 
 
     /* The vendor specific backend must create the float textures
     ** since there are no standard float textures. Hence, pure virtual

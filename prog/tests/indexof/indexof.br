@@ -54,7 +54,7 @@ int main(void)
   printf("Here are the results from the simple indexof test:\n");
   for (i=0; i<10; i++) {
     for (j=0; j<10; j++) {
-      printf ("%3.2f  ", data_e[i][j]);
+      printf ("%3.2f  ", (float)(int)data_e[i][j]);
     }
     printf ("\n");
   }

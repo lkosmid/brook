@@ -105,7 +105,7 @@ struct technique_info
 };
 
 
-static char * (*shadercompile[3]) (const char *name,
+static char * (*shadercompile[4]) (const char *name,
                                    const char *shader, 
                                    CodeGenTarget target, 
                                    ShaderResourceUsage* outUsage, 
@@ -117,16 +117,19 @@ CodeGen_Init(void) {
    case COMPILER_DEFAULT:
       shadercompile[CODEGEN_PS20] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
+      shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
       break;
    case COMPILER_CGC:
       shadercompile[CODEGEN_PS20] = compile_cgc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
+      shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_cgc;
       break;
    case COMPILER_FXC:
       shadercompile[CODEGEN_PS20] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
+      shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
       break;
    default:
@@ -1558,7 +1561,7 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
                CodeGen_TargetName(target), name, firstOutput, firstOutput+outputCount);
     }
 
-    assert (target < 3 && target >= 0);
+    assert (target < CODEGEN_NUM_TARGETS && target >= 0);
     assert (shadercompile[target]);
 
     fpcode = shadercompile[target]((std::string(globals.shaderoutputname) + "_" + name).c_str(), 

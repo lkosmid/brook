@@ -33,7 +33,7 @@ namespace brook {
                      unsigned int inHeight, 
                      TextureFormat inFormat);
 
-    bool isValidShaderNameString (const char *name) const;
+    int getShaderFormatRank (const char *name) const;
 
     static bool
     isCompatibleContext ();

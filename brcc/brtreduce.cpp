@@ -27,6 +27,12 @@ BRTFP30ReduceCode::printCode(std::ostream& out) const
 	this->BRTFP30KernelCode::printCode(out);
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BRTFP40ReduceCode::printCode(std::ostream& out) const
+{
+	this->BRTFP40KernelCode::printCode(out);
+}
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void

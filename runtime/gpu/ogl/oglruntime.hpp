@@ -16,8 +16,10 @@ namespace brook
   public:
     static OGLRuntime* create();
 
-  private:
+  protected:
     OGLRuntime() {}
+
+    virtual bool initialize();
   };
 }
 

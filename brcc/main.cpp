@@ -125,6 +125,8 @@ parse_args (int argc, char *argv[]) {
 	  globals.target |= TARGET_PS20;
 	else if (strcasecmp (optarg, "fp30") == 0)
 	  globals.target |= TARGET_FP30;
+	else if (strcasecmp (optarg, "fp40") == 0)
+	  globals.target |= TARGET_FP40;
 	else if (strcasecmp (optarg, "arb") == 0)
 	  globals.target |= TARGET_ARB;
 	else if (strcasecmp (optarg, "cpumt") == 0)
@@ -155,7 +157,7 @@ parse_args (int argc, char *argv[]) {
   // The default build targets
   if (globals.target == 0)
      globals.target = TARGET_PS20 | TARGET_CPU | TARGET_MULTITHREADED_CPU |
-                      TARGET_FP30 | TARGET_ARB;
+                      TARGET_FP30 | TARGET_ARB | TARGET_FP40;
 
   argv += optind;
   argc -= optind;

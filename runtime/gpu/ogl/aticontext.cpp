@@ -63,9 +63,11 @@ ATIContext::create() {
 }
 
 
-bool 
-ATIContext::isValidShaderNameString (const char *name) const {
-  return strcmp(name, "arb") == 0;
+int 
+ATIContext::getShaderFormatRank (const char *name) const {
+  if( strcmp(name, "arb") == 0 )
+      return 1;
+  return -1;
 }
 
 

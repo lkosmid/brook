@@ -17,7 +17,7 @@
 #define GPUPROFILE( __name ) BROOK_PROFILE( __name )
 
 #define GPULOG( __level ) \
-  BROOK_LOG( __level ) << "DX9 - "
+  BROOK_LOG( __level ) << "GPU - "
 
 #define GPULOGPRINT( __level ) \
   BROOK_LOG_PRINT( __level )

@@ -69,7 +69,9 @@ static const int nvpiAttribList[4][16] = {
 };
 
 
-NVContext::NVContext() {}
+NVContext::NVContext()
+    : supportsFP40(false)
+{}
 
 
 NVContext *
@@ -81,13 +83,21 @@ NVContext::create() {
 
   ctx->init(&nviAttribList, NULL, &nvpiAttribList);
 
+  const char *ext = (const char *) glGetString(GL_EXTENSIONS);
+  if(strstr(ext, "GL_NV_fragment_program2"))
+      ctx->supportsFP40 = true;
+
   return ctx;
 }
 
 
-bool 
-NVContext::isValidShaderNameString (const char *name) const {
-  return strcmp(name, "arb") == 0;
+int 
+NVContext::getShaderFormatRank (const char *name) const {
+  if( strcmp(name, "arb") == 0 )
+      return 1;
+  if( strcmp(name, "fp40") == 0 )
+      return 2;
+  return -1;
 }
 
 

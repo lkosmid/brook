@@ -8,7 +8,15 @@ using namespace brook;
 
 OGLRuntime* OGLRuntime::create(void)
 {
+    OGLRuntime* result = new OGLRuntime();
+    if( result && result->initialize() )
+        return result;
+    delete result;
+    return NULL;
+}
 
+bool OGLRuntime::initialize(void)
+{
   // Detect platform
   OGLWindow* wnd = new OGLWindow();
   bool isNV  = NVContext::isCompatibleContext();
@@ -38,17 +46,11 @@ OGLRuntime* OGLRuntime::create(void)
     ctx = ATIContext::create();
   }
 
-
-  // Create the runtime interface
-  if( !ctx )
-    return NULL;
-  
-  OGLRuntime* result = new OGLRuntime();
-  if( !result->initialize( ctx ) )
-    {
+  if( !GPURuntime::initialize( ctx ) )
+  {
       delete ctx;
-      return NULL;
-    }
-  
-  return result;
+      return false;
+  }
+
+  return true;
 }

@@ -11,9 +11,19 @@
 
 typedef enum {
    CODEGEN_PS20 = 0,
-   CODEGEN_FP30 = 1,
-   CODEGEN_ARB  = 2
+   CODEGEN_FP30,
+   CODEGEN_ARB,
+   CODEGEN_FP40,
+   CODEGEN_NUM_TARGETS
 } CodeGenTarget;
+
+static const char* CODEGEN_TARGET_NAMES[CODEGEN_NUM_TARGETS] =
+{
+    "ps20",
+    "fp30",
+    "arb",
+    "fp40"
+};
 
 struct ShaderResourceUsage
 {
@@ -28,9 +38,8 @@ struct ShaderResourceUsage
 
 static inline const char *
 CodeGen_TargetName(CodeGenTarget t) {
-   return (t == CODEGEN_PS20 ? "ps20" :
-           t == CODEGEN_FP30 ? "fp30" :
-           "arb");
+   assert( t >= 0 && t < CODEGEN_NUM_TARGETS );
+   return CODEGEN_TARGET_NAMES[t];
 }
 
 void CodeGen_Init(void);

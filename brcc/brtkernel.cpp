@@ -270,6 +270,12 @@ BRTFP30KernelCode::printCode(std::ostream& out) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
+BRTFP40KernelCode::printCode(std::ostream& out) const
+{
+   printCodeForType(out, CODEGEN_FP40);
+}
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
 BRTARBKernelCode::printCode(std::ostream& out) const
 {
    printCodeForType(out, CODEGEN_ARB);

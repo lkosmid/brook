@@ -25,8 +25,8 @@ namespace brook {
       kTextureFormat_Float4
     };
 
-    virtual bool
-    isValidShaderNameString (const char *name) const = 0;
+    virtual int
+    getShaderFormatRank (const char *name) const = 0;
 
     /* Test to see if we can create a texture with
     ** a dimension of this size
@@ -75,7 +75,7 @@ namespace brook {
       const unsigned int maxX, 
       const unsigned int minY,
       const unsigned int maxY,
-      GPUInterpolant &interpolant) const {} //TIM = 0; 
+      GPUInterpolant &interpolant) const = 0; 
 
     void getStreamReduceInterpolant( const TextureHandle texture,
       const unsigned int outputWidth,
@@ -99,7 +99,7 @@ namespace brook {
       const unsigned int maxX, 
       const unsigned int minY,
       const unsigned int maxY,
-      GPURegion &region) const {} //TIM = 0; 
+      GPURegion &region) const = 0; 
 
    void getStreamReduceOutputRegion( const TextureHandle texture,
      const unsigned int minPrimary,

@@ -99,6 +99,7 @@ BRTKernelDef::print(std::ostream& out, int) const
  
    PRINT_CODE(PS20, ps20);
    PRINT_CODE(FP30, fp30);
+   PRINT_CODE(FP40, fp40);
    PRINT_CODE(ARB,  arb);
    PRINT_CODE(CPU,  cpu);
 #undef PRINT_CODE
@@ -460,6 +461,7 @@ BRTKernelDef::printStub(std::ostream& out) const
       out << "  static const void *__" << *FunctionName() << "_fp[] = {";
       out << std::endl;
       out << "     \"fp30\", __" << *FunctionName() << "_fp30," << std::endl;
+      out << "     \"fp40\", __" << *FunctionName() << "_fp40," << std::endl;
       out << "     \"arb\", __" << *FunctionName() << "_arb," << std::endl;
       out << "     \"ps20\", __" << *FunctionName() << "_ps20," << std::endl;
       out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;

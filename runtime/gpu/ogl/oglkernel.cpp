@@ -261,16 +261,22 @@ OGLContext::get2DInterpolant( const float2 &start,
   f2.y = (y1+2*sy) - shifty + bias;
 
   if (h==1) {
-    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
-    interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
+//    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
+//    interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
+//    interpolant.vertices[2] = interpolant.vertices[0];
+    interpolant.vertices[0] = float4(f1.x, y1, 0.0f, 1.0f);
+    interpolant.vertices[1] = float4(f2.x, y1, 0.0f, 1.0f);
     interpolant.vertices[2] = interpolant.vertices[0];
     return;
   }
 
   if (w==1) {
-    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
+//    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
+//    interpolant.vertices[1] = interpolant.vertices[0];
+//    interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
+    interpolant.vertices[0] = float4(x1, f1.y, 0.0f, 1.0f);
     interpolant.vertices[1] = interpolant.vertices[0];
-    interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
+    interpolant.vertices[2] = float4(x1, f2.y, 0.0f, 1.0f);
     return;
   }
 
@@ -312,7 +318,7 @@ void
 OGLContext::getStreamOutputRegion( const TextureHandle texture,
                                    GPURegion &region) const {
   
-  const OGLTexture *oglTexture = (OGLTexture *) texture;
+/*  const OGLTexture *oglTexture = (OGLTexture *) texture;
 
   region.vertices[0].x = 0.0f;
   region.vertices[0].y = 0.0f;
@@ -321,14 +327,72 @@ OGLContext::getStreamOutputRegion( const TextureHandle texture,
   region.vertices[1].y = 0.0f;
 
   region.vertices[2].x = 0.0f;
-  region.vertices[2].y = oglTexture->height()*2.0f;
+  region.vertices[2].y = oglTexture->height()*2.0f;*/
+
+  // note to future generations: Ian Buck is a lying bastard
+  // the above code is just about as wrong as you can get :)
+  region.vertices[0].x = -1.0f;
+  region.vertices[0].y = -1.0f;
+
+  region.vertices[1].x = 3.0f;
+  region.vertices[1].y = -1.0f;
+
+  region.vertices[2].x = -1.0f;
+  region.vertices[2].y = 3.0f;
+}
+
+void 
+OGLContext::getStreamReduceInterpolant( const TextureHandle inTexture,
+                                        const unsigned int outputWidth,
+                                        const unsigned int outputHeight, 
+                                        const unsigned int minX,
+                                        const unsigned int maxX, 
+                                        const unsigned int minY,
+                                        const unsigned int maxY,
+                                        GPUInterpolant &interpolant) const
+{
+    float2 start(0.005f + minX, 0.005f + minY);
+    float2 end(0.005f + maxX, 0.005f + maxY);
+
+    get2DInterpolant( start, end, outputWidth, outputHeight, interpolant); 
+}
+
+void
+OGLContext::getStreamReduceOutputRegion( const TextureHandle inTexture,
+                                         const unsigned int minX,
+                                         const unsigned int maxX, 
+                                         const unsigned int minY,
+                                         const unsigned int maxY,
+                                         GPURegion &region) const
+{
+    OGLTexture* texture = (OGLTexture*) inTexture;
+    unsigned int textureWidth = texture->width();
+    unsigned int textureHeight = texture->height();
+
+    float xmin = (float)minX / (float)textureWidth;
+    float ymin = (float)minY / (float)textureHeight;
+    float width = (float)(maxX - minX) / (float)textureWidth;
+    float height = (float)(maxY - minY) / (float)textureHeight;
+    
+    float xmax = xmin + 2*width;
+    float ymax = ymin + 2*height;
+
+    // transform from texture space to surface space:
+    xmin = 2*xmin - 1;
+    xmax = 2*xmax - 1;
+    ymin = 2*ymin - 1;
+    ymax = 2*ymax - 1;
+
+    region.vertices[0] = float4(xmin,ymin,0,1);
+    region.vertices[1] = float4(xmax,ymin,0,1);
+    region.vertices[2] = float4(xmin,ymax,0,1);
 }
 
 void 
 OGLContext::drawRectangle( const GPURegion& outputRegion, 
                            const GPUInterpolant* interpolants, 
                            unsigned int numInterpolants ) {
-  unsigned int w, h, i;
+  unsigned int w, h, i, v;
 
   w = _outputTexture->width();
   h = _outputTexture->height();
@@ -340,13 +404,36 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
    * has vertices (-1, 3), (-1, -1), and (3, -1) which works out
    * nicely to contain the square (-1, -1), (-1, 1), (1, 1), (1, -1).
    */
+  glViewport(0, 0, w, h);
+  glBegin(GL_TRIANGLES);
 
+  for (v=0; v<3; v++ )
+  {
+        GPULOG(1) << "vertex " << v;
+
+        for (i=0; i<numInterpolants; i++) 
+        {
+            glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
+                                (GLfloat *) &(interpolants[i].vertices[v]));
+
+            GPULOG(1) << "tex" << i << " : " << interpolants[i].vertices[v].x
+                << ", " << interpolants[i].vertices[v].y;
+        }
+        glVertex2fv((GLfloat *) &(outputRegion.vertices[v]));
+        GPULOG(1) << "pos : " << outputRegion.vertices[v].x
+            << ", " << outputRegion.vertices[v].y;
+  }
+  glEnd();
+  CHECK_GL();
+/*
   glViewport(0, 0, w, h);
 
   glBegin(GL_TRIANGLES);
   for (i=0; i<numInterpolants; i++) 
+  {
     glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
                           (GLfloat *) &(interpolants[i].vertices[0]));
+  }
   glVertex2f(-1.0f, -1.0f);
   for (i=0; i<numInterpolants; i++) 
     glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
@@ -358,7 +445,7 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   glVertex2f(-1.0f, 3.0f);
   glEnd();
   CHECK_GL();
-
+*/
   /* Copy the output to the texture */
   glActiveTextureARB(GL_TEXTURE0+_slopTextureUnit);
   glBindTexture(GL_TEXTURE_RECTANGLE_NV, _outputTexture->id());

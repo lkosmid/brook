@@ -8,7 +8,7 @@
 #include <math.h>
 #include <float.h>
 
-//#define USE_GPU
+#define USE_GPU
 
 #ifdef BUILD_DX9
 #ifdef USE_GPU
@@ -149,12 +149,19 @@ namespace brook {
 #endif
 
 #ifdef BUILD_NV30GL
-    if (!strcmp(env, NV30GL_RUNTIME_STRING))
+    if (!strcmp(env, NV30GL_RUNTIME_STRING)) {
 #ifdef USE_GPU
       RunTime* result = OGLRuntime::create();
 #else
-      return new NV30GLRunTime();
+      RunTime* result = new NV30GLRunTime();
 #endif
+      if( result )
+        return result;
+
+      fprintf(stderr, 
+	      "Unable to initialize NV30GL runtime, falling back to CPU\n");
+      return new CPURunTime(false);
+    }
 #endif
 
 #ifdef BUILD_ARB

@@ -67,7 +67,7 @@ namespace brook
   public:
     static GPUContextDX9* create();
 
-    virtual bool isValidShaderNameString( const char* inNameString ) const;
+    virtual int getShaderFormatRank( const char* inNameString ) const;
 
     virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const;
     virtual float4 getStreamGatherConstant( TextureHandle inTexture ) const;
@@ -259,9 +259,11 @@ namespace brook
     return true;
   }
 
-  bool GPUContextDX9::isValidShaderNameString( const char* inNameString ) const
+  int GPUContextDX9::getShaderFormatRank( const char* inNameString ) const
   {
-    return strcmp( "ps20", inNameString ) == 0;
+    if( strcmp( "ps20", inNameString ) == 0 )
+        return 1;
+    return -1;
   }
 
   float4 GPUContextDX9::getStreamIndexofConstant( TextureHandle inTexture ) const
