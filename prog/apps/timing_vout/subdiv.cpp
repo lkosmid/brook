@@ -213,7 +213,8 @@ void  subdivide(::brook::stream (*neighbors), ::brook::stream (*triangles), stru
        if (rr==0) {
           TallyKernel("produceTriP",*triangles);
        }
-       produceTriP(*triangles,spvec[counter],snpvec[counter]);
+       if (streamSize(*triangles).x&&streamSize(*triangles).y)
+		   produceTriP(*triangles,spvec[counter],snpvec[counter]);
     }else {
        produceTriPNoCompact(*triangles,vospvec[counter],vospvec[counter])
           ;

@@ -5740,12 +5740,12 @@ float  shiftValuesfloat(::brook::stream list_stream, ::brook::stream (*output_st
 
     LogNMinusK = logN - 2;
     i = logN - 1;
-    if (usescatter||firstRound) 
+    if ((usescatter||firstRound)&&streamSize(guess_stream).x&&streamSize(guess_stream).y) 
       EstablishGuessfloat(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
     for (i = 1; i < logN; ++i)
     {
       LogNMinusK = logN - 1 - i;
-      if (usescatter||firstRound) 
+      if ((usescatter||firstRound)&&streamSize(guess_stream).x&&streamSize(guess_stream).y) 
         UpdateGuessfloat(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,guess_stream,(float ) (sign));
     }
 
@@ -14852,12 +14852,12 @@ float  shiftValuesfloat2(::brook::stream list_stream, ::brook::stream (*output_s
 
     LogNMinusK = logN - 2;
     i = logN - 1;
-    if (usescatter||firstRound) 
+    if ((usescatter||firstRound)&&streamSize(guess_stream).x&&streamSize(guess_stream).y) 
       EstablishGuessfloat2(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
     for (i = 1; i < logN; ++i)
     {
       LogNMinusK = logN - 1 - i;
-      if (usescatter||firstRound) 
+      if ((usescatter||firstRound) &&streamSize(guess_stream).x&&streamSize(guess_stream).y)
         UpdateGuessfloat2(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,guess_stream,(float ) (sign));
     }
 
@@ -23966,12 +23966,12 @@ float  shiftValuesfloat3(::brook::stream list_stream, ::brook::stream (*output_s
 
     LogNMinusK = logN - 2;
     i = logN - 1;
-    if (usescatter||firstRound) 
+    if ((usescatter||firstRound) &&streamSize(guess_stream).x&&streamSize(guess_stream).y)
       EstablishGuessfloat3(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
     for (i = 1; i < logN; ++i)
     {
       LogNMinusK = logN - 1 - i;
-      if (usescatter||firstRound) 
+      if ((usescatter||firstRound) &&streamSize(guess_stream).x&&streamSize(guess_stream).y)
         UpdateGuessfloat3(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,guess_stream,(float ) (sign));
     }
 
@@ -33042,12 +33042,12 @@ float  shiftValuesfloat4(::brook::stream list_stream, ::brook::stream (*output_s
 
     LogNMinusK = logN - 2;
     i = logN - 1;
-    if (usescatter||firstRound) 
+    if ((usescatter||firstRound)&&streamSize(guess_stream).x&&streamSize(guess_stream).y)
       EstablishGuessfloat4(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
     for (i = 1; i < logN; ++i)
     {
       LogNMinusK = logN - 1 - i;
-      if (usescatter||firstRound) 
+      if ((usescatter||firstRound)&&streamSize(guess_stream).x&&streamSize(guess_stream).y)
         UpdateGuessfloat4(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,guess_stream,(float ) (sign));
     }
 
