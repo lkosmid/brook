@@ -179,22 +179,19 @@ int PMLSeg_main(int argc, char* argv[]) {
     //run sanity check first!
     // MCH: It makes me ill that I have to open a new scope to get this to work.
     {
-	 int ysize = 4;
-	 int xsize = 2;
-	 int loop_count=2;
 	 float test[16];
 	 float ep = 0.005;
 	 // Setup the iterators to do a north/south/east/west/local lookup into the image
-	 iter float2 it0<ysize,xsize> = iter( float2(0.0f,  0.0f), float2(xsizef,      ysizef) );
-	 iter float2 it1<ysize,xsize> = iter( float2(-1.0f, 0.0f), float2(xsizef-1.0f, ysizef) );
-	 iter float2 it2<ysize,xsize> = iter( float2(1.0f,  0.0f), float2(xsizef+1.0f, ysizef) );
-	 iter float2 it3<ysize,xsize> = iter( float2(0.0f, -1.0f), float2(xsizef,      ysizef-1.0f) );
-	 iter float2 it4<ysize,xsize> = iter( float2(0.0f,  1.0f), float2(xsizef,      ysizef+1.0f) );
-	 float4 img<ysize,xsize>;
-	 float4 o_img<ysize,xsize>;
+	 iter float2 it0<4,2> = iter( float2(0.0f,  0.0f), float2(2.0,      4.0) );
+	 iter float2 it1<4,2> = iter( float2(-1.0f, 0.0f), float2(2.0-1.0f, 4.0) );
+	 iter float2 it2<4,2> = iter( float2(1.0f,  0.0f), float2(2.0+1.0f, 4.0) );
+	 iter float2 it3<4,2> = iter( float2(0.0f, -1.0f), float2(2.0,      4.0-1.0f) );
+	 iter float2 it4<4,2> = iter( float2(0.0f,  1.0f), float2(2.0,      4.0+1.0f) );
+	 float4 img<4,2>;
+	 float4 o_img<4,2>;
 	 
-	 input  = (float*)malloc(xsize*ysize*4*sizeof(float));
-	 output = (float*)malloc(xsize*ysize*4*sizeof(float));
+	 input  = (float*)malloc(2*4*4*sizeof(float));
+	 output = (float*)malloc(2*4*4*sizeof(float));
 	 
 	 // Our test should return these values +/- epsilon
 	 test[0] = 0.08; 
@@ -215,12 +212,12 @@ int PMLSeg_main(int argc, char* argv[]) {
 	 test[15] = 0.08;
 
 	 // Fill an image with random data and set up the seed point in the middle
-	 for(i=0; i<xsize*ysize*4; i++){
+	 for(i=0; i<2*4*4; i++){
 	      input[i] = 0.0f;
 	 } 
 	 //Let's insert some seed data in the middle
-	 for(i=xsize-1; i<xsize+1; i++){
-	      for(j=ysize/2-1; j<ysize/2+1; j++){
+	 for(i=1; i<3; i++){
+	      for(j=1; j<3; j++){
 		   input[ (j*8)+(i*2)+1] = 1.0f;
 	      }
 	 }
@@ -229,7 +226,7 @@ int PMLSeg_main(int argc, char* argv[]) {
 	 streamRead(img, input);
 	 
 	 //Do the requested number of iterations
-	 for(i=0; i<loop_count; i++){
+	 for(i=0; i<2; i++){
 	      //We can't use the input and output buffers without hosing things
 	      //so we'll need to "ping-pong" between them
 	      if(i%2==0)
