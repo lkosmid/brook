@@ -11,7 +11,7 @@ template <class T, class Functor> void gatherOpHelper (T* s,
                                                         unsigned int size,
                                                         const Functor & op) {
    for (unsigned int i=0;i<size;++i) {
-      unsigned int ind = index[i];
+      unsigned int ind = (unsigned int)index[i];
       memcpy (s+i,array+ind,sizeof(T));
       op(array[ind],s[i]);
    }
