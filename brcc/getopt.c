@@ -64,7 +64,7 @@ char *optarg;	        /* argument associated with option */
 __weak_alias(getopt_long,_getopt_long)
 #endif
 
-#ifndef __CYGWIN__
+#if defined (_WIN32) && !defined(__CYGWIN__)
 #define __progname __argv[0]
 #else
 extern char *__progname;
