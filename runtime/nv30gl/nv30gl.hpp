@@ -41,7 +41,7 @@ namespace brook {
      int extents[2];
      float ranges[4];//maximum possible values for dx
   public:
-     NV30GLIter(NV30GLRunTime * runtime,
+     NV30GLIter(class NV30GLRunTime * runtime,
              __BRTStreamType type,
              int dims,
              int extents[], 
@@ -49,7 +49,7 @@ namespace brook {
         if (dims>2)
            dims=2;//memory out of bounds check change to assert?
         this->dims=dims;
-        for (unsigned int i=0;i<dims;++i) {
+        for (int i=0;i<dims;++i) {
            this->extents[i]=extents[i];
         }
         unsigned int numranges=type*dims;
@@ -59,7 +59,7 @@ namespace brook {
      }
      virtual Stream  * makeStream() {
         if (!madeStream)
-           madeStream=makeStream(dims,extents,ranges);
+           madeStream=allocateStream(dims,extents,ranges);
         return madeStream;
      }
   };

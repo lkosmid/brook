@@ -82,7 +82,7 @@ namespace brook {
   public:
     CPUIter(__BRTStreamType type, int dims, int extents[], float ranges[])
     :Iter(type){
-      madeStream=makeStream(dims,extents,ranges);//now we always have this
+      madeStream=allocateStream(dims,extents,ranges);//now we always have this
     }
   };
     class CPURunTime: public brook::RunTime {
