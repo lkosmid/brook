@@ -97,7 +97,37 @@ Symbol * findSentinel (FunctionType * ft) {
    }
    return ret;
 }
+Decl * findVoutCounter (FunctionType * ft, bool  replacement=true) {
+  if (replacement) {
+    static std::map<FunctionType*,Decl*> replacements;
+    std::map<FunctionType*,Decl*>::iterator i =replacements.find(ft);
+    if (i!=replacements.end()) {
+      return (*i).second;
+    }else {
+      Symbol * voutCounterRW = new Symbol;
+      voutCounterRW->name = "__vout_counter_rw";
+      Decl * VoutCounter =  new Decl (voutCounterRW);
+      replacements[ft]=VoutCounter;
+      return VoutCounter;
+    }
+  }
+  for (unsigned int i=0;i<ft->nArgs;++i) {
+    if (ft->args[i]->name->name=="__vout_counter")
+      return ft->args[i];
+  }
+  return ft->args[ft->nArgs-2];
+}
 
+Decl * MakeVoutCounter(std::string fname,                                 
+                            FunctionType * ft,
+                            const Location & location) {
+  //return new ExpressionStemnt (new FloatConstant(31337,location),location);
+  //DeclStemnt * ds = new DeclStemnt (location);
+  Decl * VoutCounter = findVoutCounter(ft,true);
+  VoutCounter->form = new BaseType (BT_Float);
+  VoutCounter->initializer = new Variable(findVoutCounter(ft,false)->name->dup(),location);  
+  return VoutCounter;
+}
 Statement * InitialInfSet (std::string fname,                                 
                            FunctionType * ft,
                            const Location & location) {
@@ -107,11 +137,11 @@ Statement * InitialInfSet (std::string fname,
    if (func==voutFunctions.end())
       return NULL;
    std::set<unsigned int>::iterator iter =func->second.begin();
-   ExpressionStemnt * expr;
+   Expression* expression;
    if (iter!=func->second.end()) {
       Symbol * vout_sym=  ft->args[*iter]->name->dup();     
-      expr = new ExpressionStemnt
-         (new AssignExpr (AO_Equal,
+      expression = 
+         new AssignExpr (AO_Equal,
                           new Variable(vout_sym,location),
 #ifdef INF_SENTINEL
                           new IndexExpr (new Variable(findSentinel(ft),
@@ -121,16 +151,15 @@ Statement * InitialInfSet (std::string fname,
 #else
                           new Variable(findSentinel(ft),location),
 #endif
-                          location),
           location);
       ++iter;
    }else return NULL;
    for (;iter!=func->second.end();++iter) {
    Symbol * vout_sym=  ft->args[*iter]->name->dup();
    Symbol * Why = new Symbol;Why->name = "y";
-   expr->expression 
+   expression 
       = new BinaryExpr(BO_Comma,
-                       expr->expression,
+                       expression,
                        new AssignExpr (AO_Equal,
                                        new Variable(vout_sym,location),
 #ifdef INF_SENTINEL
@@ -149,14 +178,7 @@ Statement * InitialInfSet (std::string fname,
                        location);
 
    }
-   return expr;
-}
-Decl * findVoutCounter (FunctionType * ft) {
-   for (unsigned int i=0;i<ft->nArgs;++i) {
-      if (ft->args[i]->name->name=="__vout_counter")
-         return ft->args[i];
-   }
-   return ft->args[ft->nArgs-2];
+   return new ExpressionStemnt(expression,location);
 }
 
 static FunctionType * pushFunctionType=NULL;
@@ -340,6 +362,9 @@ FunctionDef* TransformVoutPush(FunctionDef*fd) {
    tmp =MainFunction->tail;
    MainFunction->tail=fd->tail;
    fd->tail=tmp;
+   fd->addDecls(MakeVoutCounter(fd->FunctionName()->name,
+                                ft,
+                                fd->location));
    fd->add(InitialInfSet(fd->FunctionName()->name,
                          ft,
                          fd->location));

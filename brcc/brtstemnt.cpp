@@ -135,12 +135,12 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
 
    out << "  float __vout_counter=0.0f;"<<std::endl;
 #ifdef INF_SENTINEL
-   out << "  brook::Stream * __inf = *sentinelStream(1);";
+   out << "  brook::Stream *__inf = brook::sentinelStream(1);";
 #else
    out << "  float __inf = getSentinel();";
 #endif //INF_SENTINEL
    out << std::endl;
-   out << "  int maxextents[2]={0,0};"<<std::endl;
+   out << "  unsigned int maxextents[2]={0,0};"<<std::endl;
 
    unsigned int i=0;   
    for (bool found=0;i<ft->nArgs;++i) {
@@ -153,24 +153,24 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
             out << std::endl;
          }
          out << "  assert ("<<name<<"->getDimension()<=2);" << std::endl;
-         out << "  maxDimension(maxextents,"<<name<<"->getExtents(),";
+         out << "  brook::maxDimension(maxextents,"<<name<<"->getExtents(),";
          out << name << "->getDimension());" << std::endl;
          found=true;
       }
    }
 
    for (iter = vouts->begin();iter!=vouts->end();++iter) {
-      out << "  std:: vector <__BRTStreamType> ";
+      out << "  std:: vector <brook::StreamType> ";
       std::string typevector = getDeclStream(ft->args[*iter],"_types");
       out << typevector <<";"<<std::endl;
       std::string streamiter = getDeclStream(ft->args[*iter],"_iter");
-      out << "  for (int "<<streamiter << " = 0; ";
+      out << "  for (unsigned int "<<streamiter << " = 0; ";
       out <<streamiter<<" < "<<ft->args[*iter]->name->name;
       out <<"->getFieldCount(); ++";
       out << streamiter << ") \n";
       out << "    "<<typevector<<".push_back("<<ft->args[*iter]->name->name;
       out << "->getIndexedFieldType("<<streamiter<<"));\n";
-      out << "  "<<typevector<<".push_back(__BRTNONE);\n";
+      out << "  "<<typevector<<".push_back(brook::__BRTNONE);\n";
      out << "  std::vector<brook::stream*> ";
       out<<getDeclStream(ft->args[*iter],"_outputs")<<";";
       out << std::endl;
