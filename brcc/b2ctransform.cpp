@@ -529,7 +529,18 @@ void RestoreTypes(BRTKernelDef *kDef){
 	ArrayBlacklist.clear();
 	kDef->findStemnt (FindTypesDecl);
 }
-
+void ChangeFunctionTarget (Expression * e) {
+	if (e->etype==ET_FunctionCall) {
+		Expression *k= static_cast<FunctionCall *>(e)->function;
+		if (k->etype==ET_Variable) {
+			Symbol * s =static_cast<Variable*>(k)->name;
+			s->name="_cpu_"+s->name;
+		}
+	}
+}
+void FindFunctionCall (Statement * s) {
+	s->findExpr(ChangeFunctionTarget);
+}
 void Brook2Cpp_ConvertKernel(BRTKernelDef *kDef) {
     RestoreTypes(kDef);
     kDef->findStemnt(&FindMask);
@@ -542,4 +553,5 @@ void Brook2Cpp_ConvertKernel(BRTKernelDef *kDef) {
     RestoreTypes(kDef);
     kDef->findStemnt (&FindConstantExpr);
     RestoreTypes(kDef);
+	kDef->findStemnt(&FindFunctionCall);
 }
