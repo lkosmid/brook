@@ -42,6 +42,12 @@
 #include <stdlib.h>
 #ifndef _WIN32
 #include <unistd.h>
+#else
+#ifndef YY_ALWAYS_INTERACTIVE
+#ifndef YY_NEVER_INTERACTIVE
+extern int isatty YY_PROTO(( int ));
+#endif
+#endif
 #endif
 
 /* Use prototypes in function declarations. */
@@ -81,7 +87,6 @@
 #else
 #define YY_PROTO(proto) ()
 #endif
-
 
 /* Returned upon end-of-file. */
 #define YY_NULL 0
@@ -528,7 +533,7 @@ char * copy_string (const char * in) {
 	return strdup (in);
 }
 
-#line 532 "ps2arb_lexer.cpp"
+#line 537 "ps2arb_lexer.cpp"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -692,7 +697,7 @@ YY_DECL
 
 #line 56 "ps2arb_lexer.l"
 
-#line 696 "ps2arb_lexer.cpp"
+#line 701 "ps2arb_lexer.cpp"
 
 	if ( yy_init )
 		{
@@ -984,7 +989,7 @@ YY_RULE_SETUP
 #line 155 "ps2arb_lexer.l"
 ECHO;
 	YY_BREAK
-#line 988 "ps2arb_lexer.cpp"
+#line 993 "ps2arb_lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

@@ -81,7 +81,39 @@ std::ostream &  UnaOp::print_arbfp (std::ostream & s)const {
 	s<<arbendl;
 	return s;
 }
-
+std::ostream &NrmOp::print_arbfp(std::ostream &s)const {
+  OpCode OP("DOT",InstructionFlags(InstructionFlags::FULL,false));  
+  OP.print_arbfp(s);
+  Register dstalias(dst);
+  if (dstalias.swizzle.length()==0) {
+    dstalias.swizzle="x";
+  }else {
+    dstalias.swizzle=dstalias.swizzle.substr(0,1);
+  }
+  dstalias.negate="";
+  dstalias.print_arbfp(s);
+  s<<arbdelim;
+  src0.print_arbfp(s);
+  s<<arbdelim;
+  src0.print_arbfp(s);
+  s<<arbendl;
+  OP.opcode="RSQ";
+  dstalias.print_arbfp(s);
+  s<<arbdelim;
+  dstalias.print_arbfp(s);
+  s<<arbendl;
+  OpCode FinalScale(op);
+  FinalScale.opcode="MUL";//with saturation/precision issues
+  dst.print_arbfp(s);
+  s<<arbdelim;
+  //dstalias.swizzle+=dstalias.swizzle;
+  //dstalias.swizzle+=dstalias.swizzle;//replicate 4x
+  dstalias.print_arbfp(s);
+  s<<arbdelim;
+  src0.print_arbfp(s);
+  s<<arbendl;
+  return s;
+}
 std::ostream &  BinOp::print_arbfp (std::ostream & s)const {
 	op.print_arbfp(s);
 	dst.print_arbfp(s);

@@ -226,6 +226,7 @@ static const char *const NrmOp_str="nrm";
 class NrmOp:public UnaOp{
 public:
 	UNAOPDEF(NrmOp);
+	virtual std::ostream& print_arbfp(std::ostream &s)const;
 };
 static const char *const MovOp_str="mov";
 class MovOp:public UnaOp{
