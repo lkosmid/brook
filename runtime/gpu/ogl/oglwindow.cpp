@@ -463,7 +463,7 @@ OGLWindow::bindPbuffer(unsigned int width,
     GPUError("Failed to make current GL context");
 
   glEnable(GL_FRAGMENT_PROGRAM_ARB);
-
+  
   return switched_contexts;
 }
 

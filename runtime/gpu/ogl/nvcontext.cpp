@@ -49,18 +49,18 @@ using namespace brook;
 
 static const unsigned int 
 nvtypes[4] =   {GL_FLOAT_R32_NV,
-                GL_FLOAT_RG32_NV,
-                GL_FLOAT_RGB32_NV,
+                GL_FLOAT_RGBA32_NV,
+                GL_FLOAT_RGBA32_NV,
                 GL_FLOAT_RGBA32_NV};
 
 static const unsigned int 
 nvformats[4] =  { GL_RED,
                   GL_RGBA,
-                  GL_RGB,
+                  GL_RGBA,
                   GL_RGBA };
 
 static const unsigned int 
-sizefactor[4] = { 1, 4, 3, 4 };
+sizefactor[4] = { 1, 4, 4, 4 };
 
 
 NVTexture::NVTexture ( size_t inWidth, 
@@ -105,10 +105,10 @@ static const int nvpiAttribList[4][16] = {
   {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_R_NV,
      WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
      0,0},
-  {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RG_NV,
+  {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGBA_NV,
      WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
      0,0},
-  {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGB_NV,
+  {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGBA_NV,
      WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
      0,0},
   {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGBA_NV,
