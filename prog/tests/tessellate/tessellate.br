@@ -35,6 +35,72 @@ void shouldTessellate (float4 input <>, float toler, out float output<>) {
       //printf(center.z,fheight,error,toler);
    }
 }
+kernel void shouldTessellateCheat(float4 input<>, float numerator,float denom, out float output<>) {
+   float tmp = fmod((indexof output).x,denom);
+   float infrez =isinf(input).x?0.0:1.0;
+   if (tmp+.25>denom) tmp=0;
+
+   output=(tmp+.25<numerator)?infrez:0.0;
+   
+}
+
+kernel void TessellateCheat4(float4 inputA<>, float4 inputB<>, float4 inputC<>, float4 inputD<>,
+                            float toler,
+                            out float4 outputA<>, out float4 outputB<>, out float4 outputC<>, out float4 outputD<>) {
+   float4 output;
+   float shouldDivide;
+   float4 input = inputA+inputB+inputC+inputD;
+   float2 topleft = input.xy;
+   float2 topright = input.zw;
+   float2 center = .5*topleft+.5*topright;//lerp (topleft,topright,float2(.5,.5));
+   shouldTessellate (input, toler, shouldDivide);
+   if (shouldDivide) {
+      output.xy = input.xy;
+      output.zw = center;
+   }else {
+      output=input;
+   }
+   outputA=output;
+   if (shouldDivide) {
+     output.zw = center;
+      output.xy = input.zw;
+      outputB=output;
+      output.xy = input.xw;
+      outputC=output;
+      output.xy = input.zy;
+      outputD=output;
+   }
+}
+
+
+
+kernel void TessellateCheat(float4 input<>,
+                            float toler,
+                            out float4 output<>) {
+   float shouldDivide;
+   float2 topleft = input.xy;
+   float2 topright = input.zw;
+   float2 center = .5*topleft+.5*topright;//lerp (topleft,topright,float2(.5,.5));
+   shouldTessellate (input, toler, shouldDivide);
+   if (shouldDivide) {
+      output.xy = input.xy;
+      output.zw = center;
+   }else {
+      output=input;
+   }
+   output=output;
+   if (shouldDivide) {
+     output.zw = center;
+      output.xy = input.zw;
+      output=output;
+      output.xy = input.xw;
+      output=output;
+      output.xy = input.zy;
+      output=output;
+   }
+}
+
+
 kernel void Tessellate(float4 input<>, float shouldDivide<>, vout[4] float4 output<>) {
    float2 topleft = input.xy;
    float2 topright = input.zw;
@@ -47,7 +113,7 @@ kernel void Tessellate(float4 input<>, float shouldDivide<>, vout[4] float4 outp
    }
    push(output);
    if (shouldDivide) {
-      output.zw = center;
+     output.zw = center;
       output.xy = input.zw;
       push(output);
       output.xy = input.xw;
@@ -68,6 +134,21 @@ float tof (int i) {
 float tofd (double i) {
 	return (float)i;
 }
+
+unsigned int schedulesizes [6][19]={{1,1,1,1,2,8,32,128,512,0,0,0,0,0,0,0,0,0},
+                                    {1,1,1,1,2,8,32,128,512,2048,0,0,0,0,0,0,0,0,0},
+                                    {1,1,1,1,2,8,32,128,512,0,0,0,0,0,0,0,0,0},
+                                    {1,1,1,1,1,2,5,13,39,116,346,1038,0,0,0,0,0,0,0},
+                                    {1,1,1,1,1,1,1,1,1,2,4,8,16,32,64,128,256,512,0},
+                                    {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+unsigned int schedulesizesY [6][19]={{32,128,512,2048,2048,2048,2048,2048,2048,0,0,0,0,0,0,0,0,0},
+                                     {32,128,512,2048,2048,2048,2048,2048,2048,2048,0,0,0,0,0,0,0,0,0},
+                                     {32,128,512,2048,2048,2048,2048,2048,2048,0,0,0,0,0,0,0,0,0},
+                                     {24,48,192,768,2048,2048,2048,2048,2048,2048,2048,2048,0,0,0,0,0,0,0},
+                                     {8,16,32,64,128,256,512,1024,2048,2048,2048,2048,2048,2048,2048,2048,2048,2048,0},
+                                     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+                         
+
 kernel void filter(float4 a<>,vout [] float4 output<>) {
   if (round(fmod((indexof a).x,2.0f))==1.0f) {
     output=2.0f;
@@ -80,7 +161,7 @@ kernel void filter(float4 a<>,vout [] float4 output<>) {
 }
 #define NUMTESTS 4096
 int haupto (int argc,char ** argv) {
-  int i,length = argc>1?atoi(argv[1]):1024;
+  int i,length = argc>1?atoi(argv[1]):2048;
   float4 tests <length>;
   float4 o <1>;
   float4 *array;
@@ -95,22 +176,98 @@ int haupto (int argc,char ** argv) {
   return 0;
 }
 
-#define STRIDE 1024
-#define SIZE 1024
+#define STRIDE 2048
+#define SIZE 2048
 int main (int argc, char ** argv) {
+  char usecpu=0;
+  char novout=0;
+  int i;
   SetupMillisTimer();
+   for (i=0;i<argc;++i) {
+     char match=0;
+     int j;
+     if (strcmp(argv[i],"-cpu")==0) {
+       match=1;
+       usecpu=1;
+     }
+     if (strcmp(argv[i],"-novout")==0) {
+       match=1;
+       novout=1;
+     }
+     if (match) {
+       for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
+       argc--;
+       i--;
+     }
+   }
 {
+
   float toler = argc>1?tofd(atof(argv[1])):tofd(.1);
   int limit = argc>2?atoi(argv[2]):32;
+  int cheatdenom=argc>3?atoi(argv[3]):0;
+  int cheatnumerator=argc>4?atoi(argv[4]):1;
+  float4 * finaldata=float4malloc(4096*4096*sizeof(float4));
   float4 input[4096]={float4(0,0,SIZE/2,SIZE/2),float4(0,SIZE/2,SIZE/2,SIZE),float4(SIZE/2,0,SIZE,SIZE/2),float4(SIZE/2,SIZE/2,SIZE,SIZE)};
+  float sizes[4096]={0};
   float lastsize;
   float4 polys<1,STRIDE>;
   int ite;
-  if (argc>3) return haupt(argc,argv);
+  if (usecpu) return haupt(argc,argv);
   for (ite=4;ite<4096;++ite) input[ite]=float4((float)1.0/floor(.5),(float)1.0/floor(.5),(float)1.0/floor(.5),(float)1.0/floor(.5));
   streamRead(polys,input);
+  if (cheatdenom) printf ("Warning: Cheating to get lower even results\n");
   start = GetTimeMillis();
   ite=0;
+  if (novout&&0) {
+    int i=0,j=0;
+    float4 last<1,16>;
+    for (i=0;schedulesizes[i][0];++i) {
+      start = GetTimeMillis();
+      for (j=0;schedulesizes[i][j];++j) {
+        unsigned int siz = (schedulesizes[i][j]);
+        unsigned int sizy = schedulesizesY[i][j];
+        float4 cur<siz,sizy>;
+        TessellateCheat(last,
+                        toler,
+                        cur);
+        streamSwap(last,cur);
+      }
+      streamWrite(last,finaldata);
+      stop = GetTimeMillis();
+      printf ("time for %d: %f\n",i,(float)(stop-start));      
+    }
+    
+  }else if (novout&&1) {
+    int i=0,j=0;
+    float4 lastA<1,4>;
+    float4 lastB<1,4>;
+    float4 lastC<1,4>;
+    float4 lastD<1,4>;
+    for (i=0;schedulesizes[i][0];++i) {
+      start = GetTimeMillis();
+      for (j=0;schedulesizes[i][j];++j) {
+        unsigned int siz = (schedulesizes[i][j]+3)/4;
+        unsigned int sizy = schedulesizesY[i][j];
+        float4 curA<siz,sizy>;
+        float4 curB<siz,sizy>;
+        float4 curC<siz,sizy>;
+        float4 curD<siz,sizy>;
+        TessellateCheat4(lastA, lastB, lastC, lastD,
+                        toler,
+                        curA, curB, curC, curD);
+        streamSwap(lastA,curA);
+        streamSwap(lastB,curB);
+        streamSwap(lastC,curC);
+        streamSwap(lastD,curD);
+      }
+      streamWrite(lastA,finaldata);
+      streamWrite(lastB,finaldata);
+      streamWrite(lastC,finaldata);
+      streamWrite(lastD,finaldata);
+      stop = GetTimeMillis();
+      printf ("time for %d: %f\n",i,(float)(stop-start));      
+    }
+  }else
   do {
     int lastsizeint;ite++;
     lastsize=streamSize(polys).y;
@@ -118,26 +275,37 @@ int main (int argc, char ** argv) {
     {
       float doTessellate<lastsizeint,STRIDE>;
       float4 nextPolys<1,STRIDE>;
-      shouldTessellate(polys,toler,doTessellate);
+      cheatdenom?
+        shouldTessellateCheat(polys,
+                              (float)cheatnumerator,
+                              (float)cheatdenom,
+                              doTessellate):
+        shouldTessellate(polys,toler,doTessellate);
       Tessellate(polys,doTessellate,nextPolys);
       streamSwap(polys,nextPolys);      
     }
+    if (ite<4096) sizes[ite-1]=streamSize(polys).y;
   }while ((ite<STRIDE&&streamSize(polys).y==1)||(streamSize(polys).y<limit&&streamSize(polys).y!=lastsize));
   {
     float4 size = streamSize(polys);
-    float4 * finaldata=float4malloc(size.x*size.y*sizeof(float4));
-    char * data=charmalloc((SIZE+1)*(SIZE+1)*sizeof(char));
-    memset(data,0,sizeof(char)*(1+SIZE)*(1+SIZE));
+
     streamWrite(polys,finaldata);    
     stop = GetTimeMillis();
+    {
+    char * data=charmalloc((SIZE+1)*(SIZE+1)*sizeof(char));
+    memset(data,0,sizeof(char)*(1+SIZE)*(1+SIZE));
+    for (ite=0;ite<4096&&sizes[ite];++ite) {
+      printf ("Size %f\n",sizes[ite]);
+    }
+    printf ("time %f\n",(float)(stop-start));
 
     Draw(finaldata,size,data,SIZE+1);
     writePng("polys.ppm",data,SIZE+1,SIZE+1);
     free (data);   
+    }
   }
   if (isdebug==2)
      streamPrint(polys);
-  printf ("%f ",(float)(stop-start));
   return 0;
 }
 }
