@@ -38,13 +38,13 @@ GLKernel::GLKernel(GLRunTime * runtime,
       exit(1);
    }
 
-   // count the number of passes
+   // count the number of passes.
    for (npasses=0; sources[npasses]; npasses++)
      ;
 
    pass_id = (GLuint *) malloc (npasses * sizeof(GLuint));
    pass_out = (unsigned int *) malloc (npasses * sizeof(int));
-   outstream = (GLStream **) malloc (npasses * sizeof(GLStream *));
+   outstreams = (GLStream **) malloc (npasses * sizeof(GLStream *));
 
    // Allocate ids
    glGenProgramsARB(npasses, pass_id);
@@ -218,7 +218,7 @@ void GLKernel::PushStream(Stream *s) {
    if (sreg==0)
      sreg0 = glstream;
 
-   for (unsigned int i=0; i<glstream->getNumFields(); i++) {
+   for (int i=0; i<glstream->getFieldCount(); i++) {
       glActiveTextureARB(GL_TEXTURE0_ARB+sreg);
       glBindTexture(GL_TEXTURE_RECTANGLE_EXT, glstream->id[i]);
       CHECK_GL();
@@ -250,15 +250,17 @@ void GLKernel::PushConstant(const float &val) {
              << constnames[creg] << "\n";
 #endif
 
-   for (unsigned int i=0; i<npasses; i++)
+   for (unsigned int i=0; i<npasses; i++) {
 #if 1
       glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
                                  (const GLubyte *) constnames[creg],
                                  val, 0.0f, 0.0f, 0.0f);
 #else
+      glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[i]);
       glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
                                    val, 0.0f, 0.0f, 0.0f);
 #endif
+   }
    creg++;
    argcount++;
    CHECK_GL();
@@ -270,15 +272,17 @@ void GLKernel::PushConstant(const float2 &val) {
              << constnames[creg] << "\n";
 #endif
 
-   for (unsigned int i=0; i<npasses; i++)
+   for (unsigned int i=0; i<npasses; i++) {
 #if 1
       glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
                                  (const GLubyte *) constnames[creg],
                                  val.x, val.y, 0.0f, 0.0f);
 #else
+      glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[i]);
       glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
                                    val.x, val.y, 0.0f, 0.0f);
 #endif
+   }
    creg++;
    argcount++;
    CHECK_GL();
@@ -290,15 +294,17 @@ void GLKernel::PushConstant(const float3 &val) {
              << constnames[creg] << "\n";
 #endif
 
-   for (unsigned int i=0; i<npasses; i++)
+   for (unsigned int i=0; i<npasses; i++) {
 #if 1
       glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
                                  (const GLubyte *) constnames[creg],
                                  val.x, val.y, val.z, 0.0f);
 #else
+      glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[i]);
       glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
                                    val.x, val.y, val.z, 0.0f);
 #endif
+   }
    creg++;
    argcount++;
    CHECK_GL();
@@ -310,15 +316,17 @@ void GLKernel::PushConstant(const float4 &val) {
              << constnames[creg] << "\n";
 #endif
 
-   for (unsigned int i=0; i<npasses; i++)
+   for (unsigned int i=0; i<npasses; i++) {
 #if 1
       glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
                                  (const GLubyte *) constnames[creg],
                                  val.x, val.y, val.z, val.w);
 #else
+      glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[i]);
       glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
                                    val.x, val.y, val.z, val.w);
 #endif
+   }
    creg++;
    argcount++;
    CHECK_GL();
@@ -344,7 +352,7 @@ void GLKernel::PushGatherStream(Stream *s) {
    if (sreg==0)
      sreg0 = glstream;
 
-   for (unsigned int i=0; i<glstream->getNumFields(); i++) {
+   for (int i=0; i<glstream->getFieldCount(); i++) {
       glActiveTextureARB(GL_TEXTURE0_ARB+sreg);
       glBindTexture(GL_TEXTURE_RECTANGLE_EXT, glstream->id[i]);
       CHECK_GL();
@@ -365,7 +373,7 @@ void GLKernel::PushOutput(Stream *s) {
      creg++;
    }
 
-   outstream[nout] = glstream;
+   outstreams[nout] = glstream;
 
    assert (nout < npasses);
 

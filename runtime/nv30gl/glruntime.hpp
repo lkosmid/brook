@@ -152,7 +152,7 @@ namespace brook {
 
       char **constnames;
 
-      GLStream **outstream;
+      GLStream **outstreams;
       bool     *argumentUsesIndexof;
       GLStream *sargs[GL_MAX_TEXCOORDS];
       GLIter   *iargs[GL_MAX_TEXCOORDS];
@@ -179,7 +179,6 @@ namespace brook {
      }
 
      GLStream *getNext(void) const { return next; }
-     unsigned int getNumFields(void) const { return nfields; }
 
      int printMemUsage(void);
 

@@ -34,7 +34,8 @@ namespace brook {
 
    class NV30GLKernel : public GLKernel {
    public:
-      NV30GLKernel(NV30GLRunTime *runtime, const void *[]);
+      NV30GLKernel(NV30GLRunTime *runtime, const void *sourcelist[])
+         : GLKernel(runtime, sourcelist) { /* All done in GLKernel() */ }
       virtual ~NV30GLKernel() { /* Everything is done in ~GLKernel() */ };
 
       void Map();
@@ -42,6 +43,10 @@ namespace brook {
    protected:
       void ReduceScalar();
       void ReduceStream();
+
+      void RecomputeTexCoords(unsigned int w, unsigned int h,
+                              glfloat4 f1[], glfloat4 f2[]);
+      void IssueTexCoords(glfloat4 f1[], glfloat4 f2[]);
   };
 }
 #endif

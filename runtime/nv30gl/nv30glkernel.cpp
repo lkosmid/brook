@@ -3,21 +3,12 @@
 
 using namespace brook;
 
-NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
-                           const void *sourcelist[]) :
-   GLKernel(runtime, sourcelist)
-{
-}
-
-
 static void
-compute_st(unsigned int w, unsigned int h,
-           bool is_1D_iter,
-           float x1, float y1, float z1, float w1,
-           float x2, float y2, float z2, float w2,
-           glfloat4 &f1, glfloat4 &f2)
+compute_tex_coords(unsigned int w, unsigned int h, bool is_1D_iter,
+                  float x1, float y1, float z1, float w1,
+                  float x2, float y2, float z2, float w2,
+                  glfloat4 &f1, glfloat4 &f2)
 {
-
    const float half_pixel  = 0.5f / NV30GLRunTime::workspace;
    const float pixel  = 1.0f / NV30GLRunTime::workspace;
 
@@ -88,123 +79,122 @@ compute_st(unsigned int w, unsigned int h,
       f2.z = 0.0f;
       f2.w = 1.0f;
    }
-
-#if 0
-   fprintf (stderr,
-            "\t%3.8f %3.8f %3.8f %3.8f\n\t%3.8f %3.8f %3.8f %3.8f\n",
-            f1.x, f1.y, f1.z, f1.w,
-            f2.x, f2.y, f2.z, f2.w);
-#endif
-
-
 }
 
-void NV30GLKernel::Map() {
 
-   unsigned int i, j, scount;
-   int w, h;
-   glfloat4 f1[8], f2[8];
+void
+NV30GLKernel::RecomputeTexCoords(unsigned int w, unsigned int h,
+                                 glfloat4 f1[], glfloat4 f2[])
+{
+   unsigned int i;
 
-   w = -1; h = -1; scount = 0;
+   for (i = 0; i< GL_MAX_TEXCOORDS; i++) {
+      if (sargs[i]) {
+         compute_tex_coords(w, h, false, 0.0f, 0.0f, 0.0f, 1.0f,
+                           (float) sargs[i]->width,
+                           (float) sargs[i]->height, 0.0f, 1.0f,
+                           f1[i], f2[i]);
+      } else if (iargs[i]) {
+         GLIter *itr = (GLIter *) iargs[i];
+         compute_tex_coords(w, h, (itr->dims==1),
+                            itr->min.x, itr->min.y, itr->min.z, itr->min.w,
+                            itr->max.x, itr->max.y, itr->max.z, itr->max.w,
+                            f1[i], f2[i]);
+      }
+   }
+}
 
-   for (j=0; j<npasses; ) {
+void
+NV30GLKernel::IssueTexCoords(glfloat4 f1[], glfloat4 f2[])
+{
+   unsigned int i;
 
-     if (w != (int) outstream[scount]->width ||
-         h != (int) outstream[scount]->height) {
+   for (i=0; i<GL_MAX_TEXCOORDS; i++) {
+      if (sargs[i] || (iargs[i] && iargs[i]->dims==2)) {
+         glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
+                              f1[i].x, f2[i].y, 0.0f, 1.0f);
+      } else if (iargs[i] && iargs[i]->dims==1) {
+         glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
+                              f1[i].x, f1[i].y, f1[i].z, f1[i].w);
+      }
+   }
+}
 
-       // Compute texture coords
 
-       w = outstream[scount]->width;
-       h = outstream[scount]->height;
+void
+NV30GLKernel::Map()
+{
+   unsigned int pass_idx, out_idx;
+   unsigned int w = -1, h = -1;
+   glfloat4 f1[GL_MAX_TEXCOORDS], f2[GL_MAX_TEXCOORDS];
 
-       /* Compute texture coordinates */
-       for (i=0; i<8; i++) {
-         if (sargs[i])
-           compute_st(w, h, false,
-                      0.0f, 0.0f, 0.0f, 1.0f,
-                      (float) sargs[i]->width,
-                      (float) sargs[i]->height, 0.0f, 1.0f,
-                      f1[i], f2[i]);
-         else if (iargs[i]) {
-           GLIter *itr = (GLIter *) iargs[i];
-           compute_st(w, h, (itr->dims==1),
-                      itr->min.x, itr->min.y,
-                      itr->min.z, itr->min.w,
-                      itr->max.x, itr->max.y,
-                      itr->max.z, itr->max.w,
-                      f1[i], f2[i]);
+   w = -1; h = -1;
+
+   /*
+    * Map() with single output has npasses equal to total of all fields in
+    * all outputs (i.e. structures require one pass per field, not just one
+    * pass).
+    */
+   for (pass_idx=0, out_idx = 0; pass_idx < npasses && out_idx < npasses; ) {
+      if (w != outstreams[out_idx]->width || h != outstreams[out_idx]->height) {
+         w = outstreams[out_idx]->width;
+         h = outstreams[out_idx]->height;
+
+         RecomputeTexCoords(w, h, f1, f2);
+         glViewport(0, 0, w, h);
+      }
+
+      GLStream *curOutput = outstreams[out_idx];
+      unsigned int nfields = curOutput->getFieldCount();
+      for (unsigned int field_idx=0; field_idx < nfields; field_idx++) {
+         /*
+          * If we have a floatN pbuffer, but a floatM stream, recreate the
+          * pbuffer.
+          */
+
+         if (runtime->pbuffer_ncomp != curOutput->ncomp[field_idx]) {
+            runtime->createPBuffer(curOutput->ncomp[field_idx]);
+
          }
-       }
 
-#if 0
-       fprintf (stderr, "w: %d, h: %d\n", w, h);
-       for (i=0; i<8; i++)
-         if (sargs[i] || iargs[i])
-           fprintf (stderr,
-                    "%d:\t%3.8f %3.8f %3.8f %3.8f\n\t%3.8f %3.8f %3.8f %3.8f\n",
-                    i, f1[i].x, f1[i].y, f1[i].z, f1[i].w,
-                    f2[i].x, f2[i].y, f2[i].z, f2[i].w);
-#endif
+         /*
+          * Interestingly, this line *must* be here in order for the
+          * struct_output regression test to pass.  I'm not really sure why
+          * since it looks loop invariant to me.  I tried only calling it
+          * when we recreate the pbuffer (since presumably that would
+          * require rebinding the program), but that too was insufficient.
+          * This really wants to be in every iteration.  I'll just assume
+          * that makes sense to someone who knows more about OpenGL side
+          * effects than I do.  --Jeremy.
+          */
+         glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[pass_idx]);
 
-       CHECK_GL();
+         /*
+          * We execute our kernel by using it to texture a triangle that
+          * has vertices (-1, 3), (-1, -1), and (3, -1) which works out
+          * nicely to contain the square (-1, -1), (-1, 1), (1, 1), (1, -1).
+          */
 
-       glViewport(0,0,w,h);
-     }
+         glBegin(GL_TRIANGLES);
+         IssueTexCoords(f1, f2);
+         glVertex2f(-1.0f, 3.0f);
+         IssueTexCoords(f1, f1);
+         glVertex2f(-1.0f, -1.0f);
+         IssueTexCoords(f2, f1);
+         glVertex2f(3.0f, -1.0f);
+         glEnd();
+         CHECK_GL();
 
-     unsigned int nfields = outstream[scount]->getFieldCount();
-     GLStream *outp = outstream[scount];
-     for (unsigned int k=0; k < (unsigned int) nfields; k++) {
-        if (runtime->pbuffer_ncomp != outp->ncomp[k])
-           runtime->createPBuffer(outp->ncomp[k]);
+         glActiveTextureARB(GL_TEXTURE0_ARB);
+         glBindTexture(GL_TEXTURE_RECTANGLE_EXT, curOutput->id[field_idx]);
+         glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0, 0, 0, 0, 0, w, h);
+         if (sreg0)
+           glBindTexture(GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
+         CHECK_GL();
 
-        glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[j]);
-
-        /* Issue the poly */
-        glBegin(GL_TRIANGLES);
-
-        for (i=0; i<8; i++)
-           if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
-              glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                                   f1[i].x, f2[i].y, 0.0f, 1.0f);
-           else if (iargs[i] && iargs[i]->dims==1)
-              glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                                   f1[i].x, f1[i].y, f1[i].z, f1[i].w);
-        glVertex2f(-1.0f, 3.0f);
-
-        for (i=0; i<8; i++)
-           if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
-              glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                                   f1[i].x, f1[i].y, 0.0f, 1.0f);
-           else if (iargs[i] && iargs[i]->dims==1)
-              glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                                   f1[i].x, f1[i].y, f1[i].z, f1[i].w);
-        glVertex2f(-1.0f, -1.0f);
-
-        for (i=0; i<8; i++)
-           if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
-              glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                                   f2[i].x, f1[i].y, 0.0f, 1.0f);
-           else if (iargs[i] && iargs[i]->dims==1)
-              glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                                   f2[i].x,
-                                   f2[i].y,
-                                   f2[i].z,
-                                   f2[i].w);
-        glVertex2f(3.0f, -1.0f);
-
-        glEnd();
-        CHECK_GL();
-
-        glActiveTextureARB(GL_TEXTURE0_ARB);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, outp->id[k]);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0, 0, 0, 0, 0, w, h);
-        if (sreg0)
-           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
-        CHECK_GL();
-
-        j++;
-     }
-	 scount++;
+         pass_idx++;
+      }
+      out_idx++;
    }
 
    ResetStateMachine();
@@ -315,12 +305,12 @@ NV30GLKernel::ReduceScalar() {
       int wp = half*2;
       glfloat4 f1[2], f2[2];
 
-      compute_st(half, h, false,
+      compute_tex_coords(half, h, false,
                  0.0f, 0.0f, 0.0f, 1.0f,
                  (float) wp, (float) h, 0.0f, 1.0f,
                  f1[0], f2[0]);
 
-      compute_st(half, h, false,
+      compute_tex_coords(half, h, false,
                  1.0f, 0.0f, 0.0f, 1.0f,
                  (float) wp+1, (float) h, 0.0f, 1.0f,
                  f1[1], f2[1]);
@@ -342,7 +332,7 @@ NV30GLKernel::ReduceScalar() {
       issue_reduce_poly(0, 0, half, h, 2, f1, f2);
 
       if (remainder) {
-         compute_st(1, h, false,
+         compute_tex_coords(1, h, false,
                     (float) (w-1)+0.5f, 0.0f, 0.0f, 1.0f,
                     (float) (w-1)+0.5f, (float) h, 0.0f, 1.0f,
                     f1[0], f2[0]);
@@ -378,12 +368,12 @@ NV30GLKernel::ReduceScalar() {
       int hp = half*2;
       glfloat4 f1[2], f2[2];
 
-      compute_st(1, half, false,
+      compute_tex_coords(1, half, false,
                  0.0f,       0.0f, 0.0f, 1.0f,
                  0.0f, (float) hp, 0.0f, 1.0f,
                  f1[0], f2[0]);
 
-      compute_st(1, half, false,
+      compute_tex_coords(1, half, false,
                  0.0f,         1.0f, 0.0f, 1.0f,
                  0.0f, (float) hp+1, 0.0f, 1.0f,
                  f1[1], f2[1]);
@@ -405,7 +395,7 @@ NV30GLKernel::ReduceScalar() {
       issue_reduce_poly(0, 0, 1, half, 2, f1, f2);
 
       if (remainder) {
-         compute_st(1, 1, false,
+         compute_tex_coords(1, 1, false,
                     0.0f, (float) (h-1), 0.0f, 1.0f,
                     0.0f, (float) (h-1), 0.0f, 1.0f,
                     f1[0], f2[0]);
@@ -530,12 +520,12 @@ NV30GLKernel::ReduceStream() {
       int half = ratiox/2;
       int remainder = ratiox%2;
 
-      compute_st(half*nx, h, false,
+      compute_tex_coords(half*nx, h, false,
                  0.0f, 0.0f, 0.0f, 1.0f,
                  (float) nx*ratiox, (float) h, 0.0f, 1.0f,
                  f1[0], f2[0]);
 
-      compute_st(half*nx, h, false,
+      compute_tex_coords(half*nx, h, false,
                  1.0f, 0.0f, 0.0f, 1.0f,
                  (float) nx*ratiox+1,  (float) h, 0.0f, 1.0f,
                  f1[1], f2[1]);
@@ -561,11 +551,11 @@ NV30GLKernel::ReduceStream() {
 
           assert (!first);
 
-          compute_st(nx, h, false,
+          compute_tex_coords(nx, h, false,
                      (float) ratiox-1, 0.0f, 0.0f, 1.0f,
                      (float) w+ratiox, (float) h, 0.0f, 1.0f,
                      f1[0], f2[0]);
-          compute_st(nx, h, false,
+          compute_tex_coords(nx, h, false,
                      (float) remainder_x, 0.0f, 0.0f, 1.0f,
                      (float) remainder_x+nx, (float) h, 0.0f, 1.0f,
                      f1[1], f2[1]);
@@ -588,7 +578,7 @@ NV30GLKernel::ReduceStream() {
 
         } else {
           //  Copy the remainder values over
-          compute_st(nx, h, false,
+          compute_tex_coords(nx, h, false,
                      (float) ratiox-1, 0.0f, 0.0f, 1.0f,
                      (float) w+ratiox, (float) h, 0.0f, 1.0f,
                      f1[0], f2[0]);
@@ -642,11 +632,11 @@ NV30GLKernel::ReduceStream() {
 
    /* Perform final remainder calc */
    if (have_remainder) {
-     compute_st(nx, h, false,
+     compute_tex_coords(nx, h, false,
                 (float) 0.0f, 0.0f, 0.0f, 1.0f,
                 (float) nx, (float) h, 0.0f, 1.0f,
                 f1[0], f2[0]);
-     compute_st(nx, h, false,
+     compute_tex_coords(nx, h, false,
                 (float) remainder_x, 0.0f, 0.0f, 1.0f,
                 (float) remainder_x+nx, (float) h, 0.0f, 1.0f,
                 f1[1], f2[1]);
@@ -674,12 +664,12 @@ NV30GLKernel::ReduceStream() {
       int half = ratioy/2;
       int remainder = ratioy%2;
 
-      compute_st(nx, half*ny, false,
+      compute_tex_coords(nx, half*ny, false,
                  0.0f, 0.0f, 0.0f, 1.0f,
                  (float) nx, (float) ny*ratioy, 0.0f, 1.0f,
                  f1[0], f2[0]);
 
-      compute_st(nx, half*ny, false,
+      compute_tex_coords(nx, half*ny, false,
                  0.0f, 1.0f, 0.0f, 1.0f,
                  (float) nx, (float) ny*ratioy+1, 0.0f, 1.0f,
                  f1[1], f2[1]);
@@ -712,11 +702,11 @@ NV30GLKernel::ReduceStream() {
 
       if (remainder) {
         if (have_remainder) {
-          compute_st(nx, ny, false,
+          compute_tex_coords(nx, ny, false,
                      0.0f, (float) ratioy-1, 0.0f, 1.0f,
                      (float) nx, (float) h+ratioy, 0.0f, 1.0f,
                      f1[0], f2[0]);
-          compute_st(nx, ny, false,
+          compute_tex_coords(nx, ny, false,
                      (float) 0, 0.0f, 0.0f, 1.0f,
                      (float) nx, (float) ny, 0.0f, 1.0f,
                      f1[1], f2[1]);
@@ -729,7 +719,7 @@ NV30GLKernel::ReduceStream() {
           issue_reduce_poly(0, 0, nx, ny, 2, f1, f2);
         } else {
           //  Copy the remainder values over
-          compute_st(nx, ny, false,
+          compute_tex_coords(nx, ny, false,
                      0.0f, (float) ratioy-1, 0.0f, 1.0f,
                      (float) nx,   (float) h+ratioy, 0.0f, 1.0f,
                      f1[0], f2[0]);
@@ -766,11 +756,11 @@ NV30GLKernel::ReduceStream() {
    }
 
    if (have_remainder) {
-     compute_st(nx, ny, false,
+     compute_tex_coords(nx, ny, false,
                       0.0f,       0.0f, 0.0f, 1.0f,
                 (float) nx, (float) ny, 0.0f, 1.0f,
                 f1[0], f2[0]);
-     compute_st(nx, ny, false,
+     compute_tex_coords(nx, ny, false,
                       0.0f,       0.0f, 0.0f, 1.0f,
                 (float) nx, (float) ny, 0.0f, 1.0f,
                 f1[1], f2[1]);
@@ -789,7 +779,7 @@ NV30GLKernel::ReduceStream() {
    } else {
 
      //  Copy the values over
-     compute_st(nx, ny, false,
+     compute_tex_coords(nx, ny, false,
                 0.0f, 0.0f, 0.0f, 1.0f,
                 (float) nx,   (float) ny, 0.0f, 1.0f,
                 f1[0], f2[0]);
