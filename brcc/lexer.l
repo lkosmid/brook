@@ -973,8 +973,8 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                            << ": '" << yytext[0] << "'\n";
                         else
                           *gProject->Parse_TOS->yyerrstream
-                           << ", ASCII: " << std::oct << (int)(yytext[0]) 
-                                 << " (octal)\n" << std::dec;
+                           << ", ASCII: " << std::hex << (int)(yytext[0]) 
+                                 << " (hex)\n" << std::dec;
                        }
 
 %%

@@ -477,7 +477,7 @@ Project::parse( const char* path, bool use_cpp, /* =true */
         system(cpp_cmmd);
     }
  
-    fp.open(cpp_file);
+    fp.open(cpp_file, std::ios::binary);
 
     if (!fp)
         return NULL;
