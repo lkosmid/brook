@@ -7,7 +7,7 @@
 #include <cstring>
 #include <cassert>
 #include <sstream>
-
+#include "brtdecl.h"
 #include "brtstemnt.h"
 #include "project.h"
 #include "codegen.h"
@@ -127,13 +127,18 @@ BRTCPUKernelDef::printCode(std::ostream& out) const
 	Type * form = func->args[j]->form;
 	if (form->type==TT_Stream) {
 	    form = static_cast<ArrayType *>(form)->subType;
+	}else if (form->type==TT_Array) {
+		form = new CPUGatherType(*static_cast<ArrayType *>(form));
 	}
 	
 	TypeQual tq= form->getQualifiers();
-	if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0)
-	    out << "const ";//kernels are only allowed to touch out params
-	if ((tq&TQ_Out)==0)
-	    func->args[j]->name->name=std::string("&")+func->args[j]->name->name;
+	if (0/*kernels only allowed to modify out params*/) {
+		if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
+			out << "const ";//kernels are only allowed to touch out params
+		}
+		if ((tq&TQ_Out)==0)
+			func->args[j]->name->name=std::string("&")+func->args[j]->name->name;
+	}
 	func->args[j]->form = form;
 	func->args[j]->print(out,true);
 	

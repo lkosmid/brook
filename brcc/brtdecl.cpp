@@ -141,14 +141,17 @@ void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) con
 	out << "Array"<<dimension<<"d<";
 	subType->getBase()->printBefore(out,&nothing,0);
 	const Type * t = this;
-	for (unsigned int i=0;i<dimension;i++) {
+	for (unsigned int i=0;i<dimension&&i<3;i++) {
+		if (i!=0)
+			out <<", ";
 		const ArrayType *a =static_cast<const ArrayType *>(t);
 		a->size->print(out);
 		t = a->subType;			
 	}
+	out << "> "; 
 	out << *name;
 }
-void CPUGatherType::printAfter(std::ostream &out) {
+void CPUGatherType::printAfter(std::ostream &out) const{
 		//nothing happens
 		//you fail to obtain anything
 		//...
