@@ -595,7 +595,6 @@ static void expandStreamFetches( std::ostream& shader, const std::string& argume
 static char *
 generate_shader_code (Decl **args, int nArgs, const char* functionName,
                       int inFirstOutput, int inOutputCount, bool fullAddressTrans, int reductionFactor ) {
-  const char xyzw[] = "xyzw";
   std::ostringstream shader;
   bool isReduction = false;
   bool reductionArgumentComesBeforeStreamArgument = false;
@@ -1105,7 +1104,7 @@ compile_cg_code (char *cgcode) {
 
   fpcode = Subprocess_Run(argv, cgcode);
   if (fpcode == NULL) {
-     fprintf(stderr, "%s returned an error code, skipping fp30 / nv30gl target for ",
+     fprintf(stderr, "%s returned an error code, skipping fp30 / nv30gl target ",
              argv[0]);
      return NULL;
   }
@@ -1178,7 +1177,7 @@ compile_hlsl_code (char *hlslcode) {
   errcode = Subprocess_Run(argv, NULL);
   if (!globals.keepFiles) remove(globals.shaderoutputname);
   if (errcode == NULL) {
-     fprintf(stderr, "%s returned an error code, skipping ps20 / dx9 target for",
+     fprintf(stderr, "%s returned an error code, skipping ps20 / dx9 target ",
              argv[0]);
      remove(argv[3]+3);
      return NULL;
@@ -1401,7 +1400,7 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
       }
       fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
       if (fpcode==NULL) {
-	fprintf (stderr,"Kernel %s.\n",
+	fprintf (stderr,"for kernel %s.\n",
 		 name);
       }
       free(shadercode);
