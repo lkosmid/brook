@@ -100,7 +100,8 @@ void  Gather (const __BrtFloat1  &a,
                const __BrtFloat4  &c,
                const __BrtArray<__BrtFloat1  , 2  , false> &d,
                __BrtFloat1  &e){
-  e = a + b + d[c.swizzle2(maskX, maskY)].gather() + d[c.swizzle2(maskY, maskZ)].gather() + d[c.swizzle2(maskZ, maskW)].gather() + d[c.swizzle2(maskX, maskZ)].gather() + d[c.swizzle2(maskX, maskW)].gather() + d[c.swizzle2(maskY, maskW)].gather() + d[c.swizzle2(maskZ, maskW)].gather();
+  e = a + b + d[c.swizzle2(maskX, maskY)] + d[c.swizzle2(maskY, maskZ)] + d[c.swizzle2(maskZ, maskW)] + 
+d[c.swizzle2(maskX, maskZ)] + d[c.swizzle2(maskX, maskW)] + d[c.swizzle2(maskY, maskW)] + d[c.swizzle2(maskZ, maskW)];
 }
 
 void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int size) {
