@@ -6,7 +6,6 @@ unsigned int debug_vout = 0;
 
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
 
-
 kernel void kernelReadItem (float items[][], float2 index, out float item<>) {
   item = items[index];
 }
@@ -62,36 +61,20 @@ kernel void calculateIndexModulus (float4 index,
                 modulus)-offset);
 }
 
-kernel float getSentinel2d () {
-  return -18446321861244485632.0f;//1.0f/floor(0.5);
+#define finite_float2(output) finite_float(output.x)
+#define finite_float3(output) finite_float(output.x)
+#define finite_float4(output) finite_float(output.x)
+kernel float isSentinel (float tester, float sentinel) {
+  return tester==sentinel;
 }
-kernel float isSentinel2d(float a<>) {
-  return a==getSentinel2d();//isinf(a);
-}
-float isSentinel2d_float(float a) {
-  return a==-18446321861244485632.0f;
-  }/*
-kernel float getSentinel2d () {
-  return -4.0f;//1.0f/floor(0.5);
-}
-kernel float isSentinel2d(float a<>) {
-  return a==getSentinel2d();//isinf(a);
-}
-float isSentinel2d_float(float a) {
-  return a==-4.0f;
-}
-   */
-#define isSentinel2d_float2(output) isSentinel2d_float(output.x)
-#define isSentinel2d_float3(output) isSentinel2d_float(output.x)
-#define isSentinel2d_float4(output) isSentinel2d_float(output.x)
-
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedBRT_TYPE (BRT_TYPE input <>, 
-                                   reduce BRT_TYPE output<>) {
-   output=isSentinel2d(input.x)?output:input;
+                                   reduce BRT_TYPE output<>,
+                                   float sentinel) {
+  output=isSentinel(input.x,sentinel)?output:input;
 }
-kernel void isFiniteKernelBRT_TYPE(BRT_TYPE inp<>, out float outp<>) {
-   outp=!isSentinel2d(inp.x);
+kernel void isFiniteKernelBRT_TYPE(BRT_TYPE inp<>, out float outp<>, float sentinel) {
+  outp=!isSentinel(inp.x,sentinel);
 }
 
 int finiteValueProducedBRT_TYPE (BRT_TYPE input<>) {
@@ -101,10 +84,9 @@ int finiteValueProducedBRT_TYPE (BRT_TYPE input<>) {
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedBRT_TYPE(input,output);
+   valueProducedBRT_TYPE(input,output,getSentinel());
    streamWrite(output,&rettype);
-   return !isSentinel2d_BRT_TYPE(rettype);
-   isFiniteKernelBRT_TYPE(output,finiteout);
+   isFiniteKernelBRT_TYPE(output,finiteout,getSentinel());
    streamWrite(finiteout,&ret);
    return (int)ret;
 }
@@ -120,15 +102,15 @@ kernel void valueAtBRT_TYPE (BRT_TYPE value[][],
       output = value[index];
 }
 kernel void NanToBoolRightBRT_TYPE (BRT_TYPE value[][], 
-                            out float output<>, 
-                            float sign,
-                            float2 maxvalue) {
+                                    out float output<>, 
+                                    float2 sign,
+                                    float2 maxvalue) {
    float2 nextPlaceToLook;
    BRT_TYPE neighbor;
-   getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
+   getIndexAt(indexof(output),sign.x,maxvalue,nextPlaceToLook);
    valueAtBRT_TYPE(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isSentinel2d(value[indexof(output)].x)?1:0) 
-      + (isSentinel2d(neighbor.x)?1:0);
+   output = (isSentinel(value[indexof(output)].x,sign.y)?1:0) 
+     + (isSentinel(neighbor.x,sign.y)?1:0);
 }
 kernel void NanToRightBRT_TYPE (float value [][],
                                 out float output<>,
@@ -157,17 +139,17 @@ kernel void GatherGuessBRT_TYPE(float scatterindex[][],
                         float twotologkminusi,
                         float2 maxvalue,
                         float halfk,
-                        float sign) {
-     float neighbor;
+                        float2 signsentinel) {
+      float neighbor;
       float2 nextPlaceToLook;
-      getIndexAt(indexof(output),-sign*halfk,maxvalue,nextPlaceToLook);
+      getIndexAt(indexof(output),-signsentinel.x*halfk,maxvalue,nextPlaceToLook);
       valueAtfloat(scatterindex,nextPlaceToLook,neighbor,maxvalue,0);
       if (neighbor>halfk) {
          output=halfk+twotologkminusi;
       }else {
          BRT_TYPE actualValue;
          valueAtBRT_TYPE(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&!isSentinel2d(actualValue.x)) {
+         if (neighbor==halfk&&!isSentinel(actualValue.x,signsentinel.y)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -180,7 +162,7 @@ kernel void EstablishGuessBRT_TYPE(float scatterindex[][],
                                    float twotologkminusi,
                                    float2 maxvalue,
                                    float halfk,
-                                   float sign) {
+                                   float2 signsentinel) {
    if (scatterindex[indexof(output)]==0) {
       output=0;
    } else {
@@ -190,7 +172,7 @@ kernel void EstablishGuessBRT_TYPE(float scatterindex[][],
                           twotologkminusi,
                           maxvalue,
                           halfk,
-                          sign);
+                          signsentinel);
     }
 }
 
@@ -201,33 +183,33 @@ kernel void UpdateGuessBRT_TYPE(float scatterindex[][],
                                 float twotologkminusi,
                                 float2 maxvalue,
                                 float lastguess<>,
-                                float sign) {
+                                float2 signsentinel) {
    GatherGuessBRT_TYPE(scatterindex,
                        output,
                        value,
                        twotologkminusi,
                        maxvalue,
                        lastguess,
-                       sign);
+                       signsentinel);
 }
 
 kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
                                 float gatherindex[][],
                                 BRT_TYPE value[][],
-                                float sign,
+                                float2 signsentinel,
                                 float2 maxvalue,
                                 float maxshift) {
    float2 nextPlaceToLook;
    float2 isoffedge;
    getIndexAt(indexof(output),
-              -sign.x*gatherindex[indexof(output)],
+              -signsentinel.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   getIndexAt(indexof(output),-sign.x*maxshift,maxvalue,isoffedge);
+   getIndexAt(indexof(output),-signsentinel.x*maxshift,maxvalue,isoffedge);
    isoffedge-=maxvalue;
    if (isoffedge.y>=-.0625
        || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
-     output=getSentinel2d();
+     output=signsentinel.y;
    }else {
      output=value[nextPlaceToLook];
    }
@@ -251,7 +233,7 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightBRT_TYPE (list_stream,ret_stream,(float)sign,maxvalue);   
+   NanToBoolRightBRT_TYPE (list_stream,ret_stream,float2((float)sign,getSentinel()),maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightBRT_TYPE(ret_stream,tmp_stream,(float)sign*(1<<i),maxvalue);
@@ -279,7 +261,7 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
                           (float)(1 << LogNMinusK),
                           maxvalue,
                           (float)(1<<i),
-                          (float)sign);
+                          float2((float)sign,getSentinel()));
    for (i=1;i<logN;++i) {
       LogNMinusK=logN-1-i;
       if (i%2)
@@ -289,7 +271,7 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               guess_stream,//old guess
-                              (float)sign);
+                              float2((float)sign,getSentinel()));
       else
          UpdateGuessBRT_TYPE (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
@@ -297,7 +279,7 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
                               (float)(1<<LogNMinusK),
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
-                              (float)sign);
+                              float2((float)sign,getSentinel()));
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
@@ -310,8 +292,8 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
         if (width) {
           RelativeGatherBRT_TYPE(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
-                                 list_stream,
-                                 (float)sign,
+                                 list_stream,                                 
+                                 float2((float)sign,getSentinel()),
                                  maxvalue,
                                  maxshift);
         }
@@ -996,7 +978,8 @@ kernel void combineBRT_TYPE (BRT_TYPE input1[][],
                            out BRT_TYPE output<>,
                            float2 startsecond,
                            float2 endsecond,
-                           float2 maxinput2value){
+                           float2 maxinput2value,
+                           float sentinel){
    //   getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
    //              -shift1,
    //              maxinput1value,
@@ -1019,7 +1002,7 @@ kernel void combineBRT_TYPE (BRT_TYPE input1[][],
       if (secondindex.y>endsecond.y
           ||(secondindex.y==endsecond.y
              &&secondindex.x>=endsecond.x)) {
-         output=getSentinel2d();
+         output=sentinel;
       }else {
          output = input2[secondindex];
       }
@@ -1061,7 +1044,8 @@ unsigned int  voutCombineBRT_TYPE(BRT_TYPE outleft_stream<>,
                    output_stream,
                    startsecond,
                    endsecond,
-                   maxrightvalue);
+                   maxrightvalue,
+                   1.0f/(float)floor(.5));
       streamSwap (*output,output_stream);
    }
    return totalsize;
