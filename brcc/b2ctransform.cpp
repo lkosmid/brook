@@ -281,6 +281,8 @@ class BaseType1:public BaseType {public:
       BT_Float2   |
       BT_Float3   |
       BT_Float4   |
+      BT_Double    |
+      BT_Double2   |
       BT_Fixed    |
       BT_Fixed2   |
       BT_Fixed3   |
@@ -309,6 +311,10 @@ class BaseType1:public BaseType {public:
          out << "__BrtFloat3 ";
       else if ((typemask & BT_Float4)||(raw==false&&((typemask &BT_Fixed4)||(typemask&BT_Half4))))
         out << "__BrtFloat4 ";
+      else if (typemask &BT_Double)
+         out << "__BrtDouble1 ";
+      else if (typemask &BT_Double2)
+         out << "__BrtDouble2 ";
       else if (typemask &BT_Fixed)
          out << "fixed ";
       else if (typemask &BT_Fixed2)

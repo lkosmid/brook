@@ -176,6 +176,10 @@ namespace brook {
   unsigned int getElementSize(StreamType fieldType) {
       switch(fieldType)
       {
+      case __BRTDOUBLE:
+          return sizeof(double);
+      case __BRTDOUBLE2:
+          return 2*sizeof(double);
       case __BRTFIXED:
          return sizeof(fixed);
       case __BRTFIXED2:

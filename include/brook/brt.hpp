@@ -59,6 +59,15 @@ typedef struct float2 {
   float x,y;
 } float2;
 
+
+typedef struct double2 {
+  double2(double _x, double _y) { x = _x; y = _y; }
+  double2(void) {}
+  operator __BrtDouble2()const {return __BrtDouble2(x,y);}
+  double x,y;
+} double2;
+
+
 typedef struct float3 {
   float3(float _x, float _y, float _z) { x = _x; y = _y; z = _z; }
   float3(void) {}
@@ -120,7 +129,8 @@ enum __BRTStreamType {
     __BRTHALF2=10,
     __BRTHALF3=11,
     __BRTHALF4=12,
-
+    __BRTDOUBLE=13,
+    __BRTDOUBLE2=14,
 };
 float getSentinel();
 
@@ -153,7 +163,8 @@ namespace brook {
     __BRTHALF2=10,
     __BRTHALF3=11,
     __BRTHALF4=12,
-
+    __BRTDOUBLE=13,
+    __BRTDOUBLE2=14,
   };
   unsigned int getElementSize(StreamType);
   template<typename T>
@@ -203,6 +214,16 @@ namespace brook {
   template<>
   inline const ::brook::StreamType* getStreamType(fixed4*) {
      static const ::brook::StreamType result[] = {__BRTFIXED4,__BRTNONE};
+     return result;
+  }
+  template<>
+  inline const ::brook::StreamType* getStreamType(double*) {
+     static const ::brook::StreamType result[] = {__BRTDOUBLE,__BRTNONE};
+     return result;
+  }
+  template<>
+  inline const ::brook::StreamType* getStreamType(double2*) {
+     static const ::brook::StreamType result[] = {__BRTDOUBLE2,__BRTNONE};
      return result;
   }
  

@@ -229,8 +229,6 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
         out << "char ";
     else if (typemask & BT_Short)
         out << "short ";
-    else if (typemask & BT_LongLong)
-        out << "long long ";
     else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_Half))))
        out << "__BrtFloat1 ";
     else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_Half2))))
@@ -258,7 +256,9 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
     else if ((typemask & BT_Double) && (typemask & BT_Long))
         out << "long double ";
     else if (typemask & BT_Double)
-        out << "double ";
+        out << "__BrtDouble ";
+    else if (typemask & BT_Double2)
+        out << "__BrtDouble2 ";
     else if (typemask & BT_Ellipsis)
         out << "...";
     else if (typemask & BT_Long)
@@ -326,6 +326,7 @@ static StructDef* findStructureDef( Type* inType )
 
 bool BaseType::printStructureStreamShape( std::ostream& out )
 {
+
     if (typemask & BT_Float)
         out << "__BRTFLOAT, ";
     else if (typemask & BT_Float2)
@@ -334,6 +335,10 @@ bool BaseType::printStructureStreamShape( std::ostream& out )
         out << "__BRTFLOAT3, ";
     else if (typemask & BT_Float4)
         out << "__BRTFLOAT4, ";
+    else if (typemask & BT_Double)
+        out << "__BRTDOUBLE, ";
+    else if (typemask & BT_Double2)
+        out << "__BRTDOUBLE2, ";
     else if (typemask & BT_Fixed)
         out << "__BRTFIXED, ";
     else if (typemask & BT_Fixed2)
@@ -375,8 +380,6 @@ BaseType::printBase(std::ostream& out, int level) const
         out << "char ";
     else if (typemask & BT_Short)
         out << "short ";
-    else if (typemask & BT_LongLong)
-        out << "long long ";
     else if ((typemask & BT_Float)||(0&typemask & BT_Fixed)||(0&typemask & BT_Half))
         out << "float ";
     else if ((typemask & BT_Float2)||(0&typemask & BT_Fixed2)||(0&typemask & BT_Half2))
@@ -404,7 +407,9 @@ BaseType::printBase(std::ostream& out, int level) const
     else if ((typemask & BT_Double) && (typemask & BT_Long))
         out << "long double ";
     else if (typemask & BT_Double)
-        out << "double ";
+        out << "double ";//FIXME?
+    else if (typemask & BT_Double2)
+        out << "double2 ";//FIXME?
     else if (typemask & BT_Ellipsis)
         out << "...";
     else if (typemask & BT_Long)

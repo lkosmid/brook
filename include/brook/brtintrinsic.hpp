@@ -6,6 +6,8 @@
 #define BRTINTRINSIC_HPP
 
 #define UNINTRINSICMEMBER(FUNC,CALLFUNC,RET) \
+template <typename T> vec<typename T::TYPE, 1> __##FUNC##_cpu_inner(const T &f) {return f.CALLFUNC();}
+/*
 inline RET __##FUNC##_cpu_inner (const __BrtFloat4 &f) { \
   return f.CALLFUNC(); \
 } \
@@ -18,9 +20,16 @@ inline RET __##FUNC##_cpu_inner (const __BrtFloat2 &f) { \
 inline RET __##FUNC##_cpu_inner (const __BrtFloat1 &f) { \
   return f.CALLFUNC(); \
 }
-
+*/
 
 #define UNINTRINSIC(FUNC,CALLFUNC) \
+template <typename T> T __##FUNC##_cpu_inner (const T&f ) { \
+        return T(CALLFUNC(f.getAt(0)), \
+                 CALLFUNC(f.getAt(1)), \
+                 CALLFUNC(f.getAt(2)), \
+                 CALLFUNC(f.getAt(3)));         \
+}
+/*
 inline __BrtFloat4 __##FUNC##_cpu_inner (const __BrtFloat4 &f) { \
   return __BrtFloat4 (CALLFUNC (f.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1)), \
@@ -39,9 +48,16 @@ inline __BrtFloat2 __##FUNC##_cpu_inner (const __BrtFloat2 &f) { \
 inline __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f) { \
   return __BrtFloat1 (CALLFUNC (f.unsafeGetAt(0))); \
 }
-
+*/
 
 #define UNINTRINSICINOUT(FUNC,CALLFUNC) \
+inline __BrtDouble1 __##FUNC##_cpu_inner (const __BrtDouble1 &f, __BrtDouble1 &out) { \
+  return __BrtDouble1 (CALLFUNC (f.unsafeGetAt(0),out.unsafeGetAt(0))); \
+} \
+inline __BrtDouble2 __##FUNC##_cpu_inner (const __BrtDouble2 &f, __BrtDouble2 &out) { \
+    return __BrtDouble2 (CALLFUNC (f.unsafeGetAt(0),out.unsafeGetAt(0)), \
+                         CALLFUNC(f.unsafeGetAt(1),out.unsafeGetAt(1))); \
+} \
 inline __BrtFloat4 __##FUNC##_cpu_inner (const __BrtFloat4 &f, __BrtFloat4 &out) { \
   return __BrtFloat4 (CALLFUNC (f.unsafeGetAt(0),out.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1),out.unsafeGetAt(1)), \
@@ -82,6 +98,14 @@ template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>:
 } \
 template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
        LUB<TEMPL_TYPESIZE,1>::size> __##FUNC##_cpu_inner (const __BrtFloat1 &f, const BRT_TYPE &g) { \
+  return f.CALLFUNC(g); \
+} \
+template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,double>::type, \
+       LUB<TEMPL_TYPESIZE,2>::size> __##FUNC##_cpu_inner (const __BrtDouble2 &f, const BRT_TYPE &g) { \
+  return f.CALLFUNC(g); \
+} \
+template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,double>::type, \
+       LUB<TEMPL_TYPESIZE,1>::size> __##FUNC##_cpu_inner (const __BrtDouble1 &f, const BRT_TYPE &g) { \
   return f.CALLFUNC(g); \
 }
 
@@ -131,6 +155,23 @@ template <class ThirdEye> __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f
   return __BrtFloat1 (CALLFUNC (f.unsafeGetAt(0), \
                                 g.unsafeGetAt(0),    \
                                 h.unsafeGetAt(0)));        \
+} \
+template <class ThirdEye> __BrtDouble2 __##FUNC##_cpu_inner (const __BrtDouble2 &f, \
+                                                            const __BrtDouble2 &g, \
+                                                            const ThirdEye &h) { \
+  return __BrtDouble2 (CALLFUNC (f.unsafeGetAt(0), \
+                                       g.unsafeGetAt(0), \
+                                       h.unsafeGetAt(0)), \
+                      CALLFUNC (f.unsafeGetAt(1), \
+                                       g.unsafeGetAt(1), \
+                                       h.getAt(1))); \
+} \
+template <class ThirdEye> __BrtDouble1 __##FUNC##_cpu_inner (const __BrtDouble1 &f, \
+                                                            const __BrtDouble1 &g, \
+                                                            const ThirdEye &h) { \
+  return __BrtDouble1 (CALLFUNC (f.unsafeGetAt(0), \
+                                g.unsafeGetAt(0),    \
+                                h.unsafeGetAt(0)));        \
 }
 
 template <class T> T __normalize_cpu_inner (const T &x) {
@@ -153,64 +194,60 @@ template <class T> T __normalize_cpu_inner (const T &x) {
    }
    return x/__sqrt_cpu_inner(T(size));
 }
-inline float degrees_float (float x) {
+template <typename T>  T degrees_float (T x) {
    return x*180.0f/3.1415926536f;
 }
-inline float radians_float (float x) {
+template <typename T>  float radians_float (T x) {
    return x*3.1415926536f/180.0f;
 }
-inline float saturate_float (float x) {
+template <typename T>  T saturate_float (T x) {
    return x>1.0f?1.0f:x<0.0f?0.0f:x;
 }
 
-inline float clamp_float(float x, float l, float u) {
+template <typename T>  T clamp_float(T x, T l, T u) {
    return x>u?u:x<l?l:x;
 }
-inline float sign_float (float x) {
+template <typename T>  T sign_float (T x) {
    return x==0.0f?0.0f:x<0.0f?-1.0f:1.0f;
 }
-inline float exp2_float (float x) {
-   return (float)pow(2.0f,x);
+template <typename T>  T exp2_float (T x) {
+   return (T)pow(2.0f,x);
 }
 static const float _const_log2 = (float) log(2.0f);
-inline float log2_float (float x) {
-   return (float)log (x)/_const_log2;
+template <typename T>  T log2_float (T x) {
+   return (T)log (x)/_const_log2;
 }
-inline float round_float (float x) {
-   float f = x-(float)floor(x);
-   float g = (float)ceil(x)-x;
-   return f==g?(x<0.0f?(float)floor(x):(float)ceil(x)):f<g?(float)floor(x):(float)ceil(x);
+template <typename T>  T round_float (T x) {
+   T f = x-(T)floor(x);
+   T g = (T)ceil(x)-x;
+   return f==g?(x<0.0f?(T)floor(x):(T)ceil(x)):f<g?(T)floor(x):(T)ceil(x);
 }
-inline float lerp_float (float a, float b, float s) {
+template <typename T>  T lerp_float (T a, T b, T s) {
    return a + s*(b - a);
 }
-inline float rsqrt_float (float x) {
-#ifdef __APPLE__
-	return 1.0f/sqrt(x);
-#else
-   return 1.0f/sqrtf(x);
-#endif
+template <typename T>  T rsqrt_float (T x) {
+    return (T)(1.0f/sqrt(x));
 }
-inline float frac_float (float x) {
-   float y = x-(float)floor(x);
+template <typename T>  T frac_float (T x) {
+   T y = x-(T)floor(x);
    return x<0.0f?1.0f-y:y;
 }
-inline float frc_float (float x) {
+template <typename T>  T frc_float (T x) {
    return frac_float(x);
 }
-inline float frexp_float (float x, float & oout) {
+template <typename T>  T frexp_float (T x, T & oout) {
    int exp;
-   x = (float)frexp(x,&exp);
-   oout=(float)exp;
+   x = (T)frexp(x,&exp);
+   oout=(T)exp;
    return x;
 }
-inline float modf_float (float x, float & oout) {
+template <typename T>  T modf_float (T x, T & oout) {
    double exp;
-   x = (float)modf(x,&exp);
-   oout=(float)exp;
+   x = (T)modf(x,&exp);
+   oout=(T)exp;
    return x;
 }
-inline float finite_float (float x) {
+inline float finite_float (double x) {
 #ifdef _WIN32
    return (float) _finite(x);
 #else
@@ -221,7 +258,7 @@ inline float finite_float (float x) {
 #endif
 #endif
 }
-inline float isnan_float (float x) {
+inline  float isnan_float (double x) {
 #ifdef _WIN32
    return (float) _isnan(x);
 #else
@@ -232,7 +269,7 @@ inline float isnan_float (float x) {
 #endif
 #endif
 }
-inline float isinf_float (float x) {
+inline float isinf_float (double x) {
 #ifdef _WIN32
    return (!finite_float(x))&&(!isnan_float(x));
 #else

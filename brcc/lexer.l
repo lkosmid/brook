@@ -303,6 +303,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->base = new BaseType(BT_Double);
                       return(err_tok = DOUBLE);
                     }
+<INITIAL>"double2"   {
+                      lvalp->base = new BaseType(BT_Double2);
+                      return(err_tok = DOUBLE2);
+                    }
 <INITIAL>"signed"   {
                       lvalp->base = new BaseType(BT_Signed);
                       return(err_tok = SGNED);

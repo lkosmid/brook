@@ -40,17 +40,17 @@ template <> inline vec<float,4> singlequestioncolon (const vec<float,4> &a,
                                                      const vec<float,4> &b,
                                                      const vec<float,4> &c);
 
-inline float step_float (float a, float x){
-   return (float)((x>=a)?1.0f:0.0f);
+template <typename T> T step_float (T a, T x){
+   return (T)((x>=a)?1.0f:0.0f);
 }
-inline float max_float(float x, float y) {
-   return (float)(x>y?x:y);
+template <typename T> T max_float(T x, T y) {
+   return (T)(x>y?x:y);
 }
-inline float min_float(float x, float y) {
-   return (float)(x<y?x:y);
+template<typename T> T min_float(T x, T y) {
+   return (T)(x<y?x:y);
 }
-inline float ldexp_float(float x, float y) {
-   return (float)ldexp(x,(int)y);
+template<typename T> T ldexp_float(T x, T y) {
+   return (T)ldexp(x,(int)y);
 }
 template <class T> class GetValueOf {public:
     typedef typename T::TYPE type;
@@ -519,10 +519,8 @@ VECX_CLASS(__BrtChar1,char,1);
 VECX_CLASS(__BrtChar2,char,2);
 VECX_CLASS(__BrtChar3,char,3);
 VECX_CLASS(__BrtChar4,char,4);
-VECX_CLASS(__BrtInt1,int,1);
-VECX_CLASS(__BrtInt2,int,2);
-VECX_CLASS(__BrtInt3,int,3);
-VECX_CLASS(__BrtInt4,int,4);
+VECX_CLASS(__BrtDouble1,double,1);
+VECX_CLASS(__BrtDouble2,double,2);
 #undef VECX_CLASS
 #define MATRIXXY_CLASS(TYPE,X,Y) \
 inline std::ostream& operator << (std::ostream&a, \
@@ -548,22 +546,6 @@ MATRIXXY_CLASS(__BrtFloat,1,3);
 MATRIXXY_CLASS(__BrtFloat,1,2);
 MATRIXXY_CLASS(__BrtFloat,1,1);
 
-MATRIXXY_CLASS(__BrtInt,4,4);
-MATRIXXY_CLASS(__BrtInt,4,3);
-MATRIXXY_CLASS(__BrtInt,4,2);
-MATRIXXY_CLASS(__BrtInt,4,1);
-MATRIXXY_CLASS(__BrtInt,3,4);
-MATRIXXY_CLASS(__BrtInt,3,3);
-MATRIXXY_CLASS(__BrtInt,3,2);
-MATRIXXY_CLASS(__BrtInt,3,1);
-MATRIXXY_CLASS(__BrtInt,2,4);
-MATRIXXY_CLASS(__BrtInt,2,3);
-MATRIXXY_CLASS(__BrtInt,2,2);
-MATRIXXY_CLASS(__BrtInt,2,1);
-MATRIXXY_CLASS(__BrtInt,1,4);
-MATRIXXY_CLASS(__BrtInt,1,3);
-MATRIXXY_CLASS(__BrtInt,1,2);
-MATRIXXY_CLASS(__BrtInt,1,1);
 
 MATRIXXY_CLASS(__BrtChar,4,4);
 MATRIXXY_CLASS(__BrtChar,4,3);

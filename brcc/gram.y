@@ -86,9 +86,9 @@ void baseTypeFixup(BaseType * bt,Decl * decl) {
 /* the reserved words */
 %token <typeQual>   CONST VOLATILE OUT REDUCE VOUT ITER KERNEL
 %token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF
-%token <base>       VOID CHAR SHORT INT LONG DOUBLE SGNED UNSGNED
+%token <base>       VOID CHAR SHORT INT LONG SGNED UNSGNED
 /* IMPORTANT: Keep all the FLOATN's next to each other in order! */
-%token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4 FIXED FIXED2 FIXED3 FIXED4 HALF HALF2 HALF3 HALF4
+%token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4 FIXED FIXED2 FIXED3 FIXED4 HALF HALF2 HALF3 HALF4 DOUBLE DOUBLE2
 %token <typeSpec>   ENUM STRUCT UNION 
 
 %token <loc>        BREAK CASE CONT DEFLT DO ELSE
@@ -1521,10 +1521,7 @@ decl_specs_reentrance:  storage_class opt_decl_specs_reentrance
                     && ($$->typemask & BT_Long))
                 {
                    // long long : A likely C9X addition 
-                   $$->typemask &= ~BT_Long;
-                   $3->typemask &= ~BT_Long;
-                   $$->typemask |= $3->typemask;
-                   $$->typemask |=  BT_LongLong;
+                   yyerr("long long support has been removed");
                 }
                 else
                     $$->typemask |= $3->typemask;
@@ -1757,6 +1754,7 @@ type_spec_reentrance: enum_type_define
          |  HALF3
          |  HALF4
          |  DOUBLE
+         |  DOUBLE2
          |  SGNED
          |  UNSGNED
         ;

@@ -59,9 +59,9 @@ const BaseTypeSpec BT_Void         = 0x00000001;  // explicitly no type
 const BaseTypeSpec BT_Char         = 0x00000002;
 const BaseTypeSpec BT_Short        = 0x00000004;
 const BaseTypeSpec BT_Int          = 0x00000008;
-const BaseTypeSpec BT_Long         = 0x00000010;
-const BaseTypeSpec BT_LongLong     = 0x00000020;  // a likely C9X addition
-const BaseTypeSpec BT_Double       = 0x00000040;
+const BaseTypeSpec BT_Double       = 0x00000010;
+const BaseTypeSpec BT_Double2      = 0x00000020;
+const BaseTypeSpec BT_Long         = 0x00000040;
 const BaseTypeSpec BT_Ellipsis     = 0x00000080;
 
 /*
@@ -663,13 +663,18 @@ Decl*	ReverseList( Decl* dList );
 static inline int
 FloatDimension(BaseTypeSpec bt)
 {
-   if ((bt & BT_Float)||(bt&BT_Fixed)||(bt&BT_Half)) return 1;
-   else if ((bt & BT_Float2)||(bt&BT_Fixed2)||(bt&BT_Half2)) return 2;
+   if ((bt & BT_Float)||(bt&BT_Fixed)||(bt&BT_Half)||(bt&BT_Double)) return 1;
+   else if ((bt & BT_Float2)||(bt&BT_Fixed2)||(bt&BT_Half2)||(bt&BT_Double2)) return 2;
    else if ((bt & BT_Float3)||(bt&BT_Fixed3)||(bt&BT_Half3)) return 3;
    else if ((bt & BT_Float4)||(bt&BT_Fixed4)||(bt&BT_Half4)) return 4;
    else return 0;
 }
-
+static inline int FloatGPUDimension(BaseTypeSpec bt)
+{
+    if (bt&BT_Double) return 2;
+    if (bt&BT_Double2) return 4;
+    return FloatDimension(bt);
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
 #endif  /* DECL_H */

@@ -280,6 +280,7 @@ static bool printGatherStructureFunctionBody( std::ostream& out, const std::stri
          case BT_Float2:
          case BT_Fixed2:
          case BT_Half2:
+         case BT_Double:
             out << "__fetch_float2";
             break;
          case BT_Float3:
@@ -290,6 +291,7 @@ static bool printGatherStructureFunctionBody( std::ostream& out, const std::stri
          case BT_Float4:
          case BT_Fixed4:
          case BT_Half4:
+         case BT_Double2:
             out << "__fetch_float4";
             break;
          default:
@@ -417,14 +419,24 @@ static bool expandOutputArgumentStructureDecl(std::ostream& shader,
 
               switch(base->typemask) {
               case BT_Float:
+              case BT_Fixed:
+              case BT_Half:
                 break;
               case BT_Float2:
+              case BT_Double:
+              case BT_Fixed2:
+              case BT_Half2:
                 shader << "2";
                 break;
               case BT_Float3:
+              case BT_Fixed3:
+              case BT_Half3:
                 shader << "3";
                 break;
               case BT_Float4:
+              case BT_Double2:
+              case BT_Fixed4:
+              case BT_Half4:
                 shader << "4";
                 break;
               default:
@@ -499,6 +511,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       case BT_Float2:
       case BT_Fixed2:
       case BT_Half2:
+      case BT_Double:
         shader << "2";
         break;
       case BT_Fixed3:
@@ -509,6 +522,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       case BT_Fixed4:
       case BT_Half4:
       case BT_Float4:
+      case BT_Double2:
         shader << "4";
         break;
       default:
@@ -554,6 +568,7 @@ static void expandSimpleOutputArgumentWrite(
   case BT_Float2:
   case BT_Fixed2:
   case BT_Half2:
+  case BT_Double:
     shader << "float4( " << argumentName << ", 0, 0);\n";
     break;
   case BT_Float3:
@@ -564,6 +579,7 @@ static void expandSimpleOutputArgumentWrite(
   case BT_Float4:
   case BT_Fixed4:
   case BT_Half4:
+  case BT_Double2:
     shader << argumentName << ";\n";
     break;
   default:
@@ -757,6 +773,7 @@ expandStreamStructureFetches(std::ostream& shader,
          case BT_Float2:
          case BT_Half2:
          case BT_Fixed2:
+         case BT_Double:
             shader << "__fetch_float2";
             break;
          case BT_Float3:
@@ -767,6 +784,7 @@ expandStreamStructureFetches(std::ostream& shader,
          case BT_Float4:
          case BT_Fixed4:
          case BT_Half4:
+         case BT_Double2:
             shader << "__fetch_float4";
             break;
          default:
@@ -824,6 +842,7 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      case BT_Float2:
      case BT_Half2:
      case BT_Fixed2:
+     case BT_Double:
         shader << "__fetch_float2";
         break;
      case BT_Float3:
@@ -834,6 +853,7 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      case BT_Float4:
      case BT_Half4:
      case BT_Fixed4:
+     case BT_Double2:
         shader << "__fetch_float4";
         break;
      default:
@@ -1551,7 +1571,7 @@ append_argument_information (const char *commentstring, char *fpcode,
   /* Add the argument information */
   for (int i=0; i < nArgs; i++) {
      char type;
-     int dimension = FloatDimension(args[i]->form->getBase()->typemask);
+     int dimension = FloatGPUDimension(args[i]->form->getBase()->typemask);
 
      if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
         type = 'o';
