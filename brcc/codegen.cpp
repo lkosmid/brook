@@ -493,6 +493,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
     }
   else
     {
+      BaseTypeSpec mask = form->getBase()->typemask;
       int outr = ioOutputReg++;
       if( outr < inFirstOutput ) return false;
       if( outr >= inFirstOutput+inOutputCount ) return false;
@@ -507,7 +508,12 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
 
       // it had better be just a floatN
       shader << "\t\tout float";
-      switch (form->getBase()->typemask) {
+
+      if( mask & BT_UserType )
+      {
+         mask = form->getBase()->typeName->entry->uVarDecl->form->getBase()->typemask;
+      }
+      switch(mask) {
       case BT_Float:
       case BT_Fixed:
       case BT_Half:
@@ -530,7 +536,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
         shader << "4";
         break;
       default:
-        fprintf(stderr, "Strange stream base type:");
+        fprintf(stderr, "Strange stream base type: ");
         form->getBase()->printBase(std::cerr, 0);
         abort();      
       }
@@ -563,6 +569,10 @@ static void expandSimpleOutputArgumentWrite(
   shader << "\t#ifdef DXPIXELSHADER\n";
 
   shader << "\t__output_" << outr << " = ";
+  if( base->typemask & BT_UserType )
+  {
+     base = base->typeName->entry->uVarDecl->form->getBase();
+  }
   switch(base->typemask) {
   case BT_Float:
   case BT_Fixed:
@@ -591,7 +601,7 @@ static void expandSimpleOutputArgumentWrite(
     shader << "float4( "<<argumentName<<".xy)\n";
     break;
   default:
-    fprintf(stderr, "Strange stream base type:");
+    fprintf(stderr, "Strange stream base type: ");
     base->printBase(std::cerr, 0);
     abort();
   }
@@ -852,6 +862,10 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      shader << "float4(_tex_" << positionName << "_pos,0,0);\n";
 #else
      BaseType* base = inForm->getBase();
+     if( base->typemask & BT_UserType )
+     {
+        base = base->typeName->entry->uVarDecl->form->getBase();
+     }
      switch(base->typemask) {
      case BT_Double:
        shader <<"__fetch_double";
@@ -880,6 +894,8 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
         shader << "__fetch_float4";
         break;
      default:
+        fprintf(stderr, "Can't fetch from unknown stream type ");
+        base->printBase(std::cerr, 0);
         shader << "__fetchunknown";
         break;
      }
