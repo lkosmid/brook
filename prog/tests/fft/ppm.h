@@ -29,6 +29,27 @@ int readPPM(const char *filename,
   return 1;
 }
 
+int diff(char * f1,char * f2) {
+  FILE * f=fopen(f1,"rb");
+  FILE * fp=fopen(f2,"rb");
+  if ((!f)||!fp) {
+     return 1;
+  }
+  int chr;
+  while (!feof(f)) {
+     chr=fgetc(fp);
+    if (chr!=fgetc(f)){
+      fclose(f);
+      fclose(fp);
+      return 1;  
+    }  
+  }
+  if ((!feof(f))||(!feof(fp)))
+     return 1;
+  fclose(f);
+  fclose(fp);
+  return 0;
+}
 
 int writePPM(const char *filename, 
 	     const unsigned char *data, 

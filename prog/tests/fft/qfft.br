@@ -391,9 +391,10 @@ int main (int argc, char ** argv) {
 	unsigned int logn, logm;
 	unsigned int i;
 	float2 *data;
+        int oldargc=argc;
         char *argv_bak[]={argv[0],"franklin.ppm","out.ppm"};
 	if (argc<3) {
-          printf("Usage: %s <input_file> <output_file> [do edge det]\nDefaulting to fft franklin.ppm out.ppm\n",
+          fprintf(stderr,"Usage: %s <input_file> <output_file> [do edge det]\nDefaulting to fft franklin.ppm out.ppm\n",
                  argc>=1?argv[0]:"qfft");
           argv=argv_bak;
           argc=3;
@@ -423,9 +424,15 @@ int main (int argc, char ** argv) {
 	free(data);
       	printf ("writing... %s\n",argv[2]);
 	if (!writePPM(argv[2],imgdata,width,height)) {
-		free(imgdata);
-		return 3; // 3 is write error
-	}
-	free(imgdata);
+          if (oldargc<3&&diff (argv[2],"fft.ppm")) {
+            printf ("%s differs from fft.ppm\n",argv[2]);
+          }else {
+            printf ("pass");
+          }
+          free(imgdata);
+	}else {
+          free(imgdata);
+          return 3;
+        }
 	return 0;
 }
