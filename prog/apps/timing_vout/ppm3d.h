@@ -77,8 +77,7 @@ void printVolume (const ppm &fp) {
       }
    }
    printf("</Points>\n<Polygons>\n");
-   {for (unsigned int i=0;i<j/3;++i) {
-      printf ("<Tri> <Vertex point=\"%d\"/><Vertex point=\"%d\"/><Vertex point=\"%d\"/></Tri>\n",
+   {for (unsigned int i=0;i<j/3;++i) {      printf ("<Tri> <Vertex point=\"%d\"/><Vertex point=\"%d\"/><Vertex point=\"%d\"/></Tri>\n",
               i*3,i*3+1,i*3+2);
       
    }}
@@ -120,8 +119,17 @@ void readPPM3dSlice(const ppm &fp,
        for (unsigned int i=0;i<fp.width;++i) {
          if (fp.width<=3)
            data[i+j*fp.width]= (i==1&&j==1&&whichslice==1)?1.0f:0.0f;
-         else
-           data[i+j*fp.width]= ((j-offset)*(j-offset)+(whichslice-offset)*(whichslice-offset)+(i-offset)*(i-offset)<rad*rad)?1.0f:0.0f;
+         else {
+            int newj = (j-offset);
+            int newi = (i-offset);
+            int newk = (whichslice-offset);
+            float loc = newj*(float)newj+newk*(float)newk+newi*(float)newi;
+            bool mybool=(loc<rad*rad);
+            mybool = mybool&&((loc<(rad-2)*(rad-2)
+                               &&loc>=(rad-4)*(rad-4))
+                              ||loc>=(rad-1)*(rad-1)); 
+            data[i+j*fp.width]=mybool?1.0f:0.0f;
+         }
        }
      }
    }
