@@ -1,10 +1,12 @@
 #include <set>
 #include <fstream>
 #include <string>
+#include <iostream>
+
 #include "ctool.h"
 #include "brtdecl.h"
+#include "brtstemnt.h"
 #include "main.h"
-#include <iostream>
 
 template <class ConverterFunctor> void ConvertToT (Expression * expression);
 
@@ -488,46 +490,20 @@ void FindIndexExpr (Statement * s) {
 void FindConstantExpr (Statement * s) {
     s->findExpr(ConvertToT<ConstantExprConverter>);
 }
-void RestoreTypes(TransUnit * tu){
+void RestoreTypes(BRTCPUKernelDef *cpuDef){
 	ArrayBlacklist.clear();
-	tu->findStemnt (FindTypesDecl);        	
+	cpuDef->findStemnt (FindTypesDecl);        	
 }
-extern void ConvertToBrtStreams(Statement * s);
-extern FunctionDef * ConvertToBrtKernels(FunctionDef *fDef);
-bool compileCpp() {
-    Project proj;
-    TransUnit * tu = proj.parse(globals.sourcename,false,NULL,false,NULL,NULL,NULL);
-    if (tu) {
-        std::ofstream out;
- 
-        tu->findStemnt (ConvertToBrtStreams);
-//		tu->findFunctionDef(ConvertToBrtKernels);				
-		RestoreTypes(tu);
-        tu->findStemnt(FindMask);
-		RestoreTypes(tu);		
-        tu->findStemnt (FindSwizzle);
-		RestoreTypes(tu);		
-        tu->findStemnt (FindQuestionColon);
-		RestoreTypes(tu);		
-        tu->findStemnt (FindIndexExpr);
-		RestoreTypes(tu);		
-        tu->findStemnt (FindConstantExpr);
-		RestoreTypes(tu);		
 
-
-
-        std::string s (globals.coutputname);
-        s+="pp";
-        out.open(s.c_str());
-        if (out.fail()) {
-            std::cerr << "***Unable to open " << s << "\n";
-        }
-        out << *tu << std::endl;
-        out.close();
-        
-    }else {
-      std::cerr << "***Unable to parse " << globals.sourcename << std::endl;
-      return false;
-    }
-    return true;
+void compileCpp(BRTCPUKernelDef *cpuDef) {
+    cpuDef->findStemnt(FindMask);
+    RestoreTypes(cpuDef);
+    cpuDef->findStemnt (FindSwizzle);
+    RestoreTypes(cpuDef);
+    cpuDef->findStemnt (FindQuestionColon);
+    RestoreTypes(cpuDef);
+    cpuDef->findStemnt (FindIndexExpr);
+    RestoreTypes(cpuDef);
+    cpuDef->findStemnt (FindConstantExpr);
+    RestoreTypes(cpuDef);
 }

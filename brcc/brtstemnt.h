@@ -17,6 +17,42 @@ class BRTKernelDef : public FunctionDef
 
     Statement *dup0() const;
     void print(std::ostream& out, int level) const;
+
+    virtual void printCode(std::ostream& out) const = 0;
+    void printStub(std::ostream& out) const;
+};
+
+
+class BRTGPUKernelDef : public BRTKernelDef
+{
+  public:
+    BRTGPUKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {};
+   ~BRTGPUKernelDef() { /* Nothing, ~FunctionDef() does all the work */ }
+
+    /* Just pass ourselves (as a FunctionDef descendant) to our constructor */
+    Statement *dup0() const { return new BRTGPUKernelDef(*this); }
+
+    void printCode(std::ostream& out) const;
+};
+
+
+class BRTCPUKernelDef;
+extern void compileCpp(BRTCPUKernelDef *cpuDef);
+
+class BRTCPUKernelDef : public BRTKernelDef
+{
+  public:
+    BRTCPUKernelDef(const FunctionDef& fDef) : BRTKernelDef(fDef) {
+#ifdef BROOK_CPU
+       compileCpp(this);
+#endif
+    }
+   ~BRTCPUKernelDef() { /* Nothing, ~FunctionDef() does all the work */ }
+
+    /* Just pass ourselves (as a FunctionDef descendant) to our constructor */
+    Statement *dup0() const { return new BRTCPUKernelDef(*this); }
+
+    void printCode(std::ostream& out) const;
 };
 
 #endif  /* STEMNT_H */

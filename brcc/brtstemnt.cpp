@@ -47,22 +47,47 @@ Statement*
 BRTKernelDef::dup0() const
 {
    /* Pass ourselves (as a FunctionDef) to our own constructor */
-   return new BRTKernelDef(*this);
+   assert(0); /* We're actually pure virtual */
+   return NULL;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTKernelDef::print(std::ostream& out, int) const
 {
-   FunctionType *fType;
-   std::ostringstream wrapOut;
-   char *fpcode, *stub;
-
    if (Project::gDebug) {
       out << "/* BRTKernelDef:" ;
       location.printLocation(out) ;
       out << " */" << std::endl;
    }
+
+   printCode(out);
+   printStub(out);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BRTKernelDef::printStub(std::ostream& out) const
+{
+   FunctionType *fType;
+   char *stub;
+
+   assert (decl->form->type == TT_Function);
+   fType = (FunctionType *) decl->form;
+
+   stub = CodeGen_GenerateStub(fType->subType, FunctionName()->name.c_str(),
+                               fType->args, fType->nArgs);
+   out << stub;
+   free(stub);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BRTGPUKernelDef::printCode(std::ostream& out) const
+{
+   FunctionType *fType;
+   std::ostringstream wrapOut;
+   char *fpcode;
 
    Block::print(wrapOut, 0);
    if (Project::gDebug) {
@@ -78,9 +103,15 @@ BRTKernelDef::print(std::ostream& out, int) const
                                fType->args, fType->nArgs, wrapOut.str().c_str());
    out << fpcode;
    free(fpcode);
+}
 
-   stub = CodeGen_GenerateStub(fType->subType, FunctionName()->name.c_str(),
-                               fType->args, fType->nArgs);
-   out << stub;
-   free(stub);
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BRTCPUKernelDef::printCode(std::ostream& out) const
+{
+   out << "#error \"Don't know how to generate CPU kernel code for "
+       << FunctionName()->name << "().\"\n";
+
+   /* We've already transformed everything, so just print ourselves */
+   FunctionDef::print(out, 0);
 }

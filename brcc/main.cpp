@@ -32,7 +32,7 @@ static void
 usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
-  fprintf (stderr, "brcc [-v] [-c | -f] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
+  fprintf (stderr, "brcc [-v] [-c] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
 
   exit(1);
 }
@@ -57,15 +57,15 @@ parse_args (int argc, char *argv[]) {
   globals.workspace    = 1024;
   globals.compilername = argv[0];
 
-  while ((opt = getopt(argc, argv, "cfo:p:vw:")) != EOF) {
+  while ((opt = getopt(argc, argv, "co:p:vw:")) != EOF) {
      switch(opt) {
      case 'c':
-	if (globals.fponly) usage();
-	globals.cgonly = 1;
-	break;
-     case 'f':
-	if (globals.cgonly) usage();
-	globals.fponly = 1;
+#ifdef BROOK_CPU
+	globals.cpuKernel = true;
+#else
+        std::cerr << "***Support for CPU hosted kernels is not available.\n";
+        exit(1);
+#endif
 	break;
      case 'o':
 	if (outputprefix) usage();
@@ -176,7 +176,9 @@ ConvertToBrtKernels(FunctionDef *fDef)
 {
    if (!fDef->decl->isKernel()) { return NULL; }
 
-   return new BRTKernelDef(*fDef);
+   if (globals.cpuKernel)
+          return new BRTCPUKernelDef(*fDef);
+   else return new BRTGPUKernelDef(*fDef);
 }
 
 
@@ -186,7 +188,6 @@ ConvertToBrtKernels(FunctionDef *fDef)
  *      Drive everything.  Parse the arguments, the compile the requested
  *      file.
  */
-extern bool compileCpp();
 int
 main(int argc, char *argv[])
 {
@@ -195,7 +196,6 @@ main(int argc, char *argv[])
 
    parse_args(argc, argv);
    std::cerr << "***Compiling " << globals.sourcename << "\n";
-   compileCpp();
 
    proj = new Project();
    tu = proj->parse(globals.sourcename, false, NULL, false, NULL, NULL, NULL);

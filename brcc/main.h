@@ -6,13 +6,13 @@
 
 struct globals_struct {
   bool verbose;
+  bool cpuKernel;
   char *sourcename;
   char *compilername;
   char *cgoutputname;
   char *fpoutputname;
   char *houtputname;
   char *coutputname;
-  int cgonly;
   int fponly;
   int target;
   int workspace;
