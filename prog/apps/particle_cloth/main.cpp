@@ -41,11 +41,9 @@ int main( int argc, char** argv )
   double totalOps = ( stepOps + windOps + springOps ) * iterations;
   double megaflops = totalOps / (double)time;
 
-  std::cout << "particle cloth - " << argv[1] << std::endl;
-  std::cout << "size: " << size << std::endl;
-  std::cout << "iterations: " << iterations << std::endl;
-  std::cout << "time(microseconds): " << time << std::endl;
-  std::cout << "megflop/s: " << megaflops << std::endl;
+  std::cout << iterations << "\t";
+  std::cout << time << "\t";
+  std::cout << megaflops << std::endl;
 
   CleanupMillisTimer();
   return 0;
