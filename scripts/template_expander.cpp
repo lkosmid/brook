@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fstream>
 #include <string>
 #include <vector>
 using namespace std;
@@ -121,7 +120,9 @@ string findBetween (string in, string name, string &pre, string &post) {
       s = s.substr(0,postmarker);
       printf ("found %s\n",name.c_str());
     }
-  } 
+  } else {
+    //printf("%s",post.c_str());
+  }
   return s;
 }
 unsigned int countLines (string s) {
@@ -138,15 +139,16 @@ string lineString(unsigned int in) {
 	return string("#line ")+num+string(" \"brtvector.hpp\"\n");
 }
 int main (int argc, char ** argv) {
-  FILE * fp = fopen (argv[1],"r");
+  FILE * fp = fopen (argv[1],"rb");
   struct stat st;
   stat (argv[1],&st);
   char * mem = (char *)malloc(st.st_size+1);
   fread(mem,st.st_size,1,fp);
   fclose(fp);
   string in(mem,st.st_size);
+  in = findReplace(in,"\r\n","\n");
+  in = findReplace(in,"\r","");
   free (mem);
-  ofstream o(argv[2]);
   bool lin=true;
   
   if (argc>3)
@@ -157,7 +159,8 @@ int main (int argc, char ** argv) {
   general=findBetween(in,"GENERAL_TEMPLATIZED_FUNCTIONS",pre,post);
   unsigned int linestart=1;
   unsigned int line =linestart+countLines(pre);
-  
+  if (lin)
+    pre= lineString(linestart)+pre;
   unsigned int generallines=countLines(general);
   if (lin)
 	  general= lineString(line)+general;
@@ -185,18 +188,22 @@ int main (int argc, char ** argv) {
   line+=operonlylines;
   if (lin)
 	  lastpost= lineString(line)+lastpost;
-  if (lin)
-	  o << "#line "<<linestart<<" \"brtvector.hpp\"\n";
-  
-  o << findReplace(pre,"BRTVECTOR_HPP","VC6VECTOR_HPP") <<std::endl;
-
-  o << removeTypenames (preprocessTemplates(general,generalTypes))<<std::endl;
-  o << firstpost<<std::endl;
-  o << removeTypenames(preprocessTemplates(vectoronly,vectorTypes))<<std::endl;
-  o << post <<std::endl;
-  o << removeTypenames(preprocessTemplates(operonly,operTypes))<<std::endl;
-  o << lastpost;
-  o << std::endl << "#undef __MY_VC6_HEADER" <<std::endl;
-  o.close();
-
+  FILE * o = fopen (argv[2],"w");
+  string writeme = findReplace(pre,"BRTVECTOR_HPP","VC6VECTOR_HPP");
+#define WRITEME fwrite (writeme.c_str(),writeme.length(),1,o)
+  WRITEME;
+  writeme=removeTypenames (preprocessTemplates(general,generalTypes));
+  WRITEME;
+  writeme=firstpost;
+  WRITEME;
+  writeme=removeTypenames(preprocessTemplates(vectoronly,vectorTypes));
+  WRITEME;
+  writeme=post;
+  WRITEME;
+  writeme= removeTypenames(preprocessTemplates(operonly,operTypes));
+  WRITEME;
+  writeme=lastpost;
+  WRITEME;
+  fclose(o);
+  return 0;
 }
