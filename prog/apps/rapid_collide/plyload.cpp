@@ -12,6 +12,7 @@ void LoadPly (const char * file,vector<Tri> &ret) {
   vector<float3> vertices;
   
   FILE * fp = fopen (file,"r");
+  if (!fp) return;
   fscanf(fp,"ply\nformat ascii %f\n",&ver);
   int comment;
   while (1==(comment=fscanf(fp,"commen%c %*[^\n]\n",&mchar))) {
