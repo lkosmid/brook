@@ -103,9 +103,12 @@ kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 
    }
 }
 
-kernel void computeNeighbors(Tri tgather[][], Neighbor ugather[][], float2 i<>, out Neighbor v<>) {
-  // FIXME! on ATI, gathering from a potentially sentinel value will mess up card
-  Neighbor u = ugather[i];
+kernel void computeNeighbors(Tri tgather[][], 
+                             Neighbor ugather[][], 
+                             float2 i<>, 
+                             out Neighbor v<>) {
+  float2 zero2=0;
+  Neighbor u = ugather[(i>=0&&i<8192)?i:zero2];
   float eAAB=isNeighbor(u.AAB);
   float eAAC=isNeighbor(u.AAC);
   float eABB=isNeighbor(u.ABB);
@@ -223,9 +226,10 @@ kernel void splitTriangles (Tri triangles[][],
                             Neighbor neighbors[][],
                             float2 i<>,
                             out SplitTri splittri<>) {
-  // FIXME! on ATI, gathering from a potentially sentinel value will mess up function
-  Tri tri=triangles[i];
-  Neighbor oldneighbors=neighbors[i];
+  float2 zero2=0;
+  float2 index = (i>=0&&i<2048)?i:zero2;
+  Tri tri=triangles[index];
+  Neighbor oldneighbors=neighbors[index];
   float eAAB=isNeighbor(oldneighbors.AAB);
   float eAAC=isNeighbor(oldneighbors.AAC);
   float eABB=isNeighbor(oldneighbors.ABB);
@@ -267,12 +271,12 @@ kernel void splitTriangles (Tri triangles[][],
       oldneighbors.AAB.w&&
       oldneighbors.AAC.w)       
      splittri.A.xyz = tri.A.xyz*an
-        +oldneighbors.AB.xyz*anon
-        +oldneighbors.AC.xyz*anon
-        +oldneighbors.AAB.xyz*anon
-        +oldneighbors.AAC.xyz*anon
-        +tri.B.xyz*anon
-        +tri.C.xyz*anon;
+       +anon*(oldneighbors.AB.xyz
+              +oldneighbors.AC.xyz
+              +oldneighbors.AAB.xyz
+              +oldneighbors.AAC.xyz
+              +tri.B.xyz
+              +tri.C.xyz);
 
   splittri.B = tri.B;
   if (tri.A.w&&
@@ -282,12 +286,12 @@ kernel void splitTriangles (Tri triangles[][],
       oldneighbors.ABB.w&&
       oldneighbors.BBC.w)        
     splittri.B.xyz= tri.B.xyz*bn
-       +oldneighbors.AB.xyz*bnon
-       +oldneighbors.BC.xyz*bnon
-       +oldneighbors.ABB.xyz*bnon
-       +oldneighbors.BBC.xyz*bnon
-       +tri.A.xyz*bnon
-       +tri.C.xyz*bnon;
+      +bnon*(oldneighbors.AB.xyz
+             +oldneighbors.BC.xyz
+             +oldneighbors.ABB.xyz
+             +oldneighbors.BBC.xyz
+             +tri.A.xyz
+             +tri.C.xyz);
 
   splittri.C = tri.C;
   if (tri.C.w&&
@@ -297,12 +301,12 @@ kernel void splitTriangles (Tri triangles[][],
       oldneighbors.ACC.w&&
       oldneighbors.BCC.w)       
      splittri.C.xyz = tri.C.xyz*cn
-        +oldneighbors.AC.xyz*cnon
-        +oldneighbors.BC.xyz*cnon
-        +oldneighbors.ACC.xyz*cnon
-        +oldneighbors.BCC.xyz*cnon
-        +tri.A.xyz*cnon
-        +tri.B.xyz*cnon;
+       +cnon*(oldneighbors.AC.xyz
+              +oldneighbors.BC.xyz
+              +oldneighbors.ACC.xyz
+              +oldneighbors.BCC.xyz
+              +tri.A.xyz
+              +tri.B.xyz);
 }
 
 //moves the 6 split values into 4 individual triangles (with a result of 12 vertices)
@@ -447,7 +451,7 @@ void subdivide (Neighbor (*neighbors)<>,
     streamY=toi(streamSize(shouldProduce).y);
     //if some should be split and produced then go here
     if (streamY&&streamX) {
-      float stretchX = streamY*4>2048?1:0;      
+      float stretchX = streamY*4>2048?1.0f:0.0f;      
       //allocate shared neighbor structs that hold the extra generated floats
       Neighbor sharedNeighbors<streamY,streamX>;
       SplitTri sharedTriangles <streamY,streamX>;
