@@ -227,11 +227,12 @@ void do_saxpy(int length, int num_iter, int* timing, float* flops) {
 
      // verify results
      for (i=0;i<length;i++) {
-       if (!fequals(y[i], num_iter * alpha*x[i] + tmp[i], EPS)) {
-          printf("[%d] expected: %f got: %f\n", i, num_iter * alpha*x[i] + tmp[i]);
+	float value = num_iter * alpha*x[i] + tmp[i];
+       if (!fequals(y[i], value, EPS)) {
+          printf("[%d] expected: %f got: %f\n", i, value, y[i]);
 	  printf("Asserting...\n");
 	  fflush(stdout);
-	  assert(0);
+	  assert(fequals(y[i], value, EPS));
      }
    }
 
@@ -301,6 +302,8 @@ void do_sdot(int length, int num_iter, int* timing, float* flops) {
   convert1d_to_2d(length/4, &dim1, &dim2);
   paddedLength = 4 * dim1 * dim2;
 
+  printf("sdot using %d by %d streams\n", dim1, dim2);
+
   x = (float*)malloc(sizeof(float) * paddedLength);
   y = (float*)malloc(sizeof(float) * paddedLength);
 
@@ -341,7 +344,7 @@ void do_sdot(int length, int num_iter, int* timing, float* flops) {
        printf("expected: %f got: %f\n", val, result);
        printf("exiting...\n");
        fflush(stdout);
-       assert(0);
+       assert(fequals(val, result, EPS));
     }
   
     //printf("%f  %f\n", result, val);
@@ -357,11 +360,10 @@ void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
                  float* x, float* y, float* A,
                  float alpha, float beta, int num_iter, int* innerTime) {
 
-  float* tmp = NULL;
   float4 flush[1];
   float4 flushStrm<1,1>;
 
-  int i, j = 0;
+  int i;
   int millisStart, millisStop;
   float4 xStrm<1, dim>;
   float4 yStrm<dim, 1>;
@@ -397,27 +399,6 @@ void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
 
   forceGPUFlush_float4(zStrm, flushStrm);
   streamWrite(flushStrm, flush);
-
-/*
-  tmp = (float*)malloc(sizeof(float) * 4 * dim * dim);  
-  streamWrite(tmpStrm, tmp);
-
-  for (i=0;i<dim;i++)
-    for(j=0;j<dim;j++)
-       printf("[%d,%d] %f %f %f %f\n", j, i, tmp[4*(i*dim + j)], tmp[4*(i*dim + j)+1],
-		                       tmp[4*(i*dim + j)+2], tmp[4*(i*dim + j)+3]);
-
-  printf("\n");
-  streamWrite(zStrm, tmp);
-  for(i=0;i<dim;i++)
-       printf("[%d] %f %f %f %f\n", i, tmp[i*4], tmp[4*i + 1],
-		                       tmp[i*4+2], tmp[4*i+3]);
-
-  printf("\n\n");
-  fflush(stdout);
-
-  free(tmp);
-  */
 
   millisStop = GetTimeMillis();
 
@@ -516,13 +497,12 @@ void do_sgemv(int length, int num_iter, int* timing, float* flops) {
       }
 
       for (k=0;k<4;k++) {
-	//printf("[%d] expected: %f  got: %f\n", 4*i+k, alpha*val[k] + beta*tmp[4*i+k], y[4*i + k]);
-        if (!fequals(alpha*val[k] + beta*tmp[4*i+k], y[4*i+k], EPS)) {
-	   printf("CHOKE!\n");
-           printf("[%d] expected: %f  got: %f\n", 4*i+k, alpha*val[k] + beta*tmp[4*i+k], y[4*i + k]);
+	float value = alpha*val[k] + beta*tmp[4*i+k];
+        if (!fequals(value, y[4*i + k], EPS)) {
+           printf("[%d] expected: %f  got: %f\n", 4*i+k, value, y[4*i+k]);
 	   printf("exiting...\n");
            fflush(stdout);
-           assert(0);
+           assert(fequals(value, y[4*i+k], EPS));
         }
       }
 
