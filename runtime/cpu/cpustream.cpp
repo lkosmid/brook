@@ -16,11 +16,11 @@ static map<string,int> getKnownTypes() {
     ret.insert(map<string,int>::value_type("int2",2*sizeof(int)));
     ret.insert(map<string,int>::value_type("int3",3*sizeof(int)));
     ret.insert(map<string,int>::value_type("int4",4*sizeof(int)));            
-    ret.insert(map<string,int>::value_type("bool",sizeof(bool)));
-    ret.insert(map<string,int>::value_type("bool1",sizeof(bool)));
-    ret.insert(map<string,int>::value_type("bool2",2*sizeof(bool)));
-    ret.insert(map<string,int>::value_type("bool3",3*sizeof(bool)));
-    ret.insert(map<string,int>::value_type("bool4",4*sizeof(bool)));            
+    ret.insert(map<string,int>::value_type("char",sizeof(char)));
+    ret.insert(map<string,int>::value_type("char1",sizeof(char)));
+    ret.insert(map<string,int>::value_type("char2",2*sizeof(char)));
+    ret.insert(map<string,int>::value_type("char3",3*sizeof(char)));
+    ret.insert(map<string,int>::value_type("char4",4*sizeof(char)));            
     return ret;
 }
 static map<string,int> knownTypes = getKnownTypes();
