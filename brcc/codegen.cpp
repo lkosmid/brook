@@ -54,6 +54,8 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
   /* Print the argument list */
   texcoord = 0;
   for (i=0; i < nArgs; i++) {
+     TypeQual qual = args[i]->form->getQualifiers();
+
      /* Don't put the output in the argument list */
      if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
         outArg = args[i];
@@ -62,7 +64,13 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 
      if (i) cg <<  ",\n\t\t";
 
-     if (args[i]->isStream()) {
+     if ((qual & TQ_Iter) != 0) {
+       args[i]->form->getBase()->qualifier &= ~TQ_Iter;
+       args[i]->form->printBase(cg, 0);
+       args[i]->form->getBase()->qualifier = qual;
+       cg << *args[i]->name << " : TEX"
+          << (texcoord < 1) ? texcoord++ : texcoord;
+     } else if (args[i]->isStream()) {
        cg << "uniform texobjRECT _tex_" << *args[i]->name << ",\n\t\t";
        cg << "float2 _tex_" << *args[i]->name << "_pos : TEX"
           << (texcoord < 1) ? texcoord++ : texcoord;
@@ -75,21 +83,15 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 
   /* Declare the stream variables */
   for (i=0; i < nArgs; i++) {
-     if ((args[i]->form->getBase()->qualifier & TQ_Iter) != 0) {
-        std::cerr << "Warning: fp30 backend does not support iterators: ";
-        args[i]->print(std::cerr, true);
-        std::cerr << ".\n";
-        return NULL;
-     }
+     TypeQual qual = args[i]->form->getQualifiers();
+     if ((qual & TQ_Iter) != 0) continue;
 
      if (args[i] == outArg) {
-        TypeQual qualifier = outArg->form->getBase()->qualifier;
-
-        outArg->form->getBase()->qualifier &= ~TQ_Out;
         cg << "\t";
+        outArg->form->getBase()->qualifier &= ~TQ_Out;
         args[i]->form->printBase(cg, 0);
+        outArg->form->getBase()->qualifier = qual;
         cg << " " << *args[i]->name << ";\n";
-        outArg->form->getBase()->qualifier = qualifier;
      } else if (args[i]->isStream()) {
         cg << "\t";
         args[i]->form->printBase(cg, 0);
@@ -102,7 +104,10 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 
   /* Perform stream fetches */
   for (i=0; i < nArgs; i++) {
+     TypeQual qual = args[i]->form->getQualifiers();
+
      if (args[i] == outArg) continue;
+     if ((qual & TQ_Iter) != 0) continue;
 
      if (args[i]->isStream()) {
         int dimension = FloatDimension(args[i]->form->getBase()->typemask);
@@ -203,8 +208,8 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
        if ((qual & TQ_Iter) != 0) {
           args[i]->form->getBase()->qualifier &= ~TQ_Iter;
           args[i]->form->printBase(hlsl, 0);
-          hlsl << *args[i]->name << ": TEXCOORD" << texcoord++;
           args[i]->form->getBase()->qualifier = qual;
+          hlsl << *args[i]->name << " : TEXCOORD" << texcoord++;
        } else {
           hlsl << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
                << texcoord++;
