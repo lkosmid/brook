@@ -1,0 +1,145 @@
+// This is code based of the work on Sherbondy et al. that does a
+// Perona Malik segmentation across an image.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "main.h"
+#include "PMLSeg.h"
+
+kernel void process_img( float2 img[][], float diff_strength,
+         		 float inv_grad_cutoff, float loww, float highw,
+                         iter float2 it0, iter float2 it1, iter float2 it2, 
+		         iter float2 it3, iter float2 it4, out float2 o_img<> ) {
+    float e = 2.7182817f;
+    float2 R0;
+    float2 R1;
+    float2 R2;
+    float2 R3;
+    float2 R4;
+    float4 R5;
+    float4 R6;
+
+    R0 = img[it0];
+    R1 = img[it1];
+    R2 = img[it2];
+    R3 = img[it3];
+    R4 = img[it4];
+    R6.x = (R1.y - R0.y); //-ds
+    R6.y = (R2.y - R0.y); //-dw
+    R6.z = (R3.y - R0.y); //dn
+    R6.w = (R4.y - R0.y); //de
+	
+    R5.x = (R1.x - R0.x)*diff_strength;	
+    R5.y = (R2.x - R0.x)*diff_strength;	
+    R5.z = (R3.x - R0.x)*diff_strength;	
+    R5.w = (R4.x - R0.x)*diff_strength;
+
+    R6 = R6*R6*inv_grad_cutoff;
+
+    R6.x = pow(e, -R6.x);
+    R6.y = pow(e, -R6.y);
+    R6.z = pow(e, -R6.z);
+    R6.w = pow(e, -R6.w);
+
+    R6 = dot(R6, R5);
+    R0.x = R0.x+R6.x;
+
+    R4.y = R0.y - loww;
+    R0.x = R4.y < 0 ? 0.0 : R0.x;
+
+    R4.y = R0.y - highw;
+    R0.x = R4.y < 0 ? R0.x : 0.0;
+
+    o_img.x = R0.x;
+    o_img.y = R0.y;
+}
+
+int PMLSeg_main(int argc, char* argv[]) {
+    float* output = NULL;
+    float* input = NULL;
+    int i, j;
+    float time_in_ms = 0.0f;
+    int xsize, ysize, loop_count;
+    float xsizef, ysizef;
+
+    if(argc < 4){
+          char buf[255];
+          fprintf(stderr, "Usage: %s <size x> <size y> <loop count>\n", argv[0]);
+	  printf("Size in X: ");
+	  fgets(buf, 254, stdin);
+	  xsize = atoi(buf);
+	  printf("Size in Y: ");
+	  fgets(buf, 254, stdin);
+	  ysize = atoi(buf);
+	  printf("# of loops: ");
+	  fgets(buf, 254, stdin);
+	  loop_count = atoi(buf);
+          xsizef = (float)xsize;
+          ysizef = (float)ysize;
+    }
+    else{
+        xsize = atoi(argv[1]);
+        ysize = atoi(argv[2]);
+        xsizef = (float)xsize;
+        ysizef = (float)ysize;
+        loop_count = atoi(argv[3]);
+    }
+    
+    // MCH: It makes me ill that I have to open a new scope to get this to work.
+    {
+        // Setup the iterators to do a north/south/east/west/local lookup into the image
+        iter float2 it0<xsize,ysize> = iter( float2(0.0f, 0.0f), float2(ysizef, ysizef) );
+        iter float2 it1<xsize,ysize> = iter( float2(0.0f-1.0f/xsizef, 0.0f), float2(ysizef-1.0f/ysizef, xsizef) );
+        iter float2 it2<xsize,ysize> = iter( float2(0.0f+1.0f/xsizef, 0.0f), float2(ysizef+1.0f/ysize, xsizef) );
+        iter float2 it3<xsize,ysize> = iter( float2(0.0f, 0.0f-1.0f/xsizef), float2(ysizef, ysizef-1.0f/xsizef) );
+        iter float2 it4<xsize,ysize> = iter( float2(0.0f, 0.0f+1.0f/xsizef), float2(ysizef, ysizef+1.0f/xsizef) );
+        float2 img<xsize,ysize>;
+        float2 o_img<xsize,ysize>;
+    	
+        input  = (float*)malloc(xsize*ysize*2*sizeof(float));
+        output = (float*)malloc(xsize*ysize*2*sizeof(float));
+
+	// Fill an image with random data and set up the seed point in the middle
+        for(i=0; i<xsize; i++){
+            for(j=0; j<ysize; j++){
+                input[2*(i*ysize+j)] = (float)rand()/INT_MAX;
+                if(i>(xsize/2-1) && i<(xsize/2+1) && j>(ysize/2-1) && j<(ysize/2+1))
+		    input[2*(i*ysize+j)+1] = 1.0;
+	        else
+		    input[2*(i*ysize+j)+1] = 0.0;
+            }
+        }   
+
+        //Start timing
+        start = GetTime();
+
+        //Build the input stream out of the image and seed data
+        streamRead(img, input);
+
+        //Do the requested number of iterations
+        for(i=0; i<loop_count; i++){
+	    //We can't use the input and output buffers without hosing things
+	    //so we'll need to "ping-pong" between them
+            if(i%2==0)
+                process_img(img, 0.20, 0.025, 1200./65535, 2000./65535, it0, it1, it2, it3, it4, o_img );
+            else
+                process_img(o_img, 0.20, 0.025, 1200./65535, 2000./65535, it0, it1, it2, it3, it4, img );
+	
+        }
+        if(i%2==0)
+            streamWrite(o_img, output);
+        else
+	    streamWrite(img, output);
+
+        //Stop time
+        stop = GetTime();
+
+        time_in_ms = (float)(stop-start)/1000.;
+        fprintf(stderr, "That took %.2fms total\n", time_in_ms);
+        fprintf(stderr, "That's %.2fms per loop\n", time_in_ms/loop_count);
+        fprintf(stderr, "That's %.2fMFlops\n", (39*xsize*ysize)/(time_in_ms*1000./loop_count));
+        fprintf(stderr, "Internal read bandwidth is %.2fMB/s\n", (4*5*2*xsize*ysize/(1024.*1024.))/((time_in_ms/loop_count)/1000.));
+        fprintf(stderr, "Internal write bandwidth is %.2fMB/s\n", (4*2*xsize*ysize/(1024.*1024.))/((time_in_ms/loop_count)/1000.));
+    }
+    return 0;
+}
