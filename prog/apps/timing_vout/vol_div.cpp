@@ -7,6 +7,25 @@
 #include "timing.h"
 char use_vout_filter=1;
 char use_vout_amplify=1;
+bool firstRound=true;
+bool vanilla=false;
+int count=0;
+static std::vector<brook::stream> savedStreams;
+::brook::stream & quickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
+
+   if (vanilla) {
+      static brook::stream s;
+      s= brook::stream(t,wid,len,gar);
+      return s;
+   }
+   if (firstRound) {
+      savedStreams.push_back(brook::stream(t,wid,len,gar));
+      return savedStreams.back();
+   }else {
+      return savedStreams[count++%savedStreams.size()];
+   }
+}
+
 void Aggregate4(brook::stream fourfloat, brook::stream in, brook::stream out);
 void Aggregate3(brook::stream threefloat, brook::stream in, brook::stream out);
 void Aggregate2(brook::stream twofloat, brook::stream in, brook::stream out);
@@ -222,14 +241,16 @@ int volume_division (int argc, char ** argv) {
    std::vector<int> sizesx;
    std::vector<int> sizesy;
    // now we begin the actual algorithm
+   ::brook::stream v(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
    for (unsigned int rr=0;rr<3;++rr) {
+     count=0;
+     if (rr!=0)
+       firstRound=false;
      if (rr==2) {use_vout_amplify=0;use_vout_filter=0;}
      
-     start = GetTimeMillis();
          unsigned int i;
          // which volumetric slice is this run going to produce
          float2 sliceZ;
-         ::brook::stream v(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
          // this iterator tracks the center of the block we're working with
          ::brook::iter center(__BRTFLOAT2, dat.height , dat.width, -1, (float2 (0.000000f,0.000000f)).x, (float2 (0.000000f,0.000000f)).y, (float2 (tof(dat.width),tof(dat.height))).x, (float2 (tof(dat.width),tof(dat.height))).y, -1);
          // this iterator tracks exactly 1 pixel higher in our current or next
@@ -243,6 +264,7 @@ int volume_division (int argc, char ** argv) {
            printf("Exceeded 512 wide texture bounds %d\n",dat.width);
            return 1;
          }
+         start = GetTimeMillis();
          // setup the current and next slice Z coordinates
          sliceZ.x=0.0f;sliceZ.y=1.0f;
          for (i=0;i<dat.depth-1;++i) {//loop through z values
@@ -272,7 +294,19 @@ int volume_division (int argc, char ** argv) {
                sizesx.push_back(toi(streamSize(v).x));
                sizesy.push_back(toi(streamSize(v).y));
             }
+               
+                // we know the width of the triangles (i.e. for the address
+                // calc) will be 4x as big...we have no idea how many 3x
+                // vout[3] outputs there will be (0 or 3 for each tri)
+            ::brook::stream triangles=quickAllocStream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
+            ::brook::stream trianglesA=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+            ::brook::stream trianglesB=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+            ::brook::stream trianglesC=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+            ::brook::stream trianglesD=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+            ::brook::stream trianglesE=quickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+
             if (streamSize(v).y){
+
               if (use_vout_amplify) {
 
                 // multiply our width by 4x since we could output up to 4x
@@ -289,18 +323,10 @@ int volume_division (int argc, char ** argv) {
                                                rr==2?sizesy[i]:streamSize(v).y)).y, 
                                       -1);
                  // our first triangle lookups are going to be exactly 3x as big
-                 
-                ::brook::stream trianglesFirst(::brook::getStreamType(( float3  *)0), rr==2?sizesy[i]:toi(streamSize(v).y) , rr==2?(sizesx[i]*3):(toi(streamSize(v).x) * 3),-1);
-
-                 
-                // we know the width of the triangles (i.e. for the address
-                // calc) will be 4x as big...we have no idea how many 3x
-                // vout[3] outputs there will be (0 or 3 for each tri)
-                ::brook::stream triangles(::brook::getStreamType(( float3  *)0),rr==2?sizesy[i]:1 , rr==2?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
-                     
+                                      
                 // process all the first triangles
-                processFirstTriangles(trianglesFirst,v,volumeTriangles);
-                Aggregate3(trianglesFirst,agg,agg);
+                processFirstTriangles(trianglesA,v,volumeTriangles);
+                Aggregate3(trianglesA,agg,agg);
 
                 // process the rest
                 processTriangles(triangles, 
@@ -308,25 +334,20 @@ int volume_division (int argc, char ** argv) {
                                  volumeTriangles,
                                  newsize);
                 //write it to the same place in memory
-                /*
-                vertexData.push_back(trianglesFirst);
-                vertexData.push_back(triangles);
-                */
+                
+                  vertexData.push_back(trianglesA);
+                  vertexData.push_back(triangles);
+                
                  Aggregate3(triangles,agg,agg);
-                /*
+                 /*
                  streamWrite(trianglesFirst,
                              consolidateVertices(dat,streamSize(trianglesFirst)));
                  streamWrite(triangles,
                              consolidateVertices(dat,streamSize(triangles)));
-                */
+                 */
                                 
               }else {
                   // each triangle stream will be 3x bigger than the volume
-                  ::brook::stream trianglesA(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-                  ::brook::stream trianglesB(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-                  ::brook::stream trianglesC(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-                  ::brook::stream trianglesD(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
-                  ::brook::stream trianglesE(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
                   
                  // output exactly 5 vertices for each input 
                  processTrianglesNoCompact(trianglesA,
@@ -342,13 +363,13 @@ int volume_division (int argc, char ** argv) {
                  Aggregate3(trianglesC,agg,agg);
                  Aggregate3(trianglesD,agg,agg);
                  Aggregate3(trianglesE,agg,agg);
-                 /*
+                 
                 vertexData.push_back(trianglesA);
                 vertexData.push_back(trianglesB);
                 vertexData.push_back(trianglesC);
                 vertexData.push_back(trianglesD);
                 vertexData.push_back(trianglesE);
-                 */
+                 
                 /*
                  streamWrite(trianglesA,
                              consolidateVertices(dat,streamSize(trianglesA)));
@@ -368,29 +389,28 @@ int volume_division (int argc, char ** argv) {
             sliceZ.x++;sliceZ.y++;
          }
          int tsize = vertexData.size()-1;
-         if (rr==0)
-         for (int j=0;j<(int)sizesx.size();++j) {
-           printf ("%d %d\n",sizesx[j],sizesy[j]);
-           
-         }
          stop = GetTimeMillis();
          printf ("Ready time %f",(float)(stop-start));
          streamWrite(agg,toagg);
-         for (int j=tsize;j>=0;--j) {
+         int j;
+         for (j=0;j<(int)vertexData.size();++j) {
            streamWrite(vertexData[j],
                        consolidateVertices(dat,streamSize(vertexData[j])));
-           if (j==tsize){
+           if (j==0){
              stop = GetTimeMillis();
              printf ("Total time %f",(float)(stop-start));
+             if (rr==2) break;
            }
-           vertexData.pop_back();
          }
+         vertexData.clear();
          printf("Total time with reads %f\n",(float)(GetTimeMillis()-start));
+         if (rr!=2)printVolume(dat);
+         //         dat.vertices.clear();
    }
    free(slice);
    volumeData.clear();
    //write the mesh to stdout
-   //printVolume(dat);
+
    return 0;
    
  }

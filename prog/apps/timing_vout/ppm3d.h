@@ -30,6 +30,36 @@ ppm openPPM (char * name) {
    }
    return ret;
 }
+void printVolume (ppm &fp) {
+   std::vector<float3>::const_iterator i=fp.vertices.begin();
+   unsigned int j=0;
+   static char jj = '1';
+   char nam[]="output1.xmesh";
+   nam[6]=jj++;
+   FILE * f = fopen(nam,"w");
+   fprintf (f,"<Mesh texture=\"white.bmp\"><material cullface=\"false\"/>\n");
+   fprintf(f,"<Points>\n");
+   for (;i!=fp.vertices.end();++i) {
+      if (finite_float(i->x)&&finite_float(i->y)&&finite_float(i->z)) {
+         if (i->x>-.50&&i->y>-.50&&i->z>-.50) {
+           if (i->x!=36893206672442393000.00) {
+              fprintf (f,"<Point><Location x=\"%3.2f\" y=\"%3.2f\" z=\"%3.2f\"/><Normal i=\"1\" j=\"0\" k=\"0\"/></Point>\n",i->x,i->y,i->z);
+             //            printf ("<Point><Location x=\"%3.2f\" y=\"%3.2f\" z=\"%3.2f\"/></Point>\n",i->x+.5,i->y+.5,i->z+.5);
+             j++;
+           }
+         }
+      }
+   }
+   fprintf(f,"</Points>\n<Polygons>\n");
+   {for (unsigned int i=0;i<j/3;++i) {
+         fprintf (f,"<Tri> <Vertex point=\"%d\"/><Vertex point=\"%d\"/><Vertex point=\"%d\"/></Tri>\n",
+              i*3,i*3+1,i*3+2);
+      
+   }}
+   fprintf (f,"</Polygons></Mesh>\n");
+   fp.vertices.clear();
+   fclose(f);
+}
 void printVolume (const ppm &fp) {
    std::vector<float3>::const_iterator i=fp.vertices.begin();
    unsigned int j=0;
