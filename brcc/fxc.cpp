@@ -137,8 +137,11 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
   // TIM: get instruction count information before we axe the damn thing... :)
   if( outUsage )
   {
-    const char* instructionLine = strstr( comments, "// approximately" );
+    const char* instructionLine = strstr( comments, "// approximately " );
     assert( instructionLine );
+
+    const char* totalCountText = instructionLine + strlen("// approximately ");
+    int totalInstructionCount = atoi( totalCountText );
 
 	const char* nextLine = strstr( instructionLine, "\n" );
     const char* textureCount = strstr( instructionLine, "(" );
@@ -155,7 +158,7 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
     }
     else
     {
-      outUsage->arithmeticInstructionCount = 0;
+      outUsage->arithmeticInstructionCount = totalInstructionCount;
       outUsage->textureInstructionCount = 0;
     }
 

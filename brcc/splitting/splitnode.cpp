@@ -33,6 +33,8 @@ SplitNode::SplitNode()
   _isPDTNode = false;
 
   _assignedPass = NULL;
+  _isFinalOutput = false;
+
 }
 
 void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream )
@@ -591,6 +593,26 @@ FunctionCallSplitNode::FunctionCallSplitNode( const std::string& inName, const s
     inferredType = _arguments[0]->inferredType;
   }
   else if( _name == "fmod" )
+  {
+    assert( _arguments.size() == 2 );
+    inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "floor" )
+  {
+    assert( _arguments.size() == 1 );
+    inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "lerp" )
+  {
+    assert( _arguments.size() == 3 );
+    inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "normalize" )
+  {
+    assert( _arguments.size() == 1 );
+    inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "pow" )
   {
     assert( _arguments.size() == 2 );
     inferredType = _arguments[0]->inferredType;

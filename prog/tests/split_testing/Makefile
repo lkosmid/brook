@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = split_testing
-FILES = fractal
+FILES = particle_cloth main
 LIBRARIES = $(RUNTIME_LIBS)
 BRCCFLAGS = -S -k -p ps20
 

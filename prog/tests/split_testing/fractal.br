@@ -66,7 +66,7 @@ kernel void mandelbrot( float4 cx<>, float4 cy<>, out float4 outInside<> )
 	outInside = (x*x + y*y) < 4;
 	
 }
-
+/*
 #define WIDTH 640
 #define HEIGHT 480
 #define STREAM_WIDTH (WIDTH/4)
@@ -120,18 +120,7 @@ void main()
 		image_data[i] = output_data[i] != 0 ? 0 : 255;
 	
 	fwrite( image_data, DATA_SIZE, 1, outputFile );
-	/*
-	for( j = 0; j < HEIGHT; j++ )
-	{
-		for( i = 0; i < WIDTH; i++ )
-		{
-			if( output_data[j*WIDTH+i] != 0 )
-				printf( "*" );
-			else
-				printf( "." );
-		}
-		printf( "\n" );
-	}*/
 	
 	fclose( outputFile );
 }
+*/

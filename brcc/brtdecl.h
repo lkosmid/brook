@@ -51,6 +51,7 @@ public:
 
   BaseType       *base;
   ExprVector     dims;
+  bool isIterator;
 
 protected:
   /*

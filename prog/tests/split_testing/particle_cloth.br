@@ -55,7 +55,7 @@ kernel void getNeighborForce(
 	outForce = inRange * ( strength * springAxis );
 }	
 
-kernel void integrateParticlesSplit(
+kernel void integrateParticles(
 	float3 inPosition<>,
 	float3 inVelocity<>,
 	float inIsStatic<>,
@@ -73,7 +73,7 @@ kernel void integrateParticlesSplit(
 	outVelocity = inVelocity + impulse;
 }
 
-kernel void advanceParticlesSplit(
+kernel void advanceParticles(
 	iter float2 inIndex<>,
 	float3 inPosition<>,
 	float3 inVelocity<>,
@@ -151,76 +151,10 @@ kernel void advanceParticlesSplit(
 	forceSum = forceSum + force;
 	
 	// integrate
-	integrateParticlesSplit( inPosition, inVelocity, inIsStatic, inDeltaTime, forceSum, inGravity, outPosition, outVelocity );
-}
-/*
-kernel void calculateSpringForces(
-	DynamicParticle p1<>,
-	DynamicParticle particles[][],
-	iter float2 index<>,
-	float2 offset,
-	float2 maxIndex,
-	float springConstant,
-	float dampingConstant,
-	float restLength,
-	out float4 force<> )
-{
-	float2 otherIndex = index + offset;
-	float2 minIndex;
-	float2 inRange2;
-	float inRange;
-	DynamicParticle p2;
-	float3 relativePosition;
-	float3 relativeVelocity;
-	float length;
-	float3 springAxis;
-	float perturbation;
-	float velocityInSpring;
-	float strength;
-	float3 zero;
-	zero = float3(0,0,0);
-	
-	minIndex = float2(0,0);
-	
-	inRange2 = (otherIndex >= minIndex) && (otherIndex < maxIndex);
-	inRange = inRange2.x*inRange2.y;
-	
-	p2 = particles[otherIndex];
-
-	relativePosition = (float3)(p1.position - p2.position);
-	relativeVelocity = (float3)(p1.velocity - p2.velocity);
-
-	length = sqrt( dot( relativePosition, relativePosition ) );
-
-	springAxis = relativePosition / length;
-	perturbation = length - restLength;
-
-	velocityInSpring = dot( springAxis, relativeVelocity );
-
-	strength = springConstant*perturbation + dampingConstant*velocityInSpring;
-	force.xyz = inRange ? strength * springAxis : zero;
-	force.w = 0;
-	
-//DEBUG	force = float3( otherIndex.x, inRange, 0 );
+	integrateParticles( inPosition, inVelocity, inIsStatic, inDeltaTime, forceSum, inGravity, outPosition, outVelocity );
 }
 
-kernel void accumulateSpringForces(
-	DynamicParticle p1<>,
-	DynamicParticle particles[][],
-	iter float2 index<>,
-	float2 offset,
-	float2 maxIndex,
-	float springConstant,
-	float dampingConstant,
-	float restLength,
-	float4 inForce<>,
-	out float4 outForce<> )
-{
-	float4 force;
-	calculateSpringForces( p1, particles, index, offset, maxIndex, springConstant, dampingConstant, restLength, force );
-	outForce = inForce + force;
-}
-*/
+extern int getTime();
 
 void initializeParticles(
 	int inParticlesPerSide,
@@ -263,7 +197,7 @@ void initializeParticles(
 	*stat = 0.0f;
 }
 
-void splitIterate( int inSize, int inIterations, int* outMicroseconds )
+void testParticleCloth( int inSize, int inIterations, int* outTime )
 {
   int particleCount = inSize*inSize;
   float floatSize = inSize + 0.0f;
@@ -294,7 +228,7 @@ void splitIterate( int inSize, int inIterations, int* outMicroseconds )
   float3* particleVelocities_data;
   float* particleStaticFlags_data;
 //  FILE* dump;
-//int startTime, endTime;
+int startTime, endTime;
 
   particlePositions_data = (float3*)malloc( particleCount*sizeof(float3) );
   particleVelocities_data = (float3*)malloc( particleCount*sizeof(float3) );
@@ -325,30 +259,18 @@ void splitIterate( int inSize, int inIterations, int* outMicroseconds )
   
 //  fwrite( &inSize, sizeof(inSize), 1, dump );
 
-//startTime = GetTimeMillis();
 
   streamRead( particlePositions, particlePositions_data );
   streamRead( particleVelocities, particleVelocities_data );
   streamRead( particleStaticFlags, particleStaticFlags_data );
 
+startTime = getTime();
+
   for( i = 0; i < inIterations; i++ )
   {
-  /*
-//	if( i % 100 == 0 )
-	{
-		int j;
-		streamWrite( dynamicParticles, dynamicParticles_data );
-		printf( "positions:\n" );
-		for( j = 0; j < particleCount; j++ )
-		{
-			p = dynamicParticles_data[j].position;
-			printf( "{%5.3f %5.3f}\n", p.x, p.y );
-//			fwrite( &p, sizeof(p), 1, dump );
-		}
-	}*/
 	
 	// do the integration :)
-	advanceParticlesSplit( particleIndex, particlePositions, particleVelocities,
+	advanceParticles( particleIndex, particlePositions, particleVelocities,
 		particleStaticFlags, particlePositions, particleVelocities,
 		0.001f, gravity, oldParticlePositions, oldParticleVelocities );
 	
@@ -356,141 +278,6 @@ void splitIterate( int inSize, int inIterations, int* outMicroseconds )
 	streamSwap( particleVelocities, oldParticleVelocities );
 
 /*
-    // direct springs
-    calculateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(1,0),
-		maxIndex,
-		springConstant,
-		dampingConstant,
-		directRestLength,
-		particleForces );
-
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(0,1),
-		maxIndex,
-		springConstant,
-		dampingConstant,
-		directRestLength,
-		particleForces, particleForces );
-	
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(-1,0),
-		maxIndex,
-		springConstant,
-		dampingConstant,
-		directRestLength,
-		particleForces, particleForces );
-	
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(0,-1),
-		maxIndex,
-		springConstant,
-		dampingConstant,
-		directRestLength,
-		particleForces, particleForces );
-	
-	// diagonal springs
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(-1,-1),
-		maxIndex,
-		springConstant,
-		dampingConstant,
-		diagonalRestLength,
-		particleForces, particleForces );
-
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(-1,1),
-		maxIndex,
-		springConstant,
-		dampingConstant,
-		diagonalRestLength,
-		particleForces, particleForces );
-	
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(1,1),
-		maxIndex,
-		springConstant,
-		dampingConstant,
-		diagonalRestLength,
-		particleForces, particleForces );
-	
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(1,-1),
-		maxIndex,
-		springConstant,
-		dampingConstant,
-		diagonalRestLength,
-		particleForces, particleForces );
-		
-	// bend springs
-    accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(2,0),
-		maxIndex,
-		bendSpringConstant,
-		bendDampingConstant,
-		bendRestLength,
-		particleForces, particleForces );
-
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(0,2),
-		maxIndex,
-		bendSpringConstant,
-		bendDampingConstant,
-		bendRestLength,
-		particleForces, particleForces );
-	
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(-2,0),
-		maxIndex,
-		bendSpringConstant,
-		bendDampingConstant,
-		bendRestLength,
-		particleForces, particleForces );
-	
-	accumulateSpringForces(
-		dynamicParticles,
-		dynamicParticles,
-		particleIndex,
-		float2(0,-2),
-		maxIndex,
-		bendSpringConstant,
-		bendDampingConstant,
-		bendRestLength,
-		particleForces, particleForces );
-	
 	// wind
 	accumulateWindForces(
 		dynamicParticles, dynamicParticles, particleIndex,
@@ -514,11 +301,11 @@ void splitIterate( int inSize, int inIterations, int* outMicroseconds )
 */
   }
   
-//  streamWrite( dynamicParticles, dynamicParticles_data );
+  streamWrite( particlePositions, particlePositions_data );
   
-//  endTime = GetTimeMillis();
+  endTime = getTime();
   
-//  *outMicroseconds = (endTime - startTime) * 1000;
+  *outTime = endTime - startTime;
   
 //  fclose( dump );
 }

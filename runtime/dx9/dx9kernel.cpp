@@ -451,7 +451,7 @@ void DX9Kernel::mapTechnique( const DX9Kernel::Technique& inTechnique )
   DX9PROFILE("DX9Kernel::mapTechnique");
 
   // TIM: allocate temporaries...
-  if( inTechnique.temporaryCount > 0 )
+  if( inTechnique.temporaryCount > 0 && temporaries.size() == 0 )
   {
     DX9Assert( outputStreams.size() != 0, "can't create temporaries without an output for reference" );
     DX9Stream* outputStream = outputStreams[0];
@@ -472,12 +472,14 @@ void DX9Kernel::mapTechnique( const DX9Kernel::Technique& inTechnique )
     clearInputs();
   }
 
+  /* TIM: for split-testing purposes,
+  we don't deallocate these temporaries :)
   if( inTechnique.temporaryCount > 0 )
   {
     for( int i = 0; i < inTechnique.temporaryCount; i++ )
       delete temporaries[i];
     temporaries.clear();
-  }
+  }*/
 }
 
 void DX9Kernel::mapPass( const DX9Kernel::Pass& inPass )

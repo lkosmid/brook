@@ -46,12 +46,16 @@ BrtStreamType::BrtStreamType(const ArrayType *t)
   assert (p->subType->isBaseType());
 
   base = (BaseType *) p->subType->dup0();
+
+  isIterator = (t->getQualifiers() & TQ_Iter) != 0;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BrtStreamType::BrtStreamType(const BaseType *_base, const ExprVector _dims)
   : Type(TT_BrtStream)
 {
+  isIterator = false;
+
    ExprVector::const_iterator i;
 
    base = (BaseType *) _base->dup();
@@ -87,7 +91,10 @@ void
 BrtStreamParamType::printType(std::ostream& out, Symbol *name,
                               bool showBase, int level) const
 {
-  out << "::brook::stream ";
+  if( isIterator )
+    out << "::brook::iter ";
+  else
+    out << "::brook::stream ";
 
   if (name)
     out << *name;
@@ -95,7 +102,10 @@ BrtStreamParamType::printType(std::ostream& out, Symbol *name,
 void 
 BrtStreamParamType::printBase(std::ostream &out, int level) const 
 {
-   out << "::brook::stream";
+  if( isIterator )
+    out << "::brook::iter ";
+  else
+    out << "::brook::stream ";
 }
 void
 BrtStreamParamType::printForm(std::ostream& out) const

@@ -26,6 +26,10 @@ void SplitCompilerHLSL::printHeaderCode( std::ostream& inStream ) const
 
 }
 
+static inline int max( int a, int b ) {
+  return a > b ? a : b;
+}
+
 void SplitCompilerHLSL::compileShader(
   const std::string& inHighLevelCode, std::ostream& outLowLevelCode, const SplitConfiguration& inConfiguration, SplitShaderHeuristics& outHeuristics ) const
 {
@@ -101,6 +105,35 @@ void SplitCompilerHLSL::compileShader(
   int temporaryCost = inConfiguration.temporaryCost;
   int outputCost = inConfiguration.outputCost;
 
+  // TIM: shader model is interesting
+
+  // TIM: we write 3 times as slowly on the ATI
+  // when we do more than one output...
+
+// nonlinear cost model
+  
+  int totalOutputCost = outputCount == 1 ? 5 : 3 * 5 * outputCount;
+
+  // count all issues, (not just arith)
+  int totalInstructionIssueCost = arithmeticInstructionCount + textureInstructionCount;
+
+  int totalTextureInstructionCost = 8*textureInstructionCount;
+
+  int bestCaseInstructionCost = max( totalInstructionIssueCost, totalTextureInstructionCost );
+  int worstCastInstructionCost = totalInstructionIssueCost + totalTextureInstructionCost;
+
+  // TIM: one extra instruction inserted by ATI?
+  // seems to be confirmed by data...
+  int averagedInstructionCost = 1 + (bestCaseInstructionCost + worstCastInstructionCost) / 2;
+
+  // shader time = max( instruction exec, output write ) + pass overhead
+  int shaderCost = max( averagedInstructionCost, totalOutputCost) + 6;
+
+
+// linear cost model
+//  int shaderCost = arithmeticInstructionCount + 8*textureInstructionCount + 6*outputCount + 10;
+
+/*
   int shaderCost = passCost
     + textureInstructionCost*textureInstructionCount
     + arithmeticInstructionCost*arithmeticInstructionCount
@@ -108,7 +141,7 @@ void SplitCompilerHLSL::compileShader(
     + interpolantCost*interpolantCount
     + constantCost*constantCount
     + temporaryCost*temporaryCount
-    + outputCost*outputCount;
+    + outputCost*outputCount;*/
 
   bool shouldRecompute = true;
 //  if( textureInstructionCount*2 > inConfiguration.maximumTextureInstructionCount )

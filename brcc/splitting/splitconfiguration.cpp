@@ -14,14 +14,14 @@ SplitConfiguration::SplitConfiguration()
   maximumConstantCount = 32;
   maximumTemporaryCount = 12;
 
-  passCost = 320;
-  textureInstructionCost = 30;
-  arithmeticInstructionCost = 10;
-  samplerCost = 1;
-  interpolantCost = 1;
+  passCost = 24;
+  textureInstructionCost = 8;
+  arithmeticInstructionCost = 1;
+  samplerCost = 0;
+  interpolantCost = 0;
   constantCost = 0;
   temporaryCost = 0;
-  outputCost = 30;
+  outputCost = 5;
 }
 
 void SplitConfiguration::load( const char* inFileName )

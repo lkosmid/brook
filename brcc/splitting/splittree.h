@@ -113,7 +113,7 @@ private:
   PassSet _passes;
   void rdsMergePasses( bool inLastTime = false );
   SplitPassInfo* rdsCreatePass( SplitNode* inNode );
-  SplitPassInfo* rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB );
+  SplitPassInfo* rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB, bool inForReal = false );
   void rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream );
 
   void dumpPassConfiguration( std::ostream& inStream );

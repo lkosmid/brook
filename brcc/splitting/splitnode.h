@@ -32,6 +32,7 @@ public:
   bool _wasSavedSave;
   bool _wasConsideredRecompute;
   bool _wasSavedRecompute;
+  bool _isFinalOutput;
 
   SplitPassInfo* _assignedPass;
 
