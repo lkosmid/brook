@@ -56,12 +56,16 @@ kernel void subdivisionIndices(float whichEdges<>,
     push(indices);
   }
   indices=-(indices.xy+.25);
+  indices.x=-1;
+  indices.y=1;
   if (whichEdges>0.25) {
     push(indices);
   }
+  indices.y=2;
   if (whichEdges>2.75&&whichEdges!=4) {
     push(indices);
   }
+  indices.y=3;
   if (whichEdges>6.75) {
     push(indices);      
   }
