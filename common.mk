@@ -91,10 +91,9 @@ $(SUBDIRS):
 	$(MAKE) -C $@ --no-print-directory
 
 ##  Build Binary ##
-arch: $(PRECOMP) makedirs dep
+arch: $(PRECOMP) makedirs dep $(POSTCOMP)
 
 recurse: $(BINDIR)/$(BINARY)
-
 
 dep: $(DEPS)
 	@$(MAKE) --no-print-directory recurse INCLUDEDEPS=1
