@@ -3,189 +3,427 @@
 
 #include <stdio.h>
 
-typedef struct Particle_t {
-  float3 position;
-  float oneOverMass;
-  float3 velocity;
-} Particle;
+typedef struct DynamicParticle_t {
+	float3 position;
+	float3 velocity;
+} DynamicParticle;
 
-typedef struct Spring_t {
-  float2 otherParticleIndex;
-  float restLength;
-  float springConstant;
-} Spring;
+typedef struct StaticParticle_t {
+	float active;
+} StaticParticle;
 
-kernel void stepParticles( Particle p<>, float deltaT, float3 force<>, out Particle result<> )
+kernel void stepParticles(
+	DynamicParticle dp<>,
+	StaticParticle sp<>,
+	float deltaT,
+	float3 particleForces<>,
+	float3 gravity,
+	out DynamicParticle result<> )
 {
-  float3 f = force;
-  f += float3( 0, -0.001, 0 ); // fake gravity
-  f *= p.oneOverMass;
-
-  result.position = p.position + deltaT*p.velocity;
-  result.velocity = p.velocity + deltaT*f;
-  result.oneOverMass = p.oneOverMass;
+	float3 acceleration = sp.active * ( particleForces + gravity );
+	result.position = dp.position + deltaT*dp.velocity + 0.5*deltaT*deltaT*acceleration;
+	result.velocity = dp.velocity + deltaT*acceleration;
 }
 
-kernel void calculateSpringForces( Spring s<>, Particle p1<>, Particle particles[][], out float3 force<> )
+
+kernel void calculateWindForces(
+	DynamicParticle particle<>,
+	DynamicParticle particles[][],
+	iter float2 index<>,
+	float2 offset1,
+	float2 offset2,
+	float2 maxIndex,
+	float3 windDirection,
+	float3 windVelocity,
+	out float3 force<> )
 {
-  Particle p2 = particles[s.otherParticleIndex];
+	float2 index1 = index + offset1;
+	float2 index2 = index + offset2;
+	float2 minIndex;
+	float2 inRange2;
+	float inRange;
+	float3 p0;
+	DynamicParticle d1;
+	DynamicParticle d2;
+	float3 v1;
+	float3 v2;
+	float3 normalTimesHalfArea;
+	
+	minIndex = float2(0,0);
+	
+	inRange2 = (index1 >= minIndex) && (index1 < maxIndex);
+	inRange = inRange2.x && inRange2.y;
+	inRange2 = (index2 >= minIndex) && (index2 < maxIndex);
+	inRange = inRange && inRange2.x && inRange2.y;
+	
+	p0 = particle.position;
+	d1 = particles[index1];
+	d2 = particles[index2];
+	v1 = d1.position - p0;
+	v2 = d2.position - p0;
+	normalTimesHalfArea = cross( v1, v2 );
+	
+	force = dot( normalTimesHalfArea, windDirection ) * windVelocity;
+}
 
-  float3 relativePosition = p1.position - p2.position;
-  float3 relativeVelocity = p1.velocity - p2.velocity;
-  
-  float length = sqrt( dot( relativePosition, relativePosition ) );
-  
-  float3 springAxis = relativePosition / length;
+kernel void accumulateWindForces(
+	DynamicParticle particle<>,
+	DynamicParticle particles[][],
+	iter float2 index<>,
+	float2 offset1,
+	float2 offset2,
+	float2 maxIndex,
+	float3 windDirection,
+	float3 windVelocity,
+	float3 inForce<>,
+	out float3 outForce<> )
+{
+	float3 force;
+	calculateWindForces( particle, particles, index, offset1, offset2, maxIndex, windDirection, windVelocity, force );
+	outForce = inForce + force;
+}
 
-  float perturbation = length - s.restLength;
+kernel void calculateSpringForces(
+	DynamicParticle p1<>,
+	DynamicParticle particles[][],
+	iter float2 index<>,
+	float2 offset,
+	float2 maxIndex,
+	float springConstant,
+	float dampingConstant,
+	float restLength,
+	out float3 force<> )
+{
+	float2 otherIndex = index + offset;
+	float2 minIndex;
+	float2 inRange2;
+	float inRange;
+	DynamicParticle p2;
+	float3 relativePosition;
+	float3 relativeVelocity;
+	float length;
+	float3 springAxis;
+	float perturbation;
+	float velocityInSpring;
+	float strength;
+	
+	minIndex = float2(0,0);
+	
+	inRange2 = (otherIndex >= minIndex) && (otherIndex < maxIndex);
+	inRange = inRange2.x*inRange2.y;
+	
+	p2 = particles[otherIndex];
 
-  float velocityInSpring = dot( springAxis, relativeVelocity );
+	relativePosition = p1.position - p2.position;
+	relativeVelocity = p1.velocity - p2.velocity;
 
-  float strength = s.springConstant * (perturbation + 2.5 * velocityInSpring);
-  force = strength * springAxis;
-//DEBUG  force = float3( s.otherParticleIndex.x, s.otherParticleIndex.y, 0 );
-//DEBUG  force = p2.position;
+	length = sqrt( dot( relativePosition, relativePosition ) );
+
+	springAxis = relativePosition / length;
+	perturbation = length - restLength;
+
+	velocityInSpring = dot( springAxis, relativeVelocity );
+
+	strength = springConstant*perturbation + dampingConstant*velocityInSpring;
+	force = inRange * strength * springAxis;
+	
+//DEBUG	force = float3( otherIndex.x, inRange, 0 );
+}
+
+kernel void accumulateSpringForces(
+	DynamicParticle p1<>,
+	DynamicParticle particles[][],
+	iter float2 index<>,
+	float2 offset,
+	float2 maxIndex,
+	float springConstant,
+	float dampingConstant,
+	float restLength,
+	float3 inForce<>,
+	out float3 outForce<> )
+{
+	float3 force;
+	calculateSpringForces( p1, particles, index, offset, maxIndex, springConstant, dampingConstant, restLength, force );
+	outForce = inForce + force;
+}
+
+kernel void add( float3 a<>, float3 b<>, out float3 result<> ) {
+	result = a + b;
 }
 
 reduce void sum( float3 input<>, reduce float3 output<> ) {
-  output += input;
+	output += input;
 }
 
-void initializeParticles( int inParticlesPerSide, Particle* outParticles, Spring* outSprings )
+void initializeParticles(
+	int inParticlesPerSide,
+	DynamicParticle* outDynamicParticles,
+	StaticParticle* outStaticParticles )
 {
-  int x, y;
-  Particle* p;
-  Spring* s;
+	int x, y;
+	DynamicParticle* dp;
+	StaticParticle* sp;
+	float scale;
 
-  p = outParticles;
-  for( y = 0; y < inParticlesPerSide; y++ )
-  {
-    for( x = 0; x < inParticlesPerSide; x++ )
-    {
-      p->position = float3( (float)x, (float)y, 0 );
-      p->velocity = float3( 0, 0, 0 );
-      p->oneOverMass = (y == 0 && (x == 0 || x == inParticlesPerSide-1)) ? 0.0f : 1.0f;
-      p++;
-    }
-  }
+	scale = 1.0f / (float)(inParticlesPerSide-1);
 
-  // up to four springs per particle...
-  memset( outSprings, 0, inParticlesPerSide*inParticlesPerSide*4*sizeof(Spring) );
-  s = outSprings;
-  for( y = 0; y < inParticlesPerSide; y++ )
-  {
-    for( x = 0; x < inParticlesPerSide; x++ )
-    {
-      // left
-      if( x > 0 )
-      {
-        s->otherParticleIndex = float2( (float)(x-1), (float)(y) );
-        s->restLength = 1.0f;
-        s->springConstant = 0.1f;
-      }
-      s++;
-      // top
-      if( y > 0 )
-      {
-        s->otherParticleIndex = float2( (float)(x), (float)(y-1) );
-        s->restLength = 1.0f;
-        s->springConstant = 0.1f;
-      }
-      s++;
-    }
-    for( x = 0; x < inParticlesPerSide; x++ )
-    {
-      // right
-      if( x != inParticlesPerSide-1 )
-      {
-        s->otherParticleIndex = float2( (float)(x+1), (float)(y) );
-        s->restLength = 1.0f;
-        s->springConstant = 0.1f;
-      }
-      s++;
-      // bottom
-      if( y != inParticlesPerSide-1 )
-      {
-        s->otherParticleIndex = float2( (float)(x), (float)(y+1) );
-        s->restLength = 1.0f;
-        s->springConstant = 0.1f;
-      }
-      s++;
-    }
-  }
+	dp = outDynamicParticles;
+	sp = outStaticParticles;
+	for( y = 0; y < inParticlesPerSide; y++ )
+	{
+		for( x = 0; x < inParticlesPerSide; x++ )
+		{
+			dp->position = float3( scale*(float)x, scale*(float)(-y), 0 );
+			dp->velocity = float3( 0, 0, 0 );
+			sp->active = 1.0f;
+			dp++;
+			sp++;
+		}
+	}
 
+	// tweak the corners
+	dp = outDynamicParticles + 0;
+	sp = outStaticParticles + 0;
+	dp->position = float3( 0, 0, 0.1 );
+	sp->active = 0.0f;
+	dp = outDynamicParticles + (inParticlesPerSide-1);
+	sp = outStaticParticles + (inParticlesPerSide-1);
+	dp->position = float3( 1, 0, -0.1 );
+	sp->active = 0.0f;
 }
 
-void iterate()
+void iterate( int inSize )
 {
-  Particle particles< 2, 2 >;
-  Spring springs< 4, 4 >;
-  float3 springForces< 4, 4 >;
-  float3 particleForces< 2, 2 >;
-  int i, j;
+  int springSize = 2*inSize;
+  int particleCount = inSize*inSize;
+  int springCount = 4*particleCount;
+  float floatSize = inSize + 0.0f;
+  
+  DynamicParticle dynamicParticles< inSize, inSize >;
+  StaticParticle staticParticles< inSize, inSize >;
+  float3 particleForces< inSize, inSize >;
+  iter float2 particleIndex< inSize, inSize> = iter( float2(0,0), float2(floatSize,floatSize) );
+  
+  float directRestLength;
+  float diagonalRestLength;
+  float bendRestLength;
+  float springConstant;
+  float dampingConstant;
+  float bendSpringConstant;
+  float bendDampingConstant;
+  float3 gravity;
+  float2 maxIndex;
+  float3 windDirection;
+  float3 windVelocity;
+  
+  int i;
+  int j;
   float3 p;
-  Particle particles_data[4];
-  Spring springs_data[16];
-  float3 spring_force_data[16];
-  float3 force_data[4];
+  DynamicParticle* dynamicParticles_data;
+  StaticParticle* staticParticles_data;
+  float3* force_data;
+  FILE* dump;
+
+  dynamicParticles_data = (DynamicParticle*)malloc( particleCount*sizeof(DynamicParticle) );
+  staticParticles_data = (StaticParticle*)malloc( particleCount*sizeof(StaticParticle) );
+  force_data = (float3*)malloc( particleCount*sizeof(float3) );
+  
+  directRestLength = 1.0f / (float)(inSize-1);
+  diagonalRestLength = directRestLength * sqrtf(2.0f);
+  bendRestLength = 2.0f * directRestLength;
+  springConstant = -0.5f * (float)(particleCount);
+  dampingConstant = -0.03f * (float)(particleCount);
+  bendSpringConstant = -0.1f * (float)(particleCount);
+  bendDampingConstant = -0.07f * (float)(particleCount);
+  gravity = float3( 0, -0.1, 0 );
+  maxIndex = float2( (float)(inSize), (float)(inSize) );
+  windDirection = float3( 0, 0, -1 );
+  windVelocity = float3( 0, 0, -1.0f );
 
   // initialize
-  initializeParticles( 2, particles_data, springs_data );
+  initializeParticles( inSize, dynamicParticles_data, staticParticles_data );
 
-  streamRead( particles, particles_data );
-  streamRead( springs, springs_data );
+  dump = fopen("./dump.dump","wb");
+  
+  fwrite( &inSize, sizeof(inSize), 1, dump );
 
-  for( i = 0; i < 100; i++ )
+  streamRead( dynamicParticles, dynamicParticles_data );
+  streamRead( staticParticles, staticParticles_data );
+
+  for( i = 0; i < 10000; i++ )
   {
-    if( i % 10 == 0 )
-    {
-    streamWrite( particles, particles_data );
-    printf("positions:\n");
-    for( j = 0; j < 4; j++ )
-    {
-      p = particles_data[j].position;
-      printf( "{%6.3f %6.3f} ", p.x, p.y );
-      if( j % 2 == 1 )
-        printf( "\n" );
-    }
-    }
+	if( i % 100 == 0 )
+	{
+		streamWrite( dynamicParticles, dynamicParticles_data );
+		for( j = 0; j < particleCount; j++ )
+		{
+			p = dynamicParticles_data[j].position;
+			fwrite( &p, sizeof(p), 1, dump );
+		}
+	}
     
-    calculateSpringForces( springs, particles, particles, springForces );
-/*
-    if( i % 10 == 0 )
-    {
-    streamWrite( springForces, spring_force_data );
-    printf("spring forces:\n");
-    for( j = 0; j < 16; j++ )
-    {
-      p = spring_force_data[j];
-      printf( "{%6.3f %6.3f} ", p.x, p.y );
-      if( j % 4 == 3 )
-        printf( "\n" );
-    }
-    }
-*/
-    sum( springForces, particleForces );
-/*
-    if( i % 10 == 0 )
-    {
-    streamWrite( particleForces, force_data );
-    printf("forces:\n");
-    for( j = 0; j < 4; j++ )
-    {
-      p = force_data[j];
-      printf( "{%6.3f %6.3f} ", p.x, p.y );
-      if( j % 2 == 1 )
-        printf( "\n" );
-    }
-    }
-*/
-    stepParticles( particles, 0.1f, particleForces, particles );
+    // direct springs
+    calculateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(1,0),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		directRestLength,
+		particleForces );
+
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(0,1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		directRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(-1,0),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		directRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(0,-1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		directRestLength,
+		particleForces, particleForces );
+	
+	// diagonal springs
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(-1,-1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		diagonalRestLength,
+		particleForces, particleForces );
+
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(-1,1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		diagonalRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(1,1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		diagonalRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(1,-1),
+		maxIndex,
+		springConstant,
+		dampingConstant,
+		diagonalRestLength,
+		particleForces, particleForces );
+		
+	// bend springs
+    accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(2,0),
+		maxIndex,
+		bendSpringConstant,
+		bendDampingConstant,
+		bendRestLength,
+		particleForces, particleForces );
+
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(0,2),
+		maxIndex,
+		bendSpringConstant,
+		bendDampingConstant,
+		bendRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(-2,0),
+		maxIndex,
+		bendSpringConstant,
+		bendDampingConstant,
+		bendRestLength,
+		particleForces, particleForces );
+	
+	accumulateSpringForces(
+		dynamicParticles,
+		dynamicParticles,
+		particleIndex,
+		float2(0,-2),
+		maxIndex,
+		bendSpringConstant,
+		bendDampingConstant,
+		bendRestLength,
+		particleForces, particleForces );
+	
+	// wind
+	accumulateWindForces(
+		dynamicParticles, dynamicParticles, particleIndex,
+		float2(-1,0), float2(0,-1),
+		maxIndex, windDirection, windVelocity, particleForces, particleForces );
+	accumulateWindForces(
+		dynamicParticles, dynamicParticles, particleIndex,
+		float2(0,-1), float2(1,0),
+		maxIndex, windDirection, windVelocity, particleForces, particleForces );
+	accumulateWindForces(
+		dynamicParticles, dynamicParticles, particleIndex,
+		float2(1,0), float2(0,1),
+		maxIndex, windDirection, windVelocity, particleForces, particleForces );
+	accumulateWindForces(
+		dynamicParticles, dynamicParticles, particleIndex,
+		float2(0,1), float2(-1,0),
+		maxIndex, windDirection, windVelocity, particleForces, particleForces );
+
+    stepParticles( dynamicParticles, staticParticles,
+		0.001f, particleForces, gravity, dynamicParticles );
 
   }
+  
+  fclose( dump );
 }
 
 int main()
 {
-  iterate();
+  iterate( 16 );
 }
