@@ -185,7 +185,7 @@ BRTGPUKernelDef::printCode(std::ostream& out) const
    fType = (FunctionType *) decl->form;
 
    fpcode = CodeGen_HLSLGenerateCode(fType->subType, FunctionName()->name.c_str(),
-                               fType->args, fType->nArgs, wrapOut.str().c_str());
+                                     fType->args, fType->nArgs, wrapOut.str().c_str());
    out << fpcode;
    free(fpcode);
 }

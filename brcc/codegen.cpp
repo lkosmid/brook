@@ -534,17 +534,17 @@ CodeGen_CGGenerateCode(Type *retType, const char *name,
   char *cgcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   cgcode = generate_cg_code(args, nArgs, body);
-  std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
+  //std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
 
   fpcode = compile_cg_code(cgcode);
   free(cgcode);
-  std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
+  //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
   fpcode_with_brccinfo = 
     append_argument_information("##", fpcode, args, nArgs, body);
   free(fpcode);
-  std::cerr << "***Produced this instrumented fpcode:\n"
-            << fpcode_with_brccinfo << "\n";
+  //std::cerr << "***Produced this instrumented fpcode:\n"
+  //          << fpcode_with_brccinfo << "\n";
 
   c_code = generate_c_fp_code(fpcode_with_brccinfo, name);
   free(fpcode_with_brccinfo);
@@ -572,18 +572,18 @@ CodeGen_HLSLGenerateCode(Type *retType, const char *name,
   char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   hlslcode = generate_hlsl_code(args, nArgs, body);
-  std::cerr << "\n***Produced this cgcode:\n" << hlslcode << "\n";
+  //std::cerr << "\n***Produced this cgcode:\n" << hlslcode << "\n";
 
   fpcode = compile_hlsl_code(hlslcode);
   free(hlslcode);
-  std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
+  //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
   fpcode_with_brccinfo = 
     append_argument_information("//", fpcode, args, nArgs, body);
   free(fpcode);
 
-  std::cerr << "***Produced this instrumented fpcode:\n"
-            << fpcode_with_brccinfo << "\n";
+  //std::cerr << "***Produced this instrumented fpcode:\n"
+  //          << fpcode_with_brccinfo << "\n";
 
   c_code = generate_c_ps20_code(fpcode_with_brccinfo, name);
   free(fpcode_with_brccinfo);
