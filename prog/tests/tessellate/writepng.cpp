@@ -13,7 +13,7 @@ void writePng (char * filename, char * data, int width,int height) {
       while (*hptr) {
          fputc(*hptr++,fp);
       }
-      for (unsigned int i=0;i<width*height;++i) {
+      for (int i=0;i<width*height;++i) {
          fputc(data[i],fp);
          fputc(data[i],fp);
          fputc(data[i],fp);
