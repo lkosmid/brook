@@ -14,10 +14,10 @@ static void  FloatMath (const Float1  &a,
   Float1  g = a + b;
   Float1  h = b * b;
   Float1  i = g * h + a * b;
-  Float1  j = (Float1(0.5) < a).questioncolon(g * i / ((Float1(0.001) < h).questioncolon(h,Float1(1))) + h,g * i * h - h);
+  Float1  j = (Float1(0.5f) < a).questioncolon(g * i / ((Float1(0.001f) < h).questioncolon(h,Float1(1))) + h,g * i * h - h);
   Float1  k = g * i * h + h;
   Float1  l = g + h * g + k * i;
-  Float1  m = g + j * k - i * k / ((Float1(0.001) < h).questioncolon(h,Float1(1)));
+  Float1  m = g + j * k - i * k / ((Float1(0.001f) < h).questioncolon(h,Float1(1.0f)));
   Float1  o = k;
 
   o += Float1(5);
@@ -26,8 +26,8 @@ static void  FloatMath (const Float1  &a,
   i *= Float1(1);
   o += Float1(0+0+0+0 +0 +0 +0 +0 +0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0);
   o += Float1(21049);
-  o += h * i + g + i - m * (l - j) / ((Float1(0.001) < k).questioncolon(k,Float1(1)));
-  e = g + h * i / ((Float1(0.001) < k).questioncolon(k,Float1(1))) + m * l * Float1(1*1*1 *1 * 1 * 1 * 1 * 1 * 1 * 1 * 1);
+  o += h * i + g + i - m * (l - j) / ((Float1(0.001f) < k).questioncolon(k,Float1(1.0f)));
+  e = g + h * i / ((Float1(0.001f) < k).questioncolon(k,Float1(1.0f))) + m * l * Float1(1*1*1 *1 * 1 * 1 * 1 * 1 * 1 * 1 * 1);
 }
 
 

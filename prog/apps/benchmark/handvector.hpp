@@ -206,11 +206,11 @@ public:
         return *this;
     }
     inline Float1& operator = (const unsigned int & in) { 
-        f = in;
+        f = (float) in;
         return *this;
     }
     inline Float1& operator = (const int & in) { 
-        f = in;
+        f = (float)in;
         return *this;
     }
         
