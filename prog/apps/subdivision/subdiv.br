@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "timing.h"
 /**   ABB__BBC 
       /\  /\
    AB/__\/__\BC
@@ -718,6 +718,7 @@ void subdivide (Neighbor (*neighbors)<>,
       float3 outputTri<toi(streamSize(*triangles).y),
         toi(streamSize(*triangles).x*3)>;
       copyFinalTriangles(*triangles,outputTri);
+      TallyKernel("copyFinalTriangles",outputTri);
       expandVertexArray(output,
                       3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
       streamWrite(outputTri,output->v+sizey);
@@ -737,8 +738,10 @@ void subdivide (Neighbor (*neighbors)<>,
 
     //computes the 12 shared neighbor values
     computeNeighborsNoAdaptive(*triangles,*neighbors,sharedNeighbors);
+    TallyKernel("computeNeighborsNoAdaptive",sharedNeighbors);
     //computes the 6 new triangle vertex values
     splitTrianglesNoAdaptive(*triangles,*neighbors,sharedTriangles);
+    TallyKernel("splitTrianglesNoAdaptive",sharedTriangles);
     // combines the 12 neighbors and 6 vertices to produce 4 individual 
     // sets of triangles
     // with the new triangles getting stretched in the x or y direction depending
@@ -748,6 +751,7 @@ void subdivide (Neighbor (*neighbors)<>,
                               newTriangles,
                               newNeighbors,
                               stretchX);
+    TallyKernel("linearReorgSplitTriangles",sharedTriangles);
     streamSwap(*triangles,newTriangles);
     streamSwap(*neighbors,newNeighbors);
     if (debugLoop) {
@@ -795,7 +799,9 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
     float2 shouldProduce<streamY,0>;
     float2 shouldNotProduce<streamY,0>;
     //see whether triangles should be split
+
     produceTriP(*triangles,shouldProduce,shouldNotProduce);
+    TallyKernel("produceTriP",*triangles,shouldProduce,shouldNotProduce);
     assert((int)streamX==toi(streamSize(shouldProduce).x));
     {
       int wosizex=3*toi(streamSize(shouldNotProduce).x);
@@ -808,12 +814,14 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
         float3 tJunctionsA<tsizey,0>;
         float3 tJunctionsB<tsizey,0>;
         identifyTJunctions(*triangles,*neighbors,shouldProduce,tJunctionsA,tJunctionsB);
+        TallyKernel("identifyTJunctions",shouldProduce,tJunctionsA,tJunctionsB);
         if (streamSize(tJunctionsA).x&&streamSize(tJunctionsA).y) {
           int tsizex = toi(streamSize(tJunctionsA).x)*3;
           int tsizey = toi(streamSize(tJunctionsA).y);
           float3 outputTri<tsizey,tsizex>;
           streamSwap(outputTri,tJunctionsRepairA);
           repairTJunctions(*triangles,tJunctionsA,tJunctionsRepairA);
+          TallyKernel("repairTJunctions",tJunctionsRepairA);
         }
         if (streamSize(tJunctionsB).x&&streamSize(tJunctionsB).y) {
           int tsizex = toi(streamSize(tJunctionsB).x)*3;
@@ -821,13 +829,16 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
           float3 outputTri<tsizey,tsizex>;
           streamSwap(outputTri,tJunctionsRepairB);
           repairTJunctions(*triangles,tJunctionsB,tJunctionsRepairB);
+          TallyKernel("repairTJunctions",tJunctionsRepairB);
         }
       }
       if (wosizex&&wosizey) {
         if (out4) {
           gatherTriangles(*triangles,shouldNotProduce,outputTri4);          
+          TallyKernel("gatherTriangles",outputTri4);
         }else {
           writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
+          TallyKernel("writeFinalTriangles",outputTri);
         }
       }
 
@@ -849,8 +860,11 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
         //computes the 12 shared neighbor values
         fprintf (stderr,"stretching %f to %d %d\n",stretchX,streamX*xfactor,streamY*yfactor);
         computeNeighborsAdaptive(*triangles,*neighbors,shouldProduce,sharedNeighbors);
+        TallyKernel("computeNeighborsAdaptive",sharedNeighbors); 
         //computes the 6 new triangle vertex values
         splitTrianglesAdaptive(*triangles,*neighbors,shouldProduce,sharedTriangles);
+        TallyKernel("splitTrianglesAdaptive",sharedTriangles);
+
         // combines the 12 neighbors and 6 vertices to produce 4 individual 
         // sets of triangles
         // with the new triangles getting stretched in the x or y direction depending
@@ -861,6 +875,7 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
                                     newNeighbors,
                                     epsilon,
                                     stretchX);
+        TallyKernel("adaptiveReorgSplitTriangles",newTriangles);
         streamSwap(*triangles,newTriangles);
         streamSwap(*neighbors,newNeighbors);
         if (debugLoop) {
@@ -1029,6 +1044,7 @@ int main (int argc, char**argv) {
   char adaptive=1;
   char out4=1;
   neighboreps=epsilon/1024.0f;
+  SetupMillisTimer(argc,argv);
   for (i=0;i<(unsigned int)argc;++i) {
     char match=0;
     int j;
@@ -1114,6 +1130,7 @@ int main (int argc, char**argv) {
   for (i=0;i<(unsigned int)subdivisiondepth;++i) {
     vcount*=4;
   }
+  CleanupMillisTimer();
   fprintf (stderr,"Num Rounds %d Adaptive Num Triangles %d Num Triangles %d\n",subdivisiondepth,v.size/3,vcount);
   return 0;
   }

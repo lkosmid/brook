@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = subdivision
-FILES = subdiv model splyload voutfloatN vout1dfloatN 
+FILES = subdiv model splyload voutfloatN vout1dfloatN timing
 #nurbs subdivision 
 LIBRARIES = $(RUNTIME_LIBS)
 BRCCFLAGS = 
