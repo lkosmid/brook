@@ -148,7 +148,7 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
             printf(" ");
          }
          if (finite_flt(x))
-            printf("%3.2f",x);
+            printf("%.2g",x);
          else if (isnan_flt(x))
             printf("NaN");
          else 
@@ -163,8 +163,6 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
          if ((i+1)%extent[dims-1]==0)
             printf("\n");
    }
-   if (flatten)
-      printf("\n");
    s->releaseData(brook::StreamInterface::READ);
 }
 void readItem (brook::StreamInterface *s, void * p,...) {
