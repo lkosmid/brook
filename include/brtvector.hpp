@@ -253,17 +253,21 @@ public:
         InitializeClass<T> a; 
         return a(getAt(0),getAt(1),getAt(2),getAt(3));
     }
-    template<int x, int y, int z, int w> vec<VALUE,4> swizzle4()const {
-        return vec<VALUE,4>(getAt(x),getAt(y),getAt(z),getAt(w));
+    template<class x, class y, class z, class w> 
+      vec<VALUE,4> swizzle4(x,y,z,w)const {
+        return vec<VALUE,4>(getAt(x::ref),
+                            getAt(y::ref),
+                            getAt(z::ref),
+                            getAt(w::ref));
     }
-    template<int x, int y, int z> vec<VALUE,3> swizzle3()const {
-        return vec<VALUE,3>(getAt(x),getAt(y),getAt(z),0);
+    template<class x, class y, class z> vec<VALUE,3> swizzle3(x,y,z)const {
+        return vec<VALUE,3>(getAt(x::ref),getAt(y::ref),getAt(z::ref));
     }
-    template<int x, int y> vec<VALUE,2> swizzle2()const {
-        return vec<VALUE,2>(getAt(x),getAt(y),0,0);
+    template<class x, class y> vec<VALUE,2> swizzle2(x,y)const {
+        return vec<VALUE,2>(getAt(x::ref),getAt(y::ref));
     }
-    template<int x> vec<VALUE, 1> swizzle1()const {
-        return vec<VALUE,1>(getAt(x),0,0,0);
+    template<class x> vec<VALUE, 1> swizzle1(x)const {
+        return vec<VALUE,1>(getAt(x::ref));
     }
 #define ASSIGN_OP(op) template <class T> \
          vec<VALUE,tsize>& operator op (const T & in) {  \
@@ -308,11 +312,10 @@ public:
       vec<VALUE,1> mask1 (const T&in,X) {
         if (size>X::ref)f[X::ref]=in.getAt(0);
         return vec<VALUE,1>(getAt(X::ref));
-    }
-    
+    }    
     vec() {
-        for (unsigned int i=0;i<size;++i) 
-            f[i]=VALUE();
+      //for (unsigned int i=0;i<size;++i) 
+      //      f[i]=VALUE();
     }
     template <class A,class B, class C, class D> 
       vec (const A &inx, const B &iny, const C &inz, const D& inw) {
@@ -321,9 +324,9 @@ public:
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-    template <class A, class B, class C> vec (const A& inx, const B& 
-iny, const C& inz) {
-        f[0]=inx;if (size>1) f[1]=iny;if(size>2)f[2]=inz;if (size>3)f[3]=VALUE();
+    template <class A, class B, class C> 
+      vec (const A& inx, const B& iny, const C& inz) {
+        f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
     template <class A, class B>vec (const A& inx, const B& iny) {
         f[0]=inx;
@@ -336,7 +339,7 @@ iny, const C& inz) {
     }
     template <class T> 
       vec<typename T::TYPE,tsize> questioncolon(const T &b, const T &c)const {
-        return vec<typename T::TYPE,tsize>
+        return vec<T::TYPE,tsize>
             (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
              singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
