@@ -1,0 +1,129 @@
+
+----------------------------------------------------------------
+Brook Quick Start Clean Installation For a Windows System
+(Last updated Oct 13, 2004)
+
+
+
+-----------------------------------------------------------------
+Step 1. Install Cygwin
+
+   1.1  Perform a "default" Cygwin install
+
+   1.2  Add the following cygwin packages (the version I just
+    installed is included in parenthises)
+
+
+    Devel / Make        (3.80-1)
+    Devel / Bison       (20030307-1)
+    Devel / Flex        (2.5.4a-3)
+    Interpreters / Perl (5.8.5-3)
+
+                
+-----------------------------------------------------------------
+Step 2. Install Microsoft Visual C++ compiler.
+
+    If you have Visual Studio.Net 2003 installed you can skip this step.
+
+    If you don't own Visual Studio, you can download the Visual C++ compiler for
+    *free* from Microsoft.
+   
+    2.1 Install the Visual C++ Toolkit 2003 v1.01
+    http://msdn.microsoft.com/visualc/vctoolkit2003/
+
+    2.2 Install the Microsoft Windows SP2 Platform SDK
+    http://www.microsoft.com/msdownload/platformsdk/sdkupdate/
+
+
+-----------------------------------------------------------------
+Step 3. Install the DirectX 9 (Summer 2004) SDK
+
+    Microsoft provides it here:
+    http://msdn.microsoft.com/library/default.asp?url=/downloads/list/directx.asp
+
+
+-----------------------------------------------------------------
+Step 4. Install the CGC compiler from NVIDIA
+
+    The minimum supported version of CGC is 1.3b2.  Get it from
+    NVIDIA's developer site here:
+    http://developer.nvidia.com/object/cg_toolkit.html
+
+
+-----------------------------------------------------------------
+Step 5. Set up your system environment variables
+
+  
+    If you are running from a Studio Studio.net installation, you'll
+    want to set up your PATH, LIB, and INCLUDE environment variables as
+    follows (assuming you've installed the software into the default
+    locations):
+
+INCLUDE
+    C:\Program Files\Microsoft Visual Studio .NET 2003\SDK\v1.1\include
+    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\include
+    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\PlatformSDK\Include
+
+LIB
+    C:\Program Files\Microsoft Visual Studio .NET 2003\SDK\v1.1\Lib\
+    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\lib
+    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\PlatformSDK\Lib
+
+PATH
+    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\bin
+    C:\Program Files\Microsoft Visual Studio .NET 2003\Common7\IDE
+
+    
+    If you are using the free Visual Studio Toolkit instead, your setup
+    should look more like:
+
+INCLUDE
+    C:\Program Files\Microsoft Platform SDK for Windows XP SP2\Include
+    C:\Program Files\Microsoft Visual C++ Toolkit 2003\include
+
+LIB
+    C:\Program Files\Microsoft Platform SDK for Windows XP SP2\Lib
+    C:\Program Files\Microsoft Visual C++ Toolkit 2003\lib
+    
+PATH
+    C:\Program Files\Microsoft Visual C++ Toolkit 2003\bin
+
+
+    For either setup, you'll also need to add the following lines to
+    the PATH, INCLUDE, and LIB environment variables so the build environment.
+
+INCLUDE
+    C:\Program Files\Microsoft DirectX 9.0 SDK (October 2004)\Include
+
+LIB
+    C:\Program Files\Microsoft DirectX 9.0 SDK (October 2004)\Lib
+
+PATH
+    C:\Program Files\Microsoft DirectX 9.0 SDK (October 2004)\Utilities
+    C:\Program Files\NVIDIA Corporation\Cg\bin
+
+
+-----------------------------------------------------------------
+Step 6. Get the latest Video Drivers for your card.
+
+    Check with either NVIDIA or ATI for the latest drivers.
+
+    Drivers for ATI video cards can be found at:
+    (http://www.ati.com/support/driver.html)
+
+    Drivers for NVIDIA video cards can be found at:
+    (http://www.nvidia.com/content/drivers/drivers.asp)
+
+
+-----------------------------------------------------------------
+Step 7.  Build Brook.
+
+    Type 'make' in the top-level directory of your Brook tree.  This will
+    build the BRCC compiler, the Brook runtime environment, and all the
+    Brook example applications and regression test apps.
+
+    To build only BRCC:     make brcc
+    To build only the runtime:  make runtime
+
+    All the Brook applications now exist in the bin subdirectory of the
+    root of your Brook tree.

@@ -155,7 +155,7 @@ Known Issues in the Runtimes
 
    * Note that some Brook application errors may be the result of video
      card driver bugs.  Please refer to the GPGPU.org forums or the
-     Brook project pages at (http://graphics.stanford.edu/projects/brook)
+     Brook project pages at (http://graphics.stanford.edu/projects/brookgpu)
      for up to date information regarding any known driver issues.
 
 
