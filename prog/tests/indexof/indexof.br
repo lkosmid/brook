@@ -16,8 +16,8 @@ bar(float d_prime<>, float d[10][10], out float e<>, float4 indexofe)
 {
   /* this test should make a matrix of 1 and a diagonal of 0's*/
   e = ((d_prime == d[indexof(d_prime)]) &&
-       (d_prime == d[indexof(d_prime)]) &&
-       (d_prime == d[(indexof d_prime).xy]) &&
+       (d_prime == d[indexof(d_prime).xy]) &&
+       (d_prime == d[indexof d_prime.xy]) &&
        !(d_prime == d[1?(indexofe).yx:indexofe.zz]));
 }
 
