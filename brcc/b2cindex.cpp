@@ -12,9 +12,6 @@ std::map <std::string, functionProperties> FunctionProp;
 static std::string currentName;
 static std::map<std::string,unsigned int> currentArgs;
 static bool indofchanged=false;
-unsigned int getArgOf(FunctionDef * fDef, std::string name) {
-   
-}
 Expression *indexOfKeyword (Expression* e) {
    if (e->etype==ET_BrtIndexofExpr) {
       Variable * v = static_cast<BrtIndexofExpr*>(e)->expr;
