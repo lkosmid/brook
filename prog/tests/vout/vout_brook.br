@@ -46,13 +46,7 @@ int main () {
   foo(a,b,c,d,e);
   //foo(a,b,c,d_broken,e);
 
-  streamWrite(e, data_e);
-  
-  for (i=0; i<10; i++) {
-    for (j=0; j<10; j++) {
-      printf ("%3.2f ", data_e[i][j]);
-    }
-    printf ("\n");
-  }
+  streamPrint(e, -1);
+  printf ("\n");
   return 0;
 }

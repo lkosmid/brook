@@ -164,7 +164,6 @@ void  __foo_cpu_inner (const __BrtFloat1  &a,
     {
       __e_stream = e;
     }
-
     if (__fmod_cpu_inner((__indexof_a).swizzle1(maskX),__BrtFloat1((float)2)) == __BrtFloat1((float)0))
     {
       e = __BrtFloat1((float)2);
@@ -251,7 +250,16 @@ __BrtFloat4 indexof0 = computeIndexOf(mapbegin, dims[0], extents[0]);
   }
 }
 extern int finiteValueProduced (struct __BRTStream * input);
-
+extern float shiftValues(struct __BRTStream *list_stream,
+                         struct __BRTStream *output_stream,
+                         int WIDTH, 
+                         int LENGTH, 
+                         int sign);
+void combineStreams (struct __BRTStream **streams,
+                     unsigned int num,
+                     unsigned int width, 
+                     unsigned int length,
+                     struct __BRTStream * output) ;
 void  foo (const __BRTStream& a,
 		const __BRTStream& b,
 		const float4  c,
@@ -264,24 +272,37 @@ void  foo (const __BRTStream& a,
      "cpu", (void *) __foo_cpu,
      NULL, NULL };
   static __BRTKernel k(__foo_fp);
-  std::vector<__BRTStream*> __e_outputs;
-  assert (__e_stream->getDimension()==2);
+  std::vector<__BRTStream*> __e_outputs;//get max dimension
+  assert (a->getDimension()==2);
+  int maxextents[2]={0,0};
+  maxDimension(maxextents,a->getExtents(),a->getDimension());
+  maxDimension(maxextents,b->getExtents(),b->getDimension());
+  
   do {
-     __e_outputs.push_back(new __BRTStream(__e_stream->getExtents(),
-                                             __e_stream->getDimension(),
-                                             __e_stream->getStreamType()));
+     __e_outputs.push_back(new __BRTStream(maxextents,
+                                           a->getDimension(),
+                                           __e_stream->getStreamType()));
     k->PushStream(a);
     k->PushStream(b);
     k->PushConstant(c);
     k->PushGatherStream(d);
-    k->PushOutput(__e_stream);
+    k->PushOutput(*__e_outputs.back());
     k->PushConstant(__vout_counter);
     k->Map();
-    
+    __vout_counter.x+=1.0f;
   }while (finiteValueProduced(__e_outputs.back()));
-  
-  
+  __BRTStream temp (__e_stream->getStreamType(),1,1,-1);
 
+  combineStreams(&__e_outputs[0],
+                 __e_outputs.size()-1,
+                 maxextents[0],
+                 maxextents[1],
+                 &temp);
+  float out = shiftValues(&temp,
+                          &__e_stream,
+                          temp->getExtents()[0],
+                          temp->getExtents()[1],
+                          -1);
 }
 
 
@@ -295,7 +316,6 @@ int  main()
   float  data_b[10][10];
   float4  c = float4 (1.000000f,0.000000f,3.200000f,5.000000f);
   float  data_d[10][10];
-  float  data_e[10][10];
   float  d_broken = 0.000000f;
   int  i;
   int  j;
@@ -312,17 +332,7 @@ int  main()
   streamRead(b,data_b);
   streamRead(d,data_d);
   foo(a,b,c,d,e);
-  streamWrite(e,data_e);
-  for (i = 0; i < 10; i++)
-  {
-    for (j = 0; j < 10; j++)
-    {
-      printf("%3.2f ",data_e[i][j]);
-    }
-
-    printf("\n");
-  }
-
+  streamPrint(e);
   return 0;
 }
 
