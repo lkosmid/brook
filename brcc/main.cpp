@@ -39,6 +39,7 @@ usage (void) {
         "\t-v\t\tverbose (print intermediate generated code)\n"
         "\t-n\t\tno codegen (just parse and reemit the input)\n"
         "\t-d\t\tdebug (print cTool internal state)\n"
+        "\t-k\t\tkeep generated fragment program (in foo.cg)\n"
         "\t-o prefix\tprefix prepended to all output files\n"
         "\t-w workspace\tworkspace size (16 - 2048, default 1024)\n"
         "\t-p shader\tcpu / ps20 / fp30 (can specify multiple)\n"
