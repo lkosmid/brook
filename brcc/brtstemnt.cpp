@@ -110,10 +110,15 @@ BRTKernelDef::printStub(std::ostream& out) const
       if (recursiveIsStream(fType->args[i]->form) || recursiveIsGather(fType->args[i]->form)) {
          out << "const __BRTStream& " << *fType->args[i]->name;
       } else {
-         if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)==0)
+         bool reduction = (fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0;
+         if (!reduction)
             out << "const ";
          Symbol name;name.name = fType->args[i]->name->name;
-         if (fType->args[i]->form->type!=TT_Array)
+         //XXX -- C++ backend needs values to be passed by value...
+         // It's a one time per kernel call hit--worth it to keep
+         // Values from being aliased --Daniel
+         //hence we only do the & for reduction vars
+         if (reduction&&fType->args[i]->form->type!=TT_Array)
             //arrays are automatically pass by ref. - Daniel
             name.name= "& "+name.name;
          fType->args[i]->form->printType(out,&name,true,0);
