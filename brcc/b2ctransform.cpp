@@ -452,7 +452,7 @@ Expression * operator () (Expression * e) {
     AssignExpr * ae;
     BinaryExpr * ret =NULL;
     Variable * vmask=NULL;
-    if (e->etype == ET_BinaryExpr&&(ae= static_cast<AssignExpr *> (e))) {
+    if (e->etype == ET_BinaryExpr&&static_cast<BinaryExpr*>(e)->op()==BO_Assign&&(ae= static_cast<AssignExpr *> (e))) {
         //now lets identify what expression is to the left... if it's a dot then we go!
         BinaryExpr * lval;
         if (ae->lValue()->etype==ET_BinaryExpr&& (lval = static_cast<BinaryExpr*>(ae->lValue()))) {
