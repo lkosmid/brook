@@ -160,8 +160,17 @@ class QuestionColonConverter{public:
         return ret;
     }
 };
+std::set<Expression *> ArrayBlacklist;//set of items we do not want to change to int1 objects.
+
 class BaseType1:public BaseType {public:
-	BaseType1(const BaseType &t):BaseType(t){}
+    BaseType1(const BaseType &t):BaseType(t){
+	ArrayBlacklist.insert((Expression *)this);
+    }
+    BaseType1::~BaseType1() {
+	std::set<Expression *>::iterator i = ArrayBlacklist.find((Expression *)this);
+	if (i!=ArrayBlacklist.end())
+	    ArrayBlacklist.erase(i);
+    }
 	virtual void printBase(std::ostream& out, int level) const {
 		//this->printQual(out,qualifier);
 	int special = BT_Char|BT_Int|BT_Float|BT_Float2|BT_Float3|BT_Float4|BT_Long;
@@ -194,7 +203,6 @@ class BaseType1:public BaseType {public:
 
 
 
-std::set<Expression *> ArrayBlacklist;//set of items we do not want to change to int1 objects.
 void ArrayBlackmailer(Expression * e) {
     ArrayBlacklist.insert(e);
 }
