@@ -1639,7 +1639,7 @@ generateShaderTechnique(Decl** args, int nArgs, const char* name,
 
   if( (target == CODEGEN_PS2B ||
        target == CODEGEN_PS30 ||
-       target == CODEGEN_ARB  ||
+       //target == CODEGEN_ARB  ||
        target == CODEGEN_FP40 ||
        globals.arch == GPU_ARCH_X800 ||
        globals.arch == GPU_ARCH_6800 ||
