@@ -504,6 +504,8 @@ namespace brook
     unsigned int textureWidth = texture->getWidth();
     unsigned int textureHeight = texture->getHeight();
 
+    GPULOG(3) << "texw = " << textureWidth << " texh = " << textureHeight << std::endl;
+
     float xmin = (float)minX / (float)textureWidth;
     float ymin = (float)minY / (float)textureHeight;
     float width = (float)(maxX - minX) / (float)textureWidth;
@@ -521,8 +523,8 @@ namespace brook
         int width = maxX - minX;
         int height = maxY - minY;
 
-        float biasX = width <= 1 ? 0.0f : 0.05f / (float)(width);
-        float biasY = height <= 1 ? 0.0f : 0.05f / (float)(height);
+        float biasX = textureWidth <= 1 ? 0.0f : 0.05f / (float)(textureWidth);
+        float biasY = textureHeight <= 1 ? 0.0f : 0.05f / (float)(textureHeight);
 
         for( int i = 0; i < 3; i++ )
         {

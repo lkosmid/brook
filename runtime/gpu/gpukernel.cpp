@@ -477,12 +477,15 @@ namespace brook
     size_t otherExtent = ioState.currentExtents[1-dim]; // how big the other dimension is...
 
     // First we must find an appropriate technqiue
-    // execute. We assume for now that the
-    // techniques are ordered from worst to best.
-    std::vector<Technique>::reverse_iterator t;
-    for( t = _techniques.rbegin(); t != _techniques.rend(); ++t )
+    // execute. We will always try to find one
+    // that is a perfect divisor of the reduction
+    // factor, and failing that we chose the largest
+    // applicable factor
+    size_t bestTechnique = 0; // base 2-fold reduction should always work
+    size_t t = _techniques.size();
+    while( t-- > 0 )
     {
-      Technique& technique = *t;
+      Technique& technique = _techniques[t];
       size_t passFactor = technique.reductionFactor;
 
       size_t quotient = remainingFactor / passFactor;
@@ -545,25 +548,27 @@ namespace brook
       // so our N-to-1 reductions may not be as aggresive
       // as possible.
 
-      // a valid optimization to this code might be to
-      // always favor a reduction by a perfect divisor
-      // (case 1) first, since this avoids the allocation
-      // and extra passes for the slop buffer...
-      // this is left as an exercise for the reader :)
+      if( remainder == 0 )
+      {
+          // perfect divisors are better than
+          // all other options
+          bestTechnique = t;
+          break;
+      }
 
-      if( quotient == 1 || remainder <= 1 ) break;
+      if( quotient == 1 || remainder <= 1 )
+      {
+          if( bestTechnique < t )
+              bestTechnique = t;
+      }
     }
 
-    // There should always be a valid reduction
-    // technique since a passFactor of 2 will always 
-    // satisfy either case 1 or 4 above
-    if( t == _techniques.rend() )
-      GPUError( "There was no available reduction pass... this should never happen");
-
     // pull information out of the chosen technique
-    Technique& technique = *t;
+    Technique& technique = _techniques[ bestTechnique ];
     size_t reductionFactor = technique.reductionFactor;
     size_t slopFactor = (remainingFactor % reductionFactor);
+
+    GPULOG(3) << "reduction factor: " << reductionFactor << "slop factor: " << slopFactor << std::endl;
 
     // calculate the new size of the result buffer
     size_t resultExtents[2];
