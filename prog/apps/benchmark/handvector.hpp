@@ -157,16 +157,16 @@ public:
     enum SIZ{size=tsize};
     typedef VALUE array_type[size];
 protected:
-    VALUE f[size];
+    VALUE f;
 public:
     const VALUE &getAt (unsigned int i) const{
-       return i<size?f[i]:f[size-1];
+       return f;
     }
     VALUE &getAt (unsigned int i) {
-       return i<size?f[i]:f[size-1];
+       return f;
     }
-    const VALUE &unsafeGetAt (unsigned int i) const{return f[i];}
-    VALUE &unsafeGetAt (unsigned int i) {return f[i];}
+    const VALUE &unsafeGetAt (unsigned int i) const{return f;}
+    VALUE &unsafeGetAt (unsigned int i) {return f;}
     Float1 operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
     Float1& cast() {
         return *this;
@@ -200,21 +200,15 @@ public:
 	   const BRT_TYPE &iny, 
 	   const BRT_TYPE &inz, 
 	   const BRT_TYPE& inw) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=inz;
-        if (size>3) f[3]=inw;
+        f=inx;
     }
     template <class BRT_TYPE> Float1 (const BRT_TYPE& inx, 
 				   const BRT_TYPE& iny, 
 				   const BRT_TYPE& inz) {
-        f[0]=inx;
-        if(size>1)f[1]=iny;
-        if(size>2)f[2]=inz;
+        f=inx;
     }
     template <class BRT_TYPE> Float1 (const BRT_TYPE& inx, const BRT_TYPE& iny) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
+        f=inx;
     }
     template <class BRT_TYPE> Float1 (const BRT_TYPE& scalar) {
         (*this)=scalar;
@@ -224,10 +218,7 @@ public:
     }        
 #define ASSIGN_OP(op) template <class BRT_TYPE> \
          Float1& operator op (const BRT_TYPE & in) {  \
-        f[0] op GetAt<BRT_TYPE>(in,0);  \
-        if (tsize>1) f[1] op GetAt<BRT_TYPE>(in,1);  \
-        if (tsize>2) f[2] op GetAt<BRT_TYPE>(in,2);  \
-        if (tsize>3) f[3] op GetAt<BRT_TYPE>(in,3);  \
+        f op GetAt<BRT_TYPE>(in,0);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -241,10 +232,7 @@ public:
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE>
       vec<VALUE,4> mask4 (const BRT_TYPE&in,int X, int Y,int Z,int W) {
-        f[X]=in.getAt(0);
-        f[Y]=in.getAt(1);
-        f[Z]=in.getAt(2);
-        f[W]=in.getAt(3);
+        f=in.getAt(0);
         return vec<VALUE,4>(unsafeGetAt(X),
                             unsafeGetAt(Y),
                             unsafeGetAt(Z),
@@ -252,20 +240,17 @@ public:
     }
     template <class BRT_TYPE>
       vec<VALUE,3> mask3 (const BRT_TYPE&in,int X,int Y,int Z) {
-        f[X]=in.getAt(0);
-        f[Y]=in.getAt(1);
-        f[Z]=in.getAt(2);
+        f=in.getAt(0);
         return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
     template <class BRT_TYPE> 
       vec<VALUE,2> mask2 (const BRT_TYPE&in,int X,int Y) {
-        f[X]=in.getAt(0);
-        f[Y]=in.getAt(1);
+        f=in.getAt(0);
         return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
     template <class BRT_TYPE> 
       vec<VALUE,1> mask1 (const BRT_TYPE&in,int X) {
-        f[X]=in.getAt(0);
+        f=in.getAt(0);
         return vec<VALUE,1>(unsafeGetAt(X));
     }    
     template <class BRT_TYPE> 
