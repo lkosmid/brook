@@ -23,7 +23,7 @@ namespace brook{
     CPUKernel::CPUKernel(const void * source []){
         const char ** src= (const char**)(source);
         combine=0;func=0;
-        bool multiThread=true;
+        multiThread=true;
 	for (unsigned int i=0;;i+=2) {
 	    if (src[i]==NULL){
                if (!func){
