@@ -130,7 +130,7 @@ kernel void processVirtualSliceNoCompact(out float4 vertex<>,
   }
 }
 
-kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, out float3 trianglesC<>,out float3 trianglesD<>, float4 vertices1<>,float3 volumeTriangles[][]) {
+kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, out float3 trianglesC<>,out float3 trianglesD<>, out float3 trianglesE<>, float4 vertices1<>,float3 volumeTriangles[][]) {
    float4 whichVolumeTriangle={fmod((indexof trianglesA).x,3),vertices1.w,0,0};
    float3 vertices=vertices1.xyz;
   //whichVolumeTriangle.x*=(float)(whichVolumeTriangle.x+.5<3);
@@ -142,6 +142,8 @@ kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, o
   trianglesC=vertices.xyz+volumeTriangles[whichVolumeTriangle];
   whichVolumeTriangle.x+=3;  
   trianglesD=vertices.xyz+volumeTriangles[whichVolumeTriangle];  
+  whichVolumeTriangle.x+=3;  
+  trianglesE=vertices.xyz+volumeTriangles[whichVolumeTriangle];  
 }
 unsigned int reverseBits(unsigned int x, unsigned int base) {
    unsigned int i,ret=0;
@@ -320,8 +322,10 @@ int toi (float a) {
                                (toi(streamSize(v).x)*3)>;
               float3 trianglesD<(toi(streamSize(v).y)),
                                (toi(streamSize(v).x)*3)>;
-              processTriangles(trianglesA,trianglesB,trianglesC,trianglesD,v,
-                               volumeTriangles);
+              float3 trianglesE<(toi(streamSize(v).y)),
+                               (toi(streamSize(v).x)*3)>;
+              processTriangles(trianglesA,trianglesB,trianglesC,trianglesD,trianglesE,
+                               v, volumeTriangles);
               streamWrite(trianglesA,
                           consolidateVertices(dat,streamSize(trianglesA)));
               streamWrite(trianglesB,
@@ -330,6 +334,8 @@ int toi (float a) {
                           consolidateVertices(dat,streamSize(trianglesC)));
               streamWrite(trianglesD,
                           consolidateVertices(dat,streamSize(trianglesD)));
+              streamWrite(trianglesE,
+                          consolidateVertices(dat,streamSize(trianglesE)));
               //              streamPrint(trianglesA,1);
               //              streamPrint(trianglesB,1);
               //              streamPrint(trianglesC,1);
