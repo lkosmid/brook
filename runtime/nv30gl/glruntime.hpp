@@ -21,6 +21,7 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glx.h>
+#include <stdio.h>
 #endif
 
 #define GL_MAX_TEXCOORDS        8
