@@ -150,26 +150,16 @@ BRTKernelDef::printStub(std::ostream& out) const
          out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
       } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
          out << "  k->PushReduce(&" << *fType->args[i]->name;
-         BaseTypeSpec bs= fType->args[i]->form->getBase()->typemask;
-         switch (FloatDimension(bs)){
-         case 2:
-            out <<", __BRTFLOAT2";
-            break;
-         case 3:
-            out <<", __BRTFLOAT3";
-            break;
-         case 4:
-            out <<", __BRTFLOAT4";
-            break;
-         default:
-            out <<", __BRTFLOAT";
-         }
-         out <<");\n";
+         out << ", __BRTReductionType(&" << *fType->args[i]->name <<"));\n";
       } else {
          out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
       }
    }
-   out << "  k->Map();\n";
+   if (decl->isReduce()) {
+      out << "  k->Reduce();\n";
+   }else {
+      out << "  k->Map();\n";
+   }
    out << "\n}\n\n";
 }
 

@@ -14,12 +14,28 @@ typedef struct {
   float x,y,z,w;
 } float4;
 enum __BRTStreamType {
-     __BRTFLOAT=1,
-     __BRTFLOAT2=2,
-     __BRTFLOAT3=3,
-     __BRTFLOAT4=4
+   __BRTSTREAM=0,//stream of stream is illegal. Used in reduce to stream.
+   __BRTFLOAT=1,
+   __BRTFLOAT2=2,
+   __BRTFLOAT3=3,
+   __BRTFLOAT4=4,
 };
 
+template <class T> __BRTStreamType __BRTReductionType(const T*e) {
+   return __BRTSTREAM;
+}
+template <> __BRTStreamType __BRTReductionType(const float4*e) {
+   return __BRTFLOAT4;
+}
+template <> __BRTStreamType __BRTReductionType(const float3*e) {
+   return __BRTFLOAT3;
+}
+template <> __BRTStreamType __BRTReductionType(const float2*e) {
+   return __BRTFLOAT2;
+}
+template <> __BRTStreamType __BRTReductionType(const float*e) {
+   return __BRTFLOAT;
+}
 namespace brook {
   class Kernel;
   class Stream;
@@ -39,6 +55,7 @@ namespace brook {
     virtual void PushGatherStream(Stream *s) = 0;
     virtual void PushOutput(Stream *s) = 0;
     virtual void Map() = 0;
+    virtual void Reduce() {Map();}
     virtual void Release() = 0;
 
   protected:
