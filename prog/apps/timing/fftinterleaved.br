@@ -1,0 +1,234 @@
+#include <stdio.h>
+#include "main.h"
+extern int debug_fft;
+kernel void mult_complex(float2 a <>, float2 b <>, out float2 c <>)
+{
+  c.x = a.x*b.x - a.y*b.y;
+  c.y = a.x*b.y + a.y*b.x;
+
+}
+#define DOTIMES 2
+typedef struct { float4 firstoutput, float4 secondoutput} interleavedType;
+kernel void DoDFTHelper (float4 r<>, 
+                         float4 t<>, 
+                         float2 Wxy <>, 
+                         float2 Wzw <>,
+                         out interleavedType s_prime<>) {
+  float2 temp;
+  s_primexy.xy = r.xy+t.xy ;
+  mult_complex ((r.xy-t.xy), Wxy, temp);
+  s_primexy.zw = temp;
+  s_prime.firstoutput.xy = r.zw+t.zw;
+  mult_complex((r.zw-t.zw),Wzw,temp);
+  s_prime.secondoutput.zw = temp;
+}
+kernel void DoDFTXBase (float4 s[][],
+                        float2 W[]
+                        float No4,
+                        out interleavedType s_prime<>) {
+  float2 index = (indexof s_prime).xy;
+  float2 temp,twiddle1,twiddle2;
+  twiddle1 = W[2*index.x];
+  twiddle2 = W[1+2*index.x];
+  temp = float2(round(No4),0);
+  DoDFTHelper (s[index],s[index+temp],twiddle1,twiddle2, s_prime);
+}
+kernel void
+DoDFTX (float4 s[][], 
+        float2 W[],
+        float2 Strideo2No4,
+        out interleavedType s_prime<>) {
+  float2 index = (indexof s_prime).xy;
+  float2 temp,twiddle;
+  twiddle = W[2*(index.x-fmod(index.x,Strideo2No4.x))];
+  temp = float2(round(Strideo2No4.y),0);
+  DoDFTHelper (s[index],s[index+temp],twiddle,twiddle, s_prime);
+} 
+kernel void
+DoDFTY (float2 s[][], 
+        float2 W[],
+        float2 StrideN,
+        out float4 s_prime<>) {
+  float2 index = (indexof s_prime).xy;
+  float2 temp,twiddle;
+  twiddle = W[index.y-fmod(index.y,StrideN.x)];
+  temp = float2(0,round(StrideN.y/2));
+  DoDFTHelper (s[index],s[index+temp],twiddle,s_prime);
+} 
+kernel void flattenSX (out float2 s<>, 
+                       float4 s_prime<>)
+{
+   if (round (fmod((indexof s).x,2))==1.0f)
+      s = s_prime.zw;
+   else
+      s = s_prime.xy;
+}
+kernel void flattenSY (out float2 s<>, 
+                      float4 s_prime<>)
+{
+   if (round (fmod((indexof s).y,2))==1.0f)
+      s = s_prime.zw;
+   else
+      s = s_prime.xy;
+}
+kernel void bitReverseXY (out float2 s_out<>,
+                          float indicesX[], 
+                          float indicesY[],
+                          float2 s[][]) {
+   float2 index = (indexof s_out).xy;
+   float2 outindex = {indicesX[index.x],indicesY[index.y]};
+   s_out = s[outindex];
+}
+kernel void bitReverseX (out float2 s_out<>,
+                          float indicesX[], 
+                          float2 s[][]) {
+   float2 index = (indexof s_out).xy;
+   float2 outindex = {indicesX[index.x],index.y};
+   s_out = s[outindex];
+}
+kernel void bitReverseY (out float2 s_out<>,
+                          float indicesY[], 
+                          float2 s[][]) {
+   float2 index = (indexof s_out).xy;
+   float2 outindex = {index.x,indicesY[index.y]};
+   s_out = s[outindex];
+}
+extern float * bitReversedIndices(int logN);
+extern float2 *getTwiddleFactor(int N);
+#define FFT_HORIZONTAL 0
+#define FFT_VERTICAL 1
+#define FFT_2D 2
+
+void FftwTransform2d(float2 *data, unsigned long N, unsigned long M,
+                     int isign, char cast);
+void compute2dFFT(float2 *input,
+                  float2 *output,
+                  int logN,
+                  int logM,
+                  int N,
+                  int M,
+                  int twod){
+   float2 s<N,M>;
+   float4 s_horiz<N,(M/2)>;
+   float4 s_vert <(N/2),M>;
+   float2 s_out<N,M>;
+   float2 W_horiz<M>;
+   float2 W_vert<M>;
+   float2 * dat;
+   float * rawindices=0;
+   float indicesX<M>;
+   float *rindices=0;
+   float indicesY<N>;
+   int nPass,nBits,nPassCounter,thereAndBack;
+   rindices=bitReversedIndices(logN);
+   streamRead(indicesY,rindices);
+   free(rindices);
+   rawindices =bitReversedIndices(logM);
+   streamRead(indicesX,rawindices);
+   free(rawindices);
+   rawindices=(float*)1;
+
+   streamRead(s,input);
+   dat = getTwiddleFactor(N);
+   streamRead(W_vert,dat);
+   free(dat);
+   dat = getTwiddleFactor(M);
+   streamRead(W_horiz,dat);
+   free(dat);
+   
+   if (debug_fft) {
+      printf("FFT Input:\n");
+      streamPrint(s);
+   }
+   for (thereAndBack=0;thereAndBack<DOTIMES;++thereAndBack) {
+   if (1==N*M) streamSwap(s_out,s);
+   else {
+      if (twod==FFT_2D||twod==FFT_HORIZONTAL) {
+         nPass=nBits=logM;
+         for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
+            int nStride = (1<<nPassCounter);
+            DoDFTX(s,W_horiz,float2((float) nStride, (float) M),s_horiz);
+            flattenSX(s,s_horiz);
+         }
+      }
+      if (twod==FFT_2D||twod==FFT_VERTICAL) {
+         nPass=nBits=logN;
+         for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
+            int nStride = (1<<nPassCounter);
+            DoDFTY(s,W_vert,float2((float) nStride, (float) N),s_vert);
+            flattenSY(s,s_vert);
+         }
+      }
+   }
+   if (1) {
+      if (twod) {
+         if (twod==FFT_2D) {
+            bitReverseXY(s_out,indicesX,indicesY,s);      
+         }else if (twod==FFT_VERTICAL) {
+            bitReverseY(s_out,indicesY,s);      
+         }
+      }else if (twod==FFT_HORIZONTAL){
+         bitReverseX(s_out,indicesX,s);      
+      }
+   }
+   }
+
+   if (output)
+      streamWrite(s_out,output);
+   else {
+      if (debug_fft) {
+        printf("\nStream Output\n");
+        streamPrint(s_out);
+      }
+   }
+
+
+}
+float2 * getData(int N, int M) {
+   int seed = 214098127;
+   int i,j;
+   float2 * ret;
+   ret = (float2*)malloc(N*M*sizeof(float2));
+   for (i=0;i<N;++i) {
+      for (j=0;j<M;++j) {
+         seed+=24101491;
+         ret[i*M+j]=float2((float)(seed%4096),0);
+         seed%=9420409;
+      }
+   }
+   return ret;
+}
+float2 * data = getData(4096,4096);
+#define PrintResults(sstart, sstop, name) \
+     printf("%9d    %6d        %6.2f        (* %s *)\\n", \
+          M, (int) (sstop - sstart), \
+          (float)(DOTIMES*10.*(logN+logM)*M*N) / (float) (sstop - sstart), name);
+
+void doFFT(int logN) {
+   int logM = logN; 
+   int N = (1<<logN);
+   int M = (1<<logM);
+   int MPlusN=M+N;
+   float2 * output;
+   output = (float2*)malloc(sizeof(float2)*M*N);
+   start = GetTime();
+   compute2dFFT(data,output,logN,logM,N,M,FFT_2D); 
+   stop = GetTime();
+   {
+      PrintResults(start,stop,"FFT");
+   }
+//   ReadWriteProcessTiming("FFT",data,output,1<<MPlusN,1<<MPlusN);
+   //FftwTransform2d(data,N,M,1,1);
+}
+
+int mainX (int argc, char ** argv) {
+   int logN = argc>=2?atoi(argv[1]):3;
+   int logM = argc>=3?atoi(argv[1]):logN;
+   int N = (1<<logN);
+   int M = (1<<logM);
+   float2 * output=0;
+   //   compute2dFFT(data,output,logN,logM,N,M,FFT_2D);
+   FftwTransform2d(data,N,M,1,1);
+
+   return 0;
+}
