@@ -583,7 +583,7 @@ int main (int argc, char**argv) {
   Tri *triangledata = 0;
   Neighbor *neighbordata = 0;
   unsigned int numTriangles;
-  for (i=0;i<argc;++i) {
+  for (i=0;i<(unsigned int)argc;++i) {
     char match=0;
     int j;
     if (strncmp(argv[i],"-epsilon",8)==0) {

@@ -136,16 +136,16 @@ extern void computeFunctionCallPattern(float epsilon,
           dawt(bc,bc)<epsilon) {
         nosplit.push_back(t);
       }else {
-        float4 a2b(.5*(t.A.x+t.B.x),
-                   .5*(t.A.y+t.B.y),
-                   .5*(t.A.z+t.B.z),0);
+        float4 a2b(.5f*(t.A.x+t.B.x),
+                   .5f*(t.A.y+t.B.y),
+                   .5f*(t.A.z+t.B.z),0);
                    
-        float4 a2c(.5*(t.A.x+t.C.x),
-                   .5*(t.A.y+t.C.y),
-                   .5*(t.A.z+t.C.z),0);
-        float4 b2c(.5*(t.B.x+t.C.x),
-                   .5*(t.B.y+t.C.y),
-                   .5*(t.B.z+t.C.z),0);
+        float4 a2c(.5f*(t.A.x+t.C.x),
+                   .5f*(t.A.y+t.C.y),
+                   .5f*(t.A.z+t.C.z),0);
+        float4 b2c(.5f*(t.B.x+t.C.x),
+                   .5f*(t.B.y+t.C.y),
+                   .5f*(t.B.z+t.C.z),0);
         Tri u;
         u.A=t.A;
         u.B=a2b;
