@@ -26,87 +26,6 @@
 /*
  * Streams can't be passed to functions, so use a macro.
  *
- *      We run the kernel once without any timing to prime the runtime,
- *      which otherwise appears to occasionally take unexpectedly long.
- *      Then we time  20*k + W and R + 20*k + W and subtract the former from
- *      the latter and latch the result.
- *
- *      XXX This still sometimes calculates a cur_R less than 0.  If we get
- *      a value less than 1, we ignore it and keep the last computed value.
- */
-
-#define UPDATE_CUR_R(numEntries, data, s, o)                    \
-   do {                                                         \
-      int kW, newR, i;                                          \
-      float4 *scratch;                                          \
-                                                                \
-      curNEntries = numEntries;                                 \
-      scratch = (float4 *) malloc(numEntries * sizeof *scratch);\
-      streamRead(s, data);                                      \
-      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
-      streamWrite(o, scratch);                                  \
-      start = GetTimeTSC();                                     \
-      for (i = 0; i < SMOOTHING; i++)                           \
-         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
-      streamWrite(o, scratch);                                  \
-      kW = (int) CyclesToUsecs(GetTimeTSC() - start);           \
-      start = GetTimeTSC();                                     \
-      streamRead(s, data);                                      \
-      for (i = 0; i < SMOOTHING; i++)                           \
-         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
-      streamWrite(o, scratch);                                  \
-      newR = (int) CyclesToUsecs(GetTimeTSC() - start) - kW;    \
-      if (newR > 1) cur_R = newR;                               \
-      else printf("(* Length %d computed bogus R %d *)\n", numEntries, newR); \
-      free(scratch);                                            \
-   } while(0)
-
-
-/*
- * Streams can't be passed to functions, so use a macro.
- *
- *      We run the kernel once without any timing to prime the runtime,
- *      which otherwise appears to occasionally take unexpectedly long.
- *      Then we run our kernel, but before reading back, run our kernel on a
- *      tiny stream (tiny so it runs quickly, it could be any length) and
- *      then time the streamWrite() of the real stream.
- *
- *      XXX A sufficiently unlucky card could decide to punt the stream back
- *      to system memory while we were running the kernel on the tiny
- *      stream.  If so, them's the breaks.  We ignore any value less than
- *      one to avoid divide overflows.  In practice, I haven't had a
- *      problem with low values (unlike cur_R).  --Jeremy.
- *
- */
-
-#define UPDATE_CUR_W(numEntries, data, s, o, tiny)              \
-   do {                                                         \
-      int newW, i;                                              \
-      float4 *scratch;                                          \
-                                                                \
-      curNEntries = numEntries;                                 \
-      scratch = (float4 *) malloc(numEntries * sizeof *scratch);\
-      stop = 0;                                                 \
-      for (i = 0; i < SMOOTHING; i++) {                         \
-         streamRead(s, data);                                      \
-         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
-         streamWrite(o, scratch);                                  \
-                                                                   \
-         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, tiny); \
-         streamWrite(tiny, scratch);                               \
-         start = GetTimeTSC();                                     \
-         streamWrite(o, scratch);                                  \
-         stop += GetTimeTSC() - start;                          \
-      }                                                         \
-      newW = (int) CyclesToUsecs(stop / SMOOTHING);             \
-      if (newW > 1) cur_W = newW;                               \
-      else printf("(* Length %d computed bogus W %d *)\n", numEntries, newW); \
-      free(scratch);                                            \
-   } while (0)
-
-/*
- * Streams can't be passed to functions, so use a macro.
- *
  *      We run our kernel and based on the knowledge that input[1] is 1.0
  *      and that the calculation produces n*input, there end up being n - 1
  *      instructions (cgc, fxc, and cl are all smart enough to merge the
@@ -153,7 +72,8 @@ static const int numIterations = sizeof iterations / sizeof iterations[0];
  */
 
 static int curNEntries;
-static int cur_R = 1, cur_W = 1, curOps = 0;
+static int curOps = 0;
+static float cur_R, cur_W;
 
 /*
  * RunKernelMemcpyKernel --
@@ -293,6 +213,78 @@ RunKernelKickBRT(void)
 
 
 /*
+ * RunKernelBuildSummary --
+ *
+ *      Generates a bunch of summary timing numbers
+ */
+
+static void
+RunKernelBuildSummary(int length, int verbose)
+{
+   struct StatRecord kW, W, RkW, R100kW;
+   float4 s<length, length>, o<length, length>, tiny<1, 1>;
+   float4 *outData;
+   float timeR, timeK;
+   int j, i;
+
+   outData = (float4 *) malloc(length * length * sizeof *outData);
+
+   StatRecord_Clear(&kW);
+   for (i = 0; i < SMOOTHING; i++) {
+      t1 = GetTimeTSC();
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      streamWrite(o, outData);
+      StatRecord_Record(&kW, GetTimeTSC() - t1);
+   }
+   if (verbose) StatRecord_Print(&kW, "kW");
+
+   StatRecord_Clear(&RkW);
+   for (i = 0; i < SMOOTHING; i++) {
+      t1 = GetTimeTSC();
+      streamRead(s, outData);
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      streamWrite(o, outData);
+      StatRecord_Record(&RkW, GetTimeTSC() - t1);
+   }
+   if (verbose) StatRecord_Print(&RkW, "RkW");
+
+   StatRecord_Clear(&W);
+   for (i = 0; i < SMOOTHING; i++) {
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, tiny);
+      streamWrite(tiny, outData);
+      t1 = GetTimeTSC();
+      streamWrite(o, outData);
+      StatRecord_Record(&W, GetTimeTSC() - t1);
+   }
+   if (verbose) StatRecord_Print(&W, "W");
+
+   StatRecord_Clear(&R100kW);
+   for (i = 0; i < 10; i++) {
+      t1 = GetTimeTSC();
+      streamRead(s, outData);
+      for (j = 0; j < SMOOTHING; j++) {
+         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      }
+      streamWrite(o, outData);
+      StatRecord_Record(&R100kW, GetTimeTSC() - t1);
+   }
+   if (verbose) StatRecord_Print(&R100kW, "R100kW");
+   free(outData);
+
+   timeR = (RkW.total - kW.total) / SMOOTHING;
+   timeK = R100kW.total / R100kW.n / SMOOTHING;
+   if (verbose) {
+      printf("(* Summary: R: %5.2f, k: %5.2f, W %5.2f (timed) / %5.2f (computed) *)\n",
+             timeR, timeK, W.total / W.n, RkW.total / RkW.n - timeR - timeK);
+   }
+
+   cur_R = timeR;
+   cur_W = W.total / W.n;
+}
+
+
+/*
  * RunKernelBuildData --
  *
  *      Helper function that allocates memory and fills it with the stream
@@ -342,7 +334,7 @@ RunKernelProcessTiming(char *name, float4 *data,
     *   - 4 floats per entry
     */
    printf64(CyclesToUsecs(stop - start));
-   printf("%6.2f   %8.0f   %4d\t(* %s %d R%d %d %d %d *)\n",
+   printf("   %6.2f   %8.0f   %4d\t(* %s %d R%d %d %5.2f %5.2f *)\n",
           numFLOPs / elapsed, numFLOPs / 1000000,
           nRuns, name, length, nRuns, curOps, cur_R, cur_W);
 
@@ -388,9 +380,6 @@ RunKernel1D(char *logName, int streamLength, int nRuns)
    RunKernelBuildData(&data, streamLength);
 
    if (curNEntries != streamLength) {
-      float4 tiny<1>;
-      UPDATE_CUR_R(streamLength, data, s, o);
-      UPDATE_CUR_W(streamLength, data, s, o, tiny);
       UPDATE_CUR_OPS(streamLength, data, RunKernelHardWork, s, o);
    }
 
@@ -424,10 +413,7 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
    RunKernelBuildData(&data2, streamLength * streamLength);
 
    if (curNEntries != streamLength * streamLength) {
-      float4 tiny<1>;
-
-      UPDATE_CUR_R(streamLength * streamLength, data, s, o);
-      UPDATE_CUR_W(streamLength * streamLength, data, s, o, tiny);
+      RunKernelBuildSummary(streamLength, 1);
       UPDATE_CUR_OPS(streamLength * streamLength, data, RunKernelHardWork, s, o);
    }
 
@@ -593,13 +579,12 @@ RunKernelFindIdealGPUvsCPUSlope(void)
    float4 tiny<1>;
    float4 *data, *outData;
    float slope = 0.0f, cMFLOPS, gMFLOPS, readRate, writeRate;
-   int i;
+   int cpuOps, i;
 
    RunKernelBuildData(&data, BIG_LENGTH * BIG_LENGTH);
    outData = (float4 *) malloc(BIG_LENGTH * BIG_LENGTH * sizeof *outData);
 
-   UPDATE_CUR_W(BIG_LENGTH * BIG_LENGTH, data, s, o, tiny);
-   UPDATE_CUR_OPS(BIG_LENGTH * BIG_LENGTH, data, RunKernelHardWork, s, o);
+   RunKernelBuildSummary(BIG_LENGTH, 1);
 
    RunKernelHardWorkCPU(BIG_LENGTH,
                         float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
@@ -609,7 +594,8 @@ RunKernelFindIdealGPUvsCPUSlope(void)
                            float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
    }
    t1 = CyclesToUsecs(GetTimeTSC() - t1) / SMOOTHING;
-   cMFLOPS = (BIG_LENGTH * BIG_LENGTH * 4 * ((float) curOps) / t1);
+   cpuOps = (int) outData[1].x - 1;
+   cMFLOPS = (BIG_LENGTH * BIG_LENGTH * 4 * ((float) cpuOps) / t1);
 
    t2 = GetTimeTSC();
    streamRead(s, data);
@@ -624,108 +610,26 @@ RunKernelFindIdealGPUvsCPUSlope(void)
      printf("(* The CPU is _faster_ than the GPU by");
      printf64(t2-t1);
      printf(" usecs! *)\n");
-      //goto done;
    }
 
-   if (((int) data[1].x - 1) != curOps) {
+   if (((int) data[1].x - 1) != cpuOps) {
       printf("(* CPU is doing %4.1f ops and GPU is doing %4.1f! *)\n",
-             (float) curOps, (float) (data[1].x - 1));
-      //goto done;
+             (float) cpuOps, (float) (data[1].x - 1));
    }
 
-   start = GetTimeTSC();
-   for (i = 0; i < SMOOTHING; i++) {
-      streamRead(s, data);
-      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
-      streamWrite(o, data);
-   }
-   start = CyclesToUsecs(GetTimeTSC() - start) / SMOOTHING;
-
-   if (t2 > start) {
-      printf("(* Avg(R + k + W) < Avg(k) by ");
-      printf64(t2 - start);
-      printf(" usecs?! *)\n");
-      goto done;
-   }
-
-   printf("(* R+k+W: ");
-   printf64(start);
-   printf(" R+W: ");
-   printf64(start-t2);
-   printf(" W: %6d k: ", cur_W);
-   printf64(t2);
-   printf("\n");
-
-   cur_R = ((int) (start - t2)) - cur_W;
-   if (start - t2 < cur_W) {
-      printf("(* Avg(R + k + W) < Avg(W) by ");
-      printf64(cur_W - (t2 - start));
-      printf("usecs?! *)\n");
-   }
-   readRate = sizeof(float) * 4 * BIG_LENGTH * BIG_LENGTH / (float) cur_R;
-   writeRate = sizeof(float) * 4 * BIG_LENGTH * BIG_LENGTH / (float) cur_W;
+   readRate = sizeof(float) * 4 * BIG_LENGTH * BIG_LENGTH / cur_R;
+   writeRate = sizeof(float) * 4 * BIG_LENGTH * BIG_LENGTH / cur_W;
    printf("(* Read: %5.2f MB/s, Write: %5.2f MB/s, CPU MFLOPS: %4.f GPU MFLOPS: %4.f\n",
          readRate, writeRate, cMFLOPS, gMFLOPS);
 
 
-   slope = (float) (start - t2) * curOps / (t1 - t2);
+   slope = (cur_R + cur_W) * cpuOps / (float) (t1 - t2);
    printf("(* Ideal slope: %5.2f Ideal iterations: %4.2f (%d ops)\tRunKVSIdeal *)\n",
-          slope, slope / (float) curOps, curOps);
+          slope, slope / (float) cpuOps, cpuOps);
 
-done:
    free(data);
    free(outData);
    return slope;
-}
-
-
-/*
- * RunKernelBuildSummary --
- *
- *      Generates a bunch of summary timing numbers
- */
-
-static void
-RunKernelBuildSummary(void)
-{
-   struct StatRecord kW, RkW, R100kW;
-   float4 s<BIG_LENGTH, BIG_LENGTH>, o<BIG_LENGTH, BIG_LENGTH>;
-   float4 *outData;
-   int j, i;
-
-   outData = (float4 *) malloc(BIG_LENGTH * BIG_LENGTH * sizeof *outData);
-
-   StatRecord_Clear(&kW);
-   for (i = 0; i < SMOOTHING; i++) {
-      t1 = GetTimeTSC();
-      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
-      streamWrite(o, outData);
-      StatRecord_Record(&kW, GetTimeTSC() - t1);
-   }
-   StatRecord_Print(&kW, "kW");
-
-   StatRecord_Clear(&RkW);
-   for (i = 0; i < SMOOTHING; i++) {
-      t1 = GetTimeTSC();
-      streamRead(s, outData);
-      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
-      streamWrite(o, outData);
-      StatRecord_Record(&RkW, GetTimeTSC() - t1);
-   }
-   StatRecord_Print(&RkW, "RkW");
-
-   StatRecord_Clear(&R100kW);
-   for (i = 0; i < 10; i++) {
-      t1 = GetTimeTSC();
-      streamRead(s, outData);
-      for (j = 0; j < SMOOTHING; j++) {
-         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
-      }
-      streamWrite(o, outData);
-      StatRecord_Record(&R100kW, GetTimeTSC() - t1);
-   }
-   StatRecord_Print(&R100kW, "R100kW");
-   free(outData);
 }
 
 
@@ -822,11 +726,9 @@ RunKernel_GPUvsCPU(int minLength)
    float idealSlope;
 
    RunKernelKickBRT();
-   RunKernelBuildSummary();
-   return;
 
    printf("(* RunKernel GPU vs. CPU: min length %d *)\n", minLength);
-   for (i = 0; i < 20; i++) {
+   for (i = 0; i < 1; i++) {
       idealSlope = RunKernelFindIdealGPUvsCPUSlope();
    }
 

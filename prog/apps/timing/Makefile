@@ -32,3 +32,6 @@ nv30-graph:
 
 dx9-graph:
 	$(MAKE) RUNTIME=dx9 $(GRAPHDIR)/graph-dx9.pdf
+
+arb-graph:
+	$(MAKE) RUNTIME=arb $(GRAPHDIR)/graph-arb.pdf

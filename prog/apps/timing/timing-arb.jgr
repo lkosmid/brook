@@ -1,0 +1,134 @@
+(* Timing.jgr --
+ *
+ *	Master Jgraph file for plotting the results from the Brook timing
+ *	tests.
+ *)
+
+newgraph 	(* RunKernel MFLOPS for 2D streams *)
+
+yaxis label : MFLOPS
+xaxis label : Number of Floats
+
+border
+title : 2D Stream MFLOPS (streamRead + 1000 runs + streamWrite)
+
+newcurve
+  marktype circle
+  linetype solid
+  pts 0 0
+  pts shell : awk '/RunK2D [0-9]+ R1000/ { print $7*$7*4, $2 }' graphs/graph-arb.pts
+
+newpage
+newgraph 	(* RunKernel Knee 2D Total *)
+
+yaxis min 0 label : Time (msecs)
+xaxis label : Number of ops per iteration
+
+border
+title : 2D Kernel overhead (stream length vs. elapsed time)
+
+newcurve
+  label : 1000 Iterations (43 madr kernel)
+  marktype triangle
+  linetype solid
+  pts shell : awk '/RunK2D [4-9] R1000/ { print 4*$7*$7*$9, ($1-$10-$11)/1000 }' graphs/graph-arb.pts 
+  pts shell : awk '/RunK2D [0-7][0-9] R1000/ { print 4*$7*$7*$9, ($1-$10-$11)/1000 }' graphs/graph-arb.pts
+
+  (* 
+newcurve
+  label : streamRead() + 1000 Iterations (BonusKernel) + streamWrite()
+  marktype circle
+  linetype solid
+  pts shell : awk '/RunK2DBonus [4-9] R1000/ { print 4*$7*$7*$9, ($1-$10-$11)/1000 }' graphs/graph-arb.pts 
+  pts shell : awk '/RunK2DBonus [0-4][0-9] R1000/ { print 4*$7*$7*$9, ($1-$10-$11)/1000 }' graphs/graph-arb.pts
+  *)
+
+legend bottom
+
+newpage
+newgraph 	(* RunKernel R/k/W breakdown *)
+
+yaxis label : Time (usecs)
+xaxis label : Number of Floats
+
+border
+title : 2D Kernel streamRead() / k() / streamWrite() breakdown
+
+newcurve
+  label : streamRead()
+  marktype circle
+  linetype solid
+  pts 0 0
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print 4*$7*$7, $10 }' graphs/graph-arb.pts 
+
+newcurve
+  label : streamRead() + 1 iteration
+  marktype box
+  linetype solid
+  (* pts 0 0 *)
+  pts 0 0
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print 4*$7*$7, $1 - $11 }' graphs/graph-arb.pts 
+
+newcurve
+  label : streamRead() + 1 iteration + streamWrite()
+  marktype triangle
+  linetype solid
+  pts 0 0
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print 4*$7*$7, $1 }' graphs/graph-arb.pts 
+
+legend bottom
+
+newpage
+newgraph 	(* RunKernel R/W Bandwidth *)
+
+yaxis label : MB/s
+xaxis label : Number of Floats Transferred
+
+border
+title : 2D Kernel streamRead() and streamWrite() Bandwidth
+
+newcurve
+  label : MAX(streamRead(), 1000)
+  marktype circle
+  linetype solid
+  pts shell : awk '/RunK2D [0-9]+ R1 / {                                \
+     if (16*$7*$7/$10 > 1000) {                                         \
+        print 4*$7*$7, 1000 }                                           \
+     else { print 4*$7*$7, 16*$7*$7/$10 }                               \
+  }' graphs/graph-arb.pts 
+
+newcurve
+  label : streamWrite()
+  marktype triangle
+  linetype solid
+  pts shell : awk '/RunK2D [0-9]+ R1 / { print 4*$7*$7, 16*$7*$7/$11 }' graphs/graph-arb.pts 
+
+legend bottom
+
+newpage
+newgraph 	(* RunKernel Computed k vs. average k *)
+
+yaxis label : Time (usecs)
+xaxis label : Number of Floats
+
+border
+title : 2D Kernel Computed k vs. Averaged k
+
+newcurve
+  label : MAX(( R + k + W ) - R - W, 0)
+  marktype circle
+  linetype solid
+  pts shell : awk '/RunK2D [0-9]+ R1 / {                                   \
+     if ($10 > $1) { print 4*$7*$7, 0 } else { print 4*$7*$7, ($1-$10-$11) } \
+  }' graphs/graph-arb.pts 
+
+newcurve
+  label : (R + 1000*k + W) / 1000
+  marktype box
+  linetype solid
+  pts shell : awk '/RunK2D [0-9]+ R1000 / {                              \
+     print 4*$7*$7, $1/1000                                                \
+  }' graphs/graph-arb.pts 
+
+legend bottom
+
