@@ -829,9 +829,9 @@ generate_shader_support(std::ostream& shader)
   if( !globals.enableGPUAddressTranslation ) {
     shader << "#ifdef SKIPSCALEBIAS\n";
     shader << "float __gatherindex1( float index, float4 scalebias ) { ";
-    shader << "return index; }\n";
+    shader << "return (index+scalebias.z); }\n";
     shader << "float2 __gatherindex2( float2 index, float4 scalebias ) { ";
-    shader << "return index; }\n";
+    shader << "return (index+scalebias.zw); }\n";
     shader << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
     shader << "#else\n";
     shader << "float __gatherindex1( float index, float4 scalebias ) { ";
