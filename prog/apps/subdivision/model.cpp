@@ -16,8 +16,12 @@ void checkEdgeNeighbor(const float4 &a, const float4 &b, float4 &c,const Tri &t)
    if ((t.B==a&&t.C==b)||(t.B==b&&t.C==a))
       c = t.A;
 }
+float neighboreps=0.000001;
+bool eq(float a, float b) {
+  return fabs(a-b)<neighboreps;
+}
 bool ne(float4 a, float4 b){
-	return !(a.x == b.x && a.y == b.y && a.z == b.z);
+	return !(eq(a.x, b.x) && eq(a.y, b.y) && eq(a.z, b.z));
 }
 
 void checkEdgeNeighbor2(const float4 &a, const float4 &alreadyhave, const float4 &b, float4 &c, const Tri &t){ 
@@ -37,9 +41,9 @@ void checkNeighbors (Neighbor * a, Neighbor* b, unsigned int tListsize) {
     float4 * bf = (float4*)(b+i);
     for (unsigned int j=0;j<9;++j) {
       if (ne(af[j],bf[j])) {
-        printf ("neighbor %d mismatch %.2f %.2f %.2f and %.2f %.2f %.2f\n",
+        fprintf (stderr,"neighbor %d mismatch %.2f %.2f %.2f and %.2f %.2f %.2f\n",
                 j,af[j].x,af[j].y,af[j].z,bf[j].x,bf[j].y,bf[j].z);
-      }else printf("%d ok %.2f %.2f %.2f\n",j,af[j].x,af[j].y,af[j].z);
+      }//else printf("%d ok %.2f %.2f %.2f\n",j,af[j].x,af[j].y,af[j].z);
     }
   }
 }
@@ -108,9 +112,11 @@ unsigned int loadModelData(const char * filename,
    *neigh =(Neighbor*)malloc(sizeof(Neighbor)*tList.size());
    for (unsigned int i=0;i<tList.size();++i) {
      float eps=.015625;
-     if (tList[i].A.z==0||tList[i].B.z==0||tList[i].C.z==0) {
+     if (tList[i].A.z==0) 
        tList[i].A.z+=eps;
+     if (tList[i].B.z==0)       
        tList[i].B.z+=eps;
+     if(tList[i].C.z==0) {
        tList[i].C.z+=eps;
      }
      (*tri)[i]=tList[i];
