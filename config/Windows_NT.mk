@@ -4,7 +4,7 @@ COMPILER_ECHOS   := 1
 
 CC               := cl
 LD               := link
-AR               := lib
+AR               := link /lib
 PERL             := perl
 OBJSUFFIX        := .obj
 LIBPREFIX        := 
