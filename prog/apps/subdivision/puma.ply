@@ -2,11 +2,11 @@ ply
 format ascii 1.0
 comment created by platoply
 comment modified by MCH
-element vertex 28
+element vertex 29
 property float32 x
 property float32 y
 property float32 z
-element face 34
+element face 38
 property list uint8 int32 vertex_indices
 end_header
 -64.000000 0.000000 -26.000000
@@ -37,6 +37,7 @@ end_header
 0.000000 12.000000 58.000000
 0.000000 12.000000 -16.000000
 0.000000 -12.000000 -16.000000
+0.000000 0.00000000 164.000000
 3 2 1 0
 3 27 2 3
 3 6 4 5
@@ -71,4 +72,7 @@ end_header
 3 5 27 4
 3 9 10 0
 3 3 10 11
-
+3 17 28 21
+3 21 28 15
+3 15 28 14
+3 14 28 17
