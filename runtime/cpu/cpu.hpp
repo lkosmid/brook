@@ -33,8 +33,10 @@ namespace brook {
        std::vector<void *> args;
        class ReductionArg {public:
           unsigned int which;
-          unsigned int size;
-          ReductionArg(unsigned int w, unsigned int s) {which=w;size=s;}
+          __BRTStreamType type;
+          ReductionArg(unsigned int w, __BRTStreamType s) {
+             which=w;type=s;
+          }
        };
        std::vector<ReductionArg> reductions;
        Stream * writeOnly;

@@ -51,7 +51,7 @@ namespace brook{
         args.push_back(s);
     }
     void CPUKernel::PushReduce(void * data, __BRTStreamType type) {
-       reductions.push_back(ReductionArg(args.size(),knownTypeSize(type)));
+       reductions.push_back(ReductionArg(args.size(),type));
        args.push_back(data);
     }
     void CPUKernel::PushOutput(Stream *s){
@@ -67,6 +67,7 @@ namespace brook{
 	  writeOnlies.push_back(s);
     }
     void CPUKernel::Cleanup() {
+        reductions.clear();
         args.clear();
 	while (!writeOnlies.empty()){
 	  writeOnlies.back()->releaseData(Stream::WRITE);
