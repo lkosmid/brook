@@ -192,7 +192,7 @@ int PMLSeg_main(int argc, char* argv[]) {
         for(i=0; i<xsize*ysize*2; i+=2){
 		input[i] = rand()/(float)INT_MAX;
 	}   
-	//Let's insert some seed data at 175x256
+	//Let's insert some seed data in the middle
 	for(i=xsize/2-2; i<xsize/2+2; i++){
 		for(j=ysize/2-2; j<ysize/2+2; j++){
 			input[2*(j*xsize+i)+1] = 1.0f;
