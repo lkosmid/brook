@@ -241,7 +241,9 @@ GLKernel::~GLKernel() {
    free(pass_out);
 
    for (i=0; i<GL_MAX_CONSTS; i++)
-      free(constnames[i]);
+      if (constnames[i])
+         free(constnames[i]);
+   free(constnames);
 
    free(argumentUsesIndexof);
 
