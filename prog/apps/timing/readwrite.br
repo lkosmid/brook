@@ -110,11 +110,11 @@ ReadWrite1D(const char *logName, int length)
 
    ReadWriteBuildData(&in, &output, length);
 
-   start = GetTime();
+   start = GETTIME();
    streamRead(s, in);
    ReadWriteNOP(s, o);
    streamWrite(o, output);
-   stop = GetTime();
+   stop = GETTIME();
 
    ReadWriteProcessTiming(logName, in, output, length, length);
 
@@ -138,11 +138,11 @@ ReadWrite2D(const char *logName, int length)
 
    ReadWriteBuildData(&in, &output, length * length);
 
-   start = GetTime();
+   start = GETTIME();
    streamRead(s, in);
    ReadWriteNOP(s, o);
    streamWrite(o, output);
-   stop = GetTime();
+   stop = GETTIME();
 
    ReadWriteProcessTiming(logName, in, output, length, length * length);
 

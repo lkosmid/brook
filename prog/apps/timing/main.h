@@ -14,6 +14,12 @@ typedef __int64 int64;
 typedef long long int64;
 #endif
 
+#if 1
+#define GETTIME()	GetTime()
+#else
+#define GETTIME()	(GetTimeMillis() * 1000)
+#endif
+
 extern int64 GetTime(void);
 extern unsigned int GetTimeMillis(void);
 

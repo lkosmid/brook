@@ -515,13 +515,13 @@ RunKernel1D(char *logName, int streamLength, int nRuns)
 
    RunKernelBuildData(&data, streamLength);
 
-   start = GetTime();
+   start = GETTIME();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
       RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    }
    streamWrite(o, data);
-   stop = GetTime();
+   stop = GETTIME();
 
    RunKernelProcessTiming(logName, data, streamLength, streamLength, nRuns);
    free(data);
@@ -543,13 +543,13 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
 
    RunKernelBuildData(&data, streamLength * streamLength);
 
-   start = GetTime();
+   start = GETTIME();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
       RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    }
    streamWrite(o, data);
-   stop = GetTime();
+   stop = GETTIME();
 
    RunKernelProcessTiming(logName, data,
                           streamLength, streamLength * streamLength, nRuns);
@@ -573,12 +573,12 @@ RunKernel2DCPU(char *logName, int streamLength, int nRuns)
    RunKernelBuildData(&data, streamLength * streamLength);
    outData = (float4 *) malloc(streamLength * streamLength * sizeof *outData);
 
-   start = GetTime();
+   start = GETTIME();
    for (i = 0; i < nRuns; i++) {
       RunKernelHardWorkCPU(streamLength,
                            float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
    }
-   stop = GetTime();
+   stop = GETTIME();
 
    RunKernelProcessTiming(logName, outData, streamLength,
                           streamLength * streamLength, nRuns);
@@ -599,7 +599,7 @@ RunKernel2DCPU(char *logName, int streamLength, int nRuns)
 void
 RunKernel_Time(int maxLength)
 {
-   static const int runLengths[] = { 1, 2, 4, 8, 10, 20, 40, 50, /*75, 150, 200*/ };
+   static const int runLengths[] = { 1, 2, 4, 8, 10, 20, 40, 50, 75, /* 150, 200, 300, 500 */ };
    static const int lengths[] = { 1, 4, 16, 64, 256, 512, 1024, 2048 };
    static const int numLengths = sizeof lengths / sizeof lengths[0];
    static const int numRunLengths = sizeof runLengths / sizeof runLengths[0];
