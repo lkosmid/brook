@@ -1,3 +1,3 @@
 ROOTDIR := .
-SUBDIRS := brcc/v01 src prog
+SUBDIRS := brcc src prog
 include common.mk
