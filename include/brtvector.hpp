@@ -226,23 +226,12 @@ template <> class BracketOp <char> {public:
 template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
     return Holder<T>(in).getAt(i);
 }
-class MaskX {public:
-    enum{ref=0};
+enum MASKS {
+  maskX=0,
+  maskY=1,
+  maskZ=2,
+  maskW=3
 };
-class MaskY {public:
-    enum{ref=1};
-};
-class MaskZ {public:
-    enum{ref=2};
-};
-class MaskW {public:
-    enum{ref=3};
-};
-static MaskX maskX;
-static MaskY maskY;
-static MaskZ maskZ;
-static MaskW maskW;
-
 template <class T> class InitializeClass {public:
     template <class V> T operator () (const V&a, const V&b, const V&c,
 const V&d) {
@@ -305,21 +294,20 @@ public:
         InitializeClass<T> a; 
         return a(getAt(0),getAt(1),getAt(2),getAt(3));
     }
-    template<class x, class y, class z, class w> 
-      vec<VALUE,4> swizzle4(x,y,z,w)const {
-        return vec<VALUE,4>(getAt(x::ref),
-                            getAt(y::ref),
-                            getAt(z::ref),
-                            getAt(w::ref));
+    vec<VALUE,4> swizzle4(MASKS x,MASKS y,MASKS z,MASKS w)const {
+        return vec<VALUE,4>(getAt(x),
+                            getAt(y),
+                            getAt(z),
+                            getAt(w));
     }
-    template<class x, class y, class z> vec<VALUE,3> swizzle3(x,y,z)const {
-        return vec<VALUE,3>(getAt(x::ref),getAt(y::ref),getAt(z::ref));
+    vec<VALUE,3> swizzle3(MASKS x,MASKS y,MASKS z)const {
+        return vec<VALUE,3>(getAt(x),getAt(y),getAt(z));
     }
-    template<class x, class y> vec<VALUE,2> swizzle2(x,y)const {
-        return vec<VALUE,2>(getAt(x::ref),getAt(y::ref));
+    vec<VALUE,2> swizzle2(MASKS x,MASKS y)const {
+        return vec<VALUE,2>(getAt(x),getAt(y));
     }
-    template<class x> vec<VALUE, 1> swizzle1(x)const {
-        return vec<VALUE,1>(getAt(x::ref));
+    vec<VALUE, 1> swizzle1(MASKS x)const {
+        return vec<VALUE,1>(getAt(x));
     }
 #define ASSIGN_OP(op) template <class T> \
          vec<VALUE,tsize>& operator op (const T & in) {  \
@@ -336,51 +324,50 @@ public:
     ASSIGN_OP(*=);
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
-    template <class T, class X, class Y, class Z, class W> 
-      vec<VALUE,4> mask4 (const T&in,X,Y,Z,W) {
-        if (tsize>X::ref)f[X::ref]=in.getAt(0);
-        if (tsize>Y::ref)f[Y::ref]=in.getAt(1);
-        if (tsize>Z::ref)f[Z::ref]=in.getAt(2);
-        if (tsize>W::ref)f[W::ref]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X::ref),
-                    getAt(Y::ref),
-                    getAt(Z::ref),
-                    getAt(W::ref));
+    template <class T>
+      vec<VALUE,4> mask4 (const T&in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
     }
-    template <class T, class X, class Y, class Z> 
-      vec<VALUE,3> mask3 (const T&in,X,Y,Z) {
-        if (tsize>X::ref)f[X::ref]=in.getAt(0);
-        if (tsize>Y::ref)f[Y::ref]=in.getAt(1);
-        if (tsize>Z::ref)f[Z::ref]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X::ref),getAt(Y::ref),getAt(Z::ref));
+    template <class T>
+      vec<VALUE,3> mask3 (const T&in,MASKS X,MASKS Y,MASKS Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
     }
-    template <class T, class X, class Y> 
-      vec<VALUE,2> mask2 (const T&in,X,Y) {
-        if (tsize>X::ref)f[X::ref]=in.getAt(0);
-        if (tsize>Y::ref)f[Y::ref]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X::ref),getAt(Y::ref));
+    template <class T> 
+      vec<VALUE,2> mask2 (const T&in,MASKS X,MASKS Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
     }
-    template <class T, class X> 
-      vec<VALUE,1> mask1 (const T&in,X) {
-        if (tsize>X::ref)f[X::ref]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X::ref));
+    template <class T> 
+      vec<VALUE,1> mask1 (const T&in,MASKS X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
     }    
     vec() {
       //for (unsigned int i=0;i<size;++i) 
       //      f[i]=VALUE();
     }
-    template <class A,class B, class C, class D> 
-      vec (const A &inx, const B &iny, const C &inz, const D& inw) {
+    template <class T> 
+      vec (const T &inx, const T &iny, const T &inz, const T& inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-    template <class A, class B, class C> 
-      vec (const A& inx, const B& iny, const C& inz) {
+    template <class T> vec (const T& inx, const T& iny, const T& inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-    template <class A, class B>vec (const A& inx, const B& iny) {
+    template <class T>vec (const T& inx, const T& iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
