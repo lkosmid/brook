@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <string>
 #include "nv30gl.hpp"
 
 using namespace brook;
@@ -42,6 +42,28 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
        source == NULL) { 
       fprintf (stderr, "NV30GL: No kernel source found\n");
       exit(1);
+   }
+
+   // look for our annotations...
+   std::string s = source;
+   
+   s = s.substr( s.find("!!BRCC") );
+   
+   // next is the narg line
+   s = s.substr( s.find("\n")+1 );
+   s = s.substr( s.find(":")+1 );
+   
+   std::string argumentCountString = s.substr( 0, s.find("\n") );
+   unsigned int argumentCount = (unsigned int) 
+      atoi( argumentCountString.c_str() );
+   argumentUsesIndexof = (bool *) malloc (sizeof(bool) * argumentCount);
+   
+   for( i = 0; i < argumentCount; i++ ) {
+       s = s.substr( s.find("\n")+1 );
+       s = s.substr( s.find("##")+2 );
+       char typeCode = s[0];
+       char indexofHint = s[1];
+       argumentUsesIndexof[i] = (indexofHint == 'i');
    }
    
    /* Load the program code */
@@ -157,16 +179,7 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
    }
 
    /* Initialize state machine */
-   creg = 1;
-   sreg = 0;
-   treg = 0;
-   outstream = NULL;
-   sreg0 = NULL;
-
-   for (i=0; i<NV30GL_MAX_TEXCOORDS; i++) {
-      sargs[i] = NULL;
-      iargs[i] = NULL;
-   }
+   ResetStateMachine();
 }
 
 void NV30GLKernel::PushStream(Stream *s) {
@@ -185,8 +198,14 @@ void NV30GLKernel::PushStream(Stream *s) {
      sreg0 = (NV30GLStream *) s;
 
    sargs[treg] = nv_stream;
+
+   if (argumentUsesIndexof[argcount])
+     creg++;
+
    sreg++;
    treg++;
+   argcount++;
+
 }
 
 void NV30GLKernel::PushIter(Iter *s) {
@@ -195,6 +214,7 @@ void NV30GLKernel::PushIter(Iter *s) {
 
    iargs[treg] = nv_iter;
    treg++;
+   argcount++;
 }
 
 void NV30GLKernel::PushConstant(const float &val) {
@@ -202,6 +222,7 @@ void NV30GLKernel::PushConstant(const float &val) {
                                (const GLubyte *) constnames[creg],
                                val, 0.0f, 0.0f, 0.0f);
    creg++;
+   argcount++;
    CHECK_GL();
 }
 
@@ -210,6 +231,8 @@ void NV30GLKernel::PushConstant(const float2 &val) {
                                (const GLubyte *) constnames[creg],
                                val.x, val.y, 0.0f, 0.0f);
    creg++;
+   argcount++;
+   CHECK_GL();
 }
 
 void NV30GLKernel::PushConstant(const float3 &val) {
@@ -217,6 +240,8 @@ void NV30GLKernel::PushConstant(const float3 &val) {
                                (const GLubyte *) constnames[creg],
                                val.x, val.y, val.z, 0.0f);
    creg++;
+   argcount++;
+   CHECK_GL();
 }
 
 void NV30GLKernel::PushConstant(const float4 &val) {
@@ -224,6 +249,8 @@ void NV30GLKernel::PushConstant(const float4 &val) {
                                (const GLubyte *) constnames[creg],
                                val.x, val.y, val.z, val.w);
    creg++;
+   argcount++;
+   CHECK_GL();
 }
 void NV30GLKernel::PushReduce(void * val, __BRTStreamType type) {
  
@@ -237,6 +264,7 @@ void NV30GLKernel::PushReduce(void * val, __BRTStreamType type) {
 
    sreg++;
    treg++;
+   argcount++;
 }
 
 void NV30GLKernel::PushGatherStream(Stream *s) {
@@ -249,11 +277,20 @@ void NV30GLKernel::PushGatherStream(Stream *s) {
    
    sreg++;
    creg++;
+   argcount++;
 }
 
 void NV30GLKernel::PushOutput(Stream *s) {
    assert (outstream == NULL);
    outstream = (NV30GLStream *) s;
+
+   if (argumentUsesIndexof[argcount]) {
+     sargs[treg] = outstream;
+     treg++;
+     creg++;
+   }
+
+   argcount++;
 }
 
 static void
@@ -352,6 +389,23 @@ compute_st(unsigned int w, unsigned int h,
 
 }
 
+void NV30GLKernel::ResetStateMachine() {
+   /* Reset state machine */
+
+   int i;
+
+   creg = 1;
+   sreg = 0;
+   treg = 0;
+   argcount = 0;
+   for (i=0; i<NV30GL_MAX_TEXCOORDS; i++) {
+      sargs[i] = NULL;
+      iargs[i] = NULL;
+   }
+   outstream = NULL;
+   sreg0 = NULL;
+}
+
 void NV30GLKernel::Map() {
    
    unsigned int i;
@@ -443,16 +497,8 @@ void NV30GLKernel::Map() {
                     GLtype[outstream->ncomp], 0, 0, w, h, 0);
    CHECK_GL();
 
-   /* Reset state machine */
-   creg = 1;
-   sreg = 0;
-   treg = 0;
-   for (i=0; i<NV30GL_MAX_TEXCOORDS; i++) {
-      sargs[i] = NULL;
-      iargs[i] = NULL;
-   }
-   outstream = NULL;
-   sreg0 = NULL;
+   ResetStateMachine();
+
 }
 
 
@@ -465,13 +511,7 @@ NV30GLKernel::Reduce() {
    else 
       ReduceScalar();
 
-   /* Reset state machine */
-   creg = 1;
-   sreg = 0;
-   treg = 0;
-   reduceVal = NULL;
-   inputReduceStream = NULL;
-   sreg0 = NULL;
+   ResetStateMachine();
 }
 
 #if 0
@@ -1079,6 +1119,8 @@ NV30GLKernel::~NV30GLKernel() {
  
    for (i=0; i<NV30GL_MAXCONSTS; i++)
       free(constnames[i]);
+
+   free(argumentUsesIndexof);
 
    for (i=0; i<5; i++)
       if (tmpReduceStream[i])

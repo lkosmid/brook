@@ -75,6 +75,7 @@ void __check_gl(int line, char *file);
       void Map();
       void Reduce();
       void Release() {}
+      void ResetStateMachine();
     
       NV30GLRunTime * runtime;
       GLuint id;
@@ -82,6 +83,7 @@ void __check_gl(int line, char *file);
       int sreg;
       int treg;
       int creg;
+      int argcount;
 
       void *reduceVal;
       __BRTStreamType reduceType;
@@ -100,7 +102,7 @@ void __check_gl(int line, char *file);
       char **constnames;
 
       NV30GLStream *outstream;
-      
+      bool         *argumentUsesIndexof;
       NV30GLStream *sargs[NV30GL_MAX_TEXCOORDS];
       NV30GLIter   *iargs[NV30GL_MAX_TEXCOORDS];
 
