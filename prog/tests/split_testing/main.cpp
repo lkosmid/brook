@@ -16,12 +16,12 @@ int getTime()
   return (int)timeGetTime();
 }
 
-void main()
+void main( int argc, char** argv )
 {
   int time;
 
-  int size = 512;
-  int count = 1000;
+  int size = atoi( argv[1] );
+  int count = atoi( argv[2] );
 
   testMatmult( size, count, &time );
 //  testFractal( size, count, &time );

@@ -17,10 +17,10 @@
 //#define SPLIT_SEARCH_EXHAUSTIVE
 
 // uncomment this to turn on the greedy merging that improves RDS
-//#define SPLIT_SEARCH_MERGE
+#define SPLIT_SEARCH_MERGE
 
 // uncomment this line for RDS + an after-the-fact merge
-#define SPLIT_SEARCH_MERGE_AFTER
+//#define SPLIT_SEARCH_MERGE_AFTER
 
 // uncomment this line to allow RDS*merge to remove useless nodes
 // during the incremental search, not just at the end
