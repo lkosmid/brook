@@ -94,27 +94,15 @@ else
 endif
 
 
-clean:
+BR_FILES_CLEAN   = $(addsuffix .br-clean, $(FILES))
+
+%.br-clean:
+	@if test -f $*.br; then rm -rf $*.c $*.h; fi	
+
+clean: $(BR_FILES_CLEAN)
 ifdef SUBDIRS
 	@for i in $(SUBDIRS); do $(MAKE) --no-print-directory -C $$i clean; done
 else
 	@rm -rf $(OBJDIR) $(BINDIR)/$(BINARY) $(SLOP) *.proto.cpp $(BINDIR)/$(BINARY_NAME).pdb *~ *MCTEMPFILE* $(FRAGMENT_PROGRAMS)
 endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

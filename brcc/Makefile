@@ -29,6 +29,6 @@ lex.yy.c: brook.l
 	flex brook.l
 
 clean:
-	rm -rf lex.yy.c brook.tab.c brook.tab.h \
+	rm -rf lex.yy.c brook.tab.c brook.tab.h fp30_assist.cg.bin \
 		*~ *.obj *.exe _kernel.cg *.ilk *.opt *.pdb
 
