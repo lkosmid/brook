@@ -90,15 +90,17 @@ kernel void bitReverseXo2 (out float4 s_out<>,
 }
 kernel void bitReverseXo2Y (out float4 s_out<>,
                           float4 indicesXo2YXp1o2Xm2[], 
-                          float4 s[][]) {
-   float4 indexX = indicesXo2YXp1o2Xm2[(indexof s_out).x];
-   float4 indexY = indicesXo2YXp1o2Xm2[(indexof s_out).y];
+                          float4 s[][], float halfM, float even) {
+   float2 s_out_index=indexof s_out.xy;
+   float2 zero2=0;
+   float4 indexX = indicesXo2YXp1o2Xm2[s_out_index.x];
+   float4 indexY = indicesXo2YXp1o2Xm2[s_out_index.y];
    float2 outindex = {indexX.x,indexY.y};
    float4 s_temp = s[outindex];
    s_out.xy = indexX.ww?s_temp.zw:s_temp.xy;
    outindex.x = indexX.z;//get the index + 1 (adds half the stream)
    s_temp = s[outindex];
-   s_out.zw = indexX.ww?s_temp.zw:s_temp.xy;
+   s_out.zw = ((indexX.ww||s_out_index.xx<=.5)&&round(s_out_index.xx)!=halfM)?s_temp.zw:s_temp.xy;
 }
 
 // Utilities and the BitReverse() procedure
@@ -135,11 +137,12 @@ float4 * bitReversedIndices (int logN, int logM) {
   float4 * s_array;
   s_array = (float4*)calloc(maxNM,sizeof(float4));
   for (i=0;i<maxNM;++i) {
-    int temp = BitReverse(i*2,logM);
+    int temp = i==0?0:BitReverse(M-(i*2),logM);//BitReverse(i==0?0:M-(i*2),logM);
     s_array[i].x=(float)(temp/2);
-    s_array[i].y=(float)BitReverse(i,logN);
-    s_array[i].z=(float)(BitReverse(i*2+1,logM)/2);
+    s_array[i].y=(float)(i==0?0:BitReverse(N-i,logN));//BitReverse(i==0?0:N-i,logN));
+    s_array[i].z=(float)(BitReverse(M-(i*2+1),logM)/2);//(BitReverse(M-(i*2+1),logM)/2);
     s_array[i].w=(float)(temp%2);
+    
   }
   return s_array;
 }
@@ -272,7 +275,7 @@ void computeFFT2d(float4 input<>,
 	 }
    }
    if (!split_bit_reverse) {//now do it separately
-     bitReverseXo2Y(output,indicesXo2YXp1o2Xm2,input);      
+     bitReverseXo2Y(output,indicesXo2YXp1o2Xm2,input,(float)(M/4),(float)(logM%2==0));      
      if (debug_fft==2) {
        printf ("\nBit Reversal\n");
        streamPrint(output);
@@ -319,8 +322,8 @@ void blur2d(float2 *input,
      if (!edgedetect)
         blur(s_out,N,M);
       else 
-        edgeDetect(s_out,N,M);
-     /*scale2d(s_out,s_out,(float)(N*M));*/
+        //edgeDetect(s_out,N,M);
+     scale2d(s_out,s_out,(float)(N*M));
       streamSwap(s,s_out);
    }
    computeFFT2d(s,s_out,logN,logM,N,M,bitreversal);
