@@ -236,12 +236,6 @@ char *toksym(int tok, int white)
         else
           return("static");
 
-    case STREAM:
-        if (white)
-          return("stream ");
-        else
-          return("stream");
-
     case STRUCT:
         if (white)
           return("struct ");

@@ -103,7 +103,6 @@ enum StorageType
     ST_Static,
     ST_Typedef,
     ST_Kernel,
-    ST_Stream,
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -509,8 +508,7 @@ class Decl
     bool    isStatic() const { return (storage == ST_Static); }
     bool    isKernel() const { return (storage == ST_Kernel); }
     bool    isStream() const {
-       return (storage == ST_Stream ||
-               form->type == TT_Stream || form->type == TT_BrtStream); }
+       return (form->type == TT_Stream || form->type == TT_BrtStream); }
 
     void    clear();
 

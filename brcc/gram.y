@@ -75,7 +75,7 @@ extern int err_top_level;
 
 /* the reserved words */
 %token <typeQual>   CONST VOLATILE OUT
-%token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF KERNEL STREAM
+%token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF KERNEL
 %token <base>       VOID CHAR SHORT INT LONG DOUBLE SGNED UNSGNED
 /* IMPORTANT: Keep all the FLOATN's next to each other in order! */
 %token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4
@@ -1377,7 +1377,6 @@ decl_specs_reentrance_bis: decl_specs_reentrance
           
 local_or_global_storage_class: EXTRN
                              | STATIC
-                   	     | STREAM
                              | TYPEDEF
         ;
 

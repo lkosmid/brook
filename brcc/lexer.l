@@ -218,10 +218,6 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->storage = ST_Kernel;
                       return(err_tok = KERNEL);
                     }
-<INITIAL>"stream"   {
-                      lvalp->storage = ST_Stream;
-                      return(err_tok = STREAM);
-                    }
 <INITIAL>"typedef"  {
                       lvalp->storage = ST_Typedef;
                       return(err_tok = TYPEDEF);
