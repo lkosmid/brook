@@ -47,18 +47,18 @@ void CountValues(struct StreamHolder list_stream,
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
-   float maxshift=999;
+   float maxshift=999.0f;
 
-   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   CountToRight (*list_stream,output_stream,sign,maxvalue);   
+   CountToRight (*list_stream,output_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
       printf ("\nStage %d\n",i);
       streamPrint(i%2?output_stream:tmp_stream);
       if (i%2)
-         CountToRight (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
+         CountToRight (output_stream,tmp_stream,(float)sign*(1<<i),maxvalue);      
       else
-         CountToRight (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+         CountToRight (tmp_stream,output_stream,(float)sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
      streamSwap(tmp_stream,*output_stream);
@@ -76,8 +76,8 @@ int main () {
 	max.x=3;max.y=4;
 	for (i=0;i<4;++i) {
 		for (j=0;j<3;++j) {
-			ind[i][j].x=j;
-			ind[i][j].y=i;ind[i][j].z=ind[i][j].w=0;
+			ind[i][j].x=(float)j;
+			ind[i][j].y=(float)i;ind[i][j].z=ind[i][j].w=0.0f;
                         val[i][j]=0;
 		}
 	}
