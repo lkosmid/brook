@@ -3,6 +3,14 @@ typedef struct Tri_t{
    float4 B;
    float4 C;
 } Tri;
+typedef struct SplitTri_t {
+  float4 A;
+  float4 AB;
+  float4 B;
+  float4 BC;
+  float4 C;
+  float4 AC;
+}SplitTri;
 //Stores the neighbors of a given triangle
 // the unused 'w' components act as holders
 // for the recomputed neighbor list when a triangle is split
@@ -129,60 +137,97 @@ kernel float4 addN(float3 inxyz, float inw) {
    return x;
 } 
 kernel float4 identity(float4 a, float b){return a;}
+kernel float3 ident3(float3 a, float b) {return a;}
 kernel void splitTriangles (Tri triangles[][], 
                             Neighbor neighbors[][],
                             float2 i<>,
-                            Neighbor newnei<>,
-                            out Tri triA<>,
-                            out Tri triB<>,
-                            out Tri triC<>,
-                            out Tri triD<>,
-                            out Neighbor neighborA<>,
-                            out Neighbor neighborB<>,
-                            out Neighbor neighborC<>,
-                            out Neighbor neighborD<>) {
+                            out SplitTri splittri<>) {
   Tri tri=triangles[i];
   Neighbor oldneighbors=neighbors[i];
-  float4 ac = addN(lerp(lerp (tri.A.xyz,tri.C.xyz,.5),
-                        lerp (tri.B.xyz,oldneighbors.AC.xyz,.5),
-                        .25),
-                   1);
-  float4 ab = addN(lerp(lerp (tri.A.xyz,tri.B.xyz,.5),
-                        lerp(tri.C.xyz,oldneighbors.AB.xyz,.5),
-                        .25),
-                   1);
-  float4 bc = addN(lerp(lerp (tri.B.xyz,tri.C.xyz,.5),
-                        lerp(tri.A.xyz,oldneighbors.BC.xyz,.5),
-                        .25),
-                   1);
-  float4 a = addN(lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,oldneighbors.AC.xyz,.5),
-                                 lerp(tri.B.xyz,tri.C.xyz,.5),
-                                 .5),
-                            lerp(oldneighbors.AAB.xyz,oldneighbors.AAC.xyz,.5),
-                            .33),
-                       tri.A.xyz,
-                       .625),
-                  1);
-  float4 b = addN(lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,oldneighbors.BC.xyz,.5),
-                                 lerp(tri.A.xyz,tri.C.xyz,.5),
-                                 .5),
-                            lerp(oldneighbors.ABB.xyz,oldneighbors.BBC.xyz,.5),
-                            .33),
-                       tri.B.xyz,
-                       .625),
-                  1);
-  float4 c = addN(lerp(lerp(lerp(lerp(oldneighbors.AC.xyz,
-                                      oldneighbors.BC.xyz,
+  splittri.AC = lerp (tri.A,tri.C,.5);
+  if (tri.A.w||tri.C.w)
+    splittri.AC = addN(lerp(splittri.AC.xyz,
+                            lerp (tri.B.xyz,oldneighbors.AC.xyz,.5),
+                            .25),
+                       1);
+  splittri.AB = lerp (tri.A,tri.B,.5);
+  if (tri.A.w||tri.B.w)
+    splittri.AB = addN(lerp(splittri.AB.xyz,
+                                lerp(tri.C.xyz,oldneighbors.AB.xyz,.5),
+                                .25),
+                           1);
+  splittri.BC = lerp (tri.B,tri.C,.5);
+  if (tri.B.w||tri.C.w)
+    splittri.BC = addN(lerp(splittri.BC.xyz,
+                                lerp(tri.A.xyz,oldneighbors.BC.xyz,.5),
+                                .25),
+                           1);
+  splittri.A = tri.A;
+  if (tri.A.w)
+    splittri.A.xyz = ident3(lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,
+                                              oldneighbors.AC.xyz,
+                                              .5),
+                                         lerp(tri.B.xyz,tri.C.xyz,.5),
+                                         .5),
+                                    lerp(oldneighbors.AAB.xyz,
+                                         oldneighbors.AAC.xyz,
+                                         .5),
+                                    .33),
+                               tri.A.xyz,
+                               .625),
+                          1);
+  splittri.B = tri.B;
+  if (tri.B.w)
+    splittri.B.xyz=ident3(lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,
+                                          oldneighbors.BC.xyz,
+                                          .5),
+                                     lerp(tri.A.xyz,tri.C.xyz,.5),
+                                     .5),
+                                lerp(oldneighbors.ABB.xyz,
+                                     oldneighbors.BBC.xyz,
+                                     .5),
+                                .33),
+                           tri.B.xyz,
+                           .625),
+                      1);
+  splittri.C = tri.C;
+  if (tri.C.w)
+    splittri.C.xyz=ident3(lerp(lerp(lerp(lerp(oldneighbors.AC.xyz,
+                                           oldneighbors.BC.xyz,
+                                           .5),
+                                      lerp(tri.A.xyz,
+                                           tri.B.xyz,
+                                           .5),
                                       .5),
-                                 lerp(tri.A.xyz,
-                                      tri.B.xyz,
+                                 lerp(oldneighbors.ACC.xyz,
+                                      oldneighbors.BCC.xyz,
                                       .5),
-                                 .5),
-                            lerp(oldneighbors.ACC.xyz,oldneighbors.BCC.xyz,.5),
-                            .33),
-                       tri.C.xyz,
-                       .625),
-                  1);
+                                 .33),
+                            tri.C.xyz,
+                            .625),
+                       1);
+  
+}
+
+
+
+
+kernel void reorgSplitTriangles (SplitTri splittri<>,
+                                 Neighbor newnei<>,
+                                 out Tri triA<>,
+                                 out Tri triB<>,
+                                 out Tri triC<>,
+                                 out Tri triD<>,
+                                 out Neighbor neighborA<>,
+                                 out Neighbor neighborB<>,
+                                 out Neighbor neighborC<>,
+                                 out Neighbor neighborD<>) {
+  float4 ac = splittri.AC;
+  float4 ab = splittri.AB;
+  float4 bc = splittri.BC;
+  float4 a = splittri.A;
+  float4 b = splittri.B;
+  float4 c = splittri.C;
   float4 BC_C= {newnei.BC.w,
                 newnei.ACC.w,
                 newnei.BCC.w,1};
@@ -246,6 +291,89 @@ kernel void splitTriangles (Tri triangles[][],
   neighborD.ACC = AB_B;
 
 }
+
+
+kernel void linearReorgSplitTriangles (SplitTri splittri<>,
+                                       Neighbor newnei<>,
+                                       out Tri tri<>,
+                                       out Neighbor neighbor<>) {
+  float unclampedwhich = round(fmod((indexof tri).x,4));
+  float which = unclampedwhich>3.5?0:unclampedwhich;
+  float4 ac = splittri.AC;
+  float4 ab = splittri.AB;
+  float4 bc = splittri.BC;
+  float4 a = splittri.A;
+  float4 b = splittri.B;
+  float4 c = splittri.C;
+  float4 BC_C= {newnei.BC.w,
+                newnei.ACC.w,
+                newnei.BCC.w,1};
+  float4 AC_A = {newnei.AC.w,
+                 newnei.AAB.w,
+                 newnei.AAC.w,1};
+  float4 AB_B = {newnei.AB.w,
+                 newnei.BBC.w,
+                 newnei.ABB.w,1};
+  if (which<.5) {
+    tri.A=identity(a,1);
+    tri.B=identity(ab,1);
+    tri.C=identity(ac,1);
+
+    neighbor.BCC = c;
+    neighbor.BC = bc;
+    neighbor.BBC= b;
+    neighbor.ABB= AB_B;
+    neighbor.AB = newnei.AB;
+    neighbor.AAB =  newnei.AAB;
+    neighbor.AAC =  newnei.AAC;
+    neighbor.AC = AC_A;
+    neighbor.ACC = newnei.AC;
+  }else if (which <1.5) {
+    tri.A= identity(ab,1);
+    tri.B=identity(b,1);
+    tri.C=identity(bc,1);
+
+    neighbor.BCC = BC_C;
+    neighbor.BC = newnei.BC;
+    neighbor.BBC=newnei.BBC;
+    neighbor.ABB=newnei.ABB;
+    neighbor.AB = AB_B;
+    neighbor.AAB = newnei.AB;
+    neighbor.AAC = a;
+    neighbor.AC = ac;
+    neighbor.ACC = c;
+  }else if (which<2.5) {
+    
+    tri.A=identity(ac,1);
+    tri.B=identity(ab,1);
+    tri.C=identity(c,1);
+
+    neighbor.BCC=newnei.BCC;
+    neighbor.BC=BC_C;
+    neighbor.BBC = newnei.BC;
+    neighbor.ABB = b;
+    neighbor.AB = ab;
+    neighbor.AAB = a;
+    neighbor.AAC = AC_A;
+    neighbor.AC = newnei.AC;
+    neighbor.ACC = newnei.ACC;
+  }else {
+    tri.A=identity(bc,1);
+    tri.B=identity(ac,1);
+    tri.C=identity(ab,1);
+
+    neighbor.BCC = newnei.AB;
+    neighbor.BC = a;
+    neighbor.BBC= AC_A;
+    neighbor.ABB= newnei.AC;
+    neighbor.AB = c;
+    neighbor.AAB = BC_C;
+    neighbor.AAC = newnei.BC;
+    neighbor.AC = b;
+    neighbor.ACC = AB_B;
+  }
+}
+
 int main () {
    return 0;
 }
