@@ -40,11 +40,11 @@ Software Prerequisites
      BRCC will look for cgc and fxc (the HLSL compiler from the DirectX 9
      SDK) in the path.  Following the default installations, cgc.exe is in
      C:\Program Files\NVIDIA Corporation\Cg\bin and fxc.exe is in
-     C:\DXSDK\Bin\DXUtils.
+     C:\DX90SDK\Bin\DXUtils.
 
      Additionally, compiling the DirectX runtime requires your INCLUDE and
      LIB paths include the DirectX 9 directories.  With the default
-     installations, these are C:\DXSDK\Include and C:\DXSDK\Lib.
+     installations, these are C:\DX90SDK\Include and C:\DX90SDK\Lib.
 
 
 Compiling Brook GPU
@@ -55,7 +55,7 @@ Compiling Brook GPU
    	make
 
    at the top level.  You can run make from within any subdirectory to build
-   just that.
+   just that directory.
 
 
 Building And Running Brook Programs
