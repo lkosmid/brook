@@ -229,10 +229,10 @@ void computeFFT2d(float4 input<>,
                   int N,
                   int M,
                   float4 indicesXo2YXp1o2Xm2<>) {
-   iter float2 iter1 <N,(M/2)> =iter(float2(0,0),float2(tof(M/4),tof(N)));
-   iter float2 iter2 <N,(M/2)> =iter(float2(tof(M/4),0),float2(tof(M/2),tof(N)));
-   iter float2 iter3 <N,(M/2)> =iter(float2(0,0),float2(tof(M/2),tof(N/2)));
-   iter float2 iter4 <N,(M/2)> =iter(float2(0,tof(N/2)),float2(tof(M/2),tof(N)));
+   iter float2 iter1 <N,(M/2)> =iter(float2(-.3,0),float2(tof(M/4)-.3,tof(N)));
+   iter float2 iter2 <N,(M/2)> =iter(float2(tof(M/4)-.3,0),float2(tof(M/2)-.3,tof(N)));
+   iter float2 iter3 <N,(M/2)> =iter(float2(0,-.3),float2(tof(M/2),tof(N/2)-.3));
+   iter float2 iter4 <N,(M/2)> =iter(float2(0,tof(N/2)-.3),float2(tof(M/2),tof(N)-.3));
    iter float2 s_iter <N,(M/2)> =iter(float2(0,0),float2(tof(M/2),tof(N)));
    int nPass,nBits,nPassCounter;
    
