@@ -303,146 +303,214 @@ static void generate_shader_structure_definitions( std::ostream& out ) {
 	}
 }
 
-static bool expandOutputArgumentStructureDecl(
-  std::ostream& shader, const std::string& argumentName, int inArgumentIndex, int inComponentIndex, StructDef* structure, int& ioOutputReg, int inFirstOutput, int inOutputCount, pass_info& outPass)
+static bool expandOutputArgumentStructureDecl(std::ostream& shader, 
+                                              const std::string& argumentName, 
+                                              int inArgumentIndex, 
+                                              int inComponentIndex, 
+                                              StructDef* structure, 
+                                              int& ioOutputReg, 
+                                              int inFirstOutput, 
+                                              int inOutputCount, 
+                                              pass_info& outPass)
 {
-	assert( !structure->isUnion() );
-
+  assert( !structure->isUnion() );
+  
   bool used = false;
-
-	int elementCount = structure->nComponents;
+  
+  int elementCount = structure->nComponents;
   int componentIndex = inComponentIndex;
-	for( int i = 0; i < elementCount; i++ )
-	{
-		Decl* elementDecl = structure->components[i];
-		if( elementDecl->storage & ST_Static ) continue;
-		Type* form = elementDecl->form;
-
-		// TIM: for now
-		assert( form->isBaseType() );
-		BaseType* base = form->getBase();
-		StructDef* structure = findStructureDef( base );
-    if( structure )
-			used = expandOutputArgumentStructureDecl( shader, argumentName, inArgumentIndex, componentIndex, structure, ioOutputReg, inFirstOutput, inOutputCount, outPass ) || used;
-		else
-		{
-      int outr = ioOutputReg++;
-      if( outr >= inFirstOutput
-        && outr < inFirstOutput+inOutputCount )
-      {
-        used = true;
-		    // it had better be just a floatN
-        shader << "out float4 __output_" << outr;
-        shader << " : COLOR" << (outr - inFirstOutput);
-        shader << ",\n\t\t";
-
-        outPass.addOutput( inArgumentIndex, componentIndex );
-      }
-      componentIndex++;
-		}
-	}
+  for( int i = 0; i < elementCount; i++ )
+    {
+      Decl* elementDecl = structure->components[i];
+      if( elementDecl->storage & ST_Static ) continue;
+      Type* form = elementDecl->form;
+      
+      // TIM: for now
+      assert( form->isBaseType() );
+      BaseType* base = form->getBase();
+      StructDef* structure = findStructureDef( base );
+      if( structure )
+        used = expandOutputArgumentStructureDecl( shader, argumentName, 
+                                                  inArgumentIndex, 
+                                                  componentIndex, 
+                                                  structure, ioOutputReg, 
+                                                  inFirstOutput, inOutputCount,
+                                                  outPass ) || used;
+      else
+        {
+          int outr = ioOutputReg++;
+          if( outr >= inFirstOutput
+              && outr < inFirstOutput+inOutputCount )
+            {
+              used = true;
+              // it had better be just a floatN
+              shader << "out float4 __output_" << outr;
+              shader << " : COLOR" << (outr - inFirstOutput);
+              shader << ",\n\t\t";
+              
+              outPass.addOutput( inArgumentIndex, componentIndex );
+            }
+          componentIndex++;
+        }
+    }
   return used;
 }
 
 
-static bool expandOutputArgumentDecl(
-  std::ostream& shader, const std::string& argumentName, int inArgumentIndex, int inComponentIndex, Type* form, int& ioOutputReg, int inFirstOutput, int inOutputCount, pass_info& outPass)
+static bool expandOutputArgumentDecl(std::ostream& shader, 
+                                     const std::string& argumentName, 
+                                     int inArgumentIndex, 
+                                     int inComponentIndex, 
+                                     Type* form, 
+                                     int& ioOutputReg, 
+                                     int inFirstOutput, int inOutputCount, pass_info& outPass)
 {
   StructDef* structure = NULL;
-
+  
   if( form->isStream() )
-  {
-	  BrtStreamType* streamType = (BrtStreamType*)(form);
-
-	  // TIM: can't handle arrays with a BaseType
-	  BaseType* elementType = streamType->getBase();
-	  structure = findStructureDef( elementType );
-  }
+    {
+      BrtStreamType* streamType = (BrtStreamType*)(form);
+      
+      // TIM: can't handle arrays with a BaseType
+      BaseType* elementType = streamType->getBase();
+      structure = findStructureDef( elementType );
+    }
   else
-  {
-    assert( (form->getQualifiers() & TQ_Reduce) != 0 );
-    structure = findStructureDef( form );
-  }
+    {
+      assert( (form->getQualifiers() & TQ_Reduce) != 0 );
+      structure = findStructureDef( form );
+    }
+  
+  if( structure )
+    {
+      return expandOutputArgumentStructureDecl( shader, argumentName, inArgumentIndex, 
+                                                inComponentIndex, structure, ioOutputReg, 
+                                                inFirstOutput, inOutputCount, outPass );
+    }
+  else
+    {
+      int outr = ioOutputReg++;
+      if( outr < inFirstOutput ) return false;
+      if( outr >= inFirstOutput+inOutputCount ) return false;
+ 
+      shader << "#ifdef FXC\n";
 
-	if( structure )
-	{
-		return expandOutputArgumentStructureDecl( shader, argumentName, inArgumentIndex, inComponentIndex, structure, ioOutputReg, inFirstOutput, inOutputCount, outPass );
-	}
-	else
-	{
-    int outr = ioOutputReg++;
-    if( outr < inFirstOutput ) return false;
-    if( outr >= inFirstOutput+inOutputCount ) return false;
+      shader << "\t\tout float4 __output_" << outr;
+      shader << " : COLOR" << (outr - inFirstOutput);
+      shader << ",\n\t\t";
 
-		// it had better be just a floatN
-    shader << "out float4 __output_" << outr;
-    shader << " : COLOR" << (outr - inFirstOutput);
-    shader << ",\n\t\t";
+      shader << "#else\n";
 
-    outPass.addOutput( inArgumentIndex, inComponentIndex );
+      // it had better be just a floatN
+      shader << "\t\tout float";
+      switch (form->getBase()->typemask) {
+      case BT_Float:
+        break;
+      case BT_Float2:
+        shader << "2";
+        break;
+      case BT_Float3:
+        shader << "3";
+        break;
+      case BT_Float4:
+        shader << "4";
+        break;
+      default:
+        fprintf(stderr, "Strange stream base type:");
+        form->getBase()->printBase(std::cerr, 0);
+        abort();      
+      }
+      shader << " __output_" << outr;
+      shader << " : COLOR" << (outr - inFirstOutput);
+      shader << ",\n\t\t";
+      
+      shader << "#endif\n\t\t";
 
-    return true;
-	}
+      outPass.addOutput( inArgumentIndex, inComponentIndex );
+      
+      return true;
+    }
 }
 
 static void expandSimpleOutputArgumentWrite(
-  std::ostream& shader, const std::string& argumentName, Type* form, int& outputReg, int inFirstOutput, int inOutputCount )
+                                            std::ostream& shader, 
+                                            const std::string& argumentName, 
+                                            Type* form, int& outputReg,
+                                            int inFirstOutput,
+                                            int inOutputCount )
 {
   int outr = outputReg++;
   if( outr < inFirstOutput || outr >= inFirstOutput + inOutputCount ) return;
 
   assert( form );
-	BaseType* base = form->getBase();
-	assert( base );
+  BaseType* base = form->getBase();
+  assert( base );
+  
+  shader << "\t#ifdef FXC\n";
 
   shader << "\t__output_" << outr << " = ";
+  switch(base->typemask) {
+  case BT_Float:
+    shader << "float4( " << argumentName << ", 0, 0, 0);\n";
+    break;
+  case BT_Float2:
+    shader << "float4( " << argumentName << ", 0, 0);\n";
+    break;
+  case BT_Float3:
+    shader << "float4( " << argumentName << ", 0);\n";
+    break;
+  case BT_Float4:
+    shader << argumentName << ";\n";
+    break;
+  default:
+    fprintf(stderr, "Strange stream base type:");
+    base->printBase(std::cerr, 0);
+    abort();
+  }
 
-	switch(base->typemask) {
-		case BT_Float:
-			shader << "float4( " << argumentName << ", 0, 0, 0);\n";
-			break;
-		case BT_Float2:
-			shader << "float4( " << argumentName << ", 0, 0);\n";
-			break;
-		case BT_Float3:
-			shader << "float4( " << argumentName << ", 0);\n";
-			break;
-		case BT_Float4:
-			shader << argumentName << ";\n";
-			break;
-		default:
-			fprintf(stderr, "Strange stream base type:");
-			base->printBase(std::cerr, 0);
-			abort();
-	}
+  shader << "\t#else\n";
+
+  shader << "\t__output_" << outr << " = " 
+         << argumentName << ";\n";
+
+  shader << "\t#endif\n";
+    
 }
 
-static void expandOutputArgumentStructureWrite( std::ostream& shader, const std::string& fieldName, StructDef* structure, int& ioOutputReg, int inFirstOutput, int inOutputCount )
+static void 
+expandOutputArgumentStructureWrite( std::ostream& shader,
+                                    const std::string& fieldName, 
+                                    StructDef* structure, int& ioOutputReg, 
+                                    int inFirstOutput, int inOutputCount )
 {
-	assert( !structure->isUnion() );
-
-	int elementCount = structure->nComponents;
-	for( int i = 0; i < elementCount; i++ )
-	{
-		Decl* elementDecl = structure->components[i];
-		if( elementDecl->storage & ST_Static ) continue;
-		Type* form = elementDecl->form;
-
-		std::string subFieldName = fieldName + "." + elementDecl->name->name;
-
-		// TIM: for now
-		assert( form->isBaseType() );
-		BaseType* base = form->getBase();
-		StructDef* structure = findStructureDef( base );
-		if( structure )
-		{
-			expandOutputArgumentStructureWrite( shader, subFieldName, structure, ioOutputReg, inFirstOutput, inOutputCount );
-		}
-		else
-		{
-      expandSimpleOutputArgumentWrite( shader, subFieldName, base, ioOutputReg, inFirstOutput, inOutputCount );
-		}
-	}
+  assert( !structure->isUnion() );
+  
+  int elementCount = structure->nComponents;
+  for( int i = 0; i < elementCount; i++ )
+    {
+      Decl* elementDecl = structure->components[i];
+      if( elementDecl->storage & ST_Static ) continue;
+      Type* form = elementDecl->form;
+      
+      std::string subFieldName = fieldName + "." + elementDecl->name->name;
+      
+      // TIM: for now
+      assert( form->isBaseType() );
+      BaseType* base = form->getBase();
+      StructDef* structure = findStructureDef( base );
+      if( structure )
+        {
+          expandOutputArgumentStructureWrite( shader, subFieldName, 
+                                              structure, ioOutputReg, 
+                                              inFirstOutput, inOutputCount );
+        }
+      else
+        {
+          expandSimpleOutputArgumentWrite( shader, subFieldName, 
+                                           base, ioOutputReg, 
+                                           inFirstOutput, inOutputCount );
+        }
+    }
 }
 
 static void expandOutputArgumentWrite(
@@ -452,28 +520,28 @@ static void expandOutputArgumentWrite(
   Type* elementType = NULL;
 
   if( form->isStream() )
-  {
-	  BrtStreamType* streamType = (BrtStreamType*)(form);
-
-	  // TIM: can't handle arrays with a BaseType
-	  elementType = streamType->getBase();
-	  structure = findStructureDef( elementType );
-  }
+    {
+      BrtStreamType* streamType = (BrtStreamType*)(form);
+      
+      // TIM: can't handle arrays with a BaseType
+      elementType = streamType->getBase();
+      structure = findStructureDef( elementType );
+    }
   else
-  {
-    assert( (form->getQualifiers() & TQ_Reduce) != 0 );
-    elementType = form;
-    structure = findStructureDef( form );
-  }
-
-	if( structure )
-	{
-		expandOutputArgumentStructureWrite( shader, argumentName, structure, ioOutputReg, inFirstOutput, inOutputCount );
-	}
-	else
-	{
-    expandSimpleOutputArgumentWrite( shader, argumentName, elementType, ioOutputReg, inFirstOutput, inOutputCount );
-	}
+    {
+      assert( (form->getQualifiers() & TQ_Reduce) != 0 );
+      elementType = form;
+      structure = findStructureDef( form );
+    }
+  
+  if( structure )
+    {
+      expandOutputArgumentStructureWrite( shader, argumentName, structure, ioOutputReg, inFirstOutput, inOutputCount );
+    }
+  else
+    {
+      expandSimpleOutputArgumentWrite( shader, argumentName, elementType, ioOutputReg, inFirstOutput, inOutputCount );
+    }
 }
 
 

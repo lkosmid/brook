@@ -36,7 +36,7 @@ char *
 compile_cgc (const char *cgcode, CodeGenTarget target) {
 
   char *argv[16] = { "cgc", "-quiet", "-profile", NULL,
-                     NULL, NULL };
+                     NULL, "-DCGC=1", NULL };
   char *fpcode, *endline, *startline;
   char* tempCode = strdup( cgcode );
   char arbfp[]="arbfp1";
