@@ -152,7 +152,7 @@ extern int err_top_level;
 %type  <decl>        init_decl decl
 
 %type  <value>       opt_const_expr const_expr expr opt_expr
-%type  <value>       comma_constants comma_expr assign_expr
+%type  <value>       comma_constants comma_expr assign_expr dimension_constraint
 %type  <value>       prim_expr paren_expr postfix_expr
 %type  <value>       subscript_expr comp_select_expr postinc_expr postdec_expr
 %type  <value>       direct_comp_select indirect_comp_select
@@ -2191,16 +2191,28 @@ stream_decl: direct_declarator_reentrance COMP_LESS comma_constants COMP_GRTR
                 yyerr ("Wrong type combination") ;
         }
         ;
+dimension_constraint:  constant
+        {
+            $$ = $1;
+        }
+          | func_call
+        {
+            $$ = $1;
+        }
+          | ident
+        { 
+            $$ = new Variable ($1,NoLocation);
+        }
 
 comma_constants:  /* Empty */
 	{
 	   $$ = NULL;
 	}
-          | constant
+          | dimension_constraint
         {
             $$ = $1;
         }
-          |  comma_constants COMMA constant
+          |  comma_constants COMMA dimension_constraint
         {
             $$ = new BinaryExpr(BO_Comma,$1,$3,*$2);
             delete $2;
