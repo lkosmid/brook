@@ -387,7 +387,7 @@ void computeFFT2d(float4 (*input)<>,
                   int logM,
                   int N,
                   int M,
-                  float4 indicesXo2YXp1o2Xm2<>) {
+                  float4 indicesXo2YXp1o2Xm2<>, int inv) {
   /* OBSOLETE ITERATORS that needed odd -.3 bias
    iter float2 iter1 <N,(M/2)> =iter(float2(-.3,0),float2(tof(M/4)-.3,tof(N)));
    iter float2 iter2 <N,(M/2)> =iter(float2(tof(M/4)-.3,0),float2(tof(M/2)-.3,tof(N)));
@@ -405,9 +405,10 @@ void computeFFT2d(float4 (*input)<>,
    else {
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-             do_backwards
-                 ?rDFTY(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,true),*output,s_iter)
-                 :DFTY(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,false),*output,s_iter);
+           int invert=inv&&nPassCounter==0;
+           do_backwards
+                 ?(invert?irDFTY:rDFTY)(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,true),*output,s_iter)
+                 :(invert?iDFTY:DFTY)(input->domain(int2(0,0),int2(M/2,N/2)),input->domain(int2(0,N/2),int2(M/2,N)),getW(nPassCounter,logN,0,false),*output,s_iter);
             if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
                streamPrint(*output);
@@ -421,9 +422,10 @@ void computeFFT2d(float4 (*input)<>,
 	 }
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-             do_backwards
-                 ?rDFTX(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,true),*output,s_iter)
-                 :DFTX(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,false),*output,s_iter);
+           int invert=inv&&nPassCounter==nPass-1;
+           do_backwards
+                 ?(invert?rDFTXi:rDFTX)(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,true),*output,s_iter)
+                 :(invert?DFTXi:DFTX)(input->domain(int2(0,0),int2(M/4,N)),input->domain(int2(M/4,0),int2(M/2,N)),getW(nPassCounter,logM,1,false),*output,s_iter);
             if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
                streamPrint(*output);
@@ -476,7 +478,7 @@ void blur2d(float2 *input,
    float4 bitreversal<(M/2>N?M/2:N)>;
    streamRead(s,input);   
    generatePlan(bitreversal,logN,logM);
-   computeFFT2d(&s,&s_out,logN,logM,N,M,bitreversal);
+   computeFFT2d(&s,&s_out,logN,logM,N,M,bitreversal,0);
    {//perform the blur
      if (edgedetect==0)
          blur(s_out,N,M);
@@ -486,7 +488,7 @@ void blur2d(float2 *input,
          edgeDetect(s_out,N,M);
      streamSwap(s,s_out);
    }
-   computeFFT2d(&s,&s_out,logN,logM,N,M,bitreversal);
+   computeFFT2d(&s,&s_out,logN,logM,N,M,bitreversal,0);
    if (output)
       streamWrite(s_out,output); 
    if (debug_fft) {
@@ -537,7 +539,7 @@ int maino (int argc, char **argv) {
   for (i=1,logm=0;i<numdat;i*=2,++logn);
   streamRead(s,data);   
   generatePlan(bitreversal,logn,logm);
-  computeFFT2d(&s,&s_out,logn,logm,N,M,bitreversal);
+  computeFFT2d(&s,&s_out,logn,logm,N,M,bitreversal,0);
   streamWrite(s_out,data);
   printf ("\n outpt: ");
   for (i=0;i<numdat;++i) {
