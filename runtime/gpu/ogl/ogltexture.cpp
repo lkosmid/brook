@@ -1,27 +1,36 @@
 
 
-#include "oglcontext"
+#ifdef WIN32
+#include <windows.h>
+#endif
 
+#include <GL/gl.h>
+#include "glext.h"
 
-OGLTexture::OGLTexture (size_t width,
-                        size_t height,
-                        TextureFormat format,
-                        const int *glFormat,
-                        const int *glType,
-                        const int *sizeFactor):
+#include "oglcontext.hpp"
+
+using namespace brook;
+
+/* Allocates a floating point texture */ 
+OGLTexture::OGLTexture (unsigned int width,
+                        unsigned int height,
+                        GPUContext::TextureFormat format,
+                        const unsigned int glFormat[4],
+                        const unsigned int glType[4],
+                        const unsigned int sizeFactor[4]):
    _width(width), _height(height), _format(format) {
 
    switch (_format) {
-   case kTextureFormat_Float1:
+   case GPUContext::kTextureFormat_Float1:
       _components = 1;
       break;
-   case kTextureFormat_Float2:
+   case GPUContext::kTextureFormat_Float2:
       _components = 2;
       break;
-   case kTextureFormat_Float3:
+   case GPUContext::kTextureFormat_Float3:
       _components = 3;
       break;
-   case kTextureFormat_Float4:
+   case GPUContext::kTextureFormat_Float4:
       _components = 4;
       break;
    default: 
@@ -30,21 +39,23 @@ OGLTexture::OGLTexture (size_t width,
 
    _bytesize = _width*_height*sizeFactor[_components-1]*sizeof(float);
 
+   _nativeFormat = glFormat[_components-1];
+
    glGenTextures(1, &_id);
    glActiveTextureARB(GL_TEXTURE0_ARB);
-   glBindTexture (GL_TEXTURE_RECTANGLE_EXT, _id);
+   glBindTexture (GL_TEXTURE_RECTANGLE_NV, _id);
  
    // Create a texture with NULL data
-   glTexImage2D (GL_TEXTURE_RECTANGLE_EXT, 0, 
+   glTexImage2D (GL_TEXTURE_RECTANGLE_NV, 0, 
                  glType[_components-1],
                  width, height, 0,
                  glFormat[_components-1],
                  GL_FLOAT, NULL);
    
-   glTexParameterf(GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP);
-   glTexParameterf(GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP);
-   glTexParameterf(GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameterf(GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_S, GL_CLAMP);
+   glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_T, GL_CLAMP);
+   glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    CHECK_GL();
 }
 
@@ -54,28 +65,43 @@ OGLTexture::~OGLTexture () {
 }
 
 
+bool
+OGLTexture::isFastSetPath( unsigned int inStrideBytes, 
+                           unsigned int inElemCount ) const {
+   return (inStrideBytes == _components*sizeof(float) &&
+           inElemCount   == _width*_height);
+}
+
+bool
+OGLTexture::isFastGetPath( unsigned int inStrideBytes, 
+                           unsigned int inElemCount ) const {
+   return (inStrideBytes == _components*sizeof(float) &&
+           inElemCount   == _width*_height);
+}
+
+
 void
 OGLTexture::copyToTextureFormat(const float *src, 
-                                size_t srcStrideBytes, 
-                                size_t srcElemCount,
-                                float *dst) {
-   size_t i;
+                                unsigned int srcStrideBytes, 
+                                unsigned int srcElemCount,
+                                float *dst) const {
+   unsigned int i;
    
    switch (_format) {
-   case kTextureFormat_Float1:
+   case GPUContext::kTextureFormat_Float1:
       for (i=0; i<srcElemCount; i++) {
          *dst++ = *src;
          src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
       }
       break;
-   case kTextureFormat_Float2:
+   case GPUContext::kTextureFormat_Float2:
       for (i=0; i<srcElemCount; i++) {
          *dst++ = *src;
          *dst++ = *(src+1);
          src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
       }
       break;
-   case kTextureFormat_Float3:
+   case GPUContext::kTextureFormat_Float3:
       for (i=0; i<srcElemCount; i++) {
          *dst++ = *src;
          *dst++ = *(src+1);
@@ -83,7 +109,7 @@ OGLTexture::copyToTextureFormat(const float *src,
          src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
       }
       break;
-   case kTextureFormat_Float4:
+   case GPUContext::kTextureFormat_Float4:
       for (i=0; i<srcElemCount; i++) {
          *dst++ = *src;
          *dst++ = *(src+1);
@@ -100,26 +126,26 @@ OGLTexture::copyToTextureFormat(const float *src,
 
 void
 OGLTexture::copyFromTextureFormat(const float *src, 
-                                  size_t dstStrideBytes, 
-                                  size_t dstElemCount,
-                                  float *dst) {
-   size_t i;
+                                  unsigned int dstStrideBytes, 
+                                  unsigned int dstElemCount,
+                                  float *dst) const {
+   unsigned int i;
    
    switch (_format) {
-   case kTextureFormat_Float1:
+   case GPUContext::kTextureFormat_Float1:
       for (i=0; i<dstElemCount; i++) {
          *dst = *src++;
          dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
       }
       break;
-   case kTextureFormat_Float2:
+   case GPUContext::kTextureFormat_Float2:
       for (i=0; i<dstElemCount; i++) {
          *dst     = *src++;
          *(dst+1) = *src++;
          dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
       }
       break;
-   case kTextureFormat_Float3:
+   case GPUContext::kTextureFormat_Float3:
       for (i=0; i<dstElemCount; i++) {
          *dst     = *src++;
          *(dst+1) = *src++;
@@ -127,7 +153,7 @@ OGLTexture::copyFromTextureFormat(const float *src,
          dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
       }
       break;
-   case kTextureFormat_Float4:
+   case GPUContext::kTextureFormat_Float4:
       for (i=0; i<dstElemCount; i++) {
          *dst     = *src++;
          *(dst+1) = *src++;
@@ -137,7 +163,7 @@ OGLTexture::copyFromTextureFormat(const float *src,
       }
       break;
    default: 
-      GPUError("Unkown Texture Format");
+      GPUError("Unknown Texture Format");
    }
 }
 

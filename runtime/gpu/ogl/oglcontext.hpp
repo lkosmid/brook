@@ -4,30 +4,34 @@
 
 #include "../gpucontext.hpp"
 
+#ifdef WIN32
+#include <windows.h>
+#include "wglext.h"
+#endif
+
+#include <GL/gl.h>
+#include "glext.h"
+
 namespace brook {
    
-  class OGLTexture;
-  class OGLContext;
-  
   /* Virtual class for textures */
-  class OGLTexture {
+  class OGLTexture 
+  {
   public:
     
-    /* Since there is no standard float texture 
-    ** this constructor is pure virtual. 
-    */
-    virtual OGLTexture ( unsigned int inWidth, 
-                         unsigned int inHeight, 
-                         TextureFormat inFormat) = 0;
-
+    OGLTexture ( unsigned int inWidth, 
+                 unsigned int inHeight, 
+                 GPUContext::TextureFormat inFormat ) :
+      _width(inWidth), _height(inHeight), _format(inFormat)
+    { }
 
     /* This guy is the real constructor */
-    OGLTexture::OGLTexture ( unsigned int width,
-                             unsigned int height,
-                             TextureFormat format,
-                             const int *glFormat,
-                             const int *glType,
-                             const int *sizeFactor);
+    OGLTexture ( unsigned int width,
+                 unsigned int height,
+                 GPUContext::TextureFormat format,
+                 const unsigned int glFormat[4],
+                 const unsigned int glType[4],
+                 const unsigned int sizeFactor[4]);
 
     virtual ~OGLTexture ();
 
@@ -68,24 +72,27 @@ namespace brook {
                            float *dst) const;
 
     /* Basic accessor functions */
-    unsigned int width()     const { return _width;    }
-    unsigned int height()    const { return _height;   }
-    unsigned int bytesize()  const { return _bytesize; }
-    TextureFormat format()   const { return _format;   }
-    unsigned int id()        const { return _id;       }
+    unsigned int width()                 const { return _width;    }
+    unsigned int height()                const { return _height;   }
+    unsigned int bytesize()              const { return _bytesize; }
+    unsigned int components()            const { return _components; }
+    GPUContext::TextureFormat format()   const { return _format;   }
+    unsigned int id()                    const { return _id;       }
 
     /* Returns the vendor specific "format" 
     ** parameter for glReadPixels and glTexImage2D
     ** for float textures.
-    */  
-    virtual int nativeFormat() const = 0;
+    */
+    int nativeFormat()       const { return _nativeFormat; }
+
 
   private:
     unsigned int _width, _height, _bytesize;
     unsigned int _components;
-    TextureFormat _format;
+    GPUContext::TextureFormat _format;
     unsigned int _id;
-  }    
+    unsigned int _nativeFormat;
+  };
 
 
   class OGLContext : public GPUContext
@@ -94,6 +101,9 @@ namespace brook {
     
     /* Creates a vendor specific backend */
     static OGLContext *oglContextFactory(void);
+
+    /* Creates a context and pbuffer */
+    void init();
 
     /* Everybody supports at least 2048.  Specific backends can change
     ** this if they want...
@@ -113,6 +123,7 @@ namespace brook {
                       const unsigned int outputWidth,
                       GPUInterpolant *interpolant) const;
 
+
     virtual void 
     set2DInterpolant( const float2 &start, 
                       const float2 &end,
@@ -128,7 +139,7 @@ namespace brook {
     
     virtual void
     setStreamOutputRegion( const TextureHandle texture,
-                           GPUOutputRegion *region) const; 
+                           GPURegion *region) const; 
 
 
     /* The vendor specific backend must create the float textures
@@ -155,9 +166,6 @@ namespace brook {
                     unsigned int inStrideBytes,
                     unsigned int inElemCount );
 
-    /* Reads back the texture data by rendering to the pbuffer and
-    ** calling glReadPixels
-    */
     void 
     getTextureData( TextureHandle inTexture,
                     float* outData,
@@ -186,34 +194,98 @@ namespace brook {
     /* Not really sure what this should do... */
     virtual void disableOutput( unsigned int inIndex );
 
-    virtual void drawRectangle( const GPUOutputRegion& outputRegion, 
-                                const GPUInterpolant* interpolants, 
+    virtual void drawRectangle( const GPURegion *outputRegion, 
+                                const GPUInterpolant *interpolants, 
                                 unsigned int numInterpolants );
 
   protected:
 
     void initPbuffer();
     void bindPbuffer(unsigned int numComponents);
-
-    virtual static const int   *iAttribList[4];
-    virtual static const float *fAttribList[4];
-    virtual static const int   *piAttribList[4];
+#ifdef WIN32
+    virtual void getVendorAttribs(const int   (**iAttrib)[4][64],
+                                  const float (**fAttrib)[4][16],
+                                  const int   (**piAttrib)[4][16]) {
+      *iAttrib = NULL;
+      *fAttrib = NULL;
+      *piAttrib = NULL;
+    }
+#endif
 
   private:
     VertexShaderHandle _passthroughVertexShader;
     PixelShaderHandle _passthroughPixelShader;
     OGLTexture *_outputTexture;
+    unsigned int _slopTextureUnit;
+    int currentPbufferComponents;
 
 #ifdef WIN32
+    void appendVendorAttribs();
+    void initPbufferWGL();
+    void bindPbufferWGL(unsigned int numComponents);
     HGLRC hglrc;
     HPBUFFERARB hpbuffer;
     HDC hwindowdc;
     HDC hpbufferdc;
+    int   iAttribList[4][64];
+    float fAttribList[4][16];
+    int   piAttribList[4][16];
+    int   pixelformat[4];
 #else
-    // Put GLX stuff here
+    void initPbufferGLX();
+    void bindPbufferGLX(unsigned int numComponents);
 #endif
 
   };
+
+
+#ifdef WIN32
+/*
+ * For some inexplicable reason, on Windows hosts, the OpenGL libraries
+ * don't actually export some of their symbols.  Instead, you have to use
+ * wglGetProcAddress() to pry them out.  This doesn't stop their header
+ * files from defining said symbols, but you get awkward compiler complaints
+ * if you actually allow them to be defined.  So, we fake it all here
+ * instead of defining either WGL_WGLEXT_PROTOTYPES or GL_GLEXT_PROTOTYPES.
+ */
+
+#define RUNTIME_BONUS_GL_FNS \
+   XXX(PFNWGLCREATEPBUFFERARBPROC,     wglCreatePbufferARB)            \
+   XXX(PFNWGLGETPBUFFERDCARBPROC,      wglGetPbufferDCARB)             \
+   XXX(PFNWGLRELEASEPBUFFERDCARBPROC,  wglReleasePbufferDCARB)         \
+   XXX(PFNWGLDESTROYPBUFFERARBPROC,    wglDestroyPbufferARB)           \
+   XXX(PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB)        \
+   XXX(PFNWGLBINDTEXIMAGEARBPROC,      wglBindTexImageARB)             \
+   XXX(PFNWGLRELEASETEXIMAGEARBPROC,   wglReleaseTexImageARB)          \
+                                                                       \
+   XXX(PFNGLMULTITEXCOORD2FVARBPROC,   glMultiTexCoord2fvARB)          \
+   XXX(PFNGLMULTITEXCOORD4FVARBPROC,   glMultiTexCoord4fvARB)          \
+   XXX(PFNGLACTIVETEXTUREARBPROC,      glActiveTextureARB)             \
+   XXX(PFNGLGENPROGRAMSARBPROC,        glGenProgramsARB)               \
+   XXX(PFNGLBINDPROGRAMARBPROC,        glBindProgramARB)               \
+   XXX(PFNGLPROGRAMSTRINGARBPROC,      glProgramStringARB)             \
+   XXX(PFNGLPROGRAMLOCALPARAMETER4FVARBPROC, glProgramLocalParameter4fvARB) \
+
+
+#define RUNTIME_BONUS_NV_FNS \
+   XXX(PFNGLGENPROGRAMSNVPROC,         glGenProgramsNV)                \
+   XXX(PFNGLLOADPROGRAMNVPROC,         glLoadProgramNV)                \
+   XXX(PFNGLBINDPROGRAMNVPROC,         glBindProgramNV)                \
+   XXX(PFNGLPROGRAMNAMEDPARAMETER4FNVPROC, glProgramNamedParameter4fNV)\
+
+#define XXX(type, fn) \
+   extern type fn;
+
+RUNTIME_BONUS_GL_FNS
+RUNTIME_BONUS_NV_FNS
+#undef XXX
+#endif
+
+  void initglfunc(void);
+
+#define CHECK_GL() __check_gl(__LINE__, __FILE__)
+  void __check_gl(int line, char *file);
+
 }
 
 #endif

@@ -4,7 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "oglcontext"
+#ifdef WIN32
+#include <windows.h>
+#endif
+
+#include <GL/gl.h>
+#include "glext.h"
+#include "wglext.h"
+
+#include "oglcontext.hpp"
 
 using namespace brook;
 
@@ -17,6 +25,7 @@ create_window (void) {
   HINSTANCE hinstance;
   WNDCLASS wc;
   DWORD window_style;
+  HWND hwnd;
 
   /*
    * These parameters are useless since the window is never shown nor
@@ -96,12 +105,13 @@ bSetupPixelFormat(HDC hdc)
     0,                              // reserved
     0, 0, 0                         // layer masks ignored
   };
+  int pixelformat;
   
   ppfd = &pfd;
 
-  status = ChoosePixelFormat( hdc, ppfd );
+  pixelformat = ChoosePixelFormat( hdc, ppfd );
   
-  GPUAssert(status, "ChoosePixelFormat failed");
+  GPUAssert(pixelformat, "ChoosePixelFormat failed");
   
   status = SetPixelFormat(hdc, pixelformat, ppfd);
   
@@ -110,19 +120,139 @@ bSetupPixelFormat(HDC hdc)
   return TRUE;
 }
 
+#define CRGBA(c,r,g,b,a) \
+  WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE, \
+  WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB, \
+  WGL_DEPTH_BITS_ARB,      0,\
+  WGL_STENCIL_BITS_ARB,    0,\
+  WGL_DOUBLE_BUFFER_ARB,   GL_FALSE, \
+  WGL_SUPPORT_OPENGL_ARB,  GL_TRUE, \
+  WGL_AUX_BUFFERS_ARB,     0, \
+  WGL_FLOAT_COMPONENTS_NV, GL_TRUE, \
+  WGL_COLOR_BITS_ARB,      c, \
+  WGL_RED_BITS_ARB,        r, \
+  WGL_GREEN_BITS_ARB,      g, \
+  WGL_BLUE_BITS_ARB,       b, \
+  WGL_ALPHA_BITS_ARB,      a
+
+
+/* These require vendor specific strings to append */
+static const int 
+baseiAttribList[4][64] = { {CRGBA(32,32,0,0,0), 0, 0},
+                           {CRGBA(64,32,32,0,0), 0, 0},
+                           {CRGBA(96,32,32,32,0), 0, 0},
+                           {CRGBA(128,32,32,32,32), 0, 0} };
+
+static const float
+basefAttribList[4][16] = { {0.0f,0.0f}, 
+                           {0.0f,0.0f}, 
+                           {0.0f,0.0f},
+                           {0.0f,0.0f}};
+
+static int
+basepiAttribList[4][16] = { {0, 0},
+                            {0, 0},
+                            {0, 0},
+                            {0, 0}};
+
+void 
+OGLContext::appendVendorAttribs() {
+
+  int i,j,k;
+  int nattrib = 0;
+
+  const int   (*viAttribList)[4][64];
+  const float (*vfAttribList)[4][16];
+  const int   (*vpiAttribList)[4][16];
+
+  getVendorAttribs(&viAttribList, &vfAttribList, &vpiAttribList);
+
+  for (i=0; i<4; i++) {
+
+    for (j=0; j<63; j+=2) {
+      GPUAssert(j<64, "Error: no room for base attribs");
+      iAttribList[i][j]   = baseiAttribList[i][j];
+      iAttribList[i][j+1] = baseiAttribList[i][j];
+      if (iAttribList[i][j]   == 0 && 
+          iAttribList[i][j+1] == 0)
+        break;
+    }
+
+    if (viAttribList) {
+      for (k=0; k<63; k+=2) { 
+        GPUAssert(j<64, "Error: no room for vendor attribs");
+        
+        iAttribList[i][j++]  = (*viAttribList)[i][k];
+        iAttribList[i][j++]  = (*viAttribList)[i][k+1];
+        
+      if ((*viAttribList)[i][k]   == 0 && 
+          (*viAttribList)[i][k+1] == 0)
+        break;
+      }
+    }
+
+
+    for (j=0; j<16; j+=2) {
+      GPUAssert(j<16, "Error: no room for base attribs");
+      fAttribList[i][j]   = basefAttribList[i][j];
+      fAttribList[i][j+1] = basefAttribList[i][j];
+      if (fAttribList[i][j]   == 0.0f && 
+          fAttribList[i][j+1] == 0.0f)
+        break;
+    }
+    
+
+    if (vfAttribList) {
+      for (k=0; k<16; k+=2) { 
+        GPUAssert(j<16, "Error: no room for vendor attribs");
+        
+        fAttribList[i][j++]  = (*vfAttribList)[i][k];
+        fAttribList[i][j++]  = (*vfAttribList)[i][k+1];
+        
+        if ((*vfAttribList)[i][k]   == 0.0f && 
+            (*vfAttribList)[i][k+1] == 0.0f)
+          break;
+      }
+    }
+
+
+    for (j=0; j<16; j+=2) {
+      GPUAssert(j<16, "Error: no room for base attribs");
+      piAttribList[i][j]   = basepiAttribList[i][j];
+      piAttribList[i][j+1] = basepiAttribList[i][j];
+      if (piAttribList[i][j]   == 0 && 
+          piAttribList[i][j+1] == 0)
+        break;
+    }
+
+    if (vpiAttribList) {
+      for (k=0; k<16; k+=2) { 
+        GPUAssert(j<16, "Error: no room for vendor attribs");
+        
+        piAttribList[i][j++]  = (*vpiAttribList)[i][k];
+        piAttribList[i][j++]  = (*vpiAttribList)[i][k+1];
+        
+        if ((*vpiAttribList)[i][k]   == 0 && 
+            (*vpiAttribList)[i][k+1] == 0)
+          break;
+      }
+    }
+  }
+}
 
 void
 OGLContext::initPbufferWGL(void) {
 
   unsigned int numFormats;
   BOOL status;
+  HGLRC hglrc_window;
 
   /* Create a window */
   HWND hwnd = create_window();
   hwindowdc = GetDC(hwnd);
 
   /* Initialize the initial window GL_context */
-  status = bSetupPixelFormat(hdc_window);
+  status = bSetupPixelFormat(hwindowdc);
   GPUAssert(status,
             "Unable to set window pixel format");
 
@@ -134,10 +264,16 @@ OGLContext::initPbufferWGL(void) {
   GPUAssert(status,
             "Unable to make current the window GL context");
 
+  /* Initialize gl functions */
+  initglfunc();
+
+  /* Append vendor specific attribs */
+  appendVendorAttribs();
+
   /* Fetch the pixel formats for pbuffers */
   for (int i=0; i<4; i++) {
-    status = wglChoosePixelFormatARB(hdc_window, iAttributes[i],
-                                     fAttributes[i], 1,
+    status = wglChoosePixelFormatARB(hwindowdc, iAttribList[i],
+                                     fAttribList[i], 1,
                                      pixelformat+i, &numFormats);
     
     GPUAssert(numFormats > 0 && status,
@@ -147,7 +283,7 @@ OGLContext::initPbufferWGL(void) {
   /* Bind a 4 component pbuffer */
   hpbuffer = wglCreatePbufferARB(hwindowdc,
                                  pixelformat[3],
-                                 workspace, workspace,
+                                 2048, 2048,
                                  piAttribList[3]);
 
   if (!hpbuffer)
@@ -172,8 +308,8 @@ void
 OGLContext::bindPbufferWGL(unsigned int numComponents) {
 
 
-  GPUAssert(hbufferdc, "hbufferdc = NULL");
-  GPUAssert(numComponents != curretPbufferComponents,
+  GPUAssert(hpbufferdc, "hpbufferdc = NULL");
+  GPUAssert(numComponents != currentPbufferComponents,
             "Unnessesary call to bindPbuffer");
   GPUAssert(numComponents > 0 &&
             numComponents <= 4,
@@ -190,14 +326,14 @@ OGLContext::bindPbufferWGL(unsigned int numComponents) {
     GPUError("DestroyPbufferARB Failed");
 
   GPUAssert(hwindowdc, "hwindowdc = NULL");
-  GPUAssert(pixelformat[numCompontents-1], "Invalid pixelformat");
-  GPUAssert(piAttribList[numComponts-1], "Invalid piAttribList");
-  GPUAssert(workspace, "Bogus workspace");
+  GPUAssert(pixelformat[numComponents-1], "Invalid pixelformat");
+  GPUAssert(piAttribList[numComponents-1], "Invalid piAttribList");
+  GPUAssert(2048, "Bogus 2048");
 
   /* Create a fresh pbuffer */
   hpbuffer = wglCreatePbufferARB(hwindowdc,
                                  pixelformat[numComponents-1],
-                                 workspace, workspace,
+                                 2048, 2048,
                                  piAttribList[numComponents-1]);
 
   if (!hpbuffer)
@@ -208,9 +344,9 @@ OGLContext::bindPbufferWGL(unsigned int numComponents) {
   if (!hpbufferdc)
     GPUError("Failed to get pbuffer dc");
   
-  GPUAssert(hpbufferglrc);
+  GPUAssert(hglrc, "Invalid glrc");
   
-  if (!wglMakeCurrent( hpbufferdc, hpglrc ))
+  if (!wglMakeCurrent( hpbufferdc, hglrc ))
     GPUError("Failed to make current GL context");
 }
 
@@ -223,7 +359,7 @@ OGLContext::initPbufferGLX(void) {
 
 
 void
-GLRunTime::bindPBufferGLX(int ncomponents)
+OGLContext::bindPbufferGLX(int ncomponents)
 {
   GPUError("Yet to be implemented");
 }
@@ -232,12 +368,12 @@ GLRunTime::bindPBufferGLX(int ncomponents)
 
 
 void
-OGLContext:initPBuffer(void)
+OGLContext::initPbuffer(void)
 {
 #ifdef WIN32
-   initPBufferWGL();
+   initPbufferWGL();
 #else
-   initPBufferGLX();
+   initPbufferGLX();
 #endif
 
    currentPbufferComponents = 4;
@@ -245,18 +381,18 @@ OGLContext:initPBuffer(void)
 
 
 void
-OGLContext:bindPBuffer(unsigned int numComponents)
+OGLContext::bindPbuffer(unsigned int numComponents)
 {
   /* If the pbuffer of the right size is already active,
   ** return immediately
   */
-  if (currentPBufferComponents == numComponents)
+  if (currentPbufferComponents == numComponents)
     return;
 
 #ifdef WIN32
-   bindPBufferWGL(numComponents);
+   bindPbufferWGL(numComponents);
 #else
-   bindPBufferGLX(numComponents);
+   bindPbufferGLX(numComponents);
 #endif
 
    currentPbufferComponents = numComponents;
