@@ -1,7 +1,7 @@
 ROOTDIR = ../..
 EXECUTABLE = gather_dependent
 FILES = gather_dependent
-LIBRARIES = brook
+LIBRARIES = $(RUNTIME_LIBS)
 
 include ../../common.mk
 

@@ -1,7 +1,8 @@
 ROOTDIR = ../..
 EXECUTABLE = sum
 FILES = sum
-LIBRARIES = brook
+LIBRARIES = $(RUNTIME_LIBS)
+
 
 include ../../common.mk
 

@@ -1,7 +1,7 @@
 ROOTDIR = ../..
 EXECUTABLE = iterator
 FILES = iterator
-LIBRARIES = brook
+LIBRARIES = $(RUNTIME_LIBS)
 
 include ../../common.mk
 

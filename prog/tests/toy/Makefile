@@ -1,7 +1,7 @@
 ROOTDIR = ../..
 EXECUTABLE = toy
 FILES = toy
-LIBRARIES = brook
+LIBRARIES = $(RUNTIME_LIBS)
 
 include ../../common.mk
 

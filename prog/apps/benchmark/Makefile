@@ -1,7 +1,7 @@
 ROOTDIR = ../..
 EXECUTABLE = benchmark
 FILES = brook vanilla lin_time handvector
-LIBRARIES = brook
+LIBRARIES = $(RUNTIME_LIBS)
 
 include ../../common.mk
 
