@@ -171,14 +171,14 @@ inline float sign_float (float x) {
 inline float exp2_float (float x) {
    return (float)pow(2.0f,x);
 }
-static const float _const_log2 = log(2.0f);
+static const float _const_log2 = (float) log(2.0f);
 inline float log2_float (float x) {
    return (float)log (x)/_const_log2;
 }
 inline float round_float (float x) {
-   float f = x-floor(x);
-   float g = ceil(x)-x;
-   return f==g?(x<0.0f?floor(x):ceil(x)):f<g?floor(x):ceil(x);
+   float f = x-(float)floor(x);
+   float g = (float)ceil(x)-x;
+   return f==g?(x<0.0f?(float)floor(x):(float)ceil(x)):f<g?(float)floor(x):(float)ceil(x);
 }
 inline float lerp_float (float a, float b, float s) {
    return a + s*(b - a);
@@ -191,7 +191,7 @@ inline float rsqrt_float (float x) {
 #endif
 }
 inline float frac_float (float x) {
-   float y = x-floor(x);
+   float y = x-(float)floor(x);
    return x<0.0f?1.0f-y:y;
 }
 inline float frc_float (float x) {
@@ -199,7 +199,7 @@ inline float frc_float (float x) {
 }
 inline float frexp_float (float x, float & oout) {
    int exp;
-   x = frexp(x,&exp);
+   x = (float)frexp(x,&exp);
    oout=(float)exp;
    return x;
 }
