@@ -6,58 +6,58 @@
 #define BRTINTRINSIC_HPP
 
 #define UNINTRINSICMEMBER(FUNC,CALLFUNC,RET) \
-inline RET FUNC (const __BrtFloat4 &f) { \
+inline RET __##FUNC##_cpu_inner (const __BrtFloat4 &f) { \
   return f.CALLFUNC(); \
 } \
-inline RET FUNC (const __BrtFloat3 &f) { \
+inline RET __##FUNC##_cpu_inner (const __BrtFloat3 &f) { \
   return f.CALLFUNC(); \
 } \
-inline RET FUNC (const __BrtFloat2 &f) { \
+inline RET __##FUNC##_cpu_inner (const __BrtFloat2 &f) { \
   return f.CALLFUNC(); \
 } \
-inline RET FUNC (const __BrtFloat1 &f) { \
+inline RET __##FUNC##_cpu_inner (const __BrtFloat1 &f) { \
   return f.CALLFUNC(); \
 }
 
 
 #define UNINTRINSIC(FUNC,CALLFUNC) \
-inline __BrtFloat4 FUNC (const __BrtFloat4 &f) { \
+inline __BrtFloat4 __##FUNC##_cpu_inner (const __BrtFloat4 &f) { \
   return __BrtFloat4 (CALLFUNC (f.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1)), \
                       CALLFUNC (f.unsafeGetAt(2)), \
                       CALLFUNC (f.unsafeGetAt(3))); \
 } \
-inline __BrtFloat3 FUNC (const __BrtFloat3 &f) { \
+inline __BrtFloat3 __##FUNC##_cpu_inner (const __BrtFloat3 &f) { \
   return __BrtFloat3 (CALLFUNC (f.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1)), \
                       CALLFUNC (f.unsafeGetAt(2))); \
 } \
-inline __BrtFloat2 FUNC (const __BrtFloat2 &f) { \
+inline __BrtFloat2 __##FUNC##_cpu_inner (const __BrtFloat2 &f) { \
   return __BrtFloat2 (CALLFUNC (f.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1))); \
 } \
-inline __BrtFloat1 FUNC (const __BrtFloat1 &f) { \
+inline __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f) { \
   return __BrtFloat1 (CALLFUNC (f.unsafeGetAt(0))); \
 }
 
 
 #define UNINTRINSICINOUT(FUNC,CALLFUNC) \
-inline __BrtFloat4 FUNC (const __BrtFloat4 &f, __BrtFloat4 &out) { \
+inline __BrtFloat4 __##FUNC##_cpu_inner (const __BrtFloat4 &f, __BrtFloat4 &out) { \
   return __BrtFloat4 (CALLFUNC (f.unsafeGetAt(0),out.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1),out.unsafeGetAt(1)), \
                       CALLFUNC (f.unsafeGetAt(2),out.unsafeGetAt(2)), \
                       CALLFUNC (f.unsafeGetAt(3),out.unsafeGetAt(3))); \
 } \
-inline __BrtFloat3 FUNC (const __BrtFloat3 &f, __BrtFloat3 &out) { \
+inline __BrtFloat3 __##FUNC##_cpu_inner (const __BrtFloat3 &f, __BrtFloat3 &out) { \
   return __BrtFloat3 (CALLFUNC (f.unsafeGetAt(0),out.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1),out.unsafeGetAt(1)), \
                       CALLFUNC (f.unsafeGetAt(2),out.unsafeGetAt(2))); \
 } \
-inline __BrtFloat2 FUNC (const __BrtFloat2 &f, __BrtFloat2 &out) { \
+inline __BrtFloat2 __##FUNC##_cpu_inner (const __BrtFloat2 &f, __BrtFloat2 &out) { \
   return __BrtFloat2 (CALLFUNC (f.unsafeGetAt(0),out.unsafeGetAt(0)), \
                       CALLFUNC (f.unsafeGetAt(1),out.unsafeGetAt(1))); \
 } \
-inline __BrtFloat1 FUNC (const __BrtFloat1 &f, __BrtFloat1 & out) { \
+inline __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f, __BrtFloat1 & out) { \
   return __BrtFloat1 (CALLFUNC (f.unsafeGetAt(0),out.unsafeGetAt(0))); \
 }
 
@@ -69,7 +69,7 @@ inline __BrtFloat1 FUNC (const __BrtFloat1 &f, __BrtFloat1 & out) { \
 
 #define BININTRINSIC(FUNC,CALLFUNC) \
 template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
-       LUB<TEMPL_TYPESIZE,4>::size> FUNC (const __BrtFloat4 &f, const BRT_TYPE &g) { \
+       LUB<TEMPL_TYPESIZE,4>::size> __##FUNC##_cpu_inner (const __BrtFloat4 &f, const BRT_TYPE &g) { \
   return f.CALLFUNC(g); \
 } \
 template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
@@ -77,7 +77,7 @@ template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>:
   return f.CALLFUNC(g); \
 } \
 template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
-       LUB<TEMPL_TYPESIZE,2>::size> FUNC (const __BrtFloat2 &f, const BRT_TYPE &g) { \
+       LUB<TEMPL_TYPESIZE,2>::size> __##FUNC##_cpu_inner (const __BrtFloat2 &f, const BRT_TYPE &g) { \
   return f.CALLFUNC(g); \
 } \
 template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
@@ -86,7 +86,7 @@ template <class BRT_TYPE> vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>:
 }
 
 #define TRIINTRINSIC(FUNC,CALLFUNC) \
-inline __BrtFloat4 FUNC (const __BrtFloat4 &f, \
+inline __BrtFloat4 __##FUNC##_cpu_inner (const __BrtFloat4 &f, \
              const __BrtFloat4 &g, \
              const __BrtFloat4 &h) { \
   return __BrtFloat4 (CALLFUNC (f.unsafeGetAt(0), \
@@ -102,7 +102,7 @@ inline __BrtFloat4 FUNC (const __BrtFloat4 &f, \
                                        g.unsafeGetAt(3), \
                                        h.unsafeGetAt(3))); \
 } \
-inline __BrtFloat3 FUNC (const __BrtFloat3 &f, \
+inline __BrtFloat3 __##FUNC##_cpu_inner (const __BrtFloat3 &f, \
                          const __BrtFloat3 &g, \
                          const __BrtFloat3 &h) { \
   return __BrtFloat3 (CALLFUNC (f.unsafeGetAt(0), \
@@ -115,7 +115,7 @@ inline __BrtFloat3 FUNC (const __BrtFloat3 &f, \
                                        g.unsafeGetAt(2), \
                                        h.unsafeGetAt(2))); \
 } \
-inline __BrtFloat2 FUNC (const __BrtFloat2 &f, \
+inline __BrtFloat2 __##FUNC##_cpu_inner (const __BrtFloat2 &f, \
                          const __BrtFloat2 &g, \
                          const __BrtFloat2 &h) { \
   return __BrtFloat2 (CALLFUNC (f.unsafeGetAt(0), \
@@ -125,7 +125,7 @@ inline __BrtFloat2 FUNC (const __BrtFloat2 &f, \
                                        g.unsafeGetAt(1), \
                                        h.unsafeGetAt(1))); \
 } \
-inline __BrtFloat1 FUNC (const __BrtFloat1 &f, \
+inline __BrtFloat1 __##FUNC##_cpu_inner (const __BrtFloat1 &f, \
                          const __BrtFloat1 &g, \
                          const __BrtFloat1 &h) { \
   return __BrtFloat1 (CALLFUNC (f.unsafeGetAt(0), \
