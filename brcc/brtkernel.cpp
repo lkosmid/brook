@@ -340,7 +340,7 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
     }}
     out << ")";    
     fDef->Block::print(out,0);
-    out << "static void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
+    out << "void ";//we don't want to automatically print this for it would say "kernel void" which means Nothing
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
     func->printBefore(out,&enhanced_name,0);
     out << "(const std::vector<void *>&args, ";
