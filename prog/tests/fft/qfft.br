@@ -213,7 +213,7 @@ kernel void setOne(float4 indata<>,
   // float4 zero = {0.0,0.0,0.0,0.0};
   //	float zeroit= (abs(negtopos.x)>.95||abs(negtopos.y)>.95)&&(i.x>0&&i.y>0);
   //outdata = zeroit.xxxx?zero:indata/scale;
-  outdata=indata*exp (-dot(negtopos,negtopos));  
+  outdata=indata*exp (-dot(negtopos,negtopos));
 }
 void generatePlan(float4 bitreversal<>,
                   int logN,
@@ -272,7 +272,10 @@ void computeFFT2d(float4 input<>,
    }
    if (!split_bit_reverse) {//now do it separately
      bitReverseXo2Y(output,indicesXo2YXp1o2Xm2,input);      
-            
+     if (debug_fft==2) {
+       printf ("\nBit Reversal\n");
+       streamPrint(output);
+     }            
    }
 
 }
@@ -294,6 +297,9 @@ void edgeDetect (float4 freqSpace<>,
            clampsize.y = (float)(N/2);
            setOne(freqSpace,freqSpace,normalized,negtopos,clampsize,(float)(M*N));
 }
+kernel void scale2d (float4 input<>, out float4 output<>, float scale) {
+  output=input/scale;
+}
 void blur2d(float2 *input,
             float2 *output,
             int logN,
@@ -308,10 +314,12 @@ void blur2d(float2 *input,
    generatePlan(bitreversal,logN,logM);
    computeFFT2d(s,s_out,logN,logM,N,M,bitreversal);
    {//perform the blur
-      if (!edgedetect)
+
+     if (!edgedetect)
         blur(s_out,N,M);
       else 
         edgeDetect(s_out,N,M);
+     /*scale2d(s_out,s_out,(float)(N*M));*/
       streamSwap(s,s_out);
    }
    computeFFT2d(s,s_out,logN,logM,N,M,bitreversal);
