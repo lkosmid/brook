@@ -22,9 +22,11 @@ void shouldTessellate (float4 input <>, float toler, out float output<>) {
    float2 height;
    curve2 (input,height);
    {
-      float3 center = lerp (float3(input.x,input.y,height.x),
-                            float3(input.z,input.w,height.y),
-                            float3(.5,.5,.5));
+      float3 bottomleft= {input.z,input.w,height.y};
+      float3 topright = {input.x,input.y,height.x};
+      float3 center = .5*topright+.5*bottomleft;//lerp (topright,
+                      //      bottomleft,
+                      //      float3(.5,.5,.5));
       float fheight,error;
       curve(center.xy,fheight);
       evaluateError(center.z,fheight,error);
@@ -33,7 +35,9 @@ void shouldTessellate (float4 input <>, float toler, out float output<>) {
    }
 }
 kernel void Tessellate(float4 input<>, float shouldDivide<>, vout[4] float4 output<>) {
-   float2 center = lerp (input.xy,input.zw,float2(.5,.5));
+   float2 topleft = input.xy;
+   float2 topright = input.zw;
+   float2 center = .5*topleft+.5*topright;//lerp (topleft,topright,float2(.5,.5));
    if (shouldDivide) {
       output.xy = input.xy;
       output.zw = center;
@@ -89,13 +93,18 @@ void Draw (float4 * dat, float4 datasize, char * pic, int width) {
     }
   }
 }
-
+float tof (int i) {
+	return (float)i;
+}
+float tofd (double i) {
+	return (float)i;
+}
 extern void writePng(char* , char * ,int, int);
 #define STRIDE 4
 #define SIZE 1024
 int main (int argc, char ** argv) {
-  float toler = argc>1?atof(argv[1]):.1;
-  int limit = argc>2?atoi(argv[2]):32;
+  float toler = argc>1?tofd(atof(argv[1])):tofd(.1);
+  int limit = argc>2?atoi(argv[2]):tof(32);
   float4 input[4096]={float4(0,0,SIZE/2,SIZE/2),float4(0,SIZE/2,SIZE/2,SIZE),float4(SIZE/2,0,SIZE,SIZE/2),float4(SIZE/2,SIZE/2,SIZE,SIZE)};
   float lastsize;
   float4 polys<1,STRIDE>;
