@@ -339,8 +339,10 @@ flatten=false;
          if (finite_flt(x)) {
            
 	    if (x==36893206672442393000.00)
-                printf("inf");
-            else if (fabs(x)<.000001)
+                printf("sen");
+            else if (x==-18446321861244485632.0f) {
+               printf ("inf");
+            }else if (fabs(x)<.000001)
                 printf ("0.00");
             else
                 printf("%3.2f",x);
