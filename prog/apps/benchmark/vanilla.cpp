@@ -7,10 +7,10 @@ static void floatMath (float a, float b, float4 c,
    float g=a+b;
    float h=b*b;
    float i = g*h+a*b;
-   float j = a>.5?g*i/(h>.001?h:1.0)+h:g*i*h-h;
+   float j = a>.5f?g*i/(h>.001f?h:1.0f)+h:g*i*h-h;
    float k = g*i*h+h;
    float l = g+h*g+k*i;
-   float m = g+j*k-i*k/(h>.001?h:1.0);
+   float m = g+j*k-i*k/(h>.001f?h:1.0f);
    float o = k;
    o+=5;
    g+=9;
@@ -18,8 +18,8 @@ static void floatMath (float a, float b, float4 c,
    i*=1;
    o+=0+0+0+0+0+0+0+0+0+0+0+0+0+0+0+0+0;
    o+=21049;
-   o+=h*i+g+i-m*(l-j)/(k>.001?k:1.0);
-   e= g+h*i/(k>.001?k:1.0)+m*l*1*1*1*1*1*1*1*1*1*1*1;
+   o+=h*i+g+i-m*(l-j)/(k>.001f?k:1.0f);
+   e= g+h*i/(k>.001f?k:1.0f)+m*l*1*1*1*1*1*1*1*1*1*1*1;
 }
 
 static void  FloatMath (const __BrtFloat1  &a,
@@ -30,10 +30,10 @@ static void  FloatMath (const __BrtFloat1  &a,
   __BrtFloat1  g = a + b;
   __BrtFloat1  h = b * b;
   __BrtFloat1  i = g * h + a * b;
-  __BrtFloat1  j = (__BrtFloat1(0.5) < a).questioncolon(g * i / ((__BrtFloat1(0.001) < h).questioncolon(h,__BrtFloat1(1))) + h,g * i * h - h);
+  __BrtFloat1  j = (__BrtFloat1(0.5f) < a).questioncolon(g * i / ((__BrtFloat1(0.001f) < h).questioncolon(h,__BrtFloat1(1))) + h,g * i * h - h);
   __BrtFloat1  k = g * i * h + h;
   __BrtFloat1  l = g + h * g + k * i;
-  __BrtFloat1  m = g + j * k - i * k / ((__BrtFloat1(0.001) < h).questioncolon(h,__BrtFloat1(1)));
+  __BrtFloat1  m = g + j * k - i * k / ((__BrtFloat1(0.001f) < h).questioncolon(h,__BrtFloat1(1)));
   __BrtFloat1  o = k;
 
   o += __BrtInt1(5);
@@ -42,8 +42,8 @@ static void  FloatMath (const __BrtFloat1  &a,
   i *= __BrtInt1(1);
   o += __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0);
   o += __BrtInt1(21049);
-  o += h * i + g + i - m * (l - j) / ((__BrtFloat1(0.001) < k).questioncolon(k,__BrtFloat1(1)));
-  e = g + h * i / ((__BrtFloat1(0.001) < k).questioncolon(k,__BrtFloat1(1))) + m * l * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1);
+  o += h * i + g + i - m * (l - j) / ((__BrtFloat1(0.001f) < k).questioncolon(k,__BrtFloat1(1)));
+  e = g + h * i / ((__BrtFloat1(0.001f) < k).questioncolon(k,__BrtFloat1(1))) + m * l * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1);
 }
 
 
