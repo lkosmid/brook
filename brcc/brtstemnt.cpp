@@ -57,7 +57,11 @@ BRTKernelDef::print(std::ostream& out, int) const
       out << " */" << std::endl;
    }
 
-   out << fp30 << std::endl << ps20 << std::endl << out << "void __" << *FunctionName() << "_cpu(const vector<void *>&,unsigned int, unsigned int);" << std::endl;
+   out << fp30 << std::endl << ps20 << std::endl;
+   out << "void __" 
+       << *FunctionName() 
+       << "_cpu(const vector<void *>&,unsigned int, unsigned int);" 
+       << std::endl<<std::endl;
    printStub(out);
    //somehow the dup above does not prevent the arguments from being messed up by my 
    //type converter --Daniel
