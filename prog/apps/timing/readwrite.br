@@ -77,8 +77,8 @@ ReadWriteProcessTiming(const char *name, float4 *input, float4 *output,
    int i, numBytes = numEntries * sizeof *input;
 
    printf("%9d\t%6d\t\t%6.2f\t\t(* %s *)\n",
-          length, (int) (stop - start),
-          numBytes / (float) (stop - start), name);
+          length, (int) CyclesToUsecs(stop - start),
+          numBytes / (float) CyclesToUsecs(stop - start), name);
 
    for (i = 0; CHECK_MISMATCH && i < numEntries; i++) {
       if ((input[i].x != output[i].x &&
@@ -110,11 +110,11 @@ ReadWrite1D(const char *logName, int length)
 
    ReadWriteBuildData(&in, &output, length);
 
-   start = GETTIME();
+   start = GetTimeTSC();
    streamRead(s, in);
    ReadWriteNOP(s, o);
    streamWrite(o, output);
-   stop = GETTIME();
+   stop = GetTimeTSC();
 
    ReadWriteProcessTiming(logName, in, output, length, length);
 
@@ -138,11 +138,11 @@ ReadWrite2D(const char *logName, int length)
 
    ReadWriteBuildData(&in, &output, length * length);
 
-   start = GETTIME();
+   start = GetTimeTSC();
    streamRead(s, in);
    ReadWriteNOP(s, o);
    streamWrite(o, output);
-   stop = GETTIME();
+   stop = GetTimeTSC();
 
    ReadWriteProcessTiming(logName, in, output, length, length * length);
 

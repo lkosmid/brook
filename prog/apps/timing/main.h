@@ -14,12 +14,6 @@ typedef __int64 int64;
 typedef long long int64;
 #endif
 
-#if 1
-#define GETTIME()	GetTime()
-#else
-#define GETTIME()	(GetTimeMillis() * 1000)
-#endif
-
 #ifdef WIN32
 static inline
 int64 GetTimeTSC() {

@@ -41,17 +41,17 @@
       streamRead(s, data);                                      \
       RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
       streamWrite(o, scratch);                                  \
-      start = GETTIME();                                        \
+      start = GetTimeTSC();                                     \
       for (i = 0; i < 20; i++)                                  \
          RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
       streamWrite(o, scratch);                                  \
-      cur_kW = (int) (GETTIME() - start);                       \
-      start = GETTIME();                                        \
+      cur_kW = (int) CyclesToUsecs(GetTimeTSC() - start);       \
+      start = GetTimeTSC();                                     \
       streamRead(s, data);                                      \
       for (i = 0; i < 20; i++)                                  \
          RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);  \
       streamWrite(o, scratch);                                  \
-      cur_R = (int) (GETTIME() - start - cur_kW);               \
+      cur_R = (int) CyclesToUsecs(GetTimeTSC() - start - cur_kW);  \
       if (cur_R < 1) cur_R = 1;                                 \
    } while(0)
 
@@ -85,9 +85,9 @@
                                                                 \
       RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, tiny); \
       streamWrite(tiny, scratch);                               \
-      start = GETTIME();                                        \
+      start = GetTimeTSC();                                     \
       streamWrite(o, scratch);                                  \
-      cur_W = (int) (GETTIME() - start);                        \
+      cur_W = (int) CyclesToUsecs(GetTimeTSC() - start);        \
       if (cur_W < 1) cur_W = 1;                                 \
    } while (0)
 
@@ -552,7 +552,7 @@ RunKernelProcessTiming(char *name, float4 *data,
    float scale, elapsed, numFLOPs;
    int i;
 
-   elapsed = (float) (stop - start);
+   elapsed = (float) CyclesToUsecs(stop - start);
 
    /*
     * Our kernel does one assignment and n '1.0*output + input' so the
@@ -577,7 +577,7 @@ RunKernelProcessTiming(char *name, float4 *data,
     *   - 4 floats per entry
     */
    printf("%8I64d   %6.2f   %8.0f   %4d\t(* %s %d R%d %d %d *)\n",
-          stop - start, numFLOPs / elapsed, numFLOPs / 1000000,
+          CyclesToUsecs(stop - start), numFLOPs / elapsed, numFLOPs / 1000000,
           nRuns, name, length, nRuns, cur_R, cur_W);
 
    for (i = 0; CHECK_MISMATCH && scale > 0.0f && i < numEntries; i++) {
@@ -626,13 +626,13 @@ RunKernel1D(char *logName, int streamLength, int nRuns)
       UPDATE_CUR_W(streamLength, data, s, o, tiny);
    }
 
-   start = GETTIME();
+   start = GetTimeTSC();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
       RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    }
    streamWrite(o, data);
-   stop = GETTIME();
+   stop = GetTimeTSC();
 
    RunKernelProcessTiming(logName, data, streamLength, streamLength, nRuns);
    free(data);
@@ -661,13 +661,13 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
       UPDATE_CUR_W(streamLength * streamLength, data, s, o, tiny);
    }
 
-   start = GETTIME();
+   start = GetTimeTSC();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
       RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    }
    streamWrite(o, data);
-   stop = GETTIME();
+   stop = GetTimeTSC();
 
    RunKernelProcessTiming(logName, data,
                           streamLength, streamLength * streamLength, nRuns);
@@ -693,12 +693,12 @@ RunKernel2DCPU(char *logName, int streamLength, int nRuns)
    RunKernelBuildData(&data, streamLength * streamLength);
    outData = (float4 *) malloc(streamLength * streamLength * sizeof *outData);
 
-   start = GETTIME();
+   start = GetTimeTSC();
    for (i = 0; i < nRuns; i++) {
       RunKernelHardWorkCPU(streamLength,
                            float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
    }
-   stop = GETTIME();
+   stop = GetTimeTSC();
 
    RunKernelProcessTiming(logName, outData, streamLength,
                           streamLength * streamLength, nRuns);

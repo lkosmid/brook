@@ -165,8 +165,10 @@ CyclesToUsecs(int64 cycles)
       msCount = GetTimeMillis() - msCount;
       Hz = cCount * 1000 / (double) msCount;
 
+#if 0
       std::cerr << "Your CPU is roughly "
                 << (int) (Hz / 1000000) << " MHz.\n";
+#endif
    }
 
    return (int64) (1000000 * cycles / Hz);
@@ -214,9 +216,6 @@ int
 main(int argc, char *argv[])
 {
    int length = 1024;
-
-   start = CyclesToUsecs(2800);
-   std::cerr << "2800 cycles is " << (int) start << " usecs.\n";
 
    argc--; argv++;      /* Skip argv[0] */
 

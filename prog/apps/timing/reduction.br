@@ -42,19 +42,19 @@ void do_reduction(int dim, int simReduceReg, int* time) {
   streamRead(flushStrm, flush);
 
   if (!simReduceReg) {
-    start = GETTIME();
+    start = GetTime();
     reductionKernel(xStrm, result);
     sum = result.x + result.y + result.z + result.w;
-    stop = GETTIME();
+    stop = GetTime();
 
     //printf("sum = %f\n", sum);
 
   } else {
-    start = GETTIME();
+    start = GetTime();
     reductionRegKernel(xStrm, yStrm);
     forceGPUFlush(yStrm, flushStrm);
     streamRead(flushStrm, flush);
-    stop = GETTIME();
+    stop = GetTime();
   }
 
   *time = (int)(stop - start);
