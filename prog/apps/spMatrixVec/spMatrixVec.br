@@ -1,20 +1,41 @@
 
 /*
-  CSR Sparse Matrix-Vector Multiply
-  Kayvon Fatahalian (kayvonf@stanford.edu)
-  12/10/03
+  Sparse Matrix-Vector Multiply
+
+    Simple example of how to perform a sparse matrix vector multiplication
+  (y = Ax) where the sparse matrix A is represented in padded compressed
+  sparse row, aka ITPACK format.  Each row of the matrix is constrained
+  to have at most MAX_NZ_PER_ROW nonzero elements.
+
+  Example:  
+
+  1  0  0  3
+  2  0  1  9
+  0  4  0  0
+  0  0  0  5
+
+  The representation of the above matrix, where MAX_NZ_PER_ROW = 3 and
+  NUM_ROWS = 4 is:
+
+  Anz:  1 3 0  2 1 9  4 0 0  5 0 0
+  Col:  0 3 0  0 2 3  1 0 0  3 0 0 
 
 
-  Simple example of how to perform a sparse matrix vector multiplication where the sparse matrix
-  is represented in compressed sparse row (CSR) format.  For simplicity, an upper bound is given
-  for the number of nonzero matrix elements per row, and rows containing fewer than this maximum
-  number of nonzeros are padded.
+  Algorithm:
 
-  1. Use a gather to "arrange" the elements of vector x into the ordering they will be referenced
-       in the mat-vec multiply (ordering determined by cols of nonzeros of A)
-  2. Component-wise multiply the modified x vector with the nonzeros of A
-  3. Perform reduction on resulting stream, reducing with the sum operator every MAX_NZ_PER_ROW
-       elements (the rows of the matrix) to get y = Ax.
+  1. Use a gather to "arrange" the elements of vector x into the ordering
+  they will be referenced in the mat-vec multiply (ordering determined by
+  cols of nonzeros of A)
+
+  Following the above example, elements of the x vector would be gathered
+  using the following access sequence.
+
+  0 3 0  0 2 3  1 0 0  3 0 0
+
+  2. Component-wise multiply the gathered x vector with the nonzeros of A
+
+  3. Perform reduction on resulting stream, reducing via the sum operator
+  every MAX_NZ_PER_ROW elements (the rows of the matrix) to get y = Ax.
 
 */
 
@@ -26,12 +47,13 @@
 #define MAX_NZ          50
 
 
-/*** Kernels needed for Sparse Matrix-Vector multiplication *****************************************/
+/*** Kernels needed for Sparse Matrix-Vector multiplication *******************/
 
 kernel void gather(float index<>, float x[NUM_ROWS+1], out float result<>) {
   result = x[index];
 }
 
+// componentwise multiply
 kernel void mult(float a<>, float b<>, out float c<>) {
   c = a*b;
 }
@@ -40,12 +62,12 @@ reduce void sumRows(float nzValues<>, reduce float result<>) {
   result += nzValues;
 }
 
-/*****************************************************************************************************/
+/*****************************************************************************/
 
 
-// take a standard CSR storage representation and turn it into a padded version for streaming
-// sparse matrix is represented as two (NUM_ROWS * MAX_NZ_PER_COL) streams, one containing the non
-// zero elements of A and the other containing their respective columns.
+// The data is read from disk in compressed sparse row (CSR) format.
+// This converts the structures read from disk into the padded ITPACK
+// representation that is easy to stream.
 void reshuffleData(float nz[MAX_NZ], int cols[MAX_NZ], int rowStart[NUM_ROWS+1],
                    float Anz[MAX_NZ], float Acols[MAX_NZ]) {
   int i,j;
@@ -59,10 +81,10 @@ void reshuffleData(float nz[MAX_NZ], int cols[MAX_NZ], int rowStart[NUM_ROWS+1],
       offset++;
     }
   
-    // must pad the rest of the row
+    // must pad the rest of the row if less than MAX_NZ_PER_ROW nonzeros
     while (offset < MAX_NZ_PER_ROW) {
       Anz[MAX_NZ_PER_ROW*i + offset] = 0.0f;
-      Acols[MAX_NZ_PER_ROW*i + offset] = (float)0.0f;   // this should be an invalid index.... but doesn't have to be since x multiplied by a zero here
+      Acols[MAX_NZ_PER_ROW*i + offset] = (float)0.0f;  // value is 0.0 so index doesn't matter
       offset++;
     }
   }
@@ -73,9 +95,8 @@ void reshuffleData(float nz[MAX_NZ], int cols[MAX_NZ], int rowStart[NUM_ROWS+1],
 int parseCmdLine(int argc, char** argv, char* filename) {
   
   if (argc < 2) {
-	// TIM: added default filename so we can regression-test
-	strncpy(filename, "csrMatrix.txt", 70);
-	return 0;
+	  strncpy(filename, "csrMatrix.txt", 70);
+	  return 0;
   }
 
   strncpy(filename, argv[1], 70); 
@@ -89,19 +110,25 @@ int main(int argc, char** argv) {
 
   char filename[80];
 
-  float  csrNz[MAX_NZ];
-  int    csrCols[MAX_NZ];
-  int    csrRowStart[NUM_ROWS+1];
+  // stores compressed sparse row representation of the matrix on disk
+  float  csrNz[MAX_NZ];         // nonzero values
+  int    csrCols[MAX_NZ];       // corresponding column
 
+  // index into csrNz of first nz element in each row
+  // note: number of nz in row i = csrRowStart[i+1] - csrRowStart[i]
+  int    csrRowStart[NUM_ROWS+1]; 
+
+  // storage for ITPACK representation of the matrix
   float  Anz[MAX_NZ];
   float  cIdx[MAX_NZ];
   float  x[NUM_ROWS];
   float  y[NUM_ROWS];
 
-  float  AStrm<MAX_NZ>;
-  float  cIdxStrm<MAX_NZ>;
-  float  productsStrm<MAX_NZ>;
-  float  xGatherStrm<MAX_NZ>;
+
+  float  AStrm<MAX_NZ>;           // nonzeros of A
+  float  cIdxStrm<MAX_NZ>;        // column indices
+  float  productsStrm<MAX_NZ>;    
+  float  xGatherStrm<MAX_NZ>;     // "gathered" version of x
 
   float  xStrm<NUM_ROWS>;
   float  yStrm<NUM_ROWS>;
@@ -187,7 +214,7 @@ int main(int argc, char** argv) {
   gather(cIdxStrm, xStrm, xGatherStrm);
   mult(AStrm, xGatherStrm, productsStrm);
   // reduction from (NUM_ROWS * MAX_NX_PER_ROW) to (NUM_ROWS)
-  // Note: in 2D, this can be thought of as a reduction along the horizontal direction
+  // Note: in 2D, this can be thought of as a reduction along the rows of the matrix
   sumRows(productsStrm, yStrm);     
   
 
