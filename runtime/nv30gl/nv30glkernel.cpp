@@ -233,7 +233,7 @@ void NV30GLKernel::PushReduce(void * val, __BRTStreamType type) {
    reduceTreg = treg;
 
    if (sreg==0 && type == __BRTSTREAM)
-     sreg0 =(NV30GLStream *) (Stream *) *((__BRTStream*) val);
+     sreg0 =(NV30GLStream *) (Stream *) *((::brook::stream*) val);
 
    sreg++;
    treg++;
@@ -721,7 +721,7 @@ NV30GLKernel::ReduceStream() {
 
    int leftSreg, rightSreg;
    
-   Stream* outputStreamBase = *((const __BRTStream*) reduceVal);
+   Stream* outputStreamBase = *((const ::brook::stream*) reduceVal);
    NV30GLStream *r = (NV30GLStream *)outputStreamBase;
    NV30GLStream *t;
 

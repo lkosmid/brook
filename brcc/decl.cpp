@@ -281,6 +281,50 @@ bool BaseType::printStructureStreamHelperType( std::ostream& out, const std::str
     return true;
 }
 
+static Symbol* findStructureTag( Type* inType )
+{
+	BaseType* base = inType->getBase();
+	while(true)
+	{
+		BaseTypeSpec mask = base->typemask;
+		if( mask & BT_UserType )
+		{
+			base = base->typeName->entry->uVarDecl->form->getBase();
+		}
+		else if( mask & BT_Struct )
+			return base->tag;
+		else break;
+	}
+	return NULL;
+}
+
+static StructDef* findStructureDef( Type* inType )
+{
+	Symbol* tag = findStructureTag( inType );
+	if( tag == NULL ) return NULL;
+	return tag->entry->uStructDef->stDefn;
+}
+
+
+bool BaseType::printStructureStreamShape( std::ostream& out )
+{
+    if (typemask & BT_Float)
+        out << "__BRTFLOAT, ";
+    else if (typemask & BT_Float2)
+        out << "__BRTFLOAT2, ";
+    else if (typemask & BT_Float3)
+        out << "__BRTFLOAT3, ";
+    else if (typemask & BT_Float4)
+        out << "__BRTFLOAT4, ";
+    else
+    {
+      StructDef* s = findStructureDef(this);
+      if( s == NULL ) return false;
+      s->printStructureStreamShape(out);
+    }
+    return true;
+}
+
 void
 BaseType::printBase(std::ostream& out, int level) const
 {
@@ -1108,6 +1152,24 @@ bool StructDef::printStructureStreamHelper(std::ostream& out) const
     return true;
 }
 
+bool StructDef::printStructureStreamShape(std::ostream& out)
+{
+    for (int j=0; j < nComponents; j++)
+    {
+        if(!components[j]->printStructureStreamShapeInternals(out))
+          return false;
+
+        Decl *decl = components[j]->next;
+        while (decl != NULL)
+        {
+            if(!decl->printStructureStreamShapeInternals(out))
+              return false;
+            decl = decl->next;
+        }
+    }
+    return true;
+}
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 StructDef::findExpr( fnExprCallback cb )
@@ -1631,6 +1693,38 @@ bool Decl::printStructureStreamInternals( std::ostream& out ) const
     }
 
     return true;
+}
+
+bool Decl::printStructureStreamShape(std::ostream& out)
+{
+  assert(this != NULL);
+  if(!isTypedef()) return false;
+
+  std::ostringstream stringout;
+
+  stringout << "\ntemplate<> const __BRTStreamType* ::brook::getStreamType(";
+  stringout << name->name << "*) {\n";
+  stringout << "\tstatic const __BRTStreamType result[] = {";
+  if(!form->printStructureStreamShape( stringout ))
+    return false;
+  stringout << "__BRTNONE};\n";
+  stringout << "\treturn result;\n";
+  stringout << "}\n\n";
+  out << stringout.str();
+  return true;
+}
+
+bool Decl::printStructureStreamShapeInternals(std::ostream& out)
+{
+  if(isTypedef()) return true;
+  if((storage & ST_Static) != 0) return true;
+  
+  if (form)
+  {
+    if(!form->printStructureStreamShape(out))
+      return false;
+  }
+  return true;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

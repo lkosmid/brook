@@ -147,8 +147,12 @@ Kernel* DX9RunTime::CreateKernel(const void* source[]) {
   return result;
 }
 
-Stream* DX9RunTime::CreateStream(__BRTStreamType type, int dims, int extents[])
+Stream* DX9RunTime::CreateStream(
+  int fieldCount, const __BRTStreamType fieldTypes[],
+  int dims, const int extents[])
 {
+  DX9Assert(fieldCount == 1, "Cannot allocate streams of structures.");
+  __BRTStreamType type = fieldTypes[0];
   Stream* result = DX9Stream::create( this, type, dims, extents );
   DX9Assert( result != NULL, "Unable to allocate a stream, exiting." );
   return result;

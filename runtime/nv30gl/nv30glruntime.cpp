@@ -36,8 +36,11 @@ NV30GLRunTime::CreateKernel(const void* sourcelist[]) {
 }
 
 Stream *
-NV30GLRunTime::CreateStream(__BRTStreamType type,
-                            int dims, int extents[]) {
+NV30GLRunTime::CreateStream(
+      int fieldCount, const __BRTStreamType fieldTypes[],
+      int dims, const int extents[]) {
+  assert(fieldCount == 1);
+  __BRTStreamType type = fieldTypes[0];
   return new NV30GLStream( this, type, dims, extents );
 }
 

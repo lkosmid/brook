@@ -129,7 +129,7 @@ namespace brook {
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     class CPUStream: public Stream {
     public:
-	CPUStream (__BRTStreamType type ,int dims, int extents[]);
+	CPUStream (__BRTStreamType type ,int dims, const int extents[]);
 	virtual void Read(const void* inData);
 	virtual void Write(void* outData);
 	virtual void Release();
@@ -174,9 +174,9 @@ namespace brook {
    public:
 	CPURunTime();
 	virtual Kernel * CreateKernel(const void*[]);
-	virtual Stream * CreateStream(__BRTStreamType type, 
-                                      int dims, 
-                                      int extents[]);
+	virtual Stream * CreateStream(
+    int fieldCount, const __BRTStreamType fieldTypes[],
+    int dims, const int extents[]);
 	virtual Iter * CreateIter(__BRTStreamType type, 
                                   int dims, 
                                   int extents[],

@@ -10,7 +10,9 @@ namespace brook {
   public:
     RunTime() {}
     virtual Kernel* CreateKernel(const void*[]) = 0;
-    virtual Stream* CreateStream(__BRTStreamType, int dims, int extents[]) = 0;
+    virtual Stream* CreateStream(
+      int fieldCount, const __BRTStreamType fieldTypes[],
+      int dims, const int extents[]) = 0;
     virtual Iter * CreateIter(__BRTStreamType, 
                               int dims, 
                               int extents[], 

@@ -1202,6 +1202,11 @@ DeclStemnt::print(std::ostream& out, int level) const
     for(; k != decls.end(); ++k )
     {
         (*k)->printStructureStreamHelpers(out);
+
+        // TIM: broken const-ness, but I don't care
+        // to fix it... :)
+        Decl* decl = const_cast<Decl*>(*k);
+        decl->printStructureStreamShape(out);
     }
 }
 

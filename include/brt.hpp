@@ -29,6 +29,7 @@ typedef struct float4 {
   float x,y,z,w;
 } float4;
 enum __BRTStreamType {
+   __BRTNONE=-1,
    __BRTSTREAM=0,//stream of stream is illegal. Used in reduce to stream.
    __BRTFLOAT=1,
    __BRTFLOAT2=2,
@@ -109,68 +110,95 @@ namespace brook {
     virtual ~Iter() {}
   };
 
+  template<typename T>
+  const __BRTStreamType* getStreamType(T* unused=0);
+
+  template<>
+  inline const __BRTStreamType* getStreamType(float*) {
+    static const __BRTStreamType result[] = {__BRTFLOAT,__BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const __BRTStreamType* getStreamType(float2*) {
+    static const __BRTStreamType result[] = {__BRTFLOAT2,__BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const __BRTStreamType* getStreamType(float3*) {
+    static const __BRTStreamType result[] = {__BRTFLOAT3,__BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const __BRTStreamType* getStreamType(float4*) {
+    static const __BRTStreamType result[] = {__BRTFLOAT4,__BRTNONE};
+    return result;
+  }
+
+  class iter {
+  public:
+    iter(__BRTStreamType,...);
+    ~iter() {
+      if(_iter) _iter->Release();
+    }
+
+    operator ::brook::Iter*() const {
+      return _iter;
+    }
+
+    operator ::brook::StreamInterface*() const {
+      return _iter;
+    }
+
+    ::brook::Iter* operator->() const {
+      return _iter;
+    }
+
+  private:
+    iter( const ::brook::iter& ); // no copy constructor
+    ::brook::Iter* _iter;
+  };
+
+  class stream
+  {
+  public:
+    stream(const __BRTStreamType*,...);
+    stream(int * extents,int dims,__BRTStreamType type);
+    stream( const ::brook::iter& );
+    ~stream() {
+      if(_stream) _stream->Release();
+    }
+
+    void swap(::brook::stream& other) {
+      ::brook::Stream* s = other._stream;
+      other._stream = _stream;
+      _stream = s;
+    }
+
+    operator ::brook::Stream*() const {
+      return _stream;
+    }
+
+
+    operator ::brook::StreamInterface*() const {
+      return _stream;
+    }
+
+    ::brook::Stream* operator->() const {
+      return _stream;
+    }
+
+  private:
+    stream( const stream& ); // no copy constructor
+    ::brook::Stream* _stream;
+  };
 }
 
-struct __BRTStream;
-struct __BRTIter;
-
-struct __BRTStream {
-public:
-  __BRTStream(__BRTStreamType , ...);
-  __BRTStream(int * extents, int dims, __BRTStreamType);
-  __BRTStream( const __BRTIter& );
-  ~__BRTStream()
-  {
-    if( stream != 0 )
-      stream->Release();
-  }
-  void swap(__BRTStream*s) {
-     brook::Stream *k = s->stream;
-     s->stream=stream;
-     stream=k;
-  }
-  operator brook::Stream*() const {
-    return stream;
-  }
-
-  operator brook::StreamInterface*() const {
-    return stream;
-  }
-
-  brook::Stream* operator->() const {
-    return stream;
-  }
-
-private:
-  __BRTStream( const __BRTStream& ); // no copy constructor
-  brook::Stream* stream;
-};
-
-struct __BRTIter {
-public:
-  __BRTIter(__BRTStreamType , ...);
-  ~__BRTIter()
-  {
-    if( iter != 0 )
-      iter->Release();
-  }
-
-  operator brook::Iter*() const {
-    return iter;
-  }
-
-  operator brook::StreamInterface*() const {
-    return iter;
-  }
-
-  brook::Iter* operator->() const {
-    return iter;
-  }
-
-private:
-  __BRTIter( const __BRTIter& ); // no copy constructor
-  brook::Iter* iter;
-};
+// TIM: legacy support?
+typedef ::brook::stream __BRTStream;
+typedef ::brook::iter __BRTIter;
 
 class __BRTKernel {
 public:
@@ -208,8 +236,8 @@ inline static void streamWrite( brook::Stream *s, void *p) {
   s->Write(p);
 }
 void readItem(brook::StreamInterface *s, void * p, ... );
-inline static void streamSwap(__BRTStream &x, __BRTStream&y) {
-   x.swap(&y);
+inline static void streamSwap(::brook::stream &x, ::brook::stream &y) {
+   x.swap(y);
 }
 #endif
 

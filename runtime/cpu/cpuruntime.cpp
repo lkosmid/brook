@@ -13,8 +13,12 @@ namespace brook{
     }
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    Stream * CPURunTime::CreateStream(__BRTStreamType type,int dims, int extents[]) {
-	return new CPUStream(type,dims,extents);
+    Stream * CPURunTime::CreateStream(
+      int fieldCount, const __BRTStreamType fieldTypes[],
+      int dims, const int extents[]) {
+      assert(fieldCount == 1);
+      __BRTStreamType type = fieldTypes[0];
+	    return new CPUStream(type,dims,extents);
     }
 
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

@@ -243,7 +243,7 @@ void DX9Kernel::Reduce() {
 
   if( outputReductionType == __BRTSTREAM )
   {
-    Stream* outputStreamBase = *((const __BRTStream*)outputReductionData);
+    Stream* outputStreamBase = *((const ::brook::stream*)outputReductionData);
     DX9Stream* outputStream = (DX9Stream*)outputStreamBase;
     DX9Texture* outputTexture = outputStream->getTexture();
     ReduceToStream( outputTexture );

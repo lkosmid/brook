@@ -1,0 +1,60 @@
+// sum.br
+// The absolute minimal test. It tests
+// using a kernel to sum both 1-dimensional
+// and two-dimensional input streams.
+
+#include <stdio.h>
+
+typedef struct Particle_t {
+	float3 position;
+	float3 velocity;
+} Particle;
+
+kernel void advanceParticles( Particle p<>, float t, float3 a, out Particle result<> )
+{
+	result.velocity = p.velocity + a*t;
+	result.position = p.position + p.velocity*t;
+}
+
+int main() {
+
+	Particle particles< 100 >;
+	Particle particles_data[100];
+	float timeDelta = 0.1f;
+	float3 acceleration = float3( 0, -9.8, 0 );
+	const char* format = "%6.2f ";
+	int i;
+	
+	for( i = 0; i < 100; i++ )
+	{
+		particles_data[i].position.x = 0.0f;
+		particles_data[i].position.y = (float)i;
+		particles_data[i].position.z = 0.0f;
+		particles_data[i].velocity.x = (float)i;
+		particles_data[i].velocity.y = 5.0f;
+		particles_data[i].velocity.z = (float)(-i);
+	}
+	
+	streamRead( particles, particles_data );
+	
+	for( i = 0; i < 10; i++ )
+	{
+		advanceParticles( particles, timeDelta, acceleration, particles );
+	}
+	
+	streamWrite( particles, particles_data );
+	
+	for( i = 0; i < 100; i++ )
+	{
+		printf( "{ " );
+		printf( format, particles_data[i].position.x );
+		printf( format, particles_data[i].position.y );
+		printf( format, particles_data[i].position.z );
+		printf( format, particles_data[i].velocity.x );
+		printf( format, particles_data[i].velocity.y );
+		printf( format, particles_data[i].velocity.z );
+		printf( "}\n" );
+	}
+	
+	return 0;
+}

@@ -211,6 +211,7 @@ class StructDef
 
     void    print(std::ostream& out, Symbol *name, int level) const;
     bool printStructureStreamHelper(std::ostream& out) const;
+    bool printStructureStreamShape(std::ostream& out);
 
     void    findExpr( fnExprCallback cb );
 
@@ -279,6 +280,7 @@ class Type : public DupableType
 			    bool showBase, int level ) const;
 
     virtual bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const = 0;
+    virtual bool printStructureStreamShape( std::ostream& out ) { return false; }
 
     virtual void printBase( std::ostream& out, int level ) const {}
     virtual void printBefore( std::ostream& out, Symbol *name, int level) const {}
@@ -328,6 +330,7 @@ class BaseType : public Type
     Type* extend(Type *extension) { assert(0); return NULL; }
 
     bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const;
+    bool printStructureStreamShape( std::ostream& out );
 
     void printBase( std::ostream& out, int level ) const;
     void printBefore( std::ostream& out, Symbol *name, int level) const;
@@ -591,6 +594,8 @@ class Decl
     void    print(std::ostream& out, bool showBase, int level=0) const;
     void printStructureStreamHelpers( std::ostream& out ) const;
     bool printStructureStreamInternals( std::ostream& out ) const;
+    bool printStructureStreamShape(std::ostream& out);
+    bool printStructureStreamShapeInternals(std::ostream& out);
     void    printBase(std::ostream& out, Symbol *name,
                        bool showBase, int level) const;
 

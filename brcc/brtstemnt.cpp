@@ -155,7 +155,7 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
       }
    }
    for (iter = vouts->begin();iter!=vouts->end();++iter) {
-      out << "  std::vector<__BRTStream *> ";
+     out << "  std::vector<::brook::stream *> ";
       out<<getDeclStream(ft->args[*iter],"_outputs")<<";";
       out << std::endl;
       out << "  bool "<<getDeclStream(ft->args[*iter],"_values")<<" = true;";
@@ -172,7 +172,7 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
       out << "    if ("<<getDeclStream(ft->args[*iter],"_values")<<")";
       out << std::endl;
       out << "      "<<getDeclStream(ft->args[*iter],"_outputs");
-      out << ".push_back (new __BRTStream (maxextents, ";
+      out << ".push_back (new ::brook::stream (maxextents, ";
       out << "__dimension, ";
       out << ft->args[*iter]->name->name<<"->getStreamType()));"<<std::endl;
       
@@ -210,7 +210,7 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    for (iter = beginvout;iter!=endvout;++iter) {
       Decl * decl = ft->args[*iter];
       std::string type = undecoratedBase(decl);
-      out<< "  __BRTStream "<<getDeclStream(decl,"_temp")<<"(";
+      out<< "  ::brook::stream "<<getDeclStream(decl,"_temp")<<"(";
       out<< decl->name->name<< "->getStreamType(),1,1,-1);"<<std::endl;
       out<< "  combineStreams";
       out << type <<" (&"<<getDeclStream(decl,"_outputs")<<"[0],";
@@ -241,19 +241,19 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static void printPrototypes(std::ostream & out, std::string type) {
    out << "extern int finiteValueProduced" ;
-   out << type << " (struct __BRTStream * input);\n"
+   out << type << " (::brook::stream * input);\n"
       "extern float shiftValues";
-   out << type << "(struct __BRTStream *list_stream,\n"
-      "                         struct __BRTStream *output_stream,\n"
+   out << type << "(::brook::stream *list_stream,\n"
+      "                         ::brook::stream *output_stream,\n"
       "                         int WIDTH, \n"
       "                         int LENGTH, \n"
       "                         int sign);\n"
       "void combineStreams";
-   out << type << "(struct __BRTStream **streams,\n"
+   out << type << "(::brook::stream **streams,\n"
       "                     unsigned int num,\n"
       "                     unsigned int width, \n"
       "                     unsigned int length,\n"
-      "                     struct __BRTStream * output) ;\n";
+      "                     ::brook::stream * output) ;\n";
    
 }
 void
@@ -297,7 +297,7 @@ BRTKernelDef::printStub(std::ostream& out) const
                   t = static_cast<ArrayType*>(fType->args[i]->form)->subType;                  
                t->printType(out,&name,true,0);
             }else{
-               out << "__BRTStream& "<< *fType->args[i]->name;
+               out << "::brook::stream& "<< *fType->args[i]->name;
             }
          } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
             out << "const __BRTIter& " << *fType->args[i]->name;
@@ -306,7 +306,7 @@ BRTKernelDef::printStub(std::ostream& out) const
             if ((fType->args[i]->form->getQualifiers()&TQ_Out)==0) {
                out << "const ";
             }
-            out << "__BRTStream& " << *fType->args[i]->name;
+            out << "::brook::stream& " << *fType->args[i]->name;
          } else {
             out << "const ";
             Symbol name;name.name = fType->args[i]->name->name;
@@ -392,7 +392,7 @@ BRTKernelDef::CheckSemantics() const
 
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
-
+/*TIM: remove type checking for arglist
    for (int i = 0; i < fType->nArgs; i++) {
       BaseTypeSpec baseType;
 
@@ -404,7 +404,7 @@ BRTKernelDef::CheckSemantics() const
          return false;
       }
    }
-
+*/
    if (!fType->subType->isBaseType() ||
       ((BaseType *) fType->subType)->typemask != BT_Void) {
       std::cerr << location << "Illegal return type for kernel "

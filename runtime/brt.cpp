@@ -110,29 +110,87 @@ namespace brook {
      memcpy (output,data,size);
      releaseData(READ);
   }
-}
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-__BRTStream::__BRTStream(__BRTStreamType type, ...)
-  : stream(NULL)
-{
-  std::vector<int> extents;
-
-  va_list args;
-  va_start(args,type);
-  for(;;)
+  
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+  stream::stream(const __BRTStreamType* inElementTypes, ...)
+    : _stream(0)
   {
-    int extent = va_arg(args,int);
-    if( extent == -1 ) break;
-    extents.push_back(extent);
-  }
-  va_end(args);
+    std::vector<__BRTStreamType> elementTypes;
+    std::vector<int> extents;
 
-  stream = brook::RunTime::GetInstance()->CreateStream( type, (int)extents.size(), &extents[0] );
+    const __BRTStreamType* e = inElementTypes;
+    while(*e != __BRTNONE)
+    {
+      elementTypes.push_back(*e);
+      e++;
+    }
+
+    va_list args;
+    va_start(args,inElementTypes);
+    for(;;)
+    {
+      int extent = va_arg(args,int);
+      if( extent == -1 ) break;
+      extents.push_back(extent);
+    }
+    va_end(args);
+
+    _stream = brook::RunTime::GetInstance()->CreateStream(
+      (int)elementTypes.size(), &elementTypes[0], (int)extents.size(), &extents[0] );
+  }
+  stream::stream(int * extents,int dims,__BRTStreamType type)
+    : _stream(0)
+  {
+    _stream = brook::RunTime::GetInstance()->CreateStream( 1, &type,dims,extents);
+  }
+
+  stream::stream( const ::brook::iter& i )
+    : _stream(0)
+  {
+    ::brook::Iter* iterator = i;
+
+    __BRTStreamType elementType = iterator->getStreamType();
+    int dimensionCount = iterator->getDimension();
+    int* extents = (int*)(iterator->getExtents());
+
+    _stream = brook::RunTime::GetInstance()->CreateStream( 1, &elementType, dimensionCount, extents );
+    _stream->Read( iterator->getData( brook::Stream::READ ) );
+    iterator->releaseData( brook::Stream::READ );
+  }
+
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+  iter::iter(__BRTStreamType type, ...)
+    : _iter(0)
+  {
+    std::vector<int> extents;
+    std::vector<float> ranges;
+    va_list args;
+    va_start(args,type);
+    for(;;)
+    {
+      int extent = va_arg(args,int);
+      if( extent == -1 ) break;
+      extents.push_back(extent);
+    }
+    for (int i=0;i<type;++i) {
+      float f = (float) va_arg(args,double);
+      //     fprintf(stderr, "float %f\n",f);
+      ranges.push_back(f);
+      f = (float) va_arg(args,double);
+      //     fprintf(stderr, "float %f\n",f);
+      ranges.push_back(f);
+    }
+    va_end(args);
+
+    _iter = brook::RunTime::GetInstance()->CreateIter( type, 
+                                                      (int)extents.size(), 
+                                                      &extents[0],
+                                                      &ranges[0]);
+  }
+
 }
-__BRTStream::__BRTStream(int * extents,int dims,__BRTStreamType type) {
-   stream = brook::RunTime::GetInstance()->CreateStream(type,dims,extents);
-}
+
 void streamPrint(brook::StreamInterface * s, bool flatten) {
    unsigned int dims = s->getDimension();
    const unsigned int * extent = s->getExtents();
@@ -175,49 +233,6 @@ void readItem (brook::StreamInterface *s, void * p,...) {
    }
    va_end(args);
    s->readItem(p,&index[0]);
-}
-__BRTStream::__BRTStream( const __BRTIter& i )
-  : stream(0)
-{
-  brook::Iter* iterator = i;
-
-  __BRTStreamType elementType = iterator->getStreamType();
-  int dimensionCount = iterator->getDimension();
-  int* extents = (int*)(iterator->getExtents());
-
-  stream = brook::RunTime::GetInstance()->CreateStream( elementType, dimensionCount, extents );
-  stream->Read( iterator->getData( brook::Stream::READ ) );
-  iterator->releaseData( brook::Stream::READ );
-}
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-__BRTIter::__BRTIter(__BRTStreamType type, ...)
-  : iter(NULL)
-{
-  std::vector<int> extents;
-  std::vector<float> ranges;
-  va_list args;
-  va_start(args,type);
-  for(;;)
-  {
-    int extent = va_arg(args,int);
-    if( extent == -1 ) break;
-    extents.push_back(extent);
-  }
-  for (int i=0;i<type;++i) {
-     float f = (float) va_arg(args,double);
-     //     fprintf(stderr, "float %f\n",f);
-     ranges.push_back(f);
-     f = (float) va_arg(args,double);
-     //     fprintf(stderr, "float %f\n",f);
-     ranges.push_back(f);
-  }
-  va_end(args);
-
-  iter = brook::RunTime::GetInstance()->CreateIter( type, 
-                                                    (int)extents.size(), 
-                                                    &extents[0],
-                                                    &ranges[0]);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

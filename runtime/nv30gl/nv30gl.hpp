@@ -110,7 +110,7 @@ void __check_gl(int line, char *file);
   class NV30GLStream : public Stream {
   public:
     NV30GLStream (NV30GLRunTime * runtime,
-                  __BRTStreamType type, int dims, int extents[]);
+                  __BRTStreamType type, int dims, const int extents[]);
     void Read(const void* inData);
     void Write(void* outData);
     void Release() {}
@@ -160,8 +160,8 @@ void __check_gl(int line, char *file);
   public:
      NV30GLRunTime();
      Kernel* CreateKernel(const void*[]);
-     Stream* CreateStream(__BRTStreamType type,
-                                 int dims, int extents[]);
+     Stream* CreateStream(int fieldCount, const __BRTStreamType fieldTypes[],
+      int dims, const int extents[]);
      Iter* CreateIter(__BRTStreamType type,
                              int dims, int e[],float r[]);
      ~NV30GLRunTime();

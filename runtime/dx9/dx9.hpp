@@ -121,7 +121,7 @@ namespace brook {
   class DX9Stream : public Stream {
   public:
     static DX9Stream* create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
-      int inDimensionCount, int* inExtents );
+      int inDimensionCount, const int* inExtents );
     virtual void Read(const void* inData);
     virtual void Write(void* outData);
     virtual void Release() {}
@@ -149,7 +149,7 @@ namespace brook {
 
   private:
     DX9Stream( DX9RunTime* inRuntime, __BRTStreamType inElementType );
-    bool initialize( int inDimensionCount, int* inExtents );
+    bool initialize( int inDimensionCount, const int* inExtents );
     virtual ~DX9Stream ();
     IDirect3DDevice9* getDevice();
 
@@ -171,7 +171,9 @@ namespace brook {
     static DX9RunTime* create();
 
     virtual Kernel* CreateKernel(const void*[]);
-    virtual Stream* CreateStream(__BRTStreamType type, int dims, int extents[]);
+    virtual Stream* CreateStream(
+      int fieldCount, const __BRTStreamType fieldTypes[],
+      int dims, const int extents[]);
     virtual Iter* CreateIter(__BRTStreamType type, 
                                  int dims, 
                                  int extents[],

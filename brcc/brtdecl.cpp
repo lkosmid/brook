@@ -60,14 +60,18 @@ void
 BrtStreamType::printType( std::ostream& out, Symbol *name,
 			  bool showBase, int level ) const
 {
-  out << "__BRTStream ";
+  out << "::brook::stream ";
 
   if (name) 
     out << *name;
 
   // TIM: add initializer as constructor
-  out << "(";
-  
+  out << "(::brook::getStreamType< ";
+
+  base->printType( out, NULL, true, 0 );
+
+  out << " >(), ";
+  /*
   if (base->getBase()->typemask&BT_Float4) {
     out << "__BRTFLOAT4";
   }else if (base->getBase()->typemask&BT_Float3) {
@@ -81,8 +85,7 @@ BrtStreamType::printType( std::ostream& out, Symbol *name,
     base->printBase(std::cerr,0);
     std::cerr << std::endl;
     out << "__BRTFLOAT";
-  }
-  out << ",";
+  }*/
   for (unsigned int i=0; i<dims.size(); i++) {
     dims[i]->print(out);
     out << ",";
@@ -230,7 +233,7 @@ BrtIterType::printType( std::ostream& out, Symbol *name,
 {
   ExprVector::const_iterator i;
 
-  out << "__BRTIter ";
+  out << "::brook::iter ";
 
   if (name)
     out << *name;
@@ -247,7 +250,7 @@ BrtIterType::printType( std::ostream& out, Symbol *name,
   }else if (base->getBase()->typemask&BT_Float) {
     out << "__BRTFLOAT, ";
   }else {
-    std::cerr << "Warning: Unsupported stream type ";
+    std::cerr << "Warning: Unsupported iterator type ";
     base->printBase(std::cerr,0);
     std::cerr << std::endl;
     out << "__BRTFLOAT, ";

@@ -5,7 +5,7 @@
 using namespace brook;
 
 DX9Stream* DX9Stream::create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
-  int inDimensionCount, int* inExtents )
+  int inDimensionCount, const int* inExtents )
 {
   DX9Stream* result = new DX9Stream( inRuntime, inElementType );
   if( result->initialize( inDimensionCount, inExtents ) )
@@ -21,7 +21,7 @@ DX9Stream::DX9Stream( DX9RunTime* inRuntime, __BRTStreamType inElementType)
 {
 }
 
-bool DX9Stream::initialize( int inDimensionCount, int* inExtents )
+bool DX9Stream::initialize( int inDimensionCount, const int* inExtents )
 {
   dimensionCount = inDimensionCount;
   if( (dimensionCount <= 0) || (dimensionCount > 2) )

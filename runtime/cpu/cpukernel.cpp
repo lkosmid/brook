@@ -192,7 +192,7 @@ namespace brook{
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushReduce(void * data, __BRTStreamType type) {
        if (type==__BRTSTREAM) {
-          brook::Stream * stream = *(const __BRTStream *)data;
+         brook::Stream * stream = *(const ::brook::stream *)data;
           reductions.push_back(ReductionArg(args.size(),type,stream));
           args.push_back(NULL);
           dims.push_back(stream->getDimension());
