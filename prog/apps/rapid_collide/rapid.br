@@ -41,7 +41,7 @@ typedef struct bbox_t{
 }BBox;
 
 
-typedef struct tri_t {
+typedef struct Tri_t {
   float3 A;
   float3 B;
   float3 C;
@@ -369,11 +369,7 @@ kernel void CheckTriangleCollide(float3 mRx,
 kernel float GetBBSize (float3 Radius ) {
   return Radius.x;
 }
-kernel void Collide (float3 mRx,
-                     float3 mRy,
-                     float3 mRz,
-                     float3 mT,
-                     Traverser currentNode<>,
+kernel void Collide (Traverser currentNode<>,
                      TransposedBBox b1Tree[][], 
                      BBox b2Tree[][], 
                      vout [1]float4 nextNode<>,//xy is parent yz is first of two childs
@@ -413,7 +409,7 @@ kernel void Collide (float3 mRx,
 
 
 
-
+/* Collision code to be used if we ever do structures with stuff
 kernel void CollideOBB (Traverser currentNode<>,
                         TransposedBBox b1Tree[][], 
                         BBox b2Tree[][], 
@@ -467,8 +463,8 @@ kernel void CollideVout (float4 collisions<>,
   }
 }             
 kernel void CollideHack (Traverser currentNode<>,
-                        TransposedBBox b1Tree[][], 
-                        BBox b2Tree[][], 
+                         TransposedBBox b1Tree[][], 
+                         BBox b2Tree[][], 
                          vout [1]float4 nextNode<>,//xy is parent yz is first of two childs
                          //additionally if it's <0 then it's -b-1
                          vout [1]float4 triIntersect<>//index into triangle list
@@ -507,7 +503,7 @@ kernel void CollideHack (Traverser currentNode<>,
     ? temp:__nextNode_stream;
 
 }
-               
+*/               
 kernel void updateCurrentNode(float4 curNodeIndices<>,
                               TransposedBBox aTree[][],
                               BBox bTree[][],
@@ -611,16 +607,20 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
                         float4 ** intersections) {
   unsigned int num_intersections=0;
   unsigned int temp;
+  int xsize,ysize;
   unsigned int alloc_intersections=16;
   TransposedBBox m1<bboxwidt1,bboxheit1>;
   BBox m2<bboxwidt2,bboxheit2>;
-  float3 t1A <widt1,heit1>;
+  /*  float3 t1A <widt1,heit1>;
   float3 t1B <widt1,heit1>;
   float3 t1C <widt1,heit1>;
   float3 t2A <widt2,heit2>;
   float3 t2B <widt2,heit2>;
-  float3 t2C <widt2,heit2>;
+  float3 t2C <widt2,heit2>;*/
+  Tri t1List<widt1,heit1>;
+  Tri t2List<widt2,heit2>;
   float4 hits<0,2048>;
+  float4 nextNode<0,2048>;
   Traverser baseTraverser;
   Traverser trav<1,1>;
   baseTraverser.index=float4(0,0,0,0);
@@ -629,22 +629,41 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
   baseTraverser.Rotationy=rY;
   streamRead(trav,&baseTraverser);
   *intersections=(float4*)malloc(alloc_intersections*sizeof(float4));
-  copyTriangle(widt1*heit1,t1A,t1B,t1C,t1);
-  copyTriangle(widt2*heit2,t2A,t2B,t2C,t2);
+  /*copyTriangle(widt1*heit1,t1A,t1B,t1C,t1);
+    copyTriangle(widt2*heit2,t2A,t2B,t2C,t2);*/
+  streamRead(t1List,t1);
+  streamRead(t2List,t2);
   TransposeBBoxes(bboxwidt1*bboxheit1,bboxest1);
   streamRead(m1,bboxest1);
   streamRead(m2,bboxest2);
   do {
-    
-    temp = (int)streamSize(hits).x*(int)streamSize(hits).y;
-    if (temp) {
-      while (num_intersections+temp>alloc_intersections) {
-        alloc_intersections*=2;
-        *intersections= (float4*)realloc(*intersections,alloc_intersections*sizeof(float4));
-      }
-      streamWrite(hits,*intersections+num_intersections);
-      num_intersections+=temp;
-    }
+     Collide(trav,m1,m2,nextNode,hits);
+     xsize = (int)streamSize(nextNode).x;
+     ysize = ((int)streamSize(nextNode).y)*2;     
+     {
+        Traverser temp<ysize,xsize>;
+        streamSwap(temp,trav);
+        updateCurrentNode(nextNode,
+                          m1,
+                          m2,
+                          temp,
+                          trav);
+     }
+     CheckTriangleCollide(rX,rY,rZ,trans,
+                          hits,
+                          t1List,
+                          t2List,
+                          nextNode);
+     streamSwap(hits,nextNode);
+     temp = (int)streamSize(hits).x*(int)streamSize(hits).y;
+     if (temp) {
+        while (num_intersections+temp>alloc_intersections) {
+           alloc_intersections*=2;
+           *intersections= (float4*)realloc(*intersections,alloc_intersections*sizeof(float4));
+        }
+        streamWrite(hits,*intersections+num_intersections);
+        num_intersections+=temp;
+     }
   }while(streamSize(trav).x&&streamSize(trav).y);
   return num_intersections;
 }
