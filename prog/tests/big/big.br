@@ -1,0 +1,42 @@
+// big.br
+// tests big streams with address-translation
+
+#include <stdio.h>
+
+kernel void copy( float a<>, out float b<> ) {
+	b = a;
+}
+
+int main() {
+	int SIZE = 75675;
+	int FACTOR = 17;
+	int i, j;
+	
+	float a< SIZE >;
+	float b< SIZE >;
+	float* a_data;
+	float* b_data;
+	
+	a_data = (float*)malloc( SIZE*sizeof(float) );
+	b_data = (float*)malloc( SIZE*sizeof(float) );
+
+	for( i = 0; i < SIZE; i++ )
+	{
+		j = i % FACTOR;
+		a_data[i] = (float)j;
+	}
+
+	streamRead( a, a_data );
+	copy( a, b );
+	streamWrite( b, b_data );
+
+	for( i = 0; i < SIZE; i++ )
+	{
+		j = i % FACTOR;
+		if( b_data[i] != j )
+			printf( "mismatch[%d] %f != %d\n", i, b_data[i], j );
+	}
+	printf( "done\n" );
+
+	return 0;
+}
