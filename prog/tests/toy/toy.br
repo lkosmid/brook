@@ -3,21 +3,10 @@
 extern void printf();
 extern void streamRead();
 extern void streamWrite();
-kernel void bar (out float4 f<>) {
-   f=indexof;
-}
-kernel void baz (out float f<>) {
-   f=linearindexof;
-}
-kernel void tool (out float f<>) {
-   f=linearindexof.x+indexof;
-}
+
 kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], out float e<>) {
-   float4 k;
-   float l;
-   bar(k);baz(l);tool(l);
-   e = a+b+d[c.xy]+l+k.x;
+  e = a+b+d[c.xy];
 }
 
 int main () {
