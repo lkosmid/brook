@@ -191,6 +191,35 @@ kernel void processTrianglesNoCompact(out float3 trianglesA<>,
   trianglesE=vertices.xyz+volumeTriangles[whichVolumeTriangle];  
 }
 
+
+kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>, 
+                                            float4 vertices1<>,
+                                            float3 volumeTriangles[][]) {
+  float4 whichVolumeTriangle={round(fmod((indexof trianglesA).x,3)),vertices1.w,0,0};
+  float3 vertices=vertices1.xyz;
+  float mod5=round(fmod((indexof trianglesA).y,5));
+  if (mod5+.5>5)
+     mod5=0;
+  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
+    whichVolumeTriangle.y=0;
+  if (whichVolumeTriangle.x+.5>3) whichVolumeTriangle.x=0;
+  whichVolumeTriangle.x+=mod5*3;
+  trianglesA=vertices.xyz+volumeTriangles[whichVolumeTriangle];
+  }/*
+kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>, 
+                                      float4 vertices1<>,
+                                      float3 volumeTriangles[][]) {
+  float4 whichVolumeTriangle={round(fmod((indexof trianglesA).x,15)),vertices1.w,0,0};
+  float3 vertices=vertices1.xyz;
+  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
+
+    whichVolumeTriangle.y=0;
+
+  if (whichVolumeTriangle.x+.5>15) whichVolumeTriangle.x=0;
+  trianglesA=vertices.xyz+volumeTriangles[whichVolumeTriangle];
+  }
+*/
+
 /** This kernel outputs exactly 5 triangles for each input
  *  lookup value. It assumes the sentinel is not between -.75 and .75
  *  Given that up to five triangles are produced for each volumetric datapoint
@@ -532,35 +561,39 @@ int main (int argc, char ** argv) {
                                 
               }else {
                 // each triangle stream will be 3x bigger than the volume
-                 float3 trianglesA<(toi(streamSize(v).y)),
-                                  (toi(streamSize(v).x)*3)>;
-                 float3 trianglesB<(toi(streamSize(v).y)),
+                 float3 trianglesA<(toi(streamSize(v).y)*5),
+                  (toi(streamSize(v).x)*3)>;
+                   /*                 float3 trianglesB<(toi(streamSize(v).y)),
                                   (toi(streamSize(v).x)*3)>;
                  float3 trianglesC<(toi(streamSize(v).y)),
                                   (toi(streamSize(v).x)*3)>;
                  float3 trianglesD<(toi(streamSize(v).y)),
                                   (toi(streamSize(v).x)*3)>;
                  float3 trianglesE<(toi(streamSize(v).y)),
-                                  (toi(streamSize(v).x)*3)>;
+                 (toi(streamSize(v).x)*3)>;
+*/
                  // output exactly 5 vertices for each input 
-                 processTrianglesNoCompact(trianglesA,
-                                           trianglesB,
-                                           trianglesC,
-                                           trianglesD,
-                                           trianglesE,
-                                           v, 
-                                           volumeTriangles);
+                 processTrianglesNoCompactOneOut(trianglesA,
+                                                 /*     
+                                                        trianglesB,
+                                                        trianglesC,
+                                                        trianglesD,
+                                                        trianglesE,
+*/
+                                                 v, 
+                                                 volumeTriangles);
                  // write them all into mem
                  streamWrite(trianglesA,
                              consolidateVertices(dat,streamSize(trianglesA)));
-                 streamWrite(trianglesB,
+                   /*                 streamWrite(trianglesB,
                              consolidateVertices(dat,streamSize(trianglesB)));
                  streamWrite(trianglesC,
                              consolidateVertices(dat,streamSize(trianglesC)));
                  streamWrite(trianglesD,
                              consolidateVertices(dat,streamSize(trianglesD)));
                  streamWrite(trianglesE,
-                             consolidateVertices(dat,streamSize(trianglesE)));
+                 consolidateVertices(dat,streamSize(trianglesE)));
+*/
               //              streamPrint(trianglesA,1);
               //              streamPrint(trianglesB,1);
               //              streamPrint(trianglesC,1);
