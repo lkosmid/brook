@@ -482,61 +482,64 @@ void subdivide (Neighbor (*neighbors)<>,
     //see whether triangles should be split
     produceTriP(*triangles,shouldProduce,shouldNotProduce);
     assert((int)streamX==toi(streamSize(shouldProduce).x));
-    streamY=toi(streamSize(shouldProduce).y);
-    //if some should be split and produced then go here
-    if (streamY&&streamX) {
-      float stretchX = streamY*4>2048?0.0f:1.0f;      
-      //allocate shared neighbor structs that hold the extra generated floats
-      Neighbor sharedNeighbors<streamY,streamX>;
-      SplitTri sharedTriangles <streamY,streamX>;
-      //these new neighbor structs are 4x as big as the old ones
-      //input is thus stretched through them based on the fmod
-      Neighbor newNeighbors<(stretchX?streamY:streamY*4),
-                            (stretchX?streamX*4:streamX)>;
-      Tri newTriangles<(stretchX?streamY:streamY*4),
-                       (stretchX?streamX*4:streamX)>;
-      //computes the 12 shared neighbor values
-      computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
-      //computes the 6 new triangle vertex values
-      splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
-      // combines the 12 neighbors and 6 vertices to produce 4 individual 
-      // sets of triangles
-      // with the new triangles getting stretched in the x or y direction depending
-      // on stretchX
-      linearReorgSplitTriangles(sharedTriangles,
-                                sharedNeighbors,
-                                newTriangles,
-                                newNeighbors,
-                                epsilon,
-                                stretchX);
-      streamSwap(*triangles,newTriangles);
-      streamSwap(*neighbors,newNeighbors);
-      if (debugLoop) {
-        Tri * tri;
-        Neighbor * neigh;
-        Neighbor * checknei;
-        unsigned int totalsize;
-        totalsize = ((unsigned int)streamSize(*triangles).x)*(unsigned int)streamSize(*triangles).y;
-        tri = (Tri*)malloc (sizeof(Tri)*totalsize);
-        neigh = (Neighbor*)malloc (sizeof(Neighbor)*totalsize);
-        checknei = (Neighbor*)malloc (sizeof(Neighbor)*totalsize);
-        streamWrite(*neighbors,neigh);
-        streamWrite(*triangles,tri);
-        recomputeNeighbors(tri,checknei,totalsize);
-        checkNeighbors(tri,neigh,checknei,totalsize);
-        free (tri);
-        free (neigh);
-        free(checknei);
+    {
+      int wosizex=3*toi(streamSize(shouldNotProduce).x);
+      int wosizey=toi(streamSize(shouldNotProduce).y);
+      float3 outputTri<wosizey,wosizex>;
+      if (wosizex&&wosizey)
+        writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
+
+      streamY=toi(streamSize(shouldProduce).y);
+      //if some should be split and produced then go here
+      if (streamY&&streamX) {
+        float stretchX = streamY*4>2048?0.0f:1.0f;      
+        //allocate shared neighbor structs that hold the extra generated floats
+        Neighbor sharedNeighbors<streamY,streamX>;
+        SplitTri sharedTriangles <streamY,streamX>;
+        //these new neighbor structs are 4x as big as the old ones
+        //input is thus stretched through them based on the fmod
+        Neighbor newNeighbors<(stretchX?streamY:streamY*4),
+          (stretchX?streamX*4:streamX)>;
+        Tri newTriangles<(stretchX?streamY:streamY*4),
+          (stretchX?streamX*4:streamX)>;
+        //computes the 12 shared neighbor values
+        computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
+        //computes the 6 new triangle vertex values
+        splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
+        // combines the 12 neighbors and 6 vertices to produce 4 individual 
+        // sets of triangles
+        // with the new triangles getting stretched in the x or y direction depending
+        // on stretchX
+        linearReorgSplitTriangles(sharedTriangles,
+                                  sharedNeighbors,
+                                  newTriangles,
+                                  newNeighbors,
+                                  epsilon,
+                                  stretchX);
+        streamSwap(*triangles,newTriangles);
+        streamSwap(*neighbors,newNeighbors);
+        if (debugLoop) {
+          Tri * tri;
+          Neighbor * neigh;
+          Neighbor * checknei;
+          unsigned int totalsize;
+          totalsize = ((unsigned int)streamSize(*triangles).x)*(unsigned int)streamSize(*triangles).y;
+          tri = (Tri*)malloc (sizeof(Tri)*totalsize);
+          neigh = (Neighbor*)malloc (sizeof(Neighbor)*totalsize);
+          checknei = (Neighbor*)malloc (sizeof(Neighbor)*totalsize);
+          streamWrite(*neighbors,neigh);
+          streamWrite(*triangles,tri);
+          recomputeNeighbors(tri,checknei,totalsize);
+          checkNeighbors(tri,neigh,checknei,totalsize);
+          free (tri);
+          free (neigh);
+          free(checknei);
+        }
       }
-    }
-    // if we have some triangles that are set to be produced
-    if (streamSize(shouldNotProduce).y){
-      int sizex=3*toi(streamSize(shouldNotProduce).x);
-      int sizey=toi(streamSize(shouldNotProduce).y);
-      float3 outputTri<sizey,sizex>;
-      snpSize=1;
-      // write them out to a vertex array
-      writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
+      // if we have some triangles that are set to be produced
+      if (streamSize(shouldNotProduce).y){
+        snpSize=1;
+        // write them out to a vertex array
         if ((!low_texture_ram)&&
             streamSize(shouldProduce).y&&
             streamSize(shouldProduce).x&&
@@ -547,10 +550,11 @@ void subdivide (Neighbor (*neighbors)<>,
         } 
         //now we writeback from the card to local memory since we dont have
         // render to vertex array yet
-        sizey = output->size;
+        wosizey = output->size;
         expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
                                                 streamSize(outputTri).y));
-        streamWrite(outputTri,output->v+sizey);   
+        streamWrite(outputTri,output->v+wosizey);   
+      }
     }
     if (counter>=counterMax) {
       float3 outputTri<toi(streamSize(*triangles).y),
@@ -659,7 +663,7 @@ int main (int argc, char**argv) {
       i--;
     }
   }
-  
+  epsilon*=epsilon;
   numTriangles = 
     loadModelData(argc>1?argv[1]:"dragon.ply",&triangledata,&neighbordata);
   {

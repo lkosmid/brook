@@ -300,7 +300,7 @@ Display( void )
 
 	/* specify shading to be flat:					*/
 
-	glShadeModel( GL_FLAT );
+	glShadeModel( GL_SMOOTH );
 
 
 	/* set the viewport to a square centered in the window:		*/
@@ -346,7 +346,7 @@ Display( void )
 	glColor3f( Red, Green, Blue );
 
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 
 	/* draw the object:						*/
 
@@ -579,7 +579,6 @@ InitGraphics( void )
 
 	glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
 
-
 	/* set the initial window configuration:			*/
 
 	glutInitWindowSize( WINDOW_SIZE, WINDOW_SIZE );
@@ -591,6 +590,7 @@ InitGraphics( void )
 	GrWindow = glutCreateWindow( WINDOWTITLE );
 	glutSetWindowTitle( WINDOWTITLE );
 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	/* setup the clear values:					*/
 
@@ -720,11 +720,14 @@ InitLists( void )
 	{
 		int i;
 		for(i=0; i<num_verts; i++){
+		  float len=0;
 			test = fscanf(datafile, "%f, %f, %f\n", &x, &y, &z);
 			if(test == 0){
 				fprintf(stderr, "Couldn't get num_verts\n");
 				exit(1);
-			}	
+			}
+			len=sqrt(x*x+y*y+z*z);
+			glNormal3f(x/len,y/len,z/len);
 			glVertex3f(x,y,z);
 		}
 	}
@@ -817,7 +820,23 @@ Keyboard( unsigned char c, int x, int y )
 		case 'S':
 			TransformMode = SCALE;
 			break;
-
+		      case 'm':
+		      case 'M':
+			{
+			  static char k=1;
+			  if (k) {
+			    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);			  
+			    glEnable(GL_LIGHTING);
+			    glEnable(GL_LIGHT0);
+			  }else {			    
+			    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			    glDisable(GL_LIGHTING);
+			    glDisable(GL_LIGHT0);
+			      
+			  }
+			  k=!k;
+			}
+			break;
 		default:
 			fprintf( stderr, "Don't know what to do with keyboard hit: '%c' (0x%0x)\n", c, c );
 	}
