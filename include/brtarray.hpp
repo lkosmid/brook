@@ -13,6 +13,8 @@ template <class VALUE> class __BrtArray {
   unsigned int dims;
   unsigned int elemsize;
   unsigned int  * extents;
+  unsigned int  * domain_min;
+  unsigned int  * domain_max;
   unsigned char * data;
   brook::Stream * s;
 
@@ -25,14 +27,19 @@ template <class VALUE> class __BrtArray {
   }
 
   void init(VALUE * data, unsigned int dims, unsigned int elemsize, 
-            const unsigned int *extents) {
-    
+            const unsigned int *extents, const unsigned int *domain_min,
+            const unsigned int *domain_max) {
+
     this->dims = dims;
     this->elemsize = elemsize;
     this->extents = (unsigned int *) malloc (dims * sizeof(unsigned int));
+    this->domain_min = (unsigned int *) malloc (dims * sizeof(unsigned int));
+    this->domain_max = (unsigned int *) malloc (dims * sizeof(unsigned int));
 
     for (unsigned int i=0;i<dims;++i) {
-      this->extents[i]=extents[i];
+      this->extents[i] = extents[i];
+      this->domain_min[i] = domain_min[i];
+      this->domain_max[i] = domain_max[i];
     }		
 
     this->data = (unsigned char *) data;
@@ -40,15 +47,18 @@ template <class VALUE> class __BrtArray {
   
 public:
   __BrtArray(VALUE * data, unsigned int dims, unsigned int elemsize, 
-             const unsigned int *extents):s(0) {
-    init(data,dims,elemsize,extents);
+             const unsigned int *extents, const unsigned int *domain_min,
+             const unsigned int *domain_max):s(0) {
+    init(data,dims,elemsize,extents,domain_min,domain_max);
   }
 
   __BrtArray(brook::Stream * stm):s(0) {
     init((VALUE *)stm->getData(brook::Stream::READ),
          stm->getDimension(),
          stm->getElementSize(),
-         stm->getExtents());
+         stm->getExtents(),
+         stm->getDomaimMin(),
+         stm->getDomainMax());
     this->s=stm;
   }
 
@@ -61,6 +71,8 @@ public:
     
     for (unsigned int i=0;i<dims;++i) {
       extents[i]=c.extents[i];
+      domain_min[i]=c.domain_min[i];
+      domain_max[i]=c.domain_max[i];
     }
 
     this->dims = c.dims;
@@ -90,9 +102,11 @@ public:
   }
 
   ~__BrtArray() {
-    if (s)
+    if (s && domained)
       s->releaseData(brook::Stream::READ);
     free(extents);
+    free(domain_min);
+    free(domain_max);
   }
 
   template <class T> unsigned int indexOf (const T &index) const {
