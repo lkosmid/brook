@@ -70,17 +70,20 @@ kernel float triCombine(float b1<>, float b2<>) {
 kernel float uoDistance (float3 a<>, float3 b<>){
    float3 bigger = a>b?a:b;
    float3 smaller = (a>b)?b:a;
-   return dot(bigger-smaller,bigger-smaller);
+   float3 bs = bigger-smaller
+   return dot(bs,bs);
 }
 kernel float3 avg (float3 a<>,float3 b<>) {
    float3 bigger = a>b?a:b;
    float3 smaller = a>b?b:a;
    return .5*(smaller+bigger);
+   //return lerp(a,b,.5);
 }
 kernel float4 avg4 (float4 a<>,float4 b<>) {
    float4 bigger = a>b?a:b;
    float4 smaller = a>b?b:a;
    return .5*(smaller+bigger);
+   //return lerp(a,b,.5);
 }
 //if the model is missing a neighbor then all 3 components will be zero
 //i.e. if a model has 4 or 5 neighbors only
@@ -121,6 +124,7 @@ kernel float3 add6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, fl
   float3 medt = mymed(ad,be,cf,maxt,mint);
   medt = mint+medt;
   return medt+maxt;
+  //return a+b+c+d+e+f;
 }
 kernel void add6test (float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, float3 f<>, out float3 ooo<>) {
    ooo= add6(a,b,c,d,e,f);
@@ -132,11 +136,11 @@ kernel void smallEnough(STri t<>, Neighbor u<>,
                         out Neighbor n<>, 
                         float epsilon) {
   v.A.xyz = t.A.xyz;
-  v.A.w = (dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon)?1.0:0.0;
+  v.A.w = (uoDistance(t.A.xyz,t.B.xyz)>epsilon)?1.0:0.0;
   v.B.xyz = t.B.xyz;
-  v.B.w = (dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon)?1.0:0.0;
+  v.B.w = (uoDistance(t.B.xyz,t.C.xyz)>epsilon)?1.0:0.0;
   v.C.xyz = t.C.xyz;
-  v.C.w = (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)>epsilon)?1.0:0.0;
+  v.C.w = (uoDistance(t.A.xyz,t.C.xyz)>epsilon)?1.0:0.0;
   n.AB.xyz = u.AB.xyz;
   //for the neighbors that two vertices share, there are two relevant lenghts,
   // both of which must be saved in the neighbor .w
