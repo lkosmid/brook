@@ -236,7 +236,6 @@ namespace brook{
         cur*(*j).stream->getStride();
     }
     for (;cur<curfinal;++cur) {
-      //bork bork bork!!
       (*nDfunc)(myargs,extents,dims,mapbegin,mag);
       for (j=reductions.begin();j!=reductions.end();++j) {
         myargs[(*j).which]=(char*)myargs[(*j).which]+
