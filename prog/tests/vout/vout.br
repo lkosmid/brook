@@ -108,7 +108,7 @@ kernel void valueAtBRT_TYPE (BRT_TYPE value[][],
    else 
       output = value[index];
 }
-kernel void NanToBoolRightBRT_TYPE (BRT_TYPE value[][], 
+kernel void StartScanBRT_TYPE (BRT_TYPE value[][], 
                             out float output<>, 
                             float sign,
                             float2 maxvalue) {
@@ -119,7 +119,7 @@ kernel void NanToBoolRightBRT_TYPE (BRT_TYPE value[][],
    output = (isinf(value[indexof(output)].x)?1:0) 
       + (isinf(neighbor.x)?1:0);
 }
-kernel void NanToRightBRT_TYPE (float value [][],
+kernel void ScanBRT_TYPE (float value [][],
                                 out float output<>,
                                 float twotoi,
                                 float2 maxvalue) {
@@ -128,16 +128,6 @@ kernel void NanToRightBRT_TYPE (float value [][],
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = round(value[indexof(output)]+neighbor);
-}
-kernel void CountToRightBRT_TYPE (BRT_TYPE value [][],
-                                  out BRT_TYPE output<>,
-                                  float twotoi,
-                                  float2 maxvalue) {
-   float2 nextPlaceToLook;
-   BRT_TYPE neighbor;
-   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
-   valueAtBRT_TYPE(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
 }
 
 kernel void GatherGuessBRT_TYPE(float scatterindex[][],
@@ -200,7 +190,7 @@ kernel void UpdateGuessBRT_TYPE(float scatterindex[][],
                        sign);
 }
 
-kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
+kernel void RelGatherBRT_TYPE(out BRT_TYPE output<>,
                                 float gatherindex[][],
                                 BRT_TYPE value[][],
                                 float inf<>,
@@ -239,10 +229,10 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightBRT_TYPE (list_stream,ret_stream,(float)sign,maxvalue);   
+   StartScanBRT_TYPE (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
      streamSwap(ret_stream,tmp_stream);      
-     NanToRightBRT_TYPE(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     ScanBRT_TYPE(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(ret_stream,"scattering...");
    {
@@ -287,7 +277,7 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
          if (1) {
             BRT_TYPE proper_output_stream<width,LENGTH>;
             if (width) {
-               RelativeGatherBRT_TYPE(proper_output_stream,
+               RelGatherBRT_TYPE(proper_output_stream,
                                       guess_stream,
                                       list_stream,
                                       *sentinelStream(2),
