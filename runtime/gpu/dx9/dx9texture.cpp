@@ -10,7 +10,7 @@ static const int kComponentSizes[] =
   sizeof(unsigned short)
 };
 
-DX9Texture::DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inComponentType )
+DX9Texture::DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inComponentType, bool readonly)
 	: width(inWidth),
   height(inHeight),
   components(inComponents),
@@ -21,7 +21,8 @@ DX9Texture::DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int
   device(NULL),
   textureHandle(NULL),
   surfaceHandle(NULL),
-  shadowSurface(NULL)
+  shadowSurface(NULL),
+  read_only(readonly)
 {
   componentSize = kComponentSizes[ componentType ];
 
@@ -97,7 +98,7 @@ bool DX9Texture::initialize()
     return false;
   }
 
-	result = device->CreateTexture( width, height, 1, D3DUSAGE_RENDERTARGET, dxFormat, D3DPOOL_DEFAULT, &textureHandle, NULL );
+  result = device->CreateTexture( width, height, 1, this->read_only?0:D3DUSAGE_RENDERTARGET, dxFormat, D3DPOOL_DEFAULT, &textureHandle, NULL );
   if( FAILED( result ) )
   {
     DX9WARN << "Unable to create render target texture of size "
@@ -130,10 +131,10 @@ DX9Texture::~DX9Texture()
     device->Release();
 }
 
-DX9Texture* DX9Texture::create( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inType  )
+DX9Texture* DX9Texture::create( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inType, bool read_only )
 {
   DX9PROFILE("DX9Texture::create")
-  DX9Texture* result = new DX9Texture( inContext, inWidth, inHeight, inComponents, inType );
+  DX9Texture* result = new DX9Texture( inContext, inWidth, inHeight, inComponents, inType, read_only );
   if( result->initialize() )
     return result;
   delete result;

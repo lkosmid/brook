@@ -169,7 +169,8 @@ NVContext::getShaderFormatRank (const char *name) const {
 GPUContext::TextureHandle 
 NVContext::createTexture2D( unsigned int inWidth,
                             unsigned int inHeight, 
-                            GPUContext::TextureFormat inFormat) {
+                            GPUContext::TextureFormat inFormat, 
+                            bool read_only) {
   return (GPUContext::TextureHandle) 
     new NVTexture(inWidth, inHeight, inFormat);
 }

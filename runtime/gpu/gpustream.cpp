@@ -46,7 +46,8 @@ namespace brook
   bool GPUStreamData::initialize(unsigned int inFieldCount, 
                                  const StreamType* inFieldTypes,
                                  unsigned int inDimensionCount, 
-                                 const unsigned int* inExtents )
+                                 const unsigned int* inExtents,
+                                 bool read_only )
   {
     _rank = (unsigned int)inDimensionCount;
 
@@ -212,7 +213,8 @@ namespace brook
         
         TextureHandle fieldTexture = _context->createTexture2D(_textureWidth, 
                                                                _textureHeight, 
-                                                               fieldTextureFormat );
+                                                               fieldTextureFormat,
+                                                               read_only /*not renderable*/ );
         if( fieldTexture == NULL )
           {
             GPUWARN << "Texture allocation failed during stream initialization.";
@@ -357,10 +359,11 @@ namespace brook
                                 unsigned int inFieldCount, 
                                 const StreamType* inFieldTypes,
                                 unsigned int inDimensionCount, 
-                                const unsigned int* inExtents )
+                                const unsigned int* inExtents,
+                                bool read_only)
   {
     GPUStreamData* data = new GPUStreamData( inRuntime );
-    if( data->initialize( inFieldCount, inFieldTypes, inDimensionCount, inExtents ) )
+    if( data->initialize( inFieldCount, inFieldTypes, inDimensionCount, inExtents, read_only) )
       {
         GPUStream* result = new GPUStream( data );
         data->releaseReference();

@@ -31,7 +31,8 @@ namespace brook {
     TextureHandle 
     createTexture2D( unsigned int inWidth, 
                      unsigned int inHeight, 
-                     TextureFormat inFormat);
+                     TextureFormat inFormat, 
+                     bool read_only=false);
 
     int getShaderFormatRank (const char *name) const;
 

@@ -18,7 +18,8 @@ namespace brook {
             unsigned int inFieldCount, 
             const StreamType* inFieldTypes,
             unsigned int inDimensionCount, 
-            const unsigned int* inExtents );
+            const unsigned int* inExtents,
+            bool read_only );
 
         void acquireReference();
         void releaseReference();
@@ -121,7 +122,8 @@ namespace brook {
                         unsigned int inFieldCount, 
                         const StreamType* inFieldTypes,
                         unsigned int inDimensionCount, 
-                        const unsigned int* inExtents );
+                        const unsigned int* inExtents,
+                        bool read_only);
 
         GPUStream( GPUStreamData* inData );
         GPUStream( GPUStreamData* inData,

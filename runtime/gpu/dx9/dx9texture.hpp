@@ -20,7 +20,8 @@ namespace brook
           GPUContextDX9* inContext,
           int inWidth, int inHeight,
           int inComponents,
-          ComponentType inComponentType = kComponentType_Float );
+          ComponentType inComponentType = kComponentType_Float,
+          bool read_only=false);
         ~DX9Texture();
 
         int getWidth() { return width; }
@@ -50,7 +51,7 @@ namespace brook
 
     private:
       DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents,
-        ComponentType inComponentType = kComponentType_Float  );
+        ComponentType inComponentType = kComponentType_Float , bool read_only=true );
         bool initialize();
 
         void flushCachedToShadow();
@@ -98,11 +99,12 @@ namespace brook
         LPDIRECT3DSURFACE9 surfaceHandle;
 
         LPDIRECT3DSURFACE9 shadowSurface;
-
+     
         enum DirtyFlag {
             kShadowDataDirty = 0x01,
             kCachedDataDirty = 0x02
         };
         int dirtyFlags;
+        bool read_only;
     };
 }

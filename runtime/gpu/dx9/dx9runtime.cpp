@@ -197,7 +197,7 @@ namespace brook
       const unsigned int maxY,
       GPURegion &region) const;
 
-    virtual TextureHandle createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat );
+    virtual TextureHandle createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat, bool read_only =false);
     virtual void releaseTexture( TextureHandle inTexture );
 
     virtual void setTextureData( TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount,
@@ -739,7 +739,7 @@ namespace brook
     region.viewport.maxY = maxY;
   }
 
-  GPUContextDX9Impl::TextureHandle GPUContextDX9Impl::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat )
+  GPUContextDX9Impl::TextureHandle GPUContextDX9Impl::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat ,bool read_only)
   {
     int components;
     DX9Texture::ComponentType componentType;
@@ -795,7 +795,7 @@ namespace brook
       return 0;
       break;
     }
-    DX9Texture* result = DX9Texture::create( this, inWidth, inHeight, components, componentType );
+    DX9Texture* result = DX9Texture::create( this, inWidth, inHeight, components, componentType ,read_only);
     return result;
   }
 

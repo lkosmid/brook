@@ -15,7 +15,8 @@ namespace brook {
     virtual Stream* CreateStream(unsigned int fieldCount, 
                                  const StreamType fieldTypes[],
                                  unsigned int dims, 
-                                 const unsigned int extents[]) = 0;
+                                 const unsigned int extents[], 
+                                 bool read_only=false) = 0;
 
     virtual Iter* CreateIter(StreamType type, 
                              unsigned int dims, 

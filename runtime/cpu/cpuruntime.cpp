@@ -16,7 +16,8 @@ namespace brook{
   Stream * CPURuntime::CreateStream(unsigned int fieldCount, 
                                     const StreamType fieldTypes[],
                                     unsigned int dims, 
-                                    const unsigned int extents[]) {
+                                    const unsigned int extents[],
+                                    bool read_only/*ignored*/) {
     return new CPUStream(fieldCount, fieldTypes, dims, extents);
   }
   

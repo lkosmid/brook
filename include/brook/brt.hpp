@@ -485,7 +485,8 @@ namespace brook {
     stream(const ::brook::StreamType*,...);
     stream(const unsigned int extents[],
            unsigned int dims,
-           const ::brook::StreamType *type);
+           const ::brook::StreamType *type,
+           bool read_only=false);
     stream( const ::brook::iter& );
 
     ~stream();

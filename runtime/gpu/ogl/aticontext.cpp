@@ -106,7 +106,7 @@ ATIContext::getShaderFormatRank (const char *name) const {
 GPUContext::TextureHandle 
 ATIContext::createTexture2D( unsigned int inWidth,
                             unsigned int inHeight, 
-                            GPUContext::TextureFormat inFormat) {
+                            GPUContext::TextureFormat inFormat, bool read_only) {
   return (GPUContext::TextureHandle) 
     new ATITexture(inWidth, inHeight, inFormat);
 }

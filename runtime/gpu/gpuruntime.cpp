@@ -46,9 +46,9 @@ namespace brook
 
   Stream* GPURuntime::CreateStream(
     unsigned int fieldCount, const StreamType fieldTypes[],
-    unsigned int dims, const unsigned int extents[])
+    unsigned int dims, const unsigned int extents[], bool read_only)
   {
-    Stream* result = GPUStream::create( this, fieldCount, fieldTypes, dims, extents );
+    Stream* result = GPUStream::create( this, fieldCount, fieldTypes, dims, extents, read_only);
     GPUAssert( result != NULL, "Unable to allocate a stream, exiting." );
     return result;
   }

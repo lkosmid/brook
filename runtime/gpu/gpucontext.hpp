@@ -160,7 +160,8 @@ namespace brook {
     virtual TextureHandle 
     createTexture2D( unsigned int inWidth, 
                      unsigned int inHeight, 
-                     TextureFormat inFormat ) = 0;
+                     TextureFormat inFormat, 
+                     bool read_only=false ) = 0;
     
     /* Free a texture */
     virtual void 

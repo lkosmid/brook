@@ -397,7 +397,7 @@ namespace brook {
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   stream::stream(const unsigned int * extents,
                  unsigned int dims,
-                 const StreamType *type)
+                 const StreamType *type, bool read_only)
     : _stream(0)
   {
      std::vector<StreamType>elementTypes;
@@ -407,7 +407,7 @@ namespace brook {
         e++;
      }
     _stream = brook::Runtime::GetInstance()->CreateStream
-       (elementTypes.size(), &elementTypes[0], dims, extents);
+       (elementTypes.size(), &elementTypes[0], dims, extents, read_only);
   }
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
