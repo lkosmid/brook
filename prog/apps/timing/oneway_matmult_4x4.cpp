@@ -1655,14 +1655,83 @@ void  oneway_matmult_4x4_pretransposed (::brook::stream a,
 
 }
 
-
-static void  floatFill(float  *outBuffer, int  inCount, float  inValue)
+static void fillEntry( float* outEntry, float inValue )
 {
-  int  count = inCount;
-  float  *buffer = outBuffer;
+  float* e = outEntry;
+  *e++ = inValue;
+  *e++ = 0.0f;
+  *e++ = 0.0f;
+  *e++ = 0.0f;
 
-  while (count--)
-    *buffer++ = inValue;
+  *e++ = 0.0f;
+  *e++ = inValue;
+  *e++ = 0.0f;
+  *e++ = 0.0f;
+
+  *e++ = 0.0f;
+  *e++ = 0.0f;
+  *e++ = inValue;
+  *e++ = 0.0f;
+
+  *e++ = 0.0f;
+  *e++ = 0.0f;
+  *e++ = 0.0f;
+  *e++ = inValue;
+}
+
+static void matrixFill( float* outBuffer, int inSize )
+{
+  int i,j;
+  float* b = outBuffer;
+  for( i = 0; i < inSize; i++ )
+  {
+    for( j = 0; j < inSize; j++ )
+    {
+      fillEntry( b, (float)(i % 16) );
+      b += 16;
+    }
+  }
+}
+
+static void checkEntry( float* inEntry, float inValue )
+{
+  float* e = inEntry;
+  
+  if( *e++ != inValue ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != inValue ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != inValue ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != 0.0f ) assert(false);
+  if( *e++ != inValue ) assert(false);
+}
+
+static void matrixCheck( float* inBuffer, int inSize )
+{
+  int i,j;
+  int f;
+  float* b = inBuffer;
+  for( i = 0; i < inSize; i++ )
+  {
+    for( j = 0; j < inSize; j++ )
+    {
+      f = (i % 16) * (i % 16);
+      checkEntry( b, (float)(f) );
+      b += 16;
+    }
+  }
 }
 
 static void  runTest(int  inSize, int  inIterations, int  *outTime, float  *outFlops)
@@ -1677,7 +1746,7 @@ static void  runTest(int  inSize, int  inIterations, int  *outTime, float  *outF
   int  elapsed;
 
   data = (matrix4 *) (malloc(inSize * inSize * sizeof(matrix4 ) ));
-  floatFill((float *) (data),inSize * inSize * 4,1.000000f);
+  matrixFill((float *) (data),inSize);
   startTime = GetTimeMillis();
   streamRead(a,data);
   streamRead(b,data);
@@ -1691,6 +1760,7 @@ static void  runTest(int  inSize, int  inIterations, int  *outTime, float  *outF
   elapsed = (int ) (stopTime - startTime);
   *outTime = elapsed;
   *outFlops = 0.001f * 23.000000f * inIterations * inSize * inSize / (float ) (elapsed);
+  matrixCheck((float *) (data),inSize);
 }
 
 static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime, float  *outFlops)
@@ -1705,7 +1775,7 @@ static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime,
   int  elapsed;
 
   data = (matrix4 *) (malloc(inSize * inSize * sizeof(matrix4 ) ));
-  floatFill((float *) (data),inSize * inSize * 4,1.000000f);
+  matrixFill((float *) (data),inSize);
   startTime = GetTimeMillis();
   streamRead(a,data);
   streamRead(b,data);
@@ -1719,6 +1789,7 @@ static void  runPretransposedTest(int  inSize, int  inIterations, int  *outTime,
   elapsed = (int ) (stopTime - startTime);
   *outTime = elapsed;
   *outFlops = 0.001f * 23.000000f * inIterations * inSize * inSize / (float ) (elapsed);
+//  matrixCheck((float *) (data),inSize);
 }
 
 #define MAX_ITERS 1000
