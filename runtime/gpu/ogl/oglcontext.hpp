@@ -19,7 +19,17 @@ namespace brook {
     virtual OGLTexture ( unsigned int inWidth, 
                          unsigned int inHeight, 
                          TextureFormat inFormat) = 0;
-    virtual ~OGLTexture () {} = 0;
+
+
+    /* This guy is the real constructor */
+    OGLTexture::OGLTexture ( unsigned int width,
+                             unsigned int height,
+                             TextureFormat format,
+                             const int *glFormat,
+                             const int *glType,
+                             const int *sizeFactor);
+
+    virtual ~OGLTexture ();
 
     /* This function tests if a data pointer 
     ** with a particular element stride and 
@@ -97,20 +107,36 @@ namespace brook {
     virtual unsigned int 
     getMaximumOutputCount() const { return 1; }
 
-    /* Each samples slightly differently so these are pure virtual */
-    virtual GPURect 
-    getStreamPositionInterpolant( TextureHandle* texture
-                                  TextureHandle* dstTexture = NULL) = 0;
+    virtual void
+    set1DInterpolant( const float4 &start, 
+                      const float4 &end,
+                      const unsigned int outputWidth,
+                      GPUInterpolant *interpolant) const;
+
+    virtual void 
+    set2DInterpolant( const float2 &start, 
+                      const float2 &end,
+                      const unsigned int outputWidth,
+                      const unsigned int outputHeight, 
+                      GPUInterpolant *interpolant) const;
+
+    virtual void 
+    setStreamInterpolant( const TextureHandle texture,
+                          const unsigned int outputWidth,
+                          const unsigned int outputHeight, 
+                          GPUInterpolant *interpolant) const;
     
-    virtual GPURect 
-    getStreamOutputRectangle( TextureHandle* texture ) = 0;
+    virtual void
+    setStreamOutputRegion( const TextureHandle texture,
+                           GPUOutputRegion *region) const; 
+
 
     /* The vendor specific backend must create the float textures
     ** since there are no standard float textures. Hence, pure virtual
     */
     virtual TextureHandle 
-    createTexture2D( unsigned int inWidth, 
-                     unsigned int inHeight, 
+    createTexture2D( unsigned int inWidth,
+                     unsigned int inHeight,
                      TextureFormat inFormat) = 0;
     
     /* I assume that the virtual deconstructor should do the right
@@ -118,7 +144,7 @@ namespace brook {
     */
     virtual void 
     releaseTexture( TextureHandle inTexture ) {
-      delete (OGLTexture) inTexture;
+      delete (OGLTexture *) inTexture;
     }
 
     /* Calls glTexSubImage to set the texture data
@@ -138,9 +164,9 @@ namespace brook {
                     unsigned int inStrideBytes,
                     unsigned int inElemCount );
 
-    /* Obviously a vendor specific operation */
+    /* Creates a shader */
     virtual PixelShaderHandle 
-    createPixelShader( const char* inSource ) = 0;
+    createPixelShader( const char* inSource );
 
     /* These are ARB programs */
     virtual VertexShaderHandle getPassthroughVertexShader();
@@ -160,15 +186,33 @@ namespace brook {
     /* Not really sure what this should do... */
     virtual void disableOutput( unsigned int inIndex );
 
-    virtual void drawRectangle(
-      const GPUFatRect& inVertexRectangle, 
-      const GPUFatRect* inTextureRectangles, 
-      unsigned int inTextureRectangleCount ) = 0;
+    virtual void drawRectangle( const GPUOutputRegion& outputRegion, 
+                                const GPUInterpolant* interpolants, 
+                                unsigned int numInterpolants );
+
+  protected:
+
+    void initPbuffer();
+    void bindPbuffer(unsigned int numComponents);
+
+    virtual static const int   *iAttribList[4];
+    virtual static const float *fAttribList[4];
+    virtual static const int   *piAttribList[4];
 
   private:
     VertexShaderHandle _passthroughVertexShader;
     PixelShaderHandle _passthroughPixelShader;
-    OGLTexture _outputTexture;
+    OGLTexture *_outputTexture;
+
+#ifdef WIN32
+    HGLRC hglrc;
+    HPBUFFERARB hpbuffer;
+    HDC hwindowdc;
+    HDC hpbufferdc;
+#else
+    // Put GLX stuff here
+#endif
+
   };
 }
 

@@ -9,37 +9,18 @@ namespace brook {
   class NVTexture;
   class NVContext;
 
-  class NVTexture:OGLTexture {
+  class NVTexture : public OGLTexture {
   public:
 
-    virtual NVTexture ( size_t inWidth, 
-                         size_t inHeight, 
-                         TextureFormat inFormat);
+    NVTexture ( unsigned int inWidth, 
+                unsigned int inHeight, 
+                TextureFormat inFormat);
+    
+    virtual int nativeFormat() const { return _nativeFormat; }
 
-    virtual ~NVTexture () {};
-
-    virtual bool
-    isFastSetPath( size_t inStrideBytes, 
-                   size_t inElemCount );
-
-    virtual bool
-    isFastGetPath( size_t inStrideBytes, 
-                   size_t inElemCount );
-
-    virtual void 
-    copyToTextureFormat( const float *src, 
-                         size_t inStrideBytes, 
-                         size_t inElemCount,
-                         float *dst) const;
-
-    virtual void 
-    copyFromTextureFormat( const float *src, 
-                           size_t inStrideBytes, 
-                           size_t inElemCount,
-                           float *dst) const;
-
-    virtual int nativeFormat() const;
-  }    
+  private:
+    int _nativeFormat;
+  };
 
 
   class NVContext : public OGLContext
@@ -49,23 +30,9 @@ namespace brook {
     NVContext();
 
     TextureHandle 
-    createTexture2D( size_t inWidth, 
-                     size_t inHeight, 
+    createTexture2D( unsigned int inWidth, 
+                     unsigned int inHeight, 
                      TextureFormat inFormat);
-
-    virtual PixelShaderHandle 
-    createPixelShader( const char* inSource );
-
-    virtual void bindConstant( size_t inIndex, const float4& inValue ) = 0;
-    virtual void bindTexture( size_t inIndex, TextureHandle inTexture ) = 0;
-    virtual void bindOutput( size_t inIndex, SurfaceHandle inSurface ) = 0;
-    virtual void disableOutput( size_t inIndex ) = 0;
-
-    virtual void bindPixelShader( PixelShaderHandle inPixelShader ) = 0;
-    virtual void bindVertexShader( VertexShaderHandle inVertexShader ) = 0;
-
-    virtual void drawRectangle(
-      const GPUFatRect& inVertexRectangle, const GPUFatRect* inTextureRectangles, size_t inTextureRectangleCount ) = 0;
   };
 }
 
