@@ -374,6 +374,34 @@ void doTest (float * matrix, int trisizex, int trisizey, float3 *a, float3 * b, 
   float3 triangles2C <trisizex,trisizey>;
   float4 hits <trisizex,trisizey>;
   float3 mRx,mRy,mRz,mT;
+  int i;
+  float3 * temptri;
+  temptri = (float3*)malloc(sizeof(float3)*trisizex*trisizey);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = a[i*3];
+  }
+  streamRead(triangles1A,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = a[i*3+1];
+  }
+  streamRead(triangles1B,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = a[i*3+2];
+  }
+  streamRead(triangles1C,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = b[i*3];
+  }
+  streamRead(triangles2A,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = b[i*3+1];
+  }
+  streamRead(triangles2B,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = b[i*3+2];
+  }
+  streamRead(triangles2C,temptri);
+  free(temptri);
   mRx.x=matrix[0];
   mRx.y=matrix[1];
   mRx.z=matrix[2];
@@ -411,7 +439,6 @@ kernel void SimpleCheckTriangleCollideNoDiv(float3 mRx,
   hits= tri_contact_nodiv(t1A,t1B,t1C,t2A,t2B,t2C)?(indexof hits):neg1;
 }
 void doTestNoDiv (float * matrix, int trisizex, int trisizey, float3 *a, float3 * b, float4 * ohits) {
-
   float3 triangles1A <trisizex,trisizey>;
   float3 triangles1B <trisizex,trisizey>;
   float3 triangles1C <trisizex,trisizey>;
@@ -420,6 +447,35 @@ void doTestNoDiv (float * matrix, int trisizex, int trisizey, float3 *a, float3 
   float3 triangles2C <trisizex,trisizey>;
   float4 hits <trisizex,trisizey>;
   float3 mRx,mRy,mRz,mT;
+  int i;
+  float3 * temptri;
+  temptri = (float3*)malloc(sizeof(float3)*trisizex*trisizey);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = a[i*3];
+  }
+  streamRead(triangles1A,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = a[i*3+1];
+  }
+  streamRead(triangles1B,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = a[i*3+2];
+  }
+  streamRead(triangles1C,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = b[i*3];
+  }
+  streamRead(triangles2A,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = b[i*3+1];
+  }
+  streamRead(triangles2B,temptri);
+  for (i=0;i<trisizex*trisizey;++i) {
+    temptri[i] = b[i*3+2];
+  }
+  streamRead(triangles2C,temptri);
+  free(temptri);
+
   mRx.x=matrix[0];
   mRx.y=matrix[1];
   mRx.z=matrix[2];
