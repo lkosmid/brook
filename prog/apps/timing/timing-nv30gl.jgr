@@ -43,6 +43,7 @@ title : 1D Stream MFLOPS (streamRead + 50 runs + streamWrite)
 newcurve
   marktype circle
   linetype solid
+  pts 0 0
   pts shell : awk '/RunK1D [0-9]+ R50/ { print $6, $2 }' graphs/graph-nv30gl.pts
 
 newpage
@@ -57,6 +58,7 @@ title : 2D Stream MFLOPS (streamRead + 50 runs + streamWrite)
 newcurve
   marktype circle
   linetype solid
+  pts 0 0
   pts shell : awk '/RunK2D [0-9]+ R50/ { print $6, $2 }' graphs/graph-nv30gl.pts
 
 newpage

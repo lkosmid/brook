@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "main.h"
 #include "readwrite.h"
@@ -15,6 +16,26 @@
 //#include "sparse.h"
 #include "matmult4x4.h"
 
+typedef void (*timingFn) (int length);
+
+struct timingEntry {
+   char *id;
+   timingFn f;
+};
+
+static const struct timingEntry tests[] = {
+   { "rw",      ReadWrite_Time },
+   { "runk",    RunKernel_Time },
+   //{ "blas",    Blas_Time },
+   //{ "spMV",    SpMatVec_Time },
+   //{ "conj",    ConjGrad_Time },
+   { "mm4_1w",  Matmult4x4_1way_Time },
+   { "mm4_1w_t",Matmult4x4_1wayPretransposed_Time},
+   { "mm4_4w",  Matmult4x4_4way_Time },
+   { "mm4_4w_t",Matmult4x4_4wayPretransposed_Time },
+   { "fft",     doFFT },
+};
+static const int numTests = sizeof tests / sizeof tests[0];
 
 /*
  * This is lame, but cTool doesn't cope with typedefs or #includes, so we
@@ -65,9 +86,10 @@ unsigned int GetTimeMillis(void) {
   return (unsigned int)timeGetTime();
 }
 
-// by default in 2000/XP, the timeGetTime call is set to some resolution between 10-15 ms
-// query for the range of value periods and then set timer to the lowest possible.  Note:
-// MUST make call to corresponding CleanupMillisTimer
+//  By default in 2000/XP, the timeGetTime call is set to some resolution
+// between 10-15 ms query for the range of value periods and then set timer
+// to the lowest possible.  Note: MUST make call to corresponding
+// CleanupMillisTimer
 void SetupMillisTimer(void) {
 
   TIMECAPS timeCaps;
@@ -94,6 +116,34 @@ void CleanupMillisTimer(void) {
 #endif
 
 /*
+ * RunTest --
+ *
+ *      Takes a test id string (specified on the commandline) and runs the
+ *      requested test.  The searches are boring and linear since they're so
+ *      short.
+ */
+
+static void
+RunTest(char *id, int length)
+{
+   int i;
+
+   for (i = 0; i < numTests; i++) {
+      if (_stricmp(id, tests[i].id) == 0) {
+         tests[i].f(length);
+         std::cout << std::endl;
+         return;
+      }
+   }
+
+   std::cerr << "Invalid test " << id << " requested.  Valid choices are:\n";
+   for (i = 0; i < numTests; i++) {
+      std::cerr << tests[i].id << " ";
+   }
+   std::cerr << std::endl;
+}
+
+/*
  * main --
  *
  *      Very simple for now.  Pull the stream length from argv and then run
@@ -105,28 +155,29 @@ main(int argc, char *argv[])
 {
    int length = 1024;
 
-   if (argc > 1) {
-      if ((length = strtol(argv[1], NULL, 0)) <= 0) {
+   argc--; argv++;      /* Skip argv[0] */
+
+   /* See if argv[1] was a stream length */
+   if (argc > 0 && isdigit(argv[0][0])) {
+      if ((length = strtol(argv[0], NULL, 0)) <= 0) {
          std::cerr << "Must specify a positive length!\n";
          exit(1);
       }
+      argc--; argv++;
    }
 
    SetupMillisTimer();
 
-   ReadWrite_Time(length);
-   std::cout << std::endl;
-   RunKernel_Time(length);
-   std::cout << std::endl;
-   // Blas_Time(argc, argv);
-   //SpMatVec_Time(length);
-   //ConjGrad_Time(length);
-   //Matmult4x4_1way_Time(length);
-   //Matmult4x4_1wayPretransposed_Time(length);
-   //Matmult4x4_4way_Time(length);
-   //Matmult4x4_4wayPretransposed_Time(length);
-   //doFFT(length);
-   //std::cout << std::endl;
+   /* Now process any requested tests */
+   if (argc > 0) {
+      do {
+         RunTest(*argv, length);
+         argc--; argv++;
+      } while (argc > 0);
+   } else {
+      RunTest("rw", length);
+      RunTest("runk", length);
+   }
 
    //char c;
    //std::cerr << "Press <ENTER> to exit\n";
