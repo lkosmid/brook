@@ -76,8 +76,9 @@ namespace brook{
     domain_max  = (unsigned int *) malloc (sizeof(int) * dims);
 
     for (i=0; i<dims; i++) {
-      domain_min[i] = a.domain_min[i] + min[i];
-      domain_max[i] = a.domain_min[i] + max[i]; 
+      unsigned int d = dims - (i+1);
+      domain_min[i] = a.domain_min[i] + min[d];
+      domain_max[i] = a.domain_min[i] + max[d]; 
     }
 
     isDerived = true;

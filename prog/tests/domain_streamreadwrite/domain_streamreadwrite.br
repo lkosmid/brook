@@ -33,7 +33,7 @@ int main() {
   streamRead( a2, input_a2 );
   
   streamRead( a1.domain(19, 19+7), input_b1);
-  streamRead( a2.domain(int2(5, 1), int2(5+3, 1+7)),
+  streamRead( a2.domain(int2(1, 5), int2(1+7, 5+3)),
               input_b2);
   
   streamWrite( a1, input_a1 );
@@ -64,7 +64,7 @@ int main() {
 
   
   streamWrite( a1.domain(15, 15+7), input_b1);
-  streamWrite( a2.domain(int2(4, 2), int2(4+3, 2+7)),
+  streamWrite( a2.domain(int2(2, 4), int2(2+7, 4+3)),
                input_b2);
 
   for( i = 0; i < 7; i++ )

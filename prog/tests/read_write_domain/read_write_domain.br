@@ -123,8 +123,8 @@ int main()
 	
 	streamRead( a1.domain( START_X1, END_X1 ), input1 );
 	streamRead( b1.domain( START_X1, END_X1 ), input1 );
-	streamRead( a2.domain( int2( START_Y2, START_X2 ), int2( END_Y2, END_X2 ) ), input2 );
-	streamRead( b2.domain( int2( START_Y2, START_X2 ), int2( END_Y2, END_X2 ) ), input2 );
+	streamRead( a2.domain( int2( START_X2, START_Y2 ), int2( END_X2, END_Y2 ) ), input2 );
+	streamRead( b2.domain( int2( START_X2, START_Y2 ), int2( END_X2, END_Y2 ) ), input2 );
 	
 	streamWrite( a1, a1_data );
 	streamWrite( b1, b1_data );

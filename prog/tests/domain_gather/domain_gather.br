@@ -39,7 +39,7 @@ int main()
 	streamRead( indexStream, index_data );
 	streamRead( gatherStream, gather_data );
 	
-	gatherFetch( indexStream, gatherStream.domain( int2( 7, 0 ), int2( 17, 10 ) ), resultStream );
+	gatherFetch( indexStream, gatherStream.domain( int2( 0, 7 ), int2( 10, 17 ) ), resultStream );
 	
 	streamWrite( resultStream, result_data );
 	

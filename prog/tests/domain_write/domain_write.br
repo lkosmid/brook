@@ -35,7 +35,7 @@ int main()
 	streamRead( b2, b2_data );
 	
 	copy( a1.domain( 30, 80 ), b1.domain( 20, 70 ) );
-	copy( a2.domain( int2(5,3), int2(10,9) ), b2.domain( int2(2,0), int2(7,6) ) );
+	copy( a2.domain( int2(3,5), int2(9,10) ), b2.domain( int2(0,2), int2(6,7) ) );
 	
 	streamWrite( b1, b1_data );
 	streamWrite( b2, b2_data );

@@ -104,8 +104,8 @@ int main( int argc, char** argv )
 	
 	clear3( result );
 	copy3( input.domain(
-		int3( INPUT_Z_START, INPUT_Y_START, INPUT_X_START ),
-		int3( INPUT_Z_END, INPUT_Y_END, INPUT_X_END ) ), result );
+		int3( INPUT_X_START, INPUT_Y_START, INPUT_Z_START ),
+		int3( INPUT_X_END, INPUT_Y_END, INPUT_Z_END ) ), result );
 	streamWrite( result, data_result );
 	check( data_result );
 

@@ -96,14 +96,14 @@ int main( int argc, char** argv )
 	
 	getIndexStream1( stream_1d.domain( X_1D_START, X_1D_END ) );
 	getIndexStream2( stream_2d.domain(
-		int2( Y_2D_START, X_2D_START ),
-		int2( Y_2D_END, X_2D_END ) ) );
+		int2( X_2D_START, Y_2D_START ),
+		int2( X_2D_END, Y_2D_END ) ) );
 	getIndexStream3( stream_3d.domain(
-		int3( Z_3D_START, Y_3D_START, X_3D_START ),
-		int3( Z_3D_END, Y_3D_END, X_3D_END ) ) );
+		int3( X_3D_START, Y_3D_START, Z_3D_START ),
+		int3( X_3D_END, Y_3D_END, Z_3D_END ) ) );
 	getIndexStream4( stream_4d.domain(
-		int4( W_4D_START, Z_4D_START, Y_4D_START, X_4D_START ),
-		int4( W_4D_END, Z_4D_END, Y_4D_END, X_4D_END ) ) );
+		int4( X_4D_START, Y_4D_START, Z_4D_START, W_4D_START ),
+		int4( X_4D_END, Y_4D_END, Z_4D_END, W_4D_END ) ) );
 	
 	streamWrite( stream_1d, data_1d );
 	streamWrite( stream_2d, data_2d );

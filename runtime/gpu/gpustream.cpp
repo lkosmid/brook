@@ -460,8 +460,9 @@ namespace brook
       unsigned int newDomainMax[4];
       for( int i = 0; i < 2; i++ )
       {
-          newDomainMin[i] = _domainMin[i] + (unsigned int)inMin[i];
-          newDomainMax[i] = _domainMin[i] + (unsigned int)inMax[i];
+          unsigned int d = 2 - (i+1);
+          newDomainMin[i] = _domainMin[i] + (unsigned int)inMin[d];
+          newDomainMax[i] = _domainMin[i] + (unsigned int)inMax[d];
       }
       return new GPUStream( _data, newDomainMin, newDomainMax );
   }
@@ -473,8 +474,9 @@ namespace brook
       unsigned int newDomainMax[4];
       for( int i = 0; i < 3; i++ )
       {
-          newDomainMin[i] = _domainMin[i] + (unsigned int)inMin[i];
-          newDomainMax[i] = _domainMin[i] + (unsigned int)inMax[i];
+          unsigned int d = 3 - (i+1);
+          newDomainMin[i] = _domainMin[i] + (unsigned int)inMin[d];
+          newDomainMax[i] = _domainMin[i] + (unsigned int)inMax[d];
       }
       return new GPUStream( _data, newDomainMin, newDomainMax );
   }
@@ -486,8 +488,9 @@ namespace brook
       unsigned int newDomainMax[4];
       for( int i = 0; i < 4; i++ )
       {
-          newDomainMin[i] = _domainMin[i] + (unsigned int)inMin[i];
-          newDomainMax[i] = _domainMin[i] + (unsigned int)inMax[i];
+          unsigned int d = 4 - (i+1);
+          newDomainMin[i] = _domainMin[i] + (unsigned int)inMin[d];
+          newDomainMax[i] = _domainMin[i] + (unsigned int)inMax[d];
       }
       return new GPUStream( _data, newDomainMin, newDomainMax );
   }
