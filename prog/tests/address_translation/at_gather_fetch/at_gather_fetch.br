@@ -28,7 +28,7 @@ kernel void gather4( float4 g[][][][], out float4 result<> )
 	float4 i = (indexof result).xyzw;
 	// swizzle the index
 	i = i.zwxy;
-	result = g[i.w][i.z][i.y][i.x];
+	result = g[i];
 }
 
 void checkItem( const char* streamName, const char* dimName, int expected, float actual, int x, int y, int z, int w )
