@@ -7,7 +7,7 @@
 int debug_fft=0;
 int split_bit_reverse=0;
 int do_untangle=0;
-
+int USAGE=0;
 /*
 static void __printf_cpu_inner (float a, float b, float c, float d) {
   printf ("%f %f == %f %f\n",a,b,c,d);
@@ -393,9 +393,21 @@ int main (int argc, char ** argv) {
 	float2 *data;
         int oldargc=argc;
         char *argv_bak[]={argv[0],"franklin.ppm","out.ppm"};
+        if (argc>1) {
+          if (!strcmp(argv[1],"-h")||!strcmp(argv[1],"--help")||!strcmp(argv[1],"-V")||!strcmp(argv[1],"-v")||!strcmp(argv[1],"--verbose")) {
+            int i=2;
+            for (;i<argc;++i) {
+              argv[i-1]=argv[i];
+            }
+            argc--;
+            USAGE=1;
+          }
+        }
 	if (argc<3) {
-          fprintf(stderr,"Usage: %s <input_file> <output_file> [do edge det]\nDefaulting to fft franklin.ppm out.ppm\n",
+          if (USAGE) {
+            fprintf(stderr,"Usage: %s <input_file> <output_file> [do edge det]\nDefaulting to fft franklin.ppm out.ppm\n",
                  argc>=1?argv[0]:"qfft");
+          }
           argv=argv_bak;
           argc=3;
 		//turn 1; // 1 is argument error
@@ -422,11 +434,12 @@ int main (int argc, char ** argv) {
            }
         }
 	free(data);
-      	fprintf (stderr,"writing... %s\n",argv[2]);
+        if (USAGE)
+          fprintf (stderr,"writing... %s\n",argv[2]);
 	if (!writePPM(argv[2],imgdata,width,height)) {
           if (oldargc<3&&diff (argv[2],"fft.ppm")) {
             printf ("%s differs from fft.ppm\n",argv[2]);
-          }else {
+          }else if (oldargc<3){
             printf ("pass");
           }
           free(imgdata);
