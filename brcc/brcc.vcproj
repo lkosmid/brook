@@ -25,7 +25,7 @@
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -70,7 +70,7 @@
 				RuntimeLibrary="4"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -309,7 +309,8 @@
 					Name="VCCustomBuildTool"
 					CommandLine="bison -d gram.y &amp;
 mv -f gram.tab.c gram.cpp &amp;
-mv -f gram.tab.h gram.h"
+mv -f gram.tab.h gram.h
+"
 					Outputs="gram.cpp; gram.h"/>
 			</FileConfiguration>
 			<FileConfiguration
@@ -318,7 +319,8 @@ mv -f gram.tab.h gram.h"
 					Name="VCCustomBuildTool"
 					CommandLine="bison -d gram.y &amp;
 mv -f gram.tab.c gram.cpp &amp;
-mv -f gram.tab.h gram.h"
+mv -f gram.tab.h gram.h
+"
 					Outputs="gram.cpp; gram.h"/>
 			</FileConfiguration>
 		</File>
@@ -339,7 +341,8 @@ mv -f gram.tab.h gram.h"
 					Name="VCCustomBuildTool"
 					CommandLine="flex lexer.l &amp;
 rm -rf lexer.cpp &amp;
-mv lex.yy.c lexer.cpp"
+mv lex.yy.c lexer.cpp
+"
 					AdditionalDependencies="gram.h"
 					Outputs="lexer.cpp"/>
 			</FileConfiguration>
@@ -349,7 +352,8 @@ mv lex.yy.c lexer.cpp"
 					Name="VCCustomBuildTool"
 					CommandLine="flex lexer.l &amp;
 rm -rf lexer.cpp &amp;
-mv lex.yy.c lexer.cpp"
+mv lex.yy.c lexer.cpp
+"
 					AdditionalDependencies="gram.h"
 					Outputs="lexer.cpp"/>
 			</FileConfiguration>
@@ -397,7 +401,8 @@ mv lex.yy.c lexer.cpp"
 				<Tool
 					Name="VCCustomBuildTool"
 					CommandLine="bison -pps2arb_ -d -ops2arb_gram.cpp ps2arb_gram.y &amp;
-mv -f ps2arb_gram.hpp ps2arb_gram.h"
+mv -f ps2arb_gram.hpp ps2arb_gram.h
+"
 					Outputs="ps2arb_gram.cpp; ps2arb_gram.h"/>
 			</FileConfiguration>
 			<FileConfiguration
@@ -405,7 +410,8 @@ mv -f ps2arb_gram.hpp ps2arb_gram.h"
 				<Tool
 					Name="VCCustomBuildTool"
 					CommandLine="bison -pps2arb_ -d -ops2arb_gram.cpp ps2arb_gram.y &amp;
-mv -f ps2arb_gram.hpp ps2arb_gram.h"
+mv -f ps2arb_gram.hpp ps2arb_gram.h
+"
 					Outputs="ps2arb_gram.cpp; ps2arb_gram.h"/>
 			</FileConfiguration>
 		</File>
@@ -424,14 +430,16 @@ mv -f ps2arb_gram.hpp ps2arb_gram.h"
 				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="flex -Pps2arb_ -ops2arb_lexer.cpp ps2arb_lexer.l"
+					CommandLine="flex -Pps2arb_ -ops2arb_lexer.cpp ps2arb_lexer.l
+"
 					Outputs="ps2arb_lexer.cpp"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="flex -Pps2arb_ -ops2arb_lexer.cpp ps2arb_lexer.l"
+					CommandLine="flex -Pps2arb_ -ops2arb_lexer.cpp ps2arb_lexer.l
+"
 					Outputs="ps2arb_lexer.cpp"/>
 			</FileConfiguration>
 		</File>
