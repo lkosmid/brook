@@ -131,6 +131,12 @@ $(DEPDIR)/%.depend: %.bri
 	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
 endif
 
+##  Compile .brhi files  ##
+$(OBJDIR)/%.hpp: %.brhi
+	$(CC) $(C_CPP_FLAG) $< > $(OBJDIR)/$*.brh
+	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $(BRCCFLAGS) -o $(OBJDIR)/$* $(OBJDIR)/$*.brh
+
+
 ##  Compile .brh files  ##
 $(OBJDIR)/%.hpp: %.brh
 ifndef COMPILER_ECHOES
