@@ -126,7 +126,7 @@ kernel void NanToRightBRT_TYPE (float value [][],
    float neighbor;
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
+   output = round(value[indexof(output)]+neighbor);
 }
 kernel void CountToRightBRT_TYPE (BRT_TYPE value [][],
                                   out BRT_TYPE output<>,
@@ -219,7 +219,6 @@ void CountValuesBRT_TYPE(struct StreamHolder list_stream,
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
-   unsigned int LogNMinusK;
    float maxshift=999;
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;

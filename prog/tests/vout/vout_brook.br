@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "streamholder.h"
-float CountValuesfloat(struct StreamHolder list_stream,
+void CountValuesfloat(struct StreamHolder list_stream,
                        struct StreamHolder output_stream,
                        int WIDTH, 
                        int LENGTH, 
@@ -10,42 +10,44 @@ kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], vout []float e<>) {
   e = a+b+d[c.xy];
   push(e);
-  if (fmod( (indexof a).x,2)<.5) {
+  if (round(fmod( (indexof a).x,2))!=1) {
     e = 2;
     push (e);
   }
-  if (fmod((indexof a).y,3)<.5) {
+  if (round(fmod((indexof a).y,3))!=1) {
      e=1;
      push (e);
      e=-1;
      push (e);
   }
 }
-
-int main () {
-
-  float a<10, 10>;
-  float b<10, 10>;
-  float d<10, 10>;
-  float e<10, 10>;
+int main (int argc, char * argv[]) {
+  int WID=(argc>1?atoi(argv[1]):3);
+  int LEN=(argc>2?atoi(argv[2]):(argc>1?atoi(argv[1]):5));
+  float a<WID, LEN>;
+  float b<WID, LEN>;
+  float d<WID, LEN>;
+  float e<WID, LEN>;
   float nil<40,10>;
   float test <40,10>;
-  float data_a[10][10];
-  float data_b[10][10];
+  float *data_a;
+  float *data_b;
   float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
-  float data_d[10][10];
+  float *data_d;
   float *data_nil;
-  float d_broken = 0.0f;
   float *data_out;
   int i,j;
+  data_a=(float*)malloc(WID*LEN*sizeof(float));
+  data_b=(float*)malloc(WID*LEN*sizeof(float));
+  data_d=(float*)malloc(WID*LEN*sizeof(float));
   data_out=(float*)malloc(10*40*sizeof(float));
   data_nil=(float*)malloc(10*40*sizeof(float));
   memset(data_nil,0,10*40*sizeof(float));
-  for (i=0; i<10; i++)
-    for (j=0; j<10; j++) {
-      data_a[i][j] = ((float) i) + ((float) j) / 10.0f;
-      data_b[i][j] = ((float) j) + ((float) i) / 10.0f;
-      data_d[i][j] = ((float) i) / 100.0f;
+  for (i=0; i<WID; i++)
+    for (j=0; j<LEN; j++) {
+      data_a[i*LEN+j] = ((float) i) + ((float) j) / 16;
+      data_b[i*LEN+j] = ((float) j) + ((float) i) / 16;
+      data_d[i*LEN+j] = ((float) i) / 100;
     }
   
   streamRead(a, data_a);

@@ -136,7 +136,7 @@ kernel void NanToRightfloat (float value [][],
    float neighbor;
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
+   output = round(value[indexof(output)]+neighbor);
 }
 kernel void CountToRightfloat (float value [][],
                                   out float output<>,
@@ -229,7 +229,6 @@ void CountValuesfloat(struct StreamHolder list_stream,
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
-   unsigned int LogNMinusK;
    float maxshift=999;
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
@@ -1163,7 +1162,7 @@ kernel void NanToRightfloat2 (float value [][],
    float neighbor;
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
+   output = round(value[indexof(output)]+neighbor);
 }
 kernel void CountToRightfloat2 (float2 value [][],
                                   out float2 output<>,
@@ -1256,7 +1255,6 @@ void CountValuesfloat2(struct StreamHolder list_stream,
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
-   unsigned int LogNMinusK;
    float maxshift=999;
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
@@ -2190,7 +2188,7 @@ kernel void NanToRightfloat3 (float value [][],
    float neighbor;
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
+   output = round(value[indexof(output)]+neighbor);
 }
 kernel void CountToRightfloat3 (float3 value [][],
                                   out float3 output<>,
@@ -2283,7 +2281,6 @@ void CountValuesfloat3(struct StreamHolder list_stream,
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
-   unsigned int LogNMinusK;
    float maxshift=999;
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
@@ -3217,7 +3214,7 @@ kernel void NanToRightfloat4 (float value [][],
    float neighbor;
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
+   output = round(value[indexof(output)]+neighbor);
 }
 kernel void CountToRightfloat4 (float4 value [][],
                                   out float4 output<>,
@@ -3310,7 +3307,6 @@ void CountValuesfloat4(struct StreamHolder list_stream,
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
-   unsigned int LogNMinusK;
    float maxshift=999;
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
