@@ -596,13 +596,13 @@ CodeGen_HLSLGenerateCode(Type *retType, const char *name,
   char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   hlslcode = generate_hlsl_code(args, nArgs, body);
-  std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
+  //std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
 
   fpcode = compile_hlsl_code(hlslcode);
   free(hlslcode);
   //std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
-  fpcode_with_brccinfo = 
+  fpcode_with_brccinfo =
     append_argument_information("//", fpcode, args, nArgs, body);
   free(fpcode);
 

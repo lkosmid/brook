@@ -500,7 +500,6 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                          *tokn_ptr = '\0';
                          file_ppln=false;
                          in_preprocess = 0;
-		         std::cerr << "Preprocessed '" << tokn_buff << "'.\n";
                          yyless(0);        /* Hack! */
 			 LAST_STATE();
                          lvalp->stemnt =
