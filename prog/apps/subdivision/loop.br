@@ -44,7 +44,7 @@ typedef struct Neighbor_t {
 }Neighbor;
 
 unsigned char debugLoop=0;
-int counterMax = 2;
+int counterMax = 1024;
 extern float neighboreps;
 int low_texture_ram=0;
 int subdivisiondepth=0;
@@ -494,7 +494,7 @@ void subdivide (Neighbor (*neighbors)<>,
       streamY=toi(streamSize(shouldProduce).y);
       //if some should be split and produced then go here
       if (streamY&&streamX) {
-        float stretchX = streamY*4>2048?0.0f:1.0f;      
+        float stretchX = streamY*4>2048?1.0f:0.0f;      
         //allocate shared neighbor structs that hold the extra generated floats
         Neighbor sharedNeighbors<streamY,streamX>;
         SplitTri sharedTriangles <streamY,streamX>;
