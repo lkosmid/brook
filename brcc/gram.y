@@ -642,6 +642,7 @@ continue_stemnt: CONT SEMICOLON
             delete $1;
             delete $2;
         }
+        ;
 
 return_stemnt:  RETURN opt_expr SEMICOLON
         {
@@ -2208,6 +2209,7 @@ dimension_constraint:  constant
         { 
             $$ = new Variable ($1,NoLocation);
         }
+        ;
 
 comma_constants:  /* Empty */
 	{
