@@ -32,7 +32,7 @@ static void
 usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
-  fprintf (stderr, "brcc [-v] [-n] [-d] [-o outputfileprefix] [-w workspace] [-p fp30|arb] foo.br\n");
+  fprintf (stderr, "brcc [-v] [-n] [-d] [-o outputfileprefix] [-w workspace] [-p ps20|cpu|fp30|arb] foo.br\n");
 
   exit(1);
 }
@@ -129,7 +129,7 @@ parse_args (int argc, char *argv[]) {
  *      Converts stream declaration statement objects into BrtStreams.
  */
 
-void
+static void
 ConvertToBrtStreams(Statement *s)
 {
    DeclStemnt *declStemnt;
@@ -139,44 +139,55 @@ ConvertToBrtStreams(Statement *s)
 
    for (unsigned int i=0; i<declStemnt->decls.size(); i++) {
       Decl *decl = declStemnt->decls[i];
-      if (!decl->form) continue;
-      Type *form = decl->form;
-      if (form->type != TT_Stream) continue;
-      ArrayType *tarray = (ArrayType *) form;
+      ArrayType *stream;
+      Type *brtType;
 
-      BrtStreamType *brtStream = new BrtStreamType (tarray);
-      decl->form = brtStream;
+      if (!decl->form || !decl->isStream()) continue;
+      stream = (ArrayType *) decl->form;
+
+      if (decl->initializer == NULL) {
+         assert((stream->getQualifiers() & TQ_Iter) == 0);
+         brtType = new BrtStreamType (stream);
+         // TIM: we don't want any initializer for stream types...
+         // they are initialized by their constructor...
+         //
+         // decl->initializer = new BrtStreamInitializer(brtStream,
+         //                                              declStemnt->location);
+      } else {
+         assert(decl->initializer->etype == ET_FunctionCall);
+         assert((stream->getQualifiers() & TQ_Iter) != 0);
+         brtType = new BrtIterType(stream, (FunctionCall *) decl->initializer);
+         delete decl->initializer;
+         decl->initializer = NULL;
+      }
       assert (decl->initializer == NULL);
-
-// TIM: we don't want any initializer for stream types...
-// they are initialized by their constructor...
-//      decl->initializer = new BrtStreamInitializer(brtStream,
-//						   declStemnt->location);
-  }
+      decl->form = brtType;
+   }
 }
 
 
-/*
- * ConvertToBrtKernels --
- *
- *      Converts FunctionDef *'s for kernel definitions into BRTKernelDef *'s.
- */
-
-FunctionDef *
-ConvertToBrtKernels(FunctionDef *fDef)
-{
-   if (!fDef->decl->isKernel()) { return NULL; }
-
-   return new BRTKernelDef(*fDef);
-}
-
-
-void
+static void
 ConvertToBrtScatters(Statement *s)
 {
    s->findExpr(ConvertToBrtScatterCalls);
 }
 
+
+/*
+ * ConvertToBrtFunctions --
+ *
+ *      This is the callback for the portion of the transformation phase
+ *      when we iterate over all the function definitions and convert Brook
+ *      specific ones to our types.
+ */
+
+static FunctionDef *
+ConvertToBrtFunctions(FunctionDef *fDef)
+{
+   if (fDef->decl->isKernel()) { return new BRTKernelDef(*fDef); }
+   else return NULL;
+
+}
 
 
 /*
@@ -185,6 +196,7 @@ ConvertToBrtScatters(Statement *s)
  *      Drive everything.  Parse the arguments, the compile the requested
  *      file.
  */
+
 int
 main(int argc, char *argv[])
 {
@@ -206,9 +218,8 @@ main(int argc, char *argv[])
           */
          Brook2Cpp_IdentifyIndexOf(tu);
          tu->findStemnt(ConvertToBrtStreams);
-         tu->findFunctionDef(ConvertToBrtKernels);
          tu->findStemnt(ConvertToBrtScatters);
-         //         tu->findFunctionDef(ConvertToBrtScatters);
+         tu->findFunctionDef(ConvertToBrtFunctions);
       }
 
      out.open(globals.coutputname);

@@ -129,9 +129,12 @@ BRTKernelDef::printStub(std::ostream& out) const
 
       if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
          out << "_T"<<num_templates++<<" &" << fType->args[i]->name->name;
-      }else if (recursiveIsStream(fType->args[i]->form) || recursiveIsGather(fType->args[i]->form)) {
+      } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
+         out << "const __BRTIter& " << *fType->args[i]->name;
+      } else if (recursiveIsStream(fType->args[i]->form) ||
+                 recursiveIsGather(fType->args[i]->form)) {
          out << "const __BRTStream& " << *fType->args[i]->name;
-      }else {
+      } else {
          out << "const ";
          Symbol name;name.name = fType->args[i]->name->name;
          //XXX -- C++ backend needs values to be passed by value...
@@ -162,9 +165,11 @@ BRTKernelDef::printStub(std::ostream& out) const
       if (recursiveIsStream(fType->args[i]->form) &&
           (fType->args[i]->form->getQualifiers()&TQ_Out)!=0) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
-      } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
+      } else if ((fType->args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
          out << "  k->PushReduce(&" << *fType->args[i]->name;
          out << ", __BRTReductionType(&" << *fType->args[i]->name <<"));\n";
+      } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
+         out << "  k->PushIter(" << *fType->args[i]->name << ");\n";
       } else if (recursiveIsStream(fType->args[i]->form)) {
          out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
       } else if (recursiveIsGather(fType->args[i]->form)) {
@@ -194,7 +199,7 @@ BRTKernelDef::CheckSemantics() const
    for (int i = 0; i < fType->nArgs; i++) {
       BaseTypeSpec baseType;
 
-      if ((fType->args[i]->form->getQualifiers() & TQ_Out)!=0) {
+      if ((fType->args[i]->form->getQualifiers() & TQ_Out) != 0) {
          if (outArg) {
             std::cerr << "Multiple outputs not supported: ";
             outArg->print(std::cerr, true);
@@ -205,9 +210,16 @@ BRTKernelDef::CheckSemantics() const
          }
          outArg = fType->args[i];
 
-         if (!recursiveIsStream(fType->args[i]->form)) {
+         if (!recursiveIsStream(outArg->form)) {
             std::cerr << "Output is not a stream: ";
-            fType->args[i]->print(std::cerr, true);
+            outArg->print(std::cerr, true);
+            std::cerr << ".\n";
+            return false;
+         }
+
+         if ((outArg->form->getQualifiers() & TQ_Iter) != 0) {
+            std::cerr << "Output cannot be an iterator: ";
+            outArg->print(std::cerr, true);
             std::cerr << ".\n";
             return false;
          }

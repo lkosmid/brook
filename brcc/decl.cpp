@@ -82,6 +82,9 @@ static
 void
 printQual( std::ostream& out, TypeQual qualifier )
 {
+    if ((qualifier & TQ_Iter)!=0)
+        out << "iter ";
+
     if ((qualifier & TQ_Out)!=0)
         out << "out ";
 

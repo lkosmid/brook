@@ -25,7 +25,6 @@ class BrtStreamType : public Type
 {
 public:
   BrtStreamType(const ArrayType *t);
-  BrtStreamType();
   
   ~BrtStreamType();
   
@@ -55,6 +54,41 @@ public:
  
   BaseType       *base;
   ExprVector     dims;
+
+protected:
+  BrtStreamType(void) : Type(TT_BrtStream) {}; /* Only for dup0() */
+};
+
+
+class BrtIterType : public Type
+{
+public:
+  BrtIterType(const ArrayType *stream, const FunctionCall *f);
+
+  ~BrtIterType();
+
+  Type* dup0() const;    // deep-copy
+
+  void printType( std::ostream& out, Symbol *name,
+		  bool showBase, int level ) const;
+
+  void printForm(std::ostream& out) const;
+
+  void printInitializer(std::ostream& out) const;
+
+  void findExpr( fnExprCallback cb );
+
+  bool lookup( Symbol* sym ) const { return base ? base->lookup(sym) : false; }
+
+  TypeQual getQualifiers( void ) { return base->getQualifiers(); }
+  BaseType *getBase( void ) { return base; }
+
+  BaseType       *base;
+  ExprVector     dims;
+  ExprVector     args;
+
+protected:
+  BrtIterType(void) : Type(TT_BrtIter) {}; /* Only for dup0() */
 };
 
 class CPUGatherType{public:

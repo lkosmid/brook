@@ -1,13 +1,11 @@
 Off the cuff
 ------------
 
-   * Iterator streams:
-   	- parse 'em, emit BRT calls, and the requisite stubs.
-	- augment codegen to generate proper Cg/HLSL.
+   * Error / Warning printing routine(s).
+
+   * Split 'reduce' and 'kernel' (map) semantics checking.
 
    * Emit #line directives in the emitted cpp file.
-
-   * Allow stream sizes to be pulled from variables as well as constants.
 
    * Kernel to kernel calls?
 

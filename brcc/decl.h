@@ -119,13 +119,13 @@ struct TypeQual{
       return *this;
    }
 
-   
    static TypeQual ReturnNone() {TypeQual ret;ret.init(0x0000);return ret;}
    static TypeQual ReturnConst() {TypeQual ret;ret.init(0x0001);return ret;}
    static TypeQual ReturnVolatile() {TypeQual ret;ret.init(0x0002);return ret;}
    static TypeQual ReturnOut() {TypeQual ret;ret.init(0x0004);return ret;}
    static TypeQual ReturnReduce() {TypeQual ret;ret.init(0x0008);return ret;}   
    static TypeQual ReturnVout() {TypeQual ret;ret.init(0x0010);return ret;}
+   static TypeQual ReturnIter() {TypeQual ret;ret.init(0x0020);return ret;}
 };
 
 const TypeQual TQ_None=TypeQual::ReturnNone();
@@ -134,6 +134,8 @@ const TypeQual TQ_Volatile=TypeQual::ReturnVolatile();
 const TypeQual TQ_Out=TypeQual::ReturnOut();
 const TypeQual TQ_Reduce=TypeQual::ReturnReduce();
 const TypeQual TQ_Vout=TypeQual::ReturnVout();
+const TypeQual TQ_Iter=TypeQual::ReturnIter();
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 enum StorageType
 {
@@ -160,15 +162,16 @@ enum TypeType
     TT_Base,        // a simple base type, T
     TT_Pointer,     // pointer to T
     TT_Array,       // an array of T
-    TT_Stream,      // a stream of T
+    TT_Stream,      // a stream / iter of T
     TT_BitField,    // a bitfield
     TT_Function,    // <args> -> <result>
 
-    TT_BrtStream
+    TT_BrtStream,   // Converted stream declaration
+    TT_BrtIter,     // Converted iter declaration
 
 
     /*    These are now considered TT_Base
-    TT_Struct,     
+    TT_Struct,
     TT_Union,
     TT_Enum
     */

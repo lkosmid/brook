@@ -72,6 +72,13 @@ generate_cg_code (Decl **args, int nArgs, const char *body) {
 
   /* Declare the stream variables */
   for (i=0; i < nArgs; i++) {
+     if ((args[i]->form->getBase()->qualifier & TQ_Iter) != 0) {
+        std::cerr << "Warning: fp30 backend does not support iterators: ";
+        args[i]->print(std::cerr, true);
+        std::cerr << ".\n";
+        return NULL;
+     }
+
      if (args[i] == outArg) {
         TypeQual qualifier = outArg->form->getBase()->qualifier;
 
@@ -137,40 +144,36 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
   bool isReduction = false;
   int texcoord, constreg, i;
 
-
   // Add the workspace variable
-
-  //  hlsl << "#define _WORKSPACE " << globals.workspace << std::endl;
-  //  hlsl << "#define _WORKSPACE_INV " << std::setprecision(9.9)
-  //       <<  1.0 / globals.workspace << std::endl;
-
   constreg = 0;
-  hlsl << "float4 _workspace    : register (c" 
+  hlsl << "float4 _workspace    : register (c"
        << constreg++ << ");\n";
-//  hlsl << "float2 _workspaceinv : register (c"
-//       << constreg++ << ");\n";
-  
+
   /* Print out the texture stream */
   texcoord = 0;
   for (i=0; i < nArgs; i++) {
+     TypeQual qual = args[i]->form->getQualifiers();
+
     /* Don't put the output in the argument list */
-    if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
+    if ((qual & TQ_Out) != 0) {
       outArg = args[i];
       continue;
     }
 
-    if ((args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
+    if ((qual & TQ_Reduce) != 0) {
       outArg = args[i];
       isReduction = true;
     }
-    
-    if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
+
+    if ((qual & TQ_Iter) != 0) {
+       /* Do nothing.  No samplers for iterators */
+    } else if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
        hlsl << "sampler _tex_" << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
     } else if (args[i]->isArray()) {
        hlsl << "sampler " << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
-       hlsl << "float4 " << *args[i]->name << "_scalebias" 
+       hlsl << "float4 " << *args[i]->name << "_scalebias"
             << " : register (c" << constreg++ << ");\n";
     } else {
        args[i]->print(hlsl, true);
@@ -184,30 +187,40 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
   /* Print the argument list */
   texcoord = 0;
   for (i=0; i < nArgs; i++) {
+     TypeQual qual = args[i]->form->getQualifiers();
+
      /* Don't put the output in the argument list */
-     if ((args[i]->form->getQualifiers() & TQ_Out)!=0) {
+     if ((qual & TQ_Out) != 0) {
         outArg = args[i];
         continue;
      }
 
-     if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
+     if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
        if (i) hlsl <<  ",\n\t\t";
-       hlsl << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
-            << texcoord++;
+       if ((qual & TQ_Iter) != 0) {
+          args[i]->form->getBase()->qualifier &= ~TQ_Iter;
+          args[i]->form->printBase(hlsl, 0);
+          hlsl << *args[i]->name << ": TEXCOORD" << texcoord++;
+          args[i]->form->getBase()->qualifier = qual;
+       } else {
+          hlsl << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
+               << texcoord++;
+       }
      }
   }
   hlsl << ") : COLOR0 {\n";
 
   /* Declare the stream variables */
   for (i=0; i < nArgs; i++) {
+     TypeQual qual = args[i]->form->getQualifiers();
+
      if (args[i] == outArg) {
-        TypeQual qualifier = outArg->form->getBase()->qualifier;
         outArg->form->getBase()->qualifier &= ~TQ_Out;
         hlsl << "\t";
         args[i]->form->printBase(hlsl, 0);
         hlsl << " " << *args[i]->name << ";\n";
-        outArg->form->getBase()->qualifier = qualifier;
-     } else if (args[i]->isStream()) {
+        outArg->form->getBase()->qualifier = qual;
+     } else if (args[i]->isStream() && ((qual & TQ_Iter) == 0)) {
         hlsl << "\t";
         args[i]->form->printBase(hlsl, 0);
         hlsl << " " << *args[i]->name << ";\n";
@@ -219,7 +232,10 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
 
   /* Perform stream fetches */
   for (i=0; i < nArgs; i++) {
+     TypeQual qual = args[i]->form->getQualifiers();
+
      if (args[i] == outArg && !isReduction) continue;
+     if ((qual & TQ_Iter) != 0) continue; /* No texture fetch for iterators */
 
      if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
         int dimension = FloatDimension(args[i]->form->getBase()->typemask);
@@ -586,11 +602,14 @@ CodeGen_FP30GenerateCode(Type *retType, const char *name,
   char *cgcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   cgcode = generate_cg_code(args, nArgs, body);
-  if (globals.verbose)
-    std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
-
-  fpcode = compile_cg_code(cgcode);
-  free(cgcode);
+  if (cgcode) {
+     if (globals.verbose)
+       std::cerr << "\n***Produced this cgcode:\n" << cgcode << "\n";
+     fpcode = compile_cg_code(cgcode);
+     free(cgcode);
+  } else {
+     fpcode = NULL;
+  }
 
   if (fpcode) {
     if (globals.verbose)
@@ -632,15 +651,16 @@ CodeGen_PS20GenerateCode(Type *retType, const char *name,
   char *hlslcode, *fpcode, *fpcode_with_brccinfo, *c_code;
 
   hlslcode = generate_hlsl_code(args, nArgs, body);
-
-  if (globals.verbose)
-    std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
-
-  fpcode = compile_hlsl_code(hlslcode);
-  free(hlslcode);
+  if (hlslcode) {
+     if (globals.verbose)
+       std::cerr << "\n***Produced this hlslcode:\n" << hlslcode << "\n";
+     fpcode = compile_hlsl_code(hlslcode);
+     free(hlslcode);
+  } else {
+     fpcode = NULL;
+  }
 
   if (fpcode) {
-   
     if (globals.verbose)
       std::cerr << "***Produced this fpcode:\n" << fpcode << "\n";
 
