@@ -5,6 +5,7 @@
 #include "../stemnt.h"
 #include "splittraversal.h"
 #include "splittypes.h"
+#include "splitcompiler.h"
 
 class GatherArgumentSplitNode;
 class StreamArgumentSplitNode;
@@ -54,7 +55,18 @@ public:
     _temporaryID = inID;
   }
 
+  const SplitShaderHeuristics& getHeuristics() {
+    return _heuristics;
+  }
+  void setHeuristics( const SplitShaderHeuristics& inHeuristics ) {
+    _heuristics = inHeuristics;
+  }
+
   // print an expression to get this node's value
+  virtual void dump( std::ostream& inStream ) {
+    printExpression( inStream );
+  }
+
   virtual void printTemporaryName( std::ostream& inStream );
   virtual bool needsArgument() { return false; }
   virtual void printArgumentInfo( std::ostream& inStream, SplitArgumentCounter& ioCounter ) {}
@@ -122,6 +134,8 @@ private:
   bool _isOutput;
 
   int _temporaryID;
+
+  SplitShaderHeuristics _heuristics;
 };
 
 class InputSplitNode : public SplitNode
@@ -192,6 +206,7 @@ public:
     addChild( value );
   }
 
+  void dump( std::ostream& inStream );
   void printTemporaryName( std::ostream& inStream );
   void printTemporaryExpression( std::ostream& inStream );
   void printExpression( std::ostream& inStream );
@@ -300,6 +315,7 @@ class BrtConstantSplitNode :
 public:
   BrtConstantSplitNode( Constant* inValue );
   BrtConstantSplitNode( int inValue );
+
   virtual void printTemporaryExpression( std::ostream& inStream );
   virtual void printExpression( std::ostream& inStream );
 

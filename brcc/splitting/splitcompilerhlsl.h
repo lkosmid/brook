@@ -14,7 +14,7 @@ class SplitCompilerHLSL
 {
 protected:
   virtual void printHeaderCode( std::ostream& inStream ) const;
-  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode ) const;
+  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode, SplitShaderHeuristics& outHeuristics ) const;
 
   // TIM: complete hack, even for me
   virtual bool mustScaleAndBiasGatherIndices() const { return true; }

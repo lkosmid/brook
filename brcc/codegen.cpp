@@ -1606,6 +1606,7 @@ void
 CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
                          CodeGenTarget target, std::ostream& inStream ) {
 
+
   std::ostringstream shaderStream;
 
   std::auto_ptr<SplitCompiler> compiler;
@@ -1630,24 +1631,15 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
   std::string functionName = inFunctionDef->FunctionName()->name;
   std::string mangledName = std::string("__") + functionName + "_" + targetName;
 
-  try {
-    shaderStream << "namespace {" << std::endl;
-    shaderStream << "\tusing namespace ::brook::desc;" << std::endl;
-    shaderStream << "\tstatic const gpu_kernel_desc " << mangledName << "_desc = gpu_kernel_desc()" << std::endl;
+  shaderStream << "namespace {" << std::endl;
+  shaderStream << "\tusing namespace ::brook::desc;" << std::endl;
+  shaderStream << "\tstatic const gpu_kernel_desc " << mangledName << "_desc = gpu_kernel_desc()" << std::endl;
 
-    splitTree.printTechnique( SplitTechniqueDesc(), shaderStream );
+  splitTree.printTechnique( SplitTechniqueDesc(), shaderStream );
 
-    shaderStream << ";" << std::endl;
-    shaderStream << "\tstatic const void* " << mangledName << " = &" << mangledName << "_desc;" << std::endl;
-    shaderStream << "}" << std::endl;
+  shaderStream << ";" << std::endl;
+  shaderStream << "\tstatic const void* " << mangledName << " = &" << mangledName << "_desc;" << std::endl;
+  shaderStream << "}" << std::endl;
 
-    inStream << shaderStream.str();
-  }
-  catch( SplitCompilerError& e )
-  {
-    std::cerr << e.getMessage() << std::endl;
-    std::cerr << "failure while compiling " << functionName << std::endl;
-    inStream << "static const void* " << mangledName << " = 0;" << std::endl;
-    throw 1;
-  }
+  inStream << shaderStream.str();
 }

@@ -29,13 +29,14 @@ void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompil
     _graphChildren[i]->rdsPrint( inTree, inCompiler, inStream );
 
   if( isMarkedAsSplit() ) {
-    std::cerr << "*** ";
-    printExpression( std::cerr );
-    std::cerr << std::endl;
+//    std::cerr << "*** ";
+//    printExpression( std::cerr );
+//    std::cerr << std::endl;
 
     std::vector<SplitNode*> dummy;
     dummy.push_back( this );
-    inCompiler.compile( inTree, dummy, inStream );
+    SplitShaderHeuristics unused;
+    inCompiler.compile( inTree, dummy, inStream, unused );
   }
 }
 
@@ -167,6 +168,13 @@ void InputInterpolantSplitNode::printArgumentInfo( std::ostream& inStream, Split
 
 void InputInterpolantSplitNode::printAnnotationInfo( std::ostream& inStream ) {
   inStream << ".interpolant(" << (argumentIndex+1) << "," << componentIndex << ")";
+}
+
+void OutputSplitNode::dump( std::ostream& inStream )
+{
+  printTemporaryName( inStream );
+  inStream << " = ";
+  printExpression( inStream );
 }
 
 void OutputSplitNode::printTemporaryName( std::ostream& inStream ) {

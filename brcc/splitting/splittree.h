@@ -47,6 +47,8 @@ private:
 
   bool rdsCompile( SplitNode* inNode );
 
+  float getPartitionCost();
+
   friend class SplitTreeBuilder;
   typedef std::map< std::string, SplitNode* > NodeMap;
   NodeMap outputValues;

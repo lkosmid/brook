@@ -20,7 +20,7 @@ public:
 
 protected:
   virtual void printHeaderCode( std::ostream& inStream ) const;
-  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode ) const;
+  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode, SplitShaderHeuristics& outHeuristics ) const;
 
 private:
   CodeGenTarget _target;

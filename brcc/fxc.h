@@ -8,7 +8,17 @@
 
 #include "codegen.h"
 
+struct ShaderResourceUsage
+{
+  int arithmeticInstructionCount;
+  int textureInstructionCount;
+  int samplerRegisterCount;
+  int interpolantRegisterCount;
+  int constantRegisterCount;
+  int temporaryRegisterCount;
+};
+
 char *
-compile_fxc (const char *shader, CodeGenTarget target);
+compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outUsage = 0);
 
 #endif

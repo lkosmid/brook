@@ -7,7 +7,7 @@
 #include <sstream>
 
 void SplitCompiler::compile(
-  const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const
+  const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics ) const
 {
   std::ostringstream bodyStream;
 
@@ -16,7 +16,7 @@ void SplitCompiler::compile(
   printFooterCode( bodyStream );
 
   std::ostringstream assemblerStream;
-  compileShader( bodyStream.str(), assemblerStream );
+  compileShader( bodyStream.str(), assemblerStream, outHeuristics );
   std::string assemblerCode = assemblerStream.str();
 
   // now we spit out the annotated version of things:

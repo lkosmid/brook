@@ -34,7 +34,7 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
   for( size_t i = 0; i < _outputList.size(); i++ )
     _outputList[i]->_rdsSplitHere = true;
 
-  std::cerr << "printing!!!" << std::endl;
+//  std::cerr << "printing!!!" << std::endl;
 
   // assign temporary ids to any non-output split nodes
   int temporaryID = 1;
@@ -70,7 +70,7 @@ public:
 
 void SplitTree::rdsSearch()
 {
-  std::cerr << "search" << std::endl;
+//  std::cerr << "search" << std::endl;
 
   SplitRDSUnmarkTraversal unmark;
 
@@ -78,17 +78,23 @@ void SplitTree::rdsSearch()
   {
     SplitNode* m = _multiplyReferencedNodes[i];
 
+    std::cerr << "deciding whether to save ";
+    m->dump( std::cerr );
+    std::cerr << std::endl;
+
     unmark( _outputList );
     m->_rdsFixedUnmarked = false;
     m->_rdsFixedMarked = true;
     rdsSubdivide();
-    float costSave = 0.0f; // getPartitionCost();
+    float costSave = getPartitionCost();
+    std::cerr << "save cost = " << costSave << std::endl;
 
     unmark( _outputList );
     m->_rdsFixedMarked = false;
     m->_rdsFixedUnmarked = true;
     rdsSubdivide();
-    float costRecompute = 0.0f; // getPartitionCost();
+    float costRecompute = getPartitionCost();
+    std::cerr << "save recompute = " << costSave << std::endl;
 
     if( costSave < costRecompute ) {
       m->_rdsFixedUnmarked = false;
@@ -125,7 +131,7 @@ void SplitTree::rdsSubdivide()
 
 void SplitTree::rdsSubdivide( SplitNode* t )
 {
-  std::cerr << "subdivide" << std::endl;
+//  std::cerr << "subdivide" << std::endl;
 
   if( rdsCompile( t ) ) return;
 
@@ -142,9 +148,7 @@ void SplitTree::rdsSubdivide( SplitNode* t )
       k->_rdsSplitHere = false;
     else
     {
-      // let's assume that we never decide
-      // to save, that's a pretty bad heuristic, though :)
-      k->_rdsSplitHere = false;
+      k->_rdsSplitHere = !k->getHeuristics().recompute;
     }
   }
 
@@ -154,36 +158,38 @@ void SplitTree::rdsSubdivide( SplitNode* t )
 
 void SplitTree::rdsMerge( SplitNode* n )
 {
-  std::cerr << "merge" << std::endl;
+//  std::cerr << "merge" << std::endl;
 
   size_t childCount = n->_graphChildren.size();
 
-  std::cerr << "children are:" << std::endl;
+/*  std::cerr << "children are:" << std::endl;
   for( size_t i = 0; i < childCount; i++ )
   {
     n->_graphChildren[i]->printExpression( std::cerr );
     std::cerr << std::endl;
-  }
+  }*/
 
   for( size_t d = childCount+1; d-- > 0; )
   {
     std::vector<size_t> validSubsets;
+    std::vector<SplitShaderHeuristics> validHeuristics;
 
-    std::cerr << "childCount = " << d << " out of " << childCount << std::endl;
+//    std::cerr << "childCount = " << d << " out of " << childCount << std::endl;
 
     SplitSubsetGenerator generator( d, childCount );
     while( generator.hasMore() )
     {
       size_t subsetBitfield = generator.getNext();
 
-      std::cerr << "subset = " << subsetBitfield << std::endl;
+//      std::cerr << "subset = " << subsetBitfield << std::endl;
 
       for( size_t i = 0; i < childCount; i++ )
         n->_graphChildren[i]->_mergeSplitHere = (subsetBitfield & (1 << i)) == 0;
 
-      if( rdsCompile( n ) ) {
-        std::cerr << "subset " << subsetBitfield << " was valid" << std::endl;
+     if( rdsCompile( n ) ) {
+//        std::cerr << "subset " << subsetBitfield << " was valid" << std::endl;
         validSubsets.push_back( subsetBitfield );
+        validHeuristics.push_back( n->getHeuristics() );
       }
     }
 
@@ -191,29 +197,39 @@ void SplitTree::rdsMerge( SplitNode* n )
       continue;
 
     size_t bestSubset;
-    if( validSubsets.size() == 1 )
+    SplitShaderHeuristics bestHeuristics;
+    bestSubset = validSubsets[0];
+    bestHeuristics = validHeuristics[0];
+
+    for( size_t j = 1; j < validSubsets.size(); j++ )
     {
-      bestSubset = validSubsets[0];
-    }
-    else
-    {
-      // supposed to use a heuristic... this is a very bad one :)
-      bestSubset = validSubsets[0];
+      SplitShaderHeuristics h = validHeuristics[j];
+
+      if( h.cost < bestHeuristics.cost )
+      {
+        bestHeuristics = h;
+        bestSubset = validSubsets[j];
+      }
     }
 
     // mark children according to that subset
     // and we are done!!!
-    std::cerr << "subset " << bestSubset << " was chosen" << std::endl;
+//    std::cerr << "subset " << bestSubset << " was chosen" << std::endl;
     for( size_t i = 0; i < childCount; i++ )
       n->_graphChildren[i]->_rdsSplitHere = (bestSubset & (1 << i)) == 0;
+
+    n->setHeuristics( bestHeuristics );
 
     return;
   }
 
-  std::cerr << "empty subset was chosen" << std::endl;
+//  std::cerr << "empty subset was chosen" << std::endl;
   {for( size_t i = 0; i < childCount; i++ ){
     n->_graphChildren[i]->_rdsSplitHere = true;
   }}
+
+  // TIM: force heuristic update?
+  rdsCompile( n );
 
   // we couldn't manage any of them...
   // mark all children for saving,
@@ -222,20 +238,52 @@ void SplitTree::rdsMerge( SplitNode* n )
 
 bool SplitTree::rdsCompile( SplitNode* inNode )
 {
-  try
-  {
-    std::vector<SplitNode*>  outputVector;
-    outputVector.push_back( inNode );
+  std::vector<SplitNode*>  outputVector;
+  outputVector.push_back( inNode );
 
-    std::ostringstream nullStream;
-    _compiler.compile( *this, outputVector, nullStream );
+  SplitShaderHeuristics heuristics;
 
-    return true;
-  }
-  catch( SplitCompilerError& )
+  std::ostringstream nullStream;
+  _compiler.compile( *this, outputVector, nullStream, heuristics );
+
+  if( heuristics.valid )
+    inNode->setHeuristics( heuristics );
+
+  return heuristics.valid;
+}
+
+float SplitTree::getPartitionCost()
+{
+  SplitMarkTraversal unmark(false);
+
+
+  unmark( _outputList );
+  unmark( _outputPositionInterpolant );
+
+  class AccumulateCostTraversal : public SplitNodeTraversal
   {
-    return false;
-  }
+  public:
+    float _cost;
+    virtual void traverse( SplitNode* inNode ) {
+
+      if( inNode->marked )
+        return;
+      inNode->marked = true;
+
+      inNode->traverseChildren( *this );
+
+      if( inNode->isMarkedAsSplit() )
+      {
+        _cost += inNode->getHeuristics().cost;
+      }
+    }
+  };
+
+  AccumulateCostTraversal accumulate;
+  accumulate._cost = 0;
+  accumulate( _outputList );
+
+  return accumulate._cost;
 }
 
 void SplitTree::printShaderFunction( const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const
@@ -316,4 +364,5 @@ void SplitTree::build( FunctionDef* inFunctionDef )
   }
 
   buildDominatorTree();
+//  std::cerr << "done" << std::endl;
 }

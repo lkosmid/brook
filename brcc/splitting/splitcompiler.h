@@ -13,10 +13,17 @@
 class SplitTree;
 class SplitNode;
 
+struct SplitShaderHeuristics
+{
+  bool valid; // whether this shader can be compiled
+  float cost; // the cost of this shader (if valid)
+  bool recompute; // should we recompute this shader, rather than save it?
+};
+
 class SplitCompiler
 {
 public:
-  void compile( const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream ) const;
+  void compile( const SplitTree& inTree, const std::vector<SplitNode*>& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics ) const;
 
   // TIM: complete hack, even for me
   virtual bool mustScaleAndBiasGatherIndices() const { return false; }
@@ -24,24 +31,9 @@ public:
 protected:
   virtual void printHeaderCode( std::ostream& inStream ) const {};
   virtual void printFooterCode( std::ostream& inStream ) const {};
-  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& inAssemblerStream ) const = 0;
+  virtual void compileShader( const std::string& inHighLevelCode, std::ostream& inAssemblerStream, SplitShaderHeuristics& outHeuristics ) const = 0;
 
   void printStringConstant( const std::string& inString, const std::string& inPrefix, std::ostream& inStream ) const;
-};
-
-class SplitCompilerError
-{
-public:
-  SplitCompilerError( const char* inMessage )
-    : message(inMessage)
-  {}
-
-  const char* getMessage() {
-    return message;
-  }
-
-private:
-  const char* message;
 };
 
 #endif

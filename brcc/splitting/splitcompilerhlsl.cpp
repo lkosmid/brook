@@ -26,11 +26,59 @@ void SplitCompilerHLSL::printHeaderCode( std::ostream& inStream ) const
 
 }
 
-void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode ) const
+void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode, SplitShaderHeuristics& outHeuristics ) const
 {
-  char* assemblerBuffer = compile_fxc( inHighLevelCode.c_str(), CODEGEN_PS20 );
+  ShaderResourceUsage usage;
+
+  char* assemblerBuffer = compile_fxc( inHighLevelCode.c_str(), CODEGEN_PS20, &usage );
   if( assemblerBuffer == NULL )
-    throw SplitCompilerError( "HLSL compilation failed" );
+  {
+    outHeuristics.valid = false;
+    outHeuristics.cost = 0.0f;
+    outHeuristics.recompute = false;
+    return;
+  }
+
+  int textureInstructionCount = usage.textureInstructionCount;
+  int arithmeticInstructionCount = usage.arithmeticInstructionCount;
+  int samplerCount = usage.samplerRegisterCount;
+  int interpolantCount = usage.interpolantRegisterCount;
+  int constantCount = usage.constantRegisterCount;
+  int temporaryCount = usage.temporaryRegisterCount;
+
+  static const float passCost = 15.7f;
+  static const float textureInstructionCost = 1.36f;
+  static const float arithmeticInstructionCost = 1.0f;
+  static const float samplerCost = 0.0f;
+  static const float interpolantCost = 0.0f;
+  static const float constantCost = 0.0f;
+  static const float temporaryCost = 0.5f;
+
+  float shaderCost = passCost
+    + textureInstructionCost*textureInstructionCount
+    + arithmeticInstructionCost*arithmeticInstructionCount
+    + samplerCost*samplerCount
+    + interpolantCost*interpolantCount
+    + constantCost*constantCount
+    + temporaryCost*temporaryCount;
+
+  bool shouldRecompute = false;
+  if( textureInstructionCount > 8 )
+    shouldRecompute = true;
+  if( arithmeticInstructionCount > 32 )
+    shouldRecompute = true;
+  if( samplerCount > 8 )
+    shouldRecompute = true;
+  if( interpolantCount > 4 )
+    shouldRecompute = true;
+  if( constantCount > 4 )
+    shouldRecompute = true;
+  if( temporaryCount > 8 )
+    shouldRecompute = true;
+
+  outHeuristics.valid = true;
+  outHeuristics.cost = shaderCost;
+  outHeuristics.recompute = shouldRecompute;
 
   outLowLevelCode << assemblerBuffer;
   free( assemblerBuffer );

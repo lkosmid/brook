@@ -31,7 +31,7 @@ extern "C" {
  */
 
 char *
-compile_fxc (const char *shader, CodeGenTarget target) {
+compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outUsage) {
 
   char *argv[] = { "fxc", "/Tps_2_0", "/nologo", 0, 0, NULL };
   char *fpcode,  *errcode;
@@ -89,9 +89,11 @@ compile_fxc (const char *shader, CodeGenTarget target) {
   long flen = ftell(fp);
   fseek(fp, 0, SEEK_SET);
   fpcode = (char *) malloc (flen+1);
+  char* comments = (char *) malloc(flen+1);
   
   // Have to do it this way to fix the \r\n's
   int pos = 0;
+  int cpos = 0;
   int i;
   bool incomment = false;
 
@@ -100,17 +102,22 @@ compile_fxc (const char *shader, CodeGenTarget target) {
     // Remove comment lines
     if (incomment) {
       if (i == (int) '\n') {
+        comments[cpos++] = '\n';
         incomment = false;
         while ((i = fgetc(fp)) != EOF &&
                i == (int) '\n');
         if (i == EOF)
            break;
-      } else
+      } else {
+        comments[cpos++] = (char)i;
         continue;
+      }
     }  else if (pos > 0 && 
                 fpcode[pos-1] == '/' &&
                 i == (int) '/') {
       incomment = true;
+      comments[cpos++] = '/';
+      comments[cpos++] = '/';
       fpcode[--pos] = '\0';
       continue;
     }
@@ -118,6 +125,62 @@ compile_fxc (const char *shader, CodeGenTarget target) {
     fpcode[pos++] = (char) i;
   }  
   fpcode[pos] = '\0';
+  comments[cpos] = '\0';
+
+  // TIM: get instruction count information before we axe the damn thing... :)
+  if( outUsage )
+  {
+    const char* instructionLine = strstr( comments, "// approximately" );
+    assert( instructionLine );
+
+    const char* textureCount = strstr( instructionLine, "(" );
+    if( textureCount )
+    {
+      textureCount += strlen("(");
+
+      const char* arithmeticCount = strstr( textureCount, ", " );
+      assert( arithmeticCount );
+      arithmeticCount += strlen(", ");
+
+      outUsage->arithmeticInstructionCount = atoi( arithmeticCount );
+      outUsage->textureInstructionCount = atoi( textureCount );
+    }
+    else
+    {
+      outUsage->arithmeticInstructionCount = 0;
+      outUsage->textureInstructionCount = 0;
+    }
+
+    // now look for register usage..
+    // we know the pattern for what temps/constants/etc will look like, so:
+    int samplerCount = 0;
+    int interpolantCount = 0;
+    int constantCount = 0;
+    int registerCount = 0;
+
+    char registerName[128];
+
+    for( int i = 0; i < 16; i++ )
+    {
+      sprintf( registerName, " s%d", i );
+      if( strstr( fpcode, registerName ) )
+        samplerCount = i+1;
+      sprintf( registerName, " t%d", i );
+      if( strstr( fpcode, registerName ) )
+        interpolantCount = i+1;
+      sprintf( registerName, " c%d", i );
+      if( strstr( fpcode, registerName ) )
+        constantCount = i+1;
+      sprintf( registerName, " r%d", i );
+      if( strstr( fpcode, registerName ) )
+        registerCount = i+1;
+    }
+    outUsage->samplerRegisterCount = samplerCount;
+    outUsage->interpolantRegisterCount = interpolantCount;
+    outUsage->constantRegisterCount = constantCount;
+    outUsage->temporaryRegisterCount = registerCount;
+  }
+  free(comments);
   
   fclose(fp);
   remove(argv[3]+3);

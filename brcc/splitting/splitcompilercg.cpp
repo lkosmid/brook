@@ -26,12 +26,21 @@ void SplitCompilerCg::printHeaderCode( std::ostream& inStream ) const
 
 }
 
-void SplitCompilerCg::compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode ) const
+void SplitCompilerCg::compileShader( const std::string& inHighLevelCode, std::ostream& outLowLevelCode, SplitShaderHeuristics& outHeuristics ) const
 {
   char* assemblerBuffer = compile_cgc( inHighLevelCode.c_str(), _target );
   if( assemblerBuffer == NULL )
-    throw SplitCompilerError( "Cg compilation failed" );
+  {
+    outHeuristics.valid = false;
+    outHeuristics.cost = 0.0f;
+    outHeuristics.recompute = false;
+    return;
+  }
 
   outLowLevelCode << assemblerBuffer;
   free( assemblerBuffer );
+
+  outHeuristics.valid = true;
+  outHeuristics.cost = 1.0f;
+  outHeuristics.recompute = true;
 }
