@@ -30,6 +30,11 @@
 #define GL_INTENSITY_FLOAT32_ATI          0x8817
 #define GL_LUMINANCE_FLOAT32_ATI          0x8818
 #define GL_LUMINANCE_ALPHA_FLOAT32_ATI    0x8819
+#define 	GL_INTENSITY_FLOAT16_ATI   0x881D
+#define 	GL_LUMINANCE_FLOAT16_ATI   0x881E
+#define 	GL_LUMINANCE_ALPHA_FLOAT16_ATI   0x881F
+#define 	GL_RGBA_FLOAT16_ATI   0x881A
+#define 	GL_RGB_FLOAT16_ATI   0x881B
 #endif
 
 #ifndef GLX_RENDER_TYPE
@@ -39,26 +44,26 @@
 using namespace brook;
 
 static const unsigned int 
-atitypes[4] =   {GL_LUMINANCE_FLOAT32_ATI,
-                 GL_RGBA_FLOAT32_ATI,
-                 GL_RGB_FLOAT32_ATI,
-                 GL_RGBA_FLOAT32_ATI};
+atitypes[4][3] =   {{GL_LUMINANCE_FLOAT32_ATI,GL_LUMINANCE_FLOAT16_ATI,GL_LUMINANCE},
+                 {GL_RGBA_FLOAT32_ATI,GL_LUMINANCE_ALPHA_FLOAT16_ATI,GL_LUMINANCE_ALPHA},
+                 {GL_RGB_FLOAT32_ATI,GL_RGB_FLOAT16_ATI,GL_RGB},
+                 {GL_RGBA_FLOAT32_ATI,GL_RGBA_FLOAT16_ATI,GL_RGBA}};
 
 static const unsigned int 
-atiformats[4] =  {GL_RED,
-                  GL_RGBA,
-                  GL_RGB,
-                  GL_RGBA};
+atiformats[4][3] =  {{GL_RED,GL_RED,GL_LUMINANCE},
+                     {GL_RGBA,GL_LUMINANCE_ALPHA,GL_LUMINANCE_ALPHA},
+                     {GL_RGB,GL_RGB,GL_RGB},
+                     {GL_RGBA,GL_RGBA,GL_RGBA}};
 
 static const unsigned int 
-sizefactor[4] = { 1, 4, 3, 4 };
+sizefactor[4][3] = { {1,1,1}, {4,2,2}, {3,3,3}, {4,4,4} };
 
 ATITexture::ATITexture ( size_t inWidth, 
                        size_t inHeight, 
                        GPUContext::TextureFormat inFormat) :
   OGLTexture(inWidth, inHeight, inFormat, 
              atiformats, atitypes, sizefactor),
-  _nativeFormat(atiformats[components()]) 
+  _nativeFormat(atiformats[components()][elementType()]) 
 {
 }
 

@@ -173,43 +173,43 @@ namespace brook {
 
   void StreamInterface::synchronizeRenderData() {
   }
+  unsigned int getElementSize(StreamType fieldType) {
+      switch(fieldType)
+      {
+      case __BRTFIXED:
+         return sizeof(fixed);
+      case __BRTFIXED2:
+         return sizeof(fixed2);
 
+      case __BRTFIXED3:
+         return sizeof(fixed3);
+
+      case __BRTFIXED4:
+         return sizeof(fixed4);
+
+      case __BRTFLOAT:
+        return sizeof(float);
+
+      case __BRTFLOAT2:
+        return sizeof(float2);
+
+      case __BRTFLOAT3:
+        return  sizeof(float3);
+
+      case __BRTFLOAT4:
+        return sizeof(float4);
+      default:
+        assert(false && "invalid stream element type");
+        return 0;
+      };
+  }
   unsigned int StreamInterface::getElementSize() const
   {
     unsigned int result = 0;
     int fieldCount = getFieldCount();
     for( int i = 0; i < fieldCount; i++ )
     {
-      StreamType fieldType = getIndexedFieldType(i);
-      switch(fieldType)
-      {
-      case __BRTFIXED:
-         result+= sizeof(fixed);
-         break;
-      case __BRTFIXED2:
-         result+= sizeof(fixed2);
-         break;
-      case __BRTFIXED3:
-         result+= sizeof(fixed3);
-         break;
-      case __BRTFIXED4:
-         result+= sizeof(fixed4);
-         break;
-      case __BRTFLOAT:
-        result += sizeof(float);
-        break;
-      case __BRTFLOAT2:
-        result += sizeof(float2);
-        break;
-      case __BRTFLOAT3:
-        result += sizeof(float3);
-        break;
-      case __BRTFLOAT4:
-        result += sizeof(float4);
-        break;
-      default:
-        assert(false && "invalid stream element type");
-      };
+        result+=::brook::getElementSize(getIndexedFieldType(i));
     }
     return result;
   }

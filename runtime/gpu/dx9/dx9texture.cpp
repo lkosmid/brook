@@ -6,7 +6,8 @@ using namespace brook;
 static const int kComponentSizes[] =
 {
   sizeof(float),
-  sizeof(unsigned char)
+  sizeof(unsigned char),
+  sizeof(unsigned short)
 };
 
 DX9Texture::DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inComponentType )
@@ -45,7 +46,21 @@ static D3DFORMAT getFormatForComponentCount( int inComponentCount, DX9Texture::C
       return D3DFMT_UNKNOWN;
     }
   }
-  else if( inType == DX9Texture::kComponentType_UByte )
+  else if( inType == DX9Texture::kComponentType_Half )
+  {
+    switch( inComponentCount )
+    {
+    case 1:
+      return D3DFMT_R16F;
+    case 2:
+      return D3DFMT_G16R16F;
+    case 4:
+      return D3DFMT_A16B16G16R16F;
+    default:
+      return D3DFMT_UNKNOWN;
+    }
+  }
+  else if( inType == DX9Texture::kComponentType_Fixed )
   {
     switch( inComponentCount )
     {
@@ -209,8 +224,8 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
     DX9AssertResult( result, "LockRect failed" );
 
     copyData( outData, domainWidth*inStride, inStride,
-      info.pBits, info.Pitch, internalComponents*componentSize,
-      domainWidth, domainHeight, components*componentSize );
+              info.pBits, info.Pitch, internalComponents*componentSize,
+              domainWidth, domainHeight, components,componentSize );
 
     result = shadowSurface->UnlockRect();
     DX9AssertResult( result, "UnlockRect failed" );
@@ -236,8 +251,8 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
     if( isWholeBuffer )
     {
       copyAllDataAT( outData, width*inStride, inStride,
-        info.pBits, info.Pitch, internalComponents*componentSize,
-        width, height, components*componentSize, inRank, inExtents  );
+                     info.pBits, info.Pitch, internalComponents*componentSize,
+                     width, height, components,componentSize, inRank, inExtents  );
     }
     else
     {
@@ -280,9 +295,9 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
 	  result = shadowSurface->LockRect( &info, &rectToLock, 0 );
 	  DX9AssertResult( result, "LockRect failed" );
 
-    copyData( info.pBits, info.Pitch, internalComponents*componentSize,
-      inData, domainWidth*inStride, inStride,
-      domainWidth, domainHeight, components*componentSize );
+          copyData( info.pBits, info.Pitch, internalComponents*componentSize,
+                    inData, domainWidth*inStride, inStride,
+                    domainWidth, domainHeight, components,componentSize );
 
 	  result = shadowSurface->UnlockRect();
 	  DX9AssertResult( result, "UnlockRect failed" );
@@ -316,8 +331,8 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
     if( isWholeBuffer )
     {
       copyAllDataAT( info.pBits, info.Pitch, internalComponents*componentSize,
-        inData, width*inStride, inStride,
-        width, height, components*componentSize, inRank, inExtents  );
+                     inData, width*inStride, inStride,
+                     width, height, components,componentSize, inRank, inExtents  );
     }
     else
     {
@@ -371,9 +386,9 @@ void DX9Texture::findRectForCopy( unsigned int inRank, const unsigned int* inDom
     outFullBuffer = true;
 }
 
-void DX9Texture::copyData( void* toBuffer, size_t toRowStride, size_t toElementStride,
-  const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
-  size_t columnCount, size_t rowCount, size_t elementSize )
+void DX9Texture::copyData( void* toBuffer, size_t toRowStride,  size_t toElementStride,
+                           const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
+                           size_t columnCount, size_t rowCount, size_t numElements,size_t elementSize )
 {
   char* outputLine = (char*)toBuffer;
   const char* inputLine = (const char*)fromBuffer;
@@ -389,8 +404,17 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride, size_t toElementS
       // TIM: for now we assume floating-point components
       char* output = outputPixel;
       const char* input = inputPixel;
-      for( size_t i = 0; i < elementSize; i++ )
-        *output++ = *input++;
+      if (elementSize!=1)
+        for( size_t i = 0; i < numElements*elementSize; i++ )
+          *output++ = *input++;
+      else {
+          if (fromElementStride!=toElementStride&&toElementStride==1)
+              input+=fromElementStride-1;//offset the input if writing to it
+          for( size_t i =((output+=toElementStride-1),0); i <(numElements>3?3:numElements); i++ )//offset the output, but remember the alpha channel is separate
+              *--output = *input++;// I've always wanted to do that
+        if(numElements>3)
+            output[3]=*input++;//now to copy alpha
+      }
 
       inputPixel += fromElementStride;
       outputPixel += toElementStride;
@@ -448,8 +472,8 @@ void DX9Texture::findRectForCopyAT( unsigned int inRank, const unsigned int* inD
 }
 
 void DX9Texture::copyAllDataAT( void* toBuffer, size_t toRowStride, size_t toElementStride,
-  const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
-  size_t columnCount, size_t rowCount, size_t elementSize, size_t inRank, const unsigned int* inExtents )
+                                const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
+                                size_t columnCount, size_t rowCount, size_t numElements,size_t elementSize, size_t inRank, const unsigned int* inExtents )
 {
   size_t elementCount = 1;
   for( size_t r = 0; r < inRank; r++ )
@@ -471,8 +495,17 @@ void DX9Texture::copyAllDataAT( void* toBuffer, size_t toRowStride, size_t toEle
       // TIM: for now we assume floating-point components
       char* output = outputPixel;
       const char* input = inputPixel;
-      for( size_t i = 0; i < elementSize; i++ )
-        *output++ = *input++;
+      if (elementSize!=1)
+        for( size_t i = 0; i < numElements*elementSize; i++ )
+          *output++ = *input++;
+      else {
+          if (fromElementStride!=toElementStride&&toElementStride==1)
+              input+=fromElementStride-1;//offset the input if writing to it
+          for( size_t i =((output+=toElementStride-1),0); i <(numElements>3?3:numElements); i++ )//offset the output, but remember the alpha channel is separate
+              *--output = *input++;// I've always wanted to do that
+        if(numElements>3)
+            output[3]=*input++;//now to copy alpha
+      }
 
       inputPixel += fromElementStride;
       outputPixel += toElementStride;

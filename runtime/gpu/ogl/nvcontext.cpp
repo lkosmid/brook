@@ -40,7 +40,12 @@
 #define GL_FLOAT_RG32_NV                  0x8887
 #define GL_FLOAT_RGB32_NV                 0x8889
 #define GL_FLOAT_RGBA32_NV                0x888B
+#define GL_FLOAT_R16_NV                   0x8884
+#define GL_FLOAT_RG16_NV                   0x8886
+#define GL_FLOAT_RGB16_NV                   0x8888
+#define GL_FLOAT_RGBA16_NV                   0x888A
 #define GL_TEXTURE_FLOAT_COMPONENTS_NV    0x888C
+//#define GL_LUMINANCE_ALPHA                  0x190A
 #endif
 
 #include "nvcontext.hpp"
@@ -48,19 +53,19 @@
 using namespace brook;
 
 static const unsigned int 
-nvtypes[4] =   {GL_FLOAT_R32_NV,
-                GL_FLOAT_RGBA32_NV,
-                GL_FLOAT_RGBA32_NV,
-                GL_FLOAT_RGBA32_NV};
+nvtypes[4][3] =   {{GL_FLOAT_R32_NV,GL_FLOAT_R16_NV,GL_INTENSITY},
+                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RG16_NV,GL_LUMINANCE_ALPHA},
+                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RGB16_NV,GL_RGB},
+                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RGBA16_NV,GL_RGBA}};
 
 static const unsigned int 
-nvformats[4] =  { GL_RED,
-                  GL_RGBA,
-                  GL_RGBA,
-                  GL_RGBA };
+nvformats[4][3] =  { {GL_RED,GL_RED,GL_INTENSITY},
+                  {GL_RGBA,GL_LUMINANCE_ALPHA,GL_LUMINANCE_ALPHA},
+                  {GL_RGBA,GL_RGB,GL_RGB},
+                  {GL_RGBA,GL_RGBA,GL_RGBA} };
 
 static const unsigned int 
-sizefactor[4] = { 1, 4, 4, 4 };
+sizefactor[4][3] = { {1,1,1}, {4,2,2}, {4,3,3}, {4,4,4} };
 
 
 NVTexture::NVTexture ( size_t inWidth, 
@@ -69,7 +74,7 @@ NVTexture::NVTexture ( size_t inWidth,
   OGLTexture(inWidth, inHeight, inFormat, 
              nvformats, nvtypes, sizefactor)
 {
-  _nativeFormat = nvformats[components()]; 
+   _nativeFormat = nvformats[components()][elementType()]; 
 }
 
 

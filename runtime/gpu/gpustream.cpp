@@ -171,12 +171,44 @@ namespace brook
           fieldComponentCount=4;
           fieldTextureFormat = GPUContext::kTextureFormat_Float4;
           break;
+        case __BRTFIXED:
+          fieldComponentCount=1;
+          fieldTextureFormat = GPUContext::kTextureFormat_Fixed1;
+          break;
+        case __BRTFIXED2:
+          fieldComponentCount=2;
+          fieldTextureFormat = GPUContext::kTextureFormat_Fixed2;
+          break;
+        case __BRTFIXED3:
+          fieldComponentCount=3;
+          fieldTextureFormat = GPUContext::kTextureFormat_Fixed3;
+          break;
+        case __BRTFIXED4:
+          fieldComponentCount=4;
+          fieldTextureFormat = GPUContext::kTextureFormat_Fixed4;
+          break;
+        case __BRTHALF:
+          fieldComponentCount=1;
+          fieldTextureFormat = GPUContext::kTextureFormat_Half1;
+          break;
+        case __BRTHALF2:
+          fieldComponentCount=2;
+          fieldTextureFormat = GPUContext::kTextureFormat_Half2;
+          break;
+        case __BRTHALF3:
+          fieldComponentCount=3;
+          fieldTextureFormat = GPUContext::kTextureFormat_Half3;
+          break;
+        case __BRTHALF4:
+          fieldComponentCount=4;
+          fieldTextureFormat = GPUContext::kTextureFormat_Half4;
+          break;
         default:
           GPUWARN << "Invalid element type for stream.\n"
                   << "Only float, float2, float3 and float4 elements are supported." << std::endl;
           return false;
         }
-        _elementSize += fieldComponentCount * sizeof(float);
+        _elementSize += ::brook::getElementSize(fieldType);
         
         TextureHandle fieldTexture = _context->createTexture2D(_textureWidth, 
                                                                _textureHeight, 
@@ -227,7 +259,7 @@ namespace brook
     {
       _context->setTextureData( _fields[f].texture, (const float*)data, stride, domainSize,
         _rank, inDomainMin, inDomainMax, getExtents(), _requiresAddressTranslation );
-      data += _fields[f].componentCount * sizeof(float);
+      data += ::brook::getElementSize(getIndexedFieldType(f));
     }
   }
 
@@ -245,7 +277,7 @@ namespace brook
     {
       _context->getTextureData( _fields[f].texture, (float*)data, stride, domainSize,
         _rank, inDomainMin, inDomainMax, getExtents(), _requiresAddressTranslation );
-      data += _fields[f].componentCount * sizeof(float);
+      data += ::brook::getElementSize(getIndexedFieldType(f));
     }
   }
 

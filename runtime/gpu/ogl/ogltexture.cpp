@@ -11,31 +11,59 @@ using namespace brook;
 OGLTexture::OGLTexture (unsigned int width,
                         unsigned int height,
                         GPUContext::TextureFormat format,
-                        const unsigned int glFormat[4],
-                        const unsigned int glType[4],
-                        const unsigned int sizeFactor[4]):
+                        const unsigned int glFormat[4][OGL_NUMFORMATS],
+                        const unsigned int glType[4][OGL_NUMFORMATS],
+                        const unsigned int sizeFactor[4][OGL_NUMFORMATS]):
    _width(width), _height(height), _format(format) {
-
+   _elementType=OGL_FLOAT;
    switch (_format) {
    case GPUContext::kTextureFormat_Float1:
+   case GPUContext::kTextureFormat_Float2:
+   case GPUContext::kTextureFormat_Float3:
+   case GPUContext::kTextureFormat_Float4:
+       _elementType=OGL_FLOAT;
+       break;
+   case GPUContext::kTextureFormat_Fixed1:
+   case GPUContext::kTextureFormat_Fixed2:
+   case GPUContext::kTextureFormat_Fixed3:
+   case GPUContext::kTextureFormat_Fixed4:
+       _elementType=OGL_FIXED;
+       break;
+   case GPUContext::kTextureFormat_Half1:
+   case GPUContext::kTextureFormat_Half2:
+   case GPUContext::kTextureFormat_Half3:
+   case GPUContext::kTextureFormat_Half4:
+       _elementType=OGL_HALF;
+       break;
+   }
+   switch (_format) {
+   case GPUContext::kTextureFormat_Float1:
+   case GPUContext::kTextureFormat_Fixed1:
+   case GPUContext::kTextureFormat_Half1:
       _components = 1;
       break;
    case GPUContext::kTextureFormat_Float2:
+   case GPUContext::kTextureFormat_Fixed2:
+   case GPUContext::kTextureFormat_Half2:
       _components = 2;
       break;
    case GPUContext::kTextureFormat_Float3:
+   case GPUContext::kTextureFormat_Half3:
+   case GPUContext::kTextureFormat_Fixed3:
       _components = 3;
       break;
    case GPUContext::kTextureFormat_Float4:
+   case GPUContext::kTextureFormat_Half4:
+   case GPUContext::kTextureFormat_Fixed4:
       _components = 4;
       break;
    default: 
       GPUError("Unkown Texture Format");
    }
-
-   _bytesize = _width*_height*sizeFactor[_components-1]*sizeof(float);
-   _elemsize = sizeFactor[_components-1];
-   _nativeFormat = glFormat[_components-1];
+   
+   _bytesize = _width*_height*sizeFactor[_components-1][_elementType]*sizeof(float);
+   _elemsize = sizeFactor[_components-1][_elementType];
+   _nativeFormat = glFormat[_components-1][_elementType];
 
    glGenTextures(1, &_id);
    glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -44,10 +72,10 @@ OGLTexture::OGLTexture (unsigned int width,
  
    // Create a texture with NULL data
    glTexImage2D (GL_TEXTURE_RECTANGLE_NV, 0, 
-                 glType[_components-1],
+                 glType[_components-1][_elementType],
                  width, height, 0,
-                 glFormat[_components-1],
-                 GL_FLOAT, NULL);
+                 glFormat[_components-1][_elementType],
+                 _elementType==OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, NULL);
    CHECK_GL();
    
    glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_S, GL_CLAMP);

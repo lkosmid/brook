@@ -10,6 +10,12 @@ namespace brook {
   /* Virtual class for textures */
   class OGLTexture 
   {
+      enum OGLElementFormats{
+          OGL_FLOAT,
+          OGL_HALF,
+          OGL_FIXED,
+          OGL_NUMFORMATS
+      };
   public:
     
     OGLTexture ( unsigned int inWidth, 
@@ -22,9 +28,9 @@ namespace brook {
     OGLTexture ( unsigned int width,
                  unsigned int height,
                  GPUContext::TextureFormat format,
-                 const unsigned int glFormat[4],
-                 const unsigned int glType[4],
-                 const unsigned int sizeFactor[4]);
+                 const unsigned int glFormat[4][OGL_NUMFORMATS],
+                 const unsigned int glType[4][OGL_NUMFORMATS],
+                 const unsigned int sizeFactor[4][OGL_NUMFORMATS]);
 
     virtual ~OGLTexture ();
 
@@ -74,6 +80,7 @@ namespace brook {
     unsigned int height()                const { return _height;   }
     unsigned int bytesize()              const { return _bytesize; }
     unsigned int components()            const { return _components; }
+    unsigned int elementType()            const { return _elementType; }
     GPUContext::TextureFormat format()   const { return _format;   }
     unsigned int id()                    const { return _id;       }
 
@@ -103,6 +110,7 @@ namespace brook {
   private:
     unsigned int _width, _height, _bytesize;
     unsigned int _components;
+    OGLElementFormats _elementType;
     unsigned int _elemsize;
     GPUContext::TextureFormat _format;
     unsigned int _id;

@@ -23,10 +23,14 @@ namespace brook {
       kTextureFormat_Float2,
       kTextureFormat_Float3,
       kTextureFormat_Float4,
-      kTextureFormat_UByte1,
-      kTextureFormat_UByte2,
-      kTextureFormat_UByte3,
-      kTextureFormat_UByte4
+      kTextureFormat_Fixed1,
+      kTextureFormat_Fixed2,
+      kTextureFormat_Fixed3,
+      kTextureFormat_Fixed4,
+      kTextureFormat_Half1,
+      kTextureFormat_Half2,
+      kTextureFormat_Half3,
+      kTextureFormat_Half4
     };
 
     virtual int

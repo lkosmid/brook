@@ -12,7 +12,8 @@ namespace brook
         enum ComponentType
         {
           kComponentType_Float = 0,
-          kComponentType_UByte = 1
+          kComponentType_Fixed = 1,
+          kComponentType_Half = 2
         };
 
         static DX9Texture* create(
@@ -64,14 +65,14 @@ namespace brook
         void findRectForCopy( unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
           const unsigned int* inExtents, bool inUsesAddressTranslation, RECT& outRect, bool& outFullBuffer );
         void copyData( void* toBuffer, size_t toRowStride, size_t toElementStride,
-          const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
-          size_t columnCount, size_t rowCount, size_t elementSize );
+                       const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
+                       size_t columnCount, size_t rowCount, size_t elementCount, size_t elementSize );
         void findRectForCopyAT( unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
           const unsigned int* inExtents, bool inUsesAddressTranslation, RECT& outRect, bool& outFullBuffer,
           size_t inWidth, size_t inHeight, size_t& outBaseX, size_t& outBaseY );
         void copyAllDataAT( void* toBuffer, size_t toRowStride, size_t toElementStride,
-          const void* fromBuffer, size_t fromRowStride, size_t fromElementStride,
-          size_t columnCount, size_t rowCount, size_t elementSize, size_t inRank, const unsigned int* inExtents );
+                            const void* fromBuffer, size_t fromRowStride,size_t fromElementStride,
+                            size_t columnCount, size_t rowCount, size_t elementCount, size_t elementSize, size_t inRank, const unsigned int* inExtents );
 
         void getDataAT( void* streamData, unsigned int streamRank,
           const unsigned int* streamDomainMin, const unsigned int* streamDomainMax,

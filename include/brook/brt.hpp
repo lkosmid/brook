@@ -19,7 +19,7 @@ typedef struct fixed {
   fixed& operator = (const __BrtFloat1&input){
     return (*this=fixed(input.unsafeGetAt(0)));
   }
-  unsigned char x,pad1,pad2,pad3;
+      unsigned char x;//unsigned char pad1,pad2,pad3;
 } fixed;
 
 typedef struct fixed2 {
@@ -112,6 +112,15 @@ enum __BRTStreamType {
    __BRTFLOAT2=2,
    __BRTFLOAT3=3,
    __BRTFLOAT4=4,
+    __BRTFIXED=5,
+    __BRTFIXED2=6,
+    __BRTFIXED3=7,
+    __BRTFIXED4=8,
+    __BRTHALF=9,
+    __BRTHALF2=10,
+    __BRTHALF3=11,
+    __BRTHALF4=12,
+
 };
 float getSentinel();
 
@@ -140,8 +149,13 @@ namespace brook {
     __BRTFIXED2=6,
     __BRTFIXED3=7,
     __BRTFIXED4=8,
-  };
+    __BRTHALF=9,
+    __BRTHALF2=10,
+    __BRTHALF3=11,
+    __BRTHALF4=12,
 
+  };
+  unsigned int getElementSize(StreamType);
   template<typename T>
   const ::brook::StreamType* getStreamType(T* unused=0);
 
