@@ -507,7 +507,8 @@ void NV30GLKernel::Map() {
      glActiveTextureARB(GL_TEXTURE0_ARB);
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, outstream[j]->id);
      glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0, w, h);
-     glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
+     if (sreg0)
+       glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
    
      CHECK_GL();
    }
