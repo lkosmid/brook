@@ -396,7 +396,7 @@ static bool expandOutputArgumentStructureDecl(std::ostream& shader,
             {
               used = true;
               // it had better be just a floatN
-              shader << "#ifdef FXC\n\t\t";
+              shader << "#ifdef DXPIXELSHADER\n\t\t";
               shader << "out float4 __output_" << outr;
               shader << " : COLOR" << (outr - inFirstOutput);
               shader << ",\n\t\t";
@@ -470,7 +470,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       if( outr < inFirstOutput ) return false;
       if( outr >= inFirstOutput+inOutputCount ) return false;
  
-      shader << "#ifdef FXC\n";
+      shader << "#ifdef DXPIXELSHADER\n";
 
       shader << "\t\tout float4 __output_" << outr;
       shader << " : COLOR" << (outr - inFirstOutput);
@@ -523,7 +523,7 @@ static void expandSimpleOutputArgumentWrite(
   BaseType* base = form->getBase();
   assert( base );
   
-  shader << "\t#ifdef FXC\n";
+  shader << "\t#ifdef DXPIXELSHADER\n";
 
   shader << "\t__output_" << outr << " = ";
   switch(base->typemask) {
@@ -808,19 +808,19 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
 static void
 generate_shader_support(std::ostream& shader)
 {
-  shader << "#ifdef FXC\n";
+  shader << "#if defined(DXPIXELSHADER) || !defined(USERECT)\n";
   shader << "#define _stype   sampler2D\n";
   shader << "#define _sfetch  tex2D\n";
   shader << "#define __sample1(s,i) tex2D((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) tex2D((s),(i))\n";
-  shader << "#define __FRAGMENTKILL discard\n";
   shader << "#else\n";
   shader << "#define _stype  samplerRECT\n";
   shader << "#define _sfetch  texRECT\n";
   shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) texRECT((s),(i))\n";
-  shader << "#define __FRAGMENTKILL discard\n";
   shader << "#endif\n\n";
+
+  shader << "#define __FRAGMENTKILL discard\n";
 
   shader << "#ifdef USERECT\n";
   shader << "#define SKIPSCALEBIAS\n";

@@ -58,20 +58,24 @@ compile_cgc (const char * /*name*/,
   char arbfp_x800[] = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=512";
   char arbfp_6800[] = "NumInstructionSlots=2048";
   char userect[] ="-DUSERECT=1";
+  char dxpixelshader[] = "-DDXPIXELSHADER";
 
   switch (target) {
   case CODEGEN_PS20:
      argv[4] = ps20;
+     argv[5] = dxpixelshader;
      break;
   case CODEGEN_PS2B:
      argv[4] = ps2b;
      argv[5] = profileopts;
      argv[6] = ps2b_opt;
+     argv[7] = dxpixelshader;
      break;
   case CODEGEN_PS2A:
      argv[4] = ps2a;
      argv[5] = profileopts;
      argv[6] = ps2a_opt;
+     argv[7] = dxpixelshader;
      break;
   case CODEGEN_FP30:
      argv[4] = fp30;

@@ -82,7 +82,7 @@ compile_fxc (const char *name,
   char DUSERECT [] ="/DUSERECT=1";
   char *argv[] = { "fxc", targetstring,
                    inValidate ? nothin : validate, "/nologo", 0, 0, 
-                   "/DFXC=1", targetUsesRect ? DUSERECT : 0, NULL };
+                   "/DDXPIXELSHADER=1", targetUsesRect ? DUSERECT : 0, NULL };
   char *fpcode,  *errcode;
 
   std::string inputfname  = std::string(name) + ".cg";
