@@ -208,8 +208,8 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    }
    out << "  }"<<std::endl;
    for (iter = beginvout;iter!=endvout;++iter) {
-      std::string type = undecoratedBase(decl);
       Decl * decl = ft->args[*iter];
+      std::string type = undecoratedBase(decl);
       out<< "  __BRTStream "<<getDeclStream(decl,"_temp")<<"(";
       out<< decl->name->name<< "->getStreamType(),1,1,-1);"<<std::endl;
       out<< "  combineStreams";
