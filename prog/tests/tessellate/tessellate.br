@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "timing.h"
-#include "streamholder.h"
 
 kernel void curve (float2 inp<>, out float height<>) {
   float2 input={512.0,512.0};
@@ -142,7 +141,7 @@ int main (int argc, char ** argv) {
     stop = GetTimeMillis();
 
     Draw(finaldata,size,data,SIZE+1);
-    writePng("polys.png",data,SIZE+1,SIZE+1);
+    writePng("polys.ppm",data,SIZE+1,SIZE+1);
     free (data);   
   }
   if (isdebug)
