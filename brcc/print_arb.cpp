@@ -101,12 +101,14 @@ std::ostream &NrmOp::print_arbfp(std::ostream &s)const {
   src0.print_arbfp(s);
   s<<arbendl;
   OP.opcode="RSQ";
+  OP.print_arbfp(s);
   dstalias.print_arbfp(s);
   s<<arbdelim;
   dstalias.print_arbfp(s);
   s<<arbendl;
   OpCode FinalScale(op);
   FinalScale.opcode="MUL";//with saturation/precision issues
+  FinalScale.print_arbfp(s);
   dst.print_arbfp(s);
   s<<arbdelim;
   //dstalias.swizzle+=dstalias.swizzle;
