@@ -2,6 +2,10 @@
 #define BROOK_HPP
 
 #include <stdlib.h>
+#if defined(__GNUC__) &&  __GNUC__==2 && __GNUC_MINOR__<=97
+#define __SGI_STL_INTERNAL_RELOPS
+// some predefined operator< bugs in stl_relops.h (included by vector) -- they should be inside a namespace, but namespaces don't work well in gcc 2.95.
+#endif
 #include <vector>
 #include "brt.hpp"
 #include "brtvector.hpp"

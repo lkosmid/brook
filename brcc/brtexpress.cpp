@@ -3,6 +3,7 @@
  *  the actual code to convert gathers streams and indexof exprs
  */ 
 #include "brtexpress.h"
+#include <stdio.h>
 
 BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr) 
    : Expression (ET_BrtGatherExpr, expr->location)

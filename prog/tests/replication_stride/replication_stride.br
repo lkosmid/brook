@@ -1,3 +1,4 @@
+#include <stdio.h>
 // replication_stride.br
 // Tests automatic replication and stride of kernel arguments
 
