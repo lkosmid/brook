@@ -65,24 +65,38 @@ BRTKernelDef::BRTKernelDef(const FunctionDef& fDef)
 void
 BRTKernelDef::print(std::ostream& out, int) const
 {
+   char name[1024];
+
    if (Project::gDebug) {
       out << "/* BRTKernelDef:" ;
       location.printLocation(out) ;
       out << " */" << std::endl;
    }
 
-#define PRINT_CODE(a,b) \
-   if (globals.target & TARGET_##a) {                           \
-      BRTKernelCode *var;                                       \
-      var = decl->isReduce() ? new BRT##a##ReduceCode(*this) :  \
-                               new BRT##a##KernelCode(*this);   \
-      out << *var << std::endl;                                 \
-      delete var;                                               \
-   } else {                                                     \
-      out << "static const char *__"                            \
-          << *FunctionName() << "_" << #b << "= NULL;\n";       \
-   }
+   assert(FunctionName());
+   assert(FunctionName()->entry);
+   assert(FunctionName()->entry->scope);
 
+   /* If the symbol for the generated assembly code already 
+   ** exists, don't generate the assembly.  This allows the user
+   ** to hand generate the code.
+   */
+   
+#define PRINT_CODE(a,b) \
+   sprintf (name, "__%s_%s", FunctionName()->name.c_str(), #b);      \
+   if (!FunctionName()->entry->scope->Lookup(name)) {                \
+      if (globals.target & TARGET_##a) {                             \
+         BRTKernelCode *var;                                         \
+            var = decl->isReduce() ? new BRT##a##ReduceCode(*this) : \
+                                  new BRT##a##KernelCode(*this);     \
+         out << *var << std::endl;                                   \
+         delete var;                                                 \
+      } else {                                                       \
+         out << "static const char *__"                              \
+             << *FunctionName() << "_" << #b << "= NULL;\n";         \
+      }                                                              \
+   }
+ 
    PRINT_CODE(PS20, ps20);
    PRINT_CODE(FP30, fp30);
    PRINT_CODE(CPU,  cpu);
