@@ -42,17 +42,18 @@ static const char* kPassthroughPixelShaderSource =
 "mov oC0, r0\n"
 ;
 
-DX9RunTime* DX9RunTime::create()
+DX9RunTime* DX9RunTime::create( bool inAddressTranslation )
 {
-  DX9RunTime* result = new DX9RunTime();
+  DX9RunTime* result = new DX9RunTime( inAddressTranslation );
   if( result->initialize() )
     return result;
   delete result;
   return NULL;
 }
 
-DX9RunTime::DX9RunTime()
-  : window(NULL),
+DX9RunTime::DX9RunTime( bool inAddressTranslation )
+  : addressTranslation(inAddressTranslation),
+  window(NULL),
   passthroughVertexShader(NULL),
   passthroughPixelShader(NULL),
   reductionBuffer(NULL),

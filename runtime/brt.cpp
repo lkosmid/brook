@@ -49,15 +49,20 @@ inline float isnan_flt (float x) {
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
+
+  RunTime* createRunTime( bool addressTranslation )
+  {
+    return RunTime::GetInstance( addressTranslation );
+  }
     
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-  RunTime* RunTime::GetInstance() {
-    static RunTime* sResult = CreateInstance();
+  RunTime* RunTime::GetInstance( bool addressTranslation ) {
+    static RunTime* sResult = CreateInstance( addressTranslation );
     return sResult;
   }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-  RunTime* RunTime::CreateInstance() {
+  RunTime* RunTime::CreateInstance( bool addressTranslation ) {
     char *env = getenv(RUNTIME_ENV_VAR);
 
     if (!env) {
@@ -94,7 +99,7 @@ namespace brook {
 #ifdef BUILD_DX9
     if (!strcmp(env, DX9_RUNTIME_STRING))
     {
-      RunTime* result = DX9RunTime::create();
+      RunTime* result = DX9RunTime::create( addressTranslation );
       if( result != NULL ) return result;
       fprintf(stderr, 
 	      "Unable to initialize DX9 runtime, falling back to CPU\n");

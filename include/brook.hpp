@@ -75,6 +75,21 @@ inline unsigned int getIndexOf(unsigned int i,
    return getIndexOf(ret,extent,dim,refextent);
 }
 
+                               namespace {
+  class AtStartup {
+    static AtStartup atStartup;
+    AtStartup() {
+#if defined(BROOK_ENABLE_ADDRESS_TRANSLATION)
+      ::brook::RunTime* runtime = ::brook::createRunTime( true );
+#else
+      ::brook::RunTime* runtime = ::brook::createRunTime( false );
+#endif
+    }
+  };
+  AtStartup AtStartup::atStartup;
+}
+
+
 #endif
 
 

@@ -205,6 +205,9 @@ namespace brook {
     stream( const stream& ); // no copy constructor
     ::brook::Stream* _stream;
   };
+
+  class RunTime;
+  RunTime* createRunTime( bool useAddressTranslation );
 }
 
 // TIM: legacy support?
@@ -276,5 +279,3 @@ inline static void streamSwap(::brook::stream &x, ::brook::stream &y) {
    x.swap(y);
 }
 #endif
-
-

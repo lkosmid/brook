@@ -634,6 +634,39 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
   shader << "float4 __gather_float4( _stype s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
   shader << "float4 __gather_float4( _stype s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
 
+  if( globals.enableGPUAddressTranslation )
+  {
+    shader << "\n\n";
+
+    shader << "float4 __calculateindexof( float4 outputpos_01, float4 shape ) {\n";
+    shader << "\treturn floor( outputpos_01*shape ); }\n";
+
+    shader << "float2 __calculatetexpos( float4 index, float4 linearizeConst, float2 reshapeConst, float hackConst ) {\n";
+    shader << "\tfloat linearIndex = dot( index, linearizeConst );\n";
+    shader << "#ifndef USERECT\n";
+    shader << "//HLSL codegen bug workaround\n";
+    shader << "\tlinearIndex *= hackConst;\n";
+    shader << "#endif\n";
+    shader << "\tfloat2 result;\n";
+    shader << "\tresult.x = frac( linearIndex );\n";
+    shader << "\tresult.y = linearIndex - result.x;\n";
+    shader << "\tresult *= reshapeConst;\n";
+    shader << "return result;\n}\n\n";
+
+    shader << "void __calculateoutputpos( float2 interpolant, float4 shape, float4 invshape,\n";
+    shader << "\tout float4 index, out float4 index01 ) {\n";
+    shader << "\tfloat linearIndex = interpolant.y + interpolant.x;\n";
+    shader << "\tindex01.x = frac( linearIndex );\n";
+    shader << "\tindex.y = linearIndex - index01.x;\n";
+    shader << "\tindex.x = index01.x * shape.x;\n";
+    shader << "\tindex01.y = index.y * invshape.y;\n";
+    shader << "\tindex01.z = 0;\n";
+    shader << "\tindex01.w = 0;\n";
+    shader << "\tindex.z = 0;\n";
+    shader << "\tindex.w = 0;\n";
+    shader << "}\n\n";
+  }
+
   shader << "\n\n";
 
   generate_shader_structure_definitions(shader);
@@ -655,15 +688,39 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
   samplerreg = 0;
   int outputReg = 0;
 
-  // Add the workspace variable
-  shader << "   uniform float4 _workspace    : register (c"
-       << constreg++ << ")";
+
+  if( !globals.enableGPUAddressTranslation )
+  {
+    // Add the workspace variable
+    shader << "\n\t\tuniform float4 __workspace    : register (c"
+        << constreg++ << ")";
+  }
+  else
+  {
+    shader << "\n\t\t";
+    shader << "float2 __outputtexcoord : TEXCOORD"
+      << texcoord++;
+    shader << ",\n\t\t";
+    shader << "float2 __outputaddrinterpolant : TEXCOORD"
+      << texcoord++;
+    shader << ",\n\t\t";
+    shader << "uniform float4 __outputshape : register(c"
+      << constreg++ << ")";
+    shader << ",\n\t\t";
+    shader << "uniform float4 __outputinvshape : register(c"
+      << constreg++ << ")";
+    shader << ",\n\t\t";
+    shader << "uniform float __hackconst : register(c"
+      << constreg++ << ")";
+
+  }
 
   /* Print the argument list */
 
   bool hasDoneIndexofOutput = false;
 
   for (i=0; i < nArgs; i++) {
+    std::string argName = args[i]->name->name;
     TypeQual qual = args[i]->form->getQualifiers();
     
     /* put the output in the argument list */
@@ -674,18 +731,33 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
     if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
 
       if ((qual & TQ_Iter) != 0) {
-        
-        // Just output a texcoord for an iterator
-        shader <<  ",\n\t\t";
-        args[i]->form->getBase()->qualifier &= ~TQ_Iter;
-        args[i]->form->printBase(shader, 0);
-        args[i]->form->getBase()->qualifier = qual;
-        
-        shader << *args[i]->name << " : TEXCOORD" << texcoord++; 
 
+        if( globals.enableGPUAddressTranslation )
+        {
+          shader << ",\n\t\t";
+          shader << "float2 __itershape_" << argName;
+          shader << ",\n\t\t";
+          shader << "float4 __itermin_" << argName;
+          shader << ",\n\t\t";
+          shader << "float4 __iterstep_" << argName;
+        }
+        else
+        {
+          // Just output a texcoord for an iterator
+          shader <<  ",\n\t\t";
+          args[i]->form->getBase()->qualifier &= ~TQ_Iter;
+          args[i]->form->printBase(shader, 0);
+          args[i]->form->getBase()->qualifier = qual;
+          
+          shader << *args[i]->name << " : TEXCOORD" << texcoord++; 
+        }
       } else if((qual & TQ_Out) != 0) {
 
-        if( !hasDoneIndexofOutput && FunctionProp[functionName].contains(i) ) {
+        if( globals.enableGPUAddressTranslation )
+        {
+          // index of output should already be available...
+        }
+        else if( !hasDoneIndexofOutput && FunctionProp[functionName].contains(i) ) {
           hasDoneIndexofOutput = true;
           shader <<  ",\n\t\t";
           shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
@@ -699,29 +771,59 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
 
     		exandStreamSamplerDecls( shader, (args[i]->name)->name, args[i]->form, samplerreg );
 
-        // Output a texcoord, and optional scale/bias
-        if( FunctionProp[functionName].contains(i) ) {
-          shader <<  ",\n\t\t";
-          shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
-                << " : register (c" << constreg++ << ")";
+        if( globals.enableGPUAddressTranslation )
+        {
+          shader << ",\n\t\t";
+          shader << "uniform float4 __streamshape_" << argName;
+          shader << " : register(c" << constreg++ << ")";
+          shader << ",\n\t\t";
+          shader << "uniform float4 __streamlinearize_" << argName;
+          shader << " : register(c" << constreg++ << ")";
+          shader << ",\n\t\t";
+          shader << "uniform float2 __streamreshape_" << argName;
+          shader << " : register(c" << constreg++ << ")";
         }
-        shader <<  ",\n\t\t";
-        shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
-            << texcoord++;
+        else
+        {
+          // Output a texcoord, and optional scale/bias
+          if( FunctionProp[functionName].contains(i) ) {
+            shader <<  ",\n\t\t";
+            shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
+                  << " : register (c" << constreg++ << ")";
+          }
+          shader <<  ",\n\t\t";
+          shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
+              << texcoord++;
+        }
       }
     } else if (args[i]->isArray()) {
 
       int samplerCount = getGatherStructureSamplerCount( args[i]->form );
       
-      // TIM: TODO: handle multi-sampler array for gathers...
-      shader <<  ",\n\t\t";
-      shader << "uniform _stype " << *args[i]->name;
-      shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
-      samplerreg += samplerCount;
-      shader <<  ",\n\t\t";
-      shader << "uniform float4 __gatherconst_" << *args[i]->name
-                << " : register (c" << constreg++ << ")";
-    
+      if( globals.enableGPUAddressTranslation )
+      {
+        shader <<  ",\n\t\t";
+        shader << "uniform _stype " << *args[i]->name;
+        shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
+        samplerreg += samplerCount;
+        shader << ",\n\t\t";
+        shader << "uniform float2 __gathershape_" << argName;
+        shader << " : register(c" << constreg++ << ")";
+        shader << ",\n\t\t";
+        shader << "uniform float2 __gatherstrides_" << argName;
+        shader << " : register(c" << constreg++ << ")";
+      }
+      else
+      {
+        // TIM: TODO: handle multi-sampler array for gathers...
+        shader <<  ",\n\t\t";
+        shader << "uniform _stype " << *args[i]->name;
+        shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
+        samplerreg += samplerCount;
+        shader <<  ",\n\t\t";
+        shader << "uniform float4 __gatherconst_" << *args[i]->name
+                  << " : register (c" << constreg++ << ")";
+      }
     } else {
       shader <<  ",\n\t\t";
       shader << "uniform ";
@@ -755,10 +857,21 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
      }
   }
 
+  if( globals.enableGPUAddressTranslation )
+  {
+    // set up output position values
+    shader << "\tfloat4 __indexofoutput_01;\n";
+    shader << "\tfloat4 __indexofoutput;\n";
+    shader << "\t__calculateoutputpos( __outputaddrinterpolant,\n";
+    shader << "\t\t__outputshape, __outputinvshape,\n";
+    shader << "\t\t__indexofoutput, __indexofoutput_01 );\n";
+  }
+
   /* Perform stream fetches */
   hasDoneIndexofOutput = false;
   for (i=0; i < nArgs; i++) {
      TypeQual qual = args[i]->form->getQualifiers();
+     std::string argName = args[i]->name->name;
 
      if ((qual & TQ_Iter) != 0) continue; /* No texture fetch for iterators */
 
@@ -766,7 +879,11 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
          (qual & TQ_Reduce) != 0) {
 
         if ((qual & TQ_Out) != 0 ) {
-          if( !hasDoneIndexofOutput && FunctionProp[functionName].contains(i) )
+          if( globals.enableGPUAddressTranslation )
+          {
+            // should be calculated elsewhere
+          }
+          else if( !hasDoneIndexofOutput && FunctionProp[functionName].contains(i) )
             {
               hasDoneIndexofOutput= true;
               shader << "\t" << "float4 __indexofoutput = "
@@ -778,8 +895,18 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
             }
         }
         else {
+          if( globals.enableGPUAddressTranslation )
+          {
+            shader << "\tfloat4 __indexof_" << argName << " = ";
+            shader << "__calculateindexof( __indexofoutput_01, __streamshape_" << argName;
+            shader << " );\n";
+            shader << "\tfloat2 _tex_" << argName << "_pos = ";
+            shader << "__calculatetexpos( __indexof_" << argName << ", ";
+            shader << "__streamlinearize_" << argName << ", ";
+            shader << "__streamreshape_" << argName << ", __hackconst );\n";
+          }
 	        expandStreamFetches( shader, args[i]->name->name, args[i]->form );
-          if( FunctionProp[functionName].contains(i) )
+          if( !globals.enableGPUAddressTranslation && FunctionProp[functionName].contains(i) )
             {
               shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "
                       << "_computeindexof( "

@@ -42,6 +42,7 @@
 #include "brtgather.h"
 #include "express.h"
 #include "stemnt.h"
+#include "main.h"
 
 #include "token.h"
 extern int err_cnt;
@@ -360,6 +361,10 @@ operator<<(std::ostream& out, const TransUnit& tu)
        << " " << __TIME__                                << std::endl
        << "////////////////////////////////////////////" << std::endl
        << std::endl;
+   if( globals.enableGPUAddressTranslation )
+   {
+     out << "#define BROOK_ENABLE_ADDRESS_TRANSLATION 1" << std::endl;
+   }
    out << "#include <brook.hpp>" << std::endl;
     for (stemnt=tu.head; stemnt; stemnt=stemnt->next)
 	{

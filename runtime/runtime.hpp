@@ -19,10 +19,10 @@ namespace brook {
                               float ranges[])=0;
     virtual ~RunTime() {}
 
-    static RunTime* GetInstance();
+    static RunTime* GetInstance( bool addressTranslation = false );
 
   private:
-    static RunTime* CreateInstance();
+    static RunTime* CreateInstance( bool addressTranslation );
   };
 }
 #endif

@@ -216,7 +216,7 @@ namespace brook {
 
   class DX9RunTime : public RunTime {
   public:
-    static DX9RunTime* create();
+    static DX9RunTime* create( bool inAddressTranslation );
 
     virtual Kernel* CreateKernel(const void*[]);
     virtual Stream* CreateStream(
@@ -240,12 +240,15 @@ namespace brook {
 
     void execute( const DX9FatRect& outputRect, int inputRectCount, const DX9FatRect* inputRects );
 
+    bool isAddressTranslationOn() { return addressTranslation; }
+
   private:
-    DX9RunTime();
+    DX9RunTime( bool addressTranslation );
     bool initialize();
 
     void initializeVertexBuffer();
 
+    bool addressTranslation;
     DX9Window* window;
     DX9VertexShader* passthroughVertexShader;
     DX9PixelShader* passthroughPixelShader;

@@ -20,6 +20,7 @@ struct globals_struct {
   int target;
   int workspace;
   bool allowDX9MultiOut;
+  bool enableGPUAddressTranslation;
 };
 
 extern struct globals_struct globals;
