@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = volfire
-FILES = volfire firetex
+FILES = main volfire firetex 
 LIBRARIES = $(RUNTIME_LIBS)
 
 include $(ROOTDIR)/common.mk
