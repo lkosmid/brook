@@ -4,23 +4,25 @@
 #include "volume_division.h"
 char use_vout_filter=1;
 char use_vout_amplify=1;
+
+/**This kernel tests if the data provided is above the cutoff of zero
+ * If it is, it returns the single bit passed into the index (ex 1,2,4,...,128)
+ */
 kernel float test(float vol<>,float index<>){
   return (vol>0)?index:0;
 }
-
-float __printf_cpu_inner (float a, float b, float c, float d) {
-  printf ("%f %f -> %f %f\n",a,b,c,d);
-  return 1;
-}
-kernel float eval1 (float3 loc<>) {
-   return (float) (loc.x==loc.y&&loc.y==loc.z&&loc.z==1);
-}
-kernel float eval(float3 loc<>) {
+/* This kernel is for a synthetic dataset consisting of one sphere centered at
+ * offset and radius equal to sqrt(density). 
+ * Not used for normal datasets.
+ */
+kernel float synthEval(float3 loc<>) {
   float  power;
   const float3 offset=1;
   float3 center =loc-offset;
   power = dot(center,center);
-  /*
+
+  //uncomment following to enable 8 spheres. Too many for nCidia or ATI
+  /* 
   {
   const float length=20;
   center.x +=length;
@@ -48,21 +50,61 @@ kernel float eval(float3 loc<>) {
     return density-power;
   }
 }
-kernel float evaluateNeighbors (float2 center<>,
+
+/** This kernel is for the synthetic sphere dataset and evaluates
+ *  The set of spheres for each of the neighbors and tests them > 0
+ *  for each neighbor.  The final values are added together to produce a lookup
+ *  index */
+kernel float synthEvaluateNeighbors (float2 center<>,
                                 float2 opposing<>,
                                 float2 slice) {
 
-   float a=test(eval(float3(center.x,center.y,slice.x)),1.0f) +
-      test(eval(float3(center.x,opposing.y,slice.x)),2.0f) +
-      test(eval(float3(opposing.x,opposing.y,slice.x)),4.0f) +
-      test(eval(float3(opposing.x,center.y,slice.x)),8.0f) +
-      test(eval(float3(center.x,center.y,slice.y)),16.0f) +
-      test(eval(float3(center.x,opposing.y,slice.y)),32.0f) +
-      test(eval(float3(opposing.x,opposing.y,slice.y)),64.0f) +
-      test(eval(float3(opposing.x,center.y,slice.y)),128.0f);
+   float a=test(synthEval(float3(center.x,center.y,slice.x)),1.0f) +
+      test(synthEval(float3(center.x,opposing.y,slice.x)),2.0f) +
+      test(synthEval(float3(opposing.x,opposing.y,slice.x)),4.0f) +
+      test(synthEval(float3(opposing.x,center.y,slice.x)),8.0f) +
+      test(synthEval(float3(center.x,center.y,slice.y)),16.0f) +
+      test(synthEval(float3(center.x,opposing.y,slice.y)),32.0f) +
+      test(synthEval(float3(opposing.x,opposing.y,slice.y)),64.0f) +
+      test(synthEval(float3(opposing.x,center.y,slice.y)),128.0f);
    return a>0.5f&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)?a:0;
     
 }
+/** This kernel is for the synthetic sphere dataset and evaluates
+ *  the neighbor values, and gets the lookup index for the triangle dataset
+ *  Only pushes a result if the index is not 0 (empty case)
+ **/
+kernel void processSyntheticSlice(vout[1] float4 vertex<>,
+                                iter float2 center<>,
+                                iter float2 opposing<>,
+                                float2 slice/*first value is cur then next*/) {
+  float pattern;
+  if((pattern=synthEvaluateNeighbors(center,opposing,slice))) {
+    vertex=float4(center.x,center.y,slice.x,pattern);
+    push(vertex);
+  }
+}
+/** This kernel is for the synthetic sphere dataset and evaluates
+ *  the neighbor values, and gets the lookup index for the triangle dataset
+ *  It pushes a negative index in the event that all or none of the neighbors
+ *  are dense enough */
+kernel void processSyntheticSliceNoCompact(out float4 vertex<>,
+                                           iter float2 center<>,
+                                           iter float2 opposing<>,
+                                           float2 slice
+                                           /*first value is cur then next*/) {
+  float pattern;
+  if((pattern=synthEvaluateNeighbors(center,opposing,slice))) {
+    vertex=float4(center.x,center.y,slice.x,pattern);
+  }else {
+    vertex=float4(-1.0,-1.0f,-1.0f,-1.0f);
+  }
+}
+
+/** This kernel is for the experimental dataset and evaluates
+ *  the neighbor values, and gets the lookup index for the triangle dataset
+ *  Only pushes a result if the index is not 0 or 255 (empty cases)
+ **/
 kernel void processSlice (float curgather[][],
                           float nextslice[][],
                           vout [1]float4 vertex<>,
@@ -85,6 +127,11 @@ kernel void processSlice (float curgather[][],
     push(vertex);
   }
 }
+
+/** This kernel is for the synthetic sphere dataset and evaluates
+ *  the neighbor values, and gets the lookup index for the triangle dataset
+ *  It pushes a negative index in the event that all or none of the neighbors
+ *  are dense enough */
 kernel void processSliceNoCompact (float curgather[][],
                                    float nextslice[][],
                                    out float4 vertex<>,
@@ -110,28 +157,15 @@ kernel void processSliceNoCompact (float curgather[][],
   
 }
                            
-kernel void processVirtualSlice(vout[1] float4 vertex<>,
-                                iter float2 center<>,
-                                iter float2 opposing<>,
-                                float2 slice/*first value is cur then next*/) {
-  float pattern;
-  if((pattern=evaluateNeighbors(center,opposing,slice))) {
-    vertex=float4(center.x,center.y,slice.x,pattern);
-    push(vertex);
-  }
-}
-kernel void processVirtualSliceNoCompact(out float4 vertex<>,
-                                         iter float2 center<>,
-                                         iter float2 opposing<>,
-                                         float2 slice/*first value is cur then next*/) {
-  float pattern;
-  if((pattern=evaluateNeighbors(center,opposing,slice))) {
-    vertex=float4(center.x,center.y,slice.x,pattern);
-  }else {
-    vertex=float4(-1.0,-1.0f,-1.0f,-1.0f);
-  }
-}
-
+/** This kernel outputs exactly 5 triangles for each input
+ *  lookup value. It assumes the sentinel is immutable with respect to 
+ *  addition (i.e. inf behaves this way)
+ *  Given that up to five triangles are produced for each volumetric datapoint
+ *  exactly five triangles are outputted reguardless.
+ *  The vertex is determined based on the index mod 3... the output triangles
+ *  are stretched to 3x the input so that each of the 3 requisite vertices
+ *  are produced per output.
+ */
 kernel void processTrianglesNoCompact(out float3 trianglesA<>, 
                                       out float3 trianglesB<>, 
                                       out float3 trianglesC<>,
@@ -139,11 +173,12 @@ kernel void processTrianglesNoCompact(out float3 trianglesA<>,
                                       out float3 trianglesE<>, 
                                       float4 vertices1<>,
                                       float3 volumeTriangles[][]) {
-   float4 whichVolumeTriangle={fmod((indexof trianglesA).x,3),vertices1.w,0,0};
-   float3 vertices=vertices1.xyz;
-   if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
-      whichVolumeTriangle.y=0;
-  //whichVolumeTriangle.x*=(float)(whichVolumeTriangle.x+.5<3);
+  float4 whichVolumeTriangle={fmod((indexof trianglesA).x,3),vertices1.w,0,0};
+  float3 vertices=vertices1.xyz;
+  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
+
+    whichVolumeTriangle.y=0;
+
   if (whichVolumeTriangle.x+.5>3) whichVolumeTriangle.x=0;
   trianglesA=vertices.xyz+volumeTriangles[whichVolumeTriangle];
   whichVolumeTriangle.x+=3;
@@ -156,6 +191,13 @@ kernel void processTrianglesNoCompact(out float3 trianglesA<>,
   trianglesE=vertices.xyz+volumeTriangles[whichVolumeTriangle];  
 }
 
+/** This kernel outputs exactly 5 triangles for each input
+ *  lookup value. It assumes the sentinel is not between -.75 and .75
+ *  Given that up to five triangles are produced for each volumetric datapoint
+ *  The output stream is stretched to 4x the input stream size, and either 0 or
+ *  3 vertices are produced for the given volumeTriangle lookup.
+ */
+
 kernel void processTriangles(vout[3] float3 triangles<>, 
                              float4 vertices<>,
                              float3 volumeTriangles[][],
@@ -163,11 +205,10 @@ kernel void processTriangles(vout[3] float3 triangles<>,
 
   float4 whichVolumeTriangle={fmod(streamsize.x,4.0f)*3.0f+3.0f,vertices.w,0,0};
   float3 firstTrianglePos;
-   if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
-      whichVolumeTriangle.y=0;
   if (whichVolumeTriangle.x+.5>15.0f) whichVolumeTriangle.x=3.0f;
-
-  firstTrianglePos = volumeTriangles[whichVolumeTriangle];
+  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
+    whichVolumeTriangle.y=0;
+  firstTrianglePos=volumeTriangles[whichVolumeTriangle];
   if (abs(firstTrianglePos.x-.5)<.75) {
      triangles=vertices.xyz+firstTrianglePos;
      push(triangles);
@@ -179,49 +220,59 @@ kernel void processTriangles(vout[3] float3 triangles<>,
      push(triangles);
    }  
 }
+/**
+ * Since every one of the outputted volumeTriangle lookup indices has at least 
+ * one triangle, the first triangle is a guaranteed hit and need not be 
+ * conditionally produced. 
+ * Hence the triangle is looked up, and produced. The respective vertex is
+ * computed depending on the fmod with 3
+ */
 kernel void processFirstTriangles(out float3 triangles<>, 
                                   float4 vertices<>,
                                   float3 volumeTriangles[][]) {
 
-  float4 whichVolumeTriangle={round(fmod((indexof triangles).x,3.0f)),vertices.w,0,0};
-  if (whichVolumeTriangle.x+.5>3.0f) whichVolumeTriangle.x=0.0f;
-   if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
-      whichVolumeTriangle.y=0;
-  triangles = vertices.xyz;
-  if (vertices.w>0 && vertices.w<256) {
-    triangles+= volumeTriangles[whichVolumeTriangle];
-  }
+  float4 whichVolumeTriangle={fmod((indexof triangles).x,3.0f),vertices.w,0,0};
+   if (whichVolumeTriangle.x+.5>3.0f) whichVolumeTriangle.x=0.0f;
+  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
+    whichVolumeTriangle.y=0;
+   triangles=vertices.xyz;
+   triangles+=volumeTriangles[whichVolumeTriangle];
 }
 
-unsigned int reverseBits(unsigned int x, unsigned int base) {
-   unsigned int i,ret=0;
-   unsigned int j=base-1;
-   for (i=0;i<base;++i,--j) {
-      if (x&(1<<i))         
-         ret|=(1<<j);
-   }
-   return ret;
-}
-typedef float3 Triangle[15];
+typedef float3 Triangle[5][3];
+/**
+ * The following function generates the triangle lookup table from the raw
+ * edge list data stored in volume_division.h
+ * First it fills everything with the sentinel.
+ * Then it goes through up to 15 items, filling the triangle table until a 
+ * -1 in the edge list is encountered at which point it stops adding to the tex
+ */
 char volumeTriangles(Triangle tri[256]) {
-   unsigned int i,j,k;
+  unsigned int i,j,k,m;
 
    for (i=0;i<256;++i) {
-      for (j=0;j<15;++j) {
-        tri[i][j]=/*float3((float)i,(float)i,(float)i);*/float3(-1024.0f,-1024.0f,-1024.0f);//1.0f/(float)floor(.5),1.0f/(float)floor(.5),1.0f/(float)floor(.5));
+      for (m=0;m<15;++m) {
+        // fill with sentinel
+         tri[i][(m/3)%5][m%3]=float3(1.0f/(float)floor(.5),
+                                     1.0f/(float)floor(.5),
+                                     1.0f/(float)floor(.5));
       }
       j=0;
-      while(j<15) {
-         if (m_triTable[i][j]==-1){
-            m_triNum[i]=(float)(j/3);
-            break;           
+      for (j=0;;j+=3) {
+         if (m_triTable[i][j]==-1){// our edge list is -1, stop!
+           m_triNum[i]=(float)(j/3);//set the count of triangles to j
+           break; // it's too dangerous we have to slow down first!
          }
          for (k=0;k<3;++k) {
-            float3 * p=&tri[i][j+k];
-            p->x=m_triTable[i][j+k];
-            p->y=m_triTable[i][j+k];
-            p->z=m_triTable[i][j+k];
+           // single out the point that will be set on this pass
+            float3 * p=&tri[i][j/3][k];
+            p->x=m_triTable[i][j+k];// for debugging only, overwritten
+            p->y=m_triTable[i][j+k];// for debugging only
+            p->z=m_triTable[i][j+k];// for debugging only
             switch ((int)m_triTable[i][j+k]) {
+              // set the appropriate coordinates in a 1x1x1 cube
+              // given the lookup value assuming the data is exactly
+              // in the middle--i.e. no adaptive
             case 0:
                p->x=p->z=0;p->y=0.5f;
                break;
@@ -260,25 +311,47 @@ char volumeTriangles(Triangle tri[256]) {
                break;
             }
          }
-         j+=3;
       }
    }
-  //fill in with brilliant triangle computations
   return 0;
 }
+
+/**compute the volume triangles only once and cache it.
+ */
 Triangle* getVolumeTriangles () {
   static Triangle tri[256];
   static char eval =volumeTriangles(tri);
   return tri;
 }
 
+/** Because brook doesn't allow casts in initializers
+ */
 float tof (int a) {
   return (float)a;
 }
+
+/** Because brook doesn't allow casts in initializers
+ */
 int toi (float a) {
   return (int)a;
 }
- int main (int argc, char ** argv) {
+
+/** int main (int argc, char ** argv)
+ *  usage
+ *  ./volume_division [-nofilter] [-noamplify] <width>
+ *     runs the isosurface on a sphere generated into texture coordinates
+ *  ./volume_division [-nofilter] [-noamplify] <filename.ppm>
+ *     runs the isosurface on a modified ppm 3d... may not be 100% valid
+ *  ./volume_division [-nofilter] [-noamplify] <width_height> <depth>
+ *     runs the isosurface on a 3d synthetic dataset that avoids texture reads
+ *  The -nofilter option generates exactly 1 lookup index per voxel
+ *   without said option a lookup is only generated when the voxel will have
+ *   at least 1 triangle in it
+ *  The -noamplify option generates exactly 5 triangles per lookup index given
+ *   without said option the number of triangles outputted is the minumim for 
+ *   the given voxel
+ */
+int main (int argc, char ** argv) {
    int i;
    float3 volumeTriangles<256,15>;
    struct ppm dat;
@@ -289,16 +362,16 @@ int toi (float a) {
      int j;
      if (strcmp(argv[i],"-nofilter")==0) {
        match=1;
-       use_vout_filter=0;
+       use_vout_filter=0;//turn off filtering
      }else if (strcmp(argv[i],"-noamplify")==0) {
        match=1;
-       use_vout_amplify=0;
+       use_vout_amplify=0;//turn off amplification
      }else if (strcmp(argv[i],"-filter")==0) {
        match=1;
-       use_vout_filter=1;
+       use_vout_filter=1;//deprecated
      }else if (strcmp(argv[i],"-amplify")==0) {
        match=1;
-       use_vout_amplify=1;
+       use_vout_amplify=1;//deprecated
      }
      if (match) {
        for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
@@ -306,14 +379,25 @@ int toi (float a) {
        i--;
      }
    }
-   streamRead(volumeTriangles,getVolumeTriangles());
-   //   streamPrint(volumeTriangles,1);
    if (argc<2) {
-      printf ("Usage: volume_division <FILE.pnm>\n      volume_divison <width>\n");
+     fprintf (stderr,"usage\n"
+           "  %s [-nofilter] [-noamplify] <width>\n"
+           "     runs the isosurface on a sphere generated into texture coordinates\n"
+           "  %s [-nofilter] [-noamplify] <filename.ppm>\n"
+           "     runs the isosurface on a modified ppm 3d... may not be 100% valid\n"
+           "  %s [-nofilter] [-noamplify] <width_height> <depth>\n"
+           "     runs the isosurface on a 3d synthetic dataset that avoids texture reads\n"
+           "  The -nofilter option generates exactly 1 lookup index per voxel\n"
+           "   without said option a lookup is only generated when the voxel will have\n"
+           "   at least 1 triangle in it\n"
+           "  The -noamplify option generates exactly 5 triangles per lookup index given\n"
+           "   without said option the number of triangles outputted is the minumim for \n"
+           "   the given voxel\n",argv[0],argv[0],argv[0]);
       exit (1);
    }
-   
-   if (argc==2)
+   // read in volume triangle lookups
+   streamRead(volumeTriangles,getVolumeTriangles());   
+   if (argc==2)//use texture memory
    {           
       if (atoi(argv[1])==0) {
          dat = openPPM (argv[1]);
@@ -323,7 +407,7 @@ int toi (float a) {
          dat = randomPPM(atoi(argv[1]),atoi(argv[1]),atoi(argv[1]));
       }
       slice = mallocSlice(dat);
-   }else {
+   }else {//avoid texture memory and use synthetic lookups
      int width=atoi (argv[1]);
      int depth=atoi (argv[2]);
      int height;
@@ -334,45 +418,66 @@ int toi (float a) {
        height=width;
      dat = randomPPM(width,height,depth);
    }   
+   // now we begin the actual algorithm
       {
          unsigned int i;
+         // which volumetric slice is this run going to produce
          float2 sliceZ;
+         // what is the current texutre
          float cur<(dat.height),(dat.width)>;
+         // what is the next texture
          float next<(dat.height),(dat.width)>;
+         // What vertices are we going to spit out
+         // since the vout code does address translation fill in a good guess
+         // for the width of the output, but set the height to 1 (was 0)
          float4 v<(dat.height),(use_vout_filter?1:dat.width)>;
+         // this iterator tracks the center of the block we're working with
          iter float2 center <(dat.height),(dat.width)> 
            = iter (float2(0.0f,0.0f),
                    float2(tof(dat.width),
                           tof(dat.height)));
+         // this iterator tracks exactly 1 pixel higher in our current or next
+         // 2d slice
          iter float2 up <(dat.height),(dat.width)> 
            = iter (float2(0.0f,1.0f),
                    float2(0.0f+tof(dat.width),
                           1.0f+tof(dat.height)));
+         // This iterator tracks +1 in x for the current or next 2d slice
          iter float2 upforward <(dat.height),(dat.width)> 
            = iter (float2(1.0f,1.0f),
                    float2(1.0f+tof(dat.width),
                           1.0f+tof(dat.height)));
+         // This iterator tracks +1 in both x & y for the current or next slice
          iter float2 forward <(dat.height),(dat.width)> 
            = iter (float2(1.0f,0.0f),
                    float2(1.0f+tof(dat.width),
                           tof(dat.height)));
-         if (dat.width>512) {
+         if (dat.width>512) {// we don't have so much memory.
            printf("Exceeded 512 wide texture bounds %d\n",dat.width);
            return 1;
          }
          if (!generatedData) {
+           // if we aren't dealing with synthetic data, read the first slice
             readPPM3dSlice(dat,0,slice);
             streamRead(next,slice);
          }
+         // setup the current and next slice Z coordinates
          sliceZ.x=0.0f;sliceZ.y=1.0f;
-         for (i=0;i<dat.depth-1;++i) {
+         for (i=0;i<dat.depth-1;++i) {//loop through z values
             if (!generatedData) {
+              // read a new slice for the 'next' category
                readPPM3dSlice(dat,i+1,slice);
+               // swap the old with the new
                streamSwap(cur,next);
                if (i!=dat.depth-1) {
+                 // if we are not at the end, then read one more
                   streamRead(next,slice);
                }
-               use_vout_filter?processSlice(cur,
+               
+               use_vout_filter?
+                 /// only output triangle lookup indices and centers 
+                 /// when those indices are not 0 or 255 (empty)
+                        processSlice(cur,
                                      i!=dat.depth-1?next:cur,
                                      v,
                                      center,
@@ -380,6 +485,7 @@ int toi (float a) {
                                      forward,
                                      upforward,
                                      sliceZ):
+                 /// produce exactly the number of lookup indices as textures
                  processSliceNoCompact(cur,
                                        i!=dat.depth-1?next:cur,
                                        v,
@@ -390,39 +496,41 @@ int toi (float a) {
                                        sliceZ);
             }else {
               use_vout_filter?
-                processVirtualSlice(v,center,upforward,sliceZ):
-                processVirtualSliceNoCompact(v,center,upforward,sliceZ);
+                // use synthetic data, don't compact results
+                processSyntheticSlice(v,center,upforward,sliceZ):
+                // use synthetic data, compact results
+                processSyntheticSliceNoCompact(v,center,upforward,sliceZ);
             }
             if (streamSize(v).y){
               if (use_vout_amplify) {
+                // multiply our width by 4x since we could output up to 4x
+                // of our original values
                 iter float2 newsize <(toi(streamSize(v).y)),
                                     (toi(streamSize(v).x)*4)> =
                   iter(float2(0,0),float2(streamSize(v).x*4.0f,
                                           streamSize(v).y));
+                // our first triangle lookups are going to be exactly 3x as big
                 float3 trianglesFirst<(toi(streamSize(v).y)),
-                                      (toi(streamSize(v).x)*3)>;                  
+                                      (toi(streamSize(v).x)*3)>;
+                // we know the width of the triangles (i.e. for the address
+                // calc) will be 4x as big...we have no idea how many 3x
+                // vout[3] outputs there will be (0 or 3 for each tri)
                 float3 triangles <1,(toi(streamSize(v).x)*4)>;
+                // process all the first triangles
                 processFirstTriangles(trianglesFirst,v,volumeTriangles);
+                // process the rest
                 processTriangles(triangles, 
                                  v,
                                  volumeTriangles,
                                  newsize);
-                /*
-                printf("Stream V into func\n");
-                streamPrint(v);
-                printf("FirstTris\n");
-                streamPrint(trianglesFirst);
-                printf("Last Tris\n");
-                streamPrint(triangles);
-                //printf ("Volume Trianges");
-                //streamPrint(volumeTriangles);
-                */
+                //write it to the same place in memory
                  streamWrite(trianglesFirst,
                              consolidateVertices(dat,streamSize(trianglesFirst)));
                  streamWrite(triangles,
                              consolidateVertices(dat,streamSize(triangles)));
                                 
               }else {
+                // each triangle stream will be 3x bigger than the volume
                  float3 trianglesA<(toi(streamSize(v).y)),
                                   (toi(streamSize(v).x)*3)>;
                  float3 trianglesB<(toi(streamSize(v).y)),
@@ -433,6 +541,7 @@ int toi (float a) {
                                   (toi(streamSize(v).x)*3)>;
                  float3 trianglesE<(toi(streamSize(v).y)),
                                   (toi(streamSize(v).x)*3)>;
+                 // output exactly 5 vertices for each input 
                  processTrianglesNoCompact(trianglesA,
                                            trianglesB,
                                            trianglesC,
@@ -440,6 +549,7 @@ int toi (float a) {
                                            trianglesE,
                                            v, 
                                            volumeTriangles);
+                 // write them all into mem
                  streamWrite(trianglesA,
                              consolidateVertices(dat,streamSize(trianglesA)));
                  streamWrite(trianglesB,
@@ -456,10 +566,12 @@ int toi (float a) {
               //              streamPrint(trianglesD,1);
               }
             }
+            // increment the z
             sliceZ.x++;sliceZ.y++;
          }
       }
       free(slice);
+      //write the mesh to stdout
       printVolume(dat);
    return 0;
    
