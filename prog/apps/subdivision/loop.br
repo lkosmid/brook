@@ -38,6 +38,7 @@ kernel float triCombine (float myin<>,
 }
 */
 unsigned int streamWidth=2048;
+int counterMax = 16;
 kernel float triCombine(float b1<>, float b2<>) {
    return (b1&&b2)?8:(b1?2:(b2?4:0));
 }
@@ -173,16 +174,19 @@ kernel void computeNeighbors(Tri tgather[][], Neighbor ugather[][], float2 i<>, 
                       .25);
   v.BCC.w = BC_C.z;  
 }
-kernel void writeFinalTriangles (Tri triangles[][],
-                                 float2 indices<>,
+kernel void copyFinalTriangles (Tri tri<>,
                                  out float3 triList<>) {
   float whichVertex=round(fmod((indexof triList).x,3));
-  Tri tri = triangles[indices];
   triList = tri.A.xyz;
   if (whichVertex>.5&&whichVertex<1.5)
     triList=tri.B.xyz;
   else if (whichVertex>=1.5&&whichVertex<2.5)
     triList=tri.C.xyz;
+}
+kernel void writeFinalTriangles (Tri triangles[][],
+                                 float2 indices<>,
+                                 out float3 triList<>) {
+  copyFinalTriangles(triangles[indices],triList);
 }
 kernel float4 addN(float3 inxyz, float inw) {
    float4 x = float4(inxyz.x,
@@ -480,7 +484,8 @@ int toi(float f) {return (int)f;}
 void subdivide (Neighbor (*neighbors)<>,
                 Tri (*triangles)<>,
                 struct VertexArray *output,
-                float epsilon) {
+                float epsilon,
+                int counter) {
   {
     float2 shouldProduce<streamWidth,0>;
     float2 shouldNotProduce<streamWidth,0>;
@@ -507,14 +512,24 @@ void subdivide (Neighbor (*neighbors)<>,
         float3 outputTri<streamWidth,sizey>;
 
         writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
-        if (streamSize(shouldProduce).x) {
-          subdivide(neighbors,triangles,output,epsilon);
+        if (streamSize(shouldProduce).x&&counter<counterMax) {
+          subdivide(neighbors,triangles,output,epsilon,counter+1);
         } 
+        
         sizey = output->size;
         expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
                                                 streamSize(outputTri).y));
         streamWrite(outputTri,output->v+sizey);   
       }       
+      if (counter>=counterMax) {
+        float3 outputTri<streamWidth,toi(streamSize(*triangles).x*3)>;
+        int sizey = output->size;
+        copyFinalTriangles(*triangles,outputTri);
+        expandVertexArray(output,
+                          3*toi(streamSize(*triangles).y*streamSize(*triangles).x));
+        streamWrite(outputTri,output->v+sizey);
+      }
+        
     }
   }
   /*
@@ -533,7 +548,7 @@ int main () {
   
   // initialize neighbors and triangles
   smallEnough(triangles,neighbors,triangles,neighbors,epsilon);
-  subdivide(&neighbors,&triangles,&v,epsilon);
+  subdivide(&neighbors,&triangles,&v,epsilon,0);
   
 
    return 0;
