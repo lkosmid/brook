@@ -273,15 +273,16 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
         out <<"      ";
         out <<"break;"<<std::endl;
         out <<"    }"<<std::endl;
-      }
-      out << "    "<<getDeclStream(decl,"_values")<< " = ";
+      }else {
+         out << "    "<<getDeclStream(decl,"_values")<< " = ";
 
-      out << "(";
-      out << decl->name->name<<"->getDimension()==2?";
-      out << "finiteValueProduced"<<getDimensionString(2)<<undecoratedBase(decl);
-      out << ":finiteValueProduced"<<getDimensionString(1);      
-      out << undecoratedBase(decl)<<")(*"<<getDeclStream(decl,"_outputs");
-      out << ".back())?1:0;"<<std::endl;
+         out << "(";
+         out << decl->name->name<<"->getDimension()==2?";
+         out << "finiteValueProduced"<<getDimensionString(2)<<undecoratedBase(decl);
+         out << ":finiteValueProduced"<<getDimensionString(1);      
+         out << undecoratedBase(decl)<<")(*"<<getDeclStream(decl,"_outputs");
+         out << ".back())?1:0;"<<std::endl;
+      }
    }
    out << "  }"<<std::endl;
    for (iter = beginvout;iter!=endvout;++iter) {
