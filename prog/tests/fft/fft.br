@@ -215,15 +215,15 @@ float2 cmult (float2 a, float2 b) {
 // DFT()
 // Implements the Perfect Shuffle algorithm
 kernel void
-DoDFT (float2 s[], 
+DFT (float2 s[], 
        float2 W[],
-       float2 StrideN,
+       float Stride, float N,
        out float4 s_prime<>) {
   float index = (indexof s_prime).x;
   float2 temp,r,t,twiddle;
-  twiddle = W[index-fmod(index,StrideN.x)];
+  twiddle = W[index-fmod(index,Stride)];
   r = s[index];
-  t = s[index+round(StrideN.y/2)];
+  t = s[index+round(N/2)];
   s_prime.xy = r+t ;
   mult ((r-t), twiddle, temp);
   s_prime.zw = temp;
@@ -410,7 +410,7 @@ int haupt(int argc, char **argv)
         // Do a `Perfect Shuffle'
         int nStride = (1<<nPassCounter);
         // DFT merge call. The heart of this program!
-        DoDFT(s, W,float2(nStride,N), s_prime);
+        DFT(s, W,nStride,N, s_prime);
 
 
         // To support the `in-place' perfect-shuffle algorithm

@@ -26,7 +26,7 @@ int myabs (int i) {
    return i>=0?i:-i;
 }
 brook::stream &getW(int k, int N, bool vertical) {
-   const __BRTStreamType* flawt2 = brook::getStreamType((float2*)0);
+   const brook::StreamType* flawt2 = brook::getStreamType((float2*)0);
    std::map<DualInt,brook::stream*>::iterator iter = Ws.find(DualInt(k,vertical?myabs(N):-myabs(N)));
    if (iter!=Ws.end()) {
       return *(*iter).second;
