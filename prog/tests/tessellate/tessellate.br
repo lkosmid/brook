@@ -1,28 +1,47 @@
 #include <stdio.h>
 #include "streamholder.h"
+
+kernel void curve (float2 inp<>, out float height<>) {
+  float2 input={512.0,512.0};
+  input+=inp;
+  height = input.x*input.x+input.y*input.y*input.y*input.y*input.x;
+}
+kernel void curve2 (float4 input<>, out float2 height<>) {
+  float h1,h2;
+  curve(input.xy,h1);curve(input.zw,h2);
+  height.x=h1;height.y=h2;
+}
+void __print_cpu_inner (float a, float b, float c ,float d) {
+  printf("%f %f -> %f %f\n",a,b,c,d);
+}
+kernel void evaluateError(float input<>, float actual <>, out float error<>) {
+  error=abs((input-actual)/(actual+1));
+}
 kernel 
 void shouldTessellate (float4 input <>, float toler, out float output<>) {
    float2 height;
    curve2 (input,height);
    {
       float3 center = lerp (float3(input.x,input.y,height.x),
-                            float3(input.z,input.w,height.y));
+                            float3(input.z,input.w,height.y),
+                            float3(.5,.5,.5));
       float fheight,error;
-      curve(center.xy,height);
+      curve(center.xy,fheight);
       evaluateError(center.z,fheight,error);
-      output= error<toler;
+      output= error>=toler;
+      //printf(center.z,fheight,error,toler);
    }
 }
-void Tessellate(float4 input<>, float shouldPack<>, vout[4] float4 output<>) {
-   float2 center = lerp (input.xy,input.yz);
-   if (shouldPack) {
+kernel void Tessellate(float4 input<>, float shouldDivide<>, vout[4] float4 output<>) {
+   float2 center = lerp (input.xy,input.zw,float2(.5,.5));
+   if (shouldDivide) {
       output.xy = input.xy;
       output.zw = center;
    }else {
       output=input;
    }
    push(output);
-   if (shouldPack) {
+   if (shouldDivide) {
       output.zw = center;
       output.xy = input.zw;
       push(output);
@@ -32,4 +51,78 @@ void Tessellate(float4 input<>, float shouldPack<>, vout[4] float4 output<>) {
       push(output);
    }
 }
+char * charmalloc (unsigned int  s) {
+  return (char*)malloc(s);
+}
+float4 * float4malloc(float f) {
+  return (float4 *)malloc((unsigned int)f);
+}
 
+void DrawLine (char * data, float x1, float y1, float x2, float y2, int width) {
+  int lx,gx,ly,gy,i;
+  lx = (int)(x1<x2?x1:x2);
+  gx = (int)(x1<x2?x2:x1);
+  ly = (int)(y1<y2?y1:y2);
+  gy = (int)(y1<y2?y2:y1);
+  if (gx-lx<.25){
+    for (i=ly;i<=gy;++i){      
+      data[i*width+lx]+=63;
+    }
+  }else if (gy-ly<.25) {
+    for (i=lx;i<=gx;++i){
+      data[ly*width+i]+=63;
+    }
+  }else {
+    printf ("unsupported draw from %f %f to %f %f\n",x1,y1,x2,y2);
+  }
+}
+void Draw (float4 * dat, float4 datasize, char * pic, int width) {
+  int i,datanum;
+  datanum = (int)(datasize.x*datasize.y);
+  for (i=0;i<datanum;++i) {
+    float4 data=dat[i];
+    if (finite_float(data.x)&&finite_float(data.y)&&finite_float(data.z)&&finite_float(data.w)) {
+      DrawLine(pic,data.x,data.y,data.x,data.w,width);
+      DrawLine(pic,data.x,data.y,data.z,data.y,width);
+      DrawLine(pic,data.x,data.w,data.z,data.w,width);
+      DrawLine(pic,data.z,data.w,data.z,data.y,width);
+    }
+  }
+}
+
+extern void writePng(char* , char * ,int, int);
+#define STRIDE 4
+#define SIZE 1024
+int main (int argc, char ** argv) {
+  float toler = argc>1?atof(argv[1]):.1;
+  int limit = argc>2?atoi(argv[2]):32;
+  float4 input[4096]={float4(0,0,SIZE/2,SIZE/2),float4(0,SIZE/2,SIZE/2,SIZE),float4(SIZE/2,0,SIZE,SIZE/2),float4(SIZE/2,SIZE/2,SIZE,SIZE)};
+  float lastsize;
+  float4 polys<1,STRIDE>;
+  streamRead(polys,input);
+
+  do {
+    int lastsizeint;
+    lastsize=streamSize(polys).y;
+    lastsizeint=(int)lastsize;
+    {
+      float doTessellate<lastsizeint,STRIDE>;
+      float4 nextPolys<1,STRIDE>;
+      shouldTessellate(polys,toler,doTessellate);
+      Tessellate(polys,doTessellate,nextPolys);
+      streamSwap(polys,nextPolys);      
+    }
+  }while (streamSize(polys).y<limit&&streamSize(polys).y!=lastsize);
+  {
+    float4 size = streamSize(polys);
+    float4 * finaldata=float4malloc(size.x*size.y*sizeof(float4));
+    char * data=charmalloc((SIZE+1)*(SIZE+1)*sizeof(char));
+    memset(data,0,sizeof(char)*(1+SIZE)*(1+SIZE));
+    streamWrite(polys,finaldata);    
+    Draw(finaldata,size,data,SIZE+1);
+    writePng("polys.png",data,SIZE+1,SIZE+1);
+    free (data);   
+  }
+  streamPrint(polys);
+  return 0;
+}
