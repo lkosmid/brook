@@ -209,11 +209,12 @@ void BRTKernelDef::PrintVoutDimensionalShift(std::ostream &out,
                                              unsigned int dim) const {
    
       std::string type = undecoratedBase(decl);
+      unsigned int i;
       std::string dimensionstring = getDimensionString(dim);
       out<< "    ::brook::stream "<<getDeclStream(decl,"_temp")<<"(&";
       std::string typevector = getDeclStream(decl,"_types");
       out<< typevector<<"[0],";
-      for (unsigned int i=0;i<dim;++i) {
+      for (i=0;i<dim;++i) {
          out << "1, ";
       }
       out << "-1);"<<std::endl;
@@ -233,12 +234,12 @@ void BRTKernelDef::PrintVoutDimensionalShift(std::ostream &out,
       out<< std::endl;
       out<< "                "<< decl->name->name<<",";
       out<< std::endl;
-      out<< "                "<<getDeclStream (decl,"_temp");
-      out<< "->getExtents()[0],";
-      out<<std::endl;
-      out<< "                "<<getDeclStream (decl,"_temp");
-      out<< "->getExtents()[1],";
-      out <<std::endl;
+      for (i=0;i<dim;++i) {
+         out<< "                "<<getDeclStream (decl,"_temp");
+         out<< "->getExtents()["<<i<<"],";
+         out<<std::endl;
+      }
+      for (;i<2;++i) out << "                 1,";
       out<< "                -1);"<<std::endl; 
 }
 void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
@@ -252,9 +253,11 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    for (iter = beginvout;iter!=endvout;++iter) {
       
       Decl * decl = ft->args[*iter];
-      out << "    "<<getDeclStream(decl,"_values")<< " = ";
-      out << " finiteValueProduced";      
-      out << undecoratedBase(decl)<<"(*"<<getDeclStream(decl,"_outputs");
+      out << "    "<<getDeclStream(decl,"_values")<< " = (";
+      out << decl->name->name<<"->getDimension()==2?";
+      out << "finiteValueProduced"<<getDimensionString(2)<<undecoratedBase(decl);
+      out << ":finiteValueProduced"<<getDimensionString(1);      
+      out << undecoratedBase(decl)<<")(*"<<getDeclStream(decl,"_outputs");
       out << ".back())?1:0;"<<std::endl;
    }
    out << "  }"<<std::endl;
@@ -272,10 +275,10 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static void printPrototypes(std::ostream & out, std::string type) {
    int i;
-   out << "extern int finiteValueProduced" ;
-   out << type << " (brook::stream &input);\n"      ;
    for (i=1;i<=2;++i) {
       std::string dimensionstring = getDimensionString (i);
+      out << "extern int finiteValueProduced"<<dimensionstring ;
+      out << type << " (brook::stream &input);\n"      ;
       out <<"extern float shiftValues"<<dimensionstring;
       out << type << "(brook::stream &list_stream,\n"
          "                         brook::stream& output_stream,\n"

@@ -45,9 +45,9 @@ kernel void isFiniteKernelBRT_TYPE1d(BRT_TYPE inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedBRT_TYPE1d (BRT_TYPE input<>) {
-   BRT_TYPE output<1,1>;
-   float finiteout<1,1>;
+int finiteValueProduced1dBRT_TYPE (BRT_TYPE input<>) {
+   BRT_TYPE output<1>;
+   float finiteout<1>;
    BRT_TYPE rettype;
    float ret;
   

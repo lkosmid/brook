@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 kernel void foo (float a<>, float b<>, float4 c,
-		 float d[10][10], vout []float e<>) {
+		 float d[10], vout []float e<>) {
   e = a+b;
   push(e);
   if (round(fmod( (indexof a).x,2))!=1) {

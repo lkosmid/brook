@@ -55,9 +55,9 @@ kernel void isFiniteKernelfloat1d(float inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedfloat1d (float input<>) {
-   float output<1,1>;
-   float finiteout<1,1>;
+int finiteValueProduced1dfloat (float input<>) {
+   float output<1>;
+   float finiteout<1>;
    float rettype;
    float ret;
   
@@ -944,9 +944,9 @@ kernel void isFiniteKernelfloat21d(float2 inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedfloat21d (float2 input<>) {
-   float2 output<1,1>;
-   float finiteout<1,1>;
+int finiteValueProduced1dfloat2 (float2 input<>) {
+   float2 output<1>;
+   float finiteout<1>;
    float2 rettype;
    float ret;
   
@@ -1833,9 +1833,9 @@ kernel void isFiniteKernelfloat31d(float3 inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedfloat31d (float3 input<>) {
-   float3 output<1,1>;
-   float finiteout<1,1>;
+int finiteValueProduced1dfloat3 (float3 input<>) {
+   float3 output<1>;
+   float finiteout<1>;
    float3 rettype;
    float ret;
   
@@ -2722,9 +2722,9 @@ kernel void isFiniteKernelfloat41d(float4 inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedfloat41d (float4 input<>) {
-   float4 output<1,1>;
-   float finiteout<1,1>;
+int finiteValueProduced1dfloat4 (float4 input<>) {
+   float4 output<1>;
+   float finiteout<1>;
    float4 rettype;
    float ret;
   
