@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ppm3d.h"
+#include "volume_division.h"
 kernel float test(float vol<>,float index<>){
   return (vol>0)?index:0;
 }
@@ -9,9 +10,12 @@ float __printf_cpu_inner (float a, float b, float c, float d) {
   printf ("%f %f -> %f %f\n",a,b,c,d);
   return 1;
 }
-kernel float eval (float3 loc<>) {  
+kernel float eval1 (float3 loc<>) {
+   return (float) (loc.x==loc.y&&loc.y==loc.z&&loc.z==1);
+}
+kernel float eval (float3 loc<>) {
   float  power;
-  const float3 offset=20;
+  const float3 offset=0;
   float3 center =loc-offset;
   power = dot(center,center);
   /*
@@ -37,16 +41,11 @@ kernel float eval (float3 loc<>) {
   */
   {
 
-    const float  density = 64;
+    const float  density = 9;
     //printf (power,loc.z,density,power-density);
     return density-power;
   }
 }
-kernel float3 combineIndex (float a,float b, float c) {
-  float3 ret={a,b,c};
-  return ret;
-}
-
 kernel float evaluateNeighbors (float2 center<>,
                                 float2 opposing<>,
                                 float2 slice) {
@@ -59,7 +58,7 @@ kernel float evaluateNeighbors (float2 center<>,
       test(eval(float3(center.x,opposing.y,slice.y)),32.0f) +
       test(eval(float3(opposing.x,opposing.y,slice.y)),64.0f) +
       test(eval(float3(opposing.x,center.y,slice.y)),128.0f);
-   return a>1&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)?a:0;
+   return a>0.5f&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)?a:0;
     
 }
 kernel void processSlice (float curgather[][],
@@ -79,7 +78,7 @@ kernel void processSlice (float curgather[][],
     test(nextslice[up],32.0f)+
     test(nextslice[upforward],64.0f)+
     test(nextslice[forward],128.0);
-  if (a>1&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)) {
+  if (a>0.5f&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)) {
     vertex=float4(center.x,center.y,slice.x,a);
     push(vertex);
   }
@@ -101,7 +100,7 @@ kernel void processSliceNoCompact (float curgather[][],
     test(nextslice[up],32.0f)+
     test(nextslice[upforward],64.0f)+
     test(nextslice[forward],128.0);
-  if (a>1&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)) {
+  if (a>0.5f&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)) {
     vertex=float4(center.x,center.y,slice.x,a);
   }else {
     vertex=float4(-1,-1,-1,-1);
@@ -131,11 +130,12 @@ kernel void processVirtualSliceNoCompact(out float4 vertex<>,
   }
 }
 
-kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, out float3 trianglesC<>,out float3 trianglesD<>, float4 vertices<>,float3 volumeTriangles[][]) {
-  float4 whichVolumeTriangle=fmod((indexof trianglesA).x,3);
+kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, out float3 trianglesC<>,out float3 trianglesD<>, float4 vertices1<>,float3 volumeTriangles[][]) {
+   float4 whichVolumeTriangle={fmod((indexof trianglesA).x,3),vertices1.w,0,0};
+   float3 vertices=vertices1.xyz;
   //whichVolumeTriangle.x*=(float)(whichVolumeTriangle.x+.5<3);
   if (whichVolumeTriangle.x+.5>3) whichVolumeTriangle.x=0;
-  trianglesA=volumeTriangles[whichVolumeTriangle];
+  trianglesA=vertices.xyz+volumeTriangles[whichVolumeTriangle];
   whichVolumeTriangle.x+=4;
   trianglesB=vertices.xyz+volumeTriangles[whichVolumeTriangle];
   whichVolumeTriangle.x+=4;
@@ -143,9 +143,78 @@ kernel void processTriangles(out float3 trianglesA<>, out float3 trianglesB<>, o
   whichVolumeTriangle.x+=4;  
   trianglesD=vertices.xyz+volumeTriangles[whichVolumeTriangle];  
 }
-
+unsigned int reverseBits(unsigned int x, unsigned int base) {
+   unsigned int i,ret=0;
+   unsigned int j=base-1;
+   for (i=0;i<base;++i,--j) {
+      if (x&(1<<i))         
+         ret|=(1<<j);
+   }
+   return ret;
+}
 typedef float3 Triangle[3][4];
 char volumeTriangles(Triangle tri[256]) {
+   unsigned int i,j,k;
+
+   for (i=0;i<256;++i) {
+      for (j=0;j<12;++j) {
+         tri[i][(j/4)%3][j%4]=/*float3((float)i,(float)i,(float)i);*/float3(1.0f/(float)floor(.5),1.0f/(float)floor(.5),1.0f/(float)floor(.5));
+      }
+      
+      j=0;
+      while(1) {
+         if (m_triTable[i][j]==-1){
+            m_triNum[i]=(float)(j/3);
+            break;           
+         }
+         if (j<12)
+         for (k=0;k<3;++k) {
+            float3 * p=&tri[i][j/3][k];
+            p->x=m_triTable[i][j+k];
+            p->y=m_triTable[i][j+k];
+            p->z=m_triTable[i][j+k];
+            switch ((int)m_triTable[i][j+k]) {
+            case 0:
+               p->x=p->z=0;p->y=0.5f;
+               break;
+            case 1:
+               p->x=0.5f;p->z=0;p->y=1.0f;
+               break;
+            case 2:
+               p->x=1.0f;p->z=0;p->y=0.5f;
+               break;
+            case 3:
+               p->x=0.5f;p->z=0;p->y=0;
+               break;
+            case 4:
+               p->x=0;p->z=1.0f;p->y=0.5f;
+               break;
+            case 5:
+               p->x=0.5f;p->z=1.0f;p->y=1.0f;
+               break;
+            case 6:
+               p->x=1.0f;p->z=1.0f;p->y=0.5f;
+               break;
+            case 7:
+               p->x=0.5f;p->z=1.0f;p->y=0;
+               break;
+            case 8:
+               p->x=p->y=0; p->z=0.5f;
+               break;
+            case 9:
+               p->x=0;p->y=1.0f;p->z=0.5f;
+               break;
+            case 10:
+               p->x=1.0f;p->y=1.0f;p->z=0.5f;
+               break;
+            case 11:
+               p->x=1.0f;p->y=0;p->z=0.5f;
+               break;
+            }
+         }
+         j+=3;
+      }
+   }
   //fill in with brilliant triangle computations
   return 0;
 }
@@ -163,17 +232,18 @@ int toi (float a) {
 }
  int main (int argc, char ** argv) {
    float3 volumeTriangles<256,12>;
+   struct ppm dat;
+   float * slice=0;
+   char generatedData=0;
    streamRead(volumeTriangles,getVolumeTriangles());
+   //   streamPrint(volumeTriangles,1);
    if (argc<2) {
       printf ("Usage: volume_division <FILE.pnm>\n      volume_divison <width>\n");
       exit (1);
    }
+   
    if (argc==2)
-   {
-     
-      struct ppm dat;
-      float * slice;
-      
+   {           
       if (atoi(argv[1])==0) {
          dat = openPPM (argv[1]);
          if (!dat.fp)
@@ -182,6 +252,17 @@ int toi (float a) {
          dat = randomPPM(atoi(argv[1]),atoi(argv[1]),atoi(argv[1]));
       }
       slice = mallocSlice(dat);
+   }else {
+     int width=atoi (argv[1]);
+     int depth=atoi (argv[2]);
+     int height;
+     generatedData=1;
+     if (argc>3)
+       height=atoi (argv[3]);
+     else
+       height=width;
+     dat = randomPPM(width,height,depth);
+   }   
       {
          unsigned int i;
          float2 sliceZ;
@@ -208,24 +289,29 @@ int toi (float a) {
            printf("Exceeded 512 wide texture bounds %d\n",dat.width);
            return 1;
          }
-         readPPM3dSlice(dat,0,slice);
-         streamRead(next,slice);
-
-         sliceZ.x=sliceZ.y=0.0f;
+         if (!generatedData) {
+            readPPM3dSlice(dat,0,slice);
+            streamRead(next,slice);
+         }
+         sliceZ.x=0.0f;sliceZ.y=1.0f;
          for (i=0;i<dat.depth-1;++i) {
-            readPPM3dSlice(dat,i+1,slice);
-            streamSwap(cur,next);
-            if (i!=dat.depth-1) {
-              streamRead(next,slice);
+            if (!generatedData) {
+               readPPM3dSlice(dat,i+1,slice);
+               streamSwap(cur,next);
+               if (i!=dat.depth-1) {
+                  streamRead(next,slice);
+               }
+               processSlice(cur,
+                            i!=dat.depth-1?next:cur,
+                            v,
+                            center,
+                            up,
+                            upforward,
+                            forward,
+                            sliceZ);
+            }else {
+               processVirtualSlice(v,center,upforward,sliceZ);
             }
-            processSlice(cur,
-                         i!=dat.depth-1?next:cur,
-                         v,
-                         center,
-                         up,
-                         upforward,
-                         forward,
-                         sliceZ);
             if (streamSize(v).y){
               float3 trianglesA<(toi(streamSize(v).y)),
                                (toi(streamSize(v).x)*3)>;
@@ -245,37 +331,18 @@ int toi (float a) {
                           consolidateVertices(dat,streamSize(trianglesC)));
               streamWrite(trianglesD,
                           consolidateVertices(dat,streamSize(trianglesD)));
+              //              streamPrint(trianglesA,1);
+              //              streamPrint(trianglesB,1);
+              //              streamPrint(trianglesC,1);
+              //              streamPrint(trianglesD,1);
             }
             sliceZ.x++;sliceZ.y++;
          }
       }
       free(slice);
       printVolume(dat);
-   }else {
-     int width=atoi (argv[1]);
-     int depth=atoi (argv[2]);
-     int i,height;
-     if (argc>3)
-       height=atoi (argv[3]);
-     else
-       height=width;
-     {
-       float4 v<height,width>;
-       struct ppm dat = randomPPM(width,height,depth);
-
-       iter float2 current<height,width> = iter(float2(0.0f,0.0f),
-                                                float2(tof(width),
-                                                       tof(height)));
-       iter float2 corner<height,width> = iter(float2(1.0f,1.0f),
-                                               float2(tof(1+width),
-                                                      tof(1+height)));
-       for (i=0;i<depth;++i) {
-         processVirtualSlice(v,current,corner,float2(tof(i),tof(i+1)));
-         streamWrite(v,consolidateVertices(dat,streamSize(v)));
-       }
-       printVolume(dat);
-     }
-
-   }
    return 0;
+   
  }
+
+
