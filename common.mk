@@ -200,7 +200,7 @@ ifdef REGRESSIONDIRS
 regression:
 	@for i in $(REGRESSIONDIRS); do \
 		make --no-print-directory -C $$i regression || k=$$k" "$$i; \
-	done; echo "FAILED: "$$k
+	done; test -z "$$k" || echo "FAILED: "$$k; test -z "$$k"
 else
 
 regression: arch $(BINARY_NAME).gold
