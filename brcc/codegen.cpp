@@ -65,7 +65,7 @@ generate_shader_code (Decl **args, int nArgs,
   shader << "#define _sfetch  texRECT\n";
   shader << "#define _gather1(a,b,c) texRECT((a),float2(b,0))\n";
   shader << "#define _gather2(a,b,c) texRECT((a),(b))\n";
-  shader << "#define _computeindexof(a,b) (a)\n";
+  shader << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
   shader << "#else\n";
   shader << "#define _stype   sampler\n";
   shader << "#define _sfetch  tex2D\n";
