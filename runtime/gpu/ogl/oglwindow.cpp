@@ -502,8 +502,9 @@ int          OGLWindow::piAttribList[4][16];
 bool         OGLWindow::static_window_created = false;
 bool         OGLWindow::static_pbuffers_initialized = false;
 
+//This is non square because ATI can't do 2048^2 for some odd reason
 #define PBUFFER_WIDTH 2048
-#define PBUFFER_HEIGHT 2048
+#define PBUFFER_HEIGHT 1024
 
 #define CRGBA(c, r,g,b,a) \
         GLX_RED_SIZE,               r, \
@@ -512,7 +513,8 @@ bool         OGLWindow::static_pbuffers_initialized = false;
         GLX_ALPHA_SIZE,             a, \
         GLX_STENCIL_SIZE,           0, \
         GLX_DEPTH_SIZE,             0, \
-        GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT
+        GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT, \
+        GLX_DOUBLEBUFFER,           0
 
 #define BASEIATTRIB { \
 {CRGBA(32,32,0,0,0), 0, 0}, \
@@ -535,7 +537,8 @@ basefAttribList[4][16] = { {0.0f,0.0f},
 #define PBATTRIB \
     GLX_PRESERVED_CONTENTS, GL_TRUE, \
     GLX_PBUFFER_WIDTH, PBUFFER_WIDTH, \
-    GLX_PBUFFER_HEIGHT, PBUFFER_HEIGHT
+    GLX_PBUFFER_HEIGHT, PBUFFER_HEIGHT, \
+    GLX_LARGEST_PBUFFER, 0
 
 static int
 basepiAttribList[4][16] = { {PBATTRIB, 0, 0}, \
@@ -654,8 +657,8 @@ OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
   }
   
   glxPbuffer = glXCreatePbuffer(pDisplay, 
-				glxConfig[3][0], 
-				piAttribList[3]);
+                                glxConfig[3][0], 
+                                piAttribList[3]);
   
   if (!glxPbuffer) {
     fprintf(stderr, "OGL Window: glXCreatePbuffer() failed\n");

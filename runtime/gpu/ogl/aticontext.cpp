@@ -32,6 +32,10 @@
 #define GL_LUMINANCE_ALPHA_FLOAT32_ATI    0x8819
 #endif
 
+#ifndef GLX_RENDER_TYPE
+#define GLX_RENDER_TYPE                     0x8011
+#endif
+
 using namespace brook;
 
 static const unsigned int 
@@ -65,10 +69,10 @@ static const int atiiAttribList[4][64] = {
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 },
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 }
 #else
-  {  GLX_RGBA_FLOAT_ATI_BIT, GL_TRUE,  0,0},
-  {  GLX_RGBA_FLOAT_ATI_BIT, GL_TRUE,  0,0},
-  {  GLX_RGBA_FLOAT_ATI_BIT, GL_TRUE,  0,0},
-  {  GLX_RGBA_FLOAT_ATI_BIT, GL_TRUE,  0,0}
+  {  GLX_RENDER_TYPE, GLX_RGBA_FLOAT_ATI_BIT, 0,0},
+  {  GLX_RENDER_TYPE, GLX_RGBA_FLOAT_ATI_BIT, 0,0},
+  {  GLX_RENDER_TYPE, GLX_RGBA_FLOAT_ATI_BIT, 0,0},
+  {  GLX_RENDER_TYPE, GLX_RGBA_FLOAT_ATI_BIT, 0,0}
 #endif
 };
 

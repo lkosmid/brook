@@ -126,12 +126,15 @@ CodeGen_Init(void) {
       break;
 #endif
    case COMPILER_CGC:
+#ifdef WIN32
       shadercompile[CODEGEN_PS20] = compile_cgc;
       shadercompile[CODEGEN_PS2B] = compile_cgc;
       shadercompile[CODEGEN_PS2A] = compile_cgc;
-#ifdef WIN32
       shadercompile[CODEGEN_PS30] = compile_fxc;
 #else
+      shadercompile[CODEGEN_PS20] = NULL;
+      shadercompile[CODEGEN_PS2B] = NULL;
+      shadercompile[CODEGEN_PS2A] = NULL;
       shadercompile[CODEGEN_PS30] = NULL;
 #endif
       shadercompile[CODEGEN_FP30] = compile_cgc;
