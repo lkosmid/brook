@@ -27,23 +27,30 @@ struct string3 {
     s[0]=a;s[1]=b;s[2]=c;
   }
 };
+static bool BrookFile =false;
 vector<string3> VectorTypes() {
   vector<string3> ret;
-  PB("vec<float,1> ","float","1");
-  PB("vec<int,1> ","int","1");
-  PB("vec<char,1> ","char","1");
-  PB("vec<float,2> ","float","2");
-  PB("vec<int,2> ","int","2");
-  PB("vec<char,2> ","char","2");
+  if (BrookFile) {
+     PB("float", "float", "1");
+     PB("float2", "float" , "2");
+     PB("float3", "float" , "3");
+     PB("float4", "float" , "4");
+  }else {
+     PB("vec<float,1> ","float","1");
+     PB("vec<int,1> ","int","1");
+     PB("vec<char,1> ","char","1");
+     PB("vec<float,2> ","float","2");
+     PB("vec<int,2> ","int","2");
+     PB("vec<char,2> ","char","2");
 
-  PB("vec<float,3> ","float","3");
-  PB("vec<int,3> ","int","3");
-  PB("vec<char,3> ","char","3");
+     PB("vec<float,3> ","float","3");
+     PB("vec<int,3> ","int","3");
+     PB("vec<char,3> ","char","3");
 
-    PB("vec<float,4> ","float","4");
-  PB("vec<int,4> ","int","4");
-  PB("vec<char,4> ","char","4");
-
+     PB("vec<float,4> ","float","4");
+     PB("vec<int,4> ","int","4");
+     PB("vec<char,4> ","char","4");
+  }
   return ret;
 }
 vector<string3> BasicTypes() {
@@ -53,15 +60,22 @@ vector<string3> BasicTypes() {
   PB("float","float","1");
   PB("double","double","1");
   PB("unsigned int","int","1");
-
+  PB("bool","bool","1");
   return ret;
 }
 vector<string3> OperatorTypes() {
   vector<string3> ret;
-  PB("vec<VALUE,1> ","VALUE","1");
-  PB("vec<VALUE,2> ","VALUE","2");
-  PB("vec<VALUE,3> ","VALUE","3");
-  PB("vec<VALUE,4> ","VALUE","4");
+  if (BrookFile) {
+     PB("float", "float", "1");
+     PB("float2", "float" , "2");
+     PB("float3", "float" , "3");
+     PB("float4", "float" , "4");
+  }else {
+     PB("vec<VALUE,1> ","VALUE","1");
+     PB("vec<VALUE,2> ","VALUE","2");
+     PB("vec<VALUE,3> ","VALUE","3");
+     PB("vec<VALUE,4> ","VALUE","4");
+  }
   return ret;
 }
 
@@ -73,10 +87,12 @@ vector<string3> GeneralTypes() {
 }
 
 #undef PB
+/*
 vector<string3> operTypes = OperatorTypes();
 vector<string3> basicTypes = BasicTypes();
 vector <string3> generalTypes = GeneralTypes();
 vector<string3> vectorTypes = VectorTypes();
+*/
 string preprocessTemplates (string s, vector<string3> replacementList) {
   string ret;
   s=findReplace (s,"template <class BRT_TYPE>","");
@@ -94,6 +110,7 @@ string preprocessTemplates (string s, vector<string3> replacementList) {
   return ret;
 }
 string removeTypenames (string in) {
+  vector<string3> basicTypes = BasicTypes();
   for (unsigned int i=0;i<basicTypes.size();++i) {
     string findme ("typename "+basicTypes[i].s[0]);
     printf( "find %s\n",findme.c_str());
@@ -140,6 +157,10 @@ string lineString(unsigned int in) {
 }
 int main (int argc, char ** argv) {
   FILE * fp = fopen (argv[1],"rb");
+  if (strstr(argv[1],".br")) {
+     BrookFile=true;
+     printf ("Brook File Identified");
+  }
   struct stat st;
   stat (argv[1],&st);
   char * mem = (char *)malloc(st.st_size+1);
@@ -152,8 +173,10 @@ int main (int argc, char ** argv) {
   bool lin=true;
   
   if (argc>3)
-	  if (strcmp(argv[3],"-noline")==0)
-		  lin=false;
+     for (int i=3;i<argc;++i) {
+	  if (strcmp(argv[i],"-noline")==0)
+		  lin=false;             
+     }
   string pre,general,firstpost,vectoronly,post,operonly,lastpost;
   
   general=findBetween(in,"GENERAL_TEMPLATIZED_FUNCTIONS",pre,post);
@@ -192,18 +215,20 @@ int main (int argc, char ** argv) {
   string writeme = findReplace(pre,"BRTVECTOR_HPP","VC6VECTOR_HPP");
 #define WRITEME fwrite (writeme.c_str(),writeme.length(),1,o)
   WRITEME;
-  writeme=removeTypenames (preprocessTemplates(general,generalTypes));
+  writeme=removeTypenames (preprocessTemplates(general,GeneralTypes()));
   WRITEME;
   writeme=firstpost;
   WRITEME;
-  writeme=removeTypenames(preprocessTemplates(vectoronly,vectorTypes));
+  writeme=removeTypenames(preprocessTemplates(vectoronly,VectorTypes()));
   WRITEME;
   writeme=post;
   WRITEME;
-  writeme= removeTypenames(preprocessTemplates(operonly,operTypes));
+  writeme= removeTypenames(preprocessTemplates(operonly,OperatorTypes()));
   WRITEME;
   writeme=lastpost;
   WRITEME;
   fclose(o);
   return 0;
 }
+
+
