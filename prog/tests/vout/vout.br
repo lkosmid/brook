@@ -61,18 +61,26 @@ kernel void calculateIndexModulus (float4 index,
                 + fmod(index.x,modulus),
                 modulus)-offset);
 }
-
-#define finite_float2(output) finite_float(output.x)
-#define finite_float3(output) finite_float(output.x)
-#define finite_float4(output) finite_float(output.x)
+kernel float getSentinel2d () {
+  return 1.0f/floor(0.5);
+}
+kernel float isSentinel2d(float a<>) {
+  return isinf(a);
+}
+float isSentinel2d_float(float a) {
+  return isinf(a);
+}
+#define isSentinel2d_float2(output) isSentinel2d_float(output.x)
+#define isSentinel2d_float3(output) isSentinel2d_float(output.x)
+#define isSentinel2d_float4(output) isSentinel2d_float(output.x)
 
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedBRT_TYPE (BRT_TYPE input <>, 
                                    reduce BRT_TYPE output<>) {
-   output=isinf(input.x)?output:input;
+   output=isSentinel2d(input.x)?output:input;
 }
 kernel void isFiniteKernelBRT_TYPE(BRT_TYPE inp<>, out float outp<>) {
-   outp=!isinf(inp.x);
+   outp=!isSentinel2d(inp.x);
 }
 
 int finiteValueProducedBRT_TYPE (BRT_TYPE input<>) {
@@ -84,6 +92,7 @@ int finiteValueProducedBRT_TYPE (BRT_TYPE input<>) {
    debugStreamPrint (input,"Finite Values in...");
    valueProducedBRT_TYPE(input,output);
    streamWrite(output,&rettype);
+   return !isSentinel2d_BRT_TYPE(rettype);
    isFiniteKernelBRT_TYPE(output,finiteout);
    streamWrite(finiteout,&ret);
    return (int)ret;
@@ -107,8 +116,8 @@ kernel void NanToBoolRightBRT_TYPE (BRT_TYPE value[][],
    BRT_TYPE neighbor;
    getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAtBRT_TYPE(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isinf(value[indexof(output)].x)?1:0) 
-      + (isinf(neighbor.x)?1:0);
+   output = (isSentinel2d(value[indexof(output)].x)?1:0) 
+      + (isSentinel2d(neighbor.x)?1:0);
 }
 kernel void NanToRightBRT_TYPE (float value [][],
                                 out float output<>,
@@ -147,7 +156,7 @@ kernel void GatherGuessBRT_TYPE(float scatterindex[][],
       }else {
          BRT_TYPE actualValue;
          valueAtBRT_TYPE(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&!isinf(actualValue.x)) {
+         if (neighbor==halfk&&!isSentinel2d(actualValue.x)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
@@ -194,7 +203,6 @@ kernel void UpdateGuessBRT_TYPE(float scatterindex[][],
 kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
                                 float gatherindex[][],
                                 BRT_TYPE value[][],
-                                float inf<>,
                                 float sign,
                                 float2 maxvalue,
                                 float maxshift) {
@@ -208,7 +216,7 @@ kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
    isoffedge-=maxvalue;
    if (isoffedge.y>=-.0625
        || (isoffedge.y>=-1.0625&&isoffedge.x>=-.0625)) {
-     output=inf;
+     output=getSentinel2d();
    }else {
      output=value[nextPlaceToLook];
    }
@@ -292,7 +300,6 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
           RelativeGatherBRT_TYPE(proper_output_stream,
                                  logN%2==0?ret_stream:guess_stream,
                                  list_stream,
-                                 *sentinelStream(2),
                                  (float)sign,
                                  maxvalue,
                                  maxshift);
@@ -978,8 +985,7 @@ kernel void combineBRT_TYPE (BRT_TYPE input1[][],
                            out BRT_TYPE output<>,
                            float2 startsecond,
                            float2 endsecond,
-                           float2 maxinput2value,
-                           float inf){
+                           float2 maxinput2value){
    //   getIndexAt(float4(maxinputvalue.x,maxinputvalue.y-1,0,0),
    //              -shift1,
    //              maxinput1value,
@@ -1002,7 +1008,7 @@ kernel void combineBRT_TYPE (BRT_TYPE input1[][],
       if (secondindex.y>endsecond.y
           ||(secondindex.y==endsecond.y
              &&secondindex.x>=endsecond.x)) {
-         output=inf;
+         output=getSentinel2d();
       }else {
          output = input2[secondindex];
       }
@@ -1044,8 +1050,7 @@ unsigned int  voutCombineBRT_TYPE(BRT_TYPE outleft_stream<>,
                    output_stream,
                    startsecond,
                    endsecond,
-                   maxrightvalue,
-                   1.0f/(float)floor(.5));
+                   maxrightvalue);
       streamSwap (*output,output_stream);
    }
    return totalsize;
