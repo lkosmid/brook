@@ -213,12 +213,12 @@ public:
             cgt.printSubtype(out,&nothing,true,0);
             out<<"*)";
             out <<"reinterpret_cast<brook::Stream*>"<<std::endl;
-	    indent(out,2);
+	    indent(out,3);
             out << "(args["<<index<<"])->getData(brook::Stream::READ), ";
 	    out <<std::endl;
             indent(out,2);
             out<<"reinterpret_cast<brook::Stream*>"<<std::endl;
-	    indent(out,2);
+	    indent(out,3);
             out<< "(args["<<index<<"])->getExtents());";
             break;
         }

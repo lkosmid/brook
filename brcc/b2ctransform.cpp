@@ -437,7 +437,7 @@ class NewIndexExpr :public IndexExpr {public:
       */
       out << "]";
       if (printCast&&isGather) {
-         out << ".cast()";
+         out << ".gather()";
       }
    }
 
