@@ -190,7 +190,7 @@ void FftwTransform2d(float2 *data, unsigned long N, unsigned long M,
                      int isign, char cast);
 
 
-kernel void setZero(float4 indata<>, 
+ kernel void setZero(float4 indata<>, 
                     out float4 outdata<>, 
                     iter float2 normalized<>,
                     iter float2 negtopos<>,
@@ -200,9 +200,20 @@ kernel void setZero(float4 indata<>,
   // float4 zero = {0.0,0.0,0.0,0.0};
   //	float zeroit= (abs(negtopos.x)>.95||abs(negtopos.y)>.95)&&(i.x>0&&i.y>0);
   //outdata = zeroit.xxxx?zero:indata/scale;
-
   outdata=indata*(exp (-7.2*(2-dot(negtopos,negtopos))))/scale;
   
+}
+kernel void setOne(float4 indata<>, 
+                    out float4 outdata<>, 
+                    iter float2 normalized<>,
+                    iter float2 negtopos<>,
+                    float2 clampsize,
+                    float scale) {
+  // float4 i=indexof(indata);
+  // float4 zero = {0.0,0.0,0.0,0.0};
+  //	float zeroit= (abs(negtopos.x)>.95||abs(negtopos.y)>.95)&&(i.x>0&&i.y>0);
+  //outdata = zeroit.xxxx?zero:indata/scale;
+  outdata=indata*exp (-dot(negtopos,negtopos));  
 }
 void generatePlan(float4 bitreversal<>,
                   int logN,
@@ -265,12 +276,31 @@ void computeFFT2d(float4 input<>,
    }
 
 }
+void blur (float4 freqSpace<>,
+           int N, int M) {
+           iter float2 negtopos <N,(M/2)> = iter (float2(-1,-1),float2(1,1));
+           iter float2 normalized <N,(M/2)> = iter (float2(0,0),float2(1,1));
+           float2 clampsize;
+           clampsize.x = (float)(M/4);
+           clampsize.y = (float)(N/2);
+           setZero(freqSpace,freqSpace,normalized,negtopos,clampsize,(float)(M*N));
+}
+void edgeDetect (float4 freqSpace<>,
+           int N, int M) {
+           iter float2 negtopos <N,(M/2)> = iter (float2(-1,-1),float2(1,1));
+           iter float2 normalized <N,(M/2)> = iter (float2(0,0),float2(1,1));
+           float2 clampsize;
+           clampsize.x = (float)(M/4);
+           clampsize.y = (float)(N/2);
+           setOne(freqSpace,freqSpace,normalized,negtopos,clampsize,(float)(M*N));
+}
 void blur2d(float2 *input,
             float2 *output,
             int logN,
             int logM,
             int N,
-            int M){
+            int M, 
+            char edgedetect){
    float4 s<N,(M/2)>;
    float4 s_out<N,(M/2)>;
    float4 bitreversal<(M/2>N?M/2:N)>;
@@ -278,14 +308,11 @@ void blur2d(float2 *input,
    generatePlan(bitreversal,logN,logM);
    computeFFT2d(s,s_out,logN,logM,N,M,bitreversal);
    {//perform the blur
-           iter float2 negtopos <N,(M/2)> = iter (float2(-1,-1),float2(1,1));
-           iter float2 normalized <N,(M/2)> = iter (float2(0,0),float2(1,1));
-
-           float2 clampsize;
-           clampsize.x = (float)(M/4);
-           clampsize.y = (float)(N/2);
-           setZero(s_out,s_out,normalized,negtopos,clampsize,(float)(M*N));
-           streamSwap(s,s_out);
+      if (!edgedetect)
+        blur(s_out,N,M);
+      else 
+        edgeDetect(s_out,N,M);
+      streamSwap(s,s_out);
    }
    computeFFT2d(s,s_out,logN,logM,N,M,bitreversal);
    if (output)
@@ -300,11 +327,11 @@ void blur2d(float2 *input,
 }
 
 
-void doOptFFT(int logN, int logM, float2 * data) {
+void doOptFFT(int logN, int logM, float2 * data, char edgedetect) {
    int N = (1<<logN);
    int M = (1<<logM);
    start = GetTimeMillis();
-   blur2d(data,data,logM,logN,M,N); 
+   blur2d(data,data,logM,logN,M,N,edgedetect); 
    stop = GetTimeMillis();
    //FftwTransform2d(data,N,M,1,1);
 }
@@ -325,7 +352,8 @@ int main (int argc, char ** argv) {
 	float2 *data;
 
 	if (argc<3) {
-		printf("Usage: %s <input_file> <output_file>\n",argc>=1?argv[0]:"qfft");
+		printf("Usage: %s <input_file> <output_file> [do edge det]\n",
+                       argc>=1?argv[0]:"qfft");
 		return 1; // 1 is argument error
 	}
 
@@ -342,7 +370,7 @@ int main (int argc, char ** argv) {
            }
            for (i=1, logn=0; i<height; i*=2, ++logn) {}
            for (i=1, logm=0; i<width; i*=2, ++logm) {}
-           doOptFFT(logn,logm,data); 
+           doOptFFT(logn,logm,data, argc>3); 
         
            for (i=0;i<len;i++) {
               imgdata[i*channels+channelcount] 
