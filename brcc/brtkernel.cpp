@@ -159,16 +159,15 @@ public:
         return false; 
     }
    // this function figures that all arrays have a chance to have all dims specified
-    bool isDimensionless() {
-      return false;
 #if 0
+    bool isDimensionless() {
         if (a->form->type==TT_Array) {
             return isDimensionlessHelper(static_cast<ArrayType*>
                                          (a->form)->subType);
         }
         return false;
-#endif
     }
+#endif
     void printDimensionlessGatherStream(std::ostream&out,STAGE s){
         ArrayType * t = static_cast<ArrayType*>(a->form);
         switch (s) {
@@ -193,11 +192,13 @@ public:
             nothing.name="";
             cgt.printSubtype(out,&nothing,true,0);
             out<<"*)";
-            out <<"reinterpret_cast<brook::Stream*>";
+            out <<"reinterpret_cast<brook::Stream*>"<<std::endl;
+	    indent(out,2);
             out << "(args["<<index<<"])->getData(brook::Stream::READ), ";
 	    out <<std::endl;
             indent(out,2);
-            out<<"reinterpret_cast<brook::Stream*>";
+            out<<"reinterpret_cast<brook::Stream*>"<<std::endl;
+	    indent(out,2);
             out<< "(args["<<index<<"])->getExtents());";
             break;
         }
@@ -206,7 +207,8 @@ public:
             break;
         case CLEANUP:
 	  indent(out,1);
-	  out << "reinterpret_cast<brook::Stream*>";
+	  out << "reinterpret_cast<brook::Stream*>"<<std::endl;
+	  indent(out,2);
 	  out << "(args["<<index<<"])->releaseData(brook::Stream::READ);";
 	  out << std::endl;
 	  break;
@@ -216,20 +218,22 @@ public:
    //The following function is obsolete for now since static sized
    //arrays are no longer helpful
     void printArrayStream(std::ostream &out, STAGE s) {
-      printDimensionlessGatherStream(out,s);
-      return;
         Type * t=a->form;
 	//temporarily dissect type.
 	Type * u=t;
 	Type ** typeToRestore=NULL;
 	Type * originalTarget=NULL;
-	while (0&&u->type==TT_Array) {
+	assert(u->type==TT_Array);
+	while (u->type==TT_Array) {
 	  ArrayType * uu =static_cast<ArrayType*>(u);
 	  if (uu->subType->type==TT_Stream) {
 	    //now we hop to the base type;
 	    typeToRestore = &uu->subType;
 	    originalTarget = uu->subType;
 	    uu->subType = static_cast<ArrayType*>(uu->subType)->subType;
+	    break;
+	  }else if (uu->subType->type==TT_Array) {
+	    u = uu->subType;
 	  }
 	}
         switch (s) {
@@ -324,7 +328,7 @@ public:
     void printInternalDef(std::ostream &out){
         if(isGather())
 	  printDimensionlessGatherStream(out,DEF);
-	if (!isArrayStream())            
+	else if (isArrayStream())            
 	  printArrayStream(out,DEF);
         else
 	  printNormalArg(out,DEF);
