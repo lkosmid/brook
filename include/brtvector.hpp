@@ -134,6 +134,9 @@ template <> class InitializeClass<double> {public:
 template <> class InitializeClass<int> {public:
 	template <class V> int operator () (const V&a, const V&b, const V&c, const V&d) {return (int)a;}
 };
+template <> class InitializeClass<unsigned int> {public:
+	template <class V> int operator () (const V&a, const V&b, const V&c, const V&d) {return (int)a;}
+};
 template <> class InitializeClass<char> {public:
 	template <class V> char operator () (const V&a, const V&b, const V&c, const V&d) {return (char)a;}
 };
