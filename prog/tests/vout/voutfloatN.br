@@ -151,6 +151,16 @@ kernel void NanToRightfloat (float value [][],
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = value[indexof(output)]+neighbor;
 }
+kernel void CountToRightfloat (float value [][],
+                                  out float output<>,
+                                  float twotoi,
+                                  float2 maxvalue) {
+   float2 nextPlaceToLook;
+   float neighbor;
+   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
+   valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = value[indexof(output)]+neighbor;
+}
 
 kernel void GatherGuessfloat(float scatterindex[][],
                         out float output<>,
@@ -222,6 +232,32 @@ kernel void RelativeGatherfloat(out float output<>,
               nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
+
+float CountValuesfloat(struct StreamHolder list_stream,
+                          struct StreamHolder output_stream,
+                          int WIDTH, 
+                          int LENGTH, 
+                          int sign) {
+   float tmp_stream<WIDTH,LENGTH>;
+   unsigned int i;
+   float2 maxvalue;
+   unsigned int logN;
+   unsigned int LogNMinusK;
+   float maxshift=999;
+
+   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   NanToRightfloat (*list_stream,output_stream,sign,maxvalue);   
+   for (i=1;i<logN;++i) {
+      if (i%2)
+         NanToRightfloat (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
+      else
+         NanToRightfloat (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+   }
+   if (logN%2==0)
+     streamSwap(tmp_stream,*output_stream);
+}
+
 float shiftValuesfloat(struct StreamHolder list_stream,
                        struct StreamHolder output_stream,
                        int WIDTH, 
@@ -1143,6 +1179,16 @@ kernel void NanToRightfloat2 (float value [][],
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = value[indexof(output)]+neighbor;
 }
+kernel void CountToRightfloat2 (float2 value [][],
+                                  out float2 output<>,
+                                  float twotoi,
+                                  float2 maxvalue) {
+   float2 nextPlaceToLook;
+   float2 neighbor;
+   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
+   valueAtfloat2(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = value[indexof(output)]+neighbor;
+}
 
 kernel void GatherGuessfloat2(float scatterindex[][],
                         out float output<>,
@@ -1214,6 +1260,32 @@ kernel void RelativeGatherfloat2(out float2 output<>,
               nextPlaceToLook);
    valueAtfloat2(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
+
+float CountValuesfloat2(struct StreamHolder list_stream,
+                          struct StreamHolder output_stream,
+                          int WIDTH, 
+                          int LENGTH, 
+                          int sign) {
+   float2 tmp_stream<WIDTH,LENGTH>;
+   unsigned int i;
+   float2 maxvalue;
+   unsigned int logN;
+   unsigned int LogNMinusK;
+   float maxshift=999;
+
+   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   NanToRightfloat2 (*list_stream,output_stream,sign,maxvalue);   
+   for (i=1;i<logN;++i) {
+      if (i%2)
+         NanToRightfloat2 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
+      else
+         NanToRightfloat2 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+   }
+   if (logN%2==0)
+     streamSwap(tmp_stream,*output_stream);
+}
+
 float shiftValuesfloat2(struct StreamHolder list_stream,
                        struct StreamHolder output_stream,
                        int WIDTH, 
@@ -2135,6 +2207,16 @@ kernel void NanToRightfloat3 (float value [][],
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = value[indexof(output)]+neighbor;
 }
+kernel void CountToRightfloat3 (float3 value [][],
+                                  out float3 output<>,
+                                  float twotoi,
+                                  float2 maxvalue) {
+   float2 nextPlaceToLook;
+   float3 neighbor;
+   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
+   valueAtfloat3(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = value[indexof(output)]+neighbor;
+}
 
 kernel void GatherGuessfloat3(float scatterindex[][],
                         out float output<>,
@@ -2206,6 +2288,32 @@ kernel void RelativeGatherfloat3(out float3 output<>,
               nextPlaceToLook);
    valueAtfloat3(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
+
+float CountValuesfloat3(struct StreamHolder list_stream,
+                          struct StreamHolder output_stream,
+                          int WIDTH, 
+                          int LENGTH, 
+                          int sign) {
+   float3 tmp_stream<WIDTH,LENGTH>;
+   unsigned int i;
+   float2 maxvalue;
+   unsigned int logN;
+   unsigned int LogNMinusK;
+   float maxshift=999;
+
+   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   NanToRightfloat3 (*list_stream,output_stream,sign,maxvalue);   
+   for (i=1;i<logN;++i) {
+      if (i%2)
+         NanToRightfloat3 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
+      else
+         NanToRightfloat3 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+   }
+   if (logN%2==0)
+     streamSwap(tmp_stream,*output_stream);
+}
+
 float shiftValuesfloat3(struct StreamHolder list_stream,
                        struct StreamHolder output_stream,
                        int WIDTH, 
@@ -3127,6 +3235,16 @@ kernel void NanToRightfloat4 (float value [][],
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = value[indexof(output)]+neighbor;
 }
+kernel void CountToRightfloat4 (float4 value [][],
+                                  out float4 output<>,
+                                  float twotoi,
+                                  float2 maxvalue) {
+   float2 nextPlaceToLook;
+   float4 neighbor;
+   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
+   valueAtfloat4(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = value[indexof(output)]+neighbor;
+}
 
 kernel void GatherGuessfloat4(float scatterindex[][],
                         out float output<>,
@@ -3198,6 +3316,32 @@ kernel void RelativeGatherfloat4(out float4 output<>,
               nextPlaceToLook);
    valueAtfloat4(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
+
+float CountValuesfloat4(struct StreamHolder list_stream,
+                          struct StreamHolder output_stream,
+                          int WIDTH, 
+                          int LENGTH, 
+                          int sign) {
+   float4 tmp_stream<WIDTH,LENGTH>;
+   unsigned int i;
+   float2 maxvalue;
+   unsigned int logN;
+   unsigned int LogNMinusK;
+   float maxshift=999;
+
+   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   NanToRightfloat4 (*list_stream,output_stream,sign,maxvalue);   
+   for (i=1;i<logN;++i) {
+      if (i%2)
+         NanToRightfloat4 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
+      else
+         NanToRightfloat4 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+   }
+   if (logN%2==0)
+     streamSwap(tmp_stream,*output_stream);
+}
+
 float shiftValuesfloat4(struct StreamHolder list_stream,
                        struct StreamHolder output_stream,
                        int WIDTH, 
@@ -4063,16 +4207,16 @@ unsigned int totalCombineVoutfloat4 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 1066 "brtvector.hpp"
-#line 1066 "brtvector.hpp"
+#line 1102 "brtvector.hpp"
+#line 1102 "brtvector.hpp"
 
-#line 1066 "brtvector.hpp"
+#line 1102 "brtvector.hpp"
 
-#line 1066 "brtvector.hpp"
+#line 1102 "brtvector.hpp"
 
-#line 1066 "brtvector.hpp"
+#line 1102 "brtvector.hpp"
 
-#line 1066 "brtvector.hpp"
+#line 1102 "brtvector.hpp"
 
 
 

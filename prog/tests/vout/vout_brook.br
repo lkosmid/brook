@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include "streamholder.h"
+float CountValuesfloat(struct StreamHolder list_stream,
+                       struct StreamHolder output_stream,
+                       int WIDTH, 
+                       int LENGTH, 
+                       int sign);
+
 kernel void foo (float a<>, float b<>, float4 c,
 		 float d[10][10], vout []float e<>) {
   e = a+b+d[c.xy];
@@ -22,22 +28,26 @@ int main () {
   float b<10, 10>;
   float d<10, 10>;
   float e<10, 10>;
-  
+  float nil<40,10>;
+  float test <40,10>;
   float data_a[10][10];
   float data_b[10][10];
   float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
   float data_d[10][10];
+  float *data_nil;
   float d_broken = 0.0f;
-
+  float *data_out;
   int i,j;
-
+  data_out=(float*)malloc(10*40*sizeof(float));
+  data_nil=(float*)malloc(10*40*sizeof(float));
+  memset(data_nil,0,10*40*sizeof(float));
   for (i=0; i<10; i++)
     for (j=0; j<10; j++) {
       data_a[i][j] = ((float) i) + ((float) j) / 10.0f;
       data_b[i][j] = ((float) j) + ((float) i) / 10.0f;
       data_d[i][j] = ((float) i) / 100.0f;
     }
-
+  
   streamRead(a, data_a);
   streamRead(b, data_b);
   streamRead(d, data_d);
@@ -46,6 +56,15 @@ int main () {
   //foo(a,b,c,d_broken,e);
 
   streamPrint(e);
-
+  for (i=0;i<40;++i) {
+     for (j=0;j<10;++j) {
+        data_nil[i*10+j]=1.0;
+        streamRead(nil,data_nil);
+        CountValuesfloat(&nil,&test,40,10,-1);
+        streamWrite(test,data_out);
+        data_nil[i*10+j]=0.0;
+        
+     }
+  }
   return 0;
 }

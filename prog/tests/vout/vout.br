@@ -128,6 +128,16 @@ kernel void NanToRightBRT_TYPE (float value [][],
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = value[indexof(output)]+neighbor;
 }
+kernel void CountToRightBRT_TYPE (BRT_TYPE value [][],
+                                  out BRT_TYPE output<>,
+                                  float twotoi,
+                                  float2 maxvalue) {
+   float2 nextPlaceToLook;
+   BRT_TYPE neighbor;
+   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
+   valueAtBRT_TYPE(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = value[indexof(output)]+neighbor;
+}
 
 kernel void GatherGuessBRT_TYPE(float scatterindex[][],
                         out float output<>,
@@ -199,6 +209,32 @@ kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
               nextPlaceToLook);
    valueAtBRT_TYPE(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
+
+float CountValuesBRT_TYPE(struct StreamHolder list_stream,
+                          struct StreamHolder output_stream,
+                          int WIDTH, 
+                          int LENGTH, 
+                          int sign) {
+   BRT_TYPE tmp_stream<WIDTH,LENGTH>;
+   unsigned int i;
+   float2 maxvalue;
+   unsigned int logN;
+   unsigned int LogNMinusK;
+   float maxshift=999;
+
+   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   NanToRightBRT_TYPE (*list_stream,output_stream,sign,maxvalue);   
+   for (i=1;i<logN;++i) {
+      if (i%2)
+         NanToRightBRT_TYPE (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
+      else
+         NanToRightBRT_TYPE (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+   }
+   if (logN%2==0)
+     streamSwap(tmp_stream,*output_stream);
+}
+
 float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
                        struct StreamHolder output_stream,
                        int WIDTH, 
