@@ -1,4 +1,5 @@
 // writequery.cpp
+#include <stdlib.h>
 #include "writequery.hpp"
 
 #include "runtime.hpp"
