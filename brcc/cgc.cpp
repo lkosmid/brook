@@ -49,10 +49,12 @@ compile_cgc (const char * /*name*/,
   char fp40[]="fp40";
   char ps20[]="ps_2_0";
   char ps2b[]="ps_2_x";
+  char ps2a[]="ps_2_x";
   char profileopts[] = "-profileopts";
-  char ps2b_opt[] = "NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
+  char ps2b_opt[] = "NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NoDependentReadLimit=0,NumInstructionSlots=512";
+  char ps2a_opt[] = "NumTemps=22,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
+  char arbfp_opt[]= "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=96";
   char userect[] ="-DUSERECT=1";
-  char maxindirections[]="MaxTexIndirections=4";
 
   switch (target) {
   case CODEGEN_PS20:
@@ -62,6 +64,11 @@ compile_cgc (const char * /*name*/,
      argv[4] = ps2b;
      argv[5] = profileopts;
      argv[6] = ps2b_opt;
+     break;
+  case CODEGEN_PS2A:
+     argv[4] = ps2a;
+     argv[5] = profileopts;
+     argv[6] = ps2a_opt;
      break;
   case CODEGEN_FP30:
      argv[4] = fp30;
@@ -75,7 +82,7 @@ compile_cgc (const char * /*name*/,
      argv[4] = arbfp;
      argv[5] = userect;
      argv[6] = profileopts;
-     argv[7] = maxindirections;
+     argv[7] = arbfp_opt;
      break;
   default: 
      fprintf(stderr, "Unsupported Cgc target.\n");
@@ -94,6 +101,9 @@ compile_cgc (const char * /*name*/,
     switch (target) {
     case CODEGEN_PS2B:
        fprintf(stderr, "PS2B target.");
+       break;
+    case CODEGEN_PS2A:
+       fprintf(stderr, "PS2A target.");
        break;
     case CODEGEN_PS20:
        fprintf(stderr, "PS20 target.");
@@ -114,7 +124,8 @@ compile_cgc (const char * /*name*/,
   }
 
   if (target == CODEGEN_PS20 ||
-      target == CODEGEN_PS2B)
+      target == CODEGEN_PS2B ||
+      target == CODEGEN_PS2A)
      return fpcode;
 
   // cgc has this annoying feature that it outputs warnings

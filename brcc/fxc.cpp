@@ -43,6 +43,7 @@ compile_fxc (const char *name,
   //char software[]="/Tps_2_sw";
   char hardware[]="/Tps_2_0";
   char ps2b[]="/Tps_2_b";
+  char ps2a[]="/Tps_2_a";
   char ps30_targetstring[]="/Tps_3_0";
   char nothin[]=""; //gcc does not like ?: with ""
 
@@ -50,6 +51,9 @@ compile_fxc (const char *name,
   switch (target) {
   case CODEGEN_PS2B:
     targetstring = ps2b;
+    break;
+  case CODEGEN_PS2A:
+    targetstring = ps2a;
     break;
   case CODEGEN_PS20:
   case CODEGEN_ARB:
@@ -95,6 +99,9 @@ compile_fxc (const char *name,
     switch (target) {
     case CODEGEN_PS2B:
        fprintf(stderr, "PS2B target.");
+       break;
+    case CODEGEN_PS2A:
+       fprintf(stderr, "PS2A target.");
        break;
     case CODEGEN_PS20:
        fprintf(stderr, "PS20 target.");

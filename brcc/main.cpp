@@ -52,7 +52,7 @@ usage (void) {
         "\t-N\t\tdeny support for kernels calling other kernels\n"
         "\t-o prefix\tprefix prepended to all output files\n"
         "\t-w workspace\tworkspace size (16 - 2048, default 1024)\n"
-        "\t-p shader\tcpu/ps20/ps2b/fp30/cpumt (can specify multiple)\n"
+        "\t-p shader\tcpu/ps20/ps2a/ps2b/fp30/fp40/cpumt (can specify multiple)\n"
         "\t-f compiler\tfavor a particular compiler (cgc / fxc / default)\n"  
         "\n");
 
@@ -125,6 +125,8 @@ parse_args (int argc, char *argv[]) {
 	  globals.target |= TARGET_PS20;
 	else if (strcasecmp (optarg, "ps2b") == 0)
 	  globals.target |= TARGET_PS2B;
+	else if (strcasecmp (optarg, "ps2a") == 0)
+	  globals.target |= TARGET_PS2A;
 	else if (strcasecmp (optarg, "ps30") == 0)
 	  globals.target |= TARGET_PS30;
 	else if (strcasecmp (optarg, "fp30") == 0)
@@ -162,7 +164,7 @@ parse_args (int argc, char *argv[]) {
   if (globals.target == 0)
      globals.target = TARGET_PS20 | TARGET_CPU | TARGET_MULTITHREADED_CPU |
                       TARGET_FP30 | TARGET_ARB | TARGET_FP40 | TARGET_PS30 |
-                      TARGET_PS2B;
+                      TARGET_PS2B | TARGET_PS2A;
 
   argv += optind;
   argc -= optind;

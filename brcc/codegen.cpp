@@ -118,6 +118,7 @@ CodeGen_Init(void) {
 #ifdef WIN32
       shadercompile[CODEGEN_PS20] = compile_fxc;
       shadercompile[CODEGEN_PS2B] = compile_fxc;
+      shadercompile[CODEGEN_PS2A] = compile_fxc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
@@ -127,6 +128,7 @@ CodeGen_Init(void) {
    case COMPILER_CGC:
       shadercompile[CODEGEN_PS20] = compile_cgc;
       shadercompile[CODEGEN_PS2B] = compile_cgc;
+      shadercompile[CODEGEN_PS2A] = compile_cgc;
 #ifdef WIN32
       shadercompile[CODEGEN_PS30] = compile_fxc;
 #else
@@ -139,6 +141,7 @@ CodeGen_Init(void) {
    case COMPILER_FXC:
       shadercompile[CODEGEN_PS20] = compile_fxc;
       shadercompile[CODEGEN_PS2B] = compile_fxc;
+      shadercompile[CODEGEN_PS2A] = compile_fxc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
@@ -1599,6 +1602,7 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
      {
      case CODEGEN_PS20:
      case CODEGEN_PS2B:
+     case CODEGEN_PS2A:
      case CODEGEN_PS30:
        commentString = "//";
        break;
@@ -1632,10 +1636,13 @@ generateShaderTechnique(Decl** args, int nArgs, const char* name,
   bool isReduction = false;
   int outputCount = getShaderOutputCount( nArgs, args, isReduction );
   int maxOutputsPerPass = 1;
-  if( (target == CODEGEN_PS20 || 
-       target == CODEGEN_PS2B) &&
-      !isReduction && 
-      globals.allowDX9MultiOut )
+
+  if( (target == CODEGEN_PS2B ||
+       target == CODEGEN_PS30 ||
+       target == CODEGEN_ARB  ||
+       target == CODEGEN_FP40 ||
+       globals.allowDX9MultiOut) &&
+      !isReduction )
     maxOutputsPerPass = 4;
 
   outTechnique.reductionFactor = reductionFactor;
@@ -1765,6 +1772,7 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
   {
   case CODEGEN_PS20:
   case CODEGEN_PS2B:
+  case CODEGEN_PS2A:
   case CODEGEN_PS30: {
     std::auto_ptr<SplitCompiler> tmp( new SplitCompilerHLSL() );
     compiler = tmp;

@@ -9,6 +9,7 @@
 #define TARGET_FP40     (1<<5)
 #define TARGET_PS30     (1<<6)
 #define TARGET_PS2B     (1<<7)
+#define TARGET_PS2A     (1<<8)
 
 #define COMPILER_DEFAULT 0
 #define COMPILER_CGC     1

@@ -54,6 +54,12 @@ BRTPS2BReduceCode::BRTPS2BReduceCode(const FunctionDef& _fDef)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BRTPS2AReduceCode::BRTPS2AReduceCode(const FunctionDef& _fDef)
+  : BRTPS2AKernelCode(_fDef)//converts gathers
+{
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BRTPS30ReduceCode::BRTPS30ReduceCode(const FunctionDef& _fDef)
 		: BRTPS30KernelCode(_fDef)//converts gathers
 {
@@ -69,6 +75,12 @@ void
 BRTPS2BReduceCode::printCode(std::ostream& out) const
 {
 	this->BRTPS2BKernelCode::printCode(out);
+}
+
+void
+BRTPS2AReduceCode::printCode(std::ostream& out) const
+{
+	this->BRTPS2AKernelCode::printCode(out);
 }
 
 void

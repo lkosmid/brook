@@ -16,6 +16,7 @@ typedef enum {
    CODEGEN_FP40,
    CODEGEN_PS30,
    CODEGEN_PS2B,
+   CODEGEN_PS2A,
    CODEGEN_NUM_TARGETS
 } CodeGenTarget;
 
@@ -26,7 +27,8 @@ static const char* CODEGEN_TARGET_NAMES[CODEGEN_NUM_TARGETS] =
     "arb",
     "fp40",
     "ps30",
-    "ps2b"
+    "ps2b",
+    "ps2a"
 };
 
 struct ShaderResourceUsage
