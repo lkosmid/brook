@@ -10,8 +10,8 @@ reduce void foo (float4 a<>, float4 c,
 		 float d[10][10], reduce float4 e<>) {
   e.x = a.x+e.x+d[c.xy]+d[c.yx];
   e.y = a.y+e.y;
-  e.z = (.0625+a.z)*.125*(.0625+e.z);
-  e.w = (c.w+a.w)*.0625*(c.w+e.w);
+  e.z = (a.z)*c.z*(e.z);
+  e.w = (a.w)*.0625*c.w*(e.w);
 }
 reduce void SUM( float4 a<>, reduce float4 b<> ) {
 	b = b + a;
@@ -67,7 +67,8 @@ int main () {
   for (i=0; i<10; i++)
     for (j=0; j<10; j++) {
       data_a[i][j].x = ((float) i) + ((float) j) / 10.0f;
-      data_a[i][j].y=data_a[i][j].z=data_a[i][j].w=data_a[i][j].x;
+      data_a[i][j].y=data_a[i][j].x;
+      data_a[i][j].z=.25*(.25+i);data_a[i][j].w=(i+.25+j);
       data_b[i][j] = ((float) j) + ((float) i) / 10.0f;
       data_d[i][j] = (float)j/8+((float) i) / 64.0f;
     }
