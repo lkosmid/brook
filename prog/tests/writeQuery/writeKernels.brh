@@ -1,0 +1,13 @@
+/*
+ * writeKernels.brh --
+ *
+ *      Prototypes for the kernels in writeKernels.br.
+ */
+
+#ifndef __WRITEKERNELS_BRH__
+#define __WRITEKERNELS_BRH__
+
+kernel void krn_CopyStream(float inStream<>, out float o<>);
+kernel void krn_CopyBelowThreshold(float inStream<>, float t, out float o<>);
+
+#endif

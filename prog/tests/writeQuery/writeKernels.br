@@ -1,0 +1,41 @@
+/*
+ * writeKernels.br --
+ *
+ *      The kernels used in the writeQuery test.
+ */
+
+
+/*
+ * krn_CopyStream --
+ *
+ *      Dead simple memcp() for streams.
+ *
+ * Results:
+ *      The input is copied exactly to the output.
+ */
+
+kernel void
+krn_CopyStream(float inStream<>, out float o<>)
+{
+   o = inStream;
+}
+
+
+/*
+ * krn_CopyBelowThreshold --
+ *
+ *      Copies any elements on the input that are less than the given
+ *      threshold to the output.  Kills the rest of the fragments.
+ *
+ * Results:
+ *      See description.
+ */
+
+kernel void
+krn_CopyBelowThreshold(float inStream<>, float t, out float o<>)
+{
+   if (inStream >= t) {
+      discard;
+   }
+   o = inStream;
+}
