@@ -174,14 +174,15 @@ float2 * getData(int N, int M) {
    return ret;
 }
 float2 * data = getData(4096,4096);
+
 int main (int argc, char ** argv) {
    int logN = argc>=2?atoi(argv[1]):3;
    int logM = argc>=3?atoi(argv[1]):logN;
    int N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
-   compute2dFFT(data,output,logN,logM,N,M,FFT_2D);
-   free(data);
-   
+   //   compute2dFFT(data,output,logN,logM,N,M,FFT_2D);
+   FftwTransform2d(data,N,M,1,1);
+
    return 0;
 }
