@@ -2,11 +2,16 @@
 #include <stdlib.h>
 #include "ppm3d.h"
 kernel float test(float vol<>,float index<>){
-  return vol>0;
+  return (vol>0)?index:0;
+}
+
+float __printf_cpu_inner (float a, float b, float c, float d) {
+  printf ("%f %f -> %f %f\n",a,b,c,d);
+  return 1;
 }
 kernel float eval (float3 loc<>) {  
   float  power;
-  const float offset=32;
+  const float offset=64;
   const float length=64;
   float3 center =loc-offset;
   power = dot(center,center);
@@ -30,7 +35,8 @@ kernel float eval (float3 loc<>) {
   */
   {
     const float  R = 16;
-    const float  density = 14;
+    const float  density = 184;
+    //    printf (power,R,density,power/R-density);
     return power/R-density;
   }
 }
@@ -42,15 +48,16 @@ kernel float3 combineIndex (float a,float b, float c) {
 kernel float evaluateNeighbors (float2 center<>,
                                 float2 opposing<>,
                                 float2 slice) {
-  return 
-    test(eval(float3(center.x,center.y,slice.x)),0.0f) +
-    test(eval(float3(center.x,opposing.y,slice.x)),1.0f) +
-    test(eval(float3(opposing.x,opposing.y,slice.x)),2.0f) +
-    test(eval(float3(opposing.x,center.y,slice.x)),3.0f) +
-    test(eval(float3(center.x,center.y,slice.y)),4.0f) +
-    test(eval(float3(center.x,opposing.y,slice.y)),5.0f) +
-    test(eval(float3(opposing.x,opposing.y,slice.y)),6.0f) +
-    test(eval(float3(opposing.x,center.y,slice.y)),7.0f);
+
+   float a=test(eval(float3(center.x,center.y,slice.x)),2.0f) +
+      test(eval(float3(center.x,opposing.y,slice.x)),4.0f) +
+      test(eval(float3(opposing.x,opposing.y,slice.x)),8.0f) +
+      test(eval(float3(opposing.x,center.y,slice.x)),16.0f) +
+      test(eval(float3(center.x,center.y,slice.y)),32.0f) +
+      test(eval(float3(center.x,opposing.y,slice.y)),64.0f) +
+      test(eval(float3(opposing.x,opposing.y,slice.y)),128.0f) +
+      test(eval(float3(opposing.x,center.y,slice.y)),256.0f);
+   return a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f);
     
 }
 kernel void processSlice (float curslice<>, 
@@ -62,22 +69,36 @@ kernel void processSlice (float curslice<>,
   
 }
                            
-kernel void processVirtualSlice(vout[1] float3 vertex<>,
+kernel void processVirtualSlice(vout[1] float4 vertex<>,
                                 iter float2 center<>,
                                 iter float2 opposing<>,
                                 float2 slice/*first value is cur then next*/) {
   if(evaluateNeighbors(center,opposing,slice)) {
-    vertex=float3(center.x,center.y,slice.x);
+    vertex=float4(center.x,center.y,slice.x,0);
     push(vertex);
   }
+}
+kernel void processVirtualSliceNoCompact(out float4 vertex<>,
+                                         iter float2 center<>,
+                                         iter float2 opposing<>,
+                                         float2 slice/*first value is cur then next*/) {
+  if(evaluateNeighbors(center,opposing,slice)) {
+    vertex=float4(center.x,center.y,slice.x,0);
+  }else {
+    vertex=float4(-1.0,-1.0f,-1.0f,-1.0f);
+  }
+}
+float tof (int a) {
+  return (float)a;
 }
  int main (int argc, char ** argv) {
    if (argc<2) {
       printf ("Usage: volume_division <FILE.pnm>\n      volume_divison <width>\n");
       exit (1);
    }
-   
+   if (argc==2)
    {
+     
       struct ppm dat;
       float * slice;
       
@@ -114,6 +135,31 @@ kernel void processVirtualSlice(vout[1] float3 vertex<>,
          streamWrite(v,consolidateVertices(dat,streamSize(v)));         
       }
       free(slice);
+   }else {
+     int width=atoi (argv[1]);
+     int depth=atoi (argv[2]);
+     int i,height;
+     if (argc>3)
+       height=atoi (argv[3]);
+     else
+       height=width;
+     {
+       float4 v<height,width>;
+       struct ppm dat = randomPPM(width,height,depth);
+
+       iter float2 current<height,width> = iter(float2(0.0f,0.0f),
+                                                float2(tof(width),
+                                                       tof(height)));
+       iter float2 corner<height,width> = iter(float2(1.0f,1.0f),
+                                               float2(tof(1+width),
+                                                      tof(1+height)));
+       for (i=0;i<depth;++i) {
+         processVirtualSlice(v,current,corner,float2(tof(i),tof(i+1)));
+         streamWrite(v,consolidateVertices(dat,streamSize(v)));
+       }
+       printVolume(dat);
+     }
+
    }
    return 0;
-}
+ }

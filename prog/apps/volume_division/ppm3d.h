@@ -30,6 +30,15 @@ ppm openPPM (char * name) {
    }
    return ret;
 }
+void printVolume (const ppm &fp) {
+   std::vector<float4>::const_iterator i=fp.vertices.begin();
+   unsigned int j=0;
+   for (;i!=fp.vertices.end();++i,++j) {
+      printf ("[%f %f %f %f]",i->x,i->y,i->z,i->w);
+      if (j%2==1)
+         printf("\n");
+   }
+}
 float * mallocSlice (const ppm &fp) {
    return (float*)malloc(sizeof(float)*fp.width*fp.height);
 }
@@ -62,15 +71,23 @@ unsigned int findNaN(std::vector<float4> v) {
             pos-=half;
          }
       }
+      half/=2;
    }
-   if (!isinf_float(v[pos].x))
-      pos+=1;
+   if (pos<v.size())
+      if (!isinf_float(v[pos].x))
+         pos+=1;
    return pos;
 }
 float4* consolidateVertices(ppm &fp,float4 ss/*stream size*/) {
    unsigned int size = (unsigned int)ss.x*(unsigned int)ss.y;
    unsigned int nanloc= findNaN(fp.vertices);
-   unsigned int newguys = size-(fp.vertices.size()-nanloc);
-   fp.vertices.insert(fp.vertices.end(),newguys,float4(0,0,0,0));
+   if (size>fp.vertices.size()-nanloc) {
+      unsigned int newguys = size-(fp.vertices.size()-nanloc);
+      fp.vertices.insert(fp.vertices.end(),newguys,float4(0,0,0,0));
+   }
+   if (!&fp.vertices[nanloc]) {
+      static float4 x;
+      return &x;
+   }
    return &fp.vertices[nanloc];
 }
