@@ -665,7 +665,7 @@ void SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB, bool inA
   assert( valid );
 
   int score = (inA->cost + inB->cost) - heuristics.cost;
-  assert( score > 0 );
+  assert( score >= 0 );
 
   SplitPassInfo* result = new SplitPassInfo();
   result->allOutputs.swap( allOutputs );
