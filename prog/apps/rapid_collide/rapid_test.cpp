@@ -5,17 +5,19 @@ float ABS (float x) {
 }
 #include "csgeom/vector3.h"
 #include "csgeom/matrix3.h"
+#include "csgeom/rapcol.h"
+/*
 typedef struct Tri_t {
   float3 A;
   float3 B;
   float3 C;
-} Tri;
+  } Tri;*/
 extern int tri_contact (const csVector3 &,const csVector3 &,const csVector3 &,
                         const csVector3 &,const csVector3 &,const csVector3 &);
 
 #define USE_EPSILON_TEST	1
 
-const   float EPSILON=.00001f;
+//const   float EPSILON=.00001f;
 
 
 float min3(float a, float b, float c) {
@@ -160,6 +162,7 @@ void testOBB() {
   assert(cputest==brooktest);
   } 
 }
+extern void LoadPly (const char * file, std::vector<Tri> &ret);
 int main (int argc, char ** argv) {
   float3 * a= (float3*)malloc(sizeof(float3)*3*SIZEX*SIZEY);
   float3 * b= (float3*)malloc(sizeof(float3)*3*SIZEX*SIZEY);
@@ -170,6 +173,8 @@ int main (int argc, char ** argv) {
                     0,0,1,0,
                     0,0,0,1};
   srand(1);
+  std::vector <bsp_polygon> model;
+  LoadPly ("bunny.ply",model);
   testOBB();
   for (unsigned int k=0;k<12;++k) {
   SetTriangles(SIZEX*SIZEY,a,b);
