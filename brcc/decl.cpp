@@ -1702,14 +1702,15 @@ bool Decl::printStructureStreamShape(std::ostream& out)
 
   std::ostringstream stringout;
 
-  stringout << "\ntemplate<> const __BRTStreamType* ::brook::getStreamType(";
+  stringout << "\nnamespace brook {\n";
+  stringout << "\ttemplate<> const __BRTStreamType* getStreamType(";
   stringout << name->name << "*) {\n";
-  stringout << "\tstatic const __BRTStreamType result[] = {";
+  stringout << "\t\tstatic const __BRTStreamType result[] = {";
   if(!form->printStructureStreamShape( stringout ))
     return false;
   stringout << "__BRTNONE};\n";
-  stringout << "\treturn result;\n";
-  stringout << "}\n\n";
+  stringout << "\t\treturn result;\n";
+  stringout << "\t}\n}\n";
   out << stringout.str();
   return true;
 }
