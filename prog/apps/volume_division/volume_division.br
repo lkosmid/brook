@@ -1,24 +1,80 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ppm3d.h"
-kernel float test(float vol){
+kernel float test(float vol<>,float index<>){
   return vol>0;
 }
-kernel void processVirtualSlice(vout[1] float vertex<>,
-                                iter float2 center<>,
-                                iter float2 corner<>) {
+kernel float lensqr (float3 x) {
+  return dot(x,x);
+}
+kernel float eval (float3 loc<>) {  
+  float  power;
+  const float offset=32;
+  const float length=64;
+  float3 center =loc-offset;
+  power = dot(center,center);
+  /*
+  center.x +=length;
+  power += dot(center,center);
+  center.y+=length;
+  power += dot(center,center);
+  center.x-= length;
+  power +=  dot(center,center);
+  center.z+= length;
+  power += dot(center,center);
   
+  center.y-=length;
+  power += dot(center,center);
+  
+  center.x+=length;                  
+  power += dot(center,center);
+  center.y+=length;
+  power += dot(center,center);
+  */
+  {
+    const float  R = 16;
+    const float  density = 14;
+    return power/R-density;
+  }
+}
+kernel float3 combineIndex (float a,float b, float c) {
+  float3 ret={a,b,c};
+  return ret;
+}
+
+kernel float evaluateNeighbors (float2 center<>,
+                                float2 opposing<>,
+                                float2 slice) {
+  return 
+    test(eval(float3(center.x,center.y,slice.x)),0.0f) +
+    test(eval(float3(center.x,opposing.y,slice.x)),1.0f) +
+    test(eval(float3(opposing.x,opposing.y,slice.x)),2.0f) +
+    test(eval(float3(opposing.x,center.y,slice.x)),3.0f) +
+    test(eval(float3(center.x,center.y,slice.y)),4.0f) +
+    test(eval(float3(center.x,opposing.y,slice.y)),5.0f) +
+    test(eval(float3(opposing.x,opposing.y,slice.y)),6.0f) +
+    test(eval(float3(opposing.x,center.y,slice.y)),7.0f);
+    
 }
 kernel void processSlice (float curslice<>, 
                           float curgather[][],
                           float nextslice[][],
                           vout [1]float vertex<>,
-                          iter float center<>,
-                          iter float corner<>) {
+                          iter float2 center<>,
+                          iter float2 corner<>) {
   
 }
-int main (int argc, char ** argv) {
-   float * volumetrics=NULL;
+                           
+kernel void processVirtualSlice(vout[1] float3 vertex<>,
+                                iter float2 center<>,
+                                iter float2 opposing<>,
+                                float2 slice/*first value is cur then next*/) {
+  if(evaluateNeighbors(center,opposing,slice)) {
+    vertex=float3(center.x,center.y,slice.x);
+    push(vertex);
+  }
+}
+ int main (int argc, char ** argv) {
    if (argc<2) {
       printf ("Usage: volume_division <FILE.pnm>\n      volume_divison <width>\n");
       exit (1);
@@ -41,17 +97,23 @@ int main (int argc, char ** argv) {
          float cur<(dat.height),(dat.width)>;
          float next<(dat.height),(dat.width)>;
          float v<1,(dat.width)>;
+         iter float2 curiter <(dat.height),(dat.width)> = iter (float2(0,0),
+                                                           float2(dat.width,
+                                                                  dat.height));
+         iter float2 nextiter <(dat.height),(dat.width)> = iter (float2(1,1),
+                                                           float2(1+dat.width,
+                                                                  1+dat.height));
+                                                         
          readPPM3dSlice(dat,0,slice);
          streamRead(cur,slice);
          for (i=0;i<dat.depth-1;++i) {
             readPPM3dSlice(dat,i+1,slice);
             streamSwap(cur,next);
-            streamSwap(next,prev);
             streamRead(next,slice);
-            processSlice(prev,cur,cur,next,v);
+            processSlice(cur,cur,next,v,curiter,nextiter);
             streamWrite(v,consolidateVertices(dat,streamSize(v)));
          }
-         processSlice(cur,next,next,next,v);
+         processSlice(next,next,next,v,curiter,nextiter);
          streamWrite(v,consolidateVertices(dat,streamSize(v)));         
       }
       free(slice);
