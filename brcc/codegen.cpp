@@ -97,7 +97,7 @@ generate_shader_code (Decl **args, int nArgs,
 
   // Add the workspace variable
   shader << "   uniform float4 _workspace    : register (c"
-       << constreg++ << "), \n\t\t";
+       << constreg++ << ")";
 
   /* Print the argument list */
 
@@ -105,48 +105,56 @@ generate_shader_code (Decl **args, int nArgs,
 
   for (i=0; i < nArgs; i++) {
     TypeQual qual = args[i]->form->getQualifiers();
-    
-    /* Don't put the output in the argument list */
-    if ((qual & TQ_Out) != 0) {
-      continue;
-    }
-    
-    /* Print the "," */
-    if (first) shader <<  ",\n\t\t";
-    first=true;
 
     if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
 
       if ((qual & TQ_Iter) != 0) {
         
         // Just output a texcoord for an iterator
+        shader <<  ",\n\t\t";
         args[i]->form->getBase()->qualifier &= ~TQ_Iter;
         args[i]->form->printBase(shader, 0);
         args[i]->form->getBase()->qualifier = qual;
           shader << *args[i]->name << " : TEXCOORD" << texcoord++; 
 
-      } else {
+      } else if((qual & TQ_Out) != 0) {
+        // Output a sampler, texcoord, and scale_bias for 
+        // a stream
+        if( FunctionProp[funtionName].contains(i) ) {
+          shader <<  ",\n\t\t";
+          shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
+          << " : register (c" << constreg++ << ")";
+          shader <<  ",\n\t\t";
+          shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
+          << texcoord++;
+        }
+      } else
+      {
 
         // Output a sampler, texcoord, and scale_bias for 
         // a stream
+        shader <<  ",\n\t\t";
          shader << "uniform _stype _tex_" << *args[i]->name;
-         shader << " : register (s" << samplerreg++ << "),\n\t\t";
+         shader << " : register (s" << samplerreg++ << ")";
          if( FunctionProp[funtionName].contains(i) ) {
+           shader <<  ",\n\t\t";
            shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
-                  << " : register (c" << constreg++ << "),\n\t\t";
+                  << " : register (c" << constreg++ << ")";
          }
+         shader <<  ",\n\t\t";
          shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
                 << texcoord++;
       }
     } else if (args[i]->isArray()) {
-      
+      shader <<  ",\n\t\t";
       shader << "uniform _stype " << *args[i]->name;
-      shader << " : register (s" << samplerreg++ << "),\n\t\t";
+      shader << " : register (s" << samplerreg++ << ")";
+      shader <<  ",\n\t\t";
       shader << "uniform float4 _const_" << *args[i]->name << "_scalebias"
                 << " : register (c" << constreg++ << ")";
     
     } else {
-      
+      shader <<  ",\n\t\t";
       shader << "uniform ";
       args[i]->print(shader, true);
       shader << " : register (c" << constreg++ << ")";
@@ -179,42 +187,42 @@ generate_shader_code (Decl **args, int nArgs,
   for (i=0; i < nArgs; i++) {
      TypeQual qual = args[i]->form->getQualifiers();
 
-     if (args[i] == outArg && !isReduction) continue;
      if ((qual & TQ_Iter) != 0) continue; /* No texture fetch for iterators */
 
-     if (args[i]->isStream() || 
-         (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
-       
-       int dimension = FloatDimension(args[i]->form->getBase()->typemask);
-       assert(dimension > 0);
-       
-       shader << "\t" << *args[i]->name << " = _sfetch"
-              << "(_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
-              << "_pos)";
-       
-       assert (args[i]->form);
-       BaseType *b = args[i]->form->getBase();
-       switch (b->typemask) {
-       case BT_Float:
-         shader << ".x";
-         break;
-       case BT_Float2:
-         shader << ".xy";
-         break;
-       case BT_Float3:
-         shader << ".xyz";
-         break;
-       case BT_Float4:
-         shader << ".xyzw";
-         break;
-       default:
-         fprintf(stderr, "Strange array base type:");
-         b->printBase(std::cerr, 0);
-         abort();
+     if (args[i]->isStream() || (args[i]->form->getQualifiers() & TQ_Reduce) != 0) {
+
+       if((qual & TQ_Out) == 0) {
+        int dimension = FloatDimension(args[i]->form->getBase()->typemask);
+        assert(dimension > 0);
+          
+        shader << "\t" << *args[i]->name << " = _sfetch"
+                << "(_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
+                << "_pos)";
+          
+        assert (args[i]->form);
+        BaseType *b = args[i]->form->getBase();
+        switch (b->typemask) {
+        case BT_Float:
+          shader << ".x";
+          break;
+        case BT_Float2:
+          shader << ".xy";
+          break;
+        case BT_Float3:
+          shader << ".xyz";
+          break;
+        case BT_Float4:
+          shader << ".xyzw";
+          break;
+        default:
+          fprintf(stderr, "Strange array base type:");
+          b->printBase(std::cerr, 0);
+          abort();
+        }
+          
+        shader << ";\n";
        }
-       
-       shader << ";\n";
-       
+          
        if( FunctionProp[funtionName].contains(i) )
          {
            shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "

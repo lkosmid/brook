@@ -174,7 +174,8 @@ void DX9Kernel::PushGatherStream(Stream *s) {
 
 void DX9Kernel::PushOutput(Stream *s) {
   DX9Trace("PushOutput");
-  int arg = argumentOutputIndex++;
+  int arg = argumentIndex++;
+  argumentOutputIndex++;
 
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DSurface9* surfaceHandle = stream->getSurfaceHandle();
@@ -182,6 +183,12 @@ void DX9Kernel::PushOutput(Stream *s) {
   outputStream = stream;
   outputSurface = surfaceHandle;
   outputRect = stream->getOutputRect();
+
+  if( argumentUsesIndexof[arg] )
+  {
+    PushConstantImpl( stream->getIndexofConstant() );
+    PushTexCoord( stream->getInputRect() );
+  }
 }
 
 void DX9Kernel::Map() {
