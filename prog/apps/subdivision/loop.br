@@ -1,5 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+/**   ABB__BBC 
+      /\  /\
+   AB/__\/__\BC
+    /\  B\  /\
+AAB/__\/__\/__\BCC
+   \  A\  /C  /
+    \/__\/__\/
+   AAC  AC  ACC
+**/
 typedef struct Tri_t{
    float4 A; // the last value of A indicates whether the edge AB is small
    float4 B; // enough to stop subdividing.  B.w also indicates if BC is small
