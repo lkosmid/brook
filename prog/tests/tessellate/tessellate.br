@@ -107,7 +107,7 @@ float tofd (double i) {
 	return (float)i;
 }
 extern void writePng(char* , char * ,int, int);
-#define STRIDE 8
+#define STRIDE 1024
 #define SIZE 1024
 int main (int argc, char ** argv) {
   float toler = argc>1?tofd(atof(argv[1])):tofd(.1);
@@ -120,8 +120,9 @@ int main (int argc, char ** argv) {
   streamRead(polys,input);
   SetupMillisTimer();
   start = GetTimeMillis();
+  ite=0;
   do {
-    int lastsizeint;
+    int lastsizeint;ite++;
     lastsize=streamSize(polys).y;
     lastsizeint=(int)lastsize;
     {
@@ -131,7 +132,7 @@ int main (int argc, char ** argv) {
       Tessellate(polys,doTessellate,nextPolys);
       streamSwap(polys,nextPolys);      
     }
-  }while (streamSize(polys).y<limit&&streamSize(polys).y!=lastsize);
+  }while ((ite<STRIDE&&streamSize(polys).y==1)||(streamSize(polys).y<limit&&streamSize(polys).y!=lastsize));
   {
     float4 size = streamSize(polys);
     float4 * finaldata=float4malloc(size.x*size.y*sizeof(float4));
@@ -144,7 +145,8 @@ int main (int argc, char ** argv) {
     writePng("polys.png",data,SIZE+1,SIZE+1);
     free (data);   
   }
+  if (isdebug)
   streamPrint(polys);
-  printf ("TIME FOR FUNCTION: %f .\n",(float)(stop-start));
+  printf ("%f ",(float)(stop-start));
   return 0;
 }
