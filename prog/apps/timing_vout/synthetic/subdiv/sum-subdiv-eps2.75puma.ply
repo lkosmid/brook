@@ -1,0 +1,11 @@
+EstablishGuess 75196
+NanToBoolRight 75196
+NanToRight 1009036
+RelativeGather 37618
+UpdateGuess 1009036
+computeNeighbors 9390
+linearReorgSplitTriangles 37560
+produceTriP 37598
+smallEnough 38
+splitTriangles 9390
+writeFinalTriangles 84684
