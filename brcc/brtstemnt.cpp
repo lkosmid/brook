@@ -69,7 +69,7 @@ BRTKernelDef::print(std::ostream& out, int) const
    }
 
 #define PRINT_CODE(a,b) \
-   if (globals.target & TARGET_##a##) {                         \
+   if (globals.target & TARGET_##a) {                           \
       BRTKernelCode *var;                                       \
       var = decl->isReduce() ? new BRT##a##ReduceCode(*this) :  \
                                new BRT##a##KernelCode(*this);   \
