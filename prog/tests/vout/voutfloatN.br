@@ -1,31 +1,19 @@
-#line 1 "brtvector.hpp"
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 
-#line 1 "brtvector.hpp"
 #pragma warning(disable:4244)
 #include "streamholder.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-unsigned int debug_vout = 1;
+unsigned int debug_vout = 0;
 
 void debugStreamPrint (struct StreamHolder stream,char * title) {
    if (debug_vout) {
@@ -56,7 +44,7 @@ kernel void getIndexAt(float4 inputindex,
                        out float2 outputindex<>) {
    float2 index;
    index.x=inputindex.x+shiftRight;
-   index.y=inputindex.y+floor(index.x/maxvalue.x);
+   index.y=inputindex.y+floor((.5+index.x)/maxvalue.x);
    index.x=round(fmod(round(index.x),maxvalue.x));
    if (index.x<=-.50)
       index.x+=maxvalue.x;//only necessary if shiftRight<0
@@ -95,7 +83,6 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
-#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -110,13 +97,13 @@ int finiteValueProducedfloat (struct StreamHolder  input) {
    float finiteout<1,1>;
    float ret;
   
-   streamPrint (*input);
+   debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat(*input,output);
    streamWrite(output,&ret);
-   printf ("\n4RRGH %f\n",ret);
+   if (debug_vout) printf ("\n4RRGH %f\n",ret);
    isFiniteKernelfloat(output,finiteout);
    streamWrite(finiteout,&ret);
-   printf ("\nARRGH %f\n",ret);
+   if (debug_vout) printf ("\nARRGH %f\n",ret);
    return (int)ret;
 }
 
@@ -125,7 +112,7 @@ kernel void valueAtfloat (float value[][],
                              out float output<>,
                              float2 maxvalue,
                              float nothing) {
-   if (index.y>=maxvalue.y||index.y<0)
+   if (index.y>=maxvalue.y||index.y<-.1)
       output = nothing;
    else 
       output = value[index];
@@ -1123,7 +1110,6 @@ unsigned int totalCombineVoutfloat (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -1138,13 +1124,13 @@ int finiteValueProducedfloat2 (struct StreamHolder  input) {
    float finiteout<1,1>;
    float ret;
   
-   streamPrint (*input);
+   debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat2(*input,output);
    streamWrite(output,&ret);
-   printf ("\n4RRGH %f\n",ret);
+   if (debug_vout) printf ("\n4RRGH %f\n",ret);
    isFiniteKernelfloat2(output,finiteout);
    streamWrite(finiteout,&ret);
-   printf ("\nARRGH %f\n",ret);
+   if (debug_vout) printf ("\nARRGH %f\n",ret);
    return (int)ret;
 }
 
@@ -1153,7 +1139,7 @@ kernel void valueAtfloat2 (float2 value[][],
                              out float2 output<>,
                              float2 maxvalue,
                              float nothing) {
-   if (index.y>=maxvalue.y||index.y<0)
+   if (index.y>=maxvalue.y||index.y<-.1)
       output = nothing;
    else 
       output = value[index];
@@ -2151,7 +2137,6 @@ unsigned int totalCombineVoutfloat2 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -2166,13 +2151,13 @@ int finiteValueProducedfloat3 (struct StreamHolder  input) {
    float finiteout<1,1>;
    float ret;
   
-   streamPrint (*input);
+   debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat3(*input,output);
    streamWrite(output,&ret);
-   printf ("\n4RRGH %f\n",ret);
+   if (debug_vout) printf ("\n4RRGH %f\n",ret);
    isFiniteKernelfloat3(output,finiteout);
    streamWrite(finiteout,&ret);
-   printf ("\nARRGH %f\n",ret);
+   if (debug_vout) printf ("\nARRGH %f\n",ret);
    return (int)ret;
 }
 
@@ -2181,7 +2166,7 @@ kernel void valueAtfloat3 (float3 value[][],
                              out float3 output<>,
                              float2 maxvalue,
                              float nothing) {
-   if (index.y>=maxvalue.y||index.y<0)
+   if (index.y>=maxvalue.y||index.y<-.1)
       output = nothing;
    else 
       output = value[index];
@@ -3179,7 +3164,6 @@ unsigned int totalCombineVoutfloat3 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 76 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -3194,13 +3178,13 @@ int finiteValueProducedfloat4 (struct StreamHolder  input) {
    float finiteout<1,1>;
    float ret;
   
-   streamPrint (*input);
+   debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat4(*input,output);
    streamWrite(output,&ret);
-   printf ("\n4RRGH %f\n",ret);
+   if (debug_vout) printf ("\n4RRGH %f\n",ret);
    isFiniteKernelfloat4(output,finiteout);
    streamWrite(finiteout,&ret);
-   printf ("\nARRGH %f\n",ret);
+   if (debug_vout) printf ("\nARRGH %f\n",ret);
    return (int)ret;
 }
 
@@ -3209,7 +3193,7 @@ kernel void valueAtfloat4 (float4 value[][],
                              out float4 output<>,
                              float2 maxvalue,
                              float nothing) {
-   if (index.y>=maxvalue.y||index.y<0)
+   if (index.y>=maxvalue.y||index.y<-.1)
       output = nothing;
    else 
       output = value[index];
@@ -4207,16 +4191,10 @@ unsigned int totalCombineVoutfloat4 (struct StreamHolder list_stream,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 1102 "brtvector.hpp"
-#line 1102 "brtvector.hpp"
 
-#line 1102 "brtvector.hpp"
 
-#line 1102 "brtvector.hpp"
 
-#line 1102 "brtvector.hpp"
 
-#line 1102 "brtvector.hpp"
 
 
 

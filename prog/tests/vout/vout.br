@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-unsigned int debug_vout = 1;
+unsigned int debug_vout = 0;
 
 void debugStreamPrint (struct StreamHolder stream,char * title) {
    if (debug_vout) {
@@ -34,7 +34,7 @@ kernel void getIndexAt(float4 inputindex,
                        out float2 outputindex<>) {
    float2 index;
    index.x=inputindex.x+shiftRight;
-   index.y=inputindex.y+floor(index.x/maxvalue.x);
+   index.y=inputindex.y+floor((.5+index.x)/maxvalue.x);
    index.x=round(fmod(round(index.x),maxvalue.x));
    if (index.x<=-.50)
       index.x+=maxvalue.x;//only necessary if shiftRight<0
@@ -87,13 +87,13 @@ int finiteValueProducedBRT_TYPE (struct StreamHolder  input) {
    float finiteout<1,1>;
    float ret;
   
-   streamPrint (*input);
+   debugStreamPrint (input,"Finite Values in...");
    valueProducedBRT_TYPE(*input,output);
    streamWrite(output,&ret);
-   printf ("\n4RRGH %f\n",ret);
+   if (debug_vout) printf ("\n4RRGH %f\n",ret);
    isFiniteKernelBRT_TYPE(output,finiteout);
    streamWrite(finiteout,&ret);
-   printf ("\nARRGH %f\n",ret);
+   if (debug_vout) printf ("\nARRGH %f\n",ret);
    return (int)ret;
 }
 
@@ -102,7 +102,7 @@ kernel void valueAtBRT_TYPE (BRT_TYPE value[][],
                              out BRT_TYPE output<>,
                              float2 maxvalue,
                              float nothing) {
-   if (index.y>=maxvalue.y||index.y<0)
+   if (index.y>=maxvalue.y||index.y<-.1)
       output = nothing;
    else 
       output = value[index];
