@@ -1,6 +1,6 @@
-#include <math.h>
 #include <stdio.h>
-
+#include <stdlib.h>
+#include <math.h>
 /**
  ** Note: this is the only operating system dependency in the whole code.
  **	  With this #ifdef, this code runs without change on UNIX, Windows, 
@@ -16,8 +16,6 @@
 
 /* include the OpenGL include files:					*/
 
-#include <GL/gl.h>
-#include <GL/glu.h>
 #include <GL/glut.h>
 
 
@@ -704,8 +702,7 @@ InitLists( void )
 	float x, y, z;
 	int test;
 	/* create the object:						*/
-	fprintf(stderr, "Opening file...\n");
-	FILE* datafile = fopen("data", "r");
+	FILE * datafile = fopen("data", "r");
 	if(datafile == NULL){
 		fprintf(stderr, "Can't open datafile\n");;
 		exit(1);
@@ -739,6 +736,7 @@ InitLists( void )
 
 	glColor3f(1.0, 0.0, 0.0);
 	glPointSize(10.0f);
+/*
 	glBegin(GL_POINTS);
 	{
 		int i;
@@ -752,7 +750,7 @@ InitLists( void )
 		}
 	}
 	glEnd();
-		
+	*/	
 	glEndList();
 
 	fclose(datafile);

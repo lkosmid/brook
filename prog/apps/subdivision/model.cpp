@@ -28,19 +28,23 @@ void checkEdgeNeighbor2(const float4 &a, const float4 &alreadyhave, const float4
 	if (((t.B==a&&t.C==b)||(t.B==b&&t.C==a))&&(ne(t.A,alreadyhave)))
       c = t.A;
 }
+void checkNeighbors (Neighbor * a, Neighbor* b, unsigned int tListsize) {
+  for (unsigned int i=0;i<tListsize;++i) {
+    if (isinf_float(b[i].AB.x)||isinf_float(a[i].AB.x))
+      continue;
 
-
-unsigned int loadModelData(const char * filename,
-                           Tri ** tri,
-                           Neighbor ** neigh) {
-   std::vector<Tri>tList;
-   if (strcmp(filename,"dabunny")==0) 
-     LoadPly("bunny.ply",tList);
-   else
-     LoadPly(filename,tList);
-   *tri = (Tri*)malloc(sizeof(Tri)*tList.size());
-   *neigh =(Neighbor*)malloc(sizeof(Neighbor)*tList.size());
-   for (unsigned int i=0;i<tList.size();++i) {
+    float4 * af = (float4*)(a+i);
+    float4 * bf = (float4*)(b+i);
+    for (unsigned int j=0;j<9;++j) {
+      if (ne(af[j],bf[j])) {
+        printf ("neighbor %d mismatch %.2f %.2f %.2f and %.2f %.2f %.2f\n",
+                j,af[j].x,af[j].y,af[j].z,bf[j].x,bf[j].y,bf[j].z);
+      }else printf("%d ok %.2f %.2f %.2f\n",j,af[j].x,af[j].y,af[j].z);
+    }
+  }
+}
+void recomputeNeighbors (Tri * tList, Neighbor* neigh, unsigned int tListsize) {
+   for (unsigned int i=0;i<tListsize;++i) {
       unsigned int j;
       float4 zero4(0,0,0,0);
       Tri t = tList[i];
@@ -49,8 +53,8 @@ unsigned int loadModelData(const char * filename,
       t.C.w=0;
       Neighbor n;
       memset(&n,0,sizeof(Neighbor));
-      if (strcmp(filename,"dabunny")) {
-        for (j=0;j<tList.size();++j) {
+      if (1) {
+        for (j=0;j<tListsize;++j) {
           //check for AB, BC, AC
           Tri nei=tList[j];
 					if(j==i)
@@ -59,7 +63,7 @@ unsigned int loadModelData(const char * filename,
           checkEdgeNeighbor(t.A,t.C,n.AC,nei);
           checkEdgeNeighbor(t.B,t.C,n.BC,nei);         
         }
-        for (j=0;j<tList.size();++j) {
+        for (j=0;j<tListsize;++j) {
           Tri nei=tList[j];
 					if(j==i)
 						continue;
@@ -89,8 +93,30 @@ unsigned int loadModelData(const char * filename,
         n.BBC=zero4;
       if (n.BCC==n.BC)
         n.BBC=zero4;
-      (*tri)[i]=t;
-      (*neigh)[i]=n;
+      neigh[i]=n;
+   }
+}
+unsigned int loadModelData(const char * filename,
+                           Tri ** tri,
+                           Neighbor ** neigh) {
+   std::vector<Tri>tList;
+   if (strcmp(filename,"dabunny")==0) 
+     LoadPly("bunny.ply",tList);
+   else
+     LoadPly(filename,tList);
+   *tri = (Tri*)malloc(sizeof(Tri)*tList.size());
+   *neigh =(Neighbor*)malloc(sizeof(Neighbor)*tList.size());
+   for (unsigned int i=0;i<tList.size();++i) {
+     float eps=.015625;
+     if (tList[i].A.z==0||tList[i].B.z==0||tList[i].C.z==0) {
+       tList[i].A.z+=eps;
+       tList[i].B.z+=eps;
+       tList[i].C.z+=eps;
+     }
+     (*tri)[i]=tList[i];
+   }
+   if (strcmp(filename,"dabunny")) {
+     recomputeNeighbors(*tri,*neigh,tList.size());
    }
    return tList.size();
 }
