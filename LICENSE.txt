@@ -5,7 +5,7 @@ The BRCC portion of BrookGPU is derived from the cTool project
 (http://ctool.sourceforge.net) and distributed under the GNU Public License.
 Please see the file COPYING in the brcc directory for more information.
 
-The two files runtime/nv30gl/glext.h and runtime/nv30gl/wglext.h are from
+The two files runtime/nv30gl/nv30glext.h and runtime/nv30gl/wglext.h are from
 NVIDIA and covered by the copyright and license described at the top of each
 file.
 

@@ -1,5 +1,21 @@
 			    Brook GPU Release Notes
 
+This Fixed In This Release (12/19/03)
+
+   * nv30gl backend compiles and runs on Linux.  Requires Linux cgc compiler
+     from NVIDIA and the latest drivers.
+
+   * Fixed nv30gl reduce to stream bug.  nv30gl now passes all regression 
+     tests
+
+   * BRCC properly handles executing cgc and fxc even if they are not there.
+     Produces reasonable error messages.
+
+   * Make system includes Default.mk which only compiles cpu backend.
+     Also tries to detect OS to choose the right configuration.  Builds 
+     safely on Darwin (OS X).
+
+
 Known Issues In BRCC
 
    * There is very little type checking on stream arguments-- especially in
@@ -34,3 +50,10 @@ Known Issues in the Runtimes
 
    * The cpu runtime only supports a subset of the builtin Cg / HLSL
      functions.
+
+
+Revision History
+
+12/16/03:  Initial Beta Release
+
+12/19/03:  Added Linux/BRCC fixes/Makefile improvements/nv30gl bug fixes

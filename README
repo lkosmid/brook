@@ -1,15 +1,17 @@
 				 Brook GPU
 
-(Last Revised 16 December 2003)
+(Last Revised 19 December 2003)
 
 Hardware Prerequisites
 
    * The DirectX 9 backend requires a recent ATI video card.  9800s and
      9700s should both work.  Older cards may work.  The most important
-     requirement is support for floating point render targets.
+     requirement is support for floating point render targets.  The
+     DirectX 9 backend only compiles for Windows targets.
 
    * The nv30 OpenGL backend requires (logically enough) an NVIDIA card that
-     is at least an nv30 (GeForceFX / QuadroFX or better).
+     is at least an nv30 (GeForceFX / QuadroFX or better).  The nv30 OpenGL 
+     backend compiles for both Windows and Linux targets.
 
    * The CPU backend should run on any platform (even non-PC) where the
      build environment works.
@@ -74,3 +76,10 @@ For more information, read the Brook GPU project pages at:
 	
 	http://graphics.stanford.edu/projects/brookgpu/
 
+
+Revision History
+
+12/16/03:  Initial Beta release
+
+12/19/03:  Added text about OS for different backends
+           Linux support for nv30gl
