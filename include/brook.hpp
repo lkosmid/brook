@@ -84,6 +84,8 @@ inline unsigned int getIndexOf(unsigned int i,
 #else
       ::brook::RunTime* runtime = ::brook::createRunTime( false );
 #endif
+      if (0)
+         runtime=0;
     }
   };
   AtStartup AtStartup::atStartup;
