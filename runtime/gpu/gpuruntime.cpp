@@ -114,6 +114,19 @@ namespace brook
     return _reductionTargetBuffer;
   }
 
+   // new entry points needed by C++ brook API
+   void GPURuntime::finish() {
+      _context->finish();
+   }
+
+   void GPURuntime::unbind() {
+      _context->unbind();
+   }
+
+   void GPURuntime::bind() {
+      _context->bind();
+   }
+
   // TIM: hacky magick for raytracer
   void GPURuntime::hackEnableWriteMask() {
     _context->hackEnableWriteMask();
@@ -138,10 +151,6 @@ namespace brook
 
   int GPURuntime::hackEndWriteQuery() {
     return _context->hackEndWriteQuery();
-  }
-
-  void GPURuntime::hackRestoreContext() {
-    _context->hackRestoreContext();
   }
 }
 

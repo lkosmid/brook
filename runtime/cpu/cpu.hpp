@@ -186,6 +186,11 @@ namespace brook {
                               const unsigned int extents[],
                               const float ranges[]);
     virtual ~CPURuntime(){}
+
+    // new entry points needed by C++ brook API
+    void finish() {}
+    void unbind() {}
+    void bind() {}
   };
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

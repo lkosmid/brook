@@ -226,14 +226,17 @@ namespace brook {
     virtual void* getTextureRenderData( TextureHandle inTexture ) = 0;
     virtual void synchronizeTextureRenderData( TextureHandle inTexture ) = 0;
 
+    // new entry points needed by C++ brook API
+    virtual void finish() = 0;
+    virtual void unbind() = 0;
+    virtual void bind() = 0;
+
     // TIM: hacky magick for raytracer
     virtual void hackEnableWriteMask() { GPUError("unimplemented"); throw 1; }
     virtual void hackDisableWriteMask() { GPUError("unimplemented"); throw 1; }
     virtual void hackSetWriteMask( TextureHandle ) { GPUError("unimplemented"); throw 1; }
     virtual void hackBeginWriteQuery() { GPUError("unimplemented"); throw 1; }
     virtual int hackEndWriteQuery() { GPUError("unimplemented"); throw 1; }
-
-    virtual void hackRestoreContext() { GPUError("unimplemented"); throw 1; }
   };
 }
 
