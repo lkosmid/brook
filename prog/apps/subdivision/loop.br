@@ -37,49 +37,55 @@ kernel float triCombine(float b1<>, float b2<>) {
 }
 // from a triangle and its neighbors, determines whether that edge is small
 // enough
+kernel float isNeighbor(float4 neigh) {
+   return neigh.z!=0;
+}
+kernel float isNotNeighbor(float4 neigh) {
+  return neigh.z==0;
+}
 kernel void smallEnough(Tri t<>, Neighbor u<>, 
                         out Tri v<>, 
                         out Neighbor n<>, 
                         float epsilon) {
   v.A.xyz = t.A.xyz;
-  v.A.w = (float)(//t.A.w!=0 &&
-                  dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon);
+  v.A.w = (//t.A.w!=0 &&
+                  dot(t.A.xyz-t.B.xyz,t.A.xyz-t.B.xyz)>epsilon)?1.0:0.0;
   v.B.xyz = t.B.xyz;
   v.B.w = (float)(//t.B.w!=0 &&
-                  (dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon));
+                  (dot(t.B.xyz-t.C.xyz,t.B.xyz-t.C.xyz)>epsilon))?1.0:0.0;
   v.C.xyz = t.C.xyz;
-  v.C.w = (float)(//t.C.w!=0 &&
-                  (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)>epsilon));
+  v.C.w = (//t.C.w!=0 &&
+                  (dot(t.A.xyz-t.C.xyz,t.A.xyz-t.C.xyz)>epsilon))?1.0:0.0;
   n.AB.xyz = u.AB.xyz;
   n.AB.w = triCombine(//u.AB.w,
-                      (float)(dot(t.A.xyz-u.AB.xyz,t.A.xyz-u.AB.xyz)>epsilon),
-                      (float)(dot(t.B.xyz-u.AB.xyz,t.B.xyz-u.AB.xyz)>epsilon));
+                      (dot(t.A.xyz-u.AB.xyz,t.A.xyz-u.AB.xyz)>epsilon)?1.0:0.0,
+                      (dot(t.B.xyz-u.AB.xyz,t.B.xyz-u.AB.xyz)>epsilon)?1.0:0.0);
   n.BC.xyz=u.BC.xyz;
   n.BC.w = triCombine(//u.BC.w,
-                      (float)(dot(t.B.xyz-u.BC.xyz,t.B.xyz-u.BC.xyz)>epsilon),
-                      (float)(dot(t.C.xyz-u.BC.xyz,t.C.xyz-u.BC.xyz)>epsilon));
+                      (dot(t.B.xyz-u.BC.xyz,t.B.xyz-u.BC.xyz)>epsilon)?1.0:0.0,
+                      (dot(t.C.xyz-u.BC.xyz,t.C.xyz-u.BC.xyz)>epsilon)?1.0:0.0);
   n.AC.xyz=u.AC.xyz;
   n.AC.w = triCombine(//u.AC.w,
-                      (float)(dot(t.C.xyz-u.AC.xyz,t.C.xyz-u.AC.xyz)>epsilon),
-                      (float)(dot(t.A.xyz-u.AC.xyz,t.A.xyz-u.AC.xyz)>epsilon));
+                      (dot(t.C.xyz-u.AC.xyz,t.C.xyz-u.AC.xyz)>epsilon)?1.0:0.0,
+                      (dot(t.A.xyz-u.AC.xyz,t.A.xyz-u.AC.xyz)>epsilon)?1.0:0.0);
   n.AAC.xyz=u.AAC.xyz;
-  n.AAC.w = (float)(//u.AAC.w!=0&&
-                    dot(t.A.xyz-u.AAC.xyz,t.A.xyz-u.AAC.xyz)>epsilon);
+  n.AAC.w = (isNotNeighbor(u.AAC)||
+             dot(t.A.xyz-u.AAC.xyz,t.A.xyz-u.AAC.xyz)>epsilon)?1.0:0;
   n.AAB.xyz=u.AAB.xyz;
-  n.AAB.w = (float)(//u.AAB.w!=0&&
-                    dot(t.A.xyz-u.AAB.xyz,t.A.xyz-u.AAB.xyz)>epsilon);
+  n.AAB.w = (isNotNeighbor(u.AAB)||
+             dot(t.A.xyz-u.AAB.xyz,t.A.xyz-u.AAB.xyz)>epsilon)?1.0:0;
   n.ABB.xyz=u.ABB.xyz;
-  n.ABB.w = (float)(//u.ABB.w!=0&&
-                    dot(t.B.xyz-u.ABB.xyz,t.B.xyz-u.ABB.xyz)>epsilon);
+  n.ABB.w = (isNotNeighbor(u.ABB)||
+             dot(t.B.xyz-u.ABB.xyz,t.B.xyz-u.ABB.xyz)>epsilon)?1.0:0;
   n.BBC.xyz=u.BBC.xyz;
-  n.BBC.w = (float)(//u.BBC.w!=0&&
-                    dot(t.B.xyz-u.BBC.xyz,t.B.xyz-u.BBC.xyz)>epsilon);
+  n.BBC.w = (isNotNeighbor(u.BBC)||
+             dot(t.B.xyz-u.BBC.xyz,t.B.xyz-u.BBC.xyz)>epsilon)?1.0:0;
   n.BCC.xyz=u.BCC.xyz;
-  n.BCC.w = (float)(//u.BCC.w!=0&&
-                    dot(t.C.xyz-u.BCC.xyz,t.C.xyz-u.BCC.xyz)>epsilon);
+  n.BCC.w = (isNotNeighbor(u.BCC)||
+             dot(t.C.xyz-u.BCC.xyz,t.C.xyz-u.BCC.xyz)>epsilon)?1.0:0;
   n.ACC.xyz=u.ACC.xyz;
-  n.ACC.w = (float)(//u.ACC.w!=0&&
-                    dot(t.C.xyz-u.ACC.xyz,t.C.xyz-u.ACC.xyz)>epsilon);
+  n.ACC.w = (isNotNeighbor(u.ACC)||
+             dot(t.C.xyz-u.ACC.xyz,t.C.xyz-u.ACC.xyz)>epsilon)?1.0:0;
 }
 kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 shouldNotProduce<>){
    if (t.A.w!=0.0f
@@ -93,9 +99,6 @@ kernel void produceTriP(Tri t<>, vout [1]float2 shouldProduce<>, vout[1] float2 
    }
 }
 
-kernel float isNeighbor(float4 neigh) {
-   return neigh.z!=0;
-}
 kernel void computeNeighbors(Tri tgather[][], Neighbor ugather[][], float2 i<>, out Neighbor v<>) {
   Neighbor u = ugather[i];
   float eAAB=isNeighbor(u.AAB);
@@ -408,41 +411,42 @@ void subdivide (Neighbor (*neighbors)<>,
                 struct VertexArray *output,
                 float epsilon,
                 int counter) {
+  unsigned int streamY=toi(streamSize(*triangles).y);
+  unsigned int streamX=toi(streamSize(*triangles).x);
   {
-    unsigned int streamWidth=toi(streamSize(*triangles).y);
-    float2 shouldProduce<streamWidth,0>;
-    float2 shouldNotProduce<streamWidth,0>;
+    float2 shouldProduce<0,streamX>;
+    float2 shouldNotProduce<0,streamX>;
     produceTriP(*triangles,shouldProduce,shouldNotProduce);
-    {
-      int sizeDivide=toi(streamSize(shouldProduce).x);
-      float stretchX = streamWidth*4>2048?1:0;
+    assert((int)streamX==toi(streamSize(shouldProduce).x));
+    streamY=toi(streamSize(shouldProduce).y);
+    if (streamY&&streamX) {
+      float stretchX = streamY*4>2048?1:0;      
       
-      {
-        Neighbor sharedNeighbors<streamWidth,sizeDivide>;
-        SplitTri sharedTriangles <streamWidth,sizeDivide>;
-        Neighbor newNeighbors<(stretchX?streamWidth:streamWidth*4),
-                              (stretchX?sizeDivide*4:sizeDivide)>;
-        Tri newTriangles<(stretchX?streamWidth:streamWidth*4),
-                         (stretchX?sizeDivide*4:sizeDivide)>;
-        if (!stretchX) streamWidth*=4;
-        computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
-        splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
-        linearReorgSplitTriangles(sharedTriangles,
-                                  sharedNeighbors,
-                                  newTriangles,
-                                  newNeighbors,
-                                  epsilon,
-                                  stretchX);
-        streamSwap(*triangles,newTriangles);
-        streamSwap(*neighbors,newNeighbors);
-      }
-      {
-        int sizex=3*toi(streamSize(shouldNotProduce).x);
-        int sizey=toi(streamSize(shouldNotProduce).y);
-        float3 outputTri<sizey,sizex>;
+      Neighbor sharedNeighbors<streamY,streamX>;
+      SplitTri sharedTriangles <streamY,streamX>;
+      Neighbor newNeighbors<(stretchX?streamY:streamY*4),
+                            (stretchX?streamX*4:streamX)>;
+      Tri newTriangles<(stretchX?streamY:streamY*4),
+                       (stretchX?streamX*4:streamX)>;
+      computeNeighbors(*triangles,*neighbors,shouldProduce,sharedNeighbors);
+      splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
+      linearReorgSplitTriangles(sharedTriangles,
+                                sharedNeighbors,
+                                newTriangles,
+                                newNeighbors,
+                                epsilon,
+                                stretchX);
+      streamSwap(*triangles,newTriangles);
+      streamSwap(*neighbors,newNeighbors);
+    }
+    if (streamSize(shouldNotProduce).y){
+      int sizex=3*toi(streamSize(shouldNotProduce).x);
+      int sizey=toi(streamSize(shouldNotProduce).y);
+      float3 outputTri<sizey,sizex>;
 
-        writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
+      writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
         if ((!low_texture_ram)&&
+            streamSize(shouldProduce).y&&
             streamSize(shouldProduce).x&&
             counter<counterMax) {
           subdivide(neighbors,triangles,output,epsilon,counter+1);
@@ -452,20 +456,19 @@ void subdivide (Neighbor (*neighbors)<>,
         expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
                                                 streamSize(outputTri).y));
         streamWrite(outputTri,output->v+sizey);   
-      }       
-      if (counter>=counterMax) {
-        float3 outputTri<toi(streamSize(*triangles).x),
-                         toi(streamSize(*triangles).x*3)>;
-        int sizey = output->size;
-        copyFinalTriangles(*triangles,outputTri);
-        expandVertexArray(output,
-                          3*toi(streamSize(*triangles).y*streamSize(*triangles).x));
-        streamWrite(outputTri,output->v+sizey);
-      }
-        
+    }       
+    if (counter>=counterMax) {
+      float3 outputTri<toi(streamSize(*triangles).x),
+        toi(streamSize(*triangles).x*3)>;
+      int sizey = output->size;
+      copyFinalTriangles(*triangles,outputTri);
+      expandVertexArray(output,
+                        3*toi(streamSize(*triangles).y*streamSize(*triangles).x));
+      streamWrite(outputTri,output->v+sizey);
     }
+    
   }
-  if (low_texture_ram&&streamSize(*triangles).x&&counter<counterMax) {
+  if (low_texture_ram&&streamY&&streamX&&counter<counterMax) {
      subdivide(neighbors,triangles,output,epsilon,counter+1);
   } 
   // prevents all writing at the end
@@ -525,7 +528,7 @@ unsigned int bestWidth(unsigned int totalSize){
 }
 unsigned int loadModelData(char* file,Tri **triangles,Neighbor **neighbors);
 int main (int argc, char**argv) {
-  float epsilon=.01;
+  float epsilon=.0001;
   Tri *triangledata = 0;
   Neighbor *neighbordata = 0;
   unsigned int numTriangles = 
