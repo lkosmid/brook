@@ -251,6 +251,18 @@ int getGatherStructureSamplerCount( Type* form )
   return getGatherStructureSamplerCount( structure );
 }
 
+int getGatherRank( Type* form )
+{
+   Type* f = form;
+   int rank = 0;
+   while( f->isArray() )
+   {
+      rank++;
+      f = ((ArrayType*) f)->subType;
+   }
+   return rank;
+}
+
 static bool printGatherStructureFunctionBody( std::ostream& out, const std::string& name, StructDef* structure, int& ioIndex )
 {
    int fieldCount = structure->nComponents;
@@ -321,14 +333,20 @@ static void printGatherStructureFunction( std::ostream& out, const std::string& 
   std::string body = s.str();
 
 
-  out << name << " __gather_" << name << "( _stype samplers[" << getGatherStructureSamplerCount(form);
+  out << name << " __gather_" << name << "( _stype1 samplers[" << getGatherStructureSamplerCount(form);
   out << "], float index ) {\n";
   out << name << " result;\n";
   out << body;
   out << "\treturn result;\n}\n\n";
 
-  out << name << " __gather_" << name << "( _stype samplers[" << getGatherStructureSamplerCount(form);
+  out << name << " __gather_" << name << "( _stype2 samplers[" << getGatherStructureSamplerCount(form);
   out << "], float2 index ) {\n";
+  out << name << " result;\n";
+  out << body;
+  out << "\treturn result;\n}\n\n";
+
+  out << name << " __gather_" << name << "( _stype3 samplers[" << getGatherStructureSamplerCount(form);
+     out << "], float3 index ) {\n";
   out << name << " result;\n";
   out << body;
   out << "\treturn result;\n}\n\n";
@@ -695,7 +713,7 @@ expandStreamStructureSamplerDecls(std::ostream& shader,
                                   const std::string& argumentName,
                                   int inArgumentIndex, int inComponentIndex,
                                   StructDef* structure,
-                                  int& ioIndex, int& ioSamplerReg, pass_info& outPass)
+                                  int& ioIndex, int& ioSamplerReg, pass_info& outPass, int rank)
 {
    assert(!structure->isUnion());
 
@@ -711,9 +729,9 @@ expandStreamStructureSamplerDecls(std::ostream& shader,
       StructDef* structure = findStructureDef( base );
       if (structure)
          expandStreamStructureSamplerDecls(shader, argumentName, inArgumentIndex, inComponentIndex,
-                                           structure, ioIndex, ioSamplerReg, outPass );
+                                           structure, ioIndex, ioSamplerReg, outPass, rank );
       else {
-         shader << "uniform _stype __structsampler" << ioIndex++
+         shader << "uniform _stype" << rank << " __structsampler" << ioIndex++
                 << "_" << argumentName;
          shader << " : register (s" << ioSamplerReg++ << ")";
          shader <<  ",\n\t\t";
@@ -731,6 +749,7 @@ expandStreamSamplerDecls(std::ostream& shader,
                          Type* inForm, int& samplerreg, pass_info& outPass)
 {
   StructDef* structure = NULL;
+  int rank = 2; // TIM: TODO: find out how to get correct rank, for now assume 2
 
   if (inForm->isStream()) {
 	  BrtStreamType* streamType = (BrtStreamType*)(inForm);
@@ -748,12 +767,12 @@ expandStreamSamplerDecls(std::ostream& shader,
 
      expandStreamStructureSamplerDecls(shader, inArgumentName,
                                        inArgumentIndex, inComponentIndex,
-                                       structure, index, samplerreg, outPass );
+                                       structure, index, samplerreg, outPass, rank );
   } else {
      // it had better be just a floatN
      // Output a sampler, texcoord, and scale_bias for
      // a stream
-     shader << "uniform _stype _tex_" << inArgumentName;
+     shader << "uniform _stype" << rank << " _tex_" << inArgumentName;
      shader << " : register (s" << samplerreg++ << ")";
      shader <<  ",\n\t\t";
 
@@ -926,15 +945,19 @@ generate_shader_support(std::ostream& shader)
   shader << "typedef struct double_struct {float2 x;} real;\n";
   shader << "typedef struct double2_struct {float4 xy;} real2;\n";
   shader << "#if defined(DXPIXELSHADER) || !defined(USERECT)\n";
-  shader << "#define _stype   sampler2D\n";
-  shader << "#define _sfetch  tex2D\n";
+  shader << "#define _stype1   sampler2D\n";
+  shader << "#define _stype2   sampler2D\n";
+  shader << "#define _stype3   sampler3D\n";
   shader << "#define __sample1(s,i) tex2D((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) tex2D((s),(i))\n";
+  shader << "#define __sample3(s,i) tex3D((s),(i))\n";
   shader << "#else\n";
-  shader << "#define _stype  samplerRECT\n";
-  shader << "#define _sfetch  texRECT\n";
+  shader << "#define _stype1  samplerRECT\n";
+  shader << "#define _stype2  samplerRECT\n";
+  shader << "#define _stype3  sampler3D\n";
   shader << "#define __sample1(s,i) texRECT((s),float2(i,0))\n";
   shader << "#define __sample2(s,i) texRECT((s),(i))\n";
+  shader << "#define __sample3(s,i) tex3D((s),(i))\n";
   shader << "#endif\n\n";
 
   shader << "#define __FRAGMENTKILL discard\n";
@@ -949,61 +972,83 @@ generate_shader_support(std::ostream& shader)
     shader << "return (index+scalebias.z); }\n";
     shader << "float2 __gatherindex2( float2 index, float4 scalebias ) { ";
     shader << "return (index+scalebias.zw); }\n";
+    shader << "float3 __gatherindex3( float3 index, float4 scalebias ) { ";
+    shader << "return index; }\n";
     shader << "#define _computeindexof(a,b) float4(a, 0, 0)\n";
     shader << "#else\n";
     shader << "float __gatherindex1( float index, float4 scalebias ) { ";
     shader << "return index*scalebias.x+scalebias.z; }\n";
     shader << "float2 __gatherindex2( float2 index, float4 scalebias ) { ";
     shader << "return index*scalebias.xy+scalebias.zw; }\n";
+    shader << "float3 __gatherindex3( float3 index, float4 scalebias ) { ";
+    shader << "return index; }\n";
     shader << "#define _computeindexof(a,b) (b)\n";
     shader << "#endif\n\n";
   }
 
   // TIM: simple subroutines
-  shader << "double __fetch_double( _stype s, float i ) { double r; r.x= __sample1(s,i).xy; return r;}\n";
-  shader << "double __fetch_double( _stype s, float2 i ) { double r; r.x = __sample2(s,i).xy; return r;}\n";
+  shader << "double __fetch_double( _stype1 s, float i ) { double r; r.x= __sample1(s,i).xy; return r;}\n";
+  shader << "double __fetch_double( _stype2 s, float2 i ) { double r; r.x = __sample2(s,i).xy; return r;}\n";
+  shader << "double __fetch_double( _stype3 s, float3 i ) { double r; r.x = __sample3(s,i).xy; return r;}\n";
 
-  shader << "double2 __fetch_double2( _stype s, float i ) { double2 r; r.xy= __sample1(s,i).xyzw; return r;}\n";
-  shader << "double2 __fetch_double2( _stype s, float2 i ) { double2 r; r.xy = __sample2(s,i).xyzw; return r;}\n";
+  shader << "double2 __fetch_double2( _stype1 s, float i ) { double2 r; r.xy= __sample1(s,i).xyzw; return r;}\n";
+  shader << "double2 __fetch_double2( _stype2 s, float2 i ) { double2 r; r.xy = __sample2(s,i).xyzw; return r;}\n";
+  shader << "double2 __fetch_double2( _stype3 s, float3 i ) { double2 r; r.xy = __sample3(s,i).xyzw; return r;}\n";
 
-  shader << "float __fetch_float( _stype s, float i ) { return __sample1(s,i).x; }\n";
-  shader << "float __fetch_float( _stype s, float2 i ) { return __sample2(s,i).x; }\n";
-  shader << "float2 __fetch_float2( _stype s, float i ) { return __sample1(s,i).xy; }\n";
-  shader << "float2 __fetch_float2( _stype s, float2 i ) { return __sample2(s,i).xy; }\n";
-  shader << "float3 __fetch_float3( _stype s, float i ) { return __sample1(s,i).xyz; }\n";
-  shader << "float3 __fetch_float3( _stype s, float2 i ) { return __sample2(s,i).xyz; }\n";
-  shader << "float4 __fetch_float4( _stype s, float i ) { return __sample1(s,i).xyzw; }\n";
-  shader << "float4 __fetch_float4( _stype s, float2 i ) { return __sample2(s,i).xyzw; }\n";
+  shader << "float __fetch_float( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
+  shader << "float __fetch_float( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
+  shader << "float __fetch_float( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";
+  shader << "float2 __fetch_float2( _stype1 s, float i ) { return __sample1(s,i).xy; }\n";
+  shader << "float2 __fetch_float2( _stype2 s, float2 i ) { return __sample2(s,i).xy; }\n";
+  shader << "float2 __fetch_float2( _stype3 s, float3 i ) { return __sample3(s,i).xy; }\n";
+  shader << "float3 __fetch_float3( _stype1 s, float i ) { return __sample1(s,i).xyz; }\n";
+  shader << "float3 __fetch_float3( _stype2 s, float2 i ) { return __sample2(s,i).xyz; }\n";
+  shader << "float3 __fetch_float3( _stype3 s, float3 i ) { return __sample3(s,i).xyz; }\n";
+  shader << "float4 __fetch_float4( _stype1 s, float i ) { return __sample1(s,i).xyzw; }\n";
+  shader << "float4 __fetch_float4( _stype2 s, float2 i ) { return __sample2(s,i).xyzw; }\n";
+  shader << "float4 __fetch_float4( _stype3 s, float3 i ) { return __sample3(s,i).xyzw; }\n";
 
   shader << "\n\n";
 
-  shader << "float __gather_float( _stype s[1], float i ) { return __sample1(s[0],i).x; }\n";
-  shader << "float __gather_float( _stype s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
-  shader << "float2 __gather_float2( _stype s[1], float i ) { return __sample1(s[0],i).xy; }\n";
-  shader << "float2 __gather_float2( _stype s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
-  shader << "float3 __gather_float3( _stype s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
-  shader << "float3 __gather_float3( _stype s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
-  shader << "float4 __gather_float4( _stype s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
-  shader << "float4 __gather_float4( _stype s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+  shader << "float __gather_float( _stype1 s[1], float i ) { return __sample1(s[0],i).x; }\n";
+  shader << "float __gather_float( _stype2 s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
+  shader << "float __gather_float( _stype3 s[1], float3 i ) { return __sample3(s[0],i).x; }\n";
+  shader << "float2 __gather_float2( _stype1 s[1], float i ) { return __sample1(s[0],i).xy; }\n";
+  shader << "float2 __gather_float2( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
+  shader << "float2 __gather_float2( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xy; }\n";
+  shader << "float3 __gather_float3( _stype1 s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
+  shader << "float3 __gather_float3( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
+  shader << "float3 __gather_float3( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyz; }\n";
+  shader << "float4 __gather_float4( _stype1 s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_float4( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_float4( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyzw; }\n";
 
-  shader << "float __gather_shortfixed( _stype s[1], float i ) { return __sample1(s[0],i).x; }\n";
-  shader << "float __gather_shortfixed( _stype s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
-  shader << "float2 __gather_shortfixed2( _stype s[1], float i ) { return __sample1(s[0],i).xy; }\n";
-  shader << "float2 __gather_shortfixed2( _stype s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
-  shader << "float3 __gather_shortfixed3( _stype s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
-  shader << "float3 __gather_shortfixed3( _stype s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
-  shader << "float4 __gather_shortfixed4( _stype s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
-  shader << "float4 __gather_shortfixed4( _stype s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+  shader << "float __gather_shortfixed( _stype1 s[1], float i ) { return __sample1(s[0],i).x; }\n";
+  shader << "float __gather_shortfixed( _stype2 s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
+  shader << "float __gather_shortfixed( _stype3 s[1], float3 i ) { return __sample3(s[0],i).x; }\n";
+  shader << "float2 __gather_shortfixed2( _stype1 s[1], float i ) { return __sample1(s[0],i).xy; }\n";
+  shader << "float2 __gather_shortfixed2( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
+  shader << "float2 __gather_shortfixed2( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xy; }\n";
+  shader << "float3 __gather_shortfixed3( _stype1 s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
+  shader << "float3 __gather_shortfixed3( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
+  shader << "float3 __gather_shortfixed3( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyz; }\n";
+  shader << "float4 __gather_shortfixed4( _stype1 s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_shortfixed4( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_shortfixed4( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyzw; }\n";
 
 
-  shader << "float __gather_fixed( _stype s[1], float i ) { return __sample1(s[0],i).x; }\n";
-  shader << "float __gather_fixed( _stype s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
-  shader << "float2 __gather_fixed2( _stype s[1], float i ) { return __sample1(s[0],i).xy; }\n";
-  shader << "float2 __gather_fixed2( _stype s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
-  shader << "float3 __gather_fixed3( _stype s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
-  shader << "float3 __gather_fixed3( _stype s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
-  shader << "float4 __gather_fixed4( _stype s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
-  shader << "float4 __gather_fixed4( _stype s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+  shader << "float __gather_fixed( _stype1 s[1], float i ) { return __sample1(s[0],i).x; }\n";
+  shader << "float __gather_fixed( _stype2 s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
+  shader << "float __gather_fixed( _stype3 s[1], float3 i ) { return __sample3(s[0],i).x; }\n";
+  shader << "float2 __gather_fixed2( _stype1 s[1], float i ) { return __sample1(s[0],i).xy; }\n";
+  shader << "float2 __gather_fixed2( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
+  shader << "float2 __gather_fixed2( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xy; }\n";
+  shader << "float3 __gather_fixed3( _stype1 s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
+  shader << "float3 __gather_fixed3( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
+  shader << "float3 __gather_fixed3( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyz; }\n";
+  shader << "float4 __gather_fixed4( _stype1 s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_fixed4( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_fixed4( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyzw; }\n";
 
   if (globals.enableGPUAddressTranslation) {
     shader << "\n\n";
@@ -1225,9 +1270,10 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg, int i,
 {
    std::string argName = arg->name->name;
    int samplerCount = getGatherStructureSamplerCount(arg->form);
+   int rank = getGatherRank(arg->form);
 
    if (globals.enableGPUAddressTranslation) {
-      shader << "uniform _stype " << argName;
+      shader << "uniform _stype" << rank << " " << argName;
       shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
       samplerreg += samplerCount;
 
@@ -1250,7 +1296,7 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg, int i,
       outPass.addConstant( (i+1), "kGatherConstant_ATDomainMin" );
    } else {
       // TIM: TODO: handle multi-sampler array for gathers...
-      shader << "uniform _stype " << argName;
+      shader << "uniform _stype" << rank << " " << argName;
       shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
       samplerreg += samplerCount;
 

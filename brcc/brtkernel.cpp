@@ -68,6 +68,7 @@ static Variable * NewAddressTransArg (Variable * v, const char* prefix) {
 
 // TIM: HACK
 int getGatherStructureSamplerCount( Type* form );
+int getGatherRank( Type* form );
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function prints the code of an internally callable kernel
@@ -89,7 +90,8 @@ void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
     Symbol * nam = ft->args[i]->name;
     Type * t = ft->args[i]->form;
     if (recursiveIsGather(t)) {
-      out << "_stype "<<nam->name <<"[";
+      int rank = getGatherRank(t);
+      out << "_stype" << rank << " "<<nam->name <<"[";
       // TIM: HACK:
       out << getGatherStructureSamplerCount(t);
       out << "],"<<std::endl;
