@@ -58,7 +58,7 @@ float * mallocSlice (const ppm &fp) {
    return (float*)malloc(sizeof(float)*fp.width*fp.height);
 }
 float myrand () {
-   return rand()>RAND_MAX/2?1:-1;
+  return rand()>RAND_MAX/2?1.0f:-1.0f;
    static unsigned int seed1=21051095;
    unsigned int * seed=&seed1;
    unsigned int rand_max =1509281;
