@@ -1,7 +1,7 @@
 ROOTDIR = ../../..
 EXECUTABLE = rapid_collide
-FILES = rapid voutfloatN vout1dfloatN
+FILES = simple_rapid
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = -k
+BRCCFLAGS = -S
 include $(ROOTDIR)/common.mk
 

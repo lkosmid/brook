@@ -63,7 +63,6 @@ kernel void getMatrixTranspose(float3 rX<>, float3 rY<>, float3 rZ <>,
              rY.z,
              rZ.z);
 }
-
 kernel void matMult(float3 aX<>, float3 aY<>, float3 aZ<>,
                     float3 bX<>, float3 bY<>, float3 bZ<>,
                     out float3 oX<>, out float3 oY<>) {
@@ -213,156 +212,7 @@ kernel float TrianglesHaveContact (float3 mRx,
   return tri_contact(i1,i2,i3,t2.A,t2.B,t2.C);
 
 }
-kernel float obb_disjoint (float3 Bx<>,
-                           float3 By<>,
-                           float3 Bz<>,
-                           float3 T,
-                           float3 a,
-                           float3 b) {
-  
-  return 1;
-}
 
-
-kernel void CheckTriangleCollide(float3 mRx,
-                                 float3 mRy,
-                                 float3 mRz,
-                                 float3 mT,
-                                 float4 collisions<>,
-                                 Tri t1List[][],
-                                 Tri t2List[][],
-                                 vout [1] float4 hits<>) {
-  Tri t1 = t1List[collisions.xy];
-  Tri t2 = t2List[collisions.zw];
-  if (TrianglesHaveContact(mRx,mRy,mRz,mT,
-                           t1,t2)) {
-    hits= collisions;
-    push(hits);
-  }
-}
-kernel float GetBBSize (float3 Radius ) {
-  return Radius.x;
-}
-kernel void Collide (float3 mRx,
-                     float3 mRy,
-                     float3 mRz,
-                     float3 mT,
-                     Traverser currentNode<>,
-                     TransposedBBox b1Tree[][], 
-                     BBox b2Tree[][], 
-                     vout [1]float4 nextNode<>,//xy is parent yz is first of two childs
-                                               //additionally if it's <0 then it's -b-1
-                     vout [1]float4 collisions<>//index into triangle list
-                     ) {
-  //push nextNode if currentNode has collision
-  TransposedBBox b1=b1Tree[currentNode.index.xy];
-  BBox b2=b2Tree[currentNode.index.xy];
-  if (!obb_disjoint(currentNode.Rotationx,
-                    currentNode.Rotationy,
-                    cross (currentNode.Rotationx,
-                           currentNode.Rotationy),
-                    currentNode.Translation,
-                    b1.Radius.xyz,
-                    b2.Radius.xyz)) {
-    if (b1.Radius.w!=0 && b2.Radius.w!=0) {
-      // it's a leaf node yo
-      // check ye olde triangles
-      collisions.xy = b1.Children;
-      collisions.zw = b2.Children;
-      push(collisions);
-    }else {
-      nextNode.xy = (indexof currentNode).xy;
-      if (b1.Radius.w!=0 
-          || (b1.Radius.w==0 && (GetBBSize(b1.Radius.xyz)
-                                 >
-                                 GetBBSize(b2.Radius.xyz)))) {
-        nextNode.zw = b1.Children;       
-      }else {
-        nextNode.zw = -b2.Children-1;
-      }
-      push(nextNode);
-    }
-  }
-}
-                       
-                       
-kernel void updateCurrentNode(float4 curNodeIndices<>,
-                              TransposedBBox aTree[][],
-                              BBox bTree[][],
-                              Traverser nodes[][],
-                              out Traverser nextNode<>) {
-  float leftOrRightChild = modTwo((indexof nextNode).x);
-  Traverser lastNode = nodes[curNodeIndices.xy];
-  float2 aTreeIndex = (curNodeIndices.z>=0)
-                        ?curNodeIndices.zw+leftOrRightChild
-                        :lastNode.index.xy;
-  float2 bTreeIndex = (curNodeIndices.z>=0)
-                         ?lastNode.index.zw
-                         :-curNodeIndices.zw-1+leftOrRightChild;
-  float3 lastNodeRotationz = cross(lastNode.Rotationx,
-                                   lastNode.Rotationy);
-  if (curNodeIndices.z>=0) {
-    TransposedBBox a =aTree[aTreeIndex];
-    /*
-    float3 rot_transpX;
-    float3 rot_transpY;
-    float3 rot_transpZ;
-    float3 aRotationz = cross(a.Rotationx,a.Rotationy);
-    getMatrixTranspose (a.Rotationx,
-                        a.Rotationy,
-                        aRotationz,
-                        rot_transpX,rot_transpY,rot_transpZ);    
-    */
-    float3 atransp_rotz = cross(a.transp_rotx,a.transp_roty);
-    matMult(//rot_transpX,rot_transpY,rot_transpZ,
-            a.transp_rotx,a.transp_roty,atransp_rotz,
-            lastNode.Rotationx,lastNode.Rotationy,lastNodeRotationz,
-            nextNode.Rotationx,nextNode.Rotationy);
-            
-    nextNode.Translation=matVecMult(//rot_transpX,rot_transpY,rot_transpZ,
-                                    a.transp_rotx,a.transp_roty,atransp_rotz,
-                                    lastNode.Translation-a.Translation);
-  }else {
-    BBox b =bTree[bTreeIndex];
-    float3 bRotationz = cross(b.Rotationx,b.Rotationy);
-    matMult(lastNode.Rotationx,
-            lastNode.Rotationy,
-            lastNodeRotationz,
-            b.Rotationx,
-            b.Rotationy,
-            bRotationz,
-            nextNode.Rotationx,
-            nextNode.Rotationy);            
-    nextNode.Translation=lastNode.Translation+matVecMult(lastNode.Rotationx,
-                                                         lastNode.Rotationy,
-                                                         lastNodeRotationz,
-                                                         b.Translation);
-    
-  }
-  nextNode.index=float4 (aTreeIndex.x,aTreeIndex.y,bTreeIndex.x,bTreeIndex.y);
-
-}
-
-
-
-
-int main(int argc , char * argv[] ) {
-  void * blah = malloc (65536);
-  float4 curNodeIndices<1,1>;
-  BBox aTree<1,1>;
-  BBox bTree<1,1>;
-  Traverser nodes<1,1>;
-  Traverser nextNode<1,1>;
-  memset(blah,0,65536);
-  
-  updateCurrentNode(curNodeIndices,
-                    aTree,
-                    bTree,
-                    nodes,
-                    nextNode);
-  
-  return 0;
-}
 kernel void SimpleCheckTriangleCollide(float3 mRx,
                                        float3 mRy,
                                        float3 mRz,
@@ -377,5 +227,3 @@ kernel void SimpleCheckTriangleCollide(float3 mRx,
   hits= TrianglesHaveContact(mRx,mRy,mRz,mT,
                              t1,t2)?collisions:neg1;
 }
-
-
