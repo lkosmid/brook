@@ -29,6 +29,7 @@ namespace brook {
     virtual void PushConstant(const float2 &val) = 0;  
     virtual void PushConstant(const float3 &val) = 0; 
     virtual void PushConstant(const float4 &val) = 0;
+    virtual void PushReduce (void * val, unsigned int size)=0;
     virtual void PushGatherStream(Stream *s) = 0;
     virtual void PushOutput(Stream *s) = 0;
     virtual void Map() = 0;
