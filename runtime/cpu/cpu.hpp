@@ -1,10 +1,11 @@
 #pragma once
+#include <vector>
 #include "../brt.hpp"
 
 namespace brook {
     class CPUKernel : public Kernel {
     public:
-	CPUKernel(class CPURunTime * runtime, const void * source []);
+	CPUKernel(const void * source []);
 	virtual void PushStream(const Stream *s);
 	virtual void PushConstant(const float &val);  
 	virtual void PushConstant(const float2 &val);  
@@ -16,7 +17,9 @@ namespace brook {
 	virtual void Release();
     protected:
 	virtual ~CPUKernel();
-	CPURunTime * runtime;
+	typedef void callable(void *args,unsigned int start, unsigned int end);
+	callable * func;
+	std::vector<void *> args;
     };
     class CPUStream: public Stream {
     public:
@@ -25,8 +28,9 @@ namespace brook {
 	virtual void Write(void* outData);
 	virtual void Release();
 	virtual void *getData(){return data;}
-	virtual unsigned int * getExtents(){return extents;}
-	virtual unsigned int getDimension(){return dims;}
+	virtual void *getData()const{return data;}	
+	virtual const unsigned int * getExtents() const{return extents;}
+	virtual unsigned int getDimension() const{return dims;}
     protected:
 	void * data;
 	unsigned int * extents;
