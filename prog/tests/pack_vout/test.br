@@ -5,13 +5,13 @@
 static unsigned int debug_vout = 0;
 static unsigned int myglobalnum=16;
 const unsigned int MAX_VOUT_STREAMS=31;//if you change this, change one 5 lines
-int finiteValueProducedfloat (struct __BRTStream * input);
-float shiftValuesfloat(struct __BRTStream *list_stream,
+int finiteValueProduced (struct __BRTStream * input);
+float shiftValues(struct __BRTStream *list_stream,
                   struct __BRTStream *output_stream,
                   int WIDTH, 
                   int LENGTH, 
                   int sign);
-unsigned int  voutCombinefloat(struct __BRTStream *outleft_stream,
+unsigned int  voutCombine(struct __BRTStream *outleft_stream,
                           float maxshiftleft,
                           unsigned int LEFTWIDTH,
                           struct __BRTStream *outright_stream,
@@ -19,13 +19,13 @@ unsigned int  voutCombinefloat(struct __BRTStream *outleft_stream,
                           unsigned int RIGHTWIDTH,
                           unsigned int LENGTH,
                           struct __BRTStream * output);
-unsigned int totalCombineVoutfloat (struct __BRTStream *list_stream, 
+unsigned int totalCombineVout (struct __BRTStream *list_stream, 
                                unsigned int WIDTH,
                                struct __BRTStream *list2_stream,
                                unsigned int WIDTH2,
                                unsigned int LENGTH,
                                struct __BRTStream * output);
-void combineStreamsfloat (struct __BRTStream **streams,
+void combineStreams (struct __BRTStream **streams,
                      unsigned int num,
                      unsigned int width, 
                      unsigned int length,
@@ -80,19 +80,19 @@ int main (int argc,char ** argv) {
    }   
    streamRead(list2_stream,list);
    if (debug_vout)
-      printf("\nFINITE %g %g\n",finiteValueProducedfloat(&list_stream),
-             finiteValueProducedfloat(&list2_stream));
+      printf("\nFINITE %g %g\n",finiteValueProduced(&list_stream),
+             finiteValueProduced(&list2_stream));
    printf ("\n\nSecond Stream\n");
    streamPrint(list2_stream,1);
    printf ("\n\n");
-   totalCombineVoutfloat(&list_stream,WIDTH,
+   totalCombineVout(&list_stream,WIDTH,
                     &list2_stream,WIDTH2,LENGTH,&output_stream);
    printf("Cool\n");
    streamPrint(output_stream,1);
    printf("\n\n");
-   maxshiftleft = shiftValuesfloat(&list_stream,&outleft_stream,WIDTH,LENGTH,-1);
-   maxshiftright=shiftValuesfloat(&list2_stream,&outright_stream,WIDTH2,LENGTH,-1);
-   voutCombinefloat(&outleft_stream,maxshiftleft,WIDTH,
+   maxshiftleft = shiftValues(&list_stream,&outleft_stream,WIDTH,LENGTH,-1);
+   maxshiftright=shiftValues(&list2_stream,&outright_stream,WIDTH2,LENGTH,-1);
+   voutCombine(&outleft_stream,maxshiftleft,WIDTH,
                &outright_stream,maxshiftright,WIDTH2,
                LENGTH,&output_stream);
    printf ("\nOutput\n");
@@ -168,7 +168,7 @@ int main (int argc,char ** argv) {
       if (1) {
          struct __BRTStream *streams[25]={&a,&b,&c,&d,&e,&f,&g,&h,
                                             &a1,&b1,&c1,&d1,&e1,&f1,&g1,&h1,0};
-         combineStreamsfloat(streams,
+         combineStreams(streams,
                         mynum,
                         mywidth,
                         mylength,                        
