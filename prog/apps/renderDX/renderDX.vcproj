@@ -22,7 +22,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="5"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -68,7 +68,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
+				RuntimeLibrary="4"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -187,14 +187,16 @@
 				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="brcc -o built/simulationKernel simulationKernel.br"
+					CommandLine="brcc -o built/simulationKernel simulationKernel.br
+"
 					Outputs="built/simulationKernel.cpp"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="brcc -o built/simulationKernel simulationKernel.br"
+					CommandLine="brcc -o built/simulationKernel simulationKernel.br
+"
 					Outputs="built/simulationKernel.cpp"/>
 			</FileConfiguration>
 		</File>
@@ -204,14 +206,16 @@
 				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="brcc -o built/simulationKernel simulationKernel.brh"
+					CommandLine="brcc -o built/simulationKernel simulationKernel.brh
+"
 					Outputs="built/simulationKernel.hpp"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="brcc -o built/simulationKernel simulationKernel.brh"
+					CommandLine="brcc -o built/simulationKernel simulationKernel.brh
+"
 					Outputs="built/simulationKernel.hpp"/>
 			</FileConfiguration>
 		</File>

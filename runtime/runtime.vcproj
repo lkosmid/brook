@@ -23,7 +23,7 @@
 				PreprocessorDefinitions="WINDOWS;WIN32;_DEBUG;_LIB;BUILD_DX9;BUILD_OGL"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="5"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -61,7 +61,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WINDOWS;WIN32;NDEBUG;_LIB;BUILD_DX9;BUILD_OGL"
-				RuntimeLibrary="2"
+				RuntimeLibrary="4"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"

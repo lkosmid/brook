@@ -22,7 +22,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="5"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -31,7 +31,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="brook.lib"
+				AdditionalDependencies="brook.lib opengl32.lib d3d9.lib d3dx9.lib"
 				OutputFile="$(OutDir)/accumulate.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
@@ -68,7 +68,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
+				RuntimeLibrary="4"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -77,7 +77,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="brook.lib"
+				AdditionalDependencies="brook.lib opengl32.lib d3d9.lib d3dx9.lib"
 				OutputFile="$(OutDir)/accumulate.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
@@ -123,15 +123,17 @@
 				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="brcc -o built/accumulate accumulate.br"
+					CommandLine="brcc -o built/accumulate accumulate.br
+"
 					Outputs="built/accumulate.cpp"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
-          CommandLine="brcc -o built/accumulate accumulate.br"
-          Outputs="built/accumulate.cpp"/>
+					CommandLine="brcc -o built/accumulate accumulate.br
+"
+					Outputs="built/accumulate.cpp"/>
 			</FileConfiguration>
 		</File>
 	</Files>
