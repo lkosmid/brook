@@ -43,7 +43,8 @@ namespace brook{
         this->PushStream(s);
     }
     void CPUKernel::Map(){
-	(*func)(args,0,extent);
+	(*func)(args,0,extent);//can do some fancy forking algorithm here
         args.clear();
+	extent=0;
     }
 }
