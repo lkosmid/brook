@@ -377,16 +377,4 @@ kernel void SimpleCheckTriangleCollide(float3 mRx,
                              t1,t2)?collisions:neg1;
 }
 
-kernel void test (float3 mRx,
-                                   float3 mRy,
-                                   float3 mRz,
-                                   float3 mT,
-                                   Tri t1<>, 
-                                   Tri t2<>, out float blah<>) {
-  float3 i1 = matVecMult(mRx,mRy,mRz,t1.A)+mT;
-  float3 i2 = matVecMult(mRx,mRy,mRz,t1.B)+mT;
-  float3 i3 = matVecMult(mRx,mRy,mRz,t1.C)+mT;
-  blah= tri_contact(i1,i2,i3,t2.A,t2.B,t2.C);
-
-}
 
