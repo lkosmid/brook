@@ -27,6 +27,7 @@ typedef struct Neighbor_t {
 }Neighbor;
 
 
+// from a triangle and its neighbors, determines 
 kernel void smallEnough(Tri t<>, Neighbor u<>, out Tri v<>, float epsilon) {
   v.A.xyz = t.A.xyz;
   v.A.w = (float)(t.A.w!=0 &&
