@@ -181,7 +181,41 @@ namespace brook{
   
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   void CPUStream::Write(void * outData) {
-    memcpy(outData,data,stride*totalsize);
+    int i;
+    unsigned int *index;
+    unsigned int rowlen;
+    unsigned char *dst = (unsigned char *) outData;
+
+    index = (unsigned int *) malloc (sizeof(unsigned int) * dims);
+
+    rowlen = domain_max[dims-1] - domain_min[dims-1];
+    rowlen *= stride;
+
+    for (i=0; i<(int)dims; i++)
+      index[i] = 0;
+
+    while (1) {
+      void *ptr = fetchItemPtr(data, index);
+      memcpy (dst, ptr, rowlen);
+      dst += rowlen;
+
+      if (dims < 2) {
+        free(index);
+        return;
+      }
+      
+      for (i = ((int)dims)-2; i>=0; i++) {
+        index[i]++;
+        if (index[i] >= domain_max[i] - domain_min[i]) {
+          if (i == 0) {
+            free(index);
+            return;
+          }
+          index[i] = 0;
+        } else
+          break;
+      }
+    }
   }
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
