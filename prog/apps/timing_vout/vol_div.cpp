@@ -10,6 +10,8 @@ char use_vout_amplify=1;
 bool firstRound=true;
 bool vanilla=false;
 int count=0;
+int hpcount=0;
+int qtcount=0;
 bool debug_model=false;
 static std::vector<brook::stream> savedStreams;
 ::brook::stream & quickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
@@ -26,6 +28,7 @@ static std::vector<brook::stream> savedStreams;
       return savedStreams[count++%savedStreams.size()];
    }
 }
+static std::vector<brook::stream> hpsavedStreams;
 ::brook::stream & hpquickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
 
    if (vanilla) {
@@ -34,10 +37,26 @@ static std::vector<brook::stream> savedStreams;
       return s;
    }
    if (firstRound) {
-      savedStreams.push_back(brook::stream(t,wid,len,gar));
-      return savedStreams.back();
+      hpsavedStreams.push_back(brook::stream(t,wid,len,gar));
+      return hpsavedStreams.back();
    }else {
-      return savedStreams[count++%savedStreams.size()];
+      return hpsavedStreams[hpcount++%hpsavedStreams.size()];
+   }
+}
+
+static std::vector<brook::stream> qtsavedStreams;
+::brook::stream & qtquickAllocStream (const __BRTStreamType *t, int wid, int len, int gar){
+
+   if (vanilla) {
+      static brook::stream s;
+      s= brook::stream(t,wid,len,gar);
+      return s;
+   }
+   if (firstRound) {
+      qtsavedStreams.push_back(brook::stream(t,wid,len,gar));
+      return qtsavedStreams.back();
+   }else {
+      return qtsavedStreams[qtcount++%qtsavedStreams.size()];
    }
 }
 void copy4( brook::stream in, brook::stream out);
@@ -251,22 +270,60 @@ int volume_division (int argc, char ** argv) {
    ::brook::stream agg(::brook::getStreamType(( float  *)0), 2 , 2,-1);
    streamRead(agg,toagg);
    for (i=0;i<(int)dat.depth;++i) {
-
+     int numactivetextures=dat.depth;
       readPPM3dSlice(dat,i,slice);
       volumeData.push_back(::brook::stream (brook::getStreamType(( float  *)0), dat.height , dat.width,-1));
       streamRead(volumeData.back(),slice);
+     if (i==numactivetextures-1) {                      
+        ::brook::stream v(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);    
+                  
+        float * temp=(float*)malloc(sizeof(float)*dat.width*dat.height);                        
+        for (int k=0;k<2;++k) {                          
+         ::brook::iter center(__BRTFLOAT2, dat.height , dat.width, -1, (float2 (0.000000f,0.000000f)).x, (float2 (0.000000f,0.000000f)).y, (float2 (tof(dat.width),tof(dat.height))).x, (float2 (tof(dat.width),tof(dat.height))).y, -1);                                    
+         // this iterator tracks exactly 1 pixel higher in our current or next                  
+         // 2d sliceor truy                              
+         ::brook::iter up(__BRTFLOAT2, dat.height , dat.width, -1, (float2 (0.000000f,1.000000f)).x, (float2 (0.000000f,1.000000f)).y, (float2 (0.000000f + tof(dat.width),1.000000f + tof(dat.height))).x, (float2 (0.000000f + tof(dat.width),1.000000f + tof(dat.height))).y, -1);                               
+         // This iterator tracks +1 in x for the current or next 2d slice                       
+         ::brook::iter upforward(__BRTFLOAT2, dat.height , dat.width, -1, (float2 (1.000000f,1.000000f)).x, (float2 (1.000000f,1.000000f)).y, (float2 (1.000000f + tof(dat.width),1.000000f + tof(dat.height))).x, (float2 (1.000000f + tof(dat.width),1.000000f + tof(dat.height))).y, -1);                        
+         // This iterator tracks +1 in both x & y for the current or next slice                 
+         ::brook::iter forward(__BRTFLOAT2, dat.height , dat.width, -1, (float2 (1.000000f,0.000000f)).x, (float2 (1.000000f,0.000000f)).y, (float2 (1.000000f + tof(dat.width),tof(dat.height))).x, (float2 (1.000000f + tof(dat.width),tof(dat.height))).y, -1);           
+          start = GetTimeMillis();                       
+                  
+          for (int j=0;j<(int)dat.depth;++j) {           
+            float2 sliceZ;                               
+            sliceZ.x=(float)j;sliceZ.y=(float)(j+1);     
+            processSliceNoCompact(volumeData[j%numactivetextures],                              
+                                  volumeData[(j+1)%numactivetextures],                          
+                                  v,//volumeData[(j+2)%numactivetextures],                      
+                                  center,                
+                                  up,                    
+                                  forward,               
+                                  upforward,             
+                                  sliceZ);               
+            Aggregate4(v,agg,agg);                       
+          }       
+          //streamWrite(volumeData[(j+2)%numactivetextures],temp);                              
+          //Aggregate1(volumeData[(j+1)%2],agg,agg);     
+          streamWrite(agg,toagg);                        
+          stop = GetTimeMillis();                        
+          printf ("One Time Cost %f\n",(float)(stop-start));                                    
+        }         
+      }       
 
    }
    std::vector<int> sizesx;
    std::vector<int> sizesy;
    // now we begin the actual algorithm
-   ::brook::stream v(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
    ::brook::stream vbak(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
-   for (unsigned int rr=0;rr<3;++rr) {
+   for (unsigned int rr=0;rr<8;++rr) {
+     ::brook::stream v(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);
+
      count=0;
+     hpcount=0;
+     qtcount=0;
      if (rr!=0)
        firstRound=false;
-     if (rr==2) {use_vout_amplify=0;use_vout_filter=0;}
+     if (rr>=2) {use_vout_amplify=0;use_vout_filter=0;}
      
          unsigned int i;
          // which volumetric slice is this run going to produce
@@ -310,6 +367,7 @@ int volume_division (int argc, char ** argv) {
                                        forward,
                                        upforward,
                                        sliceZ);
+               
             if (rr==0) {
                sizesx.push_back(toi(streamSize(v).x));
                sizesy.push_back(toi(streamSize(v).y));
@@ -322,27 +380,27 @@ int volume_division (int argc, char ** argv) {
                 // vout[3] outputs there will be (0 or 3 for each tri)
             ::brook::stream trianglesB;
             if (!debug_model)
-               trianglesB=hpquickAllocStream(::brook::getStreamType(( float3  *)0), (rr==2?sizesy[i]:toi(streamSize(v).y))*15 , (rr==2?sizesx[i]:toi(streamSize(v).x)) ,-1);
-            else if (!use_vout_amplify)
-               trianglesB=brook::stream(::brook::getStreamType(( float3  *)0), (rr==2?sizesy[i]:toi(streamSize(v).y))*15 , (rr==2?sizesx[i]:toi(streamSize(v).x)) ,-1);
-            if (streamSize(v).y){
+               trianglesB=hpquickAllocStream(::brook::getStreamType(( float3  *)0), (rr>=2?sizesy[i]:toi(streamSize(v).y))*15 , (rr>=2?sizesx[i]:toi(streamSize(v).x)) ,-1);
+            else if (rr!=0&&!use_vout_amplify)
+               trianglesB=brook::stream(::brook::getStreamType(( float3  *)0), (rr>=2?sizesy[i]:toi(streamSize(v).y))*15 , (rr>=2?sizesx[i]:toi(streamSize(v).x)) ,-1);
+            if (sizesy[i]){
 
-              if (use_vout_amplify) {
-                 ::brook::stream triangles=hpquickAllocStream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
-                 ::brook::stream trianglesFirst=hpquickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+              if (use_vout_amplify||rr==0) {
+                 ::brook::stream triangles=qtquickAllocStream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
+                 ::brook::stream trianglesFirst=qtquickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
 
                 // multiply our width by 4x since we could output up to 4x
                 // of our original values
                 ::brook::iter newsize(__BRTFLOAT2, 
-                                      rr==2?sizesy[i]:toi(streamSize(v).y) , 
-                                      rr==2?sizesx[i]*4:(toi(streamSize(v).x) * 4), 
+                                      rr>=2?sizesy[i]:toi(streamSize(v).y) , 
+                                      rr>=2?sizesx[i]*4:(toi(streamSize(v).x) * 4), 
                                       -1, 
                                       (float2 (0,0)).x, 
                                       (float2 (0,0)).y, 
-                                      (float2 ((rr==2?(float)sizesx[i]:streamSize(v).x) * 4.0f,
-                                               rr==2?(float)sizesy[i]:streamSize(v).y)).x, 
-                                      (float2 ((rr==2?sizesx[i]:streamSize(v).x) * 4.0f,
-                                               rr==2?sizesy[i]:streamSize(v).y)).y, 
+                                      (float2 ((rr>=2?(float)sizesx[i]:streamSize(v).x) * 4.0f,
+                                               rr>=2?(float)sizesy[i]:streamSize(v).y)).x, 
+                                      (float2 ((rr>=2?sizesx[i]:streamSize(v).x) * 4.0f,
+                                               rr>=2?sizesy[i]:streamSize(v).y)).y, 
                                       -1);
                  // our first triangle lookups are going to be exactly 3x as big
                                       
@@ -373,10 +431,11 @@ int volume_division (int argc, char ** argv) {
                   
                  // output exactly 5 vertices for each input 
                  processTrianglesNoCompactOneOut(trianglesB,
-                                           v, 
+                                           vbak, 
                                            volumeTriangles);
                  // write them all into mem
-                 //Aggregate34(trianglesB,v,agg,agg);
+                 Aggregate34(trianglesB,v,agg,agg);
+                 
                  //Aggregate3(trianglesB,agg,agg);
                  //Aggregate3(trianglesC,agg,agg);
                  //Aggregate3(trianglesD,agg,agg);
@@ -415,14 +474,14 @@ int volume_division (int argc, char ** argv) {
          streamWrite(agg,toagg);
          stop = GetTimeMillis();
          for (j=1;j<tsize;j+=2) {
-            Aggregate34(vertexData[tsize],vertexData[tsize-1],agg,agg);
+           //Aggregate34(vertexData[tsize],vertexData[tsize-1],agg,agg);
          }
          streamWrite(agg,toagg);
 
          printf ("Ready time %f %f ",(float)(stop-start),(float)(GetTimeMillis()-start));
 
          for (j=0;j<(int)vertexData.size();++j) {
-            if (rr!=2) {
+            if (rr<2) {
                streamWrite(vertexData[j],
                            consolidateVertices(dat,streamSize(vertexData[j])));
             }else {
@@ -433,18 +492,17 @@ int volume_division (int argc, char ** argv) {
            if (j==0){
              stop = GetTimeMillis();
              printf ("Total time %f",(float)(stop-start));
-             if (rr==2) break;
+             if (rr>=2) break;
            }
          }
          vertexData.clear();
          printf("Total time with reads %f\n",(float)(GetTimeMillis()-start));
-         if (debug_model&&rr!=2)printVolume(dat);
+         if (debug_model&&rr<2)printVolume(dat);
          //         dat.vertices.clear();
    }
    free(slice);
    volumeData.clear();
    //write the mesh to stdout
-
    return 0;
    
  }
