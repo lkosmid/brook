@@ -502,6 +502,9 @@ int          OGLWindow::piAttribList[4][16];
 bool         OGLWindow::static_window_created = false;
 bool         OGLWindow::static_pbuffers_initialized = false;
 
+#define PBUFFER_WIDTH 2048
+#define PBUFFER_HEIGHT 2048
+
 #define CRGBA(c, r,g,b,a) \
         GLX_RED_SIZE,               r, \
         GLX_GREEN_SIZE,             g, \
@@ -531,8 +534,8 @@ basefAttribList[4][16] = { {0.0f,0.0f},
 
 #define PBATTRIB \
     GLX_PRESERVED_CONTENTS, GL_TRUE, \
-    GLX_PBUFFER_WIDTH, 1024, \
-    GLX_PBUFFER_HEIGHT, 1024
+    GLX_PBUFFER_WIDTH, PBUFFER_WIDTH, \
+    GLX_PBUFFER_HEIGHT, PBUFFER_HEIGHT
 
 static int
 basepiAttribList[4][16] = { {PBATTRIB, 0, 0}, \
@@ -694,9 +697,11 @@ OGLWindow::bindPbuffer(unsigned int width,
   ** we just run everything in a float4 pbuffer.
   */
 
-  if (width > 1024 ||
-      height > 1024) {
+  if (width > PBUFFER_WIDTH ||
+      height > PBUFFER_HEIGHT) {
     fprintf (stderr, "Pbuffer not big enough\n");
+    fprintf (stderr, "User requested %d x %d\n",
+             width, height);
     exit(1);
   }
 
