@@ -15,15 +15,7 @@ static FunctionDef * ConvertToSwizzle(FunctionDef *s) {
 	return NULL;	
 }
 #endif
-void SwizzleConverter (Expression * e) {
-	AssignExpr * ae;
-	if (e->etype == ET_BinaryExpr&&(ae=dynamic_cast<AssignExpr *> (e))) {
-		
-	}
-}
-void ConvertToSwizzle(Statement* s) {
-	s->findExpr(SwizzleConverter);
-}
+template <class ConverterFunctor> void ConvertToT (Expression * expression);
 
 BinaryOp TranslatePlusGets (AssignOp ae) {
 				BinaryOp bo=BO_Assign;
@@ -125,20 +117,44 @@ class MaskExpr : public BinaryExpr {
 	}
 
 };
-
-
-Expression * MaskConverter (Expression * e) {
+class SwizzleConverter{public:
+	Expression * operator()(Expression * e) {
+		BinaryExpr * be;
+		if (e->etype==ET_BinaryExpr&& (be = dynamic_cast<BinaryExpr*>(e))) {
+			if (be->op()==BO_Member) {
+				Variable * vswiz;
+				if (be->rightExpr()->etype==ET_Variable&&(vswiz = dynamic_cast<Variable*>(be->rightExpr()))) {
+					if (looksLikeMask(vswiz->name->name)) {
+//						printf ("swizzlefound %s",vswiz->name->name.c_str());
+						unsigned int len =vswiz->name->name.length();
+						char swizlength [2]={len+'0',0};
+						std::string rez=std::string("swizzle")+swizlength+"<";
+						for (unsigned int i=0;i<len;++i) {
+							char swizchar [3] =  {'0'+translateMask(vswiz->name->name[i]),i==len-1?'\0':',','\0'};
+							rez+=swizchar;
+						}
+						rez+=">()";
+						vswiz->name->name=rez;
+					}
+				}
+			}
+		}
+		return NULL;
+	}
+};
+class MaskConverter{public:
+Expression * operator () (Expression * e) {
 	AssignExpr * ae;
 	BinaryExpr * ret =NULL;
 	Variable * vmask=NULL;
 	if (e->etype == ET_BinaryExpr&&(ae= dynamic_cast<AssignExpr *> (e))) {
 		//now lets identify what expression is to the left... if it's a dot then we go!
 		BinaryExpr * lval;
-		if (e->etype==ET_BinaryExpr&& (lval = dynamic_cast<BinaryExpr*>(ae->lValue()))) {
+		if (ae->lValue()->etype==ET_BinaryExpr&& (lval = dynamic_cast<BinaryExpr*>(ae->lValue()))) {
 			if (lval->op()==BO_Member) {
 				if (lval->rightExpr()->etype==ET_Variable&&(vmask = dynamic_cast<Variable*>(lval->rightExpr()))) {
 					if (looksLikeMask(vmask->name->name)) {
-						printf ("mask detected %s\n",vmask->name->name.c_str());
+						//printf ("mask detected %s\n",vmask->name->name.c_str());
 						BinaryOp bo =TranslatePlusGets (ae->op());
 						if (bo!=BO_Assign) {
 							//now we	 		need to move the lval to the right
@@ -153,7 +169,7 @@ Expression * MaskConverter (Expression * e) {
 	}
 	return ret;
 	
-}
+}};
 class ChainExpression:public Expression {
 public:
 	ChainExpression (Expression * e):Expression(e->etype,e->location) {
@@ -165,19 +181,26 @@ public:
 	virtual Expression * dup0() const {
 		return new ChainExpression(next);
 	}
+    virtual void findExpr( fnExprCallback cb ) { next->findExpr(cb); }	
 };
-void ConvertToMask (Expression * expression) {
-	Expression * e = MaskConverter (expression);
+template <class ConverterFunctor> void ConvertToT (Expression * expression) {
+	Expression * e = ConverterFunctor()(expression);
 	if (e) {
 //		(*expression)=ChainExpression(e);
-		Expression * k = new ChainExpression(e);
-		memcpy (expression,k,sizeof(Expression));
-		e->findExpr(ConvertToMask);
+		Expression * k = new ChainExpression(e);//memory leak--but how else are we to guarantee the integrity of our expression..it's a lost cause unless we have some way of assinging to the passed in expression without rewriting the whole loop.
+		char location[sizeof(Location)];
+		memcpy (&location[0],&expression->location,sizeof(Location));
+		memcpy (expression,k,sizeof(Expression));//DANGEROUS but we don't have access to the code
+		memcpy (&expression->location,&location[0],sizeof(Location));
+		e->findExpr(ConvertToT<MaskConverter>);
 		
 	}
 }
 void FindMask (Statement * s) {
-	s->findExpr (ConvertToMask);
+	s->findExpr(ConvertToT<MaskConverter>);
+}
+void FindSwizzle (Statement * s) {
+	s->findExpr(ConvertToT<SwizzleConverter>);
 }
 bool compileCpp() {
 	Project proj;
@@ -186,8 +209,7 @@ bool compileCpp() {
 		std::ofstream out;
 //		tu->findFunctionDef (ConvertToMask);
 		tu->findStemnt(FindMask);
-		tu->findStemnt(FindMask);				
-		tu->findStemnt (ConvertToSwizzle);
+		tu->findStemnt (FindSwizzle);
 		std::string s (globals.coutputname);
 		s+="pp";
 		out.open(s.c_str());
