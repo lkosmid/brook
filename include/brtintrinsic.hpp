@@ -1,4 +1,7 @@
 #include <math.h>
+#ifdef _WIN32
+#include <float.h>
+#endif
 #ifndef BRTINTRINSIC_HPP
 #define BRTINTRINSIC_HPP
 
@@ -183,6 +186,27 @@ inline float modf_float (float x, float & oout) {
    oout=exp;
    return x;
 }
+inline finite_float (float x) {
+#ifdef _WIN32
+   return _finite(x);
+#else
+   return finite(x);
+#endif
+}
+inline isnan_float (float x) {
+#ifdef _WIN32
+   return _isnan(x);
+#else
+   return isnan(x);
+#endif
+}
+inline isinf_float (float x) {
+#ifdef _WIN32
+   return (!finite_float(x))&&(!isnan_float(x));
+#else
+   return isinf(x);
+#endif
+}
   BININTRINSIC(atan2,atan2)
   BININTRINSIC(fmod,fmodf)
   BININTRINSIC(pow,pow)
@@ -196,8 +220,8 @@ inline float modf_float (float x, float & oout) {
   UNINTRINSIC(saturate,saturate_float)
   UNINTRINSIC(abs,fabsf)
   TRIINTRINSIC(clamp,clamp_float)
-  UNINTRINSIC(isfinite,finite)
-  UNINTRINSIC(isnan,isnan)
+  UNINTRINSIC(isfinite,finite_float)
+  UNINTRINSIC(isnan,isnan_float)
   BININTRINSIC(max,max_float)
   BININTRINSIC(min,min_float)
   UNINTRINSIC(sign,sign_float)
@@ -212,7 +236,7 @@ inline float modf_float (float x, float & oout) {
   UNINTRINSIC(floor,floor)
   UNINTRINSIC(frac,frac_float)
   UNINTRINSIC(frc,frc_float)
-  UNINTRINSIC(isinf,isinf)
+  UNINTRINSIC(isinf,isinf_float)
   BININTRINSIC(ldexp,ldexp_float)
   BININTRINSIC(dot,dot)
   BININTRINSIC(distance,distance)
