@@ -10,7 +10,7 @@ namespace brook {
 NV30GLRunTime::NV30GLRunTime() {
 
   // Create a window
-  hwnd = createwindow();
+  // hwnd = createwindow();
 
   // Create a window glcontext
 //  hglrc_window = createglcontext();
