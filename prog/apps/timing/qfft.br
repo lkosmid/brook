@@ -216,7 +216,7 @@ void computeFFT2d(float2 *input,
    else {
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTY(s,getW(nPassCounter,N,0),s_out,iter3,iter4,s_iter);
+            DFTY(s,getW(nPassCounter,logN,0),s_out,iter3,iter4,s_iter);
             if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
                streamPrint(s_out);
@@ -234,7 +234,7 @@ void computeFFT2d(float2 *input,
 	 }
          nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            DFTX(s,getW(nPassCounter,M,1),s_out,iter1,iter2,s_iter);
+            DFTX(s,getW(nPassCounter,logM,1),s_out,iter1,iter2,s_iter);
             if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
                streamPrint(s_out);
