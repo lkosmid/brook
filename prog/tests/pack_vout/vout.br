@@ -247,16 +247,16 @@ kernel void streamCombine5f(float input0[][],
                          -0.5f,
                          lengthmodmodulus,
                          whichmod);
-   if (whichmod==0||whichmod==modulus) {
-      output=input0[newindex];
+   if (whichmod==4) {
+      output=input4[newindex];
    }else if (whichmod==1) {
       output=input1[newindex];
    }else if (whichmod==2) {
       output=input2[newindex];
    }else if (whichmod==3) {
-      output=input3[newindex];
+     output=input3[newindex];
    }else {
-      output=input4[newindex];
+     output=input0[newindex];
    }
 }
 /*
