@@ -77,9 +77,28 @@ BrtGatherExpr::print (std::ostream& out) const
      out << ",";
      dims[0]->print(out);
      out << ")";
-   } else {
+   } else if(dims.size() == 3) {
+     out << "float3(";
+     dims[2]->print(out);
+     out << ",";
+     dims[1]->print(out);
+     out << ",";
+     dims[0]->print(out);
+     out << ")";
+   } else if(dims.size() == 4) {
+     out << "float4(";
+     dims[3]->print(out);
+     out << ",";
+     dims[2]->print(out);
+     out << ",";
+     dims[1]->print(out);
+     out << ",";
+     dims[0]->print(out);
+     out << ")";
+   }
+   else {
      std::cerr << location
-               << "GPU runtimes can't handle gathers greater than 2D.\n";
+               << "GPU runtimes can't handle gathers greater than 4D.\n";
    }
 
    out << ")";
@@ -92,11 +111,19 @@ BrtGatherExpr::print (std::ostream& out) const
    {
      out << ".xy";
    }
+   else if( ndims == 3 )
+   {
+     out << ".xyz";
+   }
+   else if( ndims == 4 )
+   {
+     out << ".xyzw";
+   }
    else
    {
      // TODO: handle the larger cases
      std::cerr << location
-               << "GPU runtimes can't handle gathers greater than 2D.\n";
+               << "GPU runtimes can't handle gathers greater than 4D.\n";
    }
 
    if( globals.enableGPUAddressTranslation )
@@ -115,83 +142,6 @@ BrtGatherExpr::print (std::ostream& out) const
     base->print(out);
     out << "_scalebias))";
    }
-
-   /* TIM: new gather functionality:
-   out << ",(";
-
-   if (dims.size() == 1) 
-     dims[0]->print(out);
-   else if (dims.size() == 2) {
-     out << "float2(";
-     dims[1]->print(out);
-     out << ",";
-     dims[0]->print(out);
-     out << ")";
-   } else {
-     std::cerr << location
-               << "GPU runtimes can't handle gathers greater than 2D.\n";
-   }
-
-   out << ")";
-   // now scale and modulate by the constant:
-   if( ndims == 1 )
-   {
-     out << ".x*_const_";
-     base->print(out);
-     out << "_scalebias.x";
-     out << "+_const_";
-     base->print(out);
-     out << "_scalebias.z";
-   }
-   else if( ndims == 2 )
-   {
-     out << ".xy*_const_";
-     base->print(out);
-     out << "_scalebias.xy";
-     out << "+_const_";
-     base->print(out);
-     out << "_scalebias.zw";
-   }
-   else
-   {
-     // TODO: handle the larger cases
-     std::cerr << location
-               << "GPU runtimes can't handle gathers greater than 2D.\n";
-   }
-   out << ")";
-
-   // All gather functions return a float4
-   // so we need to create the proper return type
-   assert(base->etype == ET_Variable);
-   Variable *v = (Variable *) base;   
-   assert(v->name);
-   assert(v->name->entry);
-   assert(v->name->entry->IsParamDecl());
-   assert(v->name->entry->uVarDecl);
-   assert(v->name->entry->uVarDecl->form);
-   assert(v->name->entry->uVarDecl->form->isArray());
-   ArrayType *a = (ArrayType *) v->name->entry->uVarDecl->form;
-   BaseType *b = a->getBase();
-   
-   switch (b->typemask) {
-   case BT_Float:
-      out << ".x ";
-      break;
-   case BT_Float2:
-      out << ".xy ";
-      break;
-   case BT_Float3:
-      out << ".xyz ";
-      break;
-   case BT_Float4:
-      out << ".xyzw ";
-      break;
-   default:
-     break;
-//      fprintf(stderr, "Strange array base type:");
-//      b->printBase(std::cerr, 0);
-//      abort();
-   }*/
 }
 
 

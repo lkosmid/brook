@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 
-kernel void copy( float a<>, out float b<> ) {
-	b = a;
+kernel void copy( float a[][][][], out float b<> ) {
+	b = a[0][0][0][(indexof b).x];
 }
 
 int main( int argc, char** argv ) {
@@ -12,13 +12,13 @@ int main( int argc, char** argv ) {
   int SIZE2 = SIZE*2;
 	int i, j;
 	
-	float a< SIZE >;
-	float b< SIZE2 >;
+	float a< 1, 1, 1, SIZE >;
+	float b< SIZE >;
 	float* a_data;
 	float* b_data;
 	
 	a_data = (float*)malloc( SIZE*sizeof(float) );
-	b_data = (float*)malloc( SIZE2*sizeof(float) );
+	b_data = (float*)malloc( SIZE*sizeof(float) );
 
 	for( i = 0; i < SIZE; i++ )
 	{
@@ -29,9 +29,9 @@ int main( int argc, char** argv ) {
 	copy( a, b );
 	streamWrite( b, b_data );
 
-	for( i = 0; i < SIZE2; i++ )
+	for( i = 0; i < SIZE; i++ )
 	{
-		j = i/2;
+		j = i;
 		if( b_data[i] != j )
 			printf( "[%d] %f != %d\n", i, b_data[i], j );
 	}
