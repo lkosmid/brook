@@ -47,7 +47,6 @@ void CountValues(float list_stream<4,3>,
    unsigned int i;
    float2 maxvalue;
    unsigned int logN;
-   float maxshift=999.0f;
 
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));

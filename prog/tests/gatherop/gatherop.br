@@ -6,16 +6,16 @@
 #include <stdio.h>
 
 reduce void mydec(float4 a <>, reduce float4 b <> ) {
-   b-=1;
+   b = a - 1;
 }
 reduce void mydec1(float a <>, reduce float b <> ) {
-   b-=1;
+   b = a - 1;
 }
 reduce void myfetch(float4 a <>, reduce float4 b <> ) {
-  
+  b = a;
 }
 reduce void myfetch1(float a <>, reduce float b <> ) {
-  
+  b = a;
 }
 
 void print_dataf (float4 data_f [2][2]) {
