@@ -10,8 +10,7 @@ DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int in
   height(inHeight),
   components(inComponents),
   internalComponents(inComponents),
-  systemDataBuffer(NULL),
-  dirtyFlags(kSystemDataDirty),
+  dirtyFlags(0),
   device(NULL),
   textureHandle(NULL),
   surfaceHandle(NULL),
@@ -67,8 +66,6 @@ bool DX9Texture::initialize()
 
 DX9Texture::~DX9Texture()
 {
-  if( systemDataBuffer != NULL )
-    delete systemDataBuffer;
   if( shadowSurface != NULL )
     shadowSurface->Release();
   if( surfaceHandle != NULL )
@@ -88,54 +85,33 @@ DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight
   return NULL;
 }
 
-void DX9Texture::setData( const float* inData )
+void DX9Texture::setData( const float* inData, unsigned int inStride )
 {
-	setShadowData( inData );
+	setShadowData( inData, inStride );
   markShadowDataChanged();
 }
 
-void DX9Texture::getData( float* outData )
+void DX9Texture::getData( float* outData, unsigned int inStride )
 {
-  if( !(dirtyFlags & kShadowDataDirty) )
-    getShadowData( outData );
-  else if( !(dirtyFlags & kSystemDataDirty) )
-    memcpy( outData, systemDataBuffer, systemDataBufferSize );
-  else
-  {
+  if( dirtyFlags & kShadowDataDirty )
     flushCachedToShadow();
-    getShadowData( outData );
-  }
+  getShadowData( outData, inStride );
 }
 
 void DX9Texture::markCachedDataChanged()
 {
-  dirtyFlags = kShadowDataDirty | kSystemDataDirty;
+  dirtyFlags = kShadowDataDirty;
 }
 
 void DX9Texture::markShadowDataChanged()
 {
-  dirtyFlags = kCachedDataDirty | kSystemDataDirty;
-}
-
-void DX9Texture::markSystemDataChanged()
-{
-  dirtyFlags = kCachedDataDirty | kShadowDataDirty;
+  dirtyFlags = kCachedDataDirty;
 }
 
 void DX9Texture::validateCachedData()
 {
   if( !(dirtyFlags & kCachedDataDirty) ) return;
-  if( dirtyFlags & kShadowDataDirty )
-    flushSystemToShadow();
   flushShadowToCached();
-}
-
-void DX9Texture::validateSystemData()
-{
-  if( !(dirtyFlags & kSystemDataDirty) ) return;
-  if( dirtyFlags & kShadowDataDirty )
-    flushCachedToShadow();
-  flushShadowToSystem();
 }
 
 void DX9Texture::flushCachedToShadow()
@@ -145,18 +121,6 @@ void DX9Texture::flushCachedToShadow()
   dirtyFlags &= ~kCachedDataDirty;
 }
 
-void DX9Texture::flushShadowToSystem()
-{
-  getShadowData( getSystemDataBuffer() );
-  dirtyFlags &= ~kSystemDataDirty;
-}
-
-void DX9Texture::flushSystemToShadow()
-{
-  setShadowData( getSystemDataBuffer() );
-  dirtyFlags &= ~kShadowDataDirty;
-}
-
 void DX9Texture::flushShadowToCached()
 {
   HRESULT result = device->UpdateSurface( shadowSurface, NULL, surfaceHandle, NULL );
@@ -164,15 +128,7 @@ void DX9Texture::flushShadowToCached()
   dirtyFlags &= ~kCachedDataDirty;
 }
 
-void* DX9Texture::getSystemDataBuffer()
-{
-  if( systemDataBuffer != NULL ) return systemDataBuffer;
-  systemDataBufferSize = width * height * components * sizeof(float);
-  systemDataBuffer = malloc( systemDataBufferSize );
-  return systemDataBuffer;
-}
-
-void DX9Texture::getShadowData( void* outData )
+void DX9Texture::getShadowData( void* outData, unsigned int inStride )
 {
   HRESULT result;
 
@@ -186,7 +142,7 @@ void DX9Texture::getShadowData( void* outData )
 	int pitchFloats = pitch / 4;
 	const float* inputLine = (const float*)info.pBits;
 
-	float* output = (float*)outData;
+	char* outputPixel = (char*)outData;
 
 	for( int y = 0; y < height; y++ )
 	{
@@ -194,11 +150,13 @@ void DX9Texture::getShadowData( void* outData )
 		for( int x = 0; x < width; x++ )
 		{
       const float* input = inputPixel;
+      float* output = (float*)outputPixel;
 			for( int c = 0; c < components; c++ )
 			{
 				*output++ = *input++;
 			}
       inputPixel += internalComponents;
+      outputPixel += inStride;
 		}
 		inputLine += pitchFloats;
 	}
@@ -207,7 +165,7 @@ void DX9Texture::getShadowData( void* outData )
 	DX9AssertResult( result, "UnlockRect failed" );
 }
 
-void DX9Texture::setShadowData( const void* inData )
+void DX9Texture::setShadowData( const void* inData, unsigned int inStride )
 {
   HRESULT result;
 	D3DLOCKED_RECT info;
@@ -221,18 +179,20 @@ void DX9Texture::setShadowData( const void* inData )
 	int pitchFloats = pitch / 4;
 	float* outputLine = (float*)info.pBits;
 
-	const float* input = (const float*)inData;
+	const char* inputPixel = (const char*)inData;
 
 	for( int y = 0; y < height; y++ )
 	{
 		float* outputPixel = outputLine;
 		for( int x = 0; x < width; x++ )
 		{
+      const float* input = (const float*)inputPixel;
       float* output = outputPixel;
 			for( int c = 0; c < components; c++ )
 			{
 				*output++ = *input++;
 			}
+      inputPixel += inStride;
       outputPixel += internalComponents;
 		}
 		outputLine += pitchFloats;

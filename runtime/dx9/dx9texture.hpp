@@ -14,15 +14,12 @@ namespace brook {
     int getWidth() { return width; }
     int getHeight() { return height; }
 
-	  void setData( const float* inData );
-	  void getData( float* outData );
+	  void setData( const float* inData, unsigned int inStride );
+	  void getData( float* outData, unsigned int inStride );
 
     void markCachedDataChanged();
     void markShadowDataChanged();
-    void markSystemDataChanged();
     void validateCachedData();
-    void validateSystemData();
-    void* getSystemDataBuffer();
 
     DX9Rect getTextureSubRect( int l, int t, int r, int b );
     DX9Rect getSurfaceSubRect( int l, int t, int r, int b );
@@ -45,11 +42,9 @@ namespace brook {
     bool initialize();
 
     void flushCachedToShadow();
-    void flushShadowToSystem();
-    void flushSystemToShadow();
     void flushShadowToCached();
-    void getShadowData( void* outData );
-    void setShadowData( const void* inData );
+    void getShadowData( void* outData, unsigned int inStride );
+    void setShadowData( const void* inData, unsigned int inStride );
 
 	  LPDIRECT3DDEVICE9 device;
 
@@ -61,13 +56,10 @@ namespace brook {
 	  LPDIRECT3DSURFACE9 surfaceHandle;
   	
 	  LPDIRECT3DSURFACE9 shadowSurface;
-    void* systemDataBuffer;
-    unsigned int systemDataBufferSize;
 
     enum DirtyFlag {
-      kSystemDataDirty = 0x01,
-      kShadowDataDirty = 0x02,
-      kCachedDataDirty = 0x04
+      kShadowDataDirty = 0x01,
+      kCachedDataDirty = 0x02
     };
     int dirtyFlags;
   };

@@ -157,13 +157,15 @@ namespace brook {
      virtual const unsigned int* getExtents() const { return &extents[0]; }
      virtual unsigned int getDimension() const { return dimensionCount; }
      virtual unsigned int getTotalSize() const { return totalSize; }
-     virtual int getFieldCount() const { return fields.size(); }
+     virtual int getFieldCount() const { return (int)fields.size(); }
      virtual __BRTStreamType getIndexedFieldType(int i) const {
        return fields[i].elementType;
      }
 
      void validateGPUData();
      void markGPUDataChanged();
+
+
 
   private:
     DX9Stream( DX9RunTime* inRuntime );
@@ -172,6 +174,8 @@ namespace brook {
       int inDimensionCount, const int* inExtents );
     virtual ~DX9Stream ();
     IDirect3DDevice9* getDevice();
+     void ReadImpl(const void* inData);
+     void WriteImpl(void* outData);
 
     class Field
     {
@@ -192,8 +196,15 @@ namespace brook {
 
     int width, height;
 
+    void validateSystemData();
+    void markSystemDataChanged();
+
+    char* systemDataBuffer;
+    unsigned int systemDataBufferSize;
+    bool systemDataChanged;
+    bool gpuDataChanged;
+
     DX9RunTime* runtime;
-    DX9Texture* texture;
     DX9FatRect inputRect;
     DX9FatRect outputRect;
     float4 gatherConstant;
