@@ -231,7 +231,7 @@ BRTKernelDef::CheckSemantics() const
    }
 
    if (outArg == NULL) {
-      std::cerr << "Warning, kernel has no output.\n";
+      std::cerr << "Warning, kernel " << *FunctionName() << " has no output.\n";
    }
 
    return true;
