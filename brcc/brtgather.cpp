@@ -11,23 +11,23 @@
 void printGatherIntrinsics(std::ostream&out) {
    for (unsigned int i=1;i<=4;++i) {
       for (unsigned int j=1;j<=2;++j) {
-         out << "streamGatherOp(float";
+         out << "kernel void streamGatherOp"<<i<<j<<" (out float";
          if (i>1)
             out << i;
          out << " t <>, ";
          out << "float";
          if (j>1)
             out << j;
-         out << " index, float";
+         out << " index<>, float";
          if (i>1)
             out << i;
-         out << "array";
+         out << " array";
          for (unsigned int k=0;k<j;++k) {
             out<<"[]";
          }
          out << ") {"<<std::endl;
          indent(out,1);
-         out << "a = array[index];"<<std::endl;
+         out << "t = array[index];"<<std::endl;
          out << "}"<<std::endl;
       }
    }
@@ -36,4 +36,12 @@ std::string printGatherIntrinsics () {
    std::ostringstream out;
    printGatherIntrinsics(out);
    return out.str();
+}
+void ComputeGatherIntrinsics(std::string &o,std::string path, std::string file) {
+   if (o.find("STREAM_GATHER_FETCH")!=std::string::npos) {
+      o=printGatherIntrinsics()+/*"\n#line 1\n"+*/o;//re_add #line
+      //error FIXME XXX daniel compiler will print out a row of nulls if the
+      //#line is there
+   }
+   std::cout << o;
 }

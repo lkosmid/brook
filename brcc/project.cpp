@@ -34,9 +34,9 @@
 #include <cstring>
 #include <cassert>
 #include <fstream>
-
+#include <sstream>
 #include "project.h"
-
+#include "brtgather.h"
 #include "express.h"
 #include "stemnt.h"
 
@@ -86,6 +86,22 @@ Project *gProject = NULL;
 bool Project::gDebug = false;
 // Fill in StdPath[1] with path obtained from running cpp on <stddef.h>
 char  *StdPath[] = { "/usr/include/", NULL, NULL };
+
+std::string ReadFile (std::istream & is) {
+  unsigned int length;
+  char * buffer;
+  // get length of file:
+  is.seekg (0, ios::end);
+  length = is.tellg();
+  is.seekg (0, ios::beg);
+  // allocate memory:
+  buffer = new char [length];
+  // read data as a block:
+  is.read (buffer,length);
+  std::string ret(buffer,length);
+  delete []buffer;
+  return ret;
+}
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
@@ -396,8 +412,11 @@ Project::parse( const char* path, bool use_cpp, /* =true */
 
     if (!fp)
         return NULL;
+    std::string content =ReadFile(fp);
+    ComputeGatherIntrinsics(content,path,cpp_file);
     
-    Parse_TOS = new ParseEnv(&fp, &std::cerr, path);
+    std::istringstream myfile(content);
+    Parse_TOS = new ParseEnv(&myfile, &std::cerr, path);
     TransUnit *unit = Parse_TOS->transUnit;
     
     yyinstream = Parse_TOS->yyinstream;

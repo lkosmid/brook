@@ -1,46 +1,4 @@
 #include <stdio.h>
-kernel void streamGatherOpFetch11(out float a<>, 
-                                  float index<>, 
-                                  float gath[]) {
-   a=gath[index];
-}  
-kernel void streamGatherOpFetch21(out float2 a<>, 
-                                  float index<>, 
-                                  float2 gath[]) {
-   a=gath[index];
-}  
-kernel void streamGatherOpFetch31(out float3 a<>, 
-                                  float index<>, 
-                                  float3 gath[]) {
-   a=gath[index];
-}  
-kernel void streamGatherOpFetch41(out float4 a<>, 
-                                  float index<>, 
-                                  float4 gath[]) {
-   a=gath[index];
-}  
-
-kernel void streamGatherOpFetch12(out float a<>, 
-                                  float2 index<>, 
-                                  float gath[][]) {
-   a=gath[index];
-}  
-kernel void streamGatherOpFetch22(out float2 a<>, 
-                                  float2 index<>, 
-                                  float2 gath[][]) {
-   a=gath[index];
-}  
-kernel void streamGatherOpFetch32(out float3 a<>, 
-                                  float2 index<>, 
-                                  float3 gath[][]) {
-   a=gath[index];
-}  
-kernel void streamGatherOpFetch42(out float4 a<>, 
-                                  float2 index<>, 
-                                  float4 gath[][]) {
-   a=gath[index];
-}  
-
 reduce void mydec(float4 a <>, reduce float4 b <> ) {
    b-=1;
 }

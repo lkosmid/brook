@@ -51,7 +51,8 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
                   std::cerr << "Function args must be stream variables";
                   assert (0);
                }
-               char symbolAppend[2]={'1',0};
+               char symbolAppend[3]={'1',0,0};
+               char indexDimension='1';
                if (strm->name->entry) {
                   Decl * uVarDecl;
                   if ((uVarDecl=strm->name->entry->uVarDecl)!=0) {
@@ -65,19 +66,38 @@ Expression * ConvertToBrtScatterCalls(Expression * e) {
                      }
                   }
                }
-               name->name= new Symbol(*name->name);
-               name->name->name+=symbolAppend;
+               if (fc->args[1]->etype==ET_Variable) {
+                  Variable * v=static_cast<Variable*>(fc->args[1]);
+                  if (v->name->entry&&v->name->entry->uVarDecl) {
+                     BaseTypeSpec typ= v->name->entry->uVarDecl->form->getBase()->typemask;
+                     if (typ&BT_Float4) {
+                        indexDimension='4';
+                     }else if (typ&BT_Float3) {
+                        indexDimension='3';
+                     }else if (typ&BT_Float2) {
+                        indexDimension='2';
+                     }
+                    
+                  }
+               }
                if (fc->args[3]->etype==ET_Variable) {
                   Variable *v=static_cast<Variable*>(fc->args[3]);
                   convertNameToScatter(v);
+                  if (v->name->name=="STREAM_GATHER_FETCH") {
+                     symbolAppend[1]=indexDimension;
+                     fc->args.erase(fc->args.begin()+3);
+                  }
                }else if (fc->args[3]->etype==ET_FunctionCall) {
                   FunctionCall * cawl = 
                      static_cast<FunctionCall*>(fc->args[3]);
                   if (cawl->function->etype==ET_Variable) {
                      convertNameToScatter(static_cast<Variable*>
                                           (cawl->function));
+                     
                   }
                }
+               name->name= new Symbol(*name->name);
+               name->name->name+=symbolAppend;
             }
          }
       }
