@@ -1,7 +1,7 @@
-ROOTDIR = ../..
+ROOTDIR = ../../..
 EXECUTABLE = convert_iter_to_stream
 FILES = convert_iter_to_stream
 LIBRARIES = $(RUNTIME_LIBS)
 
-include ../../common.mk
+include $(ROOTDIR)/common.mk
 

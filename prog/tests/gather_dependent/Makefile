@@ -1,7 +1,7 @@
-ROOTDIR = ../..
+ROOTDIR = ../../..
 EXECUTABLE = gather_dependent
 FILES = gather_dependent
 LIBRARIES = $(RUNTIME_LIBS)
 
-include ../../common.mk
+include $(ROOTDIR)/common.mk
 

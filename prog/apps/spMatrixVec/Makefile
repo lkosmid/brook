@@ -1,8 +1,8 @@
-ROOTDIR = ../..
+ROOTDIR = ../../..
 EXECUTABLE = csrMatvec
 FILES = csrMatvec
 LIBRARIES = $(RUNTIME_LIBS)
 
 
-include ../../common.mk
+include $(ROOTDIR)/common.mk
 
