@@ -69,7 +69,7 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, const char type[], int dims, int exte
 
   texture = DX9Texture::create( runtime, width, height, components );
 
-  inputRect = DX9Rect( 0, 0, 1, 1 );
+  inputRect = DX9Rect( 0, 1, 1, 0 );
   outputRect = DX9Rect( -1, -1, 1, 1 );
 }
 
