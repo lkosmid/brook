@@ -54,8 +54,8 @@ void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompil
 //    dump( std::cerr );
 //    std::cerr << std::endl;
 
-    std::set<SplitNode*> dummy;
-    dummy.insert( this );
+    std::vector<SplitNode*> dummy;
+    dummy.push_back( this );
     SplitShaderHeuristics unused;
     inCompiler.compile( inTree, dummy, inStream, unused, true );
   }

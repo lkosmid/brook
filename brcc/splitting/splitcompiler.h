@@ -36,9 +36,10 @@ public:
 class SplitCompiler
 {
 public:
+  typedef std::vector< SplitNode* > NodeList;
   typedef std::set< SplitNode* > NodeSet;
 
-  void compile( const SplitTree& inTree, const NodeSet& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics, bool forReal = false ) const;
+  void compile( const SplitTree& inTree, const NodeList& inOutputs, std::ostream& inStream, SplitShaderHeuristics& outHeuristics, bool forReal = false ) const;
 
   // TIM: complete hack, even for me
   virtual bool mustScaleAndBiasGatherIndices() const { return false; }

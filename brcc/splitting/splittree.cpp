@@ -17,14 +17,14 @@
 //#define SPLIT_SEARCH_EXHAUSTIVE
 
 // uncomment this to turn on the greedy merging that improves RDS
-#define SPLIT_SEARCH_MERGE
+//#define SPLIT_SEARCH_MERGE
 
 // uncomment this line for RDS + an after-the-fact merge
-//#define SPLIT_SEARCH_MERGE_AFTER
+#define SPLIT_SEARCH_MERGE_AFTER
 
-// uncomment this line to turn on a faster
-// merge step that *might* make worse partitions
-#define SPLIT_SEARCH_SPLOPPY_MERGE
+// uncomment this line to allow RDS*merge to remove useless nodes
+// during the incremental search, not just at the end
+//#define SPLIT_REMOVE_USELESS_NODES
 
 static unsigned long timeSplitCounter;
 static unsigned long timePrintingCounter;
@@ -73,6 +73,10 @@ SplitTree::~SplitTree()
 
 void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream )
 {
+  // TIM: sanity check:
+  for( size_t i = 0; i < _dagOrderNodeList.size(); i++ )
+    assert( _dagOrderNodeList[i]->getDagOrderIndex() == i );
+
 //  dumpFile.open( "dump.txt" );
 
 //  preRdsMagic();
@@ -173,6 +177,18 @@ void SplitTree::dumpPassConfiguration( std::ostream& inStream )
   for( PassSet::iterator p = _passes.begin(); p != _passes.end(); ++p )
   {
     inStream << "<pass>" << std::endl;
+/*
+    for( SplitNodeSet::iterator n = (*p)->allOutputs.begin(); n != (*p)->allOutputs.end(); ++n )
+    {
+      SplitNode* node = _dagOrderNodeList[ *n ];
+      inStream << "<split id=" << (*n) << ">" << std::endl;
+      for( SplitNodeSet::iterator i = node->_parentSplits.begin(); i != node->_parentSplits.end(); ++i )
+      {
+        inStream << "<parent id=" << (*i) << ">" << std::endl;
+      }
+      inStream << "</split>" << std::endl;
+    }
+*/
 
     SplitShaderHeuristics heuristics = (*p)->heuristics;
 
@@ -319,6 +335,10 @@ void SplitTree::rdsMergePasses( bool inLastTime )
   for( NodeList::iterator i = _dagOrderNodeList.begin(); i != _dagOrderNodeList.end(); ++i )
   {
     SplitNode* node = *i;
+
+    // TIM: it is bad to do no initialization... :(
+    node->_parentSplits.clear();
+
     if( node->isMarkedAsSplit() )
       _passes.insert( rdsCreatePass( node ) );
   }
@@ -329,13 +349,17 @@ void SplitTree::rdsMergePasses( bool inLastTime )
     rdsAccumulatePassDescendents( *j );
   }
 
+#if defined(SPLIT_REMOVE_USELESS_NODES)
+  bool allowRemoval = true;
+#else
+  bool allowRemoval = inLastTime;
+#endif
+
 #if defined(SPLIT_SEARCH_MERGE) || defined(SPLIT_SEARCH_MERGE_AFTER)
 
 #if defined(SPLIT_SEARCH_MERGE_AFTER)
   if( inLastTime ) {
 #endif
-
-#if defined(SPLIT_SEARCH_SPLOPPY_MERGE)
 
     std::vector<SplitValidMergeInfo> validMerges;
 
@@ -347,18 +371,16 @@ void SplitTree::rdsMergePasses( bool inLastTime )
       {
         SplitPassInfo* b = *j;
 
-        SplitPassInfo* merged = rdsMergePasses( a, b );
-        if( merged == NULL ) continue;
+        int score = rdsCanMergePasses( a, b, allowRemoval );
+        if( score < 0 ) continue;
 
         std::cout << "*";
-
-        int score = (a->cost + b->cost) - merged->cost;
 
         SplitValidMergeInfo info;
 
         // TIM: HACK: assume only a single output
-        info.a = *(a->outputs.begin());
-        info.b = *(b->outputs.begin());
+        info.a = a->singletonNode;
+        info.b = b->singletonNode;
         info.score = score;
 
         validMerges.push_back( info );
@@ -382,86 +404,11 @@ void SplitTree::rdsMergePasses( bool inLastTime )
       // they were already merged...
       if( passA == passB ) continue;
 
-      SplitPassInfo* merged = rdsMergePasses( passA, passB, true );
-      if( merged == NULL ) continue;
+      int score = rdsCanMergePasses( passA, passB, allowRemoval );
+      if( score < 0 ) continue;
 
-      std::cout << "!";
-
-      _passes.erase( passA );
-      _passes.erase( passB );
-
-      delete passA;
-      delete passB;
-
-      _passes.insert( merged );
-
-      // TIM: finalize the merge by making the outputs of
-      // the chosen merged pass know which pass outputs them
-      for( NodeSet::iterator i = merged->outputs.begin(); i != merged->outputs.end(); ++i )
-        (*i)->_assignedPass = merged;
+      rdsMergePasses( passA, passB, allowRemoval );
     }}
-
-#else
-  // now that we have all the passes, lets start building up potential merges...
-  bool didMerge = true;
-  while( didMerge )
-  {
-    std::cout << "." << std::endl;
-
-    didMerge = false;
-
-    int bestScore = 0;
-    SplitPassInfo* bestA = 0;
-    SplitPassInfo* bestB = 0;
-    SplitPassInfo* bestMerged = 0;
-
-    for( PassSet::iterator i = _passes.begin(); i != _passes.end(); )
-    {
-      SplitPassInfo* a = *i++;
-
-      for( PassSet::iterator j = i; j != _passes.end(); ++j )
-      {
-        SplitPassInfo* b = *j;
-
-        SplitPassInfo* merged = rdsMergePasses( a, b );
-        if( merged == NULL ) continue;
-
-        std::cout << "*";
-
-        int score = (a->cost + b->cost) - merged->cost;
-
-        if( score > bestScore || bestMerged == NULL )
-        {
-          if( bestMerged != NULL )
-            delete bestMerged;
-
-          bestScore = score;
-          bestMerged = merged;
-          bestA = a;
-          bestB = b;
-        }
-      }
-    }
-
-    if( bestMerged != NULL )
-    {
-      didMerge = true;
-
-      _passes.erase( bestA );
-      _passes.erase( bestB );
-
-      delete bestA;
-      delete bestB;
-
-      _passes.insert( bestMerged );
-
-      // TIM: finalize the merge by making the outputs of
-      // the chosen merged pass know which pass outputs them
-      for( NodeSet::iterator i = bestMerged->outputs.begin(); i != bestMerged->outputs.end(); ++i )
-        (*i)->_assignedPass = bestMerged;
-    }
-  }
-#endif
 
 #if defined(SPLIT_SEARCH_MERGE_AFTER)
   }
@@ -478,7 +425,9 @@ SplitPassInfo* SplitTree::rdsCreatePass( SplitNode* inNode )
 
   SplitPassInfo* result = new SplitPassInfo();
 
-  result->outputs.insert( inNode );
+  result->singletonNode = inNode;
+  result->allOutputs.insert( inNode );
+  result->usefulOutputs.insert( inNode );
 
   SplitShaderHeuristics heuristics = inNode->getHeuristics();
 
@@ -505,9 +454,9 @@ void SplitTree::rdsAccumulatePassAncestors( SplitPassInfo* ioPass )
 
   unmark( SplitNode::kMarkBit_Ancestor );
 
-  for( NodeSet::iterator i = ioPass->outputs.begin(); i != ioPass->outputs.end(); ++i )
+  for( SplitNodeSet::iterator i = ioPass->allOutputs.begin(); i != ioPass->allOutputs.end(); ++i )
   {
-    SplitNode* node = *i;
+    SplitNode* node = _dagOrderNodeList[ *i ];
     size_t parentCount = node->getGraphParentCount();
     for( size_t j = 0; j < parentCount; j++ )
       rdsAccumulatePassAncestorsRec( node->getIndexedGraphParent(j), ioPass );
@@ -526,20 +475,15 @@ void SplitTree::rdsAccumulatePassAncestorsRec( SplitNode* inNode, SplitPassInfo*
 
     rdsAccumulatePassAncestors( pass );
 
-    NodeSet unionResult;
-    std::set_union( ioPass->ancestors.begin(), ioPass->ancestors.end(),
-      pass->ancestors.begin(), pass->ancestors.end(),
-      std::inserter( unionResult, unionResult.begin() ) );
-    unionResult.insert( inNode );
+    ioPass->ancestors |= pass->ancestors;
+    ioPass->ancestors |= inNode;
 
     // TIM: bad - assume there is only one output
 /*
     std::cout << "noticing that split " << (void*)(*ioPass->outputs.begin())
       << " has parent " << (void*)inNode << std::endl;
 */
-    (*ioPass->outputs.begin())->_parentSplits.insert( inNode );
-
-    ioPass->ancestors.swap( unionResult );
+    ioPass->singletonNode->_parentSplits.insert( inNode );
   }
   else
   {
@@ -556,9 +500,9 @@ void SplitTree::rdsAccumulatePassDescendents( SplitPassInfo* ioPass )
 
   unmark( SplitNode::kMarkBit_Descendent );
 
-  for( NodeSet::iterator i = ioPass->outputs.begin(); i != ioPass->outputs.end(); ++i )
+  for( SplitNodeSet::iterator i = ioPass->allOutputs.begin(); i != ioPass->allOutputs.end(); ++i )
   {
-    SplitNode* node = *i;
+    SplitNode* node = _dagOrderNodeList[ *i ];
     size_t childCount = node->getGraphChildCount();
     for( size_t j = 0; j < childCount; j++ )
       rdsAccumulatePassDescendentsRec( node->getIndexedGraphChild(j), ioPass );
@@ -577,13 +521,8 @@ void SplitTree::rdsAccumulatePassDescendentsRec( SplitNode* inNode, SplitPassInf
 
     rdsAccumulatePassDescendents( pass );
 
-    NodeSet unionResult;
-    std::set_union( ioPass->descendents.begin(), ioPass->descendents.end(),
-      pass->descendents.begin(), pass->descendents.end(),
-      std::inserter( unionResult, unionResult.begin() ) );
-    unionResult.insert( inNode );
-
-    ioPass->descendents.swap( unionResult );
+    ioPass->descendents |= pass->descendents;
+    ioPass->descendents |= inNode;
   }
   else
   {
@@ -593,135 +532,154 @@ void SplitTree::rdsAccumulatePassDescendentsRec( SplitNode* inNode, SplitPassInf
   }
 }
 
-SplitPassInfo* SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB, bool inForReal )
+int SplitTree::rdsCanMergePasses( SplitPassInfo* inA, SplitPassInfo* inB, bool inAllowRemoval )
 {
-//  dumpFile << "MERGE PASSES " << (void*)inA << " , " << (void*)inB << std::endl;
-
-  // TIM: TODO: check basic validity
+  // check basic validity
 
   // if there is an ancestor of one pass
   // that is also a descendent of the other
   // then we can't merge
-  NodeSet intersectionResult;
-  std::set_intersection( inA->descendents.begin(), inA->descendents.end(),
-    inB->ancestors.begin(), inB->ancestors.end(),
-    std::inserter( intersectionResult, intersectionResult.begin() ) );
+  if( inA->descendents.intersects( inB->ancestors ) )
+    return -1;
 
-  if( intersectionResult.size() != 0 )
-    return NULL;
+  if( inB->descendents.intersects( inA->ancestors ) )
+    return -1;
 
-  intersectionResult.clear();
-  std::set_intersection( inB->descendents.begin(), inB->descendents.end(),
-    inA->ancestors.begin(), inA->ancestors.end(),
-    std::inserter( intersectionResult, intersectionResult.begin() ) );
+  SplitNodeSet allOutputs;
+  allOutputs.setUnion( inA->allOutputs, inB->allOutputs );
 
-  if( intersectionResult.size() != 0 )
-    return NULL;
+  SplitNodeSet usefulOutputs = allOutputs;
 
-  // further, if one of the nodes would be made suprfluous
-  // by the merge, we won't consider it...
-
-  // basically, if for any split node in the combined pass,
-  // if all it's parent splits are being generated in
-  // the same pass, then we fail the merge
-
-
-//  dumpFile << "passed early check" << std::endl;
-
-  NodeSet mergedOutputs;
-  std::set_union(
-    inA->outputs.begin(), inA->outputs.end(),
-    inB->outputs.begin(), inB->outputs.end(),
-    std::inserter( mergedOutputs, mergedOutputs.begin() ) );
-
-  NodeSet uselessNodes;
-  for( NodeSet::iterator n = mergedOutputs.begin(); n != mergedOutputs.end(); ++n )
+  SplitNodeSet uselessNodes;
+  for( SplitNodeSet::iterator n = allOutputs.begin(); n != allOutputs.end(); ++n )
   {
-    SplitNode* node = *n;
+    SplitNode* node = _dagOrderNodeList[ *n ];
 
     // can't merge actual outputs out of existence... that would be bad
     if( node->_isFinalOutput ) continue;
 
     bool okay = false;
-    for( NodeSet::iterator p = node->_parentSplits.begin(); p != node->_parentSplits.end(); ++p )
+    for( SplitNodeSet::iterator p = node->_parentSplits.begin(); p != node->_parentSplits.end(); ++p )
     {
-      if( mergedOutputs.find( *p ) == mergedOutputs.end() )
+      if( !allOutputs.contains( *p ) )
         okay = true; // parent wasn't there, it's worth saving...
     }
     if( !okay )
-      uselessNodes.insert( node );
-  }
-  for( NodeSet::iterator u = uselessNodes.begin(); u != uselessNodes.end(); ++u )
-  {
-    if( inForReal )
-      (*u)->_assignedPass = NULL;
+    {
+      if( !inAllowRemoval )
+        return -1;
 
-    std::cout << "^";
-    mergedOutputs.erase( *u );
+      usefulOutputs.remove( node );
+      uselessNodes.insert( node );
+    }
   }
 
   // now we need to generate a shader for all of these outputs...
 
-  SplitShaderHeuristics heuristics;
-  if( !rdsCompile( mergedOutputs, heuristics ) )
-    return NULL;
-/*
-  std::cout << "no problem merging pass of: " << std::endl;
-  for( NodeSet::iterator foo = mergedOutputs.begin(); foo != mergedOutputs.end(); ++foo )
+  // HACK: we have to "un-split" the useless nodes
+  // so that we can compile the result as if they were un-split...
+  for( SplitNodeSet::iterator u = uselessNodes.begin(); u != uselessNodes.end(); ++u )
   {
-    std::cout << (void*)(*foo) << ", ";
+    SplitNode* node = _dagOrderNodeList[ *u ];
+    node->_splitHere = false;
   }
-  std::cout << std::endl;
-*/
-  SplitPassInfo* result = new SplitPassInfo();
-  result->outputs.swap( mergedOutputs );
+
+  SplitShaderHeuristics heuristics;
+  bool valid = rdsCompile( usefulOutputs, heuristics );
+
+  // HACK: re-split the useless nodes, or else!
+  for( SplitNodeSet::iterator u = uselessNodes.begin(); u != uselessNodes.end(); ++u )
+  {
+    SplitNode* node = _dagOrderNodeList[ *u ];
+    node->_splitHere = true;
+  }
+
+  if( !valid )
+    return -1;
+
+  int score = (inA->cost + inB->cost) - heuristics.cost;
+  return score;
+}
+
+void SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB, bool inAllowRemoval )
+{
+  // merge two passes assuming validity check has passed...
+
+  std::cout << "!";
+
+  SplitNodeSet allOutputs;
+  allOutputs.setUnion( inA->allOutputs, inB->allOutputs );
+
+  SplitNodeSet usefulOutputs = allOutputs;
+
+  SplitNodeSet uselessNodes;
+  for( SplitNodeSet::iterator n = allOutputs.begin(); n != allOutputs.end(); ++n )
+  {
+    SplitNode* node = _dagOrderNodeList[ *n ];
+
+    // can't merge actual outputs out of existence... that would be bad
+    if( node->_isFinalOutput ) continue;
+
+    bool okay = false;
+    for( SplitNodeSet::iterator p = node->_parentSplits.begin(); p != node->_parentSplits.end(); ++p )
+    {
+      if( !allOutputs.contains( *p ) )
+        okay = true; // parent wasn't there, it's worth saving...
+    }
+    if( !okay )
+    {
+      assert( inAllowRemoval );
+
+      std::cout << "^";
+//      std::cout << "making useless: " << (*n) << std::endl;
+
+      usefulOutputs.remove( node );
+      uselessNodes.insert( node );
   
+      node->_splitHere = false;
+      node->_assignedPass = NULL;
+    }
+  }
+
+  SplitShaderHeuristics heuristics;
+  bool valid = rdsCompile( usefulOutputs, heuristics );
+  assert( valid );
+
+  int score = (inA->cost + inB->cost) - heuristics.cost;
+  assert( score > 0 );
+
+  SplitPassInfo* result = new SplitPassInfo();
+  result->allOutputs.swap( allOutputs );
+  result->usefulOutputs.swap( usefulOutputs );
+
   result->cost = heuristics.cost;
   result->heuristics = heuristics;
 
-  NodeSet tempX;
-  NodeSet tempY;
-
   // calculate ancestors of the merged set...
-  std::set_union( inA->ancestors.begin(), inA->ancestors.end(),
-    inB->ancestors.begin(), inB->ancestors.end(),
-    std::inserter( tempX, tempX.begin() ) );
-  
-  std::set_difference( tempX.begin(), tempX.end(),
-    inA->outputs.begin(), inA->outputs.end(),
-    std::inserter( tempY, tempY.begin() ) );
-
-  tempX.swap( tempY );
-
-  std::set_difference( tempX.begin(), tempX.end(),
-    inB->outputs.begin(), inB->outputs.end(),
-    std::inserter( tempY, tempY.begin() ) );
-
-  result->ancestors.swap( tempY );
-
-  tempY.clear();
-  tempX.clear();
+  result->ancestors.setUnion( inA->ancestors, inB->ancestors );
+  result->ancestors /= inB->allOutputs;
+  result->ancestors /= inA->allOutputs;
 
   // calculate descendents of the merged set
-  std::set_union( inA->descendents.begin(), inA->descendents.end(),
-    inB->descendents.begin(), inB->descendents.end(),
-    std::inserter( tempX, tempX.begin() ) );
+  result->descendents.setUnion( inA->descendents, inB->descendents );
+  result->descendents /= inB->allOutputs;
+  result->descendents /= inA->allOutputs;
 
-  std::set_difference( tempX.begin(), tempX.end(),
-    inA->outputs.begin(), inA->outputs.end(),
-    std::inserter( tempY, tempY.begin() ) );
+  _passes.erase( inA );
+  _passes.erase( inB );
 
-  tempX.swap( tempY );
+  delete inA;
+  delete inB;
 
-  std::set_difference( tempX.begin(), tempX.end(),
-    inB->outputs.begin(), inB->outputs.end(),
-    std::inserter( tempY, tempY.begin() ) );
+  _passes.insert( result );
 
-  result->descendents.swap( tempY );
-
-//  dumpFile << "CREATED " << (void*)result << " with cost " << result->cost << std::endl;
-
-  return result;
+  // TIM: finalize the merge by making the outputs of
+  // the chosen merged pass know which pass outputs them
+  for( SplitNodeSet::iterator i = result->usefulOutputs.begin(); i != result->usefulOutputs.end(); ++i )
+  {
+    SplitNode* node = _dagOrderNodeList[ *i ];
+    node->_assignedPass = result;
+  }
 }
 
 void SplitTree::rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream )
@@ -732,8 +690,8 @@ void SplitTree::rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream )
   if( inPass->printVisited ) return;
   inPass->printVisited = true;
 
-  for( NodeSet::iterator j = inPass->descendents.begin(); j != inPass->descendents.end(); ++j )
-    rdsPrintPass( (*j)->_assignedPass, inStream );
+  for( SplitNodeSet::iterator j = inPass->descendents.begin(); j != inPass->descendents.end(); ++j )
+    rdsPrintPass( _dagOrderNodeList[*j]->_assignedPass, inStream );
 
 //  dumpFile << "PRINT PASS " << (void*)inPass << std::endl;
 //  for( NodeSet::iterator i = inPass->outputs.begin(); i != inPass->outputs.end(); ++i )
@@ -744,8 +702,12 @@ void SplitTree::rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream )
 //    dumpFile << std::endl;
 //  }
 
+  NodeList outputs;
+  for( SplitNodeSet::iterator i = inPass->usefulOutputs.begin(); i != inPass->usefulOutputs.end(); ++i )
+    outputs.push_back( _dagOrderNodeList[ *i ] );
+
   SplitShaderHeuristics unused;
-  _compiler.compile( *this, inPass->outputs, inStream, unused, true );
+  _compiler.compile( *this, outputs, inStream, unused, true );
 }
 
 void SplitTree::unmark( int inMarkBit ) const
@@ -1232,18 +1194,22 @@ bool SplitTree::rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeurist
     return true;
   }
 
-  NodeSet outputSet;
+  SplitNodeSet outputSet;
   outputSet.insert( inNode );
 
   return rdsCompile( outputSet, outHeuristics );
 }
 
-bool SplitTree::rdsCompile( const NodeSet& inNodes, SplitShaderHeuristics& outHeuristics )
+bool SplitTree::rdsCompile( const SplitNodeSet& inNodes, SplitShaderHeuristics& outHeuristics )
 {
   unsigned long startCompile = getTime();
 
+  NodeList nodes;
+  for( SplitNodeSet::iterator i = inNodes.begin(); i != inNodes.end(); ++i )
+    nodes.push_back( _dagOrderNodeList[ *i ] );
+
   std::ostringstream nullStream;
-  _compiler.compile( *this, inNodes, nullStream, outHeuristics );
+  _compiler.compile( *this, nodes, nullStream, outHeuristics );
 
   unsigned long stopCompile = getTime();
   timeCompilingCounter += stopCompile - startCompile;
@@ -1260,7 +1226,7 @@ int SplitTree::getPartitionCost()
   return totalCost;
 }
 
-void SplitTree::printShaderFunction( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const
+void SplitTree::printShaderFunction( const NodeList& inOutputs, std::ostream& inStream ) const
 {
   unsigned long startPrint = getTime();
 
@@ -1271,7 +1237,7 @@ void SplitTree::printShaderFunction( const std::set<SplitNode*>& inOutputs, std:
     _dagOrderNodeList[i]->unmarkAsOutput();
   _outputPositionInterpolant->unmarkAsOutput();
 
-  for( NodeSet::const_iterator j = inOutputs.begin(); j != inOutputs.end(); ++j )
+  for( NodeList::const_iterator j = inOutputs.begin(); j != inOutputs.end(); ++j )
     (*j)->markAsOutput();
 
   // create the wrapper for the function
@@ -1291,7 +1257,7 @@ void SplitTree::printShaderFunction( const std::set<SplitNode*>& inOutputs, std:
   timePrintingCounter += stopPrint - startPrint;
 }
 
-void SplitTree::printArgumentAnnotations( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const
+void SplitTree::printArgumentAnnotations( const NodeList& inOutputs, std::ostream& inStream ) const
 {
   SplitAnnotationTraversal printAnnotations(inStream,_outputPositionInterpolant);
 

@@ -8,6 +8,7 @@
 
 #include "splitconfiguration.h"
 #include "splitcompiler.h"
+#include "splitnodeset.h"
 
 #include <string>
 #include <map>
@@ -28,14 +29,16 @@ public:
     ancestorVisited = false;
     descendentVisited = false;
     printVisited = false;
+    singletonNode = 0;
   }
 
-  typedef std::set< SplitNode* > NodeSet;
+//  typedef std::set< SplitNode* > NodeSet;
 
-  NodeSet outputs;
+  SplitNodeSet allOutputs;
+  SplitNodeSet usefulOutputs;
 
-  NodeSet ancestors;
-  NodeSet descendents;
+  SplitNodeSet ancestors;
+  SplitNodeSet descendents;
 
   int cost;
 
@@ -44,11 +47,18 @@ public:
   bool printVisited;
 
   SplitShaderHeuristics heuristics;
+
+  SplitNode* singletonNode;
 };
 
 class SplitTree
 {
 public:
+  friend class SplitTreeBuilder;
+  typedef std::map< std::string, SplitNode* > NodeMap;
+  typedef std::vector< SplitNode* > NodeList;
+  typedef std::set< SplitNode* > NodeSet;
+
   SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler );
   SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler, const std::vector<SplitNode*>& inArguments );
   virtual ~SplitTree();
@@ -58,8 +68,8 @@ public:
   void printShaderFunction( std::ostream& inStream );
 
   // print a shader function def for the given subset of outputs
-  void printShaderFunction( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const;
-  void printArgumentAnnotations( const std::set<SplitNode*>& inOutputs, std::ostream& inStream ) const;
+  void printShaderFunction( const NodeList& inOutputs, std::ostream& inStream ) const;
+  void printArgumentAnnotations( const NodeList& inOutputs, std::ostream& inStream ) const;
 
   const SplitCompiler& getComplier() {
     return _compiler;
@@ -77,10 +87,6 @@ public:
     return _compilerConfiguration;
   }
 
-  friend class SplitTreeBuilder;
-  typedef std::map< std::string, SplitNode* > NodeMap;
-  typedef std::vector< SplitNode* > NodeList;
-  typedef std::set< SplitNode* > NodeSet;
 
 private:
 
@@ -113,7 +119,8 @@ private:
   PassSet _passes;
   void rdsMergePasses( bool inLastTime = false );
   SplitPassInfo* rdsCreatePass( SplitNode* inNode );
-  SplitPassInfo* rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB, bool inForReal = false );
+  int rdsCanMergePasses( SplitPassInfo* inA, SplitPassInfo* inB, bool inAllowRemoval );
+  void rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB, bool inAllowRemoval );
   void rdsPrintPass( SplitPassInfo* inPass, std::ostream& inStream );
 
   void dumpPassConfiguration( std::ostream& inStream );
@@ -129,7 +136,7 @@ private:
 
   bool rdsCompile( SplitNode* inNode );
   bool rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeuristics );
-  bool rdsCompile( const NodeSet& inNodes, SplitShaderHeuristics& outHeuristics );
+  bool rdsCompile( const SplitNodeSet& inNodes, SplitShaderHeuristics& outHeuristics );
 
   int getPartitionCost();
 

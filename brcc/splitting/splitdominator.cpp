@@ -25,6 +25,7 @@ void SplitTree::dominatorDFS( SplitNode* inNode, SplitNode* inParent, size_t& io
     dominatorDFS( child, inNode, ioID );
   }
 
+  inNode->_dagOrderIndex = _dagOrderNodeList.size();
   _dagOrderNodeList.push_back( inNode );
 }
 

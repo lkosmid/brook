@@ -36,6 +36,7 @@ void SplitCompilerHLSL::compileShader(
   ShaderResourceUsage usage;
 
   bool shouldValidate = inConfiguration.validateShaders;
+//  bool shouldValidate = false;
 
   char* assemblerBuffer = compile_fxc( inHighLevelCode.c_str(), CODEGEN_PS20, &usage, shouldValidate );
 /*
@@ -77,7 +78,7 @@ void SplitCompilerHLSL::compileShader(
   outHeuristics.constantRegisterCount = constantCount;
   outHeuristics.temporaryRegisterCount = temporaryCount;
   outHeuristics.outputRegisterCount = outputCount;
-
+/*
   if( !shouldValidate )
   {
     if( (textureInstructionCount > inConfiguration.maximumTextureInstructionCount)
@@ -94,7 +95,7 @@ void SplitCompilerHLSL::compileShader(
       outHeuristics.recompute = true;
       return;
     }
-  }
+  }*/
 
   int passCost = inConfiguration.passCost;
   int textureInstructionCost = inConfiguration.textureInstructionCost;

@@ -6,6 +6,7 @@
 #include "splittraversal.h"
 #include "splittypes.h"
 #include "splitcompiler.h"
+#include "splitnodeset.h"
 
 #include <set>
 
@@ -174,6 +175,10 @@ public:
     _heuristics = inHeuristics;
   }
 
+  size_t getDagOrderIndex() {
+    return _dagOrderIndex;
+  }
+
 protected:
   void addChild( SplitNode* inNode );
   void removeChild( SplitNode* inNode );
@@ -209,7 +214,7 @@ private:
   typedef std::set< SplitNode* > NodeSet;
   NodeSet _spanningBucket;
 
-  NodeSet _parentSplits;
+  SplitNodeSet _parentSplits;
 
   bool _rdsFixedMarked;
   bool _rdsFixedUnmarked;
@@ -219,6 +224,7 @@ private:
   bool _isPDTNode;
 
   int _temporaryID;
+  size_t _dagOrderIndex;
 
   SplitShaderHeuristics _heuristics;
 };
