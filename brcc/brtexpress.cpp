@@ -20,19 +20,15 @@ BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr)
 
   base = (Expression *) p->dup0();
   
-#if 0
-  /* XXXXXXXXXX
-  ** There is a problem here
-  ** Ctool doesn't keep around the type of 
-  ** the variable which is needed to do
-  ** gather conversion
-  */
-
   assert(base->etype == ET_Variable);
   Variable *v = (Variable *) base;
 
-  assert (v->type->isArray());
-  ArrayType *a = (ArrayType *) v->type;
+  assert(v->name);
+  assert(v->name->entry);
+  assert(v->name->entry->uVarDecl);
+  assert(v->name->entry->uVarDecl->form);
+  assert(v->name->entry->uVarDecl->form->isArray());
+  ArrayType *a = (ArrayType *) v->name->entry->uVarDecl->form;
 
   const ArrayType *pp;
   ndims = 1;
@@ -40,9 +36,7 @@ BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr)
        pp->subType && pp->subType->isArray(); 
        pp = (ArrayType *)pp->subType)
      ndims++;
-#else
-  ndims = 2;  //IAB XXX Assume all gathers are 2D
-#endif
+
 }
 
 void
