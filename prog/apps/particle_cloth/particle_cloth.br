@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include "timing.hpp"
+
 typedef struct DynamicParticle_t {
 	float3 position;
 	float3 velocity;
@@ -192,7 +194,7 @@ void initializeParticles(
 	sp->active = 0.0f;
 }
 
-void iterate( int inSize )
+void gpuIterate( int inSize, int inIterations, int* outMicroseconds )
 {
   int springSize = 2*inSize;
   int particleCount = inSize*inSize;
@@ -217,12 +219,13 @@ void iterate( int inSize )
   float3 windVelocity;
   
   int i;
-  int j;
+//  int j;
   float3 p;
   DynamicParticle* dynamicParticles_data;
   StaticParticle* staticParticles_data;
   float3* force_data;
-  FILE* dump;
+//  FILE* dump;
+int startTime, endTime;
 
   dynamicParticles_data = (DynamicParticle*)malloc( particleCount*sizeof(DynamicParticle) );
   staticParticles_data = (StaticParticle*)malloc( particleCount*sizeof(StaticParticle) );
@@ -231,27 +234,36 @@ void iterate( int inSize )
   directRestLength = 1.0f / (float)(inSize-1);
   diagonalRestLength = directRestLength * sqrtf(2.0f);
   bendRestLength = 2.0f * directRestLength;
-  springConstant = -0.5f * (float)(particleCount);
-  dampingConstant = -0.03f * (float)(particleCount);
-  bendSpringConstant = -0.1f * (float)(particleCount);
-  bendDampingConstant = -0.07f * (float)(particleCount);
-  gravity = float3( 0, -0.1, 0 );
+  springConstant = 0.0f;
+  dampingConstant = 0.0f;
+  bendSpringConstant = 0.0f;
+  bendDampingConstant = 0.0f;
+  gravity = float3( 0, 0, 0 );
+//  springConstant = -0.5f * (float)(particleCount);
+//  dampingConstant = -0.03f * (float)(particleCount);
+//  bendSpringConstant = -0.1f * (float)(particleCount);
+//  bendDampingConstant = -0.07f * (float)(particleCount);
+//  gravity = float3( 0, -0.1, 0 );
   maxIndex = float2( (float)(inSize), (float)(inSize) );
   windDirection = float3( 0, 0, -1 );
-  windVelocity = float3( 0, 0, -1.0f );
+  windVelocity = float3( 0, 0, 0 );
+//  windVelocity = float3( 0, 0, -1.0f );
 
   // initialize
   initializeParticles( inSize, dynamicParticles_data, staticParticles_data );
 
-  dump = fopen("./dump.dump","wb");
+//  dump = fopen("./dump.dump","wb");
   
 //  fwrite( &inSize, sizeof(inSize), 1, dump );
+
+startTime = GetTimeMillis();
 
   streamRead( dynamicParticles, dynamicParticles_data );
   streamRead( staticParticles, staticParticles_data );
 
-  for( i = 0; i < 10; i++ )
+  for( i = 0; i < inIterations; i++ )
   {
+  /*
 //	if( i % 100 == 0 )
 	{
 		streamWrite( dynamicParticles, dynamicParticles_data );
@@ -262,7 +274,7 @@ void iterate( int inSize )
 			printf( "{%5.3f %5.3f}\n", p.x, p.y );
 //			fwrite( &p, sizeof(p), 1, dump );
 		}
-	}
+	}*/
     
     // direct springs
     calculateSpringForces(
@@ -422,5 +434,11 @@ void iterate( int inSize )
 
   }
   
-  fclose( dump );
+  streamWrite( dynamicParticles, dynamicParticles_data );
+  
+  endTime = GetTimeMillis();
+  
+  *outMicroseconds = (endTime - startTime) * 1000;
+  
+//  fclose( dump );
 }

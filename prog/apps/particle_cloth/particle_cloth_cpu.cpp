@@ -310,7 +310,7 @@ void cpuInitializeParticles(
 	sp->active = false;
 }
 
-void cpuIterate( int inSize, int inIterations, int64& outMicroseconds )
+void cpuIterate( int inSize, int inIterations, int& outMicroseconds )
 {
   int particleCount = inSize*inSize;
   
@@ -416,7 +416,7 @@ void cpuIterate( int inSize, int inIterations, int64& outMicroseconds )
 
   int64 endTime = GetTime();
 
-  outMicroseconds = endTime - startTime;
+  outMicroseconds = (int)(endTime - startTime);
   
 //  fclose( dump );
 }
