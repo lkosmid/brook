@@ -1,5 +1,7 @@
+
 #include "nv30gl.hpp"
-#include "../common.h"
+
+#include <stdio.h>
 
 using namespace brook;
 
@@ -10,29 +12,45 @@ namespace brook {
 NV30GLRunTime::NV30GLRunTime() {
 
   // Create a window
-  // hwnd = createwindow();
+  createWindow();
 
   // Create a window glcontext
-//  hglrc_window = createglcontext();
-
-  // Create our floating point workspace
-//  hglrc_workspace = createpbuffer();
-
+  createWindowGLContext();
   
+  // Create our floating point workspace
+  createPBuffer();
 
 }
 
-Kernel * NV30GLRunTime::CreateKernel(const void*[]) {
+Kernel * 
+NV30GLRunTime::CreateKernel(const void*[]) {
   // XXX: TO DO
-  return (Kernel *) 0;
+
+   fprintf (stderr, "NV30GL: Kernel creation not supported yet.\n");
+   exit(1);
+   
+   return (Kernel *) 0;
 }
 
-Stream * NV30GLRunTime::CreateStream(__BRTStreamType type, int dims, int extents[]) {
-  // XXX: TO DO
-  return (Stream *) 0;
+Stream *
+NV30GLRunTime::CreateStream(__BRTStreamType type,
+                            int dims, int extents[]) {
+   // XXX: TO DO
+
+   fprintf (stderr, "NV30GL: Stream creation not supported yet.\n");
+   exit(1);
+   
+   return (Stream *) 0;
 }
-Iter * NV30GLRunTime::CreateIter(__BRTStreamType type, int dims, int extents[],float r[]) {
+
+Iter * 
+NV30GLRunTime::CreateIter(__BRTStreamType type, 
+                          int dims, int extents[],float r[]) {
   // XXX: TO DO
+
+   fprintf (stderr, "NV30GL: Iter creation not supported yet.\n");
+   exit(1);
+
   return (Iter *) 0;
 }
 

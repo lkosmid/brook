@@ -1,8 +1,13 @@
 #ifndef NV30GL_H
 #define NV30GL_H
 
-#include <windows.h>
 #include "../runtime.hpp"
+
+#include <windows.h>
+#include <GL/gl.h>
+
+#include "glext.h"
+#include "wglext.h"
 
 namespace brook {
 
@@ -74,9 +79,17 @@ namespace brook {
     virtual ~NV30GLRunTime();
 
   private: 
-    HWND hwnd;
-    HGLRC hglrc_window;
-    HGLRC hglrc_workspace;
+     HWND hwnd;
+     HGLRC hglrc_window;
+     HGLRC hpbufferglrc;
+     HPBUFFERARB hpbuffer;
+
+     static const int workspace = 2048;
+
+     void createWindow(void);
+     void createWindowGLContext(void);
+     void createPBuffer(void);
+
   };
 }
 
