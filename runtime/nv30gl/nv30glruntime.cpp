@@ -9,6 +9,12 @@ namespace brook {
   const char* NV30GL_RUNTIME_STRING = "nv30gl";
 }
 
+static const char passthrough[] =        \
+"!!FP1.0\n"                              \
+"TEX  R0, f[TEX0].xyyy, TEX0, RECT;\n"   \
+"MOVR o[COLR], R0;\n"                    \
+"END\n";
+
 NV30GLRunTime::NV30GLRunTime() {
 
   // Create a window
@@ -25,7 +31,12 @@ NV30GLRunTime::NV30GLRunTime() {
   glDrawBuffer(GL_FRONT);
   glReadBuffer(GL_FRONT);
   glEnable(GL_FRAGMENT_PROGRAM_NV);
+  CHECK_GL();
 
+  glGenProgramsNV (1, &passthrough_id);
+  glLoadProgramNV (GL_FRAGMENT_PROGRAM_NV, 
+                   passthrough_id, strlen(passthrough), 
+                   (const GLubyte*) passthrough);
   CHECK_GL();
 
 }

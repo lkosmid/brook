@@ -81,9 +81,54 @@ NV30GLStream::GLReadData (void *data) {
        }
        
        free (p);
-    } else {    
+    } else {
+       
+#if 1
+       if (width == 1 && height == 1) {
+          glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp],
+                        GL_FLOAT, data);
+          return;
+       }
+
+       glActiveTextureARB(GL_TEXTURE0_ARB);
+       glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
+       glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
+       
+       glViewport (0, 0, width, height);
+       if (height == 1) {
+          glBegin(GL_TRIANGLES);
+          glTexCoord2f(0.0f, 0.5f);
+          glVertex2f(-1.0f, -1.0f);
+          glTexCoord2f(width*2.0f, 0.5f);
+          glVertex2f(3.0f, -1.0f);
+          glTexCoord2f(0.0f, 0.5f);
+          glVertex2f(-1.0f, 3.0f);
+          glEnd();
+       } else if (width == 1) {
+          glBegin(GL_TRIANGLES);
+          glTexCoord2f(0.5f, 0.0f);
+          glVertex2f(-1.0f, -1.0f);
+          glTexCoord2f(0.5f, 0.0f);
+          glVertex2f(3.0f, -1.0f);
+          glTexCoord2f(0.5f, height*2.0f);
+          glVertex2f(-1.0f, 3.0f);
+          glEnd();
+       } else {
+          glBegin(GL_TRIANGLES);
+          glTexCoord2f(0.0f, 0.0f);
+          glVertex2f(-1.0f, -1.0f);
+          glTexCoord2f(width*2.0f, 0.0f);
+          glVertex2f(3.0f, -1.0f);
+          glTexCoord2f(0.0f, height*2.0f);
+          glVertex2f(-1.0f, 3.0f);
+          glEnd();
+       }
+       glReadPixels (0, 0, width, height, GLformat[ncomp],
+                     GL_FLOAT, data);
+#else
        glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp],
                      GL_FLOAT, data);
+#endif
     }
     CHECK_GL();
 }
@@ -108,7 +153,7 @@ NV30GLStream::GLWriteData (const void *data) {
                        GL_FLOAT, p);
        
        free (p);
-    } else {    
+    } else { 
        glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
                        0, 0, width, height, GLformat[ncomp],
                        GL_FLOAT, data);

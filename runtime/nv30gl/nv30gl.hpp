@@ -186,6 +186,8 @@ void __check_gl(int line, char *file);
      GLXContext  glxContext;
 #endif
 
+     GLuint passthrough_id;
+
      enum WORKSPACESIZE{
         workspace = 2048
         //visual C++ 6.0 doesn't know about static const int

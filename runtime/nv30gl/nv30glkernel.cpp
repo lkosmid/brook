@@ -7,14 +7,6 @@
 
 using namespace brook;
 
-static const char passthrough[] =        \
-"!!FP1.0\n"                              \
-"TEX  R0, f[TEX0].xyyy, TEX0, RECT;\n"   \
-"MOVR o[COLR], R0;\n"                    \
-"END\n";
-
-static GLuint passthrough_id = 0;
-
 NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
                            const void *sourcelist[]) :
    runtime(runtime)
@@ -170,14 +162,6 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
    for (i=0; i<5; i++)
       tmpReduceStream[i] = NULL;
    
-   if (!passthrough_id) {
-      glGenProgramsNV (1, &passthrough_id);
-      glLoadProgramNV (GL_FRAGMENT_PROGRAM_NV, 
-                       passthrough_id, strlen(passthrough), 
-                       (const GLubyte*) passthrough);
-      CHECK_GL();
-   }
-
    /* Initialize state machine */
    ResetStateMachine();
 }
@@ -652,7 +636,7 @@ NV30GLKernel::ReduceScalar() {
            glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
          else 
            glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
          issue_reduce_poly(half, 0, 1, h, 1, f1, f2, fd);
          if (sreg0)
            glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
@@ -715,7 +699,7 @@ NV30GLKernel::ReduceScalar() {
            glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
          else 
            glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+         glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
        
          issue_reduce_poly(0, half, 1, 1, 1, f1, f2, fd);
          if (sreg0)
@@ -727,7 +711,7 @@ NV30GLKernel::ReduceScalar() {
       if (half + remainder > 1) {
         glActiveTextureARB(GL_TEXTURE0_ARB);
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-        glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+        glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
         glCopyTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
                          GLtype[ncomp], 0, 0, 
                          1, half+remainder, 0);
@@ -897,7 +881,7 @@ NV30GLKernel::ReduceStream() {
             glBindTexture (GL_TEXTURE_RECTANGLE_NV, inputReduceStream->id);
           else
             glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
           issue_reduce_poly(remainder_x, remainder_y, nx, h, 1, f1, f2, fd);
           if (sreg0)
             glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
@@ -1034,7 +1018,7 @@ NV30GLKernel::ReduceStream() {
                      f1[0], f2[0], fd[0]);
           glActiveTextureARB(GL_TEXTURE0_ARB);
           glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
           issue_reduce_poly(0, 0, nx, ny, 1, f1, f2, fd);
           if (sreg0)
             glBindTexture (GL_TEXTURE_RECTANGLE_NV, sreg0->id);
@@ -1095,7 +1079,7 @@ NV30GLKernel::ReduceStream() {
 
      glActiveTextureARB(GL_TEXTURE0_ARB);
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, passthrough_id);
+     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, runtime->passthrough_id);
 
      issue_reduce_poly(0, 0, nx, ny, 1, f1, f2, fd);
 
