@@ -287,7 +287,7 @@ void blur (float4 freqSpace<>,
            float2 clampsize;
            clampsize.x = (float)(M/4);
            clampsize.y = (float)(N/2);
-           setZero(freqSpace,freqSpace,normalized,negtopos,clampsize,(float)(M*N),-7.2,2);
+           setZero(freqSpace,freqSpace,normalized,negtopos,clampsize,(float)(M*N),7.2,2);
 }
 void edgeDetect (float4 freqSpace<>,
            int N, int M) {
@@ -391,11 +391,13 @@ int main (int argc, char ** argv) {
 	unsigned int logn, logm;
 	unsigned int i;
 	float2 *data;
-
+        char *argv_bak[]={argv[0],"franklin.ppm","out.ppm"};
 	if (argc<3) {
-		printf("Usage: %s <input_file> <output_file> [do edge det]\n",
-                       argc>=1?argv[0]:"qfft");
-		return 1; // 1 is argument error
+          printf("Usage: %s <input_file> <output_file> [do edge det]\nDefaulting to fft franklin.ppm out.ppm\n",
+                 argc>=1?argv[0]:"qfft");
+          argv=argv_bak;
+          argc=3;
+		//turn 1; // 1 is argument error
 	}
 
 	if (0==readPPM(argv[1],&imgdata,&width,&height)) {
