@@ -34,6 +34,7 @@ namespace brook
     void finish();
     void unbind();
     void bind();
+    IWriteQuery* createWriteQuery();
 
     // TIM: hacky magick for raytracer
     virtual void hackEnableWriteMask();

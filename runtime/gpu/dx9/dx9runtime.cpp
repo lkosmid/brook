@@ -2,9 +2,8 @@
 #include "dx9runtime.hpp"
 
 #include "dx9window.hpp"
-//#include "../../dx9/dx9pixelshader.hpp"
-//#include "../../dx9/dx9vertexshader.hpp"
 #include "dx9texture.hpp"
+#include "dx9writequery.hpp"
 
 #include <windows.h>
 #include <d3d9.h>
@@ -258,6 +257,7 @@ namespace brook
     void finish();
     void unbind();
     void bind();
+    IWriteQuery* createWriteQuery();
 
     // TIM: hacky magick for raytracer
     virtual void hackEnableWriteMask();
@@ -974,6 +974,10 @@ namespace brook
    }
 
    void GPUContextDX9Impl::bind() {
+   }
+
+   IWriteQuery* GPUContextDX9Impl::createWriteQuery() {
+      return new DX9WriteQuery( this );
    }
 
   // TIM: hacky magick for raytracer

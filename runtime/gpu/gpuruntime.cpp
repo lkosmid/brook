@@ -127,6 +127,10 @@ namespace brook
       _context->bind();
    }
 
+   IWriteQuery* GPURuntime::createWriteQuery() {
+      return _context->createWriteQuery();
+   }
+
   // TIM: hacky magick for raytracer
   void GPURuntime::hackEnableWriteMask() {
     _context->hackEnableWriteMask();

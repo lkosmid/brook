@@ -585,6 +585,35 @@ namespace brook {
     brook::Kernel* _kernel;
   };
 
+   /* wrapper class for occlusion queries */
+
+   class IWriteQuery;
+   class write_query
+   {
+   public:
+      static write_query create();
+
+      write_query();
+      write_query( const write_query& inQuery );
+
+      write_query& operator=( const write_query& inQuery );
+
+      void begin();
+      void end();
+
+      bool poll();
+      void wait();
+
+      size_t count();
+
+      operator IWriteQuery*();
+
+   private:
+      explicit write_query( IWriteQuery* inQuery );
+
+      IWriteQuery* _query;
+   };
+
 
   /* For vout */
   inline static void maxDimension(unsigned int * out, 

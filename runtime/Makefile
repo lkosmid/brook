@@ -1,6 +1,6 @@
 ROOTDIR = ..
 STATIC_LIBRARY = brook
-FILES = brt profiler logger
+FILES = brt profiler logger writequery
 
 include ../config/DetectOS.mk
 
