@@ -36,14 +36,15 @@ int main () {
   float2 index<2,2>;
   float data_a[10][10];
   float2 data_b[10][10];
-  float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
+  float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
   float data_d[10][10];
   float data_e[10][10];
   float d_broken = 0.0f;
-  float4 data_f[2][2]={{{0,0,0,0},{1,-1,1,-1}},{{2,-2,2,-2},{3,-3,3,-3}}};
+  float4 data_f[2][2]={ { float4(0,0,0,0), float4(1,-1,1,-1) },
+                        { float4(2,-2,2,-2), float4(3,-3,3,-3) } };
   float4 data_g[2][2];
-  float2 data_i[2][2]={{{0,1},{1,0}},
-                       {{1,1},{0,0}}};
+  float2 data_i[2][2]={ { float2(0,1),float2(1,0) },
+                        { float2(1,1),float2(0,0) } };
   int i,j;
 
   for (i=0; i<10; i++)

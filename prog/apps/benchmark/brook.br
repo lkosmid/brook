@@ -57,7 +57,7 @@ int main () {
   
   float *data_a;
   float *data_b;
-  float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
+  float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
   float *data_d;
   float *data_e;
   int i,j;

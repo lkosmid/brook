@@ -26,7 +26,7 @@ int main () {
   
   float data_a[10][10];
   float data_b[10][10];
-  float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
+  float4 c = float4(1.0f, 0.0f, 3.2f, 5.0f);
   float data_d[10][10];
   float data_e[10][10];
   float d_broken = 0.0f;

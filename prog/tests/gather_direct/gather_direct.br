@@ -12,7 +12,7 @@ kernel void gather2( float2 index, float a[10][10], out float b<> ) {
 
 int main() {
 	int i, j;
-	float2 index = { 3, 4 };
+	float2 index = float2(3, 4);
 	float a1< 100 >;
 	float b1< 100 >;
 	float a2< 10, 10 >;
