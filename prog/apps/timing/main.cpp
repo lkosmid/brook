@@ -21,6 +21,8 @@
  */
 int64 start, mid, mid2, stop;
 
+static unsigned int timerRes;
+
 #ifdef WIN32
 #include <windows.h>
 
@@ -54,6 +56,36 @@ GetTime(void)
 
    return ((int64) (((double) counter.QuadPart) * cycles_per_usec));
 }
+
+
+unsigned int GetTimeMillis(void) {
+  return (unsigned int)timeGetTime();
+}
+
+// by default in 2000/XP, the timeGetTime call is set to some resolution between 10-15 ms
+// query for the range of value periods and then set timer to the lowest possible.  Note:
+// MUST make call to corresponding CleanupMillisTimer
+void SetupMillisTimer(void) {
+
+  TIMECAPS timeCaps;
+  timeGetDevCaps(&timeCaps, sizeof(TIMECAPS)); 
+
+  if (timeBeginPeriod(timeCaps.wPeriodMin) == TIMERR_NOCANDO) {
+    std::cerr << "WARNING: Cannot set timer precision.  Not sure what precision we're getting!\n";
+  }
+  else {
+    timerRes = timeCaps.wPeriodMin;
+    std::cout << "Set timer resolution to " << timeCaps.wPeriodMin << "ms.\n";
+  }
+
+}
+
+void CleanupMillisTimer(void) {
+  if (timeEndPeriod(timerRes) == TIMERR_NOCANDO) {
+    std::cerr << "WARNING: bad return value of call to timeEndPeriod.\n";
+  }
+}
+
 #else
 #error "Please implement GetTime() for this platform"
 #endif
@@ -77,11 +109,13 @@ main(int argc, char *argv[])
       }
    }
 
+   SetupMillisTimer();
+
    ReadWrite_Time(length);
    std::cout << std::endl;
    RunKernel_Time(length);
    std::cout << std::endl;
-   //Blas_Time(length);
+   // Blas_Time(length);
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);
    //Matmult4x4_1way_Time(length);
@@ -90,6 +124,8 @@ main(int argc, char *argv[])
    //char c;
    //std::cerr << "Press <ENTER> to exit\n";
    //std::cin >> c;
+
+   CleanupMillisTimer();
 
    return 0;
 }

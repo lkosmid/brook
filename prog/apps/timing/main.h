@@ -15,6 +15,7 @@ typedef long long int64;
 #endif
 
 extern int64 GetTime(void);
+extern unsigned int GetTimeMillis(void);
 
 /*
  * XXX brcc currently has grief with typedefs mixed with Brook code, so we
