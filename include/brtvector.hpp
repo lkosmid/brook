@@ -277,8 +277,7 @@ protected:
     VALUE f[size];
 public:
     template <class T> operator T () const{
-      InitializeClass<T> a; 
-      return a(getAt(0),getAt(1),getAt(2),getAt(3));
+      return InitializeClass<T>()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
     const VALUE &getAt (unsigned int i) const{return f[i%size];}
     VALUE &getAt (unsigned int i) {return f[i%size];}
@@ -291,8 +290,7 @@ public:
         return *this;
     }
     template<class T> T castTo() {
-        InitializeClass<T> a; 
-        return a(getAt(0),getAt(1),getAt(2),getAt(3));
+        return InitializeClass<T>()(getAt(0),getAt(1),getAt(2),getAt(3));
     }
     vec<VALUE,4> swizzle4(MASKS x,MASKS y,MASKS z,MASKS w)const {
         return vec<VALUE,4>(getAt(x),
