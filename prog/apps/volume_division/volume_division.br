@@ -206,16 +206,21 @@ kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>,
                                             float curgather[][],
                                             float nextgather[][]) {
   float isovalue=.39;
+  float2 threefive={3.0f,5.0f};
   float3 onehalf=.5;
+  float2 onehalf2=.5;
+  float2 zero2=0;
   float4 curiso,nextiso;
   float4 vertices1=verticesinf;
   if (!(vertices1.x<256&&vertices1.x>=0)) {
     vertices1=0;
   }
   {
-  float4 whichVolumeTriangle={round(fmod((indexof trianglesA).x,15)),vertices1.w,0,0};
+  float2 whichVolumeTriangle={0,vertices1.w};
   float3 vertices=vertices1.xyz;
-  if (whichVolumeTriangle.x+.5>15) whichVolumeTriangle.x=0;
+  float2 mod35=round(fmod((indexof trianglesA).xy,threefive));
+  mod35 = (mod35+onehalf2>threefive)?zero2:mod35;
+  whichVolumeTriangle.x=mod35.x+mod35.y*3; 
 
   {
     float3 config = volumeTriangles[whichVolumeTriangle].xyz;
