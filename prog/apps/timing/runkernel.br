@@ -18,6 +18,10 @@
 #define CHECK_MISMATCH 0
 #endif
 
+#define MAX_TRIES       200
+#define SMOOTHING       100
+#define BIG_LENGTH      512
+
 /*
  * Streams can't be passed to functions, so use a macro.
  *
@@ -120,7 +124,7 @@ static int curNEntries;
 static int cur_R = 1, cur_W = 1;
 
 /*
- * RunKernelKickKernel --
+ * RunKernelMemcpyKernel --
  *
  *      Just copy.  This kernel is separate from the test kernels just so
  *      nothing related to it gets cached.  It exists only for priming the
@@ -128,7 +132,7 @@ static int cur_R = 1, cur_W = 1;
  */
 
 kernel void
-RunKernelKickKernel(float s<>, out float o<>)
+RunKernelMemcpyKernel(float s<>, out float o<>)
 {
    o = s;
 }
@@ -219,274 +223,45 @@ RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
  *      baseline for a naive native implementation.
  */
 
+#define I(o, _c, s)     o = o + s
+#define DO_MADs(o, _c, s) \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s);
+
 static void
 RunKernelHardWorkCPU(int streamLength, float4 c, float4 *input, float4 *output)
 {
    int i;
+   float ox, oy, oz, ow;
 
    for (i = 0; i < streamLength * streamLength; i++) {
-      output[i].x = input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
-      output[i].x = c.x * output[i].x + input[i].x;
+      ox = input[i].x;
+      DO_MADs(ox, c->x, input[i].x);
+      output[i].x = ox;
 
+      oy = input[i].y;
+      DO_MADs(oy, c->y, input[i].y);
+      output[i].y = oy;
 
-      output[i].y = input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
-      output[i].y = c.y * output[i].y + input[i].y;
+      oz = input[i].z;
+      DO_MADs(oz, c->z, input[i].z);
+      output[i].z = oz;
 
+      ow = input[i].w;
+      DO_MADs(ow, c->w, input[i].w);
+      output[i].w = ow;
 
-      output[i].z = input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-      output[i].z = c.z * output[i].z + input[i].z;
-
-
-      output[i].w = input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
-      output[i].w = c.w * output[i].w + input[i].w;
    }
 }
 
@@ -495,9 +270,9 @@ RunKernelHardWorkCPU(int streamLength, float4 c, float4 *input, float4 *output)
  * RunKernelKickBRT --
  *
  *      Running the first kernel is very slow because a lot of one time
- *      initialization happens in BRT itself.  So we make sure we run one
- *      untimed kernel to grease the tracks.  We intentionally don't use the
- *      same kernel we time to avoid introducing false caching behaviors.
+ *      initialization happens in BRT itself.  We use the same kernel as the
+ *      tests to ignore the one-time overhead of downloading the kernel to
+ *      the GPU.
  */
 
 static void
@@ -507,13 +282,8 @@ RunKernelKickBRT(void)
    float s<1>, o<1>;
 
    streamRead(s, d);
-   RunKernelKickKernel(s, o);
+   RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    streamWrite(o, d);
-
-   if (CHECK_MISMATCH && d[0] != 12.34f) {
-      printf("RunKernelKickBRT: Mismatch!  Got %f expecting %f\n",
-             d[0], 12.34f);
-   }
 }
 
 
@@ -769,4 +539,205 @@ RunKernel2D_Time(int maxLength)
       RunKernelDoRun(RunKernel2D, "RunK2D", lengths[i]);
    }
    RunKernelDoRun(RunKernel2D, "RunK2D", maxLength);
+}
+
+
+/*
+ * RunKernelFindIdealGPUvsCPUSlope --
+ *
+ *      At peak, we expect the GPU / CPU crossover point to be linear as a
+ *      function of the streamLength.  Specifically, we expect the CPU time
+ *      to be:
+ *
+ *      T_cpu = len * (# ops in k) * (# iterations of k) * k_cpu
+ *
+ *      where k_cpu is time to execute the CPU implementation of the kernel.
+ *      The GPU cost should be
+ *
+ *      T_gpu = (R+W)*len + len * (# ops in k) * (# iterations of k) * k_gpu
+ *
+ *      where R, W are the R and W write bandwidth in streamElements / time.
+ *
+ *      Solving, we get T_gpu < T_cpu when
+ *
+ *              total # ops > len * (R + W) / (k_cpu - k_gpu)
+ *
+ *      So we need to find k_gpu, k_cpu, and (R+W).
+ *
+ */
+
+static float
+RunKernelFindIdealGPUvsCPUSlope(void)
+{
+   float4 s<BIG_LENGTH, BIG_LENGTH>, o<BIG_LENGTH, BIG_LENGTH>;
+   float4 *data, *outData;
+   float slope = 0.0f;
+   int i;
+
+   RunKernelBuildData(&data, BIG_LENGTH * BIG_LENGTH);
+   outData = (float4 *) malloc(BIG_LENGTH * BIG_LENGTH * sizeof *outData);
+
+   t1 = GetTimeTSC();
+   for (i = 0; i < SMOOTHING; i++) {
+      RunKernelHardWorkCPU(BIG_LENGTH,
+                           float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
+   }
+   t1 = CyclesToUsecs(GetTimeTSC() - t1) / SMOOTHING;
+
+   t2 = GetTimeTSC();
+   streamRead(s, data);
+   for (i = 0; i < SMOOTHING; i++) {
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+   }
+   streamWrite(o, data);
+   t2 = CyclesToUsecs(GetTimeTSC() - t2) / SMOOTHING;
+
+   if (t2 > t1) {
+      printf("(* The CPU is _faster_ than the GPU by %10I64d usecs! *)\n",
+             t2 - t1);
+      goto done;
+   }
+
+   if (data[1].x != outData[1].x) {
+      printf("(* CPU is doing %4.1f ops and GPU is doing %4.1f! *)\n",
+             outData[1].x, data[1].x);
+      goto done;
+   }
+
+   start = GetTimeTSC();
+   for (i = 0; i < SMOOTHING; i++) {
+      streamRead(s, data);
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      streamWrite(o, data);
+   }
+   start = CyclesToUsecs(GetTimeTSC() - start) / SMOOTHING;
+
+   if (t2 > start) {
+      printf("(* Avg(R + k + W) < Avg(k) by %10I64d usecs?! *)\n", t2 - start);
+      goto done;
+   }
+
+   slope = (float) (start - t2) / (t1 - t2);
+   printf("(* Ideal slope is %6.2f, so ideal # of iterations is %6.2f *)\n",
+          slope, slope / outData[1].x);
+
+done:
+   free(data);
+   free(outData);
+   return slope;
+}
+
+
+/*
+ * RunKernelFindGPUvsCPUOne --
+ *
+ *      Finds the crossover point i at which
+ *
+ *              Read(N) + i*(GPU Version(N)) + Write(N) < i*(CPU Version(N))
+ *
+ *      Essentially, the plot is N floats vs. i*N*(# ops in the kernel) and
+ *      this function finds i given N and and a kernel length.
+ *
+ */
+
+static int
+RunKernelFindGPUvsCPUOne(int length)
+{
+   float4 s<length, length>, o<length, length>;
+   float4 *data, *outCPU, *outGPU;
+   int i;
+
+   if (length <= 1) return -1; /* We're never going to catch the CPU... */
+
+   RunKernelBuildData(&data, length * length);
+   outCPU = (float4 *) malloc(length * length * sizeof *outCPU);
+   outGPU = (float4 *) malloc(length * length * sizeof *outGPU);
+
+   for (i = 1; i < MAX_TRIES; i++) {
+      int j, k;
+
+      RunKernelHardWorkCPU(length,
+                           float4(1.0f, 1.0f, 1.0f, 1.0f), data, outCPU);
+      t1 = GetTimeTSC();
+      for (k = 0; k < SMOOTHING; k++) {
+         for (j = 0; j < i; j++) {
+            RunKernelHardWorkCPU(length,
+                                 float4(1.0f, 1.0f, 1.0f, 1.0f), data, outCPU);
+         }
+      }
+      t1 = CyclesToUsecs(GetTimeTSC() - t1);
+
+      streamRead(s, data);
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      streamWrite(o, outGPU);
+
+      t2 = GetTimeTSC();
+      for (k = 0; k < SMOOTHING; k++) {
+         streamRead(s, data);
+         for (j = 0; j < i; j++) {
+            RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+         }
+         streamWrite(o, outGPU);
+      }
+      t2 = CyclesToUsecs(GetTimeTSC() - t2);
+
+      if (t1 > t2) {
+         printf("%9d\t%10d\t%8d\t\t(* RUNVS *)\n",
+                4 * length * length, i,
+                (int) (outGPU[1].x * length * length * i * 4));
+         goto done;
+      }
+   }
+
+   if (i == MAX_TRIES) {
+      printf("(* GPU can't catch the CPU in %d iterations at length %d *)\n",
+             MAX_TRIES, length);
+      i = -1;
+   }
+
+done:
+   free(data);
+   free(outGPU);
+   free(outCPU);
+   return i;
+}
+
+
+/*
+ * RunKernel_GPUvsCPU --
+ *
+ *      Entry point for generating the list of GPU/CPU crossover points as a
+ *      function of length.
+ *
+ */
+
+void
+RunKernel_GPUvsCPU(int minLength)
+{
+   int lastIters = 0, count = 0;
+   int iters, i;
+   float idealSlope;
+
+   RunKernelKickBRT();
+
+   printf("(* RunKernel GPU vs. CPU: min length %d *)\n", minLength);
+   idealSlope = RunKernelFindIdealGPUvsCPUSlope();
+
+   printf("(* length\titerations\t# of ops *)\n");
+   RunKernelFindGPUvsCPUOne(minLength);
+   for (i = 0; i < numLengths; i++) {
+      if (lengths[i] <= minLength) continue;
+
+      iters = RunKernelFindGPUvsCPUOne(lengths[i]);
+
+      /*
+       * The way we time, we end up determining # iterations i as a function
+       * of stream length beyond which the GPU is faster than the CPU.  The
+       * model predicts this to converge to be linear in length which means
+       * i should become constant.  Once we're satisfied we've hit that
+       * point, there's no reason to calculate any more values (and it's
+       * quadratically expensive to keep going).  --Jeremy.
+       */
+      if (iters > 0 && iters == lastIters && count++ > 10) return;
+   }
 }

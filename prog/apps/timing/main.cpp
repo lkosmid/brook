@@ -31,6 +31,7 @@ static const struct timingEntry tests[] = {
    { "rw2d",    ReadWrite2D_Time },
    { "runk1d",  RunKernel1D_Time },
    { "runk2d",  RunKernel2D_Time },
+   { "runkvs",  RunKernel_GPUvsCPU },
    { "blas",    Blas_Time },
    //{ "spMV",    SpMatVec_Time },
    //{ "conj",    ConjGrad_Time },
@@ -49,7 +50,7 @@ static const int numTests = sizeof tests / sizeof tests[0];
  * This is lame, but cTool doesn't cope with typedefs or #includes, so we
  * stash the unusual variables here.  I'm a bad person.  --Jeremy.
  */
-int64 start, mid, mid2, stop;
+int64 start, stop, t1, t2;
 
 static unsigned int timerRes;
 #ifndef _WIN32

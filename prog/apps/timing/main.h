@@ -37,5 +37,5 @@ extern int64 CyclesToUsecs(int64 cycles);
  * just prototype all these here.  Since brcc runs before cpp, we sidestep
  * the issue.  I apologize deeply.  --Jeremy.
  */
-extern int64 start, mid, mid2, stop;
+extern int64 start, stop, t1, t2;
 #endif

@@ -10,5 +10,6 @@
 
 extern void RunKernel1D_Time(int maxLength);
 extern void RunKernel2D_Time(int maxLength);
+extern void RunKernel_GPUvsCPU(int maxLength);
 
 #endif
