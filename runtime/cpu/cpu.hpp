@@ -17,6 +17,7 @@ namespace brook {
        virtual void PushReduce (void * val, __BRTStreamType type);
        virtual void PushOutput(Stream *s);
        virtual void Map();
+       void subMap(unsigned int begin, unsigned int end);
        virtual void Release();
     protected:
        virtual ~CPUKernel();
@@ -30,8 +31,10 @@ namespace brook {
        class ReductionArg {public:
           unsigned int which;
           __BRTStreamType type;
-          ReductionArg(unsigned int w, __BRTStreamType s) {
+          brook::Stream *stream;
+          ReductionArg(unsigned int w, __BRTStreamType s,brook::Stream *stream) {
              which=w;type=s;
+             this->stream=stream;
           }
        };
        std::vector<ReductionArg> reductions;

@@ -46,8 +46,17 @@ namespace brook{
         args.push_back(s);
     }
     void CPUKernel::PushReduce(void * data, __BRTStreamType type) {
-       reductions.push_back(ReductionArg(args.size(),type));
-       args.push_back(data);
+
+       switch (type) {
+       case __BRTSTREAM:
+          args.push_back(NULL);
+          reductions.push_back(ReductionArg(args.size(),type,*static_cast<const __BRTStream*>(data)));
+          break;
+       default:
+          args.push_back(data);
+          reductions.push_back(ReductionArg(args.size(),type,NULL));
+       }
+
     }
     void CPUKernel::PushOutput(Stream *s){
         args.push_back(s);
@@ -79,11 +88,16 @@ namespace brook{
 #endif
 	extent=0;
     }
-    void CPUKernel::Map(){
-       Stream * rep=writeOnly;
+   //subMap is guaranteed that all reductions are actual values stored in args.
+   //subMap is in charge of parallelizing threads where necessary.
+    void CPUKernel::subMap(unsigned int begin, unsigned int end){
        (*func)(args,
-               0,
-               extent);//can do some fancy forking algorithm here
+               begin,
+               end);//can do some fancy forking algorithm here
+    }
+    void CPUKernel::Map() {
+       subMap(0,extent);
+
        Cleanup();
     }
     void CPUKernel::Release() {
