@@ -17,31 +17,37 @@ static const char passthrough[] =        \
 
 NV30GLRunTime::NV30GLRunTime()
 {
-
-  // Create a window
-  createWindow();
-
-  // Create a window glcontext
-  createWindowGLContext();
-  
-  initglfunc();
-
-  createPBuffer(4);
-
-  // Initial GL State
-  glDrawBuffer(GL_FRONT);
-  glReadBuffer(GL_FRONT);
-  glEnable(GL_FRAGMENT_PROGRAM_NV);
-  CHECK_GL();
-
-  glGenProgramsNV (1, &passthrough_id);
-  glLoadProgramNV (GL_FRAGMENT_PROGRAM_NV, 
-                   passthrough_id, strlen(passthrough), 
-                   (const GLubyte*) passthrough);
-  CHECK_GL();
-  
-  streamlist = NULL;
-
+   int i, n;
+   // Create a window
+   createWindow();
+   
+   // Create a window glcontext
+   createWindowGLContext();
+   
+   initglfunc();
+   
+   createPBuffer(4);
+   
+   // Initial GL State
+   glDrawBuffer(GL_FRONT);
+   glReadBuffer(GL_FRONT);
+   glEnable(GL_FRAGMENT_PROGRAM_NV);
+   CHECK_GL();
+   
+   glGenProgramsNV (1, &passthrough_id);
+   glLoadProgramNV (GL_FRAGMENT_PROGRAM_NV, 
+                    passthrough_id, strlen(passthrough), 
+                    (const GLubyte*) passthrough);
+   CHECK_GL();
+   
+   glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, (GLint *) &n);
+   for (i=0; i<n; i++) {
+      glActiveTextureARB(GL_TEXTURE0_ARB+i);
+      glEnable(GL_TEXTURE_RECTANGLE_NV);
+   }
+   CHECK_GL();
+   
+   streamlist = NULL;
 }
 
 Kernel * 

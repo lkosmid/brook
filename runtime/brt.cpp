@@ -66,9 +66,6 @@ namespace brook {
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*******************************\n");
       fprintf (stderr,"*                             *\n");
       fprintf (stderr,"* BRT_RUNTIME env variable is *\n");
@@ -89,10 +86,8 @@ namespace brook {
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
-      fprintf (stderr,"*****WARNING*****WARNING*******\n");
+      fprintf (stderr,"*****WARNING*****WARNING*******\n\n");
+      fflush  (stderr);
       return new CPURunTime();
     }
 

@@ -91,8 +91,12 @@ void __check_gl(int line, char *file);
       void ResetStateMachine();
     
       NV30GLRunTime * runtime;
-      GLuint id;
+
+      GLuint *pass_id;
+      unsigned int *pass_out;
+      unsigned int npasses;
       
+      unsigned int nout;
       int sreg;
       int treg;
       int creg;
@@ -114,7 +118,7 @@ void __check_gl(int line, char *file);
 
       char **constnames;
 
-      NV30GLStream *outstream;
+      NV30GLStream **outstream;
       bool         *argumentUsesIndexof;
       NV30GLStream *sargs[NV30GL_MAX_TEXCOORDS];
       NV30GLIter   *iargs[NV30GL_MAX_TEXCOORDS];

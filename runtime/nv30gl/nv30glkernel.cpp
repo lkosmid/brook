@@ -11,9 +11,9 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
                            const void *sourcelist[]) :
    runtime(runtime)
 {
-   unsigned int i, n;
-   const char** sources = NULL;
-   const char *source;
+   unsigned int i,j;
+   const char**sources = NULL;
+   const char *src;
    char *progcopy;
    char *c;
    
@@ -31,137 +31,157 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
          break;
    }
 
-   source = sources ? sources[0] : NULL;
-   
    if (sourcelist[i] == NULL ||
-       source == NULL) { 
+       sources == NULL || sources[0]==NULL) { 
       fprintf (stderr, "NV30GL: No kernel source found\n");
       exit(1);
    }
 
-   // look for our annotations...
-   std::string s = source;
-   
-   s = s.substr( s.find("!!BRCC") );
-   
-   // next is the narg line
-   s = s.substr( s.find("\n")+1 );
-   s = s.substr( s.find(":")+1 );
-   
-   std::string argumentCountString = s.substr( 0, s.find("\n") );
-   unsigned int argumentCount = (unsigned int) 
-      atoi( argumentCountString.c_str() );
-   argumentUsesIndexof = (bool *) malloc (sizeof(bool) * argumentCount);
-   
-   for( i = 0; i < argumentCount; i++ ) {
-       s = s.substr( s.find("\n")+1 );
-       s = s.substr( s.find("##")+2 );
-       char typeCode = s[0];
-       char indexofHint = s[1];
-       argumentUsesIndexof[i] = (indexofHint == 'i');
-   }
-   
-   /* Load the program code */
-   CHECK_GL();
-   
-   glGenProgramsNV (1, &id);
-   glLoadProgramNV (GL_FRAGMENT_PROGRAM_NV, id, strlen(source), 
-                    (const GLubyte*) source);
-   glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
-   
-   /* Check for program errors */
-   if (glGetError() == GL_INVALID_OPERATION) {
-      GLint pos;
-      int i;
-      int line, linestart;
-      
-      progcopy = strdup (source);
-      glGetIntegerv(GL_PROGRAM_ERROR_POSITION_NV, &pos);
-      
-      line = 1;
-      linestart = 0;
-      for (i=0; i<pos; i++) {
-         if (progcopy[i] == '\n') {
-            line++;
-            linestart = i+1;
-         }
-      }
-      fprintf ( stderr, "NV30GL: Program Error on line %d\n", line);
-      for (i=linestart; progcopy[i] != '\0' && progcopy[i] != '\n'; i++);
-      progcopy[i] = '\0';
-      fprintf ( stderr, "%s\n", progcopy+linestart);
-      for (i=linestart; i<pos; i++) 
-         fprintf ( stderr, " ");
-      for (;progcopy[i] != '\0' && progcopy[i] != '\n'; i++) 
-         fprintf ( stderr, "^");
-      fprintf ( stderr, "\n");
-      free(progcopy);
-      fprintf ( stderr, "%s\n", 
-                glGetString(GL_PROGRAM_ERROR_STRING_ARB));   
-      exit(1);
-   }
-   
-   /* Get the constant names */
-   constnames = (char **)  malloc (sizeof (char *) * NV30GL_MAXCONSTS);
-   
-   for (i=0; i<NV30GL_MAXCONSTS; i++)
-      constnames[i] = NULL;
-   
-   progcopy = strdup (source);
-   c = progcopy;
-   while (*c && (c = strstr (c, "#semantic main.")) != NULL) {
-      char *name;
-      char *constregstring;
-      unsigned int constreg;
-      
-      c += strlen("#semantic main.");
-      
-      /* set name to the ident */
-      name = c;
-      
-      do c++; while (*c != ' ');
-      *c = '\0';
-      
-      do c++; while (*c != ':');
-      do c++; while (*c == ' ');
-      
-      /* If we have not found a constant register, 
-      ** simply continue */
-      if (*c != 'C')
-         continue;
-      
-      c++;
-      constregstring = c;
-      while (*c >= '0' && *c <= '9') c++;
-      *c = '\0';
-      c++;
-      
-      constreg = atoi (constregstring);
-      
-      if (constreg > NV30GL_MAXCONSTS) {
-         fprintf (stderr, "NV30GL: Too many constant registers\n");
-         exit(1);
-      }
-      
-      constnames[constreg] = strdup (name);
-   }
-   free(progcopy);
-   
-   for (i=0; i<NV30GL_MAXCONSTS; i++) {
-      if (constnames[i] == NULL) {
-         constnames[i] = strdup ("__UNKNOWN_CONST#######");
-         sprintf(constnames[i], "__UNKNOWN_CONST%d", i);
-      }
-   }
-   
-   /* Initialize GL State */
-   glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, (GLint *) &n);
-   for (i=0; i<n; i++) {
-      glActiveTextureARB(GL_TEXTURE0_ARB+i);
-      glEnable(GL_TEXTURE_RECTANGLE_NV);
-   }
+   // count the number of passes
+   for (npasses=0; sources[npasses]; npasses++)
+     ;
+  
+   pass_id = (GLuint *) malloc (npasses * sizeof(GLuint));
+   pass_out = (unsigned int *) malloc (npasses * sizeof(int));
+   outstream = (NV30GLStream **) malloc (npasses * sizeof(NV30GLStream *));
+
+   // Allocate ids
+   glGenProgramsNV (npasses, pass_id);
    CHECK_GL();
 
+   // look for our annotations...
+   for (j=0; j<npasses; j++) {
+     src = sources[j];
+     std::string s = src;
+     
+     if (!j) {
+       s = s.substr( s.find("!!BRCC") );
+       
+       // next is the narg line
+       s = s.substr( s.find("\n")+1 );
+       s = s.substr( s.find(":")+1 );
+       
+       std::string argumentCountString = s.substr( 0, s.find("\n") );
+       unsigned int argumentCount = (unsigned int) 
+         atoi( argumentCountString.c_str() );
+       argumentUsesIndexof = (bool *) malloc (sizeof(bool) * argumentCount);
+       
+       for( i = 0; i < argumentCount; i++ ) {
+         s = s.substr( s.find("\n")+1 );
+         s = s.substr( s.find("##")+2 );
+         char typeCode = s[0];
+         char indexofHint = s[1];
+         argumentUsesIndexof[i] = (indexofHint == 'i');
+       }
+
+       /* Get the constant names */
+       constnames = (char **)  malloc (sizeof (char *) * NV30GL_MAXCONSTS);
+       
+       for (i=0; i<NV30GL_MAXCONSTS; i++)
+         constnames[i] = NULL;
+       
+       progcopy = strdup (src);
+       c = progcopy;
+       while (*c && (c = strstr (c, "#semantic main.")) != NULL) {
+         char *name;
+         char *constregstring;
+         unsigned int constreg;
+         
+         c += strlen("#semantic main.");
+         
+         /* set name to the ident */
+         name = c;
+         
+         do c++; while (*c != ' ');
+         *c = '\0';
+         
+         do c++; while (*c != ':');
+         do c++; while (*c == ' ');
+         
+         /* If we have not found a constant register, 
+         ** simply continue */
+         if (*c != 'C')
+           continue;
+         
+         c++;
+         constregstring = c;
+         while (*c >= '0' && *c <= '9') c++;
+         *c = '\0';
+         c++;
+         
+         constreg = atoi (constregstring);
+         
+         if (constreg > NV30GL_MAXCONSTS) {
+           fprintf (stderr, "NV30GL: Too many constant registers\n");
+           exit(1);
+         }
+         
+         constnames[constreg] = strdup (name);
+       }
+       free(progcopy);
+       
+       for (i=0; i<NV30GL_MAXCONSTS; i++) {
+         if (constnames[i] == NULL) {
+           constnames[i] = strdup ("__UNKNOWN_CONST#######");
+           sprintf(constnames[i], "__UNKNOWN_CONST%d", i);
+         }
+       }
+     }
+
+     /* Get the output info */
+     progcopy = strdup (src);
+     c = strstr(progcopy, "!!multipleOutputInfo:");
+     c += strlen("!!multipleOutputInfo:");
+     *(strstr(c,":")) = '\0';
+     pass_out[j] = atoi(c);
+     c += strlen(c)+1;
+     *(strstr(c,":")) = '\0';
+     if (atoi(c) != 1) {
+       fprintf (stderr, "NV30GL:  NV30GL backend does not support "
+                "shaders with multiple outputs\n");
+       exit(1);
+     }
+     free(progcopy);
+     
+     /* Load the program code */
+     CHECK_GL();
+   
+     glLoadProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[j], strlen(src), 
+                      (const GLubyte*) src);
+     
+     /* Check for program errors */
+     if (glGetError() == GL_INVALID_OPERATION) {
+       GLint pos;
+       int i;
+       int line, linestart;
+
+       progcopy = strdup (src);
+       glGetIntegerv(GL_PROGRAM_ERROR_POSITION_NV, &pos);
+       
+       line = 1;
+       linestart = 0;
+       for (i=0; i<pos; i++) {
+         if (progcopy[i] == '\n') {
+           line++;
+           linestart = i+1;
+         }
+       }
+       fprintf ( stderr, "NV30GL: Program Error on line %d\n", line);
+       for (i=linestart; progcopy[i] != '\0' && progcopy[i] != '\n'; i++);
+       progcopy[i] = '\0';
+       fprintf ( stderr, "%s\n", progcopy+linestart);
+       for (i=linestart; i<pos; i++) 
+         fprintf ( stderr, " ");
+       for (;progcopy[i] != '\0' && progcopy[i] != '\n'; i++) 
+         fprintf ( stderr, "^");
+       fprintf ( stderr, "\n");
+       free(progcopy);
+       fprintf ( stderr, "%s\n", 
+                 glGetString(GL_PROGRAM_ERROR_STRING_ARB));   
+       exit(1);
+     }
+   }
+   
    for (i=0; i<5; i++)
       tmpReduceStream[i] = NULL;
    
@@ -205,36 +225,40 @@ void NV30GLKernel::PushIter(Iter *s) {
 }
 
 void NV30GLKernel::PushConstant(const float &val) {
-   glProgramNamedParameter4fNV(id, strlen(constnames[creg]),
-                               (const GLubyte *) constnames[creg],
-                               val, 0.0f, 0.0f, 0.0f);
+   for (unsigned int i=0; i<npasses; i++)
+     glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
+                                 (const GLubyte *) constnames[creg],
+                                 val, 0.0f, 0.0f, 0.0f);
    creg++;
    argcount++;
    CHECK_GL();
 }
 
 void NV30GLKernel::PushConstant(const float2 &val) {
-   glProgramNamedParameter4fNV(id, strlen(constnames[creg]),
-                               (const GLubyte *) constnames[creg],
-                               val.x, val.y, 0.0f, 0.0f);
+   for (unsigned int i=0; i<npasses; i++)
+     glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
+                                 (const GLubyte *) constnames[creg],
+                                 val.x, val.y, 0.0f, 0.0f);
    creg++;
    argcount++;
    CHECK_GL();
 }
 
 void NV30GLKernel::PushConstant(const float3 &val) {
-   glProgramNamedParameter4fNV(id, strlen(constnames[creg]),
-                               (const GLubyte *) constnames[creg],
-                               val.x, val.y, val.z, 0.0f);
+   for (unsigned int i=0; i<npasses; i++)
+     glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
+                                 (const GLubyte *) constnames[creg],
+                                 val.x, val.y, val.z, 0.0f);
    creg++;
    argcount++;
    CHECK_GL();
 }
 
 void NV30GLKernel::PushConstant(const float4 &val) {
-   glProgramNamedParameter4fNV(id, strlen(constnames[creg]),
-                               (const GLubyte *) constnames[creg],
-                               val.x, val.y, val.z, val.w);
+   for (unsigned int i=0; i<npasses; i++)
+     glProgramNamedParameter4fNV(pass_id[i], strlen(constnames[creg]),
+                                 (const GLubyte *) constnames[creg],
+                                 val.x, val.y, val.z, val.w);
    creg++;
    argcount++;
    CHECK_GL();
@@ -268,15 +292,17 @@ void NV30GLKernel::PushGatherStream(Stream *s) {
 }
 
 void NV30GLKernel::PushOutput(Stream *s) {
-   assert (outstream == NULL);
-   outstream = (NV30GLStream *) s;
+   outstream[nout] = (NV30GLStream *) s;
 
    if (argumentUsesIndexof[argcount]) {
-     sargs[treg] = outstream;
+     sargs[treg] = outstream[nout];
      treg++;
      creg++;
    }
 
+   assert (nout < npasses);
+
+   nout++;
    argcount++;
 }
 
@@ -373,6 +399,7 @@ void NV30GLKernel::ResetStateMachine() {
 
    int i;
 
+   nout = 0;
    creg = 1;
    sreg = 0;
    treg = 0;
@@ -381,102 +408,109 @@ void NV30GLKernel::ResetStateMachine() {
       sargs[i] = NULL;
       iargs[i] = NULL;
    }
-   outstream = NULL;
    sreg0 = NULL;
 }
 
 void NV30GLKernel::Map() {
    
-   unsigned int i;
+   unsigned int i, j;
    int w, h;
    nvfloat4 f1[8], f2[8];
 
-   assert(outstream);
+   w = -1; h = -1;
 
-   if (runtime->pbuffer_ncomp != outstream->ncomp)
-      runtime->createPBuffer(outstream->ncomp);
-   
-   w = outstream->width;
-   h = outstream->height;
+   for (j=0; j<npasses; j++) {
 
-   /* Compute texture coordinates */
-   for (i=0; i<8; i++) {
-      if (sargs[i])
-         compute_st(w, h, false,
-                    0.0f, 0.0f, 0.0f, 1.0f,
-                    (float) sargs[i]->width, 
-                    (float) sargs[i]->height, 0.0f, 1.0f, 
-                    f1[i], f2[i]);
-      else if (iargs[i]) {
-         NV30GLIter *itr = iargs[i]; 
-         compute_st(w, h, (itr->dims==1),
-                    itr->min.x, itr->min.y,
-                    itr->min.z, itr->min.w,
-                    itr->max.x, itr->max.y,
-                    itr->max.z, itr->max.w,
-                    f1[i], f2[i]);
-      }
-   }
+     if (w != outstream[j]->width ||
+         h != outstream[j]->height) {
 
+       // Compute texture coords
+
+       w = outstream[j]->width;
+       h = outstream[j]->height;
+     
+       /* Compute texture coordinates */
+       for (i=0; i<8; i++) {
+         if (sargs[i])
+           compute_st(w, h, false,
+                      0.0f, 0.0f, 0.0f, 1.0f,
+                      (float) sargs[i]->width, 
+                      (float) sargs[i]->height, 0.0f, 1.0f, 
+                      f1[i], f2[i]);
+         else if (iargs[i]) {
+           NV30GLIter *itr = iargs[i]; 
+           compute_st(w, h, (itr->dims==1),
+                      itr->min.x, itr->min.y,
+                      itr->min.z, itr->min.w,
+                      itr->max.x, itr->max.y,
+                      itr->max.z, itr->max.w,
+                      f1[i], f2[i]);
+         }
+       }
+       
 #if 0
-   fprintf (stderr, "w: %d, h: %d\n", w, h);
-   for (i=0; i<8; i++)
-      if (sargs[i] || iargs[i])
-         fprintf (stderr,
-                  "%d:\t%3.8f %3.8f %3.8f %3.8f\n\t%3.8f %3.8f %3.8f %3.8f\n", 
-                  i, f1[i].x, f1[i].y, f1[i].z, f1[i].w,
-                  f2[i].x, f2[i].y, f2[i].z, f2[i].w);
+       fprintf (stderr, "w: %d, h: %d\n", w, h);
+       for (i=0; i<8; i++)
+         if (sargs[i] || iargs[i])
+           fprintf (stderr,
+                    "%d:\t%3.8f %3.8f %3.8f %3.8f\n\t%3.8f %3.8f %3.8f %3.8f\n", 
+                    i, f1[i].x, f1[i].y, f1[i].z, f1[i].w,
+                    f2[i].x, f2[i].y, f2[i].z, f2[i].w);
 #endif
-
-   CHECK_GL();
-
-   glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
-
-   glViewport(0,0,w,h);
-
-   /* Issue the poly */
-   glBegin(GL_TRIANGLES);
-   
-   for (i=0; i<8; i++)
-      if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
+     
+       CHECK_GL();
+       
+       glViewport(0,0,w,h);
+     }
+      
+     if (runtime->pbuffer_ncomp != outstream[j]->ncomp)
+       runtime->createPBuffer(outstream[j]->ncomp);
+     
+     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[j]);
+     
+     /* Issue the poly */
+     glBegin(GL_TRIANGLES);
+     
+     for (i=0; i<8; i++)
+       if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
          glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i, 
                               f1[i].x, f2[i].y, 0.0f, 1.0f);
-      else if (iargs[i] && iargs[i]->dims==1) 
+       else if (iargs[i] && iargs[i]->dims==1) 
          glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i, 
                               f1[i].x, f1[i].y, f1[i].z, f1[i].w);
-   glVertex2f(-1.0f, 3.0f); 
-
-   for (i=0; i<8; i++)
-      if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
+     glVertex2f(-1.0f, 3.0f); 
+     
+     for (i=0; i<8; i++)
+       if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
          glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i, 
                               f1[i].x, f1[i].y, 0.0f, 1.0f);
-      else if (iargs[i] && iargs[i]->dims==1) 
+       else if (iargs[i] && iargs[i]->dims==1) 
          glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i, 
                               f1[i].x, f1[i].y, f1[i].z, f1[i].w);
-   glVertex2f(-1.0f, -1.0f);
-   
-   for (i=0; i<8; i++)
-      if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
+     glVertex2f(-1.0f, -1.0f);
+     
+     for (i=0; i<8; i++)
+       if (sargs[i] || (iargs[i] && iargs[i]->dims==2))
          glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i, 
                               f2[i].x, f1[i].y, 0.0f, 1.0f);
-      else if (iargs[i] && iargs[i]->dims==1) 
+       else if (iargs[i] && iargs[i]->dims==1) 
          glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i, 
                               f2[i].x, 
                               f2[i].y,
                               f2[i].z,
                               f2[i].w);
-   glVertex2f(3.0f, -1.0f);
-
-   glEnd();
-   CHECK_GL();
-
-   glBindTexture (GL_TEXTURE_RECTANGLE_NV, outstream->id);
-   glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0, w, h);
-
-   CHECK_GL();
+     glVertex2f(3.0f, -1.0f);
+     
+     glEnd();
+     CHECK_GL();
+     
+     glBindTexture (GL_TEXTURE_RECTANGLE_NV, outstream[j]->id);
+     glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0, w, h);
+   
+     CHECK_GL();
+   }
 
    ResetStateMachine();
-
 }
 
 void
@@ -557,6 +591,8 @@ NV30GLKernel::ReduceScalar() {
    NV30GLStream *t;
    bool first = true;
 
+   assert(npasses == 1);
+
    // Don't attempt reduce on 1x1
    if (w == 1 && h == 1) {
       inputReduceStream->GLReadData(reduceVal);
@@ -615,7 +651,7 @@ NV30GLKernel::ReduceScalar() {
       }
       CHECK_GL();
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
       issue_reduce_poly(0, 0, half, h, 2, f1, f2);
       
       if (remainder) {
@@ -678,7 +714,7 @@ NV30GLKernel::ReduceScalar() {
       }
       CHECK_GL();
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
       issue_reduce_poly(0, 0, 1, half, 2, f1, f2);
       
       if (remainder) {
@@ -828,7 +864,7 @@ NV30GLKernel::ReduceStream() {
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
       }
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
 
       issue_reduce_poly(0, 0, half*nx, h, 2, f1, f2);
 
@@ -858,7 +894,7 @@ NV30GLKernel::ReduceStream() {
             glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
           }
 
-          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
 
           issue_reduce_poly(remainder_x, remainder_y, nx, h, 2, f1, f2);
 
@@ -931,7 +967,7 @@ NV30GLKernel::ReduceStream() {
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
      glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
-     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
      issue_reduce_poly(0, 0, nx, h, 2, f1, f2);
 
      dumpframebuffer(10,10);
@@ -972,7 +1008,7 @@ NV30GLKernel::ReduceStream() {
         glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
       }
 
-      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+      glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
       issue_reduce_poly(0, 0, nx, ny*half, 2, f1, f2);
 
       glActiveTextureARB(GL_TEXTURE0_ARB);
@@ -1001,7 +1037,7 @@ NV30GLKernel::ReduceStream() {
           glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
           glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
           glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id);
-          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+          glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
           issue_reduce_poly(0, 0, nx, ny, 2, f1, f2);
         } else {
           //  Copy the remainder values over
@@ -1055,7 +1091,7 @@ NV30GLKernel::ReduceStream() {
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, t->id);
      glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
      glBindTexture (GL_TEXTURE_RECTANGLE_NV, r->id);
-     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
+     glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, pass_id[0]);
      
      issue_reduce_poly(0, 0, nx, ny, 2, f1, f2);
 
@@ -1093,7 +1129,10 @@ NV30GLKernel::ReduceStream() {
 
 NV30GLKernel::~NV30GLKernel() {
    unsigned int i;
- 
+
+   free(pass_id);
+   free(pass_out);
+
    for (i=0; i<NV30GL_MAXCONSTS; i++)
       free(constnames[i]);
 
