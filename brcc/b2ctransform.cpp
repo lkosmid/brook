@@ -3,18 +3,7 @@
 #include "ctool.h"
 #include "main.h"
 #include <iostream>
-#if 0
-static FunctionDef * ConvertToMask(FunctionDef *s) {
-	if (!s->decl->isKernel()) return NULL;
-	printf ("mask kernel found");	
-	return NULL;
-}
-static FunctionDef * ConvertToSwizzle(FunctionDef *s) {
-	if (!s->decl->isKernel()) return NULL;
-	printf ("swiz kernel found");
-	return NULL;	
-}
-#endif
+
 template <class ConverterFunctor> void ConvertToT (Expression * expression);
 
 BinaryOp TranslatePlusGets (AssignOp ae) {
