@@ -281,13 +281,13 @@ OGLContext::get2DInterpolant( const float2 &start,
 
 float4 
 OGLContext::getStreamIndexofConstant( TextureHandle inTexture ) const {
-  return float4(0.0f, 0.0f, 0.0f, 0.0f);
+  return float4(1.0f, 1.0f, -0.005f, -0.005f);
 }
 
 
 float4
 OGLContext::getStreamGatherConstant( TextureHandle inTexture ) const {
-  return float4(1.0f, 1.0f, 0.5f, 0.5f);
+  return float4(1.0f, 1.0f, 0.005f, 0.005f);
 }
 
 
@@ -299,8 +299,9 @@ OGLContext::getStreamInterpolant( const TextureHandle texture,
 
   OGLTexture *oglTexture = (OGLTexture *) texture;
 
-  float2 start(0.5f, 0.5f);
-  float2 end(w+0.5f, h+0.5f);
+  float2 start(0.005f, 0.005f);
+  float2 end(oglTexture->width()+0.005f, 
+             oglTexture->height()+0.005f);
 
   get2DInterpolant(  start, end, w, h, interpolant); 
 }
