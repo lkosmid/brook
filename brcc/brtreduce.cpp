@@ -118,11 +118,11 @@ void BRTCPUReduceCode::printCode(std::ostream& out) const
 	if (output&&input) {
 		if (output->isArray()) {
 			Symbol nothing;nothing.name="";
-			out << "memcpy (arg"<<outint<<", *arg"<<inint<<"++,sizeof(";
+			out << "memcpy (*arg"<<outint<<", *arg"<<inint<<"++,sizeof(";
 			output->form->printType(out,&nothing,true,0);
 			out <<"));"<<std::endl;
 		}else{
-			out <<"arg"<<outint<<" = *arg"<<inint<<"++;"<<std::endl;
+			out <<"*arg"<<outint<<" = *arg"<<inint<<"++;"<<std::endl;
 		}
 	}
 	indent(out,1); out <<"}"<<std::endl;
