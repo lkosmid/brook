@@ -47,14 +47,14 @@ newcurve
   marktype circle
   linetype solid
   pts shell : awk '/RunK2D [0-9] R50/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts 
-  pts shell : awk '/RunK2D [0-1][0-9] R50/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
+  pts shell : awk '/RunK2D [0-4][0-9] R50/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
 
 newcurve
   label : streamRead() + 75 Iterations + streamWrite()
   marktype box
   linetype solid
   pts shell : awk '/RunK2D [0-9] R75/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts 
-  pts shell : awk '/RunK2D [0-1][0-9] R75/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
+  pts shell : awk '/RunK2D [0-4][0-9] R75/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
 
 newcurve
   label : streamRead() + 150 Iterations + streamWrite()
@@ -62,7 +62,7 @@ newcurve
   linetype solid
   pts 0 0
   pts shell : awk '/RunK2D [0-9] R150/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts 
-  pts shell : awk '/RunK2D [0-1][0-9] R150/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
+  pts shell : awk '/RunK2D [0-4][0-9] R150/ { print $7*$7, $1/1000 }' graphs/graph-cpu.pts
 
 legend bottom
 
@@ -80,20 +80,20 @@ newcurve
   marktype circle
   linetype solid
   (* pts 0 0 *)
-  pts shell : awk '/RunK2D [0-9][0-9] R150/ { print $7, $2 }' graphs/graph-cpu.pts 
+  pts shell : awk '/RunK2D [0-9]+ R150/ { print $7, $2 }' graphs/graph-cpu.pts 
 
 newcurve
   label : streamRead() + 75 Iterations + streamWrite()
   marktype box
   linetype solid
   (* pts 0 0 *)
-  pts shell : awk '/RunK2D [0-9][0-9] R75/ { print $7, $2 }' graphs/graph-cpu.pts 
+  pts shell : awk '/RunK2D [0-9]+ R75/ { print $7, $2 }' graphs/graph-cpu.pts 
 
 newcurve
   label : streamRead() + 50 Iterations + streamWrite()
   marktype triangle
   linetype solid
-  pts shell : awk '/RunK2D [0-9][0-9] R50/ { print $7, $2 }' graphs/graph-cpu.pts 
+  pts shell : awk '/RunK2D [0-9]+ R50/ { print $7, $2 }' graphs/graph-cpu.pts 
 
 legend bottom
 
@@ -149,7 +149,7 @@ newcurve
 
 newcurve
   label : streamWrite()
-  marktype box
+  marktype triangle
   linetype solid
   pts shell : awk '/RunK2D [0-9]+ R1 / { print $7*$7, 16*$7*$7/$10 }' graphs/graph-cpu.pts 
 

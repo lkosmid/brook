@@ -24,10 +24,10 @@ $(GRAPHDIR)/graph-$(RUNTIME).pdf: makedirs $(GRAPHDIR)/graph-$(RUNTIME).pts
 	jgraph -P -comments timing-$(RUNTIME).jgr | ps2pdf - $@
 
 cpu-graph:
-	$(MAKE) RUNTIME=cpu $(GRAPHDIR)/graph-$(RUNTIME).pdf
+	$(MAKE) RUNTIME=cpu $(GRAPHDIR)/graph-cpu.pdf
 
 nv30-graph:
-	$(MAKE) RUNTIME=nv30gl $(GRAPHDIR)/graph-$(RUNTIME).pdf
+	$(MAKE) RUNTIME=nv30gl $(GRAPHDIR)/graph-nv30gl.pdf
 
 dx9-graph:
-	$(MAKE) RUNTIME=dx9 $(GRAPHDIR)/graph-$(RUNTIME).pdf
+	$(MAKE) RUNTIME=dx9 $(GRAPHDIR)/graph-dx9.pdf
