@@ -12,7 +12,7 @@ SHARED_LIBSUFFIX := .dll
 STATIC_LIBSUFFIX := .lib
 BINSUFFIX        := .exe
 
-SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32
+SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32 Winmm
 
 # /w34505: Enabled warning 4505 (unreferenced static function) at level 3
 # I turned it off for now since gcc should pick this up.
