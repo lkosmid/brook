@@ -135,7 +135,7 @@ void computeFFT2d(float2 *input,
    float4 s<N,(M/2)>;
    float4 s_out<N,(M/2)>;
    float2 W_horiz<M>;
-   float2 W_vert<M>;
+   float2 W_vert<N>;
    float2 * dat;
    float4 * rawindices=0;
    float4 indicesXo2YXp1o2Xm2<(M/2>N?M/2:N)>;
@@ -204,13 +204,13 @@ void computeFFT2d(float2 *input,
           (float)(DOTIMES*10.*(logN+logM)*M*N) / (float) (sstop - sstart), name);
 
 void doOptFFT(int logN) {
-   int logM = logN; 
+   int logM = logN-1; 
    int N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
-   output = (float2*)malloc(sizeof(float2)*M*N);
+   output = (float2*)malloc(sizeof(float2)*M*2*N);
    start = GetTime();
-   computeFFT2d(data,output,logN,logM,N,M,FFT_2D); 
+   computeFFT2d(data,output,logM,logN,M,N,FFT_2D); 
    stop = GetTime();
    {
       PrintResults(start,stop,"FFT");

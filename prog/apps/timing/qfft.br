@@ -207,13 +207,13 @@ void computeFFT2d(float2 *input,
           (float)(DOTIMES*10.*(logN+logM)*M*N) / (float) (sstop - sstart), name);
 
 void doOptFFT(int logN) {
-   int logM = logN; 
+   int logM = logN-1; 
    int N = (1<<logN);
    int M = (1<<logM);
    float2 * output=0;
-   output = (float2*)malloc(sizeof(float2)*M*N);
+   output = (float2*)malloc(sizeof(float2)*2*M*N);
    start = GetTime();
-   computeFFT2d(data,output,logN,logM,N,M,FFT_2D); 
+   computeFFT2d(data,output,logM,logN,M,N,FFT_2D); 
    stop = GetTime();
    {
       PrintResults(start,stop,"FFT");
