@@ -61,7 +61,7 @@
 
 /* initial window size:							*/
 
-#define WINDOW_SIZE	500
+#define WINDOW_SIZE	1000
 
 
 /* minimum scale factor allowed:					*/
@@ -363,15 +363,15 @@ Display( void )
 
 	glEnable( GL_DEPTH_TEST );
 	glColor3f( 1., 1., 0. );
-	DoStrokeString( 0., AXES_SIZE, 0.,  AXES_SIZE/10.,   "Top of Axes" );
+/*	DoStrokeString( 0., AXES_SIZE, 0.,  AXES_SIZE/10.,   "Top of Axes" );*/
 
 
 	/* draw some text that just rotates with the scene:		*/
 
 	glDisable( GL_DEPTH_TEST );
 	glColor3f( 0., 1., 1. );
-	DoRasterString( 0., 0., AXES_SIZE,   "Front of Axes" );
-
+	/*DoRasterString( 0., 0., AXES_SIZE,   "Front of Axes" );
+*/
 
 	/* draw some text that is fixed on the screen:			*/
 
@@ -382,7 +382,7 @@ Display( void )
 	glMatrixMode( GL_MODELVIEW );
 	glLoadIdentity();
 	glColor3f( 1., 0., 1. );
-	DoRasterString( 5., 5., 0., "Sample App - Mike Houston" );
+/*	DoRasterString( 5., 5., 0., "Sample App - Mike Houston" );*/
 
 
 	/* swap the double-buffered framebuffers:			*/
@@ -1007,12 +1007,13 @@ void
 Reset( void )
 {
 	ActiveButton = 0;
-	AxesOnOff = ON;
+	AxesOnOff = OFF;
 	Projection = ORTHO;
 	Red = 1.;	Green = 1.;	Blue = 1.;	/* white	*/
-	Scale = 1.0;
+	Scale = .15;
 	TransformMode = ROTATE;
-	Xrot = Yrot = 0.;
+	Xrot = 270.; Yrot = 0.;
+	//Xrot = 55.; Yrot = 35.;
 
 	glutSetWindow( GrWindow );
 	glutPostRedisplay();
