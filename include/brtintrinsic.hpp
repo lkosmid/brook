@@ -147,7 +147,7 @@ template <class T> T __normalize_cpu_inner (const T &x) {
                        + x.unsafeGetAt(1)*x.unsafeGetAt(1)
                        + x.unsafeGetAt(2)*x.unsafeGetAt(2)
                        + x.unsafeGetAt(3)*x.unsafeGetAt(3)));
-   T::type size =x.unsafeGetAt(0)*x.unsafeGetAt(0);
+   T::TYPE size =x.unsafeGetAt(0)*x.unsafeGetAt(0);
    for (unsigned int i=1;i<T::size;++i) {
       size+=x.unsafeGetAt(i)*x.unsafeGetAt(i);
    }
