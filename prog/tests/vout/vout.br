@@ -800,14 +800,14 @@ kernel void UpdateGuess(float scatterindex[][],
 kernel void RelativeGather(out float output<>,
                            float gatherindex[][],
                            float value[][],
-                           float sign,
+                           float2 sign,
                            float2 maxvalue) {
    float2 nextPlaceToLook;
    getIndexAt(indexof(output),
-              -sign*gatherindex[indexof(output)],
+              -sign.x*gatherindex[indexof(output)],
               maxvalue,
               nextPlaceToLook);
-   valueAt(value,nextPlaceToLook,output,maxvalue,0);   
+   valueAt(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 float myrand (unsigned int *seed) {
    unsigned int rand_max =1509281;
@@ -823,7 +823,9 @@ float myrand (unsigned int *seed) {
    else
       return 4;
 }
-
+kernel void kernelReadItem (float items[][], float2 index, out float item<>) {
+  item = items[index];
+}
 float shiftValues(struct __BRTStream *list_stream,
                   struct __BRTStream *output_stream,
                   int WIDTH, 
@@ -849,10 +851,22 @@ float shiftValues(struct __BRTStream *list_stream,
          NanToRight (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
    }
    debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
-   if (sign==-1) {
-      readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,WIDTH-1,LENGTH-1);
-   }else {      
-      readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,0,0);
+   if (0) {
+     if (sign==-1) {
+       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,WIDTH-1,LENGTH-1);
+     }else {      
+       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,0,0);
+     }
+   }else {
+     float item<1>;
+     float2 index;
+     if (sign==-1) {
+       index.y = WIDTH-1; index.x = LENGTH-1;
+     }else {
+       index.y=index.x=0;
+     }
+     kernelReadItem(logN%2==0?tmp_stream:ret_stream,index,item);
+     streamWrite(item,&maxshift);
    }
    LogNMinusK=logN-2;
    i= logN-1;//could make this k! rather than N
@@ -891,7 +905,7 @@ float shiftValues(struct __BRTStream *list_stream,
       RelativeGather(proper_output_stream,
                      logN%2==0?ret_stream:guess_stream,
                      *list_stream,
-                     sign,
+                     float2(sign,1/floor(.5)),
                      maxvalue);
       streamSwap(*output_stream,proper_output_stream);
       debugStreamPrint(output_stream, "Final Value");
