@@ -1,0 +1,35 @@
+#include <stdio.h>
+#include "streamholder.h"
+kernel 
+void shouldTessellate (float4 input <>, float toler, out float output<>) {
+   float2 height;
+   curve2 (input,height);
+   {
+      float3 center = lerp (float3(input.x,input.y,height.x),
+                            float3(input.z,input.w,height.y));
+      float fheight,error;
+      curve(center.xy,height);
+      evaluateError(center.z,fheight,error);
+      output= error<toler;
+   }
+}
+void Tessellate(float4 input<>, float shouldPack<>, vout[4] float4 output<>) {
+   float2 center = lerp (input.xy,input.yz);
+   if (shouldPack) {
+      output.xy = input.xy;
+      output.zw = center;
+   }else {
+      output=input;
+   }
+   push(output);
+   if (shouldPack) {
+      output.zw = center;
+      output.xy = input.zw;
+      push(output);
+      output.xy = input.xw;
+      push(output);
+      output.xy = input.zy;
+      push(output);
+   }
+}
+
