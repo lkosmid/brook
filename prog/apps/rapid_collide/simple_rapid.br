@@ -256,7 +256,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   float3 vp;
   float3 up;
   float EPSILON=.000001;
-  float3 z3ro = {0,0,0};
+  float3 z3ro = 0;
   float b,c,max;
   float ret,coplanar;
   float b_biggest,c_biggest;
@@ -336,12 +336,16 @@ kernel float TrianglesHaveContact (float3 mRx,
                                    float3 mRy,
                                    float3 mRz,
                                    float3 mT,
-                                   Tri t1<>, 
-                                   Tri t2<>) {
-  float3 i1 = matVecMult(mRx,mRy,mRz,t1.A)+mT;
-  float3 i2 = matVecMult(mRx,mRy,mRz,t1.B)+mT;
-  float3 i3 = matVecMult(mRx,mRy,mRz,t1.C)+mT;
-  return tri_contact(i1,i2,i3,t2.A,t2.B,t2.C);
+                                   float3 t1A<>, 
+                                   float3 t1B<>, 
+                                   float3 t1C<>, 
+                                   float3 t2A<>,
+                                   float3 t2B<>,
+                                   float3 t2C<>) {
+  float3 i1 = matVecMult(mRx,mRy,mRz,t1A)+mT;
+  float3 i2 = matVecMult(mRx,mRy,mRz,t1B)+mT;
+  float3 i3 = matVecMult(mRx,mRy,mRz,t1C)+mT;
+  return tri_contact(i1,i2,i3,t2A,t2B,t2C);
 
 }
 
@@ -349,17 +353,25 @@ kernel void SimpleCheckTriangleCollide(float3 mRx,
                                        float3 mRy,
                                        float3 mRz,
                                        float3 mT,
-                                       Tri t1<>,
-                                       Tri t2<>,
+                                       float3 t1A<>,
+                                       float3 t1B<>,
+                                       float3 t1C<>,
+                                       float3 t2A<>,
+                                       float3 t2B<>,
+                                       float3 t2C<>,
                                        out float4 hits<>) {
   float4 neg1=-1;
   //  hits= TrianglesHaveContact(mRx,mRy,mRz,mT,
   //                           t1,t2)?(indexof hits):neg1;
-  hits= tri_contact(t1.A,t1.B,t1.C,t2.A,t2.B,t2.C)?(indexof hits):neg1;
+  hits= tri_contact(t1A,t1B,t1C,t2A,t2B,t2C)?(indexof hits):neg1;
 }
 void doTest (float * matrix, int trisizex, int trisizey, float3 *a, float3 * b, float4 * ohits) {
-  Tri trianglesA <trisizex,trisizey>;
-  Tri trianglesB <trisizex,trisizey>;
+  float3 triangles1A <trisizex,trisizey>;
+  float3 triangles1B <trisizex,trisizey>;
+  float3 triangles1C <trisizex,trisizey>;
+  float3 triangles2A <trisizex,trisizey>;
+  float3 triangles2B <trisizex,trisizey>;
+  float3 triangles2C <trisizex,trisizey>;
   float4 hits <trisizex,trisizey>;
   float3 mRx,mRy,mRz,mT;
   mRx.x=matrix[0];
@@ -375,9 +387,11 @@ void doTest (float * matrix, int trisizex, int trisizey, float3 *a, float3 * b, 
   mT.y=matrix[13];
   mT.z=matrix[14];
 
-  streamRead(trianglesA,a);
-  streamRead(trianglesB,b);
-  SimpleCheckTriangleCollide(mRx,mRy,mRz,mT,trianglesA,trianglesB,hits);
+  //streamRead(trianglesA,a);
+  //streamRead(trianglesB,b);
+  SimpleCheckTriangleCollide(mRx,mRy,mRz,mT,
+                             triangles1A,triangles1B,triangles1C,
+                             triangles2A,triangles2B,triangles2C,hits);
   streamWrite(hits,ohits);
 }
 
@@ -386,15 +400,24 @@ kernel void SimpleCheckTriangleCollideNoDiv(float3 mRx,
                                             float3 mRy,
                                             float3 mRz,
                                             float3 mT,
-                                            Tri t1<>,
-                                            Tri t2<>,
+                                            float3 t1A<>,
+                                            float3 t1B<>,
+                                            float3 t1C<>,
+                                            float3 t2A<>,
+                                            float3 t2B<>,
+                                            float3 t2C<>,
                                             out float4 hits<>) {
   float4 neg1=-1;
-  hits= tri_contact_nodiv(t1.A,t1.B,t1.C,t2.A,t2.B,t2.C)?(indexof hits):neg1;
+  hits= tri_contact_nodiv(t1A,t1B,t1C,t2A,t2B,t2C)?(indexof hits):neg1;
 }
 void doTestNoDiv (float * matrix, int trisizex, int trisizey, float3 *a, float3 * b, float4 * ohits) {
-  Tri trianglesA <trisizex,trisizey>;
-  Tri trianglesB <trisizex,trisizey>;
+
+  float3 triangles1A <trisizex,trisizey>;
+  float3 triangles1B <trisizex,trisizey>;
+  float3 triangles1C <trisizex,trisizey>;
+  float3 triangles2A <trisizex,trisizey>;
+  float3 triangles2B <trisizex,trisizey>;
+  float3 triangles2C <trisizex,trisizey>;
   float4 hits <trisizex,trisizey>;
   float3 mRx,mRy,mRz,mT;
   mRx.x=matrix[0];
@@ -409,10 +432,17 @@ void doTestNoDiv (float * matrix, int trisizex, int trisizey, float3 *a, float3 
   mT.x=matrix[12];
   mT.y=matrix[13];
   mT.z=matrix[14];
-
-  streamRead(trianglesA,a);
-  streamRead(trianglesB,b);
-  SimpleCheckTriangleCollideNoDiv(mRx,mRy,mRz,mT,trianglesA,trianglesB,hits);
+  
+  //streamRead(trianglesA,a);
+  //streamRead(trianglesB,b);
+  SimpleCheckTriangleCollideNoDiv(mRx,mRy,mRz,mT,
+                                  triangles1A,
+                                  triangles1B,
+                                  triangles1C,
+                                  triangles2A,
+                                  triangles2B,
+                                  triangles2C,
+                                  hits);
   streamWrite(hits,ohits);
 }
 
