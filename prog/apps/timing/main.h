@@ -26,7 +26,7 @@ int64 GetTimeTSC() {
 static inline
 long long GetTimeTSC() {
    int64 t;
-   int32 tl, th;
+   int tl, th;
    __asm__ __volatile__("mftbu %0" : "=b" (th));
    __asm__ __volatile__("mftb %0" : "=b" (tl));
    t = th;
