@@ -65,6 +65,9 @@ $(SUBDIRS_ALL):
 
 endif
 
+FRAGMENT_PROGRAMS += $(addsuffix .fp, $(BROOK_FILES))
+FRAGMENT_PROGRAMS += $(addsuffix .fp, $(CG_FILES))
+
 arch: $(PRECOMP) makedirs $(BINDIR)/$(BINARY) $(FRAGMENT_PROGRAMS)
 
 makedirs:
@@ -72,7 +75,8 @@ makedirs:
 	@if test ! -d $(BINDIR); then $(MKDIR) $(BINDIR); fi
 
 
-.SUFFIXES : $OBJSUFFIX .c .cpp .cg
+.SUFFIXES : $OBJSUFFIX .c .cpp .cg .br .fp
+.PRECIOUS : reduce.cg
 
 $(OBJDIR)/%$(OBJSUFFIX): %.c
 	@$(CC) $(CFLAGS) $(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
@@ -80,7 +84,10 @@ $(OBJDIR)/%$(OBJSUFFIX): %.c
 $(OBJDIR)/%$(OBJSUFFIX): %.cpp
 	@$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
-%.fp: %.cg
+.br.cg:
+	@brcc $* < $<
+
+.cg.fp:
 	@cgc -profile fp30 -o $@ $<
 
 $(BINDIR)/$(BINARY): $(OBJS) $(ADDITIONAL_DEPENDANCIES)

@@ -1,7 +1,7 @@
 ROOTDIR = ../..
 EXECUTABLE = reduce
 FILES = reduce
-FRAGMENT_PROGRAMS = reduce.fp
+BROOK_FILES = reduce
 LIBRARIES = gpu
 
 include ../../common.mk
