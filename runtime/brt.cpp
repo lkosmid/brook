@@ -266,6 +266,7 @@ __BRTStream * sentinelStream (int dim) {
    return sentinels[dim];
 }
 void streamPrint(brook::StreamInterface * s, bool flatten) {
+flatten=false;
    unsigned int dims = s->getDimension();
    const unsigned int * extent = s->getExtents();
    unsigned int tot = s->getTotalSize();
@@ -283,8 +284,12 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
             printf(",");
             printf(" ");
          }
-         if (finite_flt(x))
-            printf("%3.2f",x);
+         if (finite_flt(x)) {
+	    if (x==36893206672442393000.00)
+                printf("inf");
+            else 
+                printf("%3.2f",x);
+	 }
          else if (isnan_flt(x))
             printf("NaN");
          else 
