@@ -193,10 +193,23 @@ TransUnit::findFunctionDef( fnFunctionCallback cb )
            newDef = (cb)((FunctionDef*) ste);
            if (newDef == NULL) { continue; }
 
+
            (prev ? prev->next : head) = newDef;
            newDef->next = ste->next;
            ste->next = NULL;
-           delete ste;
+
+           // XXX IAB XXX  Memory leak here
+           //
+           // We can't delete the previous kernel function
+           // statements since if we do that, the symbol
+           // table which keeps around  pointers to variable
+           // declarations will become dangling.  The right 
+           // thing to do here probably is to fix up the symbol
+           // table but for now we'll just leave the memory
+           // alone.
+
+           // delete ste;
+
            ste = newDef;
         }
     }

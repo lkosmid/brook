@@ -1347,6 +1347,7 @@ Decl::Decl( Type* type )
 
     form = type;
     storage = type->storage;
+    name = NULL;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
