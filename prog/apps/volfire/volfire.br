@@ -8,6 +8,14 @@ and we need to generate some of it ourselves in the code below. */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define B 256
+
+float g[B + B + 2][4];	// 4d gradient vectors
+float p[B + B + 2];		// permutations
+
+extern unsigned char fire_image[64 * 128 * 3 +1];
 
 kernel float noise4(float4 vec, float p[], float4 g[])
 {
@@ -19,7 +27,9 @@ kernel float noise4(float4 vec, float p[], float4 g[])
     float4 s;
     float2 a;
 
-    r0 = modf(vec, b0);
+    //r0 = modf(vec, b0);
+    b0 = floor(vec);
+    r0 = vec - b0;
     b1 = b0 + 1;
     r1 = r0 - 1;
     b0 = fmod(b0, 256.);  //hardcoded texture size probably not the best idea...
@@ -125,24 +135,24 @@ kernel float turbulence4(float4 vec, float p[], float4 g[])
 {
     float n, i;
 
-    n = noise4(vec, p, g) +
-        0.5 * noise4(vec * 2.0, p, g) +
-        0.25 * noise4(vec * 4.0, p, g) +
-        0.125 * noise4(vec * 8.0, p, g) +
-        0.0625 * noise4(vec * 16.0, p, g);
-
+    n = noise4(vec, p, g);/* +
+	 0.5 * noise4(vec * 2.0, p, g) +
+	 0.25 * noise4(vec * 4.0, p, g) +
+	 0.125 * noise4(vec * 8.0, p, g) +
+	 0.0625 * noise4(vec * 16.0, p, g);
+			  */
     return n;
 }
 
 
-kernel void fireFP(float  p[],       // permutations texture
-                   float4 g[],       // random gradient 4d vectors texture
-                   float4 firetex[][], // color texture
-                   float turb_scale, // turbulence scale
-                   float z_pos,      // what slice do you want?
-                   float time,       // the time factor 
-                   iter float2 it<>, // hold position information
-                   out float4 fire<>)
+kernel void fireFP(float  p[],         // permutations texture
+                   float4 g[],         // random gradient 4d vectors texture
+                   float3 firetex[][], // color texture
+                   float turb_scale,   // turbulence scale
+                   float z_pos,        // what slice do you want?
+                   float time,         // the time factor 
+                   iter float2 it<>,   // hold position information
+                   out float3 fire<>)
 {
 
     //normally, we would be dealing with actual vertex data...
@@ -164,4 +174,117 @@ kernel void fireFP(float  p[],       // permutations texture
     fire = firetex[uv];
 }
 
+void create_noise_lookups()
+{ 
+     int i = 0, j = 0;
+     float x,y,z,w;
+     float length;
 
+     srand(rand());     
+     while (i < B)
+     {
+	  x = 2 * rand()/(float)RAND_MAX - 1.;
+	  y = 2 * rand()/(float)RAND_MAX - 1.;
+	  z = 2 * rand()/(float)RAND_MAX - 1.;
+	  w = 2 * rand()/(float)RAND_MAX - 1.;
+	  
+	  /*float4 v(2 * frand() - 1, 2 * frand() - 1, 2 * frand() - 1, 2 * frand() - 1);
+	  if (v.normalize() < 1)
+	  {
+	       v.get_value(g[i][0], g[i][1], g[i][2], g[i][3]);
+	       ++i;
+	       }*/
+	  length = sqrtf( x*x+y*y+z*z+w*w );
+	  g[i][0] = x/length;
+	  g[i][1] = y/length;
+	  g[i][2] = z/length;
+	  g[i][3] = w/length;
+	  ++i;
+     }
+     
+     // Generate permutations     
+     for (i = 0; i<B; i++) p[i] = (float)i;
+     
+     while (--i) {
+	  float k = p[i];
+	  int j;
+	  p[i] = p[j = rand() % B];
+	  p[j] = k;
+     }
+     
+     for (i = 0; i<B + 2; i++) {
+	  p[B + i] = p[i];
+	  for (j = 0; j<4; j++) g[B + i][j] = g[i][j];
+     }
+}
+
+int main(int argc, char* argv[]) {
+    unsigned char* input = NULL;
+    unsigned char* output = NULL;
+    float* outputf = NULL;
+    float* inputf = NULL;
+    int i, j;
+    int size;
+    float turbscale = 1.0;
+    float zpos = 0.5;
+    float time = 1000.;
+    char filename[255];
+    FILE* outfile;
+
+    if(argc < 6){
+	fprintf(stderr, "Usage: %s <size> <turbscale> <zpos> <time> <outfile>\n", argv[0]);
+	exit(1);
+    }
+ 
+    size = atoi(argv[1]);
+    turbscale = (float)atof(argv[2]);
+    zpos = (float)atof(argv[3]);
+    time = (float)atof(argv[4]);
+    strncpy(filename, argv[5], 254);
+
+    create_noise_lookups();
+    {	
+        iter float2 it<size,size> = iter( float2(0.-size/2.0f, 0.-size/2.0f), float2(size/2.0f, size/2.0f) );
+	float* fire_image_float;
+        float3 fire<size,size>;
+	float p_stream<256>;
+	float4 g_stream<256>;
+	float3 firetex<128,64>;
+
+	fire_image_float = (float*)malloc(3*128*64*sizeof(float));
+
+	for(i=0; i<3*128*64; i++){
+	     fire_image_float[i] = fire_image[i];
+	}
+       
+        output  = (unsigned char*)malloc(size*size*3*sizeof(unsigned char));
+        outputf = (float*)malloc(size*size*3*sizeof(float));
+
+        streamRead(p_stream, p);
+        streamRead(g_stream, g);
+	streamRead(firetex, fire_image_float);
+
+        fireFP(p_stream, g_stream, firetex, turbscale, 4*zpos, time, it, fire );
+
+        streamWrite(fire, outputf);
+
+        // convert output back to bytes for (ppm) output
+        for(i=0; i<size; i++){
+            for(j=0; j<size; j++){
+                output[i*size*3+j*3+0] = (unsigned char)outputf[i*size*3+j*3+0];
+                output[i*size*3+j*3+1] = (unsigned char)outputf[i*size*3+j*3+1];
+                output[i*size*3+j*3+2] = (unsigned char)outputf[i*size*3+j*3+2];
+            }
+        }
+
+	outfile = fopen(filename, "wb");
+	fprintf(outfile, "P6\n%d\n%d\n255\n", size, size);
+        for(i=0; i<size; i++){
+            for(j=0; j<size; j++){
+		 fwrite(&output[i*size*3+j*3], sizeof(unsigned char), 3, outfile); 
+	    }
+	}
+	fclose(outfile);
+    }
+    return 0;
+}
