@@ -92,6 +92,7 @@ const TypeQual TQ_None         = 0x0000;
 const TypeQual TQ_Const        = 0x0001;
 const TypeQual TQ_Volatile     = 0x0002;
 const TypeQual TQ_Out          = 0x0004;
+const TypeQual TQ_Reduce       = 0x0008;
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 enum StorageType

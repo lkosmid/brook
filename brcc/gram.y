@@ -74,7 +74,7 @@ extern int err_top_level;
 %token <loc>        INVALID
 
 /* the reserved words */
-%token <typeQual>   CONST VOLATILE OUT
+%token <typeQual>   CONST VOLATILE OUT REDUCE
 %token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF KERNEL
 %token <base>       VOID CHAR SHORT INT LONG DOUBLE SGNED UNSGNED
 /* IMPORTANT: Keep all the FLOATN's next to each other in order! */
@@ -1613,6 +1613,7 @@ type_qual: type_qual_token
 type_qual_token: CONST
                | VOLATILE
                | OUT
+               | REDUCE
         ;
 
 type_qual_list: type_qual_token

@@ -238,6 +238,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->typeQual = TQ_Out;
                       return(err_tok = OUT);
                     }
+<INITIAL>"reduce"      {
+                      lvalp->typeQual = TQ_Reduce;
+                      return(err_tok = REDUCE);
+                    }
 
 <INITIAL>"void"     {
                       lvalp->base = new BaseType(BT_Void);
