@@ -111,7 +111,7 @@ std::string translateMask (int swizzle) {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //The following class replaces a lval.mask = rval into lval.mask(rval)
-class MaskExpr : public BinaryExpr {
+class MaskExpr : public AssignExpr {
   public:
     std::string mask;
 	Expression * emask;
@@ -120,7 +120,7 @@ class MaskExpr : public BinaryExpr {
               std::string mask, 
               const Location& l, 
               Expression *emask=NULL ):
-        BinaryExpr(BO_Member,lExpr,rExpr,l) {
+        AssignExpr(AO_Equal,lExpr,rExpr,l) {
         this->mask=mask;
 		this->emask=emask;
     }
