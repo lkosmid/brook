@@ -6,8 +6,8 @@
 #include "timing.hpp"
 
 typedef struct DynamicParticle_t {
-	float3 position;
-	float3 velocity;
+	float4 position;
+	float4 velocity;
 } DynamicParticle;
 
 typedef struct StaticParticle_t {
@@ -18,11 +18,14 @@ kernel void stepParticles(
 	DynamicParticle dp<>,
 	StaticParticle sp<>,
 	float deltaT,
-	float3 particleForces<>,
-	float3 gravity,
+	float4 particleForces<>,
+	float4 gravity,
 	out DynamicParticle result<> )
 {
-	float3 acceleration = sp.active * ( particleForces + gravity );
+	float4 acceleration;
+	float4 zero;
+	zero = float4(0,0,0,0);
+	acceleration = sp.active ? ( particleForces + gravity ) : zero;
 	result.position = dp.position + deltaT*dp.velocity + 0.5*deltaT*deltaT*acceleration;
 	result.velocity = dp.velocity + deltaT*acceleration;
 }
@@ -37,7 +40,7 @@ kernel void calculateWindForces(
 	float2 maxIndex,
 	float3 windDirection,
 	float3 windVelocity,
-	out float3 force<> )
+	out float4 force<> )
 {
 	float2 index1 = index + offset1;
 	float2 index2 = index + offset2;
@@ -50,6 +53,8 @@ kernel void calculateWindForces(
 	float3 v1;
 	float3 v2;
 	float3 normalTimesHalfArea;
+	float3 zero;
+	zero = float3(0,0,0);
 	
 	minIndex = float2(0,0);
 	
@@ -65,7 +70,8 @@ kernel void calculateWindForces(
 	v2 = d2.position - p0;
 	normalTimesHalfArea = cross( v1, v2 );
 	
-	force = dot( normalTimesHalfArea, windDirection ) * windVelocity;
+	force.xyz = inRange ? dot( normalTimesHalfArea, windDirection ) * windVelocity : zero;
+	force.w = 0;
 }
 
 kernel void accumulateWindForces(
@@ -77,10 +83,10 @@ kernel void accumulateWindForces(
 	float2 maxIndex,
 	float3 windDirection,
 	float3 windVelocity,
-	float3 inForce<>,
-	out float3 outForce<> )
+	float4 inForce<>,
+	out float4 outForce<> )
 {
-	float3 force;
+	float4 force;
 	calculateWindForces( particle, particles, index, offset1, offset2, maxIndex, windDirection, windVelocity, force );
 	outForce = inForce + force;
 }
@@ -94,7 +100,7 @@ kernel void calculateSpringForces(
 	float springConstant,
 	float dampingConstant,
 	float restLength,
-	out float3 force<> )
+	out float4 force<> )
 {
 	float2 otherIndex = index + offset;
 	float2 minIndex;
@@ -108,6 +114,8 @@ kernel void calculateSpringForces(
 	float perturbation;
 	float velocityInSpring;
 	float strength;
+	float3 zero;
+	zero = float3(0,0,0);
 	
 	minIndex = float2(0,0);
 	
@@ -127,7 +135,8 @@ kernel void calculateSpringForces(
 	velocityInSpring = dot( springAxis, relativeVelocity );
 
 	strength = springConstant*perturbation + dampingConstant*velocityInSpring;
-	force = inRange * strength * springAxis;
+	force.xyz = inRange ? strength * springAxis : zero;
+	force.w = 0;
 	
 //DEBUG	force = float3( otherIndex.x, inRange, 0 );
 }
@@ -141,10 +150,10 @@ kernel void accumulateSpringForces(
 	float springConstant,
 	float dampingConstant,
 	float restLength,
-	float3 inForce<>,
-	out float3 outForce<> )
+	float4 inForce<>,
+	out float4 outForce<> )
 {
-	float3 force;
+	float4 force;
 	calculateSpringForces( p1, particles, index, offset, maxIndex, springConstant, dampingConstant, restLength, force );
 	outForce = inForce + force;
 }
@@ -175,8 +184,8 @@ void initializeParticles(
 	{
 		for( x = 0; x < inParticlesPerSide; x++ )
 		{
-			dp->position = float3( scale*(float)x, scale*(float)(-y), 0 );
-			dp->velocity = float3( 0, 0, 0 );
+			dp->position = float4( scale*(float)x, scale*(float)(-y), 0, 0 );
+			dp->velocity = float4( 0, 0, 0, 0 );
 			sp->active = 1.0f;
 			dp++;
 			sp++;
@@ -186,11 +195,11 @@ void initializeParticles(
 	// tweak the corners
 	dp = outDynamicParticles + 0;
 	sp = outStaticParticles + 0;
-	dp->position = float3( 0, 0, 0.1 );
+	dp->position = float4( 0, 0, 0.1, 0 );
 	sp->active = 0.0f;
 	dp = outDynamicParticles + (inParticlesPerSide-1);
 	sp = outStaticParticles + (inParticlesPerSide-1);
-	dp->position = float3( 1, 0, -0.1 );
+	dp->position = float4( 1, 0, -0.1, 0 );
 	sp->active = 0.0f;
 }
 
@@ -203,7 +212,7 @@ void gpuIterate( int inSize, int inIterations, int* outMicroseconds )
   
   DynamicParticle dynamicParticles< inSize, inSize >;
   StaticParticle staticParticles< inSize, inSize >;
-  float3 particleForces< inSize, inSize >;
+  float4 particleForces< inSize, inSize >;
   iter float2 particleIndex< inSize, inSize> = iter( float2(0,0), float2(floatSize,floatSize) );
   
   float directRestLength;
@@ -213,7 +222,7 @@ void gpuIterate( int inSize, int inIterations, int* outMicroseconds )
   float dampingConstant;
   float bendSpringConstant;
   float bendDampingConstant;
-  float3 gravity;
+  float4 gravity;
   float2 maxIndex;
   float3 windDirection;
   float3 windVelocity;
@@ -238,7 +247,7 @@ int startTime, endTime;
   dampingConstant = 0.0f;
   bendSpringConstant = 0.0f;
   bendDampingConstant = 0.0f;
-  gravity = float3( 0, 0, 0 );
+  gravity = float4( 0, 0, 0, 0 );
 //  springConstant = -0.5f * (float)(particleCount);
 //  dampingConstant = -0.03f * (float)(particleCount);
 //  bendSpringConstant = -0.1f * (float)(particleCount);
@@ -266,6 +275,7 @@ startTime = GetTimeMillis();
   /*
 //	if( i % 100 == 0 )
 	{
+		int j;
 		streamWrite( dynamicParticles, dynamicParticles_data );
 		printf( "positions:\n" );
 		for( j = 0; j < particleCount; j++ )
