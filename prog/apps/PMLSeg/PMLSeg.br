@@ -149,10 +149,10 @@ int PMLSeg_main(int argc, char* argv[]) {
 	  fprintf(stderr, "Size in X: ");
 	  fgets(buf, 254, stdin);
 	  xsize = atoi(buf);
-          xsize = xsize/2 + xsize%2; //round up
 	  fprintf(stderr, "Size in Y: ");
 	  fgets(buf, 254, stdin);
 	  ysize = atoi(buf);
+          ysize = ysize/2 + ysize%2; //round up
 	  fprintf(stderr, "# of loops: ");
 	  fgets(buf, 254, stdin);
 	  loop_count = atoi(buf);
@@ -161,8 +161,8 @@ int PMLSeg_main(int argc, char* argv[]) {
     }
     else{
         xsize = atoi(argv[1]);
-        xsize = xsize/2 + xsize%2; //round up
         ysize = atoi(argv[2]);
+        ysize = ysize/2 + ysize%2; //round up
         xsizef = (float)xsize;
         ysizef = (float)ysize;
         loop_count = atoi(argv[3]);
@@ -171,11 +171,11 @@ int PMLSeg_main(int argc, char* argv[]) {
     // MCH: It makes me ill that I have to open a new scope to get this to work.
     {
         // Setup the iterators to do a north/south/east/west/local lookup into the image
-        iter float2 it0<xsize,ysize> = iter( float2(0.0f, 0.0f), float2(ysizef, ysizef) );
-        iter float2 it1<xsize,ysize> = iter( float2(0.0f-1.0f/xsizef, 0.0f), float2(ysizef-1.0f/ysizef, xsizef) );
-        iter float2 it2<xsize,ysize> = iter( float2(0.0f+1.0f/xsizef, 0.0f), float2(ysizef+1.0f/ysize, xsizef) );
-        iter float2 it3<xsize,ysize> = iter( float2(0.0f, 0.0f-1.0f/xsizef), float2(ysizef, ysizef-1.0f/xsizef) );
-        iter float2 it4<xsize,ysize> = iter( float2(0.0f, 0.0f+1.0f/xsizef), float2(ysizef, ysizef+1.0f/xsizef) );
+        iter float2 it0<xsize,ysize> = iter( float2(0.0f,  0.0f), float2(xsizef,      ysizef) );
+        iter float2 it1<xsize,ysize> = iter( float2(-1.0f, 0.0f), float2(xsizef-1.0f, ysizef) );
+        iter float2 it2<xsize,ysize> = iter( float2(1.0f,  0.0f), float2(xsizef+1.0f, ysizef) );
+        iter float2 it3<xsize,ysize> = iter( float2(0.0f, -1.0f), float2(xsizef,      ysizef-1.0f) );
+        iter float2 it4<xsize,ysize> = iter( float2(0.0f,  1.0f), float2(xsizef,      ysizef+1.0f) );
         float4 img<xsize,ysize>;
         float4 o_img<xsize,ysize>;
     	
