@@ -126,7 +126,7 @@ static int fequals(float a, float b, float tol) {
 void saxpy_2d(int dim1, int dim2, float *x, float *y, float alpha, int num_iter, int* innerTime) {
 
   float4  flush[1];
-  float4  flushStrm<1>;
+  float4  flushStrm<1,1>;
 
   float4 xStrm<dim1, dim2>;
   float4 yStrm<dim1, dim2>;
@@ -248,7 +248,7 @@ void do_saxpy(int length, int num_iter, int* timing, float* flops) {
 void sdot_2d(int dim1, int dim2, float* x, float* y, float* result, int num_iter, int* innerTime) {
 
   float4 flush[1];
-  float4 flushStrm<1>;
+  float4 flushStrm<1,1>;
 
   float sums[4];
   float4 sumsStrm<1,1>;
@@ -359,7 +359,7 @@ void sgemv_inner(int dim, int wideDim, float fDim, float fWideDim,
 
   float* tmp = NULL;
   float4 flush[1];
-  float4 flushStrm<1>;
+  float4 flushStrm<1,1>;
 
   int i, j = 0;
   int millisStart, millisStop;
@@ -769,7 +769,6 @@ void Blas_Time(int length) {
 
 
 /*
-
   if (length < 2048) {
     for (i=0; i<num_iter;i++) {
       iterations = skip*(i+1);
