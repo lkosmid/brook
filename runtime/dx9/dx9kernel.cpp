@@ -46,6 +46,7 @@ void DX9Kernel::PushStream(Stream *s) {
 
   PushSampler( stream );
   PushTexCoord( stream->getInputRect() );
+  PushConstant( stream->getIndexofConstant() );
 }
 
 void DX9Kernel::PushReduce(void * val, __BRTStreamType type) {

@@ -48,7 +48,8 @@ BrtGatherExpr::print (std::ostream& out) const
 {
    out << "tex" << ndims << "D(";
    base->print(out);
-   out << ",float" << ndims << "(";
+//   out << ",float" << ndims << "(";
+   out << ",(";
    for (unsigned int i=0; i<dims.size(); i++) {
       if (i) out << ",";
       dims[i]->print(out);
@@ -57,7 +58,7 @@ BrtGatherExpr::print (std::ostream& out) const
    // now scale and modulate by the constant:
    if( ndims == 1 )
    {
-     out << "*";
+     out << ".x*";
      base->print(out);
      out << "_scalebias.x";
      out << "+";
@@ -66,7 +67,7 @@ BrtGatherExpr::print (std::ostream& out) const
    }
    else if( ndims == 2 )
    {
-     out << "*";
+     out << ".xy*";
      base->print(out);
      out << "_scalebias.xy";
      out << "+";

@@ -177,6 +177,8 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
     } else if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
        hlsl << "sampler _tex_" << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
+       hlsl << "float4 " << *args[i]->name << "_invscalebias"
+            << " : register (c" << constreg++ << ");\n";
     } else if (args[i]->isArray()) {
        hlsl << "sampler " << *args[i]->name;
        hlsl << " : register (s" << texcoord++ << ");\n";
@@ -251,6 +253,10 @@ generate_hlsl_code (Decl **args, int nArgs, const char *body) {
         hlsl << "\t" << *args[i]->name << " = tex2D"
              << "(_tex_" << *args[i]->name << ", _tex_" << *args[i]->name
              << "_pos);\n";
+        hlsl << "\t" << "float4 __indexof_" << *args[i]->name << " = "
+          << "float4( _tex_" << *args[i]->name << "_pos*"
+          << *args[i]->name << "_invscalebias.xy + "
+          << *args[i]->name << "_invscalebias.zw,0,0);\n";
      }
   }
 

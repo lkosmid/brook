@@ -94,6 +94,11 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int e
   gatherConstant.y = scaleY;
   gatherConstant.z = offsetX;
   gatherConstant.w = offsetY;
+
+  indexofConstant.x = (float)width;
+  indexofConstant.y = (float)height;
+  indexofConstant.z = 0;
+  indexofConstant.w = 0;
 }
 
 void DX9Stream::Read(const void *p) {

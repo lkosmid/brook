@@ -131,6 +131,7 @@ namespace brook {
     const DX9Rect& getInputRect() { return inputRect; }
     const DX9Rect& getOutputRect() { return outputRect; }
     const float4& getGatherConstant() { return gatherConstant; }
+    const float4& getIndexofConstant() { return indexofConstant; }
     int getWidth();
     int getHeight();
     DX9Rect getTextureSubRect( int l, int t, int r, int b );
@@ -161,6 +162,7 @@ namespace brook {
     DX9Rect inputRect;
     DX9Rect outputRect;
     float4 gatherConstant;
+    float4 indexofConstant;
   };
 
   class DX9RunTime : public RunTime {
