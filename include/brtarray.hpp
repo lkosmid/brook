@@ -16,6 +16,7 @@ template <class VALUE> class __BrtArray {
   unsigned int  * domain_min;
   unsigned int  * domain_max;
   unsigned char * data;
+  bool acquired_data;
   brook::Stream * s;
 
   unsigned int getSize() const{
@@ -41,7 +42,6 @@ template <class VALUE> class __BrtArray {
       this->domain_min[i] = domain_min[i];
       this->domain_max[i] = domain_max[i];
     }		
-
     this->data = (unsigned char *) data;
   }
   
@@ -49,15 +49,17 @@ public:
   __BrtArray(VALUE * data, unsigned int dims, unsigned int elemsize, 
              const unsigned int *extents, const unsigned int *domain_min,
              const unsigned int *domain_max):s(0) {
+    acquired_data=false;
     init(data,dims,elemsize,extents,domain_min,domain_max);
   }
 
   __BrtArray(brook::Stream * stm):s(0) {
+    acquired_data=true;
     init((VALUE *)stm->getData(brook::Stream::READ),
          stm->getDimension(),
          stm->getElementSize(),
          stm->getExtents(),
-         stm->getDomaimMin(),
+         stm->getDomainMin(),
          stm->getDomainMax());
     this->s=stm;
   }
@@ -102,11 +104,11 @@ public:
   }
 
   ~__BrtArray() {
-    if (s && domained)
+     if (s && acquired_data) //XXX hack::do not wish to free data twice, multiple such streams may reference a single bout of data
       s->releaseData(brook::Stream::READ);
-    free(extents);
-    free(domain_min);
-    free(domain_max);
+     free(extents);
+     free(domain_min);
+     free(domain_max);
   }
 
   template <class T> unsigned int indexOf (const T &index) const {
