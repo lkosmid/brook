@@ -154,9 +154,11 @@ public:
 	const VALUE &getAt (unsigned int i) const{return f[i%size];}
 	const VALUE &operator [] (unsigned int i)const {return f[i%size];}
 	VALUE &operator [] (unsigned int i) {return f[i%size];}	
-	template<class T> T cast() {
+	template<class T> T castTo() {
 		InitializeClass<T> a; return a(getAt(0),getAt(1),getAt(2),getAt(3));
 	}
+	vec<VALUE,tsize> & cast () {return *this;}
+	const vec<VALUE,tsize>& cast()const {return *this;}
 	template<int x, int y, int z, int w> vec<VALUE,4> swizzle4()const {
 		return vec<VALUE,4>(getAt(x),getAt(y),getAt(z),getAt(w));
 	}
