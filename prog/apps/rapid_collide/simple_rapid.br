@@ -81,7 +81,7 @@ kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
 
 kernel void ISECT(float3 VV<>, float3 D, out float2 isect<>) {
   isect =float2(VV.x + (VV.y-VV.x)*D.x/(D.x-D.y),
-                VV.y + (VV.z-VV.x)*D.x/(D.x-D.z));
+                VV.x + (VV.z-VV.x)*D.x/(D.x-D.z));
 }
 kernel float COMPUTE_INTERVALS (float3 VV<>,
                                 float3 D<>,
@@ -92,19 +92,24 @@ kernel float COMPUTE_INTERVALS (float3 VV<>,
   float3 Dord = D.zxy;
   float ret = DOD1>0.0f?0:1.0f;
   pred = (float)(ret&&DOD2>0.0f);
-  VVord = pred?VV.yxz:VVord; Dord = pred?D.yxz:Dord;
+  VVord = pred.xxx?VV.yxz:VVord; Dord = pred.xxx?D.yxz:Dord;
   ret=pred?0:ret;
   
   pred=(float) (ret&&(D.y * D.z > 0.0f || D.x != 0.0f));
-  VVord = pred?VV:VVord; Dord=  pred?D:Dord;
+  //  VVord = pred.xxx?VV.xyz:VVord.xyz; Dord=  pred.xxx?D.xyz:Dord.xyz;
+
+  VVord = pred?VV:VVord; 
+
+  Dord=  pred?D:Dord;
+
   ret=pred?0:ret;
   
   pred= (float)(ret&&D.y!=0.0f);
-  VVord = pred?VV.yxz:VVord; Dord = pred?D.yxz:Dord;
+  VVord = pred.xxx?VV.yxz:VVord; Dord = pred.xxx?D.yxz:Dord;
   ret=pred?0:ret;
   
   pred=  (float)(ret&&D.z!=0.0f);
-  VVord = pred?VV.zxy:VVord; Dord = pred?D.zxy:Dord;
+  VVord = pred.xxx?VV.zxy:VVord; Dord = pred.xxx?D.zxy:Dord;
   ret=pred?0:ret;
   ISECT(VVord,Dord,isect);
   return ret;
@@ -115,6 +120,7 @@ kernel float2 sort2(float2 input) {
 kernel float coplanar_tri_tri(float3 N<>,
                               float3 V0<>,float3 V1<>,float3 V2<>,
                               float3 U0<>,float3 U1<>,float3 U2<>) {
+  
   return 0;
 }
 kernel float3 make_float3 (float a, float b, float c) {
@@ -221,10 +227,11 @@ kernel void SimpleCheckTriangleCollide(float3 mRx,
                                        Tri t2<>,
                                        out float4 hits<>) {
   float4 neg1=-1;
-  hits= TrianglesHaveContact(mRx,mRy,mRz,mT,
-                             t1,t2)?(indexof hits):neg1;
+  //  hits= TrianglesHaveContact(mRx,mRy,mRz,mT,
+  //                           t1,t2)?(indexof hits):neg1;
+  hits= tri_contact(t1.A,t1.B,t1.C,t2.A,t2.B,t2.C)?(indexof hits):neg1;
 }
-void doTest (float * matrix, int trisizex, int trisizey, Tri *a, Tri * b, float4 * ohits) {
+void doTest (float * matrix, int trisizex, int trisizey, float3 *a, float3 * b, float4 * ohits) {
   Tri trianglesA <trisizex,trisizey>;
   Tri trianglesB <trisizex,trisizey>;
   float4 hits <trisizex,trisizey>;
