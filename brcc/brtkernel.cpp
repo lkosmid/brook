@@ -177,6 +177,16 @@ void PrintAccessStream(std::ostream &out,
                        unsigned int index,
                        std::string function, 
                        std::string permissions="") {
+   if (function=="getExtents") {
+      out << "extents["<<index<<"]";
+   }else if(function=="getDimension") {
+      out << "dims["<<index<<"]";
+   }else if (function=="releaseData") {
+      
+   }else {
+      out << "args["<<index<<"]";
+   }
+   return;
    out << "reinterpret_cast<brook::Stream*>"<<std::endl;
    indent(out,3);
    out << "(args["<<index<<"])->"<<function;
@@ -218,6 +228,8 @@ void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&
             out << "arg"<<index;
             break;
         case CLEANUP:
+           break;
+        default:
 	  indent(out,1);
           PrintAccessStream(out,index,"releaseData","brook::Stream::READ");
 	  out << ";"<<std::endl;
@@ -273,6 +285,8 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s)
             break;
         }
 	case CLEANUP:
+           break;
+        default:
           if (isStream) {
               indent(out,1);
               PrintAccessStream(out,index,"releaseData",isOut?
@@ -344,6 +358,8 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
                     out <<"++";
             break;
 	case CLEANUP:
+           break;
+        default:
            if (isStream) {
               indent(out,1);
               PrintAccessStream(out,index,"releaseData",isOut?
@@ -453,6 +469,9 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
 
     std::string whiteOut= whiteout(myvoid + enhanced_name+" (");
     out << " (const std::vector<void *>&args,"<<std::endl;
+    out << whiteOut << "const std::vector<const unsigned int *>&extents,";
+    out <<std::endl;
+    out << whiteOut << "const std::vector<unsigned int>&dims,"<<std::endl;
     out << whiteOut << "unsigned int mapbegin) {"<<std::endl;
     indent(out,1);
     out << "unsigned int i= mapbegin;";
@@ -527,6 +546,9 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     out << " (";
     std::string long_name (whiteout(myvoid + enhanced_name.name+" ("));
     out << "const std::vector<void *>&args,"<<std::endl;
+    out << long_name << "const std::vector<const unsigned int *>&extents,";
+    out <<std::endl;
+    out << long_name << "const std::vector<unsigned int>&dims,"<<std::endl;
     out << long_name<<"unsigned int mapbegin, "<<std::endl;
     out << long_name<< "unsigned int mapend) {"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {

@@ -22,17 +22,27 @@ namespace brook {
     protected:
        virtual ~CPUKernel();
        typedef void callable(const std::vector<void *>&args,
+                             const std::vector<const unsigned int *>&extents,
+                             const std::vector<unsigned int> &dims,
                              unsigned int start, 
                              unsigned int end);
        typedef void nDcallable(const std::vector<void *>&args,
+                               const std::vector<const unsigned int *>&extents,
+                               const std::vector<unsigned int> &dims,
                                unsigned int * start,
                                const unsigned int * end);
-       typedef void combinable (const std::vector<void*>&args,
-                                unsigned int start);
+       typedef void combinable(const std::vector<void*>&args,
+                               const std::vector<const unsigned int *>&extents,
+                               const std::vector<unsigned int> &dims,
+                               unsigned int start);
        callable * func;
        combinable *combine;
        nDcallable *nDfunc;
        std::vector<void *> args;
+       std::vector<const unsigned int *>extents;
+       std::vector<unsigned int> dims;
+       std::vector<brook::Stream*> inputs;
+       std::vector<brook::Stream*>outputs;
        class ReductionArg {public:
           unsigned int which;
           __BRTStreamType type;
@@ -46,7 +56,7 @@ namespace brook {
        std::vector<ReductionArg> reductions;
        unsigned int totalsize;
        unsigned int dim;
-       const unsigned int *extents;
+       const unsigned int *extent;
        void Cleanup();
     };
     class CPUStream: public Stream {
