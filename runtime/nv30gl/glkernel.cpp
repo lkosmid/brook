@@ -11,13 +11,15 @@ using namespace brook;
 
 
 static void
-NV30ComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
+NV30ComputeTexCoords(unsigned int w, unsigned int h, 
+                     bool is_iter, bool is_1D,
                      float x1, float y1, float z1, float w1,
                      float x2, float y2, float z2, float w2,
                      glfloat4 &f1, glfloat4 &f2);
 
 static void
-ATIComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
+ATIComputeTexCoords(unsigned int w, unsigned int h, 
+                    bool is_iter, bool is_1D,
                     float x1, float y1, float z1, float w1,
                     float x2, float y2, float z2, float w2,
                     glfloat4 &f1, glfloat4 &f2);
@@ -209,6 +211,8 @@ GLKernel::Initialize(GLRunTime * runtime, const void *sourcelist[],
          free(progcopy);
          fprintf ( stderr, "%s\n",
                glGetString(GL_PROGRAM_ERROR_STRING_ARB));
+         fflush(stderr);
+         assert(0);
          exit(1);
       }
    }
@@ -247,6 +251,10 @@ GLKernel::~GLKernel() {
 
 }
 
+void
+GLKernel::PushScaleBias(Stream *s)
+{
+}
 
 void
 GLKernel::PushStream(Stream *s) {
@@ -266,11 +274,10 @@ GLKernel::PushStream(Stream *s) {
       CHECK_GL();
       sreg++;
    }
-
    sargs[treg] = glstream;
 
    if (argumentUsesIndexof[argcount])
-      creg++;
+      PushShape(s);
 
    treg++;
    argcount++;
@@ -320,7 +327,7 @@ GLKernel::PushGatherStream(Stream *s) {
       sreg++;
    }
 
-   creg++;
+   PushScaleBias(s);
    argcount++;
 }
 
@@ -332,7 +339,8 @@ GLKernel::PushOutput(Stream *s) {
    if (argumentUsesIndexof[argcount]) {
       sargs[treg] = glstream;
       treg++;
-      creg++;
+
+      PushShape(s);
    }
 
    outstreams[nout] = glstream;
@@ -364,7 +372,8 @@ GLKernel::ResetStateMachine() {
 
 
 static void
-NV30ComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
+NV30ComputeTexCoords(unsigned int w, unsigned int h, 
+                     bool is_iter, bool is_1D,
                      float x1, float y1, float z1, float w1,
                      float x2, float y2, float z2, float w2,
                      glfloat4 &f1, glfloat4 &f2)
@@ -372,7 +381,7 @@ NV30ComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
    const float half_pixel  = 0.5f / GLRunTime::workspace;
    const float pixel  = 1.0f / GLRunTime::workspace;
 
-   if (is_1D_iter) {
+   if (is_iter && is_1D) {
       // 1D
       if (w == 1) {
          f1.x = x1; f1.y = y1;
@@ -442,7 +451,8 @@ NV30ComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
 }
 
 static void
-ATIComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
+ATIComputeTexCoords(unsigned int w, unsigned int h, 
+                    bool is_iter, bool is_1D,
                     float x1, float y1, float z1, float w1,
                     float x2, float y2, float z2, float w2,
                     glfloat4 &f1, glfloat4 &f2)
@@ -450,7 +460,7 @@ ATIComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
    const float half_pixel  = 0.5f / GLRunTime::workspace;
    const float pixel  = 1.0f / GLRunTime::workspace;
 
-   if (is_1D_iter) {
+   if (is_iter && is_1D) {
       // 1D
       if (w == 1) {
          f1.x = x1; f1.y = y1;
@@ -481,6 +491,8 @@ ATIComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
       }
    } else {
       // 2D
+      float bias = is_iter ? 0.0f : 0.5f;
+
       if (w == 1) {
          f1.x = x1 + half_pixel;
          f2.x = f1.x;
@@ -488,8 +500,8 @@ ATIComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
          float sw = x2-x1;
          float ratio = sw / w;
          float shift = ratio * 0.5f;
-         f1.x = x1 - (shift - half_pixel) + 0.5f;
-         f2.x = (2*x2-x1) - (shift - half_pixel) + 0.5f;
+         f1.x = x1 - (shift - half_pixel) + bias;
+         f2.x = (2*x2-x1) - (shift - half_pixel) + bias;
       }
 
       if (h == 1) {
@@ -499,8 +511,8 @@ ATIComputeTexCoords(unsigned int w, unsigned int h, bool is_1D_iter,
          float sh = y2-y1;
          float ratio = sh / h;
          float shift = ratio * 0.5f;
-         f1.y = y1 - (shift - half_pixel) + 0.5f;
-         f2.y = (2*y2-y1) - (shift - half_pixel) + 0.5f;
+         f1.y = y1 - (shift - half_pixel) + bias;
+         f2.y = (2*y2-y1) - (shift - half_pixel) + bias;
       }
       f1.z = 0.0f;
       f1.w = 1.0f;
@@ -518,13 +530,15 @@ GLKernel::RecomputeTexCoords(unsigned int w, unsigned int h,
 
    for (i = 0; i< GL_MAX_TEXCOORDS; i++) {
       if (sargs[i]) {
-         ComputeTexCoords(w, h, false, 0.0f, 0.0f, 0.0f, 1.0f,
-                          (float) sargs[i]->width,
-                          (float) sargs[i]->height, 0.0f, 1.0f,
+         GLStream *s = sargs[i];
+         ComputeTexCoords(w, h, false, false,
+                          0.0f, 0.0f, 0.0f, 1.0f,
+                          (float) s->width,
+                          (float) s->height, 0.0f, 1.0f,
                           f1[i], f2[i]);
       } else if (iargs[i]) {
          GLIter *itr = (GLIter *) iargs[i];
-         ComputeTexCoords(w, h, (itr->dims==1),
+         ComputeTexCoords(w, h, true, (itr->dims==1),
                           itr->min.x, itr->min.y, itr->min.z, itr->min.w,
                           itr->max.x, itr->max.y, itr->max.z, itr->max.w,
                           f1[i], f2[i]);
@@ -696,12 +710,12 @@ GLKernel::ReduceScalar()
       int wp = half*2;
       glfloat4 f1[2], f2[2];
 
-      ComputeTexCoords(half, h, false,
+      ComputeTexCoords(half, h, false, false,
             0.0f, 0.0f, 0.0f, 1.0f,
             (float) wp, (float) h, 0.0f, 1.0f,
             f1[0], f2[0]);
 
-      ComputeTexCoords(half, h, false,
+      ComputeTexCoords(half, h, false, false,
             1.0f, 0.0f, 0.0f, 1.0f,
             (float) wp+1, (float) h, 0.0f, 1.0f,
             f1[1], f2[1]);
@@ -723,7 +737,7 @@ GLKernel::ReduceScalar()
       issue_reduce_poly(0, 0, half, h, 2, f1, f2);
 
       if (remainder) {
-         ComputeTexCoords(1, h, false,
+         ComputeTexCoords(1, h, false, false,
                (float) (w-1)+0.5f, 0.0f, 0.0f, 1.0f,
                (float) (w-1)+0.5f, (float) h, 0.0f, 1.0f,
                f1[0], f2[0]);
@@ -759,12 +773,12 @@ GLKernel::ReduceScalar()
       int hp = half*2;
       glfloat4 f1[2], f2[2];
 
-      ComputeTexCoords(1, half, false,
+      ComputeTexCoords(1, half, false, false,
             0.0f,       0.0f, 0.0f, 1.0f,
             0.0f, (float) hp, 0.0f, 1.0f,
             f1[0], f2[0]);
 
-      ComputeTexCoords(1, half, false,
+      ComputeTexCoords(1, half, false, false,
             0.0f,         1.0f, 0.0f, 1.0f,
             0.0f, (float) hp+1, 0.0f, 1.0f,
             f1[1], f2[1]);
@@ -786,7 +800,7 @@ GLKernel::ReduceScalar()
       issue_reduce_poly(0, 0, 1, half, 2, f1, f2);
 
       if (remainder) {
-         ComputeTexCoords(1, 1, false,
+         ComputeTexCoords(1, 1, false, false,
                0.0f, (float) (h-1), 0.0f, 1.0f,
                0.0f, (float) (h-1), 0.0f, 1.0f,
                f1[0], f2[0]);
@@ -909,12 +923,12 @@ GLKernel::ReduceStream()
       int half = ratiox/2;
       int remainder = ratiox%2;
 
-      ComputeTexCoords(half*nx, h, false,
+      ComputeTexCoords(half*nx, h, false, false,
             0.0f, 0.0f, 0.0f, 1.0f,
             (float) nx*ratiox, (float) h, 0.0f, 1.0f,
             f1[0], f2[0]);
 
-      ComputeTexCoords(half*nx, h, false,
+      ComputeTexCoords(half*nx, h, false, false,
             1.0f, 0.0f, 0.0f, 1.0f,
             (float) nx*ratiox+1,  (float) h, 0.0f, 1.0f,
             f1[1], f2[1]);
@@ -940,11 +954,11 @@ GLKernel::ReduceStream()
 
           assert (!first);
 
-          ComputeTexCoords(nx, h, false,
+          ComputeTexCoords(nx, h, false, false,
                      (float) ratiox-1, 0.0f, 0.0f, 1.0f,
                      (float) w+ratiox, (float) h, 0.0f, 1.0f,
                      f1[0], f2[0]);
-          ComputeTexCoords(nx, h, false,
+          ComputeTexCoords(nx, h, false, false,
                      (float) remainder_x, 0.0f, 0.0f, 1.0f,
                      (float) remainder_x+nx, (float) h, 0.0f, 1.0f,
                      f1[1], f2[1]);
@@ -967,7 +981,7 @@ GLKernel::ReduceStream()
 
         } else {
           //  Copy the remainder values over
-          ComputeTexCoords(nx, h, false,
+           ComputeTexCoords(nx, h, false, false,
                      (float) ratiox-1, 0.0f, 0.0f, 1.0f,
                      (float) w+ratiox, (float) h, 0.0f, 1.0f,
                      f1[0], f2[0]);
@@ -1018,11 +1032,11 @@ GLKernel::ReduceStream()
 
    /* Perform final remainder calc */
    if (have_remainder) {
-     ComputeTexCoords(nx, h, false,
+      ComputeTexCoords(nx, h, false, false,
                 (float) 0.0f, 0.0f, 0.0f, 1.0f,
                 (float) nx, (float) h, 0.0f, 1.0f,
                 f1[0], f2[0]);
-     ComputeTexCoords(nx, h, false,
+      ComputeTexCoords(nx, h, false, false,
                 (float) remainder_x, 0.0f, 0.0f, 1.0f,
                 (float) remainder_x+nx, (float) h, 0.0f, 1.0f,
                 f1[1], f2[1]);
@@ -1048,12 +1062,12 @@ GLKernel::ReduceStream()
       int half = ratioy/2;
       int remainder = ratioy%2;
 
-      ComputeTexCoords(nx, half*ny, false,
+      ComputeTexCoords(nx, half*ny, false, false,
                  0.0f, 0.0f, 0.0f, 1.0f,
                  (float) nx, (float) ny*ratioy, 0.0f, 1.0f,
                  f1[0], f2[0]);
 
-      ComputeTexCoords(nx, half*ny, false,
+      ComputeTexCoords(nx, half*ny, false, false,
                  0.0f, 1.0f, 0.0f, 1.0f,
                  (float) nx, (float) ny*ratioy+1, 0.0f, 1.0f,
                  f1[1], f2[1]);
@@ -1086,11 +1100,11 @@ GLKernel::ReduceStream()
 
       if (remainder) {
         if (have_remainder) {
-          ComputeTexCoords(nx, ny, false,
+           ComputeTexCoords(nx, ny, false, false,
                      0.0f, (float) ratioy-1, 0.0f, 1.0f,
                      (float) nx, (float) h+ratioy, 0.0f, 1.0f,
                      f1[0], f2[0]);
-          ComputeTexCoords(nx, ny, false,
+           ComputeTexCoords(nx, ny, false, false,
                      (float) 0, 0.0f, 0.0f, 1.0f,
                      (float) nx, (float) ny, 0.0f, 1.0f,
                      f1[1], f2[1]);
@@ -1103,7 +1117,7 @@ GLKernel::ReduceStream()
           issue_reduce_poly(0, 0, nx, ny, 2, f1, f2);
         } else {
           //  Copy the remainder values over
-          ComputeTexCoords(nx, ny, false,
+           ComputeTexCoords(nx, ny, false, false,
                      0.0f, (float) ratioy-1, 0.0f, 1.0f,
                      (float) nx,   (float) h+ratioy, 0.0f, 1.0f,
                      f1[0], f2[0]);
@@ -1137,9 +1151,9 @@ GLKernel::ReduceStream()
    }
 
    if (have_remainder) {
-     ComputeTexCoords(nx, ny, false, 0.0f, 0.0f, 0.0f, 1.0f,
+     ComputeTexCoords(nx, ny, false, false, 0.0f, 0.0f, 0.0f, 1.0f,
                         (float) nx, (float) ny, 0.0f, 1.0f, f1[0], f2[0]);
-     ComputeTexCoords(nx, ny, false, 0.0f, 0.0f, 0.0f, 1.0f,
+     ComputeTexCoords(nx, ny, false, false, 0.0f, 0.0f, 0.0f, 1.0f,
                         (float) nx, (float) ny, 0.0f, 1.0f, f1[1], f2[1]);
 
      glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
@@ -1154,7 +1168,7 @@ GLKernel::ReduceStream()
    } else {
 
      //  Copy the values over
-     ComputeTexCoords(nx, ny, false, 0.0f, 0.0f, 0.0f, 1.0f,
+     ComputeTexCoords(nx, ny, false, false, 0.0f, 0.0f, 0.0f, 1.0f,
                         (float) nx, (float) ny, 0.0f, 1.0f, f1[0], f2[0]);
 
      glActiveTextureARB(GL_TEXTURE0_ARB);

@@ -22,3 +22,16 @@ ARBKernel::BindParameter(const float x, const float y,
    }
    CHECK_GL();
 }
+
+void
+ARBKernel::PushScaleBias(Stream *s) {
+   BindParameter(1.0f, 1.0f, 0.001f, 0.001f);
+   creg++;
+}
+
+
+void
+ARBKernel::PushShape(Stream *s) {
+   BindParameter(1.0f, 1.0f, -0.5f, -0.5f);
+   creg++;
+}

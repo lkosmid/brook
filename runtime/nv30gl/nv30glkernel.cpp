@@ -14,3 +14,19 @@ NV30GLKernel::BindParameter(const float x,
    }
    CHECK_GL();
 }
+
+void
+NV30GLKernel::PushScaleBias(Stream *s) {
+
+   /* Scale and bias are not used for FP30 */
+
+   creg++;
+}
+
+void
+NV30GLKernel::PushShape(Stream *s) {
+
+   /* Shape is not used for FP30 */
+
+   creg++;
+}

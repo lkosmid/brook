@@ -32,6 +32,8 @@ namespace brook {
    protected:
       void BindParameter(const float x, const float y,
                          const float z, const float w);
+      void PushScaleBias(Stream *s);
+      void PushShape(Stream *s);
   };
 }
 #endif

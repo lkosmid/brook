@@ -142,6 +142,8 @@ namespace brook {
 
       virtual void BindParameter(const float x, const float y,
                                  const float z, const float w) = 0;
+      virtual void PushScaleBias(Stream *s) = 0;
+      virtual void PushShape(Stream *s) = 0;
       void Initialize(GLRunTime *runtime, const void *sourcelist[],
                       const char *shaderLang);
       void ResetStateMachine();
@@ -151,7 +153,8 @@ namespace brook {
                               glfloat4 f1[], glfloat4 f2[]);
       void IssueMapTexCoords(glfloat4 f1[], glfloat4 f2[]);
 
-      void (*ComputeTexCoords) (unsigned int w, unsigned int h, bool is_1D_iter,
+      void (*ComputeTexCoords) (unsigned int w, unsigned int h,
+                                bool is_iter, bool is_1D,
                                 float x1, float y1, float z1, float w1,
                                 float x2, float y2, float z2, float w2,
                                 glfloat4 &f1, glfloat4 &f2);
