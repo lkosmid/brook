@@ -3,12 +3,14 @@
 #include "wfft.h"
 extern int debug_fft;
 extern float2 * data;
+/*
 static void __printf_cpu_inner (float a, float b, float c, float d) {
   printf ("%f %f == %f %f\n",a,b,c,d);
 }
 static void __print_cpu_inner (float a, float b, float c, float d) {
   printf ("%f %f -> %f %f\n",a,b,c,d);
 }
+*/
 kernel void mult_complex1(float2 a <>, float2 b <>, out float2 c <>)
 {
   c.x = a.x*b.x - a.y*b.y;
@@ -35,26 +37,26 @@ kernel void DoDFTHorizontalInner (float2 r<>,
 
 kernel void
 DFTX (float4 s[][], 
-        float2 W[],
-      float2 otherW<>,
-        float2 StrideNo4,
-        out float4 s_prime<>, iter float2 indexR<>, iter float2 indexI<>) {
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 indexR<>, 
+      iter float2 indexI<>) {
   float2 temp= round(fmod((indexof s_prime).x,2))==1;
   float4 r,t;
   r = s[indexR]; t = s[indexI];
-  DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,otherW,s_prime);
+  DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W,s_prime);
 } 
 
 
 kernel void
 DFTY (float4 s[][], 
-        float2 W[],
-      float2 otherW<>,
-        float2 StrideNo2,
-        out float4 s_prime<>, iter float2 indexR<>, iter float2 indexI<>) {
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 indexR<>, 
+      iter float2 indexI<>) {
    float4 r =  s[indexR]; float4 t = s[indexI];
    if (round(fmod((indexof s_prime).y,2))==1) {
-      mult_complex2(r-t,otherW,s_prime);
+      mult_complex2(r-t,W,s_prime);
    }else {
       s_prime=r+t;
    }
@@ -116,7 +118,6 @@ float4 * bitReversedIndices (int logN, int logM) {
   return s_array;
 }
 
-extern float2 *getTwiddleFactor(int N);
 #define FFT_HORIZONTAL 0
 #define FFT_VERTICAL 1
 #define FFT_2D 2
@@ -132,9 +133,6 @@ void computeFFT2d(float2 *input,
                   int twod){
    float4 s<N,(M/2)>;
    float4 s_out<N,(M/2)>;
-   float2 W_horiz<(M/2)>;
-   float2 W_vert<(N/2)>;
-   float2 * dat;
    float4 * rawindices=0;
    float4 indicesXo2YXp1o2Xm2<(M/2>N?M/2:N)>;
    iter float2 iter1 <N,(M/2)> =iter(float2(0,0),float2(tof(M/4),tof(N)));
@@ -147,12 +145,6 @@ void computeFFT2d(float2 *input,
    streamRead(indicesXo2YXp1o2Xm2,rawindices);
 
    streamRead(s,input);
-   dat = getTwiddleFactor(N);
-   streamRead(W_vert,dat);
-   free(dat);
-   dat = getTwiddleFactor(M);
-   streamRead(W_horiz,dat);
-   free(dat);
    
    if (debug_fft) {
       printf("FFT Input:\n");
@@ -163,8 +155,7 @@ void computeFFT2d(float2 *input,
    else {
       nPass=nBits=logM;
          for (nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            int nStride = (1<<nPassCounter);
-            DFTX(s,W_horiz,getW(nPassCounter,M,1),float2((float) nStride, (float) (M/4)),s_out,iter1,iter2);
+            DFTX(s,getW(nPassCounter,M,1),s_out,iter1,iter2);
             if (debug_fft==2) {
                printf ("\nX STAGE %d\n",nPassCounter);
                streamPrint(s_out);
@@ -173,8 +164,7 @@ void computeFFT2d(float2 *input,
          }
          nPass=nBits=logN;
          for(nPassCounter=0;nPassCounter<nPass;++nPassCounter) {
-            int nStride = (1<<nPassCounter);
-            DFTY(s,W_vert,getW(nPassCounter,N,0),float2((float) nStride, (float) (N/2)),s_out,iter3,iter4);
+            DFTY(s,getW(nPassCounter,N,0),s_out,iter3,iter4);
             if (debug_fft==2) {
                printf ("\nY STAGE %d\n",nPassCounter);
                streamPrint(s_out);
