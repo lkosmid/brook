@@ -4,9 +4,13 @@
 #include <vector>
 #include "volume_division.h"
 #include "ppm3d.h"
+#include "timing.h"
 char use_vout_filter=1;
 char use_vout_amplify=1;
-
+void Aggregate4(brook::stream fourfloat, brook::stream in, brook::stream out);
+void Aggregate3(brook::stream threefloat, brook::stream in, brook::stream out);
+void Aggregate2(brook::stream twofloat, brook::stream in, brook::stream out);
+void Aggregate1(brook::stream onefloat, brook::stream in, brook::stream out);
 void processSlice(brook::stream curslice,
                   brook::stream nextslice,
                   ::brook::stream &__vertex_stream,
@@ -205,6 +209,9 @@ int volume_division (int argc, char ** argv) {
    slice = mallocSlice(dat);
    std::vector<::brook::stream> volumeData;
    std::vector<::brook::stream> vertexData;
+   float toagg[4]={0,0,0,0};
+   ::brook::stream agg(::brook::getStreamType(( float  *)0), 2 , 2,-1);
+   streamRead(agg,toagg);
    for (i=0;i<(int)dat.depth;++i) {
 
       readPPM3dSlice(dat,i,slice);
@@ -212,8 +219,13 @@ int volume_division (int argc, char ** argv) {
       streamRead(volumeData.back(),slice);
 
    }
+   std::vector<int> sizesx;
+   std::vector<int> sizesy;
    // now we begin the actual algorithm
-      {
+   for (unsigned int rr=0;rr<3;++rr) {
+     if (rr==2) {use_vout_amplify=0;use_vout_filter=0;}
+     
+     start = GetTimeMillis();
          unsigned int i;
          // which volumetric slice is this run going to produce
          float2 sliceZ;
@@ -234,6 +246,7 @@ int volume_division (int argc, char ** argv) {
          // setup the current and next slice Z coordinates
          sliceZ.x=0.0f;sliceZ.y=1.0f;
          for (i=0;i<dat.depth-1;++i) {//loop through z values
+           
               // read a new slice for the 'next' category
                use_vout_filter?
                  /// only output triangle lookup indices and centers 
@@ -255,31 +268,51 @@ int volume_division (int argc, char ** argv) {
                                        forward,
                                        upforward,
                                        sliceZ);
+            if (rr==0) {
+               sizesx.push_back(toi(streamSize(v).x));
+               sizesy.push_back(toi(streamSize(v).y));
+            }
             if (streamSize(v).y){
               if (use_vout_amplify) {
+
                 // multiply our width by 4x since we could output up to 4x
                 // of our original values
-                 ::brook::iter newsize(__BRTFLOAT2, toi(streamSize(v).y) , toi(streamSize(v).x) * 4, -1, (float2 (0,0)).x, (float2 (0,0)).y, (float2 (streamSize(v).x * 4.000000f,streamSize(v).y)).x, (float2 (streamSize(v).x * 4.000000f,streamSize(v).y)).y, -1);
+                ::brook::iter newsize(__BRTFLOAT2, 
+                                      rr==2?sizesy[i]:toi(streamSize(v).y) , 
+                                      rr==2?sizesx[i]*4:(toi(streamSize(v).x) * 4), 
+                                      -1, 
+                                      (float2 (0,0)).x, 
+                                      (float2 (0,0)).y, 
+                                      (float2 ((rr==2?(float)sizesx[i]:streamSize(v).x) * 4.0f,
+                                               rr==2?(float)sizesy[i]:streamSize(v).y)).x, 
+                                      (float2 ((rr==2?sizesx[i]:streamSize(v).x) * 4.0f,
+                                               rr==2?sizesy[i]:streamSize(v).y)).y, 
+                                      -1);
                  // our first triangle lookups are going to be exactly 3x as big
                  
-                 ::brook::stream trianglesFirst(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+                ::brook::stream trianglesFirst(::brook::getStreamType(( float3  *)0), rr==2?sizesy[i]:toi(streamSize(v).y) , rr==2?(sizesx[i]*3):(toi(streamSize(v).x) * 3),-1);
 
                  
                 // we know the width of the triangles (i.e. for the address
                 // calc) will be 4x as big...we have no idea how many 3x
                 // vout[3] outputs there will be (0 or 3 for each tri)
-                 ::brook::stream triangles(::brook::getStreamType(( float3  *)0), 1 , toi(streamSize(v).x) * 4,-1);
-
+                ::brook::stream triangles(::brook::getStreamType(( float3  *)0),rr==2?sizesy[i]:1 , rr==2?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
+                     
                 // process all the first triangles
                 processFirstTriangles(trianglesFirst,v,volumeTriangles);
+                Aggregate3(trianglesFirst,agg,agg);
+
                 // process the rest
                 processTriangles(triangles, 
                                  v,
                                  volumeTriangles,
                                  newsize);
                 //write it to the same place in memory
+                /*
                 vertexData.push_back(trianglesFirst);
                 vertexData.push_back(triangles);
+                */
+                 Aggregate3(triangles,agg,agg);
                 /*
                  streamWrite(trianglesFirst,
                              consolidateVertices(dat,streamSize(trianglesFirst)));
@@ -294,6 +327,7 @@ int volume_division (int argc, char ** argv) {
                   ::brook::stream trianglesC(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
                   ::brook::stream trianglesD(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
                   ::brook::stream trianglesE(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
+                  
                  // output exactly 5 vertices for each input 
                  processTrianglesNoCompact(trianglesA,
                                            trianglesB,
@@ -303,11 +337,18 @@ int volume_division (int argc, char ** argv) {
                                            v, 
                                            volumeTriangles);
                  // write them all into mem
+                 Aggregate3(trianglesA,agg,agg);
+                 Aggregate3(trianglesB,agg,agg);
+                 Aggregate3(trianglesC,agg,agg);
+                 Aggregate3(trianglesD,agg,agg);
+                 Aggregate3(trianglesE,agg,agg);
+                 /*
                 vertexData.push_back(trianglesA);
                 vertexData.push_back(trianglesB);
                 vertexData.push_back(trianglesC);
                 vertexData.push_back(trianglesD);
                 vertexData.push_back(trianglesE);
+                 */
                 /*
                  streamWrite(trianglesA,
                              consolidateVertices(dat,streamSize(trianglesA)));
@@ -326,17 +367,30 @@ int volume_division (int argc, char ** argv) {
             // increment the z
             sliceZ.x++;sliceZ.y++;
          }
-      }
-      free(slice);
-      for (unsigned int j=0;j<vertexData.size();++j) {
-         streamWrite(vertexData[j],
-                     consolidateVertices(dat,streamSize(vertexData[j])));
-         
-      }
-      vertexData.clear();
-      volumeData.clear();
-      //write the mesh to stdout
-      printVolume(dat);
+         int tsize = vertexData.size()-1;
+         if (rr==0)
+         for (int j=0;j<(int)sizesx.size();++j) {
+           printf ("%d %d\n",sizesx[j],sizesy[j]);
+           
+         }
+         stop = GetTimeMillis();
+         printf ("Ready time %f",(float)(stop-start));
+         streamWrite(agg,toagg);
+         for (int j=tsize;j>=0;--j) {
+           streamWrite(vertexData[j],
+                       consolidateVertices(dat,streamSize(vertexData[j])));
+           if (j==tsize){
+             stop = GetTimeMillis();
+             printf ("Total time %f",(float)(stop-start));
+           }
+           vertexData.pop_back();
+         }
+         printf("Total time with reads %f\n",(float)(GetTimeMillis()-start));
+   }
+   free(slice);
+   volumeData.clear();
+   //write the mesh to stdout
+   //printVolume(dat);
    return 0;
    
  }
