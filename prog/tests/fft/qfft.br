@@ -425,7 +425,7 @@ int main (int argc, char ** argv) {
            }
            for (i=1, logn=0; i<height; i*=2, ++logn) {}
            for (i=1, logm=0; i<width; i*=2, ++logm) {}
-           doOptFFT(logn,logm,data, argc>3); 
+           doOptFFT(logm,logn,data, argc>3); 
         
            for (i=0;i<len;i++) {
               imgdata[i*channels+channelcount] 
