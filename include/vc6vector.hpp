@@ -337,6 +337,7 @@ template <> class BracketType <int> {public:
 template <> class BracketType <char> {public:
   typedef vec<char,1> type;
 };
+/*
 template <> class BracketType <vec<float,1> > {public:
   typedef vec<vec<float,1>,1> type;
 };
@@ -346,7 +347,7 @@ template <> class BracketType <vec<int,1> > {public:
 template <> class BracketType <vec<char,1> > {public:
   typedef vec<vec<char,1>,1 > type;
 };
-
+*/
 template <class T> class BracketOp {public:
   template <class U> T& operator ()(const U&u, unsigned int i) {
     return u.getAt(i);
@@ -364,6 +365,7 @@ template <> class BracketOp <int> {public:
 template <> class BracketOp <char> {public:
   template <class U> U operator ()(const U&u, unsigned int i) {return u;}
 };
+/*
 template <> class BracketOp <vec<float,1> > {public:
 	template <class U> vec<vec<float,1>,1> operator ()(const U&u, unsigned int i) {return vec<vec<float,1>,1>(u.getAt(0));}
 };
@@ -373,7 +375,7 @@ template <> class BracketOp <vec<int,1> > {public:
 template <> class BracketOp <vec<char,1> > {public:
   template <class U> vec<vec<char,1>,1> operator ()(const U&u, unsigned int i) {return u.getAt(0);}
 };
-
+*/
 
 
 template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
@@ -831,38 +833,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<float,1>,1>  &inx, 
-	   const vec<vec<float,1>,1>  &iny, 
-	   const vec<vec<float,1>,1>  &inz, 
-	   const vec<vec<float,1>,1> & inw) {
+      vec (const vec<float,2>  &inx, 
+	   const vec<float,2>  &iny, 
+	   const vec<float,2>  &inz, 
+	   const vec<float,2> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<float,1>,1> & inx, 
-				   const vec<vec<float,1>,1> & iny, 
-				   const vec<vec<float,1>,1> & inz) {
+     vec (const vec<float,2> & inx, 
+				   const vec<float,2> & iny, 
+				   const vec<float,2> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<float,1>,1> & inx, const vec<vec<float,1>,1> & iny) {
+     vec (const vec<float,2> & inx, const vec<float,2> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<float,1>,1> & scalar) {
+     vec (const vec<float,2> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<float,1>,1>  () const{
-      return InitializeClass<vec<vec<float,1>,1> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<float,2>  () const{
+      return InitializeClass<vec<float,2> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<float,1>,1>  & in) {  \
-        f[0] op GetAt<vec<vec<float,1>,1> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<float,1>,1> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<float,1>,1> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<float,1>,1> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<float,2>  & in) {  \
+        f[0] op GetAt<vec<float,2> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<float,2> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<float,2> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<float,2> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -875,38 +877,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<float,1>,2>  &inx, 
-	   const vec<vec<float,1>,2>  &iny, 
-	   const vec<vec<float,1>,2>  &inz, 
-	   const vec<vec<float,1>,2> & inw) {
+      vec (const vec<int,2>  &inx, 
+	   const vec<int,2>  &iny, 
+	   const vec<int,2>  &inz, 
+	   const vec<int,2> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<float,1>,2> & inx, 
-				   const vec<vec<float,1>,2> & iny, 
-				   const vec<vec<float,1>,2> & inz) {
+     vec (const vec<int,2> & inx, 
+				   const vec<int,2> & iny, 
+				   const vec<int,2> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<float,1>,2> & inx, const vec<vec<float,1>,2> & iny) {
+     vec (const vec<int,2> & inx, const vec<int,2> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<float,1>,2> & scalar) {
+     vec (const vec<int,2> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<float,1>,2>  () const{
-      return InitializeClass<vec<vec<float,1>,2> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<int,2>  () const{
+      return InitializeClass<vec<int,2> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<float,1>,2>  & in) {  \
-        f[0] op GetAt<vec<vec<float,1>,2> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<float,1>,2> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<float,1>,2> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<float,1>,2> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<int,2>  & in) {  \
+        f[0] op GetAt<vec<int,2> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<int,2> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<int,2> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<int,2> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -919,38 +921,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<float,1>,3>  &inx, 
-	   const vec<vec<float,1>,3>  &iny, 
-	   const vec<vec<float,1>,3>  &inz, 
-	   const vec<vec<float,1>,3> & inw) {
+      vec (const vec<char,2>  &inx, 
+	   const vec<char,2>  &iny, 
+	   const vec<char,2>  &inz, 
+	   const vec<char,2> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<float,1>,3> & inx, 
-				   const vec<vec<float,1>,3> & iny, 
-				   const vec<vec<float,1>,3> & inz) {
+     vec (const vec<char,2> & inx, 
+				   const vec<char,2> & iny, 
+				   const vec<char,2> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<float,1>,3> & inx, const vec<vec<float,1>,3> & iny) {
+     vec (const vec<char,2> & inx, const vec<char,2> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<float,1>,3> & scalar) {
+     vec (const vec<char,2> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<float,1>,3>  () const{
-      return InitializeClass<vec<vec<float,1>,3> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<char,2>  () const{
+      return InitializeClass<vec<char,2> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<float,1>,3>  & in) {  \
-        f[0] op GetAt<vec<vec<float,1>,3> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<float,1>,3> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<float,1>,3> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<float,1>,3> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<char,2>  & in) {  \
+        f[0] op GetAt<vec<char,2> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<char,2> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<char,2> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<char,2> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -963,38 +965,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<float,1>,4>  &inx, 
-	   const vec<vec<float,1>,4>  &iny, 
-	   const vec<vec<float,1>,4>  &inz, 
-	   const vec<vec<float,1>,4> & inw) {
+      vec (const vec<float,3>  &inx, 
+	   const vec<float,3>  &iny, 
+	   const vec<float,3>  &inz, 
+	   const vec<float,3> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<float,1>,4> & inx, 
-				   const vec<vec<float,1>,4> & iny, 
-				   const vec<vec<float,1>,4> & inz) {
+     vec (const vec<float,3> & inx, 
+				   const vec<float,3> & iny, 
+				   const vec<float,3> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<float,1>,4> & inx, const vec<vec<float,1>,4> & iny) {
+     vec (const vec<float,3> & inx, const vec<float,3> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<float,1>,4> & scalar) {
+     vec (const vec<float,3> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<float,1>,4>  () const{
-      return InitializeClass<vec<vec<float,1>,4> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<float,3>  () const{
+      return InitializeClass<vec<float,3> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<float,1>,4>  & in) {  \
-        f[0] op GetAt<vec<vec<float,1>,4> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<float,1>,4> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<float,1>,4> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<float,1>,4> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<float,3>  & in) {  \
+        f[0] op GetAt<vec<float,3> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<float,3> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<float,3> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<float,3> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -1007,38 +1009,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<int,1>,1>  &inx, 
-	   const vec<vec<int,1>,1>  &iny, 
-	   const vec<vec<int,1>,1>  &inz, 
-	   const vec<vec<int,1>,1> & inw) {
+      vec (const vec<int,3>  &inx, 
+	   const vec<int,3>  &iny, 
+	   const vec<int,3>  &inz, 
+	   const vec<int,3> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<int,1>,1> & inx, 
-				   const vec<vec<int,1>,1> & iny, 
-				   const vec<vec<int,1>,1> & inz) {
+     vec (const vec<int,3> & inx, 
+				   const vec<int,3> & iny, 
+				   const vec<int,3> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<int,1>,1> & inx, const vec<vec<int,1>,1> & iny) {
+     vec (const vec<int,3> & inx, const vec<int,3> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<int,1>,1> & scalar) {
+     vec (const vec<int,3> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<int,1>,1>  () const{
-      return InitializeClass<vec<vec<int,1>,1> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<int,3>  () const{
+      return InitializeClass<vec<int,3> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<int,1>,1>  & in) {  \
-        f[0] op GetAt<vec<vec<int,1>,1> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<int,1>,1> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<int,1>,1> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<int,1>,1> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<int,3>  & in) {  \
+        f[0] op GetAt<vec<int,3> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<int,3> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<int,3> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<int,3> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -1051,38 +1053,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<int,1>,2>  &inx, 
-	   const vec<vec<int,1>,2>  &iny, 
-	   const vec<vec<int,1>,2>  &inz, 
-	   const vec<vec<int,1>,2> & inw) {
+      vec (const vec<char,3>  &inx, 
+	   const vec<char,3>  &iny, 
+	   const vec<char,3>  &inz, 
+	   const vec<char,3> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<int,1>,2> & inx, 
-				   const vec<vec<int,1>,2> & iny, 
-				   const vec<vec<int,1>,2> & inz) {
+     vec (const vec<char,3> & inx, 
+				   const vec<char,3> & iny, 
+				   const vec<char,3> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<int,1>,2> & inx, const vec<vec<int,1>,2> & iny) {
+     vec (const vec<char,3> & inx, const vec<char,3> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<int,1>,2> & scalar) {
+     vec (const vec<char,3> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<int,1>,2>  () const{
-      return InitializeClass<vec<vec<int,1>,2> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<char,3>  () const{
+      return InitializeClass<vec<char,3> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<int,1>,2>  & in) {  \
-        f[0] op GetAt<vec<vec<int,1>,2> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<int,1>,2> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<int,1>,2> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<int,1>,2> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<char,3>  & in) {  \
+        f[0] op GetAt<vec<char,3> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<char,3> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<char,3> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<char,3> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -1095,38 +1097,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<int,1>,3>  &inx, 
-	   const vec<vec<int,1>,3>  &iny, 
-	   const vec<vec<int,1>,3>  &inz, 
-	   const vec<vec<int,1>,3> & inw) {
+      vec (const vec<float,4>  &inx, 
+	   const vec<float,4>  &iny, 
+	   const vec<float,4>  &inz, 
+	   const vec<float,4> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<int,1>,3> & inx, 
-				   const vec<vec<int,1>,3> & iny, 
-				   const vec<vec<int,1>,3> & inz) {
+     vec (const vec<float,4> & inx, 
+				   const vec<float,4> & iny, 
+				   const vec<float,4> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<int,1>,3> & inx, const vec<vec<int,1>,3> & iny) {
+     vec (const vec<float,4> & inx, const vec<float,4> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<int,1>,3> & scalar) {
+     vec (const vec<float,4> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<int,1>,3>  () const{
-      return InitializeClass<vec<vec<int,1>,3> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<float,4>  () const{
+      return InitializeClass<vec<float,4> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<int,1>,3>  & in) {  \
-        f[0] op GetAt<vec<vec<int,1>,3> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<int,1>,3> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<int,1>,3> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<int,1>,3> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<float,4>  & in) {  \
+        f[0] op GetAt<vec<float,4> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<float,4> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<float,4> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<float,4> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -1139,38 +1141,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<int,1>,4>  &inx, 
-	   const vec<vec<int,1>,4>  &iny, 
-	   const vec<vec<int,1>,4>  &inz, 
-	   const vec<vec<int,1>,4> & inw) {
+      vec (const vec<int,4>  &inx, 
+	   const vec<int,4>  &iny, 
+	   const vec<int,4>  &inz, 
+	   const vec<int,4> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<int,1>,4> & inx, 
-				   const vec<vec<int,1>,4> & iny, 
-				   const vec<vec<int,1>,4> & inz) {
+     vec (const vec<int,4> & inx, 
+				   const vec<int,4> & iny, 
+				   const vec<int,4> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<int,1>,4> & inx, const vec<vec<int,1>,4> & iny) {
+     vec (const vec<int,4> & inx, const vec<int,4> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<int,1>,4> & scalar) {
+     vec (const vec<int,4> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<int,1>,4>  () const{
-      return InitializeClass<vec<vec<int,1>,4> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<int,4>  () const{
+      return InitializeClass<vec<int,4> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<int,1>,4>  & in) {  \
-        f[0] op GetAt<vec<vec<int,1>,4> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<int,1>,4> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<int,1>,4> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<int,1>,4> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<int,4>  & in) {  \
+        f[0] op GetAt<vec<int,4> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<int,4> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<int,4> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<int,4> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -1183,170 +1185,38 @@ public:
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
-      vec (const vec<vec<char,1>,1>  &inx, 
-	   const vec<vec<char,1>,1>  &iny, 
-	   const vec<vec<char,1>,1>  &inz, 
-	   const vec<vec<char,1>,1> & inw) {
+      vec (const vec<char,4>  &inx, 
+	   const vec<char,4>  &iny, 
+	   const vec<char,4>  &inz, 
+	   const vec<char,4> & inw) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=inz;
         if (size>3) f[3]=inw;
     }
-     vec (const vec<vec<char,1>,1> & inx, 
-				   const vec<vec<char,1>,1> & iny, 
-				   const vec<vec<char,1>,1> & inz) {
+     vec (const vec<char,4> & inx, 
+				   const vec<char,4> & iny, 
+				   const vec<char,4> & inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-     vec (const vec<vec<char,1>,1> & inx, const vec<vec<char,1>,1> & iny) {
+     vec (const vec<char,4> & inx, const vec<char,4> & iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
         if (size>3) f[3]=VALUE();
     }
-     vec (const vec<vec<char,1>,1> & scalar) {
+     vec (const vec<char,4> & scalar) {
         (*this)=scalar;
     }
-     operator vec<vec<char,1>,1>  () const{
-      return InitializeClass<vec<vec<char,1>,1> >()(getAt(0),getAt(1),getAt(2),getAt(3));
+     operator vec<char,4>  () const{
+      return InitializeClass<vec<char,4> >()(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
 #define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<char,1>,1>  & in) {  \
-        f[0] op GetAt<vec<vec<char,1>,1> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<char,1>,1> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<char,1>,1> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<char,1>,1> >(in,3);  \
-        return *this;  \
-    }
-    ASSIGN_OP(=);
-    ASSIGN_OP(/=);
-    ASSIGN_OP(+=);
-    ASSIGN_OP(-=);
-    ASSIGN_OP(*=);
-    ASSIGN_OP(%=);
-#undef ASSIGN_OP
-#undef GENERAL_TEMPLATIZED_FUNCTIONS
-#define GENERAL_TEMPLATIZED_FUNCTIONS
-     
-      vec (const vec<vec<char,1>,2>  &inx, 
-	   const vec<vec<char,1>,2>  &iny, 
-	   const vec<vec<char,1>,2>  &inz, 
-	   const vec<vec<char,1>,2> & inw) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=inz;
-        if (size>3) f[3]=inw;
-    }
-     vec (const vec<vec<char,1>,2> & inx, 
-				   const vec<vec<char,1>,2> & iny, 
-				   const vec<vec<char,1>,2> & inz) {
-        f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
-    }
-     vec (const vec<vec<char,1>,2> & inx, const vec<vec<char,1>,2> & iny) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=VALUE();
-        if (size>3) f[3]=VALUE();
-    }
-     vec (const vec<vec<char,1>,2> & scalar) {
-        (*this)=scalar;
-    }
-     operator vec<vec<char,1>,2>  () const{
-      return InitializeClass<vec<vec<char,1>,2> >()(getAt(0),getAt(1),getAt(2),getAt(3));
-    }        
-#define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<char,1>,2>  & in) {  \
-        f[0] op GetAt<vec<vec<char,1>,2> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<char,1>,2> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<char,1>,2> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<char,1>,2> >(in,3);  \
-        return *this;  \
-    }
-    ASSIGN_OP(=);
-    ASSIGN_OP(/=);
-    ASSIGN_OP(+=);
-    ASSIGN_OP(-=);
-    ASSIGN_OP(*=);
-    ASSIGN_OP(%=);
-#undef ASSIGN_OP
-#undef GENERAL_TEMPLATIZED_FUNCTIONS
-#define GENERAL_TEMPLATIZED_FUNCTIONS
-     
-      vec (const vec<vec<char,1>,3>  &inx, 
-	   const vec<vec<char,1>,3>  &iny, 
-	   const vec<vec<char,1>,3>  &inz, 
-	   const vec<vec<char,1>,3> & inw) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=inz;
-        if (size>3) f[3]=inw;
-    }
-     vec (const vec<vec<char,1>,3> & inx, 
-				   const vec<vec<char,1>,3> & iny, 
-				   const vec<vec<char,1>,3> & inz) {
-        f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
-    }
-     vec (const vec<vec<char,1>,3> & inx, const vec<vec<char,1>,3> & iny) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=VALUE();
-        if (size>3) f[3]=VALUE();
-    }
-     vec (const vec<vec<char,1>,3> & scalar) {
-        (*this)=scalar;
-    }
-     operator vec<vec<char,1>,3>  () const{
-      return InitializeClass<vec<vec<char,1>,3> >()(getAt(0),getAt(1),getAt(2),getAt(3));
-    }        
-#define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<char,1>,3>  & in) {  \
-        f[0] op GetAt<vec<vec<char,1>,3> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<char,1>,3> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<char,1>,3> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<char,1>,3> >(in,3);  \
-        return *this;  \
-    }
-    ASSIGN_OP(=);
-    ASSIGN_OP(/=);
-    ASSIGN_OP(+=);
-    ASSIGN_OP(-=);
-    ASSIGN_OP(*=);
-    ASSIGN_OP(%=);
-#undef ASSIGN_OP
-#undef GENERAL_TEMPLATIZED_FUNCTIONS
-#define GENERAL_TEMPLATIZED_FUNCTIONS
-     
-      vec (const vec<vec<char,1>,4>  &inx, 
-	   const vec<vec<char,1>,4>  &iny, 
-	   const vec<vec<char,1>,4>  &inz, 
-	   const vec<vec<char,1>,4> & inw) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=inz;
-        if (size>3) f[3]=inw;
-    }
-     vec (const vec<vec<char,1>,4> & inx, 
-				   const vec<vec<char,1>,4> & iny, 
-				   const vec<vec<char,1>,4> & inz) {
-        f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
-    }
-     vec (const vec<vec<char,1>,4> & inx, const vec<vec<char,1>,4> & iny) {
-        f[0]=inx;
-        if (size>1) f[1]=iny;
-        if (size>2) f[2]=VALUE();
-        if (size>3) f[3]=VALUE();
-    }
-     vec (const vec<vec<char,1>,4> & scalar) {
-        (*this)=scalar;
-    }
-     operator vec<vec<char,1>,4>  () const{
-      return InitializeClass<vec<vec<char,1>,4> >()(getAt(0),getAt(1),getAt(2),getAt(3));
-    }        
-#define ASSIGN_OP(op)  \
-         vec<VALUE,tsize>& operator op (const vec<vec<char,1>,4>  & in) {  \
-        f[0] op GetAt<vec<vec<char,1>,4> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<vec<char,1>,4> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<vec<char,1>,4> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<vec<char,1>,4> >(in,3);  \
+         vec<VALUE,tsize>& operator op (const vec<char,4>  & in) {  \
+        f[0] op GetAt<vec<char,4> >(in,0);  \
+        if (tsize>1) f[1] op GetAt<vec<char,4> >(in,1);  \
+        if (tsize>2) f[2] op GetAt<vec<char,4> >(in,2);  \
+        if (tsize>3) f[3] op GetAt<vec<char,4> >(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -1399,6 +1269,37 @@ public:
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
              singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
     }
+#if defined (_ARRGH) && (_ARRGH <= 1200)
+#define TEMPL_TYPESIZE sizeof(vec<float,1> )/sizeof(float)
+#else
+#define TEMPL_TYPESIZE 1
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<float,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<float,1>  &b)const{ \
+      return vec< TYPESPECIFIER<float, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (getAt(0) op b.getAt(0), \
+                 getAt(1) op b.getAt(1), \
+                 getAt(2) op b.getAt(2), \
+                 getAt(3) op b.getAt(3)); \
+    }
+    BROOK_BINARY_OP(*,LCM);
+    BROOK_BINARY_OP(/,LCM);
+    BROOK_BINARY_OP(+,LCM);
+    BROOK_BINARY_OP(-,LCM);
+    BROOK_BINARY_OP(%,LCM);
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
@@ -1439,6 +1340,37 @@ public:
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
              singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
     }
+#if defined (_ARRGH) && (_ARRGH <= 1200)
+#define TEMPL_TYPESIZE sizeof(vec<int,1> )/sizeof(int)
+#else
+#define TEMPL_TYPESIZE 1
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<int,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<int,1>  &b)const{ \
+      return vec< TYPESPECIFIER<int, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (getAt(0) op b.getAt(0), \
+                 getAt(1) op b.getAt(1), \
+                 getAt(2) op b.getAt(2), \
+                 getAt(3) op b.getAt(3)); \
+    }
+    BROOK_BINARY_OP(*,LCM);
+    BROOK_BINARY_OP(/,LCM);
+    BROOK_BINARY_OP(+,LCM);
+    BROOK_BINARY_OP(-,LCM);
+    BROOK_BINARY_OP(%,LCM);
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
@@ -1479,500 +1411,15 @@ public:
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
              singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
     }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<float,1>,1> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<float,1>,1> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<float,1>,1> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<float,1>,1> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<float,1>,tsize> questioncolon(const vec<vec<float,1>,1>  &b, 
-						const vec<vec<float,1>,1>  &c)const {
-        return vec<vec<float,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<float,1>,2> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<float,1>,2> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<float,1>,2> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<float,1>,2> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<float,1>,tsize> questioncolon(const vec<vec<float,1>,2>  &b, 
-						const vec<vec<float,1>,2>  &c)const {
-        return vec<vec<float,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<float,1>,3> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<float,1>,3> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<float,1>,3> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<float,1>,3> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<float,1>,tsize> questioncolon(const vec<vec<float,1>,3>  &b, 
-						const vec<vec<float,1>,3>  &c)const {
-        return vec<vec<float,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<float,1>,4> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<float,1>,4> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<float,1>,4> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<float,1>,4> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<float,1>,tsize> questioncolon(const vec<vec<float,1>,4>  &b, 
-						const vec<vec<float,1>,4>  &c)const {
-        return vec<vec<float,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<int,1>,1> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<int,1>,1> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<int,1>,1> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<int,1>,1> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<int,1>,tsize> questioncolon(const vec<vec<int,1>,1>  &b, 
-						const vec<vec<int,1>,1>  &c)const {
-        return vec<vec<int,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<int,1>,2> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<int,1>,2> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<int,1>,2> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<int,1>,2> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<int,1>,tsize> questioncolon(const vec<vec<int,1>,2>  &b, 
-						const vec<vec<int,1>,2>  &c)const {
-        return vec<vec<int,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<int,1>,3> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<int,1>,3> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<int,1>,3> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<int,1>,3> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<int,1>,tsize> questioncolon(const vec<vec<int,1>,3>  &b, 
-						const vec<vec<int,1>,3>  &c)const {
-        return vec<vec<int,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<int,1>,4> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<int,1>,4> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<int,1>,4> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<int,1>,4> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<int,1>,tsize> questioncolon(const vec<vec<int,1>,4>  &b, 
-						const vec<vec<int,1>,4>  &c)const {
-        return vec<vec<int,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<char,1>,1> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<char,1>,1> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<char,1>,1> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<char,1>,1> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<char,1>,tsize> questioncolon(const vec<vec<char,1>,1>  &b, 
-						const vec<vec<char,1>,1>  &c)const {
-        return vec<vec<char,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<char,1>,2> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<char,1>,2> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<char,1>,2> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<char,1>,2> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<char,1>,tsize> questioncolon(const vec<vec<char,1>,2>  &b, 
-						const vec<vec<char,1>,2>  &c)const {
-        return vec<vec<char,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<char,1>,3> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<char,1>,3> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<char,1>,3> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<char,1>,3> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<char,1>,tsize> questioncolon(const vec<vec<char,1>,3>  &b, 
-						const vec<vec<char,1>,3>  &c)const {
-        return vec<vec<char,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define VECTOR_TEMPLATIZED_FUNCTIONS
-    
-      vec<VALUE,4> mask4 (const vec<vec<char,1>,4> &in,int X, int Y,int Z,int W) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        if (tsize>W)f[W]=in.getAt(3);
-        return vec<VALUE,4>(getAt(X),
-                    getAt(Y),
-                    getAt(Z),
-                    getAt(W));
-    }
-    
-      vec<VALUE,3> mask3 (const vec<vec<char,1>,4> &in,int X,int Y,int Z) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        if (tsize>Z)f[Z]=in.getAt(2);
-        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
-    }
-     
-      vec<VALUE,2> mask2 (const vec<vec<char,1>,4> &in,int X,int Y) {
-        if (tsize>X)f[X]=in.getAt(0);
-        if (tsize>Y)f[Y]=in.getAt(1);
-        return vec<VALUE,2>(getAt(X),getAt(Y));
-    }
-     
-      vec<VALUE,1> mask1 (const vec<vec<char,1>,4> &in,int X) {
-        if (tsize>X)f[X]=in.getAt(0);
-        return vec<VALUE,1>(getAt(X));
-    }    
-     
-      vec<vec<char,1>,tsize> questioncolon(const vec<vec<char,1>,4>  &b, 
-						const vec<vec<char,1>,4>  &c)const {
-        return vec<vec<char,1>,tsize>
-            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
-             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
-             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
-             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
-    }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-
-
-
-#define OPERATOR_TEMPLATIZED_FUNCTIONS
 #if defined (_ARRGH) && (_ARRGH <= 1200)
-#define TEMPL_TYPESIZE sizeof(vec<VALUE,1> )/sizeof(VALUE)
+#define TEMPL_TYPESIZE sizeof(vec<char,1> )/sizeof(char)
 #else
 #define TEMPL_TYPESIZE 1
 #endif
 #define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
-    vec<typename TYPESPECIFIER<VALUE,VALUE>::type, \
-       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<VALUE,1>  &b)const{ \
-      return vec< TYPESPECIFIER<VALUE, \
+    vec<typename TYPESPECIFIER<char,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<char,1>  &b)const{ \
+      return vec< TYPESPECIFIER<char, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
@@ -1995,17 +1442,55 @@ public:
     BROOK_BINARY_OP(==,COMMON_CHAR)
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
-#undef OPERATOR_TEMPLATIZED_FUNCTIONS
-#define OPERATOR_TEMPLATIZED_FUNCTIONS
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<float,2> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<float,2> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<float,2> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<float,2> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<float,tsize> questioncolon(const vec<float,2>  &b, 
+						const vec<float,2>  &c)const {
+        return vec<float,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
 #if defined (_ARRGH) && (_ARRGH <= 1200)
-#define TEMPL_TYPESIZE sizeof(vec<VALUE,2> )/sizeof(VALUE)
+#define TEMPL_TYPESIZE sizeof(vec<float,2> )/sizeof(float)
 #else
 #define TEMPL_TYPESIZE 2
 #endif
 #define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
-    vec<typename TYPESPECIFIER<VALUE,VALUE>::type, \
-       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<VALUE,2>  &b)const{ \
-      return vec< TYPESPECIFIER<VALUE, \
+    vec<typename TYPESPECIFIER<float,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<float,2>  &b)const{ \
+      return vec< TYPESPECIFIER<float, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
@@ -2028,17 +1513,197 @@ public:
     BROOK_BINARY_OP(==,COMMON_CHAR)
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
-#undef OPERATOR_TEMPLATIZED_FUNCTIONS
-#define OPERATOR_TEMPLATIZED_FUNCTIONS
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<int,2> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<int,2> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<int,2> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<int,2> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<int,tsize> questioncolon(const vec<int,2>  &b, 
+						const vec<int,2>  &c)const {
+        return vec<int,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
 #if defined (_ARRGH) && (_ARRGH <= 1200)
-#define TEMPL_TYPESIZE sizeof(vec<VALUE,3> )/sizeof(VALUE)
+#define TEMPL_TYPESIZE sizeof(vec<int,2> )/sizeof(int)
+#else
+#define TEMPL_TYPESIZE 2
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<int,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<int,2>  &b)const{ \
+      return vec< TYPESPECIFIER<int, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (getAt(0) op b.getAt(0), \
+                 getAt(1) op b.getAt(1), \
+                 getAt(2) op b.getAt(2), \
+                 getAt(3) op b.getAt(3)); \
+    }
+    BROOK_BINARY_OP(*,LCM);
+    BROOK_BINARY_OP(/,LCM);
+    BROOK_BINARY_OP(+,LCM);
+    BROOK_BINARY_OP(-,LCM);
+    BROOK_BINARY_OP(%,LCM);
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<char,2> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<char,2> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<char,2> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<char,2> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<char,tsize> questioncolon(const vec<char,2>  &b, 
+						const vec<char,2>  &c)const {
+        return vec<char,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
+#if defined (_ARRGH) && (_ARRGH <= 1200)
+#define TEMPL_TYPESIZE sizeof(vec<char,2> )/sizeof(char)
+#else
+#define TEMPL_TYPESIZE 2
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<char,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<char,2>  &b)const{ \
+      return vec< TYPESPECIFIER<char, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (getAt(0) op b.getAt(0), \
+                 getAt(1) op b.getAt(1), \
+                 getAt(2) op b.getAt(2), \
+                 getAt(3) op b.getAt(3)); \
+    }
+    BROOK_BINARY_OP(*,LCM);
+    BROOK_BINARY_OP(/,LCM);
+    BROOK_BINARY_OP(+,LCM);
+    BROOK_BINARY_OP(-,LCM);
+    BROOK_BINARY_OP(%,LCM);
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<float,3> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<float,3> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<float,3> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<float,3> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<float,tsize> questioncolon(const vec<float,3>  &b, 
+						const vec<float,3>  &c)const {
+        return vec<float,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
+#if defined (_ARRGH) && (_ARRGH <= 1200)
+#define TEMPL_TYPESIZE sizeof(vec<float,3> )/sizeof(float)
 #else
 #define TEMPL_TYPESIZE 3
 #endif
 #define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
-    vec<typename TYPESPECIFIER<VALUE,VALUE>::type, \
-       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<VALUE,3>  &b)const{ \
-      return vec< TYPESPECIFIER<VALUE, \
+    vec<typename TYPESPECIFIER<float,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<float,3>  &b)const{ \
+      return vec< TYPESPECIFIER<float, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
@@ -2061,17 +1726,197 @@ public:
     BROOK_BINARY_OP(==,COMMON_CHAR)
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
-#undef OPERATOR_TEMPLATIZED_FUNCTIONS
-#define OPERATOR_TEMPLATIZED_FUNCTIONS
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<int,3> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<int,3> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<int,3> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<int,3> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<int,tsize> questioncolon(const vec<int,3>  &b, 
+						const vec<int,3>  &c)const {
+        return vec<int,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
 #if defined (_ARRGH) && (_ARRGH <= 1200)
-#define TEMPL_TYPESIZE sizeof(vec<VALUE,4> )/sizeof(VALUE)
+#define TEMPL_TYPESIZE sizeof(vec<int,3> )/sizeof(int)
+#else
+#define TEMPL_TYPESIZE 3
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<int,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<int,3>  &b)const{ \
+      return vec< TYPESPECIFIER<int, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (getAt(0) op b.getAt(0), \
+                 getAt(1) op b.getAt(1), \
+                 getAt(2) op b.getAt(2), \
+                 getAt(3) op b.getAt(3)); \
+    }
+    BROOK_BINARY_OP(*,LCM);
+    BROOK_BINARY_OP(/,LCM);
+    BROOK_BINARY_OP(+,LCM);
+    BROOK_BINARY_OP(-,LCM);
+    BROOK_BINARY_OP(%,LCM);
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<char,3> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<char,3> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<char,3> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<char,3> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<char,tsize> questioncolon(const vec<char,3>  &b, 
+						const vec<char,3>  &c)const {
+        return vec<char,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
+#if defined (_ARRGH) && (_ARRGH <= 1200)
+#define TEMPL_TYPESIZE sizeof(vec<char,3> )/sizeof(char)
+#else
+#define TEMPL_TYPESIZE 3
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<char,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<char,3>  &b)const{ \
+      return vec< TYPESPECIFIER<char, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (getAt(0) op b.getAt(0), \
+                 getAt(1) op b.getAt(1), \
+                 getAt(2) op b.getAt(2), \
+                 getAt(3) op b.getAt(3)); \
+    }
+    BROOK_BINARY_OP(*,LCM);
+    BROOK_BINARY_OP(/,LCM);
+    BROOK_BINARY_OP(+,LCM);
+    BROOK_BINARY_OP(-,LCM);
+    BROOK_BINARY_OP(%,LCM);
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<float,4> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<float,4> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<float,4> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<float,4> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<float,tsize> questioncolon(const vec<float,4>  &b, 
+						const vec<float,4>  &c)const {
+        return vec<float,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
+#if defined (_ARRGH) && (_ARRGH <= 1200)
+#define TEMPL_TYPESIZE sizeof(vec<float,4> )/sizeof(float)
 #else
 #define TEMPL_TYPESIZE 4
 #endif
 #define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
-    vec<typename TYPESPECIFIER<VALUE,VALUE>::type, \
-       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<VALUE,4>  &b)const{ \
-      return vec< TYPESPECIFIER<VALUE, \
+    vec<typename TYPESPECIFIER<float,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<float,4>  &b)const{ \
+      return vec< TYPESPECIFIER<float, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
@@ -2094,6 +1939,159 @@ public:
     BROOK_BINARY_OP(==,COMMON_CHAR)
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<int,4> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<int,4> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<int,4> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<int,4> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<int,tsize> questioncolon(const vec<int,4>  &b, 
+						const vec<int,4>  &c)const {
+        return vec<int,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
+#if defined (_ARRGH) && (_ARRGH <= 1200)
+#define TEMPL_TYPESIZE sizeof(vec<int,4> )/sizeof(int)
+#else
+#define TEMPL_TYPESIZE 4
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<int,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<int,4>  &b)const{ \
+      return vec< TYPESPECIFIER<int, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (getAt(0) op b.getAt(0), \
+                 getAt(1) op b.getAt(1), \
+                 getAt(2) op b.getAt(2), \
+                 getAt(3) op b.getAt(3)); \
+    }
+    BROOK_BINARY_OP(*,LCM);
+    BROOK_BINARY_OP(/,LCM);
+    BROOK_BINARY_OP(+,LCM);
+    BROOK_BINARY_OP(-,LCM);
+    BROOK_BINARY_OP(%,LCM);
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    
+      vec<VALUE,4> mask4 (const vec<char,4> &in,int X, int Y,int Z,int W) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        if (tsize>W)f[W]=in.getAt(3);
+        return vec<VALUE,4>(getAt(X),
+                    getAt(Y),
+                    getAt(Z),
+                    getAt(W));
+    }
+    
+      vec<VALUE,3> mask3 (const vec<char,4> &in,int X,int Y,int Z) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        if (tsize>Z)f[Z]=in.getAt(2);
+        return vec<VALUE,3>(getAt(X),getAt(Y),getAt(Z));
+    }
+     
+      vec<VALUE,2> mask2 (const vec<char,4> &in,int X,int Y) {
+        if (tsize>X)f[X]=in.getAt(0);
+        if (tsize>Y)f[Y]=in.getAt(1);
+        return vec<VALUE,2>(getAt(X),getAt(Y));
+    }
+     
+      vec<VALUE,1> mask1 (const vec<char,4> &in,int X) {
+        if (tsize>X)f[X]=in.getAt(0);
+        return vec<VALUE,1>(getAt(X));
+    }    
+     
+      vec<char,tsize> questioncolon(const vec<char,4>  &b, 
+						const vec<char,4>  &c)const {
+        return vec<char,tsize>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
+#if defined (_ARRGH) && (_ARRGH <= 1200)
+#define TEMPL_TYPESIZE sizeof(vec<char,4> )/sizeof(char)
+#else
+#define TEMPL_TYPESIZE 4
+#endif
+#define BROOK_BINARY_OP(op,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<char,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const vec<char,4>  &b)const{ \
+      return vec< TYPESPECIFIER<char, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (getAt(0) op b.getAt(0), \
+                 getAt(1) op b.getAt(1), \
+                 getAt(2) op b.getAt(2), \
+                 getAt(3) op b.getAt(3)); \
+    }
+    BROOK_BINARY_OP(*,LCM);
+    BROOK_BINARY_OP(/,LCM);
+    BROOK_BINARY_OP(+,LCM);
+    BROOK_BINARY_OP(-,LCM);
+    BROOK_BINARY_OP(%,LCM);
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+
+
+
+#define OPERATOR_TEMPLATIZED_FUNCTIONS
+#undef OPERATOR_TEMPLATIZED_FUNCTIONS
+#define OPERATOR_TEMPLATIZED_FUNCTIONS
+#undef OPERATOR_TEMPLATIZED_FUNCTIONS
+#define OPERATOR_TEMPLATIZED_FUNCTIONS
+#undef OPERATOR_TEMPLATIZED_FUNCTIONS
+#define OPERATOR_TEMPLATIZED_FUNCTIONS
 #undef OPERATOR_TEMPLATIZED_FUNCTIONS
 
 
@@ -2121,28 +2119,25 @@ inline std::ostream& operator << (std::ostream&a,const vec<TYPE,X> & b) { \
 }   \
 typedef vec<TYPE,X> NAME
 
-VECX_CLASS(__BrtFloat0,float,1);
-VECX_CLASS(__BrtFloat1,__BrtFloat0,1);
-VECX_CLASS(__BrtFloat2,__BrtFloat0,2);
-VECX_CLASS(__BrtFloat3,__BrtFloat0,3);
-VECX_CLASS(__BrtFloat4,__BrtFloat0,4);
-VECX_CLASS(__BrtChar0,char,1);
-VECX_CLASS(__BrtChar1,__BrtChar0,1);
-VECX_CLASS(__BrtChar2,__BrtChar0,2);
-VECX_CLASS(__BrtChar3,__BrtChar0,3);
-VECX_CLASS(__BrtChar4,__BrtChar0,4);
-VECX_CLASS(__BrtInt0,int,1);
-VECX_CLASS(__BrtInt1,__BrtInt0,1);
-VECX_CLASS(__BrtInt2,__BrtInt0,2);
-VECX_CLASS(__BrtInt3,__BrtInt0,3);
-VECX_CLASS(__BrtInt4,__BrtInt0,4);
+VECX_CLASS(__BrtFloat1,float,1);
+VECX_CLASS(__BrtFloat2,float,2);
+VECX_CLASS(__BrtFloat3,float,3);
+VECX_CLASS(__BrtFloat4,float,4);
+VECX_CLASS(__BrtChar1,char,1);
+VECX_CLASS(__BrtChar2,char,2);
+VECX_CLASS(__BrtChar3,char,3);
+VECX_CLASS(__BrtChar4,char,4);
+VECX_CLASS(__BrtInt1,int,1);
+VECX_CLASS(__BrtInt2,int,2);
+VECX_CLASS(__BrtInt3,int,3);
+VECX_CLASS(__BrtInt4,int,4);
 #undef VECX_CLASS
 #define MATRIXXY_CLASS(TYPE,X,Y) \
 inline std::ostream& operator << (std::ostream&a, \
-                                  const vec<vec<TYPE##0,X>,Y> & b) { \
+                                  const vec<TYPE##X,Y> & b) { \
     return a^b; \
 }   \
-typedef vec<vec<TYPE##0,X>,Y> TYPE##X##x##Y
+typedef vec<TYPE##X,Y> TYPE##X##x##Y
 
 MATRIXXY_CLASS(__BrtFloat,4,4);
 MATRIXXY_CLASS(__BrtFloat,4,3);

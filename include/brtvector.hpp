@@ -337,6 +337,7 @@ template <> class BracketType <int> {public:
 template <> class BracketType <char> {public:
   typedef vec<char,1> type;
 };
+/*
 template <> class BracketType <vec<float,1> > {public:
   typedef vec<vec<float,1>,1> type;
 };
@@ -346,7 +347,7 @@ template <> class BracketType <vec<int,1> > {public:
 template <> class BracketType <vec<char,1> > {public:
   typedef vec<vec<char,1>,1 > type;
 };
-
+*/
 template <class T> class BracketOp {public:
   template <class U> T& operator ()(const U&u, unsigned int i) {
     return u.getAt(i);
@@ -364,6 +365,7 @@ template <> class BracketOp <int> {public:
 template <> class BracketOp <char> {public:
   template <class U> U operator ()(const U&u, unsigned int i) {return u;}
 };
+/*
 template <> class BracketOp <vec<float,1> > {public:
 	template <class U> vec<vec<float,1>,1> operator ()(const U&u, unsigned int i) {return vec<vec<float,1>,1>(u.getAt(0));}
 };
@@ -373,7 +375,7 @@ template <> class BracketOp <vec<int,1> > {public:
 template <> class BracketOp <vec<char,1> > {public:
   template <class U> vec<vec<char,1>,1> operator ()(const U&u, unsigned int i) {return u.getAt(0);}
 };
-
+*/
 
 
 template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
@@ -559,8 +561,6 @@ public:
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
              singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
     }
-#undef VECTOR_TEMPLATIZED_FUNCTIONS
-#define OPERATOR_TEMPLATIZED_FUNCTIONS
 #if defined (_MSC_VER) && (_MSC_VER <= 1200)
 #define TEMPL_TYPESIZE sizeof(BRT_TYPE)/sizeof(BRT_TYPE::TYPE)
 #else
@@ -592,6 +592,8 @@ public:
     BROOK_BINARY_OP(==,COMMON_CHAR)
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define OPERATOR_TEMPLATIZED_FUNCTIONS
 #undef OPERATOR_TEMPLATIZED_FUNCTIONS
 };
 
@@ -617,28 +619,25 @@ inline std::ostream& operator << (std::ostream&a,const vec<TYPE,X> & b) { \
 }   \
 typedef vec<TYPE,X> NAME
 
-VECX_CLASS(__BrtFloat0,float,1);
-VECX_CLASS(__BrtFloat1,__BrtFloat0,1);
-VECX_CLASS(__BrtFloat2,__BrtFloat0,2);
-VECX_CLASS(__BrtFloat3,__BrtFloat0,3);
-VECX_CLASS(__BrtFloat4,__BrtFloat0,4);
-VECX_CLASS(__BrtChar0,char,1);
-VECX_CLASS(__BrtChar1,__BrtChar0,1);
-VECX_CLASS(__BrtChar2,__BrtChar0,2);
-VECX_CLASS(__BrtChar3,__BrtChar0,3);
-VECX_CLASS(__BrtChar4,__BrtChar0,4);
-VECX_CLASS(__BrtInt0,int,1);
-VECX_CLASS(__BrtInt1,__BrtInt0,1);
-VECX_CLASS(__BrtInt2,__BrtInt0,2);
-VECX_CLASS(__BrtInt3,__BrtInt0,3);
-VECX_CLASS(__BrtInt4,__BrtInt0,4);
+VECX_CLASS(__BrtFloat1,float,1);
+VECX_CLASS(__BrtFloat2,float,2);
+VECX_CLASS(__BrtFloat3,float,3);
+VECX_CLASS(__BrtFloat4,float,4);
+VECX_CLASS(__BrtChar1,char,1);
+VECX_CLASS(__BrtChar2,char,2);
+VECX_CLASS(__BrtChar3,char,3);
+VECX_CLASS(__BrtChar4,char,4);
+VECX_CLASS(__BrtInt1,int,1);
+VECX_CLASS(__BrtInt2,int,2);
+VECX_CLASS(__BrtInt3,int,3);
+VECX_CLASS(__BrtInt4,int,4);
 #undef VECX_CLASS
 #define MATRIXXY_CLASS(TYPE,X,Y) \
 inline std::ostream& operator << (std::ostream&a, \
-                                  const vec<vec<TYPE##0,X>,Y> & b) { \
+                                  const vec<TYPE##X,Y> & b) { \
     return a^b; \
 }   \
-typedef vec<vec<TYPE##0,X>,Y> TYPE##X##x##Y
+typedef vec<TYPE##X,Y> TYPE##X##x##Y
 
 MATRIXXY_CLASS(__BrtFloat,4,4);
 MATRIXXY_CLASS(__BrtFloat,4,3);
