@@ -1,3 +1,9 @@
+/*
+ * XXX This file is old and has been replaced by main.cpp.  Don't use it.
+ */
+
+#error "Don't compile me.  See main.cpp instead"
+#if 0
 #define CBOX
 //#define GLASSNER
 
@@ -130,3 +136,4 @@ int main(int argc, char **argv){
   img.Write("out.ppm");
   return 0;
 }
+#endif

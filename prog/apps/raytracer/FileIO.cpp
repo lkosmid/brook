@@ -5,25 +5,28 @@
 
 
 typedef struct Vertex {
-  float x,y,z;                         /* the usual 3-space position of a vertex */
-  float nx,ny,nz;                      /* vertex normal components */
+  float x,y,z;                     /* the usual 3-space position of a vertex */
+  float nx,ny,nz;                  /* vertex normal components */
   unsigned char diffuse_red,
-    diffuse_green,
-    diffuse_blue;                      /* vertex color components */
+                diffuse_green,
+                diffuse_blue;      /* vertex color components */
   void* other_props;
 } Vertex;
 
 typedef struct Face {
-  unsigned char nverts;               /* number of vertex indices in list */
-  int *verts;                         /* vertex index list */
+  unsigned char nverts;           /* number of vertex indices in list */
+  int *verts;                     /* vertex index list */
   void* other_props;
 } Face;
 
-char *elem_names[] = {                /* list of the kinds of elements in the user's object */
+
+/* The kinds of elements in the user's object */
+static char *elem_names[] = {
   "vertex", "face"
 };
 
-PlyProperty vert_props[] = { /* list of property information for a vertex */
+/* List of property information for a vertex */
+static PlyProperty vert_props[] = {
   {"x", Float32, Float32, offsetof(Vertex,x), 0, 0, 0, 0},
   {"y", Float32, Float32, offsetof(Vertex,y), 0, 0, 0, 0},
   {"z", Float32, Float32, offsetof(Vertex,z), 0, 0, 0, 0},
@@ -35,10 +38,12 @@ PlyProperty vert_props[] = { /* list of property information for a vertex */
   {"diffuse_blue", Uint8, Uint8, offsetof(Vertex,diffuse_blue), 0, 0, 0, 0},
 };
 
-PlyProperty face_props[] = { /* list of property information for a face */
-  {"vertex_indices", Int32, Int32, offsetof(Face,verts),
-   1, Uint8, Uint8, offsetof(Face,nverts)},
+/* List of property information for a face */
+static PlyProperty face_props[] = {
+  { "vertex_indices", Int32, Int32, offsetof(Face,verts),
+    1, Uint8, Uint8, offsetof(Face,nverts) },
 };
+
 
 void ReadPlyFile( char *filename, int &numtris, HMatrix3 xform,
 		  Point3* &v0, Point3* &v1, Point3* &v2,
@@ -53,29 +58,29 @@ void ReadPlyFile( char *filename, int &numtris, HMatrix3 xform,
   PlyOtherProp *vert_other, *face_other;
   int has_norm = 0;
   int has_color = 0;
- 
+
   int i,j,k;
   int elem_count;
   char *elem_name;
-  
+
   FILE *infile = fopen(filename, "r");
   in_ply = read_ply(infile);
-  
+
   if (!in_ply) {
     fprintf(stderr, "Can't open %s\n", filename );
   }
 
   for (i = 0; i < in_ply->num_elem_types; i++) {
     elem_name = setup_element_read_ply(in_ply, i, &elem_count);
-    
+
     if (equal_strings ("vertex", elem_name)) {
       nverts = elem_count;
       vlist = (Vertex **) malloc (sizeof (Vertex *) * nverts);
       setup_property_ply(in_ply, &vert_props[0]);
       setup_property_ply(in_ply, &vert_props[1]);
       setup_property_ply(in_ply, &vert_props[2]);
-      
-      
+
+
       for(j=0; j<in_ply->elems[i]->nprops; j++){
 	PlyProperty *prop;
 	prop = in_ply->elems[i]->props[j];
@@ -87,20 +92,20 @@ void ReadPlyFile( char *filename, int &numtris, HMatrix3 xform,
 	  }
 	}
       }
-      
+
       vert_other = get_other_properties_ply(in_ply, offsetof(Vertex, other_props));
-      
+
       for (j = 0; j < nverts; j++) {
 	vlist[j] = (Vertex *) malloc (sizeof (Vertex));
 	get_element_ply(in_ply, (void *) vlist[j]);
       }
-      
+
     }
-    
+
     else if (equal_strings ("face", elem_name)) {
       nfaces = elem_count;
       flist = (Face **) malloc (sizeof (Face *) * nfaces);
-      
+
       setup_property_ply(in_ply, &face_props[0]);
       face_other = get_other_properties_ply(in_ply, offsetof(Face,other_props));
       for (j = 0; j < nfaces; j++) {
@@ -139,7 +144,7 @@ void ReadPlyFile( char *filename, int &numtris, HMatrix3 xform,
     v0[i] = xform.apply(v0[i]);
     v1[i] = xform.apply(v1[i]);
     v2[i] = xform.apply(v2[i]);
-    
+
     if(has_norm){
       n0[i].x = vlist[flist[i]->verts[0]]->nx;
       n0[i].y = vlist[flist[i]->verts[0]]->ny;
@@ -171,10 +176,10 @@ void ReadPlyFile( char *filename, int &numtris, HMatrix3 xform,
   }
 
   //free up the structures we malloc'd
-  for (j = 0; j < nverts; j++) 
+  for (j = 0; j < nverts; j++)
     free(vlist[j]);
   free(vlist);
-  for (j = 0; j < nfaces; j++) 
+  for (j = 0; j < nfaces; j++)
     free(flist[j]);
   free(flist);
   fprintf(stderr, "Done\n");
@@ -196,7 +201,7 @@ void WriteVoxFile( char *fname, int *ntris, int modelno,
     fprintf(stderr, "Couldn't open %s for writing\n", fname);
     exit(-1);
   }
-  
+
   fprintf(stderr, "\tWriting grid parameters... ");
   fwrite( &grid_dim, sizeof(int), 3, fp );
   fwrite( &grid_min, sizeof(float), 3, fp );
@@ -270,63 +275,61 @@ void WriteVoxFile( char *fname, int *ntris, int modelno,
 
 }
 
-void ReadVoxFile( char *fname, Tuple3i &grid_dim, Tuple3f &grid_min,
-		  Tuple3f &grid_max, Tuple3f &grid_vsize,
-		  BitVector* &grid_bitmap, int* &grid_trilist_offset,
-		  int &trilist_size, int* &grid_trilist, int &numtris,
+void ReadVoxFile( char *fname, bool verbose, Grid& grid,
 		  Point3* &v0, Point3* &v1, Point3* &v2,
 		  Normal3* &n0, Normal3* &n1, Normal3* &n2,
-		  Spectra* &c0, Spectra* &c1, Spectra* &c2 ){
+		  Spectra* &c0, Spectra* &c1, Spectra* &c2 )
+{
   FILE *fp = fopen( fname, "rb" );
   if( !fp ){
     fprintf(stderr, "Couldn't open %s for reading\n", fname);
     exit(-1);
   }
 
-  fprintf(stderr, "\tReading grid paramters... ");
-  fread( &grid_dim, sizeof(int), 3, fp );
-  fread( &grid_min, sizeof(float), 3, fp );
-  fread( &grid_max, sizeof(float), 3, fp );
-  fread( &grid_vsize, sizeof(float), 3, fp );
-  fprintf(stderr, "Done\n");
-  
-  fprintf(stderr, "\tReading bitvector... ");
-  grid_bitmap = new BitVector( grid_dim, 4 );
-  grid_bitmap->ReadFromFile(fp);
-  fprintf(stderr, "Done\n");
+  if ( verbose ) fprintf(stderr, "\tReading grid paramters... ");
+  fread(&grid.dim, sizeof(int), 3, fp );
+  fread(&grid.min, sizeof(float), 3, fp );
+  fread(&grid.max, sizeof(float), 3, fp );
+  fread(&grid.vsize, sizeof(float), 3, fp );
+  if ( verbose ) fprintf(stderr, "Done\n");
 
-  fprintf(stderr, "\tReading triangle list offsets... ");
-  grid_trilist_offset = new int[grid_dim.x*grid_dim.y*grid_dim.z];
+  if ( verbose ) fprintf(stderr, "\tReading bitvector... ");
+  grid.bitmap = new BitVector( grid.dim, 4 );
+  grid.bitmap->ReadFromFile(fp);
+  if ( verbose ) fprintf(stderr, "Done\n");
+
+  if ( verbose ) fprintf(stderr, "\tReading triangle list offsets... ");
+  grid.trilistOffset = new int[grid.dim.x*grid.dim.y*grid.dim.z];
   int i=0;
-  for(int x=0; x<grid_dim.x; x++){
-    for(int y=0; y<grid_dim.y; y++){
-      for(int z=0; z<grid_dim.z; z++){
-	fread( &grid_trilist_offset[i++], sizeof(int), 1, fp );
+  for(int x=0; x<grid.dim.x; x++){
+    for(int y=0; y<grid.dim.y; y++){
+      for(int z=0; z<grid.dim.z; z++){
+	fread( &grid.trilistOffset[i++], sizeof(int), 1, fp );
       }
     }
   }
-  fprintf(stderr, "Done\n");
+  if ( verbose ) fprintf(stderr, "Done\n");
 
-  fprintf(stderr, "\tReading triangle list... ");
-  trilist_size = 0;
-  fread( &trilist_size, sizeof(int), 1, fp );
-  grid_trilist = new int[trilist_size];
-  for( i=0; i<trilist_size; i++)
-    fread( &grid_trilist[i], sizeof(int), 1, fp );
-  fprintf(stderr, "Done\n");
+  if ( verbose ) fprintf(stderr, "\tReading triangle list... ");
+  grid.trilistSize = 0;
+  fread( &grid.trilistSize, sizeof(int), 1, fp );
+  grid.trilist = new int[grid.trilistSize];
+  for( i=0; i<grid.trilistSize; i++)
+    fread( &grid.trilist[i], sizeof(int), 1, fp );
+  if ( verbose ) fprintf(stderr, "Done\n");
 
-  fprintf(stderr, "\tReading triangle data... ");
-  fread( &numtris, sizeof(int), 1, fp);
-  v0 = new Point3[numtris];
-  v1 = new Point3[numtris];
-  v2 = new Point3[numtris];
-  n0 = new Point3[numtris];
-  n1 = new Point3[numtris];
-  n2 = new Point3[numtris];
-  c0 = new Spectra[numtris];
-  c1 = new Spectra[numtris];
-  c2 = new Spectra[numtris];
-  for( i=0; i<numtris; i++){
+  if ( verbose ) fprintf(stderr, "\tReading triangle data... ");
+  fread( &grid.nTris, sizeof(int), 1, fp);
+  v0 = new Point3[grid.nTris];
+  v1 = new Point3[grid.nTris];
+  v2 = new Point3[grid.nTris];
+  n0 = new Point3[grid.nTris];
+  n1 = new Point3[grid.nTris];
+  n2 = new Point3[grid.nTris];
+  c0 = new Spectra[grid.nTris];
+  c1 = new Spectra[grid.nTris];
+  c2 = new Spectra[grid.nTris];
+  for( i=0; i<grid.nTris; i++){
     fread( &v0[i], sizeof(float), 3, fp );
     fread( &v1[i], sizeof(float), 3, fp );
     fread( &v2[i], sizeof(float), 3, fp );
@@ -338,5 +341,5 @@ void ReadVoxFile( char *fname, Tuple3i &grid_dim, Tuple3f &grid_min,
     fread( &c2[i], sizeof(float), 3, fp );
   }
   fclose(fp);
-  fprintf(stderr, "Done\n");
+  if ( verbose ) fprintf(stderr, "Done\n");
 }
