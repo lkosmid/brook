@@ -132,6 +132,8 @@ public:
         if (t->type==TT_Array) {
             ArrayType* a = static_cast<ArrayType*>(t);
             Expression * size=  a->size;
+	    if (size==NULL)
+		return true;
             if (size->etype==ET_VoidExpr)
                 return true;
             return isDimensionlessHelper (a->subType);
@@ -185,9 +187,12 @@ public:
         }
     }
     void printDimensionalGatherStream(std::ostream &out, STAGE s) {
-        Type * t=a->form;
+	printDimensionlessGatherStream(out,s);
+	return;
+	//past this point is dead code.
+        Type * t=a->form;//obsolete! not allowed to index with float4
         switch (s) {
-        case HEADER:{
+        case HEADER:{//obsolete! not allowed to index with float4
             TypeQual tq= t->getQualifiers();            
             if ((tq&TQ_Const)==0&&(tq&TQ_Out)==0){
                 out << "const ";//kernels are only allowed to touch out params
@@ -195,7 +200,7 @@ public:
             a->print(out,0);
             break;
         }
-        case DEF:{
+        case DEF:{//obsolete! not allowed to index with float4
             t=static_cast<ArrayType*>(t)->subType;
             Symbol s;
             if (t->type==TT_Base)
@@ -211,7 +216,7 @@ public:
             out <<"reinterpret_cast<CPUStream *>(args["<<index<<"])->getData();";
             break;
         }
-        case USE:{
+        case USE:{//obsolete! not allowed to index with float4
             out <<"arg"<<index;
             break;
         }
