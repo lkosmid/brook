@@ -13,9 +13,9 @@ all: makedirs ../bin/brcc.exe
 makedirs:
 	@if test ! -d ../bin; then mkdir ../bin; fi
 
-
-../bin/brcc.exe: brook.tab.c lex.yy.c parser.c
-	cl -nologo -Zi -o ../bin/brcc.exe brook.tab.c lex.yy.c parser.c
+../bin/brcc.exe: brook.tab.c lex.yy.c brcc.c parser.c codegen.c
+	cl -nologo -W3 -Zi -MLd -o ../bin/brcc.exe brook.tab.c \
+		lex.yy.c parser.c brcc.c codegen.c
 
 brook.tab.c: brook.y
 	bison -d brook.y 
@@ -26,5 +26,5 @@ lex.yy.c: brook.l
 
 clean:
 	rm -rf lex.yy.c brook.tab.c brook.tab.h \
-		*~ *.obj *.exe _kernel.pl *.ilk *.opt *.pdb
+		*~ *.obj *.exe _kernel.cg *.ilk *.opt *.pdb
 
