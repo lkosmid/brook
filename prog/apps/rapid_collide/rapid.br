@@ -5,11 +5,10 @@
 // Rotation * Vec is
 // float3 (dot(Rotationx,Vec),dot(Rotationy,Vec),dot(Rotationz,Vec));
 typedef struct traverser_t {
+  float4 index;//.xy is index into the aTree  .zw is index into bTree
+  float3 Translation; 
   float3 Rotationx;
   float3 Rotationy;
-  float3 Translation;
-  float4 index;//.xy is index into the aTree  .zw is index into bTree
-  
 }Traverser;
 
 typedef struct transposedbbox_t{
@@ -18,12 +17,12 @@ typedef struct transposedbbox_t{
   // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
   /// cross(Rotationx,Rotationy);
   float3 Translation;
-  float3 Radius;
+  float4 Radius; // if it's a leaf Radius.w is 1 else Radius.w = 0
 
-  // if leaf, the Children.xy is an index to the Triangle Children.zw is{-1,-1}
-  // if node, the Children.xy is an index to left child .zw is right
+  // if leaf, the Children.xy is an index to the Triangle
+  // if node, the Children.xy is an index to left child
   // assert right.xy is always left + {1,0} this may require gaps in the tree
-  float4 Children;  
+  float2 Children;  
 }TransposedBBox;
 
 
@@ -33,12 +32,12 @@ typedef struct bbox_t{
   // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
   /// cross(Rotationx,Rotationy);
   float3 Translation;
-  float3 Radius;
+  float4 Radius;// if it's a leaf Radius.w is 1 else Radius.w = 0
 
-  // if leaf, the Children.xy is an index to the Triangle Children.zw is{-1,-1}
-  // if node, the Children.xy is an index to left child .zw is right
+  // if leaf, the Children.xy is an index to the Triangle
+  // if node, the Children.xy is an index to left child
   // assert right.xy is always left + {1,0} this may require gaps in the tree
-  float4 Children;  
+  float2 Children;  
 }BBox;
 
 
@@ -62,13 +61,8 @@ kernel float obb_disjoint (float3 Bx<>,
                            float3 T,
                            float3 a,
                            float3 b) {
+  
   return 1;
-}
-kernel float isLeaf(BBox a<>) {
-  return a.Children.z==-1;
-}
-kernel float isLeafT(TransposedBBox a<>) {
-  return a.Children.z==-1;
 }
 
 kernel float modTwo(float who) {
@@ -101,6 +95,63 @@ kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
   return temp=float3(dot(vec,aX),
                      dot(vec,aY),
                      dot(vec,aZ));
+}
+kernel void CheckTriangleCollide(float3 mRx,
+                                 float3 mRy,
+                                 float3 mRz,
+                                 float3 mT,
+                                 float4 collisions<>,
+                                 Tri t1List[][],
+                                 Tri t2List[][],
+                                 vout [1] float4 hits<>) {
+  Tri t1 = t1List[collisions.xy];
+  Tri t2 = t2List[collisions.zw];
+
+
+  hits= collisions;
+  
+}
+kernel float GetBBSize (float3 Radius ) {
+  return Radius.x;
+}
+kernel void Collide (float3 mRx,
+                     float3 mRy,
+                     float3 mRz,
+                     float3 mT,
+                     Traverser currentNode<>,
+                     TransposedBBox b1Tree[][], 
+                     BBox b2Tree[][], 
+                     vout [1]float4 nextNode<>,//xy is parent yz is first of two childs
+                                               //additionally if it's <0 then it's -b-1
+                     vout [1]float4 collisions<>//index into triangle list
+                     ) {
+  //push nextNode if currentNode has collision
+  TransposedBBox b1=b1Tree[currentNode.index.xy];
+  BBox b2=b2Tree[currentNode.index.xy];
+  if (!obb_disjoint(currentNode.Rotationx,
+                    currentNode.Rotationy,
+                    cross (currentNode.Rotationx,
+                           currentNode.Rotationy),
+                    currentNode.Translation,
+                    b1.Radius.xyz,
+                    b2.Radius.xyz)) {
+    if (b1.Radius.w!=0 && b2.Radius.w!=0) {
+      // it's a leaf node yo
+      // check ye olde triangles
+      collisions.xy = b1.Children;
+      collisions.zw = b2.Children;
+      push(collisions);
+    }else {
+      nextNode.xy = (indexof currentNode).xy;
+      if (b1.Radius.w!=0 || (!b1.Radius.w && (GetBBSize(b1.Radius)>
+                                              GetBBSize(b2.Radius)))) {
+        nextNode.zw = b1.Children;       
+      }else {
+        nextNode.zw = -b2.Children-1;
+      }
+      push(nextNode);
+    }
+  }
 }
                        
                        
@@ -161,23 +212,23 @@ kernel void updateCurrentNode(float4 curNodeIndices<>,
 
 }
 
-kernel void Collide (float3 mRx,
-                     float3 mRy,
-                     float3 mRz,
-                     float3 mT,
-                     Traverser currentNode<>,
-                     BBox a[][], 
-                     BBox b[][], 
-                     vout [1]float4 nextNode<>//xy is parent yz is first of two childs
-                                               //additionally if it's <0 then it's -b-1
-                     ) {
-  //push nextNode if currentNode has collision
-  
-}
 
 
 
 int main(int argc , char * argv[] ) {
+  void * blah = malloc (65536);
+  float4 curNodeIndices<1,1>;
+  BBox aTree<1,1>;
+  BBox bTree<1,1>;
+  Traverser nodes<1,1>;
+  Traverser nextNode<1,1>;
+  memset(blah,0,65536);
+  
+  updateCurrentNode(curNodeIndices,
+                    aTree,
+                    bTree,
+                    nodes,
+                    nextNode);
   
   return 0;
 }
