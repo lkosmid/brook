@@ -11,6 +11,7 @@
 
 #include "main.h"
 #include "runkernel.h"
+#include "statrecord.h"
 
 #if 1
 #define CHECK_MISMATCH 1
@@ -679,6 +680,56 @@ done:
 
 
 /*
+ * RunKernelBuildSummary --
+ *
+ *      Generates a bunch of summary timing numbers
+ */
+
+static void
+RunKernelBuildSummary(void)
+{
+   struct StatRecord kW, RkW, R100kW;
+   float4 s<BIG_LENGTH, BIG_LENGTH>, o<BIG_LENGTH, BIG_LENGTH>;
+   float4 *outData;
+   int j, i;
+
+   outData = (float4 *) malloc(BIG_LENGTH * BIG_LENGTH * sizeof *outData);
+
+   StatRecord_Clear(&kW);
+   for (i = 0; i < SMOOTHING; i++) {
+      t1 = GetTimeTSC();
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      streamWrite(o, outData);
+      StatRecord_Record(&kW, GetTimeTSC() - t1);
+   }
+   StatRecord_Print(&kW, "kW");
+
+   StatRecord_Clear(&RkW);
+   for (i = 0; i < SMOOTHING; i++) {
+      t1 = GetTimeTSC();
+      streamRead(s, outData);
+      RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      streamWrite(o, outData);
+      StatRecord_Record(&RkW, GetTimeTSC() - t1);
+   }
+   StatRecord_Print(&RkW, "RkW");
+
+   StatRecord_Clear(&R100kW);
+   for (i = 0; i < 10; i++) {
+      t1 = GetTimeTSC();
+      streamRead(s, outData);
+      for (j = 0; j < SMOOTHING; j++) {
+         RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
+      }
+      streamWrite(o, outData);
+      StatRecord_Record(&R100kW, GetTimeTSC() - t1);
+   }
+   StatRecord_Print(&R100kW, "R100kW");
+   free(outData);
+}
+
+
+/*
  * RunKernelFindGPUvsCPUOne --
  *
  *      Finds the crossover point i at which
@@ -771,6 +822,8 @@ RunKernel_GPUvsCPU(int minLength)
    float idealSlope;
 
    RunKernelKickBRT();
+   RunKernelBuildSummary();
+   return;
 
    printf("(* RunKernel GPU vs. CPU: min length %d *)\n", minLength);
    for (i = 0; i < 20; i++) {
