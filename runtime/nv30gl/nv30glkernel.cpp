@@ -12,4 +12,5 @@ NV30GLKernel::BindParameter(const float x,
                                   (const GLubyte *) constnames[creg],
                                   x, y, z, w);
    }
+   CHECK_GL();
 }

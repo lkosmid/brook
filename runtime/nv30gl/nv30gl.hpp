@@ -3,9 +3,6 @@
 
 #include "glruntime.hpp"
 
-#define NV30GL_MAXCONSTS        GL_MAX_CONSTS
-#define NV30GL_MAX_TEXCOORDS    GL_MAX_TEXCOORDS
-
 /*
  * This file is actually pulled in by glruntime.hpp because it has a bunch
  * of core GL definitions in addition to nv30 ones, but is left here too
@@ -15,18 +12,14 @@
 //#include "nv30glext.h"
 
 namespace brook {
-
-   class NV30GLRunTime;
-   class NV30GLKernel;
-
    extern const char *NV30GL_RUNTIME_STRING;
-   extern const char *ARB_RUNTIME_STRING;
 
    class NV30GLRunTime : public GLRunTime {
    public:
-      NV30GLRunTime();
+      NV30GLRunTime() : GLRunTime() { /* All done in GLRunTime() */ }
+      virtual ~NV30GLRunTime() { /* All done in GLRunTime() */ }
 
-      Kernel *CreateKernel(const void*[]);
+      Kernel *CreateKernel(const void *sourcelist[]);
    };
 
    class NV30GLKernel : public GLKernel {

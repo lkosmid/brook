@@ -7,8 +7,19 @@
 
 using namespace brook;
 
+static const char passthrough[] =
+"!!ARBfp1.0\n"
+"ATTRIB tex0 = fragment.texcoord[0];\n"
+"OUTPUT oColor = result.color;\n"
+"TEX oColor, tex0, texture[0], RECT;\n"
+"END\n";
+
 GLRunTime::GLRunTime()
 {
+   int i, n;
+
+   streamlist = NULL;
+
 #ifdef WIN32
    createWindow();
    createWindowGLContext();
@@ -20,7 +31,21 @@ GLRunTime::GLRunTime()
    glReadBuffer(GL_FRONT);
    CHECK_GL();
 
-   streamlist = NULL;
+   glEnable(GL_FRAGMENT_PROGRAM_ARB);
+   CHECK_GL();
+
+   glGenProgramsARB(1, &passthrough_id);
+   glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, passthrough_id);
+   glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+                      strlen(passthrough), (GLubyte *) passthrough);
+   CHECK_GL();
+
+   glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, (GLint *) &n);
+   for (i=0; i<n; i++) {
+      glActiveTextureARB(GL_TEXTURE0_ARB+i);
+      glEnable(GL_TEXTURE_RECTANGLE_EXT);
+   }
+   CHECK_GL();
 }
 
 

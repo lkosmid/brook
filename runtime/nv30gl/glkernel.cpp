@@ -9,9 +9,8 @@
 
 using namespace brook;
 
-GLKernel::GLKernel(GLRunTime * runtime,
-                   const void *sourcelist[]) :
-   runtime((GLRunTime *) runtime)
+GLKernel::GLKernel(GLRunTime * runtime, const void *sourcelist[])
+   : runtime((GLRunTime *) runtime)
 {
    unsigned int i,j;
    const char**sources = NULL;
@@ -40,7 +39,7 @@ GLKernel::GLKernel(GLRunTime * runtime,
 
    // count the number of passes.
    for (npasses=0; sources[npasses]; npasses++)
-     ;
+      ;
 
    pass_id = (GLuint *) malloc (npasses * sizeof(GLuint));
    pass_out = (unsigned int *) malloc (npasses * sizeof(int));
@@ -53,151 +52,151 @@ GLKernel::GLKernel(GLRunTime * runtime,
    // look for our annotations...
    int sourceIndex = 0; // TIM: evil hack
    for (j=0; j<npasses; j++) {
-     src = sources[sourceIndex++];
-     std::string s = src;
+      src = sources[sourceIndex++];
+      std::string s = src;
 
-     if (!j) {
-       s = s.substr( s.find("!!BRCC") );
+      if (!j) {
+         s = s.substr( s.find("!!BRCC") );
 
-       // next is the narg line
-       s = s.substr( s.find("\n")+1 );
-       s = s.substr( s.find(":")+1 );
-
-       std::string argumentCountString = s.substr( 0, s.find("\n") );
-       unsigned int argumentCount = (unsigned int)
-         atoi( argumentCountString.c_str() );
-       argumentUsesIndexof = (bool *) malloc (sizeof(bool) * argumentCount);
-
-       for( i = 0; i < argumentCount; i++ ) {
+         // next is the narg line
          s = s.substr( s.find("\n")+1 );
-         s = s.substr( s.find("##")+2 );
-         // char typeCode = s[0];
-         char indexofHint = s[1];
-         argumentUsesIndexof[i] = (indexofHint == 'i');
-       }
+         s = s.substr( s.find(":")+1 );
 
-       /* Get the constant names */
-       constnames = (char **)  malloc (sizeof (char *) * GL_MAX_CONSTS);
+         std::string argumentCountString = s.substr( 0, s.find("\n") );
+         unsigned int argumentCount = (unsigned int)
+            atoi( argumentCountString.c_str() );
+         argumentUsesIndexof = (bool *) malloc (sizeof(bool) * argumentCount);
 
-       for (i=0; i<GL_MAX_CONSTS; i++)
-         constnames[i] = NULL;
-
-       progcopy = strdup (src);
-       c = progcopy;
-       while (*c && (c = strstr (c, "#semantic main.")) != NULL) {
-         char *name;
-         char *constregstring;
-         unsigned int constreg;
-
-         c += strlen("#semantic main.");
-
-         /* set name to the ident */
-         name = c;
-
-         do c++; while (*c != ' ');
-         *c = '\0';
-
-         do c++; while (*c != ':');
-         do c++; while (*c == ' ');
-
-         /* If we have not found a constant register,
-         ** simply continue */
-         if (*c != 'C')
-           continue;
-
-         c++;
-         constregstring = c;
-         while (*c >= '0' && *c <= '9') c++;
-         *c = '\0';
-         c++;
-
-         constreg = atoi (constregstring);
-
-         if (constreg > GL_MAX_CONSTS) {
-           fprintf (stderr, "GL: Too many constant registers\n");
-           exit(1);
+         for( i = 0; i < argumentCount; i++ ) {
+            s = s.substr( s.find("\n")+1 );
+            s = s.substr( s.find("##")+2 );
+            // char typeCode = s[0];
+            char indexofHint = s[1];
+            argumentUsesIndexof[i] = (indexofHint == 'i');
          }
 
-         constnames[constreg] = strdup (name);
-       }
-       free(progcopy);
+         /* Get the constant names */
+         constnames = (char **)  malloc (sizeof (char *) * GL_MAX_CONSTS);
 
-       for (i=0; i<GL_MAX_CONSTS; i++) {
-         if (constnames[i] == NULL) {
-           constnames[i] = strdup ("__UNKNOWN_CONST#######");
-           sprintf(constnames[i], "__UNKNOWN_CONST%d", i);
+         for (i=0; i<GL_MAX_CONSTS; i++)
+            constnames[i] = NULL;
+
+         progcopy = strdup (src);
+         c = progcopy;
+         while (*c && (c = strstr (c, "#semantic main.")) != NULL) {
+            char *name;
+            char *constregstring;
+            unsigned int constreg;
+
+            c += strlen("#semantic main.");
+
+            /* set name to the ident */
+            name = c;
+
+            do c++; while (*c != ' ');
+            *c = '\0';
+
+            do c++; while (*c != ':');
+            do c++; while (*c == ' ');
+
+            /* If we have not found a constant register,
+             ** simply continue */
+            if (*c != 'C')
+               continue;
+
+            c++;
+            constregstring = c;
+            while (*c >= '0' && *c <= '9') c++;
+            *c = '\0';
+            c++;
+
+            constreg = atoi (constregstring);
+
+            if (constreg > GL_MAX_CONSTS) {
+               fprintf (stderr, "GL: Too many constant registers\n");
+               exit(1);
+            }
+
+            constnames[constreg] = strdup (name);
          }
-       }
-     }
+         free(progcopy);
 
-     /* Get the output info */
-     progcopy = strdup (src);
-     c = strstr(progcopy, "!!multipleOutputInfo:");
-     c += strlen("!!multipleOutputInfo:");
-     *(strstr(c,":")) = '\0';
-     pass_out[j] = atoi(c);
-     c += strlen(c)+1;
-     *(strstr(c,":")) = '\0';
-     if (atoi(c) != 1) {
-       fprintf (stderr, "GL:  GL backend does not support "
-                "shaders with multiple outputs\n");
-       exit(1);
-     }
-     free(progcopy);
-
-     /* TIM: try to parse reduction stuff */
-     progcopy = strdup (src);
-     c = strstr(progcopy, "!!reductionFactor:");
-     c += strlen("!!reductionFactor:");
-     *(strstr(c,":")) = '\0';
-     int factor = atoi(c);
-     free(progcopy);
-     if( factor != 0 && factor != 2 )
-     {
-       /* TIM: remove this pass from consideration... */
-       npasses--;
-       j--;
-	   continue;
-     }
-
-     /* Load the program code */
-     CHECK_GL();
-
-     glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[j]);
-     glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-                        strlen(src), (GLubyte *) src);
-
-     /* Check for program errors */
-     if (glGetError() == GL_INVALID_OPERATION) {
-       GLint pos;
-       int i;
-       int line, linestart;
-
-       progcopy = strdup (src);
-       glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &pos);
-
-       line = 1;
-       linestart = 0;
-       for (i=0; i<pos; i++) {
-         if (progcopy[i] == '\n') {
-           line++;
-           linestart = i+1;
+         for (i=0; i<GL_MAX_CONSTS; i++) {
+            if (constnames[i] == NULL) {
+               constnames[i] = strdup ("__UNKNOWN_CONST#######");
+               sprintf(constnames[i], "__UNKNOWN_CONST%d", i);
+            }
          }
-       }
-       fprintf ( stderr, "GL: Program Error on line %d\n", line);
-       for (i=linestart; progcopy[i] != '\0' && progcopy[i] != '\n'; i++);
-       progcopy[i] = '\0';
-       fprintf ( stderr, "%s\n", progcopy+linestart);
-       for (i=linestart; i<pos; i++)
-         fprintf ( stderr, " ");
-       for (;progcopy[i] != '\0' && progcopy[i] != '\n'; i++)
-         fprintf ( stderr, "^");
-       fprintf ( stderr, "\n");
-       free(progcopy);
-       fprintf ( stderr, "%s\n",
-                 glGetString(GL_PROGRAM_ERROR_STRING_ARB));
-       exit(1);
-     }
+      }
+
+      /* Get the output info */
+      progcopy = strdup (src);
+      c = strstr(progcopy, "!!multipleOutputInfo:");
+      c += strlen("!!multipleOutputInfo:");
+      *(strstr(c,":")) = '\0';
+      pass_out[j] = atoi(c);
+      c += strlen(c)+1;
+      *(strstr(c,":")) = '\0';
+      if (atoi(c) != 1) {
+         fprintf (stderr, "GL:  GL backend does not support "
+               "shaders with multiple outputs\n");
+         exit(1);
+      }
+      free(progcopy);
+
+      /* TIM: try to parse reduction stuff */
+      progcopy = strdup (src);
+      c = strstr(progcopy, "!!reductionFactor:");
+      c += strlen("!!reductionFactor:");
+      *(strstr(c,":")) = '\0';
+      int factor = atoi(c);
+      free(progcopy);
+      if( factor != 0 && factor != 2 )
+      {
+         /* TIM: remove this pass from consideration... */
+         npasses--;
+         j--;
+         continue;
+      }
+
+      /* Load the program code */
+      CHECK_GL();
+
+      glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[j]);
+      glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+            strlen(src), (GLubyte *) src);
+
+      /* Check for program errors */
+      if (glGetError() == GL_INVALID_OPERATION) {
+         GLint pos;
+         int i;
+         int line, linestart;
+
+         progcopy = strdup (src);
+         glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &pos);
+
+         line = 1;
+         linestart = 0;
+         for (i=0; i<pos; i++) {
+            if (progcopy[i] == '\n') {
+               line++;
+               linestart = i+1;
+            }
+         }
+         fprintf ( stderr, "GL: Program Error on line %d\n", line);
+         for (i=linestart; progcopy[i] != '\0' && progcopy[i] != '\n'; i++);
+         progcopy[i] = '\0';
+         fprintf ( stderr, "%s\n", progcopy+linestart);
+         for (i=linestart; i<pos; i++)
+            fprintf ( stderr, " ");
+         for (;progcopy[i] != '\0' && progcopy[i] != '\n'; i++)
+            fprintf ( stderr, "^");
+         fprintf ( stderr, "\n");
+         free(progcopy);
+         fprintf ( stderr, "%s\n",
+               glGetString(GL_PROGRAM_ERROR_STRING_ARB));
+         exit(1);
+      }
    }
 
    for (i=0; i<5; i++)
@@ -236,7 +235,7 @@ GLKernel::PushStream(Stream *s) {
    inputReduceStreamSreg = sreg;
 
    if (sreg==0)
-     sreg0 = glstream;
+      sreg0 = glstream;
 
    for (int i=0; i<glstream->getFieldCount(); i++) {
       glActiveTextureARB(GL_TEXTURE0_ARB+sreg);
@@ -248,7 +247,7 @@ GLKernel::PushStream(Stream *s) {
    sargs[treg] = glstream;
 
    if (argumentUsesIndexof[argcount])
-     creg++;
+      creg++;
 
    treg++;
    argcount++;
@@ -276,7 +275,7 @@ GLKernel::PushReduce(void * val, __BRTStreamType type) {
    reduceTreg = treg;
 
    if (sreg==0 && type == __BRTSTREAM)
-     sreg0 =(GLStream *) (Stream *) *((::brook::stream*) val);
+      sreg0 =(GLStream *) (Stream *) *((::brook::stream*) val);
 
    sreg++;
    treg++;
@@ -289,7 +288,7 @@ GLKernel::PushGatherStream(Stream *s) {
    GLStream *glstream = (GLStream *) s;
 
    if (sreg==0)
-     sreg0 = glstream;
+      sreg0 = glstream;
 
    for (int i=0; i<glstream->getFieldCount(); i++) {
       glActiveTextureARB(GL_TEXTURE0_ARB+sreg);
@@ -309,9 +308,9 @@ GLKernel::PushOutput(Stream *s) {
    GLStream *glstream = (GLStream *) s;
 
    if (argumentUsesIndexof[argcount]) {
-     sargs[treg] = glstream;
-     treg++;
-     creg++;
+      sargs[treg] = glstream;
+      treg++;
+      creg++;
    }
 
    outstreams[nout] = glstream;
@@ -344,9 +343,9 @@ GLKernel::ResetStateMachine() {
 
 static void
 compute_tex_coords(unsigned int w, unsigned int h, bool is_1D_iter,
-                  float x1, float y1, float z1, float w1,
-                  float x2, float y2, float z2, float w2,
-                  glfloat4 &f1, glfloat4 &f2)
+      float x1, float y1, float z1, float w1,
+      float x2, float y2, float z2, float w2,
+      glfloat4 &f1, glfloat4 &f2)
 {
    const float half_pixel  = 0.5f / GLRunTime::workspace;
    const float pixel  = 1.0f / GLRunTime::workspace;
@@ -400,13 +399,13 @@ compute_tex_coords(unsigned int w, unsigned int h, bool is_1D_iter,
          f2.y = f1.y;
       } else {
          /* XXXX
-         ** It is totally irrational that I have to
-         ** treat the y direction totally differently
-         ** than the x direction.
-         ** Through experimentation: ratio*2+1 works
-         ** Is this an NVIDIA bug?
-         **    -- Ian
-         */
+          ** It is totally irrational that I have to
+          ** treat the y direction totally differently
+          ** than the x direction.
+          ** Through experimentation: ratio*2+1 works
+          ** Is this an NVIDIA bug?
+          **    -- Ian
+          */
          float sh = y2-y1;
          float ratio = sh / h;
          float shift = ratio * 0.5f;
@@ -423,27 +422,27 @@ compute_tex_coords(unsigned int w, unsigned int h, bool is_1D_iter,
 
 void
 GLKernel::RecomputeTexCoords(unsigned int w, unsigned int h,
-                             glfloat4 f1[], glfloat4 f2[])
+      glfloat4 f1[], glfloat4 f2[])
 {
    unsigned int i;
 
    for (i = 0; i< GL_MAX_TEXCOORDS; i++) {
       if (sargs[i]) {
          compute_tex_coords(w, h, false, 0.0f, 0.0f, 0.0f, 1.0f,
-                           (float) sargs[i]->width,
-                           (float) sargs[i]->height, 0.0f, 1.0f,
-                           f1[i], f2[i]);
+               (float) sargs[i]->width,
+               (float) sargs[i]->height, 0.0f, 1.0f,
+               f1[i], f2[i]);
       } else if (iargs[i]) {
          GLIter *itr = (GLIter *) iargs[i];
          compute_tex_coords(w, h, (itr->dims==1),
-                            itr->min.x, itr->min.y, itr->min.z, itr->min.w,
-                            itr->max.x, itr->max.y, itr->max.z, itr->max.w,
-                            f1[i], f2[i]);
+               itr->min.x, itr->min.y, itr->min.z, itr->min.w,
+               itr->max.x, itr->max.y, itr->max.z, itr->max.w,
+               f1[i], f2[i]);
       }
    }
 }
 
-void
+   void
 GLKernel::IssueMapTexCoords(glfloat4 f1[], glfloat4 f2[])
 {
    unsigned int i;
@@ -451,16 +450,16 @@ GLKernel::IssueMapTexCoords(glfloat4 f1[], glfloat4 f2[])
    for (i=0; i<GL_MAX_TEXCOORDS; i++) {
       if (sargs[i] || (iargs[i] && iargs[i]->dims==2)) {
          glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                              f1[i].x, f2[i].y, 0.0f, 1.0f);
+               f1[i].x, f2[i].y, 0.0f, 1.0f);
       } else if (iargs[i] && iargs[i]->dims==1) {
          glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                              f1[i].x, f1[i].y, f1[i].z, f1[i].w);
+               f1[i].x, f1[i].y, f1[i].z, f1[i].w);
       }
    }
 }
 
 
-void
+   void
 GLKernel::Map()
 {
    unsigned int pass_idx, out_idx;
@@ -517,7 +516,7 @@ GLKernel::Map()
          glBindTexture(GL_TEXTURE_RECTANGLE_EXT, curOutput->id[field_idx]);
          glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0, 0, 0, 0, 0, w, h);
          if (sreg0)
-           glBindTexture(GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
+            glBindTexture(GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
          CHECK_GL();
 
          pass_idx++;
@@ -531,8 +530,8 @@ GLKernel::Map()
 
 static void
 issue_reduce_poly (int x1, int y1,
-                   int w, int h, int n,
-                   glfloat4 f1[], glfloat4 f2[]) {
+      int w, int h, int n,
+      glfloat4 f1[], glfloat4 f2[]) {
 
    int i;
 
@@ -542,22 +541,22 @@ issue_reduce_poly (int x1, int y1,
    glBegin(GL_TRIANGLES);
    for (i=0; i<n; i++)
       glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                           f1[i].x, f2[i].y, 0.0f, 1.0f);
+            f1[i].x, f2[i].y, 0.0f, 1.0f);
    glVertex2f(-1.0f, 3.0f);
    for (i=0; i<n; i++)
       glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                           f1[i].x, f1[i].y, 0.0f, 1.0f);
+            f1[i].x, f1[i].y, 0.0f, 1.0f);
    glVertex2f(-1.0f, -1.0f);
    for (i=0; i<n; i++)
       glMultiTexCoord4fARB(GL_TEXTURE0_ARB+i,
-                           f2[i].x, f1[i].y, 0.0f, 1.0f);
+            f2[i].x, f1[i].y, 0.0f, 1.0f);
    glVertex2f(3.0f, -1.0f);
    glEnd();
    CHECK_GL();
 }
 
 
-void
+   void
 GLKernel::ReduceScalar()
 {
    /* First reduce in the x direction */
@@ -579,15 +578,15 @@ GLKernel::ReduceScalar()
 
    /* Construct the temp stream */
    if (tmpReduceStream[ncomp] &&
-       (tmpReduceStream[ncomp]->width < (unsigned int) w ||
-        tmpReduceStream[ncomp]->height < (unsigned int) h)) {
-     delete tmpReduceStream[ncomp];
-     tmpReduceStream[ncomp] = NULL;
+         (tmpReduceStream[ncomp]->width < (unsigned int) w ||
+          tmpReduceStream[ncomp]->height < (unsigned int) h)) {
+      delete tmpReduceStream[ncomp];
+      tmpReduceStream[ncomp] = NULL;
    }
 
    if (!tmpReduceStream[ncomp]) {
-     int extents[2] = {h,w};
-     __BRTStreamType t = (__BRTStreamType) ncomp;
+      int extents[2] = {h,w};
+      __BRTStreamType t = (__BRTStreamType) ncomp;
       tmpReduceStream[ncomp] =
          new GLStream(runtime, 1, &t, 2, extents);
    }
@@ -595,10 +594,10 @@ GLKernel::ReduceScalar()
    t = tmpReduceStream[ncomp];
 
    assert (inputReduceStreamTreg == 0 ||
-           inputReduceStreamTreg == 1);
+         inputReduceStreamTreg == 1);
 
    assert (reduceTreg == 0 ||
-           reduceTreg == 1);
+         reduceTreg == 1);
 
    /* First reduce in the x dir */
    while (w != 1) {
@@ -608,25 +607,25 @@ GLKernel::ReduceScalar()
       glfloat4 f1[2], f2[2];
 
       compute_tex_coords(half, h, false,
-                 0.0f, 0.0f, 0.0f, 1.0f,
-                 (float) wp, (float) h, 0.0f, 1.0f,
-                 f1[0], f2[0]);
+            0.0f, 0.0f, 0.0f, 1.0f,
+            (float) wp, (float) h, 0.0f, 1.0f,
+            f1[0], f2[0]);
 
       compute_tex_coords(half, h, false,
-                 1.0f, 0.0f, 0.0f, 1.0f,
-                 (float) wp+1, (float) h, 0.0f, 1.0f,
-                 f1[1], f2[1]);
+            1.0f, 0.0f, 0.0f, 1.0f,
+            (float) wp+1, (float) h, 0.0f, 1.0f,
+            f1[1], f2[1]);
 
       if (first) {
-        glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
-        glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
       } else {
-        glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
-        glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
       }
       CHECK_GL();
 
@@ -635,19 +634,19 @@ GLKernel::ReduceScalar()
 
       if (remainder) {
          compute_tex_coords(1, h, false,
-                    (float) (w-1)+0.5f, 0.0f, 0.0f, 1.0f,
-                    (float) (w-1)+0.5f, (float) h, 0.0f, 1.0f,
-                    f1[0], f2[0]);
+               (float) (w-1)+0.5f, 0.0f, 0.0f, 1.0f,
+               (float) (w-1)+0.5f, (float) h, 0.0f, 1.0f,
+               f1[0], f2[0]);
 
          glActiveTextureARB(GL_TEXTURE0_ARB);
          if (first)
-           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
          else
-           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
          glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
          issue_reduce_poly(half, 0, 1, h, 1, f1, f2);
          if (sreg0)
-           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
       }
 
       first = false;
@@ -655,10 +654,10 @@ GLKernel::ReduceScalar()
       glActiveTextureARB(GL_TEXTURE0_ARB);
       glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
       glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
-                       0, 0, 0, 0,
-                       half+remainder, h);
+            0, 0, 0, 0,
+            half+remainder, h);
       if (sreg0)
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
 
       w = half+remainder;
    }
@@ -671,25 +670,25 @@ GLKernel::ReduceScalar()
       glfloat4 f1[2], f2[2];
 
       compute_tex_coords(1, half, false,
-                 0.0f,       0.0f, 0.0f, 1.0f,
-                 0.0f, (float) hp, 0.0f, 1.0f,
-                 f1[0], f2[0]);
+            0.0f,       0.0f, 0.0f, 1.0f,
+            0.0f, (float) hp, 0.0f, 1.0f,
+            f1[0], f2[0]);
 
       compute_tex_coords(1, half, false,
-                 0.0f,         1.0f, 0.0f, 1.0f,
-                 0.0f, (float) hp+1, 0.0f, 1.0f,
-                 f1[1], f2[1]);
+            0.0f,         1.0f, 0.0f, 1.0f,
+            0.0f, (float) hp+1, 0.0f, 1.0f,
+            f1[1], f2[1]);
 
       if (first) {
-        glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
-        glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
       } else {
-        glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
-        glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+inputReduceStreamSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+reduceSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
       }
       CHECK_GL();
 
@@ -698,33 +697,33 @@ GLKernel::ReduceScalar()
 
       if (remainder) {
          compute_tex_coords(1, 1, false,
-                    0.0f, (float) (h-1), 0.0f, 1.0f,
-                    0.0f, (float) (h-1), 0.0f, 1.0f,
-                    f1[0], f2[0]);
+               0.0f, (float) (h-1), 0.0f, 1.0f,
+               0.0f, (float) (h-1), 0.0f, 1.0f,
+               f1[0], f2[0]);
 
          glActiveTextureARB(GL_TEXTURE0_ARB);
          if (first)
-           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
          else
-           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
          glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
 
          issue_reduce_poly(0, half, 1, 1, 1, f1, f2);
          if (sreg0)
-           glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
       }
 
       first = false;
 
       if (half + remainder > 1) {
-        glActiveTextureARB(GL_TEXTURE0_ARB);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
-        glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
-        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
-                         0, 0, 0, 0,
-                         1, half+remainder);
-        if (sreg0)
-          glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, runtime->passthrough_id);
+         glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
+               0, 0, 0, 0,
+               1, half+remainder);
+         if (sreg0)
+            glBindTexture (GL_TEXTURE_RECTANGLE_EXT, sreg0->id[0]);
       }
       h = half+remainder;
    }
@@ -735,7 +734,7 @@ GLKernel::ReduceScalar()
       ((float *)reduceVal)[i] = ((float *)&readback)[i];
 }
 
-void
+   void
 GLKernel::ReduceStream()
 {
    int w = inputReduceStream->width;
@@ -781,17 +780,17 @@ GLKernel::ReduceStream()
 
    /* Construct the temp stream */
    if (tmpReduceStream[ncomp] &&
-       (tmpReduceStream[ncomp]->width < (unsigned int) w ||
-        tmpReduceStream[ncomp]->height < (unsigned int) h)) {
-     delete tmpReduceStream[ncomp];
-     tmpReduceStream[ncomp] = NULL;
+         (tmpReduceStream[ncomp]->width < (unsigned int) w ||
+          tmpReduceStream[ncomp]->height < (unsigned int) h)) {
+      delete tmpReduceStream[ncomp];
+      tmpReduceStream[ncomp] = NULL;
    }
 
    if (!tmpReduceStream[ncomp]) {
-     int extents[2] = {h,w};
-     __BRTStreamType t = (__BRTStreamType) ncomp;
+      int extents[2] = {h,w};
+      __BRTStreamType t = (__BRTStreamType) ncomp;
 
-     tmpReduceStream[ncomp] =
+      tmpReduceStream[ncomp] =
          new GLStream(runtime, 1, &t, 2, extents);
    }
    t = tmpReduceStream[ncomp];
@@ -800,19 +799,19 @@ GLKernel::ReduceStream()
    remainder_y = 0;
 
    assert (inputReduceStreamTreg == 0 ||
-           inputReduceStreamTreg == 1);
+         inputReduceStreamTreg == 1);
 
    assert (reduceTreg == 0 ||
-           reduceTreg == 1);
+         reduceTreg == 1);
 
    assert (treg == 2);
 
    if (inputReduceStreamSreg < reduceSreg) {
-     leftSreg = inputReduceStreamSreg;
-     rightSreg = reduceSreg;
+      leftSreg = inputReduceStreamSreg;
+      rightSreg = reduceSreg;
    } else {
-     leftSreg = reduceSreg;
-     rightSreg = inputReduceStreamSreg;
+      leftSreg = reduceSreg;
+      rightSreg = inputReduceStreamSreg;
    }
 
    /* First reduce in the x dir */
@@ -821,25 +820,25 @@ GLKernel::ReduceStream()
       int remainder = ratiox%2;
 
       compute_tex_coords(half*nx, h, false,
-                 0.0f, 0.0f, 0.0f, 1.0f,
-                 (float) nx*ratiox, (float) h, 0.0f, 1.0f,
-                 f1[0], f2[0]);
+            0.0f, 0.0f, 0.0f, 1.0f,
+            (float) nx*ratiox, (float) h, 0.0f, 1.0f,
+            f1[0], f2[0]);
 
       compute_tex_coords(half*nx, h, false,
-                 1.0f, 0.0f, 0.0f, 1.0f,
-                 (float) nx*ratiox+1,  (float) h, 0.0f, 1.0f,
-                 f1[1], f2[1]);
+            1.0f, 0.0f, 0.0f, 1.0f,
+            (float) nx*ratiox+1,  (float) h, 0.0f, 1.0f,
+            f1[1], f2[1]);
 
       if (first) {
-        glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
-        glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, inputReduceStream->id[0]);
       } else {
-        glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
-        glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
-        glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+leftSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
+         glActiveTextureARB(GL_TEXTURE0_ARB+rightSreg);
+         glBindTexture (GL_TEXTURE_RECTANGLE_EXT, t->id[0]);
       }
 
       glBindProgramARB (GL_FRAGMENT_PROGRAM_ARB, pass_id[0]);
@@ -1087,14 +1086,8 @@ void
 GLKernel::PushConstant(const float &val)
 {
    BindParameter(val, 0.0f, 0.0f, 0.0f);
-#if 0
-   glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, pass_id[i]);
-   glProgramLocalParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, creg,
-                                val.x, val.y, 0.0f, 0.0f);
-#endif
    creg++;
    argcount++;
-   CHECK_GL();
 }
 
 void
@@ -1103,7 +1096,6 @@ GLKernel::PushConstant(const float2 &val)
    BindParameter(val.x, val.y, 0.0f, 0.0f);
    creg++;
    argcount++;
-   CHECK_GL();
 }
 
 void
@@ -1112,7 +1104,6 @@ GLKernel::PushConstant(const float3 &val)
    BindParameter(val.x, val.y, val.z, 0.0f);
    creg++;
    argcount++;
-   CHECK_GL();
 }
 
 void
@@ -1120,5 +1111,4 @@ GLKernel::PushConstant(const float4 &val) {
    BindParameter(val.x, val.y, val.z, val.w);
    creg++;
    argcount++;
-   CHECK_GL();
 }

@@ -15,6 +15,10 @@
 #include "nv30gl/nv30gl.hpp"
 #endif
 
+#ifdef BUILD_ARB
+#include "nv30gl/arb.hpp"
+#endif
+
 #include "cpu/cpu.hpp"
 #include "brtscatterintrinsic.hpp"
 
@@ -128,8 +132,7 @@ namespace brook {
 
 #ifdef BUILD_ARB
     if (!strcmp(env, ARB_RUNTIME_STRING))
-       /* ARB and NV30 turn out to be identical... */
-       return new NV30GLRunTime();
+       return new ARBRunTime();
 #endif
 
     if (strcmp(env,CPU_RUNTIME_STRING)&&strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)){
