@@ -485,7 +485,7 @@ class IndexExprConverter{public:
 class NewIntConstant:public IntConstant {public:
     NewIntConstant(long val, const Location &l):IntConstant(val,l){}
     virtual void print (std::ostream&out) const{
-        out << "__BrtInt1(";
+        out << "__BrtFloat1((float)";
         (this)->IntConstant::print(out);
         out << ")";
     }
@@ -496,7 +496,7 @@ class NewIntConstant:public IntConstant {public:
 class NewUIntConstant:public UIntConstant {public:
     NewUIntConstant(unsigned int val, const Location &l):UIntConstant(val,l){}
     virtual void print (std::ostream&out) const{
-        out << "__BrtInt1(";
+        out << "__BrtFloat1((float)";
         (this)->UIntConstant::print(out);
         out << ")";
     }
@@ -507,7 +507,7 @@ class NewUIntConstant:public UIntConstant {public:
 class NewCharConstant:public CharConstant {public:
     NewCharConstant(char val, const Location &l):CharConstant(val,l){}
     virtual void print (std::ostream&out) const{
-        out << "__BrtChar1(";
+        out << "__BrtFloat1((float)";
         (this)->CharConstant::print(out);
         out << ")";
     }
