@@ -1,5 +1,6 @@
-
+#if !defined(__GNUC__) || __GNUC__ != 2
 #include <ios>
+#endif
 #include <iostream>
 #include <sstream>
 #include <iomanip>

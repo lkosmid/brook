@@ -9,6 +9,7 @@
 #include "wglext.h"
 #else
 #include <X11/Xlib.h>
+#define GL_GLEXT_LEGACY
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glx.h>
