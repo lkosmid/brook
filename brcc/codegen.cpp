@@ -196,49 +196,46 @@ int getGatherStructureSamplerCount( Type* form )
 
 static bool printGatherStructureFunctionBody( std::ostream& out, const std::string& name, StructDef* structure, int& ioIndex )
 {
-  int fieldCount = structure->nComponents;
-	for( int i = 0; i < fieldCount; i++ )
-	{
-		Decl* fieldDecl = structure->components[i];
-		if( fieldDecl->isStatic() ) continue;
-		if( fieldDecl->isTypedef() ) continue;
-    
-    std::string subName = name + "." + fieldDecl->name->name;
-
-    Type* form = fieldDecl->form;
-    StructDef* subStructure = findStructureDef( form );
-    if( subStructure )
-    {
-      if(!printGatherStructureFunctionBody( out, subName, subStructure, ioIndex ))
-        return false;
-    }
-    else
-    {
-      out << "result" << subName << " = ";
-
-      BaseType* base = form->getBase();
-      switch(base->typemask) {
-      case BT_Float:
-        out << "__fetch_float";
-      break;
-      case BT_Float2:
-        out << "__fetch_float2";
-      break;
-      case BT_Float3:
-        out << "__fetch_float3";
-      break;
-      case BT_Float4:
-        out << "__fetch_float4";
-      break;
-      default:
-        out << "__fetchunknown";
-        break;
+   int fieldCount = structure->nComponents;
+   for( int i = 0; i < fieldCount; i++ ) {
+      Decl* fieldDecl = structure->components[i];
+      if( fieldDecl->isStatic() ) continue;
+      if( fieldDecl->isTypedef() ) continue;
+      
+      std::string subName = name + "." + fieldDecl->name->name;
+      
+      Type* form = fieldDecl->form;
+      StructDef* subStructure = findStructureDef( form );
+      if( subStructure ) {
+         if(!printGatherStructureFunctionBody( out, subName, 
+                                               subStructure, ioIndex ))
+            return false;
+      } else {
+         out << "result" << subName << " = ";
+         
+         BaseType* base = form->getBase();
+         switch(base->typemask) {
+         case BT_Float:
+            out << "__fetch_float";
+            break;
+         case BT_Float2:
+            out << "__fetch_float2";
+            break;
+         case BT_Float3:
+            out << "__fetch_float3";
+            break;
+         case BT_Float4:
+            out << "__fetch_float4";
+            break;
+         default:
+            return false;
+            break;
+         }
+         out << "( ";
+         out << "samplers[" << ioIndex++ << "], index );\n";
       }
-      out << "( ";
-      out << "samplers[" << ioIndex++ << "], index );\n";
-    }
-	}
-  return true;
+   }
+   return true;
 }
 
 static void printGatherStructureFunction( std::ostream& out, const std::string& name, Type* form )
@@ -266,29 +263,30 @@ static void printGatherStructureFunction( std::ostream& out, const std::string& 
   out << "\treturn result;\n}\n\n";
 }
 
-static void generate_shader_type_declaration( std::ostream& out, DeclStemnt* inStmt )
+static void generate_shader_type_declaration( std::ostream& out,
+                                              DeclStemnt* inStmt )
 {
-	for( DeclVector::iterator i = inStmt->decls.begin(); i != inStmt->decls.end(); ++i )
-	{
-		Decl* decl = *i;
-		Type* form = decl->form;
-		/*
-		Symbol* structureTag = findStructureTag( form );
-		if( structureTag != NULL ) {
-			StructDef* structure = structureTag->entry->uStructDef->stDefn;
-			printShaderStructureDef( out, structure );
-		}*/
-
-		if( decl->isTypedef() )
-		{
-			out << "typedef ";
-			form->printBase(out,0);
-			out << " " << decl->name->name;
-			out << ";\n\n";
-
-      printGatherStructureFunction( out, decl->name->name, decl->form );
-		}
-	}
+   for( DeclVector::iterator i = inStmt->decls.begin(); 
+        i != inStmt->decls.end(); ++i ) {
+      Decl* decl = *i;
+      Type* form = decl->form;
+      /*
+        Symbol* structureTag = findStructureTag( form );
+        if( structureTag != NULL ) {
+        StructDef* structure = structureTag->entry->uStructDef->stDefn;
+        printShaderStructureDef( out, structure );
+        }*/
+      
+      if( decl->isTypedef() ) {
+         out << "typedef ";
+         form->printBase(out,0);
+         out << " " << decl->name->name;
+         out << ";";
+         out << "\n";
+         
+         printGatherStructureFunction( out, decl->name->name, decl->form );
+      }
+   }
 }
 
 static void generate_shader_structure_definitions( std::ostream& out ) {
