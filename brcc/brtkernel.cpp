@@ -23,7 +23,7 @@ unsigned int getReferenceStream(FunctionDef * fDef) {
    FunctionType * ft= static_cast<FunctionType*>(fDef->decl->form);
    unsigned int ret=0;
    bool found=false;
-   for (unsigned int i=0;i<ft->nArgs;++i) {
+   for (int i=0;i<ft->nArgs;++i) {
       if (ft->args[i]->isReduce())
          continue;
       if (ft->args[i]->isStream()){
