@@ -175,6 +175,7 @@ int haupto (int argc,char ** argv) {
   printf("Total Time %f\n",(stop-start)/(NUMTESTS*1000.));
   return 0;
 }
+extern int rapidCollideMain (int argc, char ** argv);
 extern int volume_division(int,char**);
 extern int raw_vout(int,char**);
 #define STRIDE 2048
@@ -183,12 +184,17 @@ int main (int argc, char ** argv) {
   char usecpu=0;
   char novout=0;
   char vol_div=0;
+  char rapid=0;
   char raw_v=0;
   int i;
   SetupMillisTimer();
    for (i=0;i<argc;++i) {
      char match=0;
      int j;
+     if (strcmp(argv[i],"-rapid")==0) {
+       rapid=1;
+       match=1;
+     }
      if (strcmp(argv[i],"-mc")==0) {
        vol_div=1;
        match=1;
@@ -205,6 +211,7 @@ int main (int argc, char ** argv) {
    }
    if (raw_v) return raw_vout (argc, argv);
    if (vol_div) return volume_division(argc,argv);
+   if (rapid) return rapidCollideMain (argc,argv);
    for (i=0;i<argc;++i) {
      char match=0;
      int j;
