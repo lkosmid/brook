@@ -95,7 +95,7 @@ void Reduction_Time(int length) {
   int size; 
   int simReduceReg;
   int usec;
-  int iterations = 100;
+  int iterations = 200;
 
   simReduceReg = 0;
 
