@@ -1,16 +1,19 @@
 #include <iostream>
 #include <math.h>
  
-template <class T, class B> T singlequestioncolon (const B& a, const T&b,
-const T&c){
+template <class T, class B> static T singlequestioncolon (const B& a,
+                                                          const T&b,
+                                                          const T&c){
     return a.questioncolon(b,c);
 };
-template <> float singlequestioncolon (const char & a, const float &b,
-const float&c) {
+template <> static float singlequestioncolon (const char & a,
+                                              const float &b,
+                                              const float&c) {
     return a?b:c;
 }
-template <> float singlequestioncolon (const float & a, const float &b,
-const float&c) {
+template <> static float singlequestioncolon (const float & a,
+                                              const float &b,
+                                              const float&c) {
     return a?b:c;
 }
 
