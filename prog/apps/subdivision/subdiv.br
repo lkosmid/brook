@@ -352,7 +352,8 @@ kernel void repairTJunctions(STri triangles[][],
 kernel void identifyTJunctions(STri triangles[][],
                              Neighbor neighbors[][],
                              float2 i<>,
-                             vout[2] float3 cracks<>) {
+                             vout[1] float3 cracksA<>,
+                             vout[1] float3 cracksB<>) {
   float2 zero2=0;
   float2 index = (i>=0&&i<2048)?i:zero2;
   STri tri=triangles[index];
@@ -361,18 +362,33 @@ kernel void identifyTJunctions(STri triangles[][],
   if(i.x>=0&&i.x<2048/*&&(tri.A.w!=0||tri.B.w!=0||tri.C.w!=0)*/) {
     if ((generous||oldneighbors.AB.w==0)&&tri.A.w==0) {
       //that triangle is rastered as is, we better push out a repair triangle
-      cracks=float3(i.x,i.y,0);
-      push(cracks);
-    }
+      cracksA=float3(i.x,i.y,0);
+      push(cracksA);
+      if ((generous||oldneighbors.BC.w==0)&&tri.B.w==0) {
+        //that triangle is rastered as is, we better push out a repair triangle
+        cracksB=float3(i.x,i.y,1);
+        push(cracksB);
+      }
+      if ((generous||oldneighbors.AC.w==0)&&tri.C.w==0) {
+        //that triangle is rastered as is, we better push out a repair triangle
+        cracksB=float3(i.x,i.y,2);
+        push(cracksB);
+      }
+    }else
     if ((generous||oldneighbors.BC.w==0)&&tri.B.w==0) {
      //that triangle is rastered as is, we better push out a repair triangle
-      cracks=float3(i.x,i.y,1);
-      push(cracks);
-    }
+      cracksA=float3(i.x,i.y,1);
+      push(cracksA);
+      if ((generous||oldneighbors.AC.w==0)&&tri.C.w==0) {
+        //that triangle is rastered as is, we better push out a repair triangle
+        cracksB=float3(i.x,i.y,2);
+        push(cracksB);
+      }
+    }else
     if ((generous||oldneighbors.AC.w==0)&&tri.C.w==0) {
       //that triangle is rastered as is, we better push out a repair triangle
-      cracks=float3(i.x,i.y,2);
-      push(cracks);
+      cracksA=float3(i.x,i.y,2);
+      push(cracksA);
     }
   }
 }
@@ -702,7 +718,8 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
                         struct VertexArray *output,
                         float epsilon,
                         int counter) {
-  float3 tJunctionsRepair<0,0>;
+  float3 tJunctionsRepairA<0,0>;
+  float3 tJunctionsRepairB<0,0>;
   unsigned int streamY=toi(streamSize(*triangles).y);
   unsigned int streamX=toi(streamSize(*triangles).x);
   unsigned char snpSize=0;
@@ -717,17 +734,25 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
       int wosizex=3*toi(streamSize(shouldNotProduce).x);
       int wosizey=toi(streamSize(shouldNotProduce).y);
       int tsizex=toi(streamSize(shouldProduce).x);
-      int tsizey=2*toi(streamSize(shouldProduce).y);
+      int tsizey=toi(streamSize(shouldProduce).y);
       float3 outputTri<wosizey,wosizex>;
       if (tsizey&&tsizex) {
-        float3 tJunctions<tsizey,tsizex>;
-        identifyTJunctions(*triangles,*neighbors,shouldProduce,tJunctions);
-        if (streamSize(tJunctions).x&&streamSize(tJunctions).y) {
-          int tsizex = toi(streamSize(tJunctions).x)*3;
-          int tsizey = toi(streamSize(tJunctions).y);
+        float3 tJunctionsA<tsizey,0>;
+        float3 tJunctionsB<tsizey,0>;
+        identifyTJunctions(*triangles,*neighbors,shouldProduce,tJunctionsA,tJunctionsB);
+        if (streamSize(tJunctionsA).x&&streamSize(tJunctionsA).y) {
+          int tsizex = toi(streamSize(tJunctionsA).x)*3;
+          int tsizey = toi(streamSize(tJunctionsA).y);
           float3 outputTri<tsizey,tsizex>;
-          streamSwap(outputTri,tJunctionsRepair);
-          repairTJunctions(*triangles,tJunctions,tJunctionsRepair);
+          streamSwap(outputTri,tJunctionsRepairA);
+          repairTJunctions(*triangles,tJunctionsA,tJunctionsRepairA);
+        }
+        if (streamSize(tJunctionsB).x&&streamSize(tJunctionsB).y) {
+          int tsizex = toi(streamSize(tJunctionsB).x)*3;
+          int tsizey = toi(streamSize(tJunctionsB).y);
+          float3 outputTri<tsizey,tsizex>;
+          streamSwap(outputTri,tJunctionsRepairB);
+          repairTJunctions(*triangles,tJunctionsB,tJunctionsRepairB);
         }
       }
       if (wosizex&&wosizey)
@@ -800,11 +825,17 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
                                                 streamSize(outputTri).y));
           streamWrite(outputTri,output->v+wosizey);   
         }
-        if (streamSize(tJunctionsRepair).x&&streamSize(tJunctionsRepair).y&&!noCracks) {
+        if (streamSize(tJunctionsRepairA).x&&streamSize(tJunctionsRepairA).y&&!noCracks) {
           wosizey = output->size;
-          expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepair).x*
-                                                  streamSize(tJunctionsRepair).y));
-          streamWrite(tJunctionsRepair,output->v+wosizey);             
+          expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepairA).x*
+                                                  streamSize(tJunctionsRepairA).y));
+          streamWrite(tJunctionsRepairA,output->v+wosizey);             
+        }
+        if (streamSize(tJunctionsRepairB).x&&streamSize(tJunctionsRepairB).y&&!noCracks) {
+          wosizey = output->size;
+          expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepairB).x*
+                                                  streamSize(tJunctionsRepairB).y));
+          streamWrite(tJunctionsRepairB,output->v+wosizey);             
         }
       }
     }
@@ -818,11 +849,17 @@ void subdivideAdaptive (Neighbor (*neighbors)<>,
                           3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
         streamWrite(outputTri,output->v+sizey);
       }
-      if (streamSize(tJunctionsRepair).x&&streamSize(tJunctionsRepair).y&&!noCracks) {
+      if (streamSize(tJunctionsRepairA).x&&streamSize(tJunctionsRepairA).y&&!noCracks) {
         sizey = output->size;
-        expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepair).x*
-                                                streamSize(tJunctionsRepair).y));
-        streamWrite(tJunctionsRepair,output->v+sizey);             
+        expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepairA).x*
+                                                streamSize(tJunctionsRepairA).y));
+        streamWrite(tJunctionsRepairA,output->v+sizey);             
+      }
+      if (streamSize(tJunctionsRepairB).x&&streamSize(tJunctionsRepairB).y&&!noCracks) {
+        sizey = output->size;
+        expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepairB).x*
+                                                streamSize(tJunctionsRepairB).y));
+        streamWrite(tJunctionsRepairB,output->v+sizey);             
       }
     }
     
