@@ -250,10 +250,33 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    std::set<unsigned int >::iterator endvout
       = voutFunctions[FunctionName()->name].end();
    std::set<unsigned int >::iterator iter;
+   
    for (iter = beginvout;iter!=endvout;++iter) {
-      
       Decl * decl = ft->args[*iter];
-      out << "    "<<getDeclStream(decl,"_values")<< " = (";
+      Expression * vout_limit = decl->form->getQualifiers().vout;
+      
+      if (vout_limit) {
+        bool useparen=(vout_limit->precedence() < 
+                       RelExpr(RO_Less,
+                               NULL,
+                               NULL,
+                               vout_limit->location).precedence());
+        // the above is a simple check for the common expressions.
+        // no need to get fancy here for parens are ok in this case.
+        out <<"    if (__vout_counter >= ";
+        if (useparen) out << "(";
+        vout_limit->print(out);
+        if (useparen) out << ")";
+        out <<") {"<<std::endl;
+        out <<"      ";
+        out <<getDeclStream(decl,"_outputs")<<".push_back(0);"<<std::endl;
+        out <<"      ";
+        out <<"break;"<<std::endl;
+        out <<"    }"<<std::endl;
+      }
+      out << "    "<<getDeclStream(decl,"_values")<< " = ";
+
+      out << "(";
       out << decl->name->name<<"->getDimension()==2?";
       out << "finiteValueProduced"<<getDimensionString(2)<<undecoratedBase(decl);
       out << ":finiteValueProduced"<<getDimensionString(1);      
@@ -268,8 +291,14 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
       PrintVoutDimensionalShift(out,decl,2);
       out << "  }else {"<<std::endl;
       PrintVoutDimensionalShift(out,decl,1);
-      out << "  };"<<std::endl;
-      
+      out << "  }"<<std::endl;
+      out << "  while ("<<getDeclStream(decl,"_outputs")<<".size()) {";
+      out << std::endl;
+      out << "    if ("<<getDeclStream(decl,"_outputs")<<".back())"<<std::endl;
+      out << "      delete "<<getDeclStream(decl,"_outputs")<<".back();";
+      out << std::endl;
+      out << "    "<<getDeclStream(decl,"_outputs")<<".pop_back();"<<std::endl;
+      out << "  }"<<std::endl;
    }
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
