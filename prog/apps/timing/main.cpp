@@ -44,8 +44,24 @@ static const int numTests = sizeof tests / sizeof tests[0];
 int64 start, mid, mid2, stop;
 
 static unsigned int timerRes;
+#ifndef _WIN32
+#include <sys/time.h>
+#include <string.h>
+void SetupMillisTimer(void) {}
+void CleanupMillisTimer(void) {}
+int64 GetTime (void) {
+  struct timeval tv;
+  timerRes = 1000;
+  gettimeofday(&tv,NULL);
+  int64 temp = tv.tv_usec;
+  temp+=tv.tv_sec*1000000;
+  return temp;
+}
+unsigned int GetTimeMillis () {
+  return (unsigned int)(GetTime ()/1000);
+}
 
-#ifdef WIN32
+#else
 #include <windows.h>
 
 /*
@@ -111,8 +127,6 @@ void CleanupMillisTimer(void) {
   }
 }
 
-#else
-#error "Please implement GetTime() for this platform"
 #endif
 
 /*
@@ -122,13 +136,16 @@ void CleanupMillisTimer(void) {
  *      requested test.  The searches are boring and linear since they're so
  *      short.
  */
-
+#ifndef _WIN32
+#define _stricmp strcasecmp
+#endif
 static void
 RunTest(char *id, int length)
 {
    int i;
 
    for (i = 0; i < numTests; i++) {
+     
       if (_stricmp(id, tests[i].id) == 0) {
          tests[i].f(length);
          std::cout << std::endl;
