@@ -1,0 +1,79 @@
+#include <stdio.h>
+
+extern void printf();
+extern void streamRead();
+extern void streamWrite();
+void __printf_cpu_inner (float f) {
+   printf("%f\n",f);
+}
+reduce void foo (float4 a<>, float4 c,
+		 float d[10][10], reduce float4 e<>) {
+  e.x = a.x+e.x+d[c.xy]+d[c.yx];
+  e.y = a.y+e.y;
+  e.z = (.0625+a.z)*.125*(.0625+e.z);
+  e.w = (c.w+a.w)*.0625*(c.w+e.w);
+}
+reduce void SUM( float4 a<>, reduce float4 b<> ) {
+	b = b + a;
+}
+int bane () {
+
+  float4 a< 10, 10 >;
+  
+  float4 data_a[10][10];
+  float4 result<2,5>;
+  float4 rez[2][5];
+  int i,j;
+
+  for (i=0; i<10; i++)
+    for (j=0; j<10; j++) {
+      data_a[i][j].x = (float)i;
+      data_a[i][j].y = (float)j;
+      data_a[i][j].z = (float)1;
+      data_a[i][j].w = (float)2;
+    }
+  streamRead(a, data_a);
+  
+  SUM(a,result);
+  streamWrite(result,rez);
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", rez[0][0].x,rez[0][0].y,
+          rez[0][0].z,rez[0][0].w);
+  return 0;
+}
+
+int main () {
+
+  float4 a<10, 10>;
+  float b<10, 10>;
+  float d<10, 10>;
+  float e<10, 10>;
+  
+  float4 data_a[10][10];
+  float data_b[10][10];
+  float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
+  float data_d[10][10];
+  float data_e[10][10];
+  float d_broken = 0.0f;
+  float4 output<2,5>;
+  float4 rez[2][5];
+
+  int i,j;
+
+  for (i=0; i<10; i++)
+    for (j=0; j<10; j++) {
+      data_a[i][j].x = ((float) i) + ((float) j) / 10.0f;
+      data_a[i][j].y=data_a[i][j].z=data_a[i][j].w=data_a[i][j].x;
+      data_b[i][j] = ((float) j) + ((float) i) / 10.0f;
+      data_d[i][j] = (float)j/8+((float) i) / 64.0f;
+    }
+  streamRead(a, data_a);
+  streamRead(b, data_b);
+  streamRead(d, data_d);
+
+  foo(a,c,d,output);
+  //foo(a,b,c,d_broken,e);
+  streamWrite(output,rez);
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", rez[0][0].x,rez[0][0].y,
+          rez[0][0].z,rez[0][0].w);
+  return bane();
+}
