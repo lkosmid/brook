@@ -11,6 +11,8 @@
 
 #include <brt.hpp>
 
+#include "../profiler.hpp"
+
 // uncomment this line to have the DX9
 // runtime spit out
 // lots of debug trace information

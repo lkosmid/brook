@@ -88,12 +88,16 @@ DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight
 
 void DX9Texture::setData( const float* inData, unsigned int inStride, unsigned int inCount  )
 {
+  BROOK_PROFILE("DX9Texture::setData")
+
 	setShadowData( inData, inStride, inCount  );
   markShadowDataChanged();
 }
 
 void DX9Texture::getData( float* outData, unsigned int inStride, unsigned int inCount  )
 {
+  BROOK_PROFILE("DX9Texture::getData")
+
   if( dirtyFlags & kShadowDataDirty )
     flushCachedToShadow();
   getShadowData( outData, inStride, inCount  );
@@ -117,6 +121,8 @@ void DX9Texture::validateCachedData()
 
 void DX9Texture::flushCachedToShadow()
 {
+  BROOK_PROFILE("DX9Texture::flushCachedToShadow")
+
   HRESULT result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
 	DX9AssertResult( result, "Failed to copy floating-point render target to plain surface." );
   dirtyFlags &= ~kCachedDataDirty;
@@ -124,6 +130,8 @@ void DX9Texture::flushCachedToShadow()
 
 void DX9Texture::flushShadowToCached()
 {
+  BROOK_PROFILE("DX9Texture::flushShadowToCached")
+
   HRESULT result = device->UpdateSurface( shadowSurface, NULL, surfaceHandle, NULL );
 	DX9AssertResult( result, "Failed to copy floating-point plain surface to render target." );
   dirtyFlags &= ~kCachedDataDirty;
@@ -131,6 +139,8 @@ void DX9Texture::flushShadowToCached()
 
 void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned int inCount  )
 {
+  BROOK_PROFILE("DX9Texture::getShadowData")
+
   HRESULT result;
 
 	D3DLOCKED_RECT info;
@@ -171,6 +181,8 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
 
 void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsigned int inCount  )
 {
+  BROOK_PROFILE("DX9Texture::setShadowData")
+
   HRESULT result;
 	D3DLOCKED_RECT info;
 

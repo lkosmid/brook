@@ -8,6 +8,8 @@ DX9Stream* DX9Stream::create( DX9RunTime* inRuntime,
   int inFieldCount, const __BRTStreamType* inFieldTypes,
   int inDimensionCount, const int* inExtents )
 {
+  BROOK_PROFILE("DX9Stream::create")
+  
   DX9Stream* result = new DX9Stream( inRuntime );
   if( result->initialize( inFieldCount, inFieldTypes, inDimensionCount, inExtents ) )
     return result;
@@ -163,6 +165,8 @@ DX9Stream::~DX9Stream () {
 }
 
 void DX9Stream::Read(const void *p) {
+  BROOK_PROFILE("DX9Stream::Read")
+
   if( systemDataBuffer != 0 && !gpuDataChanged )
   {
     memcpy( systemDataBuffer, p, systemDataBufferSize );
@@ -177,6 +181,8 @@ void DX9Stream::Read(const void *p) {
 }
 
 void DX9Stream::Write(void *p) {
+  BROOK_PROFILE("DX9Stream::Write")
+
   if( systemDataBuffer != 0 && !gpuDataChanged )
   {
     memcpy( p, systemDataBuffer, systemDataBufferSize );
