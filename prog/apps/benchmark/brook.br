@@ -34,10 +34,11 @@ kernel void math(float a<>, float b<>, float4 c,
    float4 g;
    float f;
 
-   tmp=(a+b,a*b,(a+b)*(b*a),a*c.x);
+   tmp=float4(a+b,a*b,(a+b)*(b*a),a*c.x);
    g=tmp;
    tmp*=c+tmp;
-   tmp = f.xxxx=tmp.x+tmp.y+tmp.z+tmp.w;
+   f=tmp.x+tmp.y+tmp.z+tmp.w;
+   tmp = f.xxxx;
    e=f+(tmp+g).x+(tmp+g).y+(tmp+g).z;
 }
 

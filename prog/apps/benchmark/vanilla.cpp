@@ -19,28 +19,6 @@ static void floatMath (float a, float b, float4 c,
    o+=h*i+g+i-m*(l-j)/(k>.001?k:1.0);
    e= g+h*i/(k>.001?k:1.0)+m*l*1*1*1*1*1*1*1*1*1*1*1;
 }
-static void math(float a, float b, float4 c,
-                    float d[10][10], float &e) {
-   float4 tmp={a+b,a*b,(a+b)*(b*a),a*c.x};
-   float4 g;
-   float f;
-
-   g=tmp;
-   tmp.x*=c.x+tmp.w;
-   tmp.y*=c.y+tmp.w;
-   tmp.z*=c.z+tmp.w;
-   tmp.w*=c.w+tmp.w;
-   f=tmp.x+tmp.y+tmp.z+tmp.w;
-   tmp.x=f;tmp.y=f;tmp.z=f;tmp.w=f;
-   e=f+(tmp.x+g.x)+(tmp.y+g.y)+(tmp.z+g.z);
-}
-
-static void gather (float a, float b, float4 c,
-                    float d[10][10], float &e) {
-  e = a+b+d[(int)c.y][(int)c.x]+d[(int)c.z][(int)c.y]+d[(int)c.w][(int)c.z]
-     +d[(int)c.z][(int)c.x]+d[(int)c.w][(int)c.x]+d[(int)c.w][(int)c.y]
-     +d[(int)c.w][(int)c.z];
-}
 
 static void  FloatMath (const __BrtFloat1  &a,
                          const __BrtFloat1  &b,
@@ -50,38 +28,70 @@ static void  FloatMath (const __BrtFloat1  &a,
   __BrtFloat1  g = a + b;
   __BrtFloat1  h = b * b;
   __BrtFloat1  i = g * h + a * b;
-  __BrtFloat1  j = (a > __BrtFloat1(0.5)).questioncolon(g * i / ((h > __BrtFloat1(0.001)).questioncolon(h,__BrtFloat1(1))) + h,g * i * h - h);
+  __BrtFloat1  j = (a.getAt(0) > 0.5)?(g * i / ((h.getAt(0) > 0.001)?h:__BrtFloat1(1)) + h):g * i * h - h;
   __BrtFloat1  k = g * i * h + h;
   __BrtFloat1  l = g + h * g + k * i;
-  __BrtFloat1  m = g + j * k - i * k / ((h > __BrtFloat1(0.001)).questioncolon(h,__BrtFloat1(1)));
+  __BrtFloat1  m = g + j * k - i * k / (h.getAt(0) > 0.001?h:__BrtFloat1(1));
   __BrtFloat1  o = k;
 
-  o += __BrtInt1(5);
-  g += __BrtInt1(9);
-  h *= __BrtInt1(24);
-  i *= __BrtInt1(1);
-  o += __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0) + __BrtInt1(0);
-  o += __BrtInt1(21049);
-  o += h * i + g + i - m * (l - j) / ((k > __BrtFloat1(0.001)).questioncolon(k,__BrtFloat1(1)));
-  e = g + h * i / ((k > __BrtFloat1(0.001)).questioncolon(k,__BrtFloat1(1))) + m * l * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1) * __BrtInt1(1);
+  o += 5;
+  g += 9;
+  h *= 4;
+  i *= 1;
+  o += 0+0 + 0+0 +0 +0 +0 + 0 + 0 + 0 + 0 +0 + 0 + 0 + 0 + 0 + 0;
+  o += 21049;
+  o += h * i + g + i - m * (l - j) / ((k.getAt(0) > 0.001)?k:__BrtFloat1(1));
+  e = g + h * i / ((k.getAt(0) > 0.001)?k:__BrtFloat1(1)) + m*l *__BrtFloat1(1 * 1 * 1 * 1 * 1 * 1 * 1 * 1 * 1 * 1 * 1);
 }
+
+
+static void math(float a, float b, float4 c,
+                    float d[10][10], float &e) {
+   float4 tmp;
+   float4 g;
+   float f;
+   {
+     float4 assgn={a+b,a*b,(a+b)*(b*a),a*c.x};
+     tmp=assgn;
+   }
+   g=tmp;
+   tmp.x*=c.x+tmp.x;
+   tmp.y*=c.y+tmp.y;
+   tmp.z*=c.z+tmp.z;
+   tmp.w*=c.w+tmp.w;
+   f=tmp.x+tmp.y+tmp.z+tmp.w;
+   {
+     float4 assgn={f,f,f,f};
+     tmp=assgn;
+   }
+   e=f+(tmp.x+g.x)+(tmp.y+g.y)+(tmp.z+g.z);
+}
+
 
 static void  Math(const __BrtFloat1  &a,
                    const __BrtFloat1  &b,
                    const __BrtFloat4  &c,
                    const __BrtArray<__BrtFloat1  , 2  , false> &d,
                    __BrtFloat1  &e){
-   __BrtFloat4  tmp;
+  __BrtFloat4  tmp;
   __BrtFloat4  g;
   __BrtFloat1  f;
 
-  tmp = (a + b , a * b , (a + b) * (b * a) , a * c.swizzle1(maskX));
+  tmp = __BrtFloat4 (a + b,a * b,(a + b) * (b * a),a * c.swizzle1(maskX));
   g = tmp;
   tmp *= c + tmp;
-  tmp = f.mask4(tmp.swizzle1(maskX) + tmp.swizzle1(maskY) + tmp.swizzle1(maskZ) + tmp.swizzle1(maskW),maskX,maskX,maskX,maskX);
+  f = tmp.swizzle1(maskX) + tmp.swizzle1(maskY) + tmp.swizzle1(maskZ) + tmp.swizzle1(maskW);
+  tmp = f.swizzle4(maskX, maskX, maskX, maskX);
   e = f + (tmp + g).swizzle1(maskX) + (tmp + g).swizzle1(maskY) + (tmp + g).swizzle1(maskZ);
 }
  
+static void gather (float a, float b, float4 c,
+                    float d[10][10], float &e) {
+  e = a+b+d[(int)c.y][(int)c.x]+d[(int)c.z][(int)c.y]+d[(int)c.w][(int)c.z]
+     +d[(int)c.z][(int)c.x]+d[(int)c.w][(int)c.x]+d[(int)c.w][(int)c.y]
+     +d[(int)c.w][(int)c.z];
+}
+
 
 void  Gather (const __BrtFloat1  &a,
                const __BrtFloat1  &b,
@@ -117,6 +127,8 @@ void cputest(float *a, float *b, float4 c, float * d, float * e, unsigned int si
    for (i=0;i<total;++i) {
       floatMath (*aa++,*bb++,c,dd,*ee++);
    }
+   aa=a;bb = b;ee=e;
+
    UpdateTime();
    fprintf (stderr,"Native Float Math took %lf seconds\n",GetElapsedTime());
 
