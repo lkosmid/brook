@@ -175,11 +175,10 @@ float4 * bitReversedIndices (int logN, int logM) {
   float4 * s_array;
   s_array = (float4*)calloc(maxNM,sizeof(float4));
   for (i=0;i<maxNM;++i) {
-    int temp = i==0?0:BitReverse(M-(i*2),logM);//BitReverse(i==0?0:M-(i*2),logM);
-    s_array[i].x=(float)(temp/2);
+    s_array[i].x=(float)(i==0?0:BitReverse(M-(i*2),logM)/2);
     s_array[i].y=(float)(i==0?0:BitReverse(N-i,logN));//BitReverse(i==0?0:N-i,logN));
     s_array[i].z=(float)(BitReverse(M-(i*2+1),logM)/2);//(BitReverse(M-(i*2+1),logM)/2);
-    s_array[i].w=(float)(temp%2);
+    s_array[i].w=(float)BitReverse(i,logN);//for real values
     
   }
   return s_array;
@@ -313,7 +312,7 @@ void computeFFT2d(float4 (*input)<>,
             streamSwap(*input,*output);
          }
 	 if (split_bit_reverse) {
-	   bitReverseXo2(*output,indicesXo2YXp1o2Xm2,*input,(float)(M/4));
+	   bitReverseXo2(*output,indicesXo2YXp1o2Xm2,*input,(float)(M/4),(float)(M/4)+0.51f);
 	 }
    }
    if (!split_bit_reverse) {//now do it separately
