@@ -15,14 +15,13 @@ kernel void reductionRegKernel(float4 x<>, float4 constant, out float4 result<>)
   //discard;
 }
 
-
 kernel void forceGPUFlush(float4 input<>, out float4 result<>) {
   result = input;
 }
 
 
 
-void do_reduction(int dim, int simReduceReg, int* time) {
+void do_reduction(int dim, int simReduceReg, int iterations, int* time) {
 
   int i;
   float* x;
@@ -40,18 +39,23 @@ void do_reduction(int dim, int simReduceReg, int* time) {
   for (i=0;i<dim*dim*4;i++)
     x[i] = 1.0f;
 
+  constant.x = constant.y = constant.z = constant.w = 2.0f;
+
   streamRead(xStrm, x);
   forceGPUFlush(xStrm, flushStrm);
   streamRead(flushStrm, flush);
 
-  // wait for a little  bit
+  // wait for a little, make sure system is ready
   Sleep(250);
+
 
   if (!simReduceReg) {
   
-    start = GetTimeTSC();
-    reductionKernel(xStrm, result);
-    sum = result.x + result.y + result.z + result.w;
+    start = GetTimeTSC();        
+	for (i=0;i<iterations;i++) {    
+		reductionKernel(xStrm, result);
+		sum = result.x + result.y + result.z + result.w;
+    }    
     stop = GetTimeTSC();
 
 	if (fabs(sum - (4.0f*dim*dim)) > .05 )
@@ -60,17 +64,20 @@ void do_reduction(int dim, int simReduceReg, int* time) {
     // printf("sum = %f\n", sum);
 
   } else {
-
-  
+	
     start = GetTimeTSC();
-    reductionRegKernel(xStrm, constant, yStrm);
-    forceGPUFlush(yStrm, flushStrm);
-    streamRead(flushStrm, flush);
-    stop = GetTimeTSC();
+    for (i=0;i<iterations;i++) {
+		reductionRegKernel(xStrm, constant, yStrm);	
+    }     	
+	forceGPUFlush(yStrm, flushStrm);
+	streamWrite(flushStrm, flush);   	
+    stop = GetTimeTSC();              
    
   }
 
-  *time = (int)(CyclesToUsecs(stop) - CyclesToUsecs(start));
+  //printf("%d\n", (int)(stop - start) );
+
+  *time = (int)(CyclesToUsecs(stop-start));  
 
   free(x);
 
@@ -85,27 +92,30 @@ void Reduction_Time(int length) {
   int size; 
   int simReduceReg;
   int usec;
-
+  int iterations = 100;
 
   simReduceReg = 0;
 
-  do_reduction(512, simReduceReg, &usec);
+  do_reduction(512, simReduceReg, 1, &usec);
 
   printf("(* size *)  (* usec *)\n");
-  for (size = 1; size<=length; size*=2) {
-    do_reduction(size, simReduceReg, &usec);
-    printf("%8d    %8d (* reduce *)\n", 4*size*size, usec);
+  for (size = 32; size<=length; size+=32) {
+    do_reduction(size, simReduceReg, iterations, &usec);
+    printf("%8d    %.5f    (* reduce *)\n", 4*size*size, (float)usec / (float)iterations );
   }
 
   printf("\n\n\n");
 
+
   simReduceReg = 1;
 
   printf("(* size *)  (* usec *)\n");
-  for (size = 1; size<=length; size*=2) {
-    do_reduction(size, simReduceReg, &usec);
-    printf("%8d    %8d (* reduce *)\n", 4*size*size, usec);
+  for (size = 32; size<=length; size+=32) {
+    do_reduction(size, simReduceReg, iterations, &usec);
+    printf("%8d    %.5f    (* reduce *)\n", 4*size*size, (float)usec / (float)iterations );
   }
+  
+ 
 
 
 }
