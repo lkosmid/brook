@@ -215,6 +215,8 @@ int volume_division (int argc, char ** argv) {
    int i;
    ::brook::stream volumeTriangles(::brook::getStreamType(( float3  *)0), 256 , 15,-1);
    struct ppm dat;
+   unsigned int wasted_tri=0;
+   unsigned int total_tri=0;
    unsigned int numspheres=1;
    float spheredist=2.0f;
    float * slice=0;
@@ -388,8 +390,18 @@ int volume_division (int argc, char ** argv) {
                                        sliceZ);
                
             if (rr==0) {
+               static float4 * tris;
+               tris=(float4*)malloc(sizeof(float4)*dat.width*dat.height);
                sizesx.push_back(toi(streamSize(v).x));
                sizesy.push_back(toi(streamSize(v).y));
+               streamWrite(v,tris);
+               for (unsigned int i=0;i<sizesx.back()*sizesy.back();++i) {
+                  if (tris[i].w>=0&&tris[i].w<=255.5) {
+                     unsigned int tmp=m_triNum[(unsigned int)tris[i].w];
+                     total_tri+=tmp;
+                     wasted_tri+=5-tmp;
+                  }
+               }
             }
             if (rr==0&&i==(dat.depth/2)) {
                copy4(v,vbak);
@@ -507,8 +519,9 @@ int volume_division (int argc, char ** argv) {
          }
          streamWrite(agg,toagg);
 
+         if (rr==0)
+            printf ("\nTotal Triangles %d Wasted Triangles %d Total Volume wid:%d hei %d dep %d\n",total_tri,wasted_tri,dat.width,dat.height,dat.depth);
          printf ("Ready time %f %f ",(float)(stop-start),(float)(GetTimeMillis()-start));
-
          for (j=0;j<(int)vertexData.size();++j) {
             if (rr<2) {
                streamWrite(vertexData[j],
