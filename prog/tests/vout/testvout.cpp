@@ -277,11 +277,12 @@ void  foo (const __BRTStream& a,
   int maxextents[2]={0,0};
   maxDimension(maxextents,a->getExtents(),a->getDimension());
   maxDimension(maxextents,b->getExtents(),b->getDimension());
-  
-  do {
-     __e_outputs.push_back(new __BRTStream(maxextents,
-                                           a->getDimension(),
-                                           __e_stream->getStreamType()));
+  bool __e_values=true;
+  while(__e_values) {
+     if (__e_values)
+        __e_outputs.push_back(new __BRTStream(maxextents,
+                                              a->getDimension(),
+                                              __e_stream->getStreamType()));
     k->PushStream(a);
     k->PushStream(b);
     k->PushConstant(c);
@@ -290,7 +291,8 @@ void  foo (const __BRTStream& a,
     k->PushConstant(__vout_counter);
     k->Map();
     __vout_counter.x+=1.0f;
-  }while (finiteValueProduced(__e_outputs.back()));
+    __e_values = finiteValueProduced(__e_outputs.back())?1:0;
+  }
   __BRTStream temp (__e_stream->getStreamType(),1,1,-1);
 
   combineStreams(&__e_outputs[0],
