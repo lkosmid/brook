@@ -7,23 +7,23 @@
 
 
 
+
 #ifdef _WIN32
 #pragma warning(disable:4244)
 #endif
-#include "streamholder.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 unsigned int debug_vout = 0;
 
-void debugStreamPrint (struct StreamHolder stream,char * title) {
-   if (debug_vout) {
-      printf ("%s\n",title);
-      
-      streamPrint(*stream,1);
-      printf ("\n\n");
+
+#define debugStreamPrint(stream,title) \
+   if (debug_vout) { \
+      printf ("%s\n",title); \
+      streamPrint(stream,1); \
+      printf ("\n\n"); \
    }
-}
+
 
 kernel void kernelReadItem (float items[][], float2 index, out float item<>) {
   item = items[index];
@@ -93,14 +93,14 @@ kernel void isFiniteKernelfloat(float inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedfloat (struct StreamHolder  input) {
+int finiteValueProducedfloat (float input<>) {
    float output<1,1>;
    float finiteout<1,1>;
    float rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedfloat(*input,output);
+   valueProducedfloat(input,output);
    streamWrite(output,&rettype);
    isFiniteKernelfloat(output,finiteout);
    streamWrite(finiteout,&ret);
@@ -220,8 +220,8 @@ kernel void RelativeGatherfloat(out float output<>,
    valueAtfloat(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesfloat(struct StreamHolder list_stream,
-                          struct StreamHolder output_stream,
+void CountValuesfloat(float list_stream <>,
+                          float output_stream <>,
                           int WIDTH, 
                           int LENGTH, 
                           int sign) {
@@ -232,7 +232,7 @@ void CountValuesfloat(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat (*list_stream,output_stream,sign,maxvalue);   
+   NanToRightfloat (list_stream,output_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
@@ -240,11 +240,11 @@ void CountValuesfloat(struct StreamHolder list_stream,
          NanToRightfloat (tmp_stream,output_stream,sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
-     streamSwap(tmp_stream,*output_stream);
+     streamSwap(tmp_stream,output_stream);
 }
 
-float shiftValuesfloat(struct StreamHolder list_stream,
-                       struct StreamHolder output_stream,
+float shiftValuesfloat(float list_stream <>,
+                       float output_stream<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -259,14 +259,14 @@ float shiftValuesfloat(struct StreamHolder list_stream,
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat (*list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightfloat (list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
       else
          NanToRightfloat (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
+   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
@@ -283,7 +283,7 @@ float shiftValuesfloat(struct StreamHolder list_stream,
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
    EstablishGuessfloat(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
-                          *list_stream,
+                          list_stream,
                           (1 << LogNMinusK),
                           maxvalue,
                           1<<i,
@@ -293,7 +293,7 @@ float shiftValuesfloat(struct StreamHolder list_stream,
       if (i%2)
          UpdateGuessfloat (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               guess_stream,//old guess
@@ -301,13 +301,13 @@ float shiftValuesfloat(struct StreamHolder list_stream,
       else
          UpdateGuessfloat (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
                               sign);
    }
-   debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
+   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -317,10 +317,10 @@ float shiftValuesfloat(struct StreamHolder list_stream,
         float proper_output_stream<width,LENGTH>;
         RelativeGatherfloat(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
-                               *list_stream,
+                               list_stream,
                                float2(sign,1/floor(.5)),
                                maxvalue);
-        streamSwap(*output_stream,proper_output_stream);
+        streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
    }
@@ -755,9 +755,9 @@ kernel void floatstreamCombine8f(float input0[][],
    }
 }
 */
-void combineStreamsHelperfloat (struct StreamHolder *streams,
+void combineStreamsHelperfloat (float (**streams) <>,
                                 unsigned int num,
-                                struct StreamHolder  output,
+                                float output<>,
                                 float modulus,
                                 float offset,
                                 float length,
@@ -769,8 +769,8 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 2:
       floatstreamCombine2(*streams[0],
@@ -779,8 +779,8 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 3:
       floatstreamCombine3(*streams[0],
@@ -790,8 +790,8 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 4:
    default:
@@ -803,8 +803,8 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>4) {
          combineStreamsHelperfloat(streams+4,
                                       num-4,
@@ -816,7 +816,7 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
       }
       /*
    case 5:
-      floatstreamCombine5(*streams[0],
+      floatstreamCombine5(streams[0],
                      *streams[1],
                      *streams[2],
                      *streams[3],
@@ -825,8 +825,8 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 6:
       floatstreamCombine6(*streams[0],
@@ -839,8 +839,8 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    default:
       floatstreamCombine7(*streams[0],
@@ -854,8 +854,8 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>7) {
          combineStreamsHelperfloat(streams+7,
                                       num-7,
@@ -868,19 +868,19 @@ void combineStreamsHelperfloat (struct StreamHolder *streams,
       */     
    }
 }
-void combineStreamsfloat (struct StreamHolder *streams,
+void combineStreamsfloat (float (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          struct StreamHolder  output) {
+                          float output<>) {
    unsigned int  lengthmodmodulus=length%num;
    float tmp<(num*width),length>;
-   streamSwap(tmp,*output);
+   streamSwap(tmp,output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(*output,*streams[0]);
+      streamSwap(output,*streams[0]);
       break;
    case 2:
       floatstreamCombine2f(*streams[0],
@@ -888,7 +888,7 @@ void combineStreamsfloat (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 3:
       floatstreamCombine3f(*streams[0],
@@ -897,7 +897,7 @@ void combineStreamsfloat (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 4:
       floatstreamCombine4f(*streams[0],
@@ -907,7 +907,7 @@ void combineStreamsfloat (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 5:
    default:
@@ -919,7 +919,7 @@ void combineStreamsfloat (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -946,7 +946,7 @@ void combineStreamsfloat (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 7:
       floatstreamCombine7f(*streams[0],
@@ -959,7 +959,7 @@ void combineStreamsfloat (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    default:
       if (num>MAX_VOUT_STREAMS) {
@@ -978,7 +978,7 @@ void combineStreamsfloat (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>8) {
          combineStreamsHelperfloat(streams+8,
                                       num-8,
@@ -1033,14 +1033,14 @@ kernel void combinefloat (float input1[][],
       output=input1[indexof(output)];
    }
 }
-unsigned int  voutCombinefloat(struct StreamHolder outleft_stream,
+unsigned int  voutCombinefloat(float outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
-                               struct StreamHolder outright_stream,
+                               float outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               struct StreamHolder  output){
+                               float output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
@@ -1061,41 +1061,41 @@ unsigned int  voutCombinefloat(struct StreamHolder outleft_stream,
                     -maxshiftright,
                     maxrightvalue,
                     &endsecond);
-      combinefloat(*outleft_stream,
-                   *outright_stream,
+      combinefloat(outleft_stream,
+                   outright_stream,
                    output_stream,
                    startsecond,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (*output,output_stream);
+      streamSwap (output,output_stream);
    }
    return totalsize;
 }
 
-unsigned int totalCombineVoutfloat (struct StreamHolder list_stream, 
+unsigned int totalCombineVoutfloat (float list_stream<>, 
                                     unsigned int WIDTH,
-                                    struct StreamHolder list2_stream,
+                                    float list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    struct StreamHolder  output){
+                                    float output<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesfloat(list_stream,
-                                           &outleft_stream,
+                                           outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesfloat(list2_stream,
-                                           &outright_stream,
+                                           outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
-   return voutCombinefloat (&outleft_stream,
+   return voutCombinefloat (outleft_stream,
                             maxshiftleft,
                             WIDTH,
-                            &outright_stream,
+                            outright_stream,
                             maxshiftright,
                             WIDTH2,
                             LENGTH,
@@ -1111,14 +1111,14 @@ kernel void isFiniteKernelfloat2(float2 inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedfloat2 (struct StreamHolder  input) {
+int finiteValueProducedfloat2 (float2 input<>) {
    float2 output<1,1>;
    float finiteout<1,1>;
    float2 rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedfloat2(*input,output);
+   valueProducedfloat2(input,output);
    streamWrite(output,&rettype);
    isFiniteKernelfloat2(output,finiteout);
    streamWrite(finiteout,&ret);
@@ -1238,8 +1238,8 @@ kernel void RelativeGatherfloat2(out float2 output<>,
    valueAtfloat2(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesfloat2(struct StreamHolder list_stream,
-                          struct StreamHolder output_stream,
+void CountValuesfloat2(float2 list_stream <>,
+                          float2 output_stream <>,
                           int WIDTH, 
                           int LENGTH, 
                           int sign) {
@@ -1250,7 +1250,7 @@ void CountValuesfloat2(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat2 (*list_stream,output_stream,sign,maxvalue);   
+   NanToRightfloat2 (list_stream,output_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat2 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
@@ -1258,11 +1258,11 @@ void CountValuesfloat2(struct StreamHolder list_stream,
          NanToRightfloat2 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
-     streamSwap(tmp_stream,*output_stream);
+     streamSwap(tmp_stream,output_stream);
 }
 
-float shiftValuesfloat2(struct StreamHolder list_stream,
-                       struct StreamHolder output_stream,
+float shiftValuesfloat2(float2 list_stream <>,
+                       float2 output_stream<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -1277,21 +1277,15 @@ float shiftValuesfloat2(struct StreamHolder list_stream,
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat2 (*list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightfloat2 (list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat2 (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
       else
          NanToRightfloat2 (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
-   if (0) {
-     if (sign==-1) {
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,WIDTH-1,LENGTH-1);
-     }else {      
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,0,0);
-     }
-   }else {
+   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   {
      float item<1>;
      float2 index;
      if (sign==-1) {
@@ -1307,7 +1301,7 @@ float shiftValuesfloat2(struct StreamHolder list_stream,
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
    EstablishGuessfloat2(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
-                          *list_stream,
+                          list_stream,
                           (1 << LogNMinusK),
                           maxvalue,
                           1<<i,
@@ -1317,7 +1311,7 @@ float shiftValuesfloat2(struct StreamHolder list_stream,
       if (i%2)
          UpdateGuessfloat2 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               guess_stream,//old guess
@@ -1325,13 +1319,13 @@ float shiftValuesfloat2(struct StreamHolder list_stream,
       else
          UpdateGuessfloat2 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
                               sign);
    }
-   debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
+   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -1341,10 +1335,10 @@ float shiftValuesfloat2(struct StreamHolder list_stream,
         float2 proper_output_stream<width,LENGTH>;
         RelativeGatherfloat2(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
-                               *list_stream,
+                               list_stream,
                                float2(sign,1/floor(.5)),
                                maxvalue);
-        streamSwap(*output_stream,proper_output_stream);
+        streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
    }
@@ -1779,9 +1773,9 @@ kernel void float2streamCombine8f(float2 input0[][],
    }
 }
 */
-void combineStreamsHelperfloat2 (struct StreamHolder *streams,
+void combineStreamsHelperfloat2 (float2 (**streams) <>,
                                 unsigned int num,
-                                struct StreamHolder  output,
+                                float2 output<>,
                                 float modulus,
                                 float offset,
                                 float length,
@@ -1793,8 +1787,8 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 2:
       float2streamCombine2(*streams[0],
@@ -1803,8 +1797,8 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 3:
       float2streamCombine3(*streams[0],
@@ -1814,8 +1808,8 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 4:
    default:
@@ -1827,8 +1821,8 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>4) {
          combineStreamsHelperfloat2(streams+4,
                                       num-4,
@@ -1840,7 +1834,7 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
       }
       /*
    case 5:
-      float2streamCombine5(*streams[0],
+      float2streamCombine5(streams[0],
                      *streams[1],
                      *streams[2],
                      *streams[3],
@@ -1849,8 +1843,8 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 6:
       float2streamCombine6(*streams[0],
@@ -1863,8 +1857,8 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    default:
       float2streamCombine7(*streams[0],
@@ -1878,8 +1872,8 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>7) {
          combineStreamsHelperfloat2(streams+7,
                                       num-7,
@@ -1892,19 +1886,19 @@ void combineStreamsHelperfloat2 (struct StreamHolder *streams,
       */     
    }
 }
-void combineStreamsfloat2 (struct StreamHolder *streams,
+void combineStreamsfloat2 (float2 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          struct StreamHolder  output) {
+                          float2 output<>) {
    unsigned int  lengthmodmodulus=length%num;
    float2 tmp<(num*width),length>;
-   streamSwap(tmp,*output);
+   streamSwap(tmp,output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(*output,*streams[0]);
+      streamSwap(output,*streams[0]);
       break;
    case 2:
       float2streamCombine2f(*streams[0],
@@ -1912,7 +1906,7 @@ void combineStreamsfloat2 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 3:
       float2streamCombine3f(*streams[0],
@@ -1921,7 +1915,7 @@ void combineStreamsfloat2 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 4:
       float2streamCombine4f(*streams[0],
@@ -1931,7 +1925,7 @@ void combineStreamsfloat2 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 5:
    default:
@@ -1943,7 +1937,7 @@ void combineStreamsfloat2 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -1970,7 +1964,7 @@ void combineStreamsfloat2 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 7:
       float2streamCombine7f(*streams[0],
@@ -1983,7 +1977,7 @@ void combineStreamsfloat2 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    default:
       if (num>MAX_VOUT_STREAMS) {
@@ -2002,7 +1996,7 @@ void combineStreamsfloat2 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>8) {
          combineStreamsHelperfloat2(streams+8,
                                       num-8,
@@ -2057,14 +2051,14 @@ kernel void combinefloat2 (float2 input1[][],
       output=input1[indexof(output)];
    }
 }
-unsigned int  voutCombinefloat2(struct StreamHolder outleft_stream,
+unsigned int  voutCombinefloat2(float2 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
-                               struct StreamHolder outright_stream,
+                               float2 outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               struct StreamHolder  output){
+                               float2 output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
@@ -2085,41 +2079,41 @@ unsigned int  voutCombinefloat2(struct StreamHolder outleft_stream,
                     -maxshiftright,
                     maxrightvalue,
                     &endsecond);
-      combinefloat2(*outleft_stream,
-                   *outright_stream,
+      combinefloat2(outleft_stream,
+                   outright_stream,
                    output_stream,
                    startsecond,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (*output,output_stream);
+      streamSwap (output,output_stream);
    }
    return totalsize;
 }
 
-unsigned int totalCombineVoutfloat2 (struct StreamHolder list_stream, 
+unsigned int totalCombineVoutfloat2 (float2 list_stream<>, 
                                     unsigned int WIDTH,
-                                    struct StreamHolder list2_stream,
+                                    float2 list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    struct StreamHolder  output){
+                                    float2 output<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesfloat2(list_stream,
-                                           &outleft_stream,
+                                           outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesfloat2(list2_stream,
-                                           &outright_stream,
+                                           outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
-   return voutCombinefloat2 (&outleft_stream,
+   return voutCombinefloat2 (outleft_stream,
                             maxshiftleft,
                             WIDTH,
-                            &outright_stream,
+                            outright_stream,
                             maxshiftright,
                             WIDTH2,
                             LENGTH,
@@ -2135,14 +2129,14 @@ kernel void isFiniteKernelfloat3(float3 inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedfloat3 (struct StreamHolder  input) {
+int finiteValueProducedfloat3 (float3 input<>) {
    float3 output<1,1>;
    float finiteout<1,1>;
    float3 rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedfloat3(*input,output);
+   valueProducedfloat3(input,output);
    streamWrite(output,&rettype);
    isFiniteKernelfloat3(output,finiteout);
    streamWrite(finiteout,&ret);
@@ -2262,8 +2256,8 @@ kernel void RelativeGatherfloat3(out float3 output<>,
    valueAtfloat3(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesfloat3(struct StreamHolder list_stream,
-                          struct StreamHolder output_stream,
+void CountValuesfloat3(float3 list_stream <>,
+                          float3 output_stream <>,
                           int WIDTH, 
                           int LENGTH, 
                           int sign) {
@@ -2274,7 +2268,7 @@ void CountValuesfloat3(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat3 (*list_stream,output_stream,sign,maxvalue);   
+   NanToRightfloat3 (list_stream,output_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat3 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
@@ -2282,11 +2276,11 @@ void CountValuesfloat3(struct StreamHolder list_stream,
          NanToRightfloat3 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
-     streamSwap(tmp_stream,*output_stream);
+     streamSwap(tmp_stream,output_stream);
 }
 
-float shiftValuesfloat3(struct StreamHolder list_stream,
-                       struct StreamHolder output_stream,
+float shiftValuesfloat3(float3 list_stream <>,
+                       float3 output_stream<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -2301,21 +2295,15 @@ float shiftValuesfloat3(struct StreamHolder list_stream,
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat3 (*list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightfloat3 (list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat3 (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
       else
          NanToRightfloat3 (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
-   if (0) {
-     if (sign==-1) {
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,WIDTH-1,LENGTH-1);
-     }else {      
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,0,0);
-     }
-   }else {
+   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   {
      float item<1>;
      float2 index;
      if (sign==-1) {
@@ -2331,7 +2319,7 @@ float shiftValuesfloat3(struct StreamHolder list_stream,
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
    EstablishGuessfloat3(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
-                          *list_stream,
+                          list_stream,
                           (1 << LogNMinusK),
                           maxvalue,
                           1<<i,
@@ -2341,7 +2329,7 @@ float shiftValuesfloat3(struct StreamHolder list_stream,
       if (i%2)
          UpdateGuessfloat3 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               guess_stream,//old guess
@@ -2349,13 +2337,13 @@ float shiftValuesfloat3(struct StreamHolder list_stream,
       else
          UpdateGuessfloat3 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
                               sign);
    }
-   debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
+   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -2365,10 +2353,10 @@ float shiftValuesfloat3(struct StreamHolder list_stream,
         float3 proper_output_stream<width,LENGTH>;
         RelativeGatherfloat3(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
-                               *list_stream,
+                               list_stream,
                                float2(sign,1/floor(.5)),
                                maxvalue);
-        streamSwap(*output_stream,proper_output_stream);
+        streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
    }
@@ -2803,9 +2791,9 @@ kernel void float3streamCombine8f(float3 input0[][],
    }
 }
 */
-void combineStreamsHelperfloat3 (struct StreamHolder *streams,
+void combineStreamsHelperfloat3 (float3 (**streams) <>,
                                 unsigned int num,
-                                struct StreamHolder  output,
+                                float3 output<>,
                                 float modulus,
                                 float offset,
                                 float length,
@@ -2817,8 +2805,8 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 2:
       float3streamCombine2(*streams[0],
@@ -2827,8 +2815,8 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 3:
       float3streamCombine3(*streams[0],
@@ -2838,8 +2826,8 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 4:
    default:
@@ -2851,8 +2839,8 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>4) {
          combineStreamsHelperfloat3(streams+4,
                                       num-4,
@@ -2864,7 +2852,7 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
       }
       /*
    case 5:
-      float3streamCombine5(*streams[0],
+      float3streamCombine5(streams[0],
                      *streams[1],
                      *streams[2],
                      *streams[3],
@@ -2873,8 +2861,8 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 6:
       float3streamCombine6(*streams[0],
@@ -2887,8 +2875,8 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    default:
       float3streamCombine7(*streams[0],
@@ -2902,8 +2890,8 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>7) {
          combineStreamsHelperfloat3(streams+7,
                                       num-7,
@@ -2916,19 +2904,19 @@ void combineStreamsHelperfloat3 (struct StreamHolder *streams,
       */     
    }
 }
-void combineStreamsfloat3 (struct StreamHolder *streams,
+void combineStreamsfloat3 (float3 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          struct StreamHolder  output) {
+                          float3 output<>) {
    unsigned int  lengthmodmodulus=length%num;
    float3 tmp<(num*width),length>;
-   streamSwap(tmp,*output);
+   streamSwap(tmp,output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(*output,*streams[0]);
+      streamSwap(output,*streams[0]);
       break;
    case 2:
       float3streamCombine2f(*streams[0],
@@ -2936,7 +2924,7 @@ void combineStreamsfloat3 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 3:
       float3streamCombine3f(*streams[0],
@@ -2945,7 +2933,7 @@ void combineStreamsfloat3 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 4:
       float3streamCombine4f(*streams[0],
@@ -2955,7 +2943,7 @@ void combineStreamsfloat3 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 5:
    default:
@@ -2967,7 +2955,7 @@ void combineStreamsfloat3 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -2994,7 +2982,7 @@ void combineStreamsfloat3 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 7:
       float3streamCombine7f(*streams[0],
@@ -3007,7 +2995,7 @@ void combineStreamsfloat3 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    default:
       if (num>MAX_VOUT_STREAMS) {
@@ -3026,7 +3014,7 @@ void combineStreamsfloat3 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>8) {
          combineStreamsHelperfloat3(streams+8,
                                       num-8,
@@ -3081,14 +3069,14 @@ kernel void combinefloat3 (float3 input1[][],
       output=input1[indexof(output)];
    }
 }
-unsigned int  voutCombinefloat3(struct StreamHolder outleft_stream,
+unsigned int  voutCombinefloat3(float3 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
-                               struct StreamHolder outright_stream,
+                               float3 outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               struct StreamHolder  output){
+                               float3 output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
@@ -3109,41 +3097,41 @@ unsigned int  voutCombinefloat3(struct StreamHolder outleft_stream,
                     -maxshiftright,
                     maxrightvalue,
                     &endsecond);
-      combinefloat3(*outleft_stream,
-                   *outright_stream,
+      combinefloat3(outleft_stream,
+                   outright_stream,
                    output_stream,
                    startsecond,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (*output,output_stream);
+      streamSwap (output,output_stream);
    }
    return totalsize;
 }
 
-unsigned int totalCombineVoutfloat3 (struct StreamHolder list_stream, 
+unsigned int totalCombineVoutfloat3 (float3 list_stream<>, 
                                     unsigned int WIDTH,
-                                    struct StreamHolder list2_stream,
+                                    float3 list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    struct StreamHolder  output){
+                                    float3 output<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesfloat3(list_stream,
-                                           &outleft_stream,
+                                           outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesfloat3(list2_stream,
-                                           &outright_stream,
+                                           outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
-   return voutCombinefloat3 (&outleft_stream,
+   return voutCombinefloat3 (outleft_stream,
                             maxshiftleft,
                             WIDTH,
-                            &outright_stream,
+                            outright_stream,
                             maxshiftright,
                             WIDTH2,
                             LENGTH,
@@ -3159,14 +3147,14 @@ kernel void isFiniteKernelfloat4(float4 inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedfloat4 (struct StreamHolder  input) {
+int finiteValueProducedfloat4 (float4 input<>) {
    float4 output<1,1>;
    float finiteout<1,1>;
    float4 rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedfloat4(*input,output);
+   valueProducedfloat4(input,output);
    streamWrite(output,&rettype);
    isFiniteKernelfloat4(output,finiteout);
    streamWrite(finiteout,&ret);
@@ -3286,8 +3274,8 @@ kernel void RelativeGatherfloat4(out float4 output<>,
    valueAtfloat4(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesfloat4(struct StreamHolder list_stream,
-                          struct StreamHolder output_stream,
+void CountValuesfloat4(float4 list_stream <>,
+                          float4 output_stream <>,
                           int WIDTH, 
                           int LENGTH, 
                           int sign) {
@@ -3298,7 +3286,7 @@ void CountValuesfloat4(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightfloat4 (*list_stream,output_stream,sign,maxvalue);   
+   NanToRightfloat4 (list_stream,output_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat4 (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
@@ -3306,11 +3294,11 @@ void CountValuesfloat4(struct StreamHolder list_stream,
          NanToRightfloat4 (tmp_stream,output_stream,sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
-     streamSwap(tmp_stream,*output_stream);
+     streamSwap(tmp_stream,output_stream);
 }
 
-float shiftValuesfloat4(struct StreamHolder list_stream,
-                       struct StreamHolder output_stream,
+float shiftValuesfloat4(float4 list_stream <>,
+                       float4 output_stream<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -3325,21 +3313,15 @@ float shiftValuesfloat4(struct StreamHolder list_stream,
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat4 (*list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightfloat4 (list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightfloat4 (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
       else
          NanToRightfloat4 (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
-   if (0) {
-     if (sign==-1) {
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,WIDTH-1,LENGTH-1);
-     }else {      
-       readItem(logN%2==0?tmp_stream:ret_stream,&maxshift,0,0);
-     }
-   }else {
+   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
+   {
      float item<1>;
      float2 index;
      if (sign==-1) {
@@ -3355,7 +3337,7 @@ float shiftValuesfloat4(struct StreamHolder list_stream,
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
    EstablishGuessfloat4(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
-                          *list_stream,
+                          list_stream,
                           (1 << LogNMinusK),
                           maxvalue,
                           1<<i,
@@ -3365,7 +3347,7 @@ float shiftValuesfloat4(struct StreamHolder list_stream,
       if (i%2)
          UpdateGuessfloat4 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               guess_stream,//old guess
@@ -3373,13 +3355,13 @@ float shiftValuesfloat4(struct StreamHolder list_stream,
       else
          UpdateGuessfloat4 (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
                               sign);
    }
-   debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
+   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -3389,10 +3371,10 @@ float shiftValuesfloat4(struct StreamHolder list_stream,
         float4 proper_output_stream<width,LENGTH>;
         RelativeGatherfloat4(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
-                               *list_stream,
+                               list_stream,
                                float2(sign,1/floor(.5)),
                                maxvalue);
-        streamSwap(*output_stream,proper_output_stream);
+        streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
    }
@@ -3827,9 +3809,9 @@ kernel void float4streamCombine8f(float4 input0[][],
    }
 }
 */
-void combineStreamsHelperfloat4 (struct StreamHolder *streams,
+void combineStreamsHelperfloat4 (float4 (**streams) <>,
                                 unsigned int num,
-                                struct StreamHolder  output,
+                                float4 output<>,
                                 float modulus,
                                 float offset,
                                 float length,
@@ -3841,8 +3823,8 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 2:
       float4streamCombine2(*streams[0],
@@ -3851,8 +3833,8 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 3:
       float4streamCombine3(*streams[0],
@@ -3862,8 +3844,8 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 4:
    default:
@@ -3875,8 +3857,8 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>4) {
          combineStreamsHelperfloat4(streams+4,
                                       num-4,
@@ -3888,7 +3870,7 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
       }
       /*
    case 5:
-      float4streamCombine5(*streams[0],
+      float4streamCombine5(streams[0],
                      *streams[1],
                      *streams[2],
                      *streams[3],
@@ -3897,8 +3879,8 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 6:
       float4streamCombine6(*streams[0],
@@ -3911,8 +3893,8 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    default:
       float4streamCombine7(*streams[0],
@@ -3926,8 +3908,8 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>7) {
          combineStreamsHelperfloat4(streams+7,
                                       num-7,
@@ -3940,19 +3922,19 @@ void combineStreamsHelperfloat4 (struct StreamHolder *streams,
       */     
    }
 }
-void combineStreamsfloat4 (struct StreamHolder *streams,
+void combineStreamsfloat4 (float4 (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          struct StreamHolder  output) {
+                          float4 output<>) {
    unsigned int  lengthmodmodulus=length%num;
    float4 tmp<(num*width),length>;
-   streamSwap(tmp,*output);
+   streamSwap(tmp,output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(*output,*streams[0]);
+      streamSwap(output,*streams[0]);
       break;
    case 2:
       float4streamCombine2f(*streams[0],
@@ -3960,7 +3942,7 @@ void combineStreamsfloat4 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 3:
       float4streamCombine3f(*streams[0],
@@ -3969,7 +3951,7 @@ void combineStreamsfloat4 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 4:
       float4streamCombine4f(*streams[0],
@@ -3979,7 +3961,7 @@ void combineStreamsfloat4 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 5:
    default:
@@ -3991,7 +3973,7 @@ void combineStreamsfloat4 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -4018,7 +4000,7 @@ void combineStreamsfloat4 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 7:
       float4streamCombine7f(*streams[0],
@@ -4031,7 +4013,7 @@ void combineStreamsfloat4 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    default:
       if (num>MAX_VOUT_STREAMS) {
@@ -4050,7 +4032,7 @@ void combineStreamsfloat4 (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>8) {
          combineStreamsHelperfloat4(streams+8,
                                       num-8,
@@ -4105,14 +4087,14 @@ kernel void combinefloat4 (float4 input1[][],
       output=input1[indexof(output)];
    }
 }
-unsigned int  voutCombinefloat4(struct StreamHolder outleft_stream,
+unsigned int  voutCombinefloat4(float4 outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
-                               struct StreamHolder outright_stream,
+                               float4 outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               struct StreamHolder  output){
+                               float4 output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
@@ -4133,41 +4115,41 @@ unsigned int  voutCombinefloat4(struct StreamHolder outleft_stream,
                     -maxshiftright,
                     maxrightvalue,
                     &endsecond);
-      combinefloat4(*outleft_stream,
-                   *outright_stream,
+      combinefloat4(outleft_stream,
+                   outright_stream,
                    output_stream,
                    startsecond,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (*output,output_stream);
+      streamSwap (output,output_stream);
    }
    return totalsize;
 }
 
-unsigned int totalCombineVoutfloat4 (struct StreamHolder list_stream, 
+unsigned int totalCombineVoutfloat4 (float4 list_stream<>, 
                                     unsigned int WIDTH,
-                                    struct StreamHolder list2_stream,
+                                    float4 list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    struct StreamHolder  output){
+                                    float4 output<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesfloat4(list_stream,
-                                           &outleft_stream,
+                                           outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesfloat4(list2_stream,
-                                           &outright_stream,
+                                           outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
-   return voutCombinefloat4 (&outleft_stream,
+   return voutCombinefloat4 (outleft_stream,
                             maxshiftleft,
                             WIDTH,
-                            &outright_stream,
+                            outright_stream,
                             maxshiftright,
                             WIDTH2,
                             LENGTH,

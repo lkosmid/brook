@@ -1,18 +1,19 @@
+#ifdef _WIN32
 #pragma warning(disable:4244)
-#include "streamholder.h"
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 
 unsigned int debug_vout = 0;
 
-void debugStreamPrint (struct StreamHolder stream,char * title) {
-   if (debug_vout) {
-      printf ("%s\n",title);
-      
-      streamPrint(*stream,1);
-      printf ("\n\n");
+
+#define debugStreamPrint(stream,title) \
+   if (debug_vout) { \
+      printf ("%s\n",title); \
+      streamPrint(stream,1); \
+      printf ("\n\n"); \
    }
-}
+
 
 kernel void kernelReadItem (float items[][], float2 index, out float item<>) {
   item = items[index];
@@ -82,14 +83,14 @@ kernel void isFiniteKernelBRT_TYPE(BRT_TYPE inp<>, out float outp<>) {
    outp=!isinf(inp.x);
 }
 
-int finiteValueProducedBRT_TYPE (struct StreamHolder  input) {
+int finiteValueProducedBRT_TYPE (BRT_TYPE input<>) {
    BRT_TYPE output<1,1>;
    float finiteout<1,1>;
    BRT_TYPE rettype;
    float ret;
   
    debugStreamPrint (input,"Finite Values in...");
-   valueProducedBRT_TYPE(*input,output);
+   valueProducedBRT_TYPE(input,output);
    streamWrite(output,&rettype);
    isFiniteKernelBRT_TYPE(output,finiteout);
    streamWrite(finiteout,&ret);
@@ -209,8 +210,8 @@ kernel void RelativeGatherBRT_TYPE(out BRT_TYPE output<>,
    valueAtBRT_TYPE(value,nextPlaceToLook,output,maxvalue,sign.y);   
 }
 
-void CountValuesBRT_TYPE(struct StreamHolder list_stream,
-                          struct StreamHolder output_stream,
+void CountValuesBRT_TYPE(BRT_TYPE list_stream <>,
+                          BRT_TYPE output_stream <>,
                           int WIDTH, 
                           int LENGTH, 
                           int sign) {
@@ -221,7 +222,7 @@ void CountValuesBRT_TYPE(struct StreamHolder list_stream,
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
-   NanToRightBRT_TYPE (*list_stream,output_stream,sign,maxvalue);   
+   NanToRightBRT_TYPE (list_stream,output_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightBRT_TYPE (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
@@ -229,11 +230,11 @@ void CountValuesBRT_TYPE(struct StreamHolder list_stream,
          NanToRightBRT_TYPE (tmp_stream,output_stream,sign*(1<<i),maxvalue);
    }
    if (logN%2==0)
-     streamSwap(tmp_stream,*output_stream);
+     streamSwap(tmp_stream,output_stream);
 }
 
-float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
-                       struct StreamHolder output_stream,
+float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
+                       BRT_TYPE output_stream<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign) {
@@ -248,14 +249,14 @@ float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightBRT_TYPE (*list_stream,ret_stream,sign,maxvalue);   
+   NanToBoolRightBRT_TYPE (list_stream,ret_stream,sign,maxvalue);   
    for (i=1;i<logN;++i) {
       if (i%2)
          NanToRightBRT_TYPE (ret_stream,tmp_stream,sign*(1<<i),maxvalue);      
       else
          NanToRightBRT_TYPE (tmp_stream,ret_stream,sign*(1<<i),maxvalue);
    }
-   debugStreamPrint(logN%2==0?&tmp_stream:&ret_stream,"scattering...");
+   debugStreamPrint(logN%2==0?tmp_stream:ret_stream,"scattering...");
    {
      float item<1>;
      float2 index;
@@ -272,7 +273,7 @@ float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
    // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
    EstablishGuessBRT_TYPE(logN%2==0?tmp_stream:ret_stream,
                           guess_stream,
-                          *list_stream,
+                          list_stream,
                           (1 << LogNMinusK),
                           maxvalue,
                           1<<i,
@@ -282,7 +283,7 @@ float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
       if (i%2)
          UpdateGuessBRT_TYPE (logN%2==0?tmp_stream:ret_stream,//scatter values
                               logN%2==0?ret_stream:tmp_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               guess_stream,//old guess
@@ -290,13 +291,13 @@ float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
       else
          UpdateGuessBRT_TYPE (logN%2==0?tmp_stream:ret_stream,//scatter values
                               guess_stream,//new guess
-                              *list_stream,//actual values
+                              list_stream,//actual values
                               1<<LogNMinusK,
                               maxvalue,
                               logN%2==0?ret_stream:tmp_stream, //old guess
                               sign);
    }
-   debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
+   debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
       unsigned int size,width;
       size = (unsigned int)LENGTH*(unsigned int)WIDTH
@@ -306,10 +307,10 @@ float shiftValuesBRT_TYPE(struct StreamHolder list_stream,
         BRT_TYPE proper_output_stream<width,LENGTH>;
         RelativeGatherBRT_TYPE(proper_output_stream,
                                logN%2==0?ret_stream:guess_stream,
-                               *list_stream,
+                               list_stream,
                                float2(sign,1/floor(.5)),
                                maxvalue);
-        streamSwap(*output_stream,proper_output_stream);
+        streamSwap(output_stream,proper_output_stream);
       }
       debugStreamPrint(output_stream, "Final Value");
    }
@@ -744,9 +745,9 @@ kernel void BRT_TYPEstreamCombine8f(BRT_TYPE input0[][],
    }
 }
 */
-void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
+void combineStreamsHelperBRT_TYPE (BRT_TYPE (**streams) <>,
                                 unsigned int num,
-                                struct StreamHolder  output,
+                                BRT_TYPE output<>,
                                 float modulus,
                                 float offset,
                                 float length,
@@ -758,8 +759,8 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 2:
       BRT_TYPEstreamCombine2(*streams[0],
@@ -768,8 +769,8 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 3:
       BRT_TYPEstreamCombine3(*streams[0],
@@ -779,8 +780,8 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 4:
    default:
@@ -792,8 +793,8 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>4) {
          combineStreamsHelperBRT_TYPE(streams+4,
                                       num-4,
@@ -805,7 +806,7 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
       }
       /*
    case 5:
-      BRT_TYPEstreamCombine5(*streams[0],
+      BRT_TYPEstreamCombine5(streams[0],
                      *streams[1],
                      *streams[2],
                      *streams[3],
@@ -814,8 +815,8 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    case 6:
       BRT_TYPEstreamCombine6(*streams[0],
@@ -828,8 +829,8 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       break;
    default:
       BRT_TYPEstreamCombine7(*streams[0],
@@ -843,8 +844,8 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
                      offset,
                      length,
                      lengthmodmodulus,
-                     *output,
-                     *output);
+                     output,
+                     output);
       if (num>7) {
          combineStreamsHelperBRT_TYPE(streams+7,
                                       num-7,
@@ -857,19 +858,19 @@ void combineStreamsHelperBRT_TYPE (struct StreamHolder *streams,
       */     
    }
 }
-void combineStreamsBRT_TYPE (struct StreamHolder *streams,
+void combineStreamsBRT_TYPE (BRT_TYPE (**streams)<>,
                           unsigned int num,
                           unsigned int width, 
                           unsigned int length,
-                          struct StreamHolder  output) {
+                          BRT_TYPE output<>) {
    unsigned int  lengthmodmodulus=length%num;
    BRT_TYPE tmp<(num*width),length>;
-   streamSwap(tmp,*output);
+   streamSwap(tmp,output);
    switch (num) {
    case 0:
       return;
    case 1:
-      streamSwap(*output,*streams[0]);
+      streamSwap(output,*streams[0]);
       break;
    case 2:
       BRT_TYPEstreamCombine2f(*streams[0],
@@ -877,7 +878,7 @@ void combineStreamsBRT_TYPE (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 3:
       BRT_TYPEstreamCombine3f(*streams[0],
@@ -886,7 +887,7 @@ void combineStreamsBRT_TYPE (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 4:
       BRT_TYPEstreamCombine4f(*streams[0],
@@ -896,7 +897,7 @@ void combineStreamsBRT_TYPE (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 5:
    default:
@@ -908,7 +909,7 @@ void combineStreamsBRT_TYPE (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>MAX_VOUT_STREAMS) {
          fprintf (stderr,
                   "vout stream not reconstituted properly. %s%d streams",
@@ -935,7 +936,7 @@ void combineStreamsBRT_TYPE (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    case 7:
       BRT_TYPEstreamCombine7f(*streams[0],
@@ -948,7 +949,7 @@ void combineStreamsBRT_TYPE (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       break;
    default:
       if (num>MAX_VOUT_STREAMS) {
@@ -967,7 +968,7 @@ void combineStreamsBRT_TYPE (struct StreamHolder *streams,
                       num,
                       length,
                       lengthmodmodulus,
-                      *output);
+                      output);
       if (num>8) {
          combineStreamsHelperBRT_TYPE(streams+8,
                                       num-8,
@@ -1022,14 +1023,14 @@ kernel void combineBRT_TYPE (BRT_TYPE input1[][],
       output=input1[indexof(output)];
    }
 }
-unsigned int  voutCombineBRT_TYPE(struct StreamHolder outleft_stream,
+unsigned int  voutCombineBRT_TYPE(BRT_TYPE outleft_stream<>,
                                float maxshiftleft,
                                unsigned int LEFTWIDTH,
-                               struct StreamHolder outright_stream,
+                               BRT_TYPE outright_stream<>,
                                float maxshiftright,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
-                               struct StreamHolder  output){
+                               BRT_TYPE output<>){
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
@@ -1050,41 +1051,41 @@ unsigned int  voutCombineBRT_TYPE(struct StreamHolder outleft_stream,
                     -maxshiftright,
                     maxrightvalue,
                     &endsecond);
-      combineBRT_TYPE(*outleft_stream,
-                   *outright_stream,
+      combineBRT_TYPE(outleft_stream,
+                   outright_stream,
                    output_stream,
                    startsecond,
                    endsecond,
                    maxrightvalue,
                    1.0f/(float)floor(.5));
-      streamSwap (*output,output_stream);
+      streamSwap (output,output_stream);
    }
    return totalsize;
 }
 
-unsigned int totalCombineVoutBRT_TYPE (struct StreamHolder list_stream, 
+unsigned int totalCombineVoutBRT_TYPE (BRT_TYPE list_stream<>, 
                                     unsigned int WIDTH,
-                                    struct StreamHolder list2_stream,
+                                    BRT_TYPE list2_stream<>,
                                     unsigned int WIDTH2,
                                     unsigned int LENGTH,
-                                    struct StreamHolder  output){
+                                    BRT_TYPE output<>){
 
    float outleft_stream<WIDTH,LENGTH>;
    float outright_stream<WIDTH2,LENGTH>;
    float maxshiftleft =shiftValuesBRT_TYPE(list_stream,
-                                           &outleft_stream,
+                                           outleft_stream,
                                            WIDTH,
                                            LENGTH,
                                            -1);
    float maxshiftright=shiftValuesBRT_TYPE(list2_stream,
-                                           &outright_stream,
+                                           outright_stream,
                                            WIDTH2,
                                            LENGTH,
                                            -1);
-   return voutCombineBRT_TYPE (&outleft_stream,
+   return voutCombineBRT_TYPE (outleft_stream,
                             maxshiftleft,
                             WIDTH,
-                            &outright_stream,
+                            outright_stream,
                             maxshiftright,
                             WIDTH2,
                             LENGTH,

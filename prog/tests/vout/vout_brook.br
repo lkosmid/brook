@@ -1,7 +1,6 @@
 #include <stdio.h>
-#include "streamholder.h"
-void CountValuesfloat(struct StreamHolder list_stream,
-                       struct StreamHolder output_stream,
+void CountValuesfloat(float list_stream<>,
+                       float output_stream<>,
                        int WIDTH, 
                        int LENGTH, 
                        int sign);
@@ -64,7 +63,7 @@ int main (int argc, char * argv[]) {
        int k;
         data_nil[i*10+j]=1.0;
         streamRead(nil,data_nil);
-        CountValuesfloat(&nil,&test,40,10,-1);
+        CountValuesfloat(nil,test,40,10,-1);
         streamWrite(test,data_out);
         data_nil[i*10+j]=0.0;
 
