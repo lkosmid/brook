@@ -34,6 +34,3 @@ Known Issues in the Runtimes
 
    * The cpu runtime only supports a subset of the builtin Cg / HLSL
      functions.
-
-   * The dx9 runtime leaves logfiles behind in the current directory when
-     brook programs run using it.
