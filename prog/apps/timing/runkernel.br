@@ -623,7 +623,7 @@ RunKernelFindIdealGPUvsCPUSlope(void)
    }
 
    slope = (float) (start - t2) * outData[1].x / (t1 - t2);
-   printf("(* Ideal slope is %6.2f, so ideal # of iterations is %6.2f *)\n",
+   printf("(* Ideal slope: %6.2f Ideal iterations: %6.2f\t\tRunKVSIdeal *)\n",
           slope, slope / outData[1].x);
 
 done:
@@ -687,7 +687,7 @@ RunKernelFindGPUvsCPUOne(int length)
       t2 = CyclesToUsecs(GetTimeTSC() - t2);
 
       if (t1 > t2) {
-         printf("%9d\t%10d\t%8d\t\t(* RUNVS *)\n",
+         printf("%9d   %10d   %8d\t\t\t(* RunKVS *)\n",
                 4 * length * length, i,
                 (int) (outGPU[1].x * length * length * i * 4));
          goto done;
@@ -728,7 +728,7 @@ RunKernel_GPUvsCPU(int minLength)
    printf("(* RunKernel GPU vs. CPU: min length %d *)\n", minLength);
    idealSlope = RunKernelFindIdealGPUvsCPUSlope();
 
-   printf("(* length\titerations\t# of ops *)\n");
+   printf("(* length   iterations   # of ops *)\n");
    RunKernelFindGPUvsCPUOne(minLength);
    for (i = 0; i < numLengths; i++) {
       if (lengths[i] <= minLength) continue;
