@@ -1364,13 +1364,11 @@ declaration:  decl_specs opt_init_decl_list
         {
             assert (1||err_top_level ||
                     $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
-      if ($1!=gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs) {
-          if (err_top_level) {
-             fprintf (stderr,"would have been error but not\n");
-          }else {
-             baseTypeFixup($1,$2);
-          }
-      }
+            if ($1!=gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs) {
+              if (!err_top_level) {
+                baseTypeFixup($1,$2);
+              }
+            }
             gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();            
             
             possibleType = true;
