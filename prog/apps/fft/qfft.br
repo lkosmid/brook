@@ -115,28 +115,30 @@ kernel void optBitReverseY (out float4 s_out<>,
 }
 kernel void bitReverseXo2 (out float4 s_out<>,
 			   float4 indicesXo2YXp1o2Xm2[],
-			   float4 s[][], float halfM) {
+			   float4 s[][], float halfM, float halfMpp) {
    float2 s_out_index=indexof s_out.xy;
    float4 indexX = indicesXo2YXp1o2Xm2[(indexof s_out).x];
    float2 outindex = {indexX.x,(indexof s_out).y};
    float4 s_temp = s[outindex];
-   s_out.xy = indexX.ww?s_temp.zw:s_temp.xy;
+   float dubya=(s_out_index.x<=halfMpp)?1:0;
+   s_out.xy = (dubya.xx&&s_out_index.xx>=.5)?s_temp.zw:s_temp.xy;
    outindex.x = indexX.z;//get the index + 1 (adds half the stream)
    s_temp = s[outindex];
-   s_out.zw = ((indexX.ww||s_out_index.xx<=.5)&&round(s_out_index.xx)!=halfM)?s_temp.zw:s_temp.xy;
+   s_out.zw = (dubya.xx&&round(s_out_index.xx)!=halfM)?s_temp.zw:s_temp.xy;
 }
 kernel void bitReverseXo2Y (out float4 s_out<>,
                           float4 indicesXo2YXp1o2Xm2[], 
-                          float4 s[][], float halfM, float even) {
+                          float4 s[][], float halfM, float halfMpp) {
    float2 s_out_index=indexof s_out.xy;
    float4 indexX = indicesXo2YXp1o2Xm2[s_out_index.x];
    float4 indexY = indicesXo2YXp1o2Xm2[s_out_index.y];
    float2 outindex = {indexX.x,indexY.y};
    float4 s_temp = s[outindex];
-   s_out.xy = indexX.ww?s_temp.zw:s_temp.xy;
+   float dubya=(s_out_index.x<=halfMpp)?1:0;
+   s_out.xy = (dubya.xx&&s_out_index.xx>=.5)?s_temp.zw:s_temp.xy;
    outindex.x = indexX.z;//get the index + 1 (adds half the stream)
    s_temp = s[outindex];
-   s_out.zw = ((indexX.ww||s_out_index.xx<=.5)&&round(s_out_index.xx)!=halfM)?s_temp.zw:s_temp.xy;
+   s_out.zw = (dubya.xx&&round(s_out_index.xx)!=halfM)?s_temp.zw:s_temp.xy;
 }
 
 // Utilities and the BitReverse() procedure
@@ -315,7 +317,7 @@ void computeFFT2d(float4 (*input)<>,
 	 }
    }
    if (!split_bit_reverse) {//now do it separately
-     bitReverseXo2Y(*output,indicesXo2YXp1o2Xm2,*input,(float)(M/4),(float)(logM%2==0));      
+     bitReverseXo2Y(*output,indicesXo2YXp1o2Xm2,*input,(float)(M/4),(float)(M/4)+0.51f);      
      if (debug_fft==2) {
        printf ("\nBit Reversal\n");
        streamPrint(*output);
