@@ -1,6 +1,7 @@
 #include <iostream>
 #include<assert.h>
 #include "cpu.hpp"
+#include <stdio.h>
 static void nothing (const std::vector<void*>&args,
                      const std::vector<const unsigned int *>&extents,
                      const std::vector<unsigned int> &dims,
@@ -110,10 +111,10 @@ namespace brook{
              streamReduction=reductions.back().stream;
           }
        }else {
+          reductions.push_back(ReductionArg(args.size(),type,NULL));
           args.push_back(data);
           dims.push_back(0);
           extents.push_back(0);
-          reductions.push_back(ReductionArg(args.size(),type,NULL));
        }
 
     }
@@ -161,12 +162,17 @@ namespace brook{
        unsigned int cur=0;
        unsigned int step = totalsize/numThreads;
        unsigned int remainder = totalsize%numThreads;
+
+       //fork!
+       subMap(cur,step);
+       cur+=step;
        std::vector<void *>reductionbackup;
        for (j=reductions.begin();
             j!=reductions.end();
             ++j) {
           reductionbackup.push_back(args[j->which]);          
           args[j->which]=malloc(numThreads*j->type*sizeof(float));
+
        }
        for (i=0;i<numThreads-1;++i) {
           unsigned int thisstep=step;
@@ -181,10 +187,12 @@ namespace brook{
        }
        subMap(cur,totalsize-cur);
        cur=0;
-       for (i=0;i<reductions.size();++i){
-          args.push_back(((char *)args[reductions[i].which])
-                         - j->type*sizeof(float)*(numThreads-2));
-          args[reductions[i].which]=reductionbackup[i];
+       for (i=0;i<reductions.size();++i) {
+          char * end = (char *)args[reductions[i].which];
+
+          end-=reductions[i].type*sizeof(float)*(numThreads-1);
+          args.push_back(end);                         
+          args[reductions[i].which]=reductionbackup[i];          
        }
 
        if (combine!=0) {
@@ -203,7 +211,7 @@ namespace brook{
              }     
           }
           for (i=delta;i<args.size();++i) {
-             free((char *)args[i]-reductions[i-delta].type*sizeof(float)*(numThreads-1));
+             free( (char *)args[i]-reductions[i-delta].type*sizeof(float)*(numThreads-1));
           }
        }
     }
