@@ -134,13 +134,10 @@ Type::DeleteTypeList(Type* typeList)
 void
 Type::printType( std::ostream& out, Symbol *name, bool showBase, int level ) const
 {
-    if (showBase)
-	{
-        printBase(out,level);
-
-		if (name != NULL)
-			std::cout << " ";
-	}
+    if (showBase) {
+       printBase(out,level);
+       if (name != NULL) out << " ";
+    }
 
     printBefore(out,name,level);
     printAfter(out);
