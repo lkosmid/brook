@@ -106,7 +106,8 @@ class MaskExpr : public BinaryExpr {
 		else
 			out << *lValue();
 		out << ".mask"<< mask.length()<<"(";
-		if (rValue()->precedence()<2/*comma*/)
+		int commaprecedence = BinaryExpr(BO_Comma,NULL,NULL,location).precedence();		
+		if (rValue()->precedence()<commaprecedence/*comma*/)
 			out << "(" <<*rValue() <<")";
 		else
 			out << *rValue();
@@ -120,13 +121,14 @@ class MaskExpr : public BinaryExpr {
 };
 class NewQuestionColon :public TrinaryExpr {public:
 	NewQuestionColon (Expression * c, Expression * t, Expression * f, const Location &l):TrinaryExpr(c,t,f,l) {}
-	Expression * dup0() const {return new NewQuestionColon(*this);}
+	Expression * dup0() const {return new NewQuestionColon(condExpr()->dup(),trueExpr()->dup(),falseExpr()->dup(),location);}
 	int precedence() const {return 3;}
 	void print(std::ostream &out) const {
-		if (condExpr()->precedence()<16) 
+		int memberprecedence = BinaryExpr(BO_Member,NULL,NULL,location).precedence();
+		if (condExpr()->precedence()<memberprecedence)/*member*/ 
 			out << "(";
 		out<<*condExpr();
-		if (condExpr()->precedence()<16) 
+		if (condExpr()->precedence()<memberprecedence) /*member*/
 			out << ")";		
 		out<<".questioncolon(";
 		out<<*trueExpr();
@@ -150,6 +152,57 @@ class QuestionColonConverter{public:
 	}
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class NewIndexExpr :public IndexExpr {public:
+	NewIndexExpr (Expression * a, Expression * s,const Location &l):IndexExpr(a,s,l) {} //Not *the* tr1nity with a/s/l check onjoin.
+	Expression * dup0() const {return new NewIndexExpr(array->dup(),_subscript->dup(),location);}
+	void print(std::ostream &out) const {
+    if (array->precedence() < precedence())
+    {
+        out << "(";
+        array->print(out);
+        out << ")";
+    }
+    else
+        array->print(out);
+
+    out << "[(int)";
+	int castprecedence= CastExpr(NULL,NULL,location).precedence();
+	if (_subscript->precedence()<=castprecedence)
+		out <<"(";
+    _subscript->print(out);
+	if (_subscript->precedence()<=castprecedence)
+		out <<")";	
+    out << "]";
+
+	}
+		
+};
+class IndexExprConverter{public:
+	Expression * operator()(Expression * e) {
+		IndexExpr *ie;
+		IndexExpr * ret=NULL;
+		if (e->etype==ET_IndexExpr&&(ie=dynamic_cast<IndexExpr*>(e))) {
+			ret = new NewIndexExpr (ie->array->dup(),ie->_subscript->dup(),e->location);
+			ret->array->findExpr(ConvertToT<IndexExprConverter>);
+			ret->_subscript->findExpr(ConvertToT<IndexExprConverter>);			
+		}
+		return ret;
+	}
+};
 
 
 class SwizzleConverter{public:
@@ -240,6 +293,9 @@ void FindSwizzle (Statement * s) {
 void FindQuestionColon (Statement * s) {
 	s->findExpr(ConvertToT<QuestionColonConverter>);
 }
+void FindIndexExpr (Statement * s) {
+	s->findExpr(ConvertToT<IndexExprConverter>);
+}
 
 bool compileCpp() {
 	Project proj;
@@ -250,6 +306,8 @@ bool compileCpp() {
 		tu->findStemnt(FindMask);
 		tu->findStemnt (FindSwizzle);
 		tu->findStemnt (FindQuestionColon);
+		tu->findStemnt (FindIndexExpr);
+
 		std::string s (globals.coutputname);
 		s+="pp";
 		out.open(s.c_str());
