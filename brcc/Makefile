@@ -7,9 +7,9 @@ FILES = context decl express parseenv project stemnt symbol token \
 	b2cindex brtreduce brtgather
 
 CPP_PATH = /usr/bin/cpp
-SLOP = lexer.cpp gram.cpp gram.output gram.h fp30_assist.cg.bin
+SLOP = lexer.cpp gram.cpp gram.output gram.h
 
-ADDITIONAL_DEPENDANCIES = gram.h fp30_assist.cg.bin
+ADDITIONAL_DEPENDANCIES = gram.h
 
 include ../common.mk
 
@@ -24,6 +24,3 @@ gram.cpp gram.h:  gram.y
 	-mv -f gram.cpp.h gram.h
 	-mv -f gram.hpp gram.h
 #the gram.cpp.h line is for macs
-
-fp30_assist.cg.bin: fp30_assist.cg
-	cpp -P < fp30_assist.cg | perl makestring.pl > fp30_assist.cg.bin

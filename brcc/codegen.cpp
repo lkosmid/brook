@@ -28,10 +28,6 @@ extern "C" {
 #include "brtkernel.h"
 #include "b2ctransform.h"
 
-static const char fp30_assist[] =
-#include "fp30_assist.cg.bin"
-;
-
 /*
  * generate_hlsl_code --
  *
