@@ -256,14 +256,14 @@ OGLContext::get2DInterpolant( const float2 &start,
   f2.x = (2*x2-x1) + shiftx;
   f2.y = (2*y2-y1) + shifty;
 
-  if (w==1) {
+  if (h==1) {
     interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
     interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
     interpolant.vertices[2] = interpolant.vertices[0];
     return;
   }
 
-  if (h==1) {
+  if (w==1) {
     interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
     interpolant.vertices[1] = interpolant.vertices[0];
     interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
