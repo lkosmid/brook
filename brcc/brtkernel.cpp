@@ -19,6 +19,14 @@
 #include "brtexpress.h"
 #include "codegen.h"
 #include "main.h"
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+std::string whiteout (std::string s) {
+   for (unsigned int i=0;i<s.length();++i) {
+      s[i]=' ';
+   }
+   return s;
+}
+
 extern bool recursiveIsGather(Type*);
 
 unsigned int getReferenceStream(FunctionDef * fDef) {
@@ -92,10 +100,42 @@ static Variable * NewGatherArg (Variable * v) {
 
 
 void BRTPS20KernelCode::printInnerCode (std::ostream&out) const {
-
+   unsigned int i;
+   std::string myvoid("void  ");
+   FunctionType * ft = static_cast<FunctionType *>(fDef->decl->form);
+   out << myvoid;
+   out << fDef->decl->name->name<< " (";
+   std::string blank (whiteout(myvoid + fDef->decl->name->name +" ("));
+   for (i=0;i<ft->nArgs;++i) {
+      if (i!=0) {
+         out << ","<<std::endl<< blank;
+      }
+      Symbol * nam = ft->args[i]->name;
+      Type * t = ft->args[i]->form;
+      if (recursiveIsGather(t)) {
+         out << "sampler "<<nam->name <<","<<std::endl;
+         out << blank << "float4 "<<nam->name<<"_scalebias";
+      }else {
+         if (ft->args[i]->isStream()) {
+            t = static_cast<ArrayType *>(t)->subType;
+         }
+         t->printType(out,nam, true,0);
+      }
+   }
+   std::set<unsigned int>::iterator iter=
+      FunctionProp[ fDef->decl->name->name].begin();
+   std::set<unsigned int>::iterator iterend = 
+      FunctionProp[ fDef->decl->name->name].end();
+   for (;iter!=iterend;++iter,++i) {
+      if (i!=0)
+         out << ","<<std::endl<<blank;
+      out << "float4 __indexof_"<<ft->args[*iter]->name->name;
+   }
+   out << ")"<<std::endl;
+   fDef->Block::print(out,0);
 }
 void BRTFP30KernelCode::printInnerCode (std::ostream&out) const {
-
+   //nothing happens.
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *
@@ -237,6 +277,7 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
 void
 BRTPS20KernelCode::printCode(std::ostream& out) const
 {
+   //   printInnerCode(std::cout);
    FunctionType *fType;
    std::ostringstream wrapOut;
    char *fpcode;
@@ -304,9 +345,7 @@ bool BRTCPUKernelCode::PrintCPUArg::isGather() {
 	return recursiveIsGather(a->form);
 }
 void BRTCPUKernelCode::printInnerCode (std::ostream&out) const {
-   out << "void  ";
-   FunctionDef * fDef= static_cast<FunctionDef*>(this->fDef->dup());
-   
+   //nothing happens: you fail to obtain anything
 }
 
 bool BRTCPUKernelCode::PrintCPUArg::isArrayType() {
@@ -630,13 +669,6 @@ void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out,
 
 
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-std::string whiteout (std::string s) {
-   for (unsigned int i=0;i<s.length();++i) {
-      s[i]=' ';
-   }
-   return s;
-}
 std::vector<BRTCPUKernelCode::PrintCPUArg> 
 BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
     Type * form = fDef->decl->form;
