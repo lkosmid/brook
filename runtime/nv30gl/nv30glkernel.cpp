@@ -478,7 +478,7 @@ issue_reduce_poly (int x1, int y1,
    CHECK_GL();
 }
 
-#if 1
+#if 0
 static void
 dumpframebuffer (int w, int h) {
    int i, j;
@@ -652,6 +652,11 @@ NV30GLKernel::ReduceScalar() {
 
 void
 NV30GLKernel::ReduceStream() {
+
+  assert (0);
+
+#if 0
+
    int w = inputReduceStream->width;
    int h = inputReduceStream->height;
    int ncomp = inputReduceStream->ncomp;
@@ -722,7 +727,7 @@ NV30GLKernel::ReduceStream() {
                  1.0f, 0.0f, 0.0f, 1.0f,
                  (float) nx*ratiox+1,  (float) h, 0.0f, 1.0f,
                  f1[1], f2[1], fd[1]);
-#if 1
+#if 0
          fprintf (stderr,
                   "\t%3.8f %3.8f %3.8f %3.8f\n\t%3.8f %3.8f %3.8f %3.8f\n", 
                   f1[0].x, f1[0].y, f1[0].z, f1[0].w,
@@ -732,7 +737,7 @@ NV30GLKernel::ReduceStream() {
       glBindProgramNV (GL_FRAGMENT_PROGRAM_NV, id);
       issue_reduce_poly(0, 0, half*nx, h, 2, f1, f2, fd);
       
-      dumpframebuffer(10,10);
+      // dumpframebuffer(10,10);
 
       if (remainder) {
          compute_st(1, h, false,
@@ -822,6 +827,7 @@ NV30GLKernel::ReduceStream() {
    
    for (i=0; i<ncomp; i++)
       ((float *)reduceVal)[i] = ((float *)&readback)[i];
+#endif
 #endif
 }
 
