@@ -208,11 +208,13 @@ void BlackmailType (Type * t) {
 	BlackmailT<PtrType>(t);
 	BlackmailT<BitFieldType>(t);
 	StreamType * st;
+/*
 	if (st = dynamic_cast<StreamType *>(t)) {
 		st->size->findExpr(ArrayBlackmailer);
 		ArrayBlackmailer(st->size);		
 		BlackmailType(st->subType);
 	}
+*/
 	FunctionType * ft;
 	if (ft = dynamic_cast<FunctionType *>(t)) {
 		ft->findExpr(ArrayBlackmailer);
