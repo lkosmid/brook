@@ -115,7 +115,7 @@ extern bool forcevanilla;
 extern int  checkPassCorrectness(Traverser *, int , int );
 unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsigned int  bboxwidt1, unsigned int  bboxheit1, BBox  *bboxest1, unsigned int  widt2, unsigned int  heit2, Tri  *t2, unsigned int  bboxwidt2, unsigned int  bboxheit2, BBox  *bboxest2, float3  rX, float3  rY, float3  rZ, float3  trans, float3  csRapidColliderrX, float3  csRapidColliderrY, float3  csRapidColliderrZ, float3  csRapidColliderT, float4  **intersections)
 {
-  //forcevanilla=false;// this makes it so that our vout stuff is cached;
+  forcevanilla=false;// this makes it so that our vout stuff is cached;
   
   unsigned int  num_intersections = 0;
   unsigned int  temp;
@@ -200,6 +200,7 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
     TransposeBBoxes(bboxwidt1 * bboxheit1,bboxest1);
     streamRead(m1,bboxest1);
     int iter=0;
+    num_intersections=0;
     do   {
       Collide(trav,m1,m2,nextNode,hits);
       if (rr==0){
