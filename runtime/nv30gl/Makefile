@@ -2,7 +2,7 @@
 ROOTDIR = ../..
 STATIC_LIBRARY = nv30gl
 
-GLFILES = glfunc gliter glkernel glstream glwindow glcheckgl glruntime GLee
+GLFILES = glfunc gliter glkernel glstream glwindow glcheckgl glruntime
 NV30FILES = nv30glruntime nv30glkernel
 ARBFILES = arbruntime arbkernel
 
