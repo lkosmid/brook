@@ -2,7 +2,7 @@ ROOTDIR = ../../..
 EXECUTABLE = big
 FILES = big
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = -A -v
+BRCCFLAGS = -A 
 
 
 include $(ROOTDIR)/common.mk
