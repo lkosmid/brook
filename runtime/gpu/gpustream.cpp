@@ -39,7 +39,7 @@ namespace brook
   
   void GPUStreamData::releaseReference()
   {
-    if( _referenceCount-- == 0 )
+    if( --_referenceCount == 0 )
       delete this;
   }
   
