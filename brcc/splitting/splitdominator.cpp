@@ -126,7 +126,9 @@ void SplitTree::buildDominatorTree()
     // we add it to the partial tree if it is multiply-referenced
     // or has some multiply-referenced descendants (which would
     // have already been added).
-    if( n->_graphParents.size() > 1 )
+    // TIM: we ignore nodes that are taken to be "trivial"
+    // (that is, those that should never be saved)
+    if( n->_graphParents.size() > 1 && !n->isTrivial() )
     {
       _multiplyReferencedNodes.push_back( n );
       n->_pdtDominator->_pdtChildren.push_back( n );

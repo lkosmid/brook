@@ -25,13 +25,16 @@ SplitNode::SplitNode()
 
 void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompiler, std::ostream& inStream )
 {
+  if( marked ) return;
+  marked = true;
+
   for( size_t i = 0; i < _graphChildren.size(); i++ )
     _graphChildren[i]->rdsPrint( inTree, inCompiler, inStream );
 
   if( isMarkedAsSplit() ) {
-//    std::cerr << "*** ";
-//    printExpression( std::cerr );
-//    std::cerr << std::endl;
+    std::cerr << "*** ";
+    printExpression( std::cerr );
+    std::cerr << std::endl;
 
     std::vector<SplitNode*> dummy;
     dummy.push_back( this );
@@ -42,6 +45,18 @@ void SplitNode::rdsPrint( const SplitTree& inTree, const SplitCompiler& inCompil
 
 void SplitNode::addChild( SplitNode* inNode ) {
   _graphChildren.push_back( inNode );
+}
+
+void SplitNode::removeChild( SplitNode* inNode )
+{
+  NodeList::iterator i;
+  for( i = _graphChildren.begin(); i != _graphChildren.end(); ++i )
+  {
+    if( *i != inNode ) continue;
+
+    _graphChildren.erase( i );
+    return;
+  }
 }
 
 void SplitNode::traverseChildren( SplitNodeTraversal& ioTraversal )
@@ -178,7 +193,7 @@ void OutputSplitNode::dump( std::ostream& inStream )
 }
 
 void OutputSplitNode::printTemporaryName( std::ostream& inStream ) {
-  inStream << "arg" << argumentIndex << "output" << componentIndex;
+  inStream << "arg" << (argumentIndex+1) << "output" << componentIndex;
 }
 
 void OutputSplitNode::printTemporaryExpression( std::ostream& inStream ) {
@@ -220,6 +235,32 @@ void OutputSplitNode::traverseChildren( SplitNodeTraversal& ioTraversal ) {
   ioTraversal( value );
 }
 
+void LocalVariableSplitNode::assign( SplitNode* inValue )
+{
+  SplitNode* value = inValue->getValueNode();
+  if( value->inferredType != inferredType )
+  {
+    std::vector<SplitNode*> constructorArgs;
+    constructorArgs.push_back( value );
+    value = new ConstructorSplitNode( inferredType, constructorArgs );
+  }
+  if( _value )
+    removeChild( _value );
+  _value = value;
+  addChild( _value );
+}
+
+void LocalVariableSplitNode::printTemporaryExpression( std::ostream& inStream )
+{
+  assert( _value );
+  _value->printTemporaryExpression( inStream );
+}
+
+void LocalVariableSplitNode::printExpression( std::ostream& inStream )
+{
+  inStream << _name;
+}
+
 void ArgumentSplitNode::printTemporaryExpression( std::ostream& inStream )
 {
   inStream << "arg" << argumentIndex;
@@ -230,8 +271,37 @@ void ArgumentSplitNode::printExpression( std::ostream& inStream )
   inStream << name;
 }
 
+void AssignableArgumentSplitNode::assign( SplitNode* inValue )
+{
+  SplitNode* value = inValue->getValueNode();
+  if( value->inferredType != inferredType )
+  {
+    std::vector<SplitNode*> constructorArgs;
+    constructorArgs.push_back( value );
+    value = new ConstructorSplitNode( inferredType, constructorArgs );
+  }
+  if( _assignedValue )
+    removeChild( _assignedValue );
+  _assignedValue = value;
+  addChild( _assignedValue );
+}
+
+void AssignableArgumentSplitNode::printTemporaryExpression( std::ostream& inStream )
+{
+  if( _assignedValue )
+    _assignedValue->printTemporaryExpression( inStream );
+  else
+    ArgumentSplitNode::printTemporaryExpression( inStream );
+}
+
+IteratorArgumentSplitNode::IteratorArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex )
+  : AssignableArgumentSplitNode( inName, inType, inArgumentIndex )
+{
+  _value = new InputInterpolantSplitNode( argumentIndex, 0, inferredType );
+}
+
 StreamArgumentSplitNode::StreamArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex, SplitTreeBuilder& ioBuilder )
-  : ArgumentSplitNode( inName, inType, inArgumentIndex )
+  : AssignableArgumentSplitNode( inName, inType, inArgumentIndex )
 {
   sampler = new InputSamplerSplitNode( argumentIndex, 0, inferredType );
   interpolant = new InputInterpolantSplitNode( argumentIndex, 0, kSplitBasicType_Float2 );
@@ -242,8 +312,8 @@ StreamArgumentSplitNode::StreamArgumentSplitNode( const std::string& inName, Spl
   // TIM: for now we are *really* bad and assume it is always the ps2.0 way :)
 
   indexofNode = ioBuilder.addConstructor( kSplitBasicType_Float4,
-    ioBuilder.addBinaryOp( BO_Plus,
-      ioBuilder.addBinaryOp( BO_Mult, interpolant, ioBuilder.addMember(indexofConstant,"xy") ),
+    ioBuilder.addBinaryOp( "+",
+      ioBuilder.addBinaryOp( "*", interpolant, ioBuilder.addMember(indexofConstant,"xy") ),
       ioBuilder.addMember( indexofConstant, "zw" ) ),
     ioBuilder.addConstant( 0 ),
     ioBuilder.addConstant( 0 ) );
@@ -259,7 +329,7 @@ GatherArgumentSplitNode::GatherArgumentSplitNode( const std::string& inName, Spl
 }
 
 ConstantArgumentSplitNode::ConstantArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex )
-  : ArgumentSplitNode( inName, inType, inArgumentIndex )
+  : AssignableArgumentSplitNode( inName, inType, inArgumentIndex )
 {
   value = new InputConstantSplitNode( argumentIndex, 0, inType );
 }
@@ -333,8 +403,27 @@ void BrtMemberSplitNode::printExpression( std::ostream& inStream )
   inStream << "." << name;
 }
 
-BrtBinaryOpSplitNode::BrtBinaryOpSplitNode( BinaryOp inOperation, SplitNode* inLeft, SplitNode* inRight )
-: operation(inOperation), left(inLeft), right(inRight)
+UnaryOpSplitNode::UnaryOpSplitNode( const std::string& inOperation, SplitNode* inOperand )
+  : _operation(inOperation), _operand(inOperand)
+{
+  inferredType = inOperand->inferredType;
+  addChild( _operand );
+}
+
+void UnaryOpSplitNode::printTemporaryExpression( std::ostream& inStream )
+{
+  inStream << _operation;
+  _operand->printTemporaryName( inStream );
+}
+
+void UnaryOpSplitNode::printExpression( std::ostream& inStream )
+{
+  inStream << _operation;
+  _operand->printExpression( inStream );
+}
+
+BrtBinaryOpSplitNode::BrtBinaryOpSplitNode( const std::string& inOperation, SplitNode* inLeft, SplitNode* inRight )
+  : operation(inOperation), left(inLeft), right(inRight)
 {
   // TIM: simple assumption - always choose the larger of the two...
   // this is actually a HACK
@@ -349,125 +438,15 @@ BrtBinaryOpSplitNode::BrtBinaryOpSplitNode( BinaryOp inOperation, SplitNode* inL
 
 void BrtBinaryOpSplitNode::printTemporaryExpression( std::ostream& inStream )
 {
-  std::ostream& out = inStream;
-
   left->printTemporaryName( inStream );
-
-  switch( operation )
-  {
-  case BO_Plus:
-    out << "+";
-    break;
-  case BO_Minus:
-    out << "-";
-    break;
-  case BO_Mult:
-    out << "*";
-    break;
-  case BO_Div:
-    out << "/";
-    break;
-  case BO_Mod:
-    out << "%";
-    break;
-  case BO_Shl:
-    out << "<<";
-    break;
-  case BO_Shr:
-    out << ">>";
-    break;
-  case BO_BitAnd:
-    out << "&";
-    break;
-  case BO_BitXor:
-    out << "^";
-    break;
-  case BO_BitOr:
-    out << "|";
-    break;
-  case BO_And:
-    out << "&&";
-    break;
-  case BO_Or:
-    out << "||";
-    break;
-  case BO_Comma:
-    out << ",";
-    break;
-  case BO_Member:
-    out << ".";
-    break;
-  case BO_PtrMember:
-    out << "->";
-    break;
-  default:
-    //  case BO_Index        // x[y]
-  case BO_Assign:      // An AssignExpr
-  case BO_Rel:         // A RelExpr
-    break;
-  }
+  inStream << " " << operation << " ";
   right->printTemporaryName( inStream );
 }
 
 void BrtBinaryOpSplitNode::printExpression( std::ostream& inStream )
 {
-  std::ostream& out = inStream;
-
   left->printExpression( inStream );
-
-  switch( operation )
-  {
-  case BO_Plus:
-    out << "+";
-    break;
-  case BO_Minus:
-    out << "-";
-    break;
-  case BO_Mult:
-    out << "*";
-    break;
-  case BO_Div:
-    out << "/";
-    break;
-  case BO_Mod:
-    out << "%";
-    break;
-  case BO_Shl:
-    out << "<<";
-    break;
-  case BO_Shr:
-    out << ">>";
-    break;
-  case BO_BitAnd:
-    out << "&";
-    break;
-  case BO_BitXor:
-    out << "^";
-    break;
-  case BO_BitOr:
-    out << "|";
-    break;
-  case BO_And:
-    out << "&&";
-    break;
-  case BO_Or:
-    out << "||";
-    break;
-  case BO_Comma:
-    out << ",";
-    break;
-  case BO_Member:
-    out << ".";
-    break;
-  case BO_PtrMember:
-    out << "->";
-    break;
-  default:
-    //  case BO_Index        // x[y]
-  case BO_Assign:      // An AssignExpr
-  case BO_Rel:         // A RelExpr
-    break;
-  }
+  inStream << " " << operation << " ";
   right->printExpression( inStream );
 }
 
@@ -502,6 +481,22 @@ void TextureFetchSplitNode::printTemporaryExpression( std::ostream& inStream )
   inStream << ", ";
   textureCoordinate->printTemporaryName( inStream );
   inStream << " )";
+
+  switch( inferredType )
+  {
+  case kSplitBasicType_Float:
+    inStream << ".x";
+    break;
+  case kSplitBasicType_Float2:
+    inStream << ".xy";
+    break;
+  case kSplitBasicType_Float3:
+    inStream << ".xyz";
+    break;
+  case kSplitBasicType_Float4:
+    inStream << ".xyzw";
+    break;
+  }
 }
 
 void TextureFetchSplitNode::printExpression( std::ostream& inStream )
@@ -534,5 +529,56 @@ void ConstructorSplitNode::printExpression( std::ostream& inStream )
     (*i)->printExpression( inStream );
   }
   inStream << " )";
+}
 
+
+FunctionCallSplitNode::FunctionCallSplitNode( const std::string& inName, const std::vector<SplitNode*>& inArguments )
+  : _name(inName), _arguments(inArguments)
+{
+  for( size_t i = 0; i < _arguments.size(); i++ )
+  {
+    _arguments[i] = _arguments[i]->getValueNode();
+    addChild( _arguments[i] );
+  }
+
+  // TIM: must try to infer the type from the arguments!!!!
+  if( _name == "dot" )
+  {
+    assert( _arguments.size() == 2 );
+    inferredType = kSplitBasicType_Float;
+  }
+  else if( _name == "sqrt" )
+  {
+    assert( _arguments.size() == 1 );
+    inferredType = _arguments[0]->inferredType;
+  }
+  else if( _name == "cross" )
+  {
+    assert( _arguments.size() == 2 );
+    inferredType = kSplitBasicType_Float3;
+  }
+}
+
+void FunctionCallSplitNode::printTemporaryExpression( std::ostream& inStream )
+{
+  inStream << _name << "( ";
+  for( NodeList::const_iterator i = _arguments.begin(); i != _arguments.end(); ++i )
+  {
+    if( i != _arguments.begin() )
+      inStream << ", ";
+    (*i)->printTemporaryName( inStream );
+  }
+  inStream << " )";
+}
+
+void FunctionCallSplitNode::printExpression( std::ostream& inStream )
+{
+  inStream << _name << "( ";
+  for( NodeList::const_iterator i = _arguments.begin(); i != _arguments.end(); ++i )
+  {
+    if( i != _arguments.begin() )
+      inStream << ", ";
+    (*i)->printExpression( inStream );
+  }
+  inStream << " )";
 }

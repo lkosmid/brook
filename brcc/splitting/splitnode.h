@@ -78,6 +78,10 @@ public:
   virtual bool needsAnnotation() { return false; }
   virtual void printAnnotationInfo( std::ostream& inStream ) {}
 
+  virtual void assign( SplitNode* inValue ) {
+    throw 1;
+  }
+
   virtual GatherArgumentSplitNode* isGatherArgument() { return 0; }
   virtual StreamArgumentSplitNode* isStreamArgument() { return 0; }
   virtual OutputSplitNode* isOutputNode() { return 0; }
@@ -99,8 +103,11 @@ public:
 
   void traverseChildren( SplitNodeTraversal& ioTraversal );
 
+  virtual bool isTrivial() { return false; }
+
 protected:
   void addChild( SplitNode* inNode );
+  void removeChild( SplitNode* inNode );
 
 private:
   // data for calculating immediate dominators...
@@ -169,6 +176,8 @@ public:
   virtual void printAnnotationInfo( std::ostream& inStream );
 
   virtual const char* getComponentTypeName() { return "sampler"; }
+
+  virtual bool isTrivial() { return true; }
 };
 
 class InputConstantSplitNode : public InputSplitNode
@@ -181,6 +190,8 @@ public:
   virtual void printAnnotationInfo( std::ostream& inStream );
 
   virtual const char* getComponentTypeName() { return "constant"; }
+
+  virtual bool isTrivial() { return true; }
 };
 
 class InputInterpolantSplitNode : public InputSplitNode
@@ -193,6 +204,8 @@ public:
     virtual void printAnnotationInfo( std::ostream& inStream );
 
     virtual const char* getComponentTypeName() { return "texcoord"; }
+
+    virtual bool isTrivial() { return true; }
 };
 
 class OutputSplitNode : public SplitNode
@@ -216,7 +229,7 @@ public:
 
   void traverseChildren( SplitNodeTraversal& ioTraversal );
 
-  bool needsArgument() { return true; }
+  bool needsArgument() { return false; }
   bool needsAnnotation() { return true; }
   bool needsTemporaryVariable() { return false; }
 
@@ -226,6 +239,28 @@ private:
   SplitNode* value;
   int argumentIndex;
   int componentIndex;
+};
+
+class LocalVariableSplitNode : public SplitNode
+{
+public:
+  LocalVariableSplitNode( const std::string& inName, SplitBasicType inType )
+    : _name(inName), _value(0)
+  {
+    inferredType = inType;
+  }
+
+  void assign( SplitNode* inValue );
+  virtual SplitNode* getValueNode() {
+    return _value ? _value : this;
+  }
+
+  void printTemporaryExpression( std::ostream& inStream );
+  void printExpression( std::ostream& inStream );
+
+private:
+  std::string _name;
+  SplitNode* _value;
 };
 
 class ArgumentSplitNode : public SplitNode
@@ -242,33 +277,57 @@ protected:
   int argumentIndex;
 };
 
-class ReduceArgumentSplitNode : public ArgumentSplitNode
+class AssignableArgumentSplitNode : public ArgumentSplitNode
+{
+public:
+  AssignableArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex )
+    : ArgumentSplitNode( inName, inType, inArgumentIndex ), _assignedValue(0)
+  {}
+
+  void assign( SplitNode* inValue );
+  virtual SplitNode* getValueNode() {
+    return _assignedValue ? _assignedValue : this;
+  }
+
+  void printTemporaryExpression( std::ostream& inStream );
+
+protected:
+  SplitNode* _assignedValue;
+};
+
+class ReduceArgumentSplitNode : public AssignableArgumentSplitNode
 {
 public:
   ReduceArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex )
-    : ArgumentSplitNode( inName, inType, inArgumentIndex ) {}
+    : AssignableArgumentSplitNode( inName, inType, inArgumentIndex ) {}
 };
 
-class IteratorArgumentSplitNode : public ArgumentSplitNode
+class IteratorArgumentSplitNode : public AssignableArgumentSplitNode
 {
 public:
-  IteratorArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex )
-    : ArgumentSplitNode( inName, inType, inArgumentIndex ) {}
+  IteratorArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex );
+
+  virtual SplitNode* getValueNode() { return _assignedValue ? _assignedValue : _value; }
+
+  virtual bool isTrivial() { return true; }
+
+private:
+  InputInterpolantSplitNode* _value;
 };
 
-class OutputArgumentSplitNode : public ArgumentSplitNode
+class OutputArgumentSplitNode : public AssignableArgumentSplitNode
 {
 public:
   OutputArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex )
-    : ArgumentSplitNode( inName, inType, inArgumentIndex ) {}
+    : AssignableArgumentSplitNode( inName, inType, inArgumentIndex ) {}
 };
 
-class StreamArgumentSplitNode : public ArgumentSplitNode
+class StreamArgumentSplitNode : public AssignableArgumentSplitNode
 {
 public:
   StreamArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex, SplitTreeBuilder& ioBuilder );
   
-  virtual SplitNode* getValueNode() { return value; }
+  virtual SplitNode* getValueNode() { return _assignedValue ? _assignedValue : value; }
   virtual SplitNode* getIndexofNode() { return indexofNode; }
 
   virtual StreamArgumentSplitNode* isStreamArgument() { return this; }
@@ -298,12 +357,12 @@ private:
   SplitNode* bias;
 };
 
-class ConstantArgumentSplitNode : public ArgumentSplitNode
+class ConstantArgumentSplitNode : public AssignableArgumentSplitNode
 {
 public:
   ConstantArgumentSplitNode( const std::string& inName, SplitBasicType inType, int inArgumentIndex );
 
-  virtual SplitNode* getValueNode() { return value; }
+  virtual SplitNode* getValueNode() { return _assignedValue ? _assignedValue : value; }
 
 private:
   InputConstantSplitNode* value;
@@ -318,6 +377,8 @@ public:
 
   virtual void printTemporaryExpression( std::ostream& inStream );
   virtual void printExpression( std::ostream& inStream );
+
+  virtual bool isTrivial() { return true; }
 
 private:
   std::string value;
@@ -340,11 +401,24 @@ private:
   std::string name;
 };
 
+class UnaryOpSplitNode :
+  public SplitNode
+{
+public:
+  UnaryOpSplitNode( const std::string& inOperation, SplitNode* inOperand );
+  virtual void printTemporaryExpression( std::ostream& inStream );
+  virtual void printExpression( std::ostream& inStream );
+
+private:
+  std::string _operation;
+  SplitNode* _operand; 
+};
+
 class BrtBinaryOpSplitNode :
   public SplitNode
 {
 public:
-  BrtBinaryOpSplitNode( BinaryOp inOperation, SplitNode* inLeft, SplitNode* inRight );
+  BrtBinaryOpSplitNode( const std::string& inOperation, SplitNode* inLeft, SplitNode* inRight );
   virtual void printTemporaryExpression( std::ostream& inStream );
   virtual void printExpression( std::ostream& inStream );
 
@@ -354,9 +428,9 @@ public:
   }
 
 private:
-   BinaryOp operation;
-   SplitNode* left;
-   SplitNode* right; 
+  std::string operation;
+  SplitNode* left;
+  SplitNode* right; 
 };
 
 class TextureFetchSplitNode :
@@ -404,6 +478,20 @@ public:
 
 private:
   std::vector<SplitNode*> arguments;
+};
+
+class FunctionCallSplitNode :
+  public SplitNode
+{
+public:
+  FunctionCallSplitNode( const std::string& inName, const std::vector<SplitNode*>& inArguments );
+
+  virtual void printTemporaryExpression( std::ostream& inStream );
+  virtual void printExpression( std::ostream& inStream );
+
+private:
+  std::string _name;
+  std::vector<SplitNode*> _arguments;
 };
 
 #endif

@@ -39,6 +39,7 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include "main.h"
 #include "config.h"
@@ -1028,6 +1029,23 @@ FunctionCall::findExpr( fnExprCallback cb )
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* FunctionCall::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  std::cerr << "building split tree for function call" << std::endl;
+  print( std::cerr );
+  std::cerr << "****";
+
+  std::vector<SplitNode*> arguments;
+  for( ExprVector::iterator i = args.begin(); i != args.end(); ++i )
+  {
+    arguments.push_back( (*i)->buildSplitTree( ioBuilder ) );
+  }
+
+  return ioBuilder.addFunctionCall( function, arguments );
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 UnaryExpr::UnaryExpr( UnaryOp _op, Expression *expr, const Location& l)
           : Expression( ET_UnaryExpr, l)
 {
@@ -1129,6 +1147,20 @@ UnaryExpr::findExpr( fnExprCallback cb )
 {
     _operand = (cb)(_operand);
     _operand->findExpr(cb);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* UnaryExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  SplitNode* operandNode = _operand->buildSplitTree( ioBuilder );
+  // TIM: we don't support ++/-- yet... blech
+
+  std::ostringstream opStream;
+  PrintUnaryOp( opStream, uOp );
+  std::string operation = opStream.str();
+
+  return ioBuilder.addUnaryOp( operation, operandNode );
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -1273,8 +1305,12 @@ SplitNode* BinaryExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
   }
   else
   {
+    std::ostringstream opStream;
+    PrintBinaryOp( opStream, bOp );
+    std::string operation = opStream.str();
+
     SplitNode* right = _rightExpr->buildSplitTree( ioBuilder );
-    return ioBuilder.addBinaryOp( bOp, left, right );
+    return ioBuilder.addBinaryOp( operation, left, right );
   }
 }
 
@@ -1481,6 +1517,20 @@ RelExpr::precedence() const
       case RO_GrtrEql:
         return 10;
     }
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// TIM: adding DAG-building for kernel splitting support
+SplitNode* RelExpr::buildSplitTree( SplitTreeBuilder& ioBuilder )
+{
+  SplitNode* left = _leftExpr->buildSplitTree( ioBuilder );
+  SplitNode* right = _rightExpr->buildSplitTree( ioBuilder );
+
+  std::ostringstream opStream;
+  PrintRelOp( opStream, rOp );
+  std::string operation = opStream.str();
+
+  return ioBuilder.addBinaryOp( operation, left, right );
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

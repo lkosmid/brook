@@ -7,12 +7,20 @@ kernel void big(
 	float4 arg1[], float4 arg2[], float4 arg3[],
 	float4 arg4[], float4 arg5<>, out float4 result<> )
 {
-	float2 temp = arg5.x;
+	float temp = arg5.x;
 	temp = arg4[ temp ].x;
 	temp = arg3[ temp ].x;
 	temp = arg2[ temp ].x;
 	result = arg1[ temp ];
 }
+
+kernel void caller(
+	float4 arg1[], float4 arg2[], float4 arg3[],
+	float4 arg4[], float4 arg5<>, out float4 result<> )
+{
+	big( arg1, arg2, arg3, arg4, arg5, result );
+}
+
 
 int main () {
 	float4 a<10>;

@@ -190,7 +190,11 @@ class Expression : public DupableExpression
     virtual void findExpr( fnExprCallback cb ) { (cb)(this); }
 
     // TIM: adding DAG-building for kernel splitting support
-    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder ) { return 0; }
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder ) {
+      std::cerr << "unknown expression type encountered in split tree build!!!" << std::endl;
+      print( std::cerr );
+      throw "couldn't build split tree for this node!!!";
+    }
 
     ExpressionType    etype;
     Location          location;
@@ -358,6 +362,9 @@ class FunctionCall : public Expression
 
     void findExpr( fnExprCallback cb );
 
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
+
     Expression   *function;
     ExprVector    args;
 };
@@ -379,6 +386,9 @@ class UnaryExpr : public Expression
     void print(std::ostream& out) const;
 
     void findExpr( fnExprCallback cb );
+
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
 
     UnaryOp    uOp;
     Expression *_operand;
@@ -475,6 +485,9 @@ class RelExpr : public BinaryExpr
 
     Expression *dup0() const;
     void print(std::ostream& out) const;
+
+    // TIM: adding DAG-building for kernel splitting support
+    virtual SplitNode* buildSplitTree( SplitTreeBuilder& ioBuilder );
 
     RelOp    rOp;
 };

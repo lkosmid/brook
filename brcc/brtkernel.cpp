@@ -158,7 +158,9 @@ BRTGPUKernelCode::ConvertGathers (Expression *expr) {
   BrtGatherExpr *gather;
 
   /* Check function calls inside of kernels */
-  if (expr->etype == ET_FunctionCall) {
+  // TIM: we don't convert the argumenst to a call when
+  // we use the DAG-building kernel-splitting codegen
+  if (expr->etype == ET_FunctionCall && !globals.enableKernelSplitting) {
 
      //now we have to convert gathers that are passed into functions
      FunctionCall * fc = static_cast<FunctionCall*>(expr);

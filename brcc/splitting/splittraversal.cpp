@@ -15,6 +15,8 @@ void SplitArgumentTraversal::traverse( SplitNode* inNode )
   inNode->marked = true;
 
 
+  bool traverseChildren = true;
+
   if( inNode->isMarkedAsOutput() )
   {
     inNode->traverseChildren( *this );
@@ -29,10 +31,10 @@ void SplitArgumentTraversal::traverse( SplitNode* inNode )
     inNode->printTemporaryName( stream );
     stream << " : COLOR" << argumentCounter.outputCount++;
     hasOutput = true;
-    return;
-  }
 
-  if( inNode->isMarkedAsSplit() )
+    traverseChildren = false;
+  }
+  else if( inNode->isMarkedAsSplit() )
   {
     traverse( outputPosition );
 
@@ -46,10 +48,12 @@ void SplitArgumentTraversal::traverse( SplitNode* inNode )
     inNode->printTemporaryName( stream );
     stream << "_saved : register(s" << argumentCounter.samplerCount++ << ")";
     hasOutput = true;
-    return;
+
+    traverseChildren = false;
   }
 
-  inNode->traverseChildren( *this );
+  if( traverseChildren )
+    inNode->traverseChildren( *this );
 
   if( !inNode->needsArgument() ) return;
 
@@ -125,8 +129,9 @@ void SplitStatementTraversal::traverse( SplitNode* inNode )
   inNode->printTemporaryName( stream );
   stream << " = ";
   inNode->printTemporaryExpression( stream );
-  stream << "; // ";
-  inNode->printExpression( stream );
+  stream << ";";
+//  stream << " // ";
+//  inNode->printExpression( stream );
   stream << std::endl;
 }
 

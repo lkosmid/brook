@@ -68,6 +68,7 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
   if (errcode == NULL) {
     fprintf(stderr, "%s resulted in an error,"
             "skipping ps20 / dx9 target ", argv[0]);
+    
      remove(argv[3]+3);
      return NULL;
   }

@@ -18,6 +18,12 @@ SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompile
   build( inFunctionDef );
 }
 
+SplitTree::SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler, const std::vector<SplitNode*>& inArguments )
+  : _compiler(inCompiler)
+{
+  build( inFunctionDef, inArguments );
+}
+
 SplitTree::~SplitTree()
 {
 }
@@ -53,6 +59,10 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
   {
     inStream << "\t\t.temporaries(" << temporaryCount << ")" << std::endl;
   }
+
+  SplitMarkTraversal unmark(false);
+  unmark( _outputList );
+  unmark( _outputPositionInterpolant );
 
   {for( size_t i = 0; i < _outputList.size(); i++ ){
     _outputList[i]->rdsPrint( *this, _compiler, inStream );
@@ -238,6 +248,16 @@ void SplitTree::rdsMerge( SplitNode* n )
 
 bool SplitTree::rdsCompile( SplitNode* inNode )
 {
+  // TIM: we really need to handle this better:
+  if( inNode->isTrivial() )
+  {
+    SplitShaderHeuristics heuristics;
+    heuristics.cost = 0;
+    heuristics.recompute = false;
+    heuristics.valid = true;
+    return true;
+  }
+
   std::vector<SplitNode*>  outputVector;
   outputVector.push_back( inNode );
 
@@ -245,6 +265,18 @@ bool SplitTree::rdsCompile( SplitNode* inNode )
 
   std::ostringstream nullStream;
   _compiler.compile( *this, outputVector, nullStream, heuristics );
+
+  /* TIM: if you want to see the output at the point of failure...
+  static size_t errorNumber = 0;
+  if( !heuristics.valid )
+  {
+    std::cerr << "****" << std::endl;
+    inNode->dump( std::cerr );
+    std::cerr << "****" << std::endl;
+
+    if( ++errorNumber == 2 )
+      throw 1;
+  }*/
 
   if( heuristics.valid )
     inNode->setHeuristics( heuristics );
@@ -325,11 +357,48 @@ void SplitTree::printArgumentAnnotations( const std::vector<SplitNode*>& inOutpu
   printAnnotations( inOutputs );
 }
 
-void SplitTree::build( FunctionDef* inFunctionDef )
+static FunctionType* getFunctionType( FunctionDef* inFunctionDef )
 {
   Decl* functionDecl = inFunctionDef->decl;
   assert( functionDecl->form->type == TT_Function );
-  FunctionType* functionType = ((FunctionType*)functionDecl->form);
+  return ((FunctionType*)functionDecl->form);
+  Statement* headStatement = inFunctionDef->head;
+}
+
+void SplitTree::build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>& inArguments )
+{
+  FunctionType* functionType = getFunctionType( inFunctionDef );
+
+  SplitTreeBuilder builder( *this );
+
+  std::cerr << "function args: " << functionType->nArgs << " args passed: " << inArguments.size();
+
+  assert( functionType->nArgs == inArguments.size() );
+
+  unsigned int i;
+  for( i = 0; i < functionType->nArgs; i++ )
+  {
+    Decl* argumentDecl = functionType->args[i];
+    builder.addArgument( argumentDecl, i, inArguments[i] );
+  }
+
+  Statement* statement = inFunctionDef->head;
+  while( statement )
+  {
+    statement->buildSplitTree( builder );
+
+    statement = statement->next;
+  }
+
+  // we were called with arguments
+  // thus we don't deal with creating
+  // output nodes, or with building
+  // the dominator tree...
+}
+
+void SplitTree::build( FunctionDef* inFunctionDef )
+{
+  FunctionType* functionType = getFunctionType( inFunctionDef );
   Statement* headStatement = inFunctionDef->head;
 
   SplitTreeBuilder builder( *this );

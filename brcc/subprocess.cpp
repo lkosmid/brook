@@ -250,6 +250,7 @@ Subprocess_Run(char *argv[], char *input)
   if (ret != 0) {
     if (debug) fprintf (stderr, "%s exited with an error (%#x):\n", argv[0], ret);
     fwrite (output, strlen(output), 1, stderr);
+
     return NULL;
   }
 

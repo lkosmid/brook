@@ -19,6 +19,7 @@ class SplitTree
 {
 public:
   SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler );
+  SplitTree( FunctionDef* inFunctionDef, const SplitCompiler& inCompiler, const std::vector<SplitNode*>& inArguments );
   virtual ~SplitTree();
 
   void printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream );
@@ -37,6 +38,7 @@ public:
 
 private:
   void build( FunctionDef* inFunctionDef );
+  void build( FunctionDef* inFunctionDef, const std::vector<SplitNode*>& inArguments );
 
   void buildDominatorTree();
 

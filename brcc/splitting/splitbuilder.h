@@ -20,18 +20,22 @@ public:
   SplitTreeBuilder( SplitTree& ioTree );
 
   SplitNode* addArgument( Decl* inDeclaration, int inArgumentIndex );
+  SplitNode* addArgument( Decl* inDeclaration, int inArgumentIndex, SplitNode* inValue );
   void addVariable( const std::string& inName, Type* inForm );
 
   SplitNode* addConstant( Constant* inConstant );
   SplitNode* addConstant( int inValue );
   SplitNode* addMember( SplitNode* inValue, const std::string& inName );
-  SplitNode* addBinaryOp( BinaryOp inOperation, SplitNode* inLeft, SplitNode* inRight );
+  SplitNode* addUnaryOp( const std::string& inOperation, SplitNode* inOperand );
+  SplitNode* addBinaryOp( const std::string& inOperation, SplitNode* inLeft, SplitNode* inRight );
   SplitNode* addGather( SplitNode* inStream, const std::vector<SplitNode*> inIndices );
   SplitNode* addConstructor( BaseType* inType, const std::vector<SplitNode*>& inArguments );
   SplitNode* addConstructor( SplitBasicType inType, SplitNode* inX = 0, SplitNode* inY = 0, SplitNode* inZ = 0, SplitNode* inW = 0 );
   SplitNode* addIndexof( const std::string& inName );
   SplitNode* findVariable( const std::string& inName );
   SplitNode* assign( const std::string& inName, SplitNode* inValue );
+
+  SplitNode* addFunctionCall( Expression* inFunction, const std::vector<SplitNode*>& inArguments );
 
 private:
   typedef std::map< std::string, SplitNode* > NodeMap;
