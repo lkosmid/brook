@@ -18,7 +18,7 @@
 #define CHECK_MISMATCH 0
 #endif
 
-#define MAX_TRIES       200
+#define MAX_TRIES       100
 #define SMOOTHING       100
 #define BIG_LENGTH      512
 
@@ -157,7 +157,7 @@ RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; /*o = c*o + s; o = c*o + s; o = c*o + s;
+   o = c*o + s; o = c*o + s; /*o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
    o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
@@ -184,7 +184,7 @@ RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
    I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
    I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
    I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
-   I(o, _c, s); I(o, _c, s); /*I(o, _c, s); I(o, _c, s); I(o, _c, s); \
+   I(o, _c, s); I(o, _c, s); I(o, _c, s); /*I(o, _c, s); I(o, _c, s); \
    I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
    I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
    I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); I(o, _c, s); \
@@ -656,9 +656,9 @@ RunKernelFindGPUvsCPUOne(int length)
       t2 = CyclesToUsecs(GetTimeTSC() - t2);
 
       if (t1 > t2) {
-         printf("%9d   %10d   %8d\t\t\t(* RunKVS *)\n",
+         printf("%9d   %10d   %8d\t\t\t(* RunKVS %d *)\n",
                 4 * length * length, i,
-                (int) (outGPU[1].x * length * length * i * 4));
+                (int) (outGPU[1].x * length * length * i * 4), length);
          goto done;
       }
    }
@@ -666,6 +666,8 @@ RunKernelFindGPUvsCPUOne(int length)
    if (i == MAX_TRIES) {
       printf("(* GPU can't catch the CPU in %d iterations at length %d *)\n",
              MAX_TRIES, length);
+      printf("%9d   %10d   %8d\t\t\t(* RunKVS %d *)\n",
+             4 * length * length, -1, -1, length);
       i = -1;
    }
 
@@ -712,8 +714,8 @@ RunKernel_GPUvsCPU(int minLength)
        * point, there's no reason to calculate any more values (and it's
        * quadratically expensive to keep going).  --Jeremy.
        */
-      if (iters > 0 && iters == lastIters && count++ > 10) {
-         i = i * 2;
+      if (iters > 0 && iters == lastIters) {
+         if (count++ > 10) { i += (numLengths - i) / 2; count = 0; }
       } else {
          count = 0;
          lastIters = iters;
