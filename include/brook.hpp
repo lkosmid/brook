@@ -54,7 +54,8 @@ inline unsigned int getIndexOf(unsigned int i,
    for (unsigned int j=1;j<dim;++j) {
       ret*=refextent[j];
       unsigned ij = i;
-      for (int k=dim-1;k>j;--k) {
+      for (unsigned int k=dim-1;k>j;--k) {
+         //the above may be unsigned as j>=1
          ij/=mapextent[k];
       }
       ret+=mapbegin[j]+ij%refextent[j];
