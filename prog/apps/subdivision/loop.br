@@ -43,6 +43,8 @@ typedef struct Neighbor_t {
   float4 AAC;// w = AC->A.z
 }Neighbor;
 
+unsigned char onlyCracks=0;
+unsigned char noCracks=0;
 unsigned char debugLoop=0;
 int counterMax = 1024;
 extern float neighboreps;
@@ -239,6 +241,102 @@ kernel float4 identity(float4 a, float b){return a;}
 //you fail to obtain anything
 kernel float3 ident3(float3 a, float b) {return a;}
 
+
+kernel void repairTJunctions(STri triangles[][],
+                             float3 where<>,
+                             out float3  tris<>) {
+  float2 zero2=0;
+  float2 index = (where.xy>=0&&where.xy<2048)?where.xy:zero2;
+  STri tri = triangles[index.xy];
+  float mod3 = round(fmod((indexof tris).x,3.0f));
+  float3 AC = lerp (tri.A.xyz,tri.C.xyz,.5);
+  float3 AB = lerp (tri.A.xyz,tri.B.xyz,.5);
+  float3 BC = lerp (tri.B.xyz,tri.C.xyz,.5);  
+  if (mod3>2.5||mod3<.5) {
+    if (where.z==0) {
+      tris=tri.A.xyz;
+    }else if (where.z==1) {
+      tris=tri.B.xyz;
+    }else {
+      tris=tri.C.xyz;
+    }
+  }else if (mod3<1.5) {
+    if (where.z==0) {
+      tris=tri.B.xyz;
+    }else if (where.z==1) {
+      tris=tri.C.xyz;
+    }else {
+      tris=tri.A.xyz;
+    }    
+  }else {
+    if (where.z==0) {
+      tris=AB;
+    }else if (where.z==1) {
+      tris=BC;
+    }else {
+      tris=AC;
+    }    
+  }
+  
+  
+}
+kernel void identifyTJunctions(STri triangles[][],
+                             Neighbor neighbors[][],
+                             float2 i<>,
+                             vout[2] float3 cracks<>) {
+  float2 zero2=0;
+  float2 index = (i>=0&&i<2048)?i:zero2;
+  STri tri=triangles[index];
+  Neighbor oldneighbors=neighbors[index];
+  float generous=0;
+  /*
+  float eAAB=isNeighbor(oldneighbors.AAB);
+  float eAAC=isNeighbor(oldneighbors.AAC);
+  float eABB=isNeighbor(oldneighbors.ABB);
+  float eBBC=isNeighbor(oldneighbors.BBC);
+  float eBCC=isNeighbor(oldneighbors.BCC);
+  float eACC=isNeighbor(oldneighbors.ACC);
+  
+  float3 fiveandhalf=5.5;
+  float3 fourandhalf=4.5;
+  float3 weights={.625,.579533905371,0.515625};
+  
+  float3 ABCneighbors = {4.0f+eAAC+eAAB,4.0f+eBBC+eABB,4.0f+eBCC+eACC};
+  float3 abcn =ABCneighbors>fiveandhalf?weights.xxx:(ABCneighbors>fourandhalf?weights.yyy:weights.zzz);
+  //float an = .375+(.375+sqr(.25*cos(2*3.1415926536/Aneighbors)));
+  //float bn = //.375+(.375+sqr(.25*cos(2*3.1415926536/Bneighbors)));
+  //float cn = //.375+(.375+sqr(.25*cos(2*3.1415926536/Cneighbors)));
+ 
+  float an = abcn.x;
+  float bn = abcn.y;
+  float cn = abcn.z;
+  float3 abcnon = (1-abcn)/ABCneighbors;
+  float anon = abcnon.x;
+  float bnon = abcnon.y;
+  float cnon = abcnon.z;
+  float3 AC = lerp (tri.A.xyz,tri.C.xyz,.5);
+  float3 AB = lerp (tri.A.xyz,tri.B.xyz,.5);
+  float3 BC = lerp (tri.B.xyz,tri.C.xyz,.5);
+  */
+
+  if(i.x>=0&&i.x<2048&&(tri.A.w!=0||tri.B.w!=0||tri.C.w!=0)) {
+    if ((generous||oldneighbors.AB.w==0)&&tri.A.w==0) {
+      //that triangle is rastered as is, we better push out a repair triangle
+      cracks=float3(i.x,i.y,0);
+      push(cracks);
+    }
+    if ((generous||oldneighbors.BC.w==0)&&tri.B.w==0) {
+     //that triangle is rastered as is, we better push out a repair triangle
+      cracks=float3(i.x,i.y,1);
+      push(cracks);
+    }
+    if ((generous||oldneighbors.AC.w==0)&&tri.C.w==0) {
+      //that triangle is rastered as is, we better push out a repair triangle
+      cracks=float3(i.x,i.y,2);
+      push(cracks);
+    }
+  }
+}
 //this function takes as input an index that tells which triangle must be split
 //the output is 6 new vertices that make up the 4 new triangles and 12 neighbors 
 // (stored in 9 float4s)
@@ -474,6 +572,7 @@ void subdivide (Neighbor (*neighbors)<>,
                 struct VertexArray *output,
                 float epsilon,
                 int counter) {
+  float3 tJunctionsRepair<0,0>;
   unsigned int streamY=toi(streamSize(*triangles).y);
   unsigned int streamX=toi(streamSize(*triangles).x);
   unsigned char snpSize=0;
@@ -487,7 +586,20 @@ void subdivide (Neighbor (*neighbors)<>,
     {
       int wosizex=3*toi(streamSize(shouldNotProduce).x);
       int wosizey=toi(streamSize(shouldNotProduce).y);
+      int tsizex=toi(streamSize(shouldProduce).x);
+      int tsizey=2*toi(streamSize(shouldProduce).y);
       float3 outputTri<wosizey,wosizex>;
+      if (tsizey&&tsizex) {
+        float3 tJunctions<tsizey,tsizex>;
+        identifyTJunctions(*triangles,*neighbors,shouldProduce,tJunctions);
+        if (streamSize(tJunctions).x&&streamSize(tJunctions).y) {
+          int tsizex = toi(streamSize(tJunctions).x)*3;
+          int tsizey = toi(streamSize(tJunctions).y);
+          float3 outputTri<tsizey,tsizex>;
+          streamSwap(outputTri,tJunctionsRepair);
+          repairTJunctions(*triangles,tJunctions,tJunctionsRepair);
+        }
+      }
       if (wosizex&&wosizey)
         writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
 
@@ -552,10 +664,18 @@ void subdivide (Neighbor (*neighbors)<>,
         } 
         //now we writeback from the card to local memory since we dont have
         // render to vertex array yet
-        wosizey = output->size;
-        expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
+        if (!onlyCracks){
+          wosizey = output->size;
+          expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
                                                 streamSize(outputTri).y));
-        streamWrite(outputTri,output->v+wosizey);   
+          streamWrite(outputTri,output->v+wosizey);   
+        }
+        if (streamSize(tJunctionsRepair).x&&streamSize(tJunctionsRepair).y&&!noCracks) {
+          wosizey = output->size;
+          expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepair).x*
+                                                  streamSize(tJunctionsRepair).y));
+          streamWrite(tJunctionsRepair,output->v+wosizey);             
+        }
       }
     }
     if (counter>=counterMax) {
@@ -563,9 +683,17 @@ void subdivide (Neighbor (*neighbors)<>,
                        toi(streamSize(*triangles).x*3)>;
       int sizey = output->size;
       copyFinalTriangles(*triangles,outputTri);
-      expandVertexArray(output,
-                        3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
-      streamWrite(outputTri,output->v+sizey);
+      if (!onlyCracks){
+        expandVertexArray(output,
+                          3*toi(streamSize(*triangles).y)*toi(streamSize(*triangles).x));
+        streamWrite(outputTri,output->v+sizey);
+      }
+      if (streamSize(tJunctionsRepair).x&&streamSize(tJunctionsRepair).y&&!noCracks) {
+        sizey = output->size;
+        expandVertexArray(output,(unsigned int)(streamSize(tJunctionsRepair).x*
+                                                streamSize(tJunctionsRepair).y));
+        streamWrite(tJunctionsRepair,output->v+sizey);             
+      }
     }
     
   }
@@ -654,6 +782,14 @@ int main (int argc, char**argv) {
     }
     if (strncmp(argv[i],"-counter",8)==0) {
       counterMax = (int)atoi(argv[i]+8);
+      match=1;
+    }
+    if (strncmp(argv[i],"-cracks",8)==0) {
+      noCracks=1;
+      match=1;
+    }
+    if (strncmp(argv[i],"-onlycracks",8)==0) {
+      onlyCracks=1;
       match=1;
     }
     if (strncmp(argv[i],"-eps",4)==0) {

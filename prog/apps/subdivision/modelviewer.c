@@ -165,7 +165,7 @@ int	TransformMode;		/* ROTATE or SCALE			*/
 int	TransformModeMenu;	/* id of the transform mode menu	*/
 float	Xrot, Yrot;		/* rotation angles in degrees		*/
 int	Xmouse, Ymouse;		/* mouse values				*/
-
+char * model="data";
 
 
 /**
@@ -224,10 +224,14 @@ main( int argc, char *argv[] )
 		{
 			Debug = TRUE;
 			continue;
+		}else {
+		  if (i==1) {
+		    model=argv[i];
+		  }
 		}
-
+/*
 		fprintf( stderr, "Unknown argument: '%s'\n", argv[i] );
-		fprintf( stderr, "Usage: %s [-D]\n", argv[0] );
+		fprintf( stderr, "Usage: %s [-D]\n", argv[0] );*/
 	}
 
 
@@ -702,7 +706,7 @@ InitLists( void )
 	float x, y, z;
 	int test;
 	/* create the object:						*/
-	FILE * datafile = fopen("data", "r");
+	FILE * datafile = fopen(model, "r");
 	if(datafile == NULL){
 		fprintf(stderr, "Can't open datafile\n");;
 		exit(1);
@@ -735,7 +739,7 @@ InitLists( void )
 
 	fclose(datafile);
 
-	datafile = fopen("data", "rb");
+	datafile = fopen(model, "rb");
 
 	glColor3f(1.0, 0.0, 0.0);
 	glPointSize(10.0f);
