@@ -4,24 +4,26 @@
 
 using namespace brook;
 
-DX9Stream* DX9Stream::create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
+DX9Stream* DX9Stream::create( DX9RunTime* inRuntime,
+  int inFieldCount, const __BRTStreamType* inFieldTypes,
   int inDimensionCount, const int* inExtents )
 {
-  DX9Stream* result = new DX9Stream( inRuntime, inElementType );
-  if( result->initialize( inDimensionCount, inExtents ) )
+  DX9Stream* result = new DX9Stream( inRuntime );
+  if( result->initialize( inFieldCount, inFieldTypes, inDimensionCount, inExtents ) )
     return result;
   delete result;
   return NULL;
 }
 
-DX9Stream::DX9Stream( DX9RunTime* inRuntime, __BRTStreamType inElementType)
-  : Stream(inElementType),
-  runtime(inRuntime),
+DX9Stream::DX9Stream( DX9RunTime* inRuntime )
+  : runtime(inRuntime),
   texture(NULL)
 {
 }
 
-bool DX9Stream::initialize( int inDimensionCount, const int* inExtents )
+bool DX9Stream::initialize(
+  int inFieldCount, const __BRTStreamType* inFieldTypes,
+  int inDimensionCount, const int* inExtents )
 {
   dimensionCount = inDimensionCount;
   if( (dimensionCount <= 0) || (dimensionCount > 2) )
@@ -32,7 +34,7 @@ bool DX9Stream::initialize( int inDimensionCount, const int* inExtents )
   }
 
   totalSize = 1;
-  for( int d = 0; d < dimensionCount; d++ )
+  for( unsigned int d = 0; d < dimensionCount; d++ )
   {
     int extent = inExtents[d];
     if( (extent <= 0) || (extent > kDX9MaximumTextureSize) )
@@ -45,9 +47,6 @@ bool DX9Stream::initialize( int inDimensionCount, const int* inExtents )
     extents[d] = extent;
     totalSize *= extents[d];
   }
-
-  int width;
-  int height;
 
   switch( dimensionCount )
   {
@@ -64,31 +63,38 @@ bool DX9Stream::initialize( int inDimensionCount, const int* inExtents )
     return false;
   }
 
-  int i = 0;
-  switch (type) {
-  case __BRTFLOAT:
-     componentCount=1;
-     break;
-  case __BRTFLOAT2:
-     componentCount=2;
-     break;
-  case __BRTFLOAT3:
-     componentCount=3;
-     break;
-  case __BRTFLOAT4:
-     componentCount=4;
-     break;
-  default:
-    DX9Warn( "Invalid element type for stream.\n",
-      "Only float, float2, float3 and float4 elements are supported." );
-    return false;
-  }
-
-  texture = DX9Texture::create( runtime, width, height, componentCount );
-  if( texture == NULL )
+  for( int i = 0; i < inFieldCount; i++ )
   {
-    DX9Warn( "Texture allocation failed during sream initialization." );
-    return false;
+    __BRTStreamType fieldType = inFieldTypes[i];
+    int fieldComponentCount;
+
+    switch (fieldType) {
+    case __BRTFLOAT:
+      fieldComponentCount=1;
+      break;
+    case __BRTFLOAT2:
+      fieldComponentCount=2;
+      break;
+    case __BRTFLOAT3:
+      fieldComponentCount=3;
+      break;
+    case __BRTFLOAT4:
+      fieldComponentCount=4;
+      break;
+    default:
+      DX9Warn( "Invalid element type for stream.\n",
+        "Only float, float2, float3 and float4 elements are supported." );
+      return false;
+    }
+
+    DX9Texture* fieldTexture = DX9Texture::create( runtime, width, height, fieldComponentCount );
+    if( fieldTexture == NULL )
+    {
+      DX9Warn( "Texture allocation failed during sream initialization." );
+      return false;
+    }
+
+    fields.push_back( Field(fieldType,fieldComponentCount,fieldTexture) );
   }
 
   inputRect = DX9Rect( 0, 1, 1, 0 );
@@ -124,20 +130,28 @@ void DX9Stream::Write(void *p) {
   texture->getData( (float*)p );
 }
 
-IDirect3DTexture9* DX9Stream::getTextureHandle() {
-  return texture->getTextureHandle();
-}
-
-IDirect3DSurface9* DX9Stream::getSurfaceHandle() {
-  return texture->getSurfaceHandle();
-}
-
 int DX9Stream::getWidth() {
-  return texture->getWidth();
+  return width;
 }
 
 int DX9Stream::getHeight() {
-  return texture->getHeight();
+  return height;
+}
+
+int DX9Stream::getSubstreamCount() {
+  return fields.size();
+}
+
+DX9Texture* DX9Stream::getIndexedTexture( int inIndex ) {
+  return fields[inIndex].texture;
+}
+
+IDirect3DTexture9* DX9Stream::getIndexedTextureHandle( int inIndex ) {
+  return fields[inIndex].texture->getTextureHandle();
+}
+
+IDirect3DSurface9* DX9Stream::getIndexedSurfaceHandle( int inIndex ) {
+  return fields[inIndex].texture->getSurfaceHandle();
 }
 
 DX9Rect DX9Stream::getTextureSubRect( int l, int t, int r, int b ) {

@@ -4,6 +4,8 @@
 #include "../runtime.hpp"
 #include "dx9base.hpp"
 
+#include <vector>
+
 #pragma comment(lib,"d3d9")
 #pragma comment(lib,"d3dx9")
 
@@ -43,7 +45,7 @@ namespace brook {
     bool initialize( const char* inSource );
     virtual ~DX9Kernel();
 
-    void PushSampler( DX9Stream* s );
+    void PushSamplers( DX9Stream* s );
     void PushTexCoord( const DX9FatRect& r );
     void PushConstantImpl(const float4 &val);
     void ClearInputs();
@@ -65,26 +67,31 @@ namespace brook {
       int remainingExtent, int remainingOtherExtent, int slopBufferCount, int dim );
 
     int argumentIndex;
-    int argumentSamplerIndex;
-    int argumentTexCoordIndex;
-    int argumentConstantIndex;
-    int argumentOutputIndex;
-    int argumentReductionIndex;
+//    int argumentSamplerIndex;
+//    int argumentTexCoordIndex;
+//    int argumentConstantIndex;
+//    int argumentOutputIndex;
+//    int argumentReductionIndex;
 
-    bool argumentUsesIndexof[32];
+    std::vector<bool> argumentUsesIndexof;
+
+    std::vector<DX9Stream*> outputStreams;
+    std::vector<IDirect3DSurface9*> outputSurfaces;
+    DX9FatRect outputRect;
+    int outputWidth, outputHeight;
+
+    std::vector<DX9FatRect> inputTextureRects;
+    std::vector<float4> inputConstants;
+
+    std::vector<DX9Stream*> inputStreams;
+    std::vector<IDirect3DTexture9*> inputTextures;
+
+    std::vector<void*> outputReductionDatas;
+    std::vector<__BRTStreamType> outputReductionTypes;
 
     DX9RunTime* runtime;
     IDirect3DDevice9* device;
     DX9PixelShader* pixelShader;
-    DX9FatRect inputRects[8]; // TIM: TODO: named constant?
-    float4 inputConstants[32];
-    DX9Stream* inputStreams[8];
-    IDirect3DTexture9* inputTextures[8];
-    DX9FatRect outputRect;
-    DX9Stream* outputStream;
-    IDirect3DSurface9* outputSurface;
-    void* outputReductionData;
-    __BRTStreamType outputReductionType;
 
     DX9Stream* inputReductionStream;
     int inputReductionStreamSamplerIndex;
@@ -120,15 +127,22 @@ namespace brook {
   };
   class DX9Stream : public Stream {
   public:
-    static DX9Stream* create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
+    static DX9Stream* create( DX9RunTime* inRuntime,
+      int inFieldCount, const __BRTStreamType* inFieldTypes,
       int inDimensionCount, const int* inExtents );
     virtual void Read(const void* inData);
     virtual void Write(void* outData);
     virtual void Release() {}
 
-    DX9Texture* getTexture() { return texture; }
-    IDirect3DTexture9* getTextureHandle();
-    IDirect3DSurface9* getSurfaceHandle();
+//    DX9Texture* getTexture() { return texture; }
+//    IDirect3DTexture9* getTextureHandle();
+//    IDirect3DSurface9* getSurfaceHandle();
+
+    int getSubstreamCount();
+    DX9Texture* getIndexedTexture( int inIndex );
+    IDirect3DTexture9* getIndexedTextureHandle( int inIndex );
+    IDirect3DSurface9* getIndexedSurfaceHandle( int inIndex );
+
     const DX9FatRect& getInputRect() { return inputRect; }
     const DX9FatRect& getOutputRect() { return outputRect; }
     const float4& getGatherConstant() { return gatherConstant; }
@@ -140,23 +154,43 @@ namespace brook {
 
      virtual void* getData (unsigned int flags);
      virtual void releaseData(unsigned int flags);
-     virtual const unsigned int* getExtents() const { return extents; }
+     virtual const unsigned int* getExtents() const { return &extents[0]; }
      virtual unsigned int getDimension() const { return dimensionCount; }
      virtual unsigned int getTotalSize() const { return totalSize; }
+     virtual int getFieldCount() const { return fields.size(); }
+     virtual __BRTStreamType getIndexedFieldType(int i) const {
+       return fields[i].elementType;
+     }
 
      void validateGPUData();
      void markGPUDataChanged();
 
   private:
-    DX9Stream( DX9RunTime* inRuntime, __BRTStreamType inElementType );
-    bool initialize( int inDimensionCount, const int* inExtents );
+    DX9Stream( DX9RunTime* inRuntime );
+    bool initialize(
+      int inFieldCount, const __BRTStreamType* inFieldTypes,
+      int inDimensionCount, const int* inExtents );
     virtual ~DX9Stream ();
     IDirect3DDevice9* getDevice();
 
-    int dimensionCount;
-    unsigned int extents[8];
+    class Field
+    {
+    public:
+      Field( __BRTStreamType inElementType, int inComponentCount, DX9Texture* inTexture )
+        : elementType(inElementType), componentCount(inComponentCount), texture(inTexture)
+      {}
+
+      __BRTStreamType elementType;
+      int componentCount;
+      DX9Texture* texture;
+    };
+
+    unsigned int dimensionCount;
     unsigned int totalSize;
-    int componentCount;
+    std::vector<unsigned int> extents;
+    std::vector<Field> fields;
+
+    int width, height;
 
     DX9RunTime* runtime;
     DX9Texture* texture;
@@ -190,7 +224,7 @@ namespace brook {
     DX9Texture* getReductionBuffer();
     DX9Texture* getReductionTargetBuffer();
 
-    void execute( const DX9FatRect& outputRect, const DX9FatRect* inputRects );
+    void execute( const DX9FatRect& outputRect, int inputRectCount, const DX9FatRect* inputRects );
 
   private:
     DX9RunTime();

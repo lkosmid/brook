@@ -37,7 +37,8 @@ void streamGatherOpIndexDet(T* data,
                              unsigned int bounds,
                              const Functor &op) {
    unsigned int dim = out->getDimension();
-   switch (index->getStreamType()) {
+   assert(index->getFieldCount()==1);
+   switch (index->getIndexedFieldType(0)) {
    case __BRTFLOAT4:
       if (dim!=4)dim=1;
       break;

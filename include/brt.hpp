@@ -77,7 +77,12 @@ namespace brook {
     virtual void readItem(void * p,unsigned int * index);
     virtual const unsigned int * getExtents() const=0;
     virtual unsigned int getDimension() const {return 0;}
-    virtual __BRTStreamType getStreamType ()const=0;
+
+    unsigned int getElementSize() const;
+    virtual int getFieldCount() const = 0;
+    virtual __BRTStreamType getIndexedFieldType(int) const = 0;
+
+    //virtual __BRTStreamType getStreamType ()const=0;
     virtual unsigned int getTotalSize() const {
        unsigned int ret=1;
        unsigned int dim=getDimension();
@@ -91,20 +96,26 @@ namespace brook {
 
   class Stream : public StreamInterface {
   public:
-    Stream (__BRTStreamType type) {this->type=type;}
+    Stream () {}
     virtual void Read(const void* inData) = 0;
     virtual void Write(void* outData) = 0;
-    virtual unsigned int getStride() const {return sizeof(float)*getStreamType();}
-    virtual __BRTStreamType getStreamType ()const{return type;}
+    
+    //virtual unsigned int getStride() const {return sizeof(float)*getStreamType();}
+    //virtual __BRTStreamType getStreamType ()const{return type;}
   protected:
-    __BRTStreamType type;
     virtual ~Stream() {}
   };
 
   class Iter : public StreamInterface {
   public:
     Iter (__BRTStreamType type) {this->type=type;}
-    virtual __BRTStreamType getStreamType ()const{return type;}
+    virtual int getFieldCount() const { return 1; }
+    virtual __BRTStreamType getIndexedFieldType(int i) const {
+      assert(i == 0);
+      return type;
+    }
+
+//    virtual __BRTStreamType getStreamType ()const{return type;}
   protected:
     __BRTStreamType type;
     virtual ~Iter() {}

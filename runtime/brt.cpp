@@ -86,6 +86,35 @@ namespace brook {
 	       "Unknown runtime requested: %s falling back to CPU\n", env);
     return new CPURunTime();
   }
+
+  unsigned int StreamInterface::getElementSize() const
+  {
+    unsigned int result = 0;
+    int fieldCount = getFieldCount();
+    for( int i = 0; i < fieldCount; i++ )
+    {
+      __BRTStreamType fieldType = getIndexedFieldType(i);
+      switch(fieldType)
+      {
+      case __BRTFLOAT:
+        result += sizeof(float);
+        break;
+      case __BRTFLOAT2:
+        result += sizeof(float2);
+        break;
+      case __BRTFLOAT3:
+        result += sizeof(float3);
+        break;
+      case __BRTFLOAT4:
+        result += sizeof(float4);
+        break;
+      default:
+        assert(false && "invalid stream element type");
+      };
+    }
+    return result;
+  }
+
   void StreamInterface::readItem (void * output, unsigned int * index){
      unsigned int linearindex = index[0];
      unsigned int dim = getDimension();
@@ -94,17 +123,7 @@ namespace brook {
         linearindex*=extents[i];
         linearindex+=index[i];
      }
-     __BRTStreamType type = getStreamType();
-     unsigned int size;
-     switch (type) {
-     case __BRTFLOAT:
-     case __BRTFLOAT2:
-     case __BRTFLOAT3:
-     case __BRTFLOAT4:
-        size=type*sizeof(float);
-     default:    
-        size=sizeof(float);
-     }
+     unsigned int size = getElementSize();
      char * data = (char*)getData(READ);
      data+=linearindex*size;
      memcpy (output,data,size);
@@ -150,7 +169,7 @@ namespace brook {
   {
     ::brook::Iter* iterator = i;
 
-    __BRTStreamType elementType = iterator->getStreamType();
+    __BRTStreamType elementType = iterator->getIndexedFieldType(0);
     int dimensionCount = iterator->getDimension();
     int* extents = (int*)(iterator->getExtents());
 
@@ -195,7 +214,8 @@ void streamPrint(brook::StreamInterface * s, bool flatten) {
    unsigned int dims = s->getDimension();
    const unsigned int * extent = s->getExtents();
    unsigned int tot = s->getTotalSize();
-   __BRTStreamType typ = s->getStreamType();
+   assert(s->getFieldCount() == 1);
+   __BRTStreamType typ = s->getIndexedFieldType(0);
    float * data = (float *)s->getData(brook::StreamInterface::READ);
    for (unsigned int i=0;i<tot;++i) {
       if (typ!=1)printf( "{");

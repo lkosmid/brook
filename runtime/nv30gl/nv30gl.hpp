@@ -119,9 +119,16 @@ void __check_gl(int line, char *file);
     const unsigned int * getExtents() const {return extents;}
     unsigned int getDimension() const {return dims;}
 
+    virtual int getFieldCount() const {return 1;}
+    virtual __BRTStreamType getIndexedFieldType(int i) const {
+      assert(i == 0);
+      return elementType;
+    }
+
      void GLReadData (void *p);
      void GLWriteData (const void *p);
 
+     __BRTStreamType elementType;
      unsigned int width, height;
      unsigned int extents[3];
      unsigned int dims;

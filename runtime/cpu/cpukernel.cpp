@@ -358,13 +358,13 @@ namespace brook{
       std::vector<ReductionArg>::const_iterator j;
       for (j=reductions.begin();j!=reductions.end();++j) {
          myargs[(*j).which]=(char*)myargs[(*j).which]+
-            cur*(*j).stream->getStride();
+            cur*(*j).stream->getElementSize();
       }
       for (;cur<curfinal;++cur) {
          (*nDfunc)(myargs,extents,dims,mapbegin,mag);
          for (j=reductions.begin();j!=reductions.end();++j) {
             myargs[(*j).which]=(char*)myargs[(*j).which]+
-               (*j).stream->getStride();
+               (*j).stream->getElementSize();
          }
          
          mapbegin[rdim-1]+=mag[rdim-1];

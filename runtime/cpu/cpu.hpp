@@ -139,7 +139,14 @@ namespace brook {
 	virtual unsigned int getDimension() const{return dims;}
         virtual unsigned int getTotalSize()const{return totalsize;}	
 	virtual ~CPUStream();
+
+  virtual int getFieldCount() const {return 1;}
+  virtual __BRTStreamType getIndexedFieldType(int i) const {
+    assert(i == 0);
+    return elementType;
+  }
     protected:
+  __BRTStreamType elementType;
 	void * data;
 	unsigned int * extents;
 	unsigned int dims;		
@@ -165,7 +172,7 @@ namespace brook {
     virtual void releaseData(unsigned int flags){stream.releaseData(flags);}
     virtual const unsigned int* getExtents()const {return stream.getExtents();}
     virtual unsigned int getDimension()const {return stream.getDimension();}
-    virtual __BRTStreamType getStreamType()const{return stream.getStreamType();}
+    //virtual __BRTStreamType getStreamType()const{return stream.getStreamType();}
     virtual unsigned int getTotalSize() const {return stream.getTotalSize();}
    };
 

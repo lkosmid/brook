@@ -151,9 +151,7 @@ Stream* DX9RunTime::CreateStream(
   int fieldCount, const __BRTStreamType fieldTypes[],
   int dims, const int extents[])
 {
-  DX9Assert(fieldCount == 1, "Cannot allocate streams of structures.");
-  __BRTStreamType type = fieldTypes[0];
-  Stream* result = DX9Stream::create( this, type, dims, extents );
+  Stream* result = DX9Stream::create( this, fieldCount, fieldTypes, dims, extents );
   DX9Assert( result != NULL, "Unable to allocate a stream, exiting." );
   return result;
 }
@@ -166,7 +164,7 @@ Iter* DX9RunTime::CreateIter(
   return result;
 }
 
-void DX9RunTime::execute( const DX9FatRect& outputRect, const DX9FatRect* inputRects )
+void DX9RunTime::execute( const DX9FatRect& outputRect, int inputRectCount, const DX9FatRect* inputRects )
 {
   HRESULT result;
   initializeVertexBuffer();
@@ -174,6 +172,9 @@ void DX9RunTime::execute( const DX9FatRect& outputRect, const DX9FatRect* inputR
   DX9Vertex* vertices;
   result = vertexBuffer->Lock( 0, 0, (void**)&vertices, D3DLOCK_DISCARD );
   DX9AssertResult( result, "VB::Lock failed" );
+
+  DX9Assert( inputRectCount <= 8,
+    "Can't have more than 8 texture coordinate interpolators" );
 
   DX9Vertex vertex;
   for( int i = 0; i < 4; i++ )
@@ -186,7 +187,7 @@ void DX9RunTime::execute( const DX9FatRect& outputRect, const DX9FatRect* inputR
     vertex.position.z = 0.5f;
     vertex.position.w = 1.0f;
 
-    for( int t = 0; t < 8; t++ )
+    for( int t = 0; t < inputRectCount; t++ )
       vertex.texcoords[t] = inputRects[t].vertices[i];
 
     *vertices++ = vertex;

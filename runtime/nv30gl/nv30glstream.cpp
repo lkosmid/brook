@@ -7,7 +7,7 @@ using namespace brook;
 
 NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
                             __BRTStreamType type, int dims, const int extents[])
-  : Stream(type), runtime(rt) { 
+  : elementType(type), runtime(rt) { 
 
    int i;
   
