@@ -1,0 +1,40 @@
+// indexof.br
+// Tests the built-in operator 'indexof.'
+// It confirms the invariant that when
+// a stream is passed as both a stream
+// argument and a gather argument to
+// a kernel, fetching from the gather
+// argument with the index of the stream
+// argument should produce the same
+// value as the stream argument.
+
+#include <stdio.h>
+
+extern void printf();
+extern void streamRead();
+extern void streamWrite();
+
+kernel void foo (out float e<>) {
+   
+   e = (indexof(e)).x+(indexof(e)).y*10;
+}
+int main () {
+
+  float e<10, 10>;
+  
+  float data_e[10][10];
+
+  int i,j;
+
+  foo(e);
+
+  streamWrite(e, data_e);
+  
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f ", data_e[i][j]);
+    }
+    printf ("\n");
+  }
+  return 0;
+}
