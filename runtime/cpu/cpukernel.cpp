@@ -172,6 +172,10 @@ namespace brook{
        unsigned int cur=0;
        unsigned int step = totalsize/numThreads;
        unsigned int remainder = totalsize%numThreads;
+       vector<pthread_t>threads;
+       for (i=0;i<numThreads-1;++i)
+         threads.push_back(pthread_t());
+       //pthread_create(&threads[0],NULL,staticSubMap,new subMapInput(this,args,cur,step));
        staticSubMap(new subMapInput(this,args,cur,step));
        cur+=step;
        std::vector<void *>reductionbackup;
@@ -182,11 +186,12 @@ namespace brook{
           args[j->which]=malloc(numThreads*j->type*sizeof(float));
 
        }
-       for (i=0;i<numThreads-1;++i) {
+       for (i=1;i<numThreads-1;++i) {
           unsigned int thisstep=step;
           if (i<remainder)
              thisstep++;//leap year
           //fork!          
+          //pthread_create(&threads[i],NULL,staticSubMap,new subMapInput(this,args,cur,thisstep));
           staticSubMap(new subMapInput(this,args,cur,thisstep));
           cur+=thisstep;
           for (j=reductions.begin();j!=reductions.end();++j) {
@@ -194,11 +199,15 @@ namespace brook{
           }          
        }
        subMap(cur,totalsize-cur);
+       for (unsigned int i=0;i<threads.size();++i) {
+         //void * Nill;
+         //pthread_join(threads[i],&Nill);
+       }
        cur=0;
        for (i=0;i<reductions.size();++i) {
           char * end = (char *)args[reductions[i].which];
 
-          end-=reductions[i].type*sizeof(float)*(numThreads-1);
+          end-=reductions[i].type*sizeof(float)*(numThreads-2);
           args.push_back(end);                         
           args[reductions[i].which]=reductionbackup[i];          
        }
@@ -326,11 +335,13 @@ namespace brook{
             }
           }
           cur=0;
+          vector<pthread_t> pthreads;
           for (unsigned int threads=0;threads<numThreads;++threads) {
             unsigned int curfinal=cur+step;
             if (threads<remainder) curfinal++;
             unsigned int * mapbegin=e+threads*dim;
-            if (threads!=numThreads-1)
+            if (threads!=numThreads-1) {
+              pthreads.push_back(pthread_t());
               CPUKernel::staticReduceToStream(new reduceToStreamInput(this,
                                                                       args,
                                                                       cur,
@@ -339,8 +350,10 @@ namespace brook{
                                                                       rdim,
                                                                       mapbegin,
                                                                       mag));
-            else
+              
+            }else{
               ReduceToStream(args,cur,curfinal,extent,rdim,mapbegin,mag);
+            }
             
             cur=curfinal;
             //forkborkborkbork
