@@ -24,12 +24,6 @@
 #include <stdlib.h>
 #ifndef _WIN32
 #include <unistd.h>
-#else
-#ifndef YY_ALWAYS_INTERACTIVE
-#ifndef YY_NEVER_INTERACTIVE
-extern int isatty YY_PROTO(( int ));
-#endif
-#endif
 #endif
 
 /* Use prototypes in function declarations. */
@@ -69,6 +63,7 @@ extern int isatty YY_PROTO(( int ));
 #else
 #define YY_PROTO(proto) ()
 #endif
+
 
 /* Returned upon end-of-file. */
 #define YY_NULL 0
@@ -983,7 +978,7 @@ EXTERN int yylex ARGS((YYSTYPE *lvalp));
 #define GCC_ATTRIB 8
 
 /* %option nounput */
-#line 987 "lex.yy.c"
+#line 982 "lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -1151,7 +1146,7 @@ YY_DECL
 #line 176 "lexer.l"
 
 
-#line 1155 "lex.yy.c"
+#line 1150 "lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -2823,7 +2818,7 @@ YY_RULE_SETUP
 #line 980 "lexer.l"
 ECHO;
 	YY_BREAK
-#line 2827 "lex.yy.c"
+#line 2822 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(Start):
 case YY_STATE_EOF(PP):
