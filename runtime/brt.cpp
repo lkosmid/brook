@@ -190,7 +190,6 @@ namespace brook {
     : _stream(0)
   {
   }
-  
   stream::stream( const stream& inStream )
     : _stream(inStream._stream)
   {
@@ -306,6 +305,7 @@ class StreamSentinels {public:
       }
    }
 };
+float onehalf = 0.5f;
 __BRTStream * sentinelStream (int dim) {
    static StreamSentinels s;
    if (dim<(int)s.sentinels.size())
@@ -320,7 +320,7 @@ __BRTStream * sentinelStream (int dim) {
    s.sentinels[dim]=new brook::stream(&extents[0],
                                       dim,
                                       brook::getStreamType((float*)0));   
-   float inf = 1.0f/(float)floor(.5);
+   float inf = 1.0f/(float)floor(onehalf);
    streamRead(*s.sentinels[dim],&inf);
    return s.sentinels[dim];
 }
