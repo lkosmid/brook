@@ -7,23 +7,31 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+
+//#define USE_GPU
+
 #ifdef BUILD_DX9
-
-//#define USE_GPU_FOR_DX9
-
-#ifdef USE_GPU_FOR_DX9
+#ifdef USE_GPU
 #include "gpu/dx9/dx9runtime.hpp"
-#endif
-
+#else
 #include "dx9/dx9.hpp"
+#endif
 #endif
 
 #ifdef BUILD_NV30GL
+#ifdef USE_GPU
+#include "gpu/ogl/oglruntime.hpp"
+#else
 #include "nv30gl/nv30gl.hpp"
+#endif
 #endif
 
 #ifdef BUILD_ARB
+#ifdef USE_GPU
+#include "gpu/ogl/oglruntime.hpp"
+#else
 #include "nv30gl/arb.hpp"
+#endif
 #endif
 
 #include "cpu/cpu.hpp"
@@ -34,6 +42,7 @@ __StreamScatterAdd STREAM_SCATTER_ADD;
 __StreamScatterMul STREAM_SCATTER_MUL;
 __StreamGatherInc STREAM_GATHER_INC;
 __StreamGatherFetch STREAM_GATHER_FETCH;
+
 inline float finite_flt (float x) {
 #ifdef _WIN32
    return (float) _finite(x);
@@ -62,6 +71,7 @@ inline float isnan_flt (float x) {
 float getSentinel() {
    return (float)-1844632.18612444856320;
 } 
+
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
@@ -76,13 +86,13 @@ namespace brook {
     return RunTime::GetInstance( 0, 0, addressTranslation );
   }
     
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   RunTime* RunTime::GetInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation ) {
     static RunTime* sResult = CreateInstance( inRuntimeName, inContextValue, addressTranslation );
     return sResult;
   }
 
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   RunTime* RunTime::CreateInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation ) {
     const char *env = inRuntimeName != NULL ? inRuntimeName : getenv(RUNTIME_ENV_VAR);
 
@@ -124,7 +134,7 @@ namespace brook {
 #ifdef BUILD_DX9
     if (!strcmp(env, DX9_RUNTIME_STRING))
     {
-#ifdef USE_GPU_FOR_DX9
+#ifdef USE_GPU
       RunTime* result = GPURuntimeDX9::create();
 #else
       RunTime* result = DX9RunTime::create( addressTranslation, inContextValue );
@@ -140,15 +150,31 @@ namespace brook {
 
 #ifdef BUILD_NV30GL
     if (!strcmp(env, NV30GL_RUNTIME_STRING))
+#ifdef USE_GPU
+      RunTime* result = OGLRuntime::create();
+#else
       return new NV30GLRunTime();
+#endif
 #endif
 
 #ifdef BUILD_ARB
-    if (!strcmp(env, ARB_RUNTIME_STRING))
-       return new ARBRunTime();
+    if (!strcmp(env, ARB_RUNTIME_STRING)) {
+#ifdef USE_GPU
+      RunTime* result = OGLRuntime::create();
+#else
+      RunTime* result = new ARBRunTime();
+#endif
+      if( result )
+        return result;
+
+      fprintf(stderr, 
+	      "Unable to initialize OpenGL runtime, falling back to CPU\n");
+      return new CPURunTime(false);
+    }
 #endif
 
-    if (strcmp(env,CPU_RUNTIME_STRING)&&strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)){
+    if (strcmp(env,CPU_RUNTIME_STRING) && 
+        strcmp(env,CPU_MULTITHREADED_RUNTIME_STRING)) {
       fprintf (stderr, 
 	       "Unknown runtime requested: %s falling back to CPU\n", env);
     }
@@ -202,6 +228,7 @@ namespace brook {
     : _stream(0)
   {
   }
+
   stream::stream( const stream& inStream )
     : _stream(inStream._stream)
   {
@@ -317,7 +344,9 @@ class StreamSentinels {public:
       }
    }
 };
+
 float onehalf = 0.5f;
+
 __BRTStream * sentinelStream (int dim) {
    static StreamSentinels s;
    if (dim<(int)s.sentinels.size())
@@ -336,6 +365,7 @@ __BRTStream * sentinelStream (int dim) {
    streamRead(*s.sentinels[dim],&inf);
    return s.sentinels[dim];
 }
+
 void streamPrint(brook::StreamInterface * s, bool flatten) {
 flatten=false;
    unsigned int dims = s->getDimension();
@@ -382,6 +412,7 @@ flatten=false;
    }
    s->releaseData(brook::StreamInterface::READ);
 }
+
 void readItem (brook::StreamInterface *s, void * p,...) {
    unsigned int dims = s->getDimension();
    std::vector<unsigned int> index;
