@@ -37,20 +37,29 @@ namespace brook {
     virtual unsigned int 
     getMaximumOutputCount() const { return 1; }
     
-    /* Returns the GPURect structure to pass to the draw routine to
-    ** use for the stream fetch function. dstTexture is the target
-    ** texture which will be executed on set to NULL for a matching
-    ** texure output size.
-    */
-    virtual GPURect 
-    getStreamPositionInterpolant( TextureHandle* texture,
-                                  const TextureHandle* dstTexture = NULL) = 0;
+    virtual void
+    set1DInterpolant( const float4 &start, 
+                      const float4 &end,
+                      const unsigned int outputWidth,
+                      GPUInterpolant *interpolant) const = 0;
+
+    virtual void 
+    set2DInterpolant( const float4 &start, 
+                      const float4 &end,
+                      const unsigned int outputWidth,
+                      const unsigned int outputHeight, 
+                      GPUInterpolant *interpolant) const = 0;
+
+    virtual void 
+    setStreamInterpolant( const TextureHandle texture,
+                          const unsigned int outputWidth,
+                          const unsigned int outputHeight, 
+                          GPUInterpolant *interpolant) const = 0;
     
-    /* Returns the GPURect structure to pass to the draw routine to
-    ** use for the output region size.
-    */
-    virtual GPURect 
-    getStreamOutputRectangle( TextureHandle* texture ) = 0;
+    virtual void
+    setStreamOutputRegion( const TextureHandle texture,
+                           GPUOutputRegion *region) const = 0; 
+
 
     /* Create a texture */
     virtual TextureHandle 
@@ -102,9 +111,9 @@ namespace brook {
     virtual void disableOutput( unsigned int inIndex ) = 0;
 
     virtual void drawRectangle(
-      const GPUFatRect& inVertexRectangle, 
-      const GPUFatRect* inTextureRectangles, 
-      unsigned int inTextureRectangleCount ) = 0;
+      const GPUOutputRegion& outputRegion, 
+      const GPUInterpolant* interpolants, 
+      unsigned int numInterpolants ) = 0;
   };
 }
 
