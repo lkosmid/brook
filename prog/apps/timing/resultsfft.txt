@@ -1,47 +1,50 @@
-newgraph
-  xaxis min 0 
-    label : Length on a side of input image
-  yaxis min 0 max 1024
-    label : Time to perform 128 FFT operations 
-  newcurve
-    linetype longdash
-    label: nv-box Brook FFT (4 Real->4 Complex)
-    pts 128 .708 256 2.943670 512 13.129980 1024 59.077019 2048 257.349499
-  newcurve 
-    linetype dotdash
-    label : Angel GPU FFT (4 Real->4 Complex)
-    pts 256 3.106 512 11.30 1024 47.31
-  newcurve 
-    linetype dashed 
-    label : FFTW (4 Real->4 Complex)
-    pts 128 .223000 256    .969000  512    5.168000  1024    25.241000   2048    113.334000
-  newcurve
-    linetype solid
-    label : Brook GPU FFT (Complex->Complex)
-    pts 256    2.217823 512    9.734216 1024   44.953809 2048   196.228151
-  newcurve
-    linetype dotted
-    label : FFTW (Complex->Complex)
-    pts 128   175000  256     2.481000 512    15.610000 1024   75.968000 2048   340.396000
- 
+Ours (ATI)
+SIZE
+128x64     .75760      249
+256x128    1.0496      830
+512x256    11.70125    337
+1024x512   51.20922    345
+1024x1024  103.017472  361
+2048x1024  212.5947    367
+
+Ours (nVidia):
+FFT 4 Complex->4 Complex
+SIZE       TIME     MFLOPS
+128x64    .590511   320.29
+256x128   2.868334  304.96
+512x256   12.946863 305.56
+1024x512  59.548534 296.87
+1024x1024 125.65    296.16
+2048x1024 259.63313 300.99
+
+Angel Results
+FFT 4 Complex->4 Complex
+rez     #   seconds         MFLOPS
+128x64     128 .391932       483.31
+256x128    128 2.550339      342.03
+512x256    128 10.996448     359.77
+1024x512   128 47.995502     368.33
+1024x1024  128 102.54557     362.89
+2048x1024  128 219.86353     355.81
+
+FFTW Benchmark:
+FFT 4 Complex->4 Complex
+SIZE        #    seconds   MFLOPS
+128x64     128  .244       774
+256x128    128  1.335      653.31
+512x256    128  23.56      167.82
+1024x512   128  111.40     158.67
+1024x1024  128  263.066    141.49
+2048x1024  128  552.828    141.35
+/////////////////////////////////////////
 
 
 
-ours working new:
-128    .590511
-256   2.868334
-512   12.946863
-1024  59.548534
-2048 259.63313
 
-Angel Results:
-rez     #   seconds         
-256    128 3.106283.000000  
-512    128 11.302208.000000 
-1024   128 47.307297.000000 
-256    2   643506.000000   
-512    2   727416.000000  
-1024   2   1076324.000000  
+
+Ours ATI 4 complex->4 Complex 128 times:
+2048x2048 texture  426.150 seconds 384 
+
 
 
 FFTW Real (DOTIMES=128) (4 in parallel)
