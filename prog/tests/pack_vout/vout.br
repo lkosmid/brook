@@ -679,12 +679,19 @@ void cpuGetIndexAt(float2 inputindex,
 }
 
 reduce void valueProduced (float input <>, reduce float output<>) {
-   output=isfinite(input)?input:output;
+   output=isinf(input)?output:input;
+}
+kernel void isFiniteKernel(float inp<>, out float outp<>) {
+	outp=!isinf(inp);
 }
 int finiteValueProduced (struct __BRTStream * input) {
-   float output;
+   float output<1,1>;
+   float finiteout<1,1>;
+   float ret;
    valueProduced(*input,output);
-   return finite_float(output);
+   isFiniteKernel(output,finiteout);
+   streamWrite(finiteout,&ret);
+   return (int)ret;
 }
 
 kernel void getIndexAt(float4 inputindex,
@@ -718,7 +725,7 @@ kernel void NanToBoolRight (float value[][],
    float neighbor;
    getIndexAt(indexof(output),sign,maxvalue,nextPlaceToLook);
    valueAt(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = (isfinite(value[indexof(output)])?0:1) + (isfinite(neighbor)?0:1);
+   output = (isinf(value[indexof(output)])?1:0) + (isinf(neighbor)?1:0);
 }
 kernel void NanToRight (float value [][],
                         out float output<>,
@@ -746,7 +753,7 @@ kernel void GatherGuess(float scatterindex[][],
       }else {
          float actualValue;
          valueAt(value,nextPlaceToLook,actualValue,maxvalue,0);
-         if (neighbor==halfk&&isfinite(actualValue)) {
+         if (neighbor==halfk&&!isinf(actualValue)) {
             output=halfk;
          }else {
             output = halfk-twotologkminusi;
