@@ -424,7 +424,7 @@ int  subdivision(int  argc, char  **argv)
   epsilon *= epsilon;
   numTriangles = loadModelData((argc > 1) ? (argv[1]) : ("dragon.ply"),&triangledata,&neighbordata);
   {
-    for (rr=0;rr<4;++rr) {
+    for (rr=0;rr<6;++rr) {
        ::brook::stream neighbors(::brook::getStreamType(( Neighbor  *)0), bestHeight(numTriangles) , bestWidth(numTriangles),-1);
        ::brook::stream triangles(::brook::getStreamType(( STri  *)0), bestHeight(numTriangles) , bestWidth(numTriangles),-1);
 
