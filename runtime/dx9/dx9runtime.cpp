@@ -3,6 +3,8 @@
 
 #include "dx9window.hpp"
 #include "dx9vertexshader.hpp"
+#include "dx9pixelshader.hpp"
+#include "dx9texture.hpp"
 
 using namespace brook;
 
@@ -32,7 +34,17 @@ static const char* kPassthroughVertexShaderSource =
 "mov oT7, v8\n"
 ;
 
-DX9RunTime::DX9RunTime() {
+static const char* kPassthroughPixelShaderSource =
+"ps_2_0\n"
+"dcl t0.xy\n"
+"dcl_2d s0\n"
+"texld r0, t0, s0\n"
+"mov oC0, r0\n"
+;
+
+DX9RunTime::DX9RunTime()
+  : reductionBuffer(NULL)
+{
   // XXX: TO DO
   // TIM: initialize D3D
   DX9Trace("DX9RunTime::DX9RunTime");
@@ -66,6 +78,7 @@ DX9RunTime::DX9RunTime() {
 //	device->SetRenderState( D3DRS_AMBIENT, 0xFFFFFFFF );
 
   passthroughVertexShader = DX9VertexShader::create( this, kPassthroughVertexShaderSource );
+  passthroughPixelShader = DX9PixelShader::create( this, kPassthroughPixelShaderSource );
 }
 
 Kernel * DX9RunTime::CreateKernel(const void* source[]) {
@@ -122,6 +135,13 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
 
   result = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, 2 );
   DX9CheckResult( result );
+}
+
+DX9Texture* DX9RunTime::getReductionBuffer() {
+  if( reductionBuffer != NULL ) return reductionBuffer;
+
+  reductionBuffer = DX9Texture::create( this, kReductionBufferSize, kReductionBufferSize, 4 );
+  return reductionBuffer;
 }
 
 static const D3DVERTEXELEMENT9 kDX9VertexElements[] =

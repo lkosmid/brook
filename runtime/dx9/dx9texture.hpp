@@ -11,8 +11,15 @@ namespace brook {
 	  static DX9Texture* create( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents );
 	  ~DX9Texture();
 
+    int getWidth() { return width; }
+    int getHeight() { return height; }
+
 	  void setData( const float* inData );
 	  void getData( float* outData );
+
+    DX9Rect getTextureSubRect( int l, int t, int r, int b );
+    DX9Rect getSurfaceSubRect( int l, int t, int r, int b );
+    void getTopLeftPixel( float4& outResult );
 
 	  LPDIRECT3DTEXTURE9 getTextureHandle();
 	  LPDIRECT3DSURFACE9 getSurfaceHandle();

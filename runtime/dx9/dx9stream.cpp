@@ -111,3 +111,19 @@ IDirect3DTexture9* DX9Stream::getTextureHandle() {
 IDirect3DSurface9* DX9Stream::getSurfaceHandle() {
   return texture->getSurfaceHandle();
 }
+
+int DX9Stream::getWidth() {
+  return texture->getWidth();
+}
+
+int DX9Stream::getHeight() {
+  return texture->getHeight();
+}
+
+DX9Rect DX9Stream::getTextureSubRect( int l, int t, int r, int b ) {
+  return texture->getTextureSubRect( l, t, r, b );
+}
+
+DX9Rect DX9Stream::getSurfaceSubRect( int l, int t, int r, int b ) {
+  return texture->getSurfaceSubRect( l, t, r, b );
+}

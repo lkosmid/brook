@@ -2,15 +2,18 @@
 
 #include "dx9pixelshader.hpp"
 #include "dx9vertexshader.hpp"
+#include "dx9texture.hpp"
 
 using namespace brook;
 
 static const char* PIXEL_SHADER_NAME_STRING = "ps20";
 
 DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
-  : runtime(runtime), argumentSamplerIndex(0), argumentTexCoordIndex(0), argumentConstantIndex(0), argumentOutputIndex(0)
+  : runtime(runtime)
 {
   DX9Trace("DX9Kernel::DX9Kernel");
+
+  ClearInputs();
   
   int i = 0;
   while( source[i] != NULL )
@@ -35,26 +38,17 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
 
 void DX9Kernel::PushStream(Stream *s) {
   DX9Stream* stream = (DX9Stream*)s;
+  int arg = argumentStreamIndex++;
+  inputStreams[arg] = stream;
   PushSampler( stream );
   PushTexCoord( stream->getInputRect() );
 }
 
 void DX9Kernel::PushReduce(void * val, __BRTStreamType type) {
-   //XXX Add Reduce functionality
-   fprintf (stderr,"Reduce inoperative in DirectX\n");
-   switch (type) {
-   case __BRTFLOAT2:
-      PushConstant(*(float2*)val);
-      break;
-   case __BRTFLOAT3:
-      PushConstant(*(float3*)val);
-      break;
-   case __BRTFLOAT4:
-      PushConstant(*(float4*)val);
-      break;
-   default:
-      PushConstant(*(float*)val);
-   }  
+  DX9Trace("PushReduce");
+  argumentReductionIndex++;
+  outputReductionData = val;
+  outputReductionType = type;
 }
 
 void DX9Kernel::PushConstant(const float &val) {
@@ -117,10 +111,8 @@ void DX9Kernel::Map() {
   int texCoordCount = argumentTexCoordIndex;
   int constantCount = argumentConstantIndex;
   int outputCount = argumentOutputIndex;
-  argumentSamplerIndex = 0;
-  argumentTexCoordIndex = 0;
-  argumentConstantIndex = 0;
-  argumentOutputIndex = 0;
+  int reductionCount = argumentReductionIndex;
+  ClearInputs();
 
   DX9VertexShader* vertexShader = runtime->getPassthroughVertexShader();
 
@@ -160,6 +152,116 @@ void DX9Kernel::Map() {
   DX9CheckResult( result );
 }
 
+void DX9Kernel::Reduce() {
+  DX9Trace("Reduce");
+  HRESULT result;
+
+  int streamCount = argumentStreamIndex;
+  int constantCount = argumentConstantIndex;
+  int outputCount = argumentOutputIndex;
+  int reductionCount = argumentReductionIndex;
+
+  // inspect the input stuff:
+  if( streamCount != 1 )
+    DX9Fail("Only one input sampler allowed on DX9 reduction");
+
+  if( reductionCount != 1 )
+    DX9Fail("Must have one and only one reduction argument");
+
+  if( outputCount != 0 )
+    DX9Fail("Can't have any other outputs during a reduction");
+
+  DX9VertexShader* passthroughVertexShader = runtime->getPassthroughVertexShader();
+  DX9PixelShader* passthroughPixelShader = runtime->getPassthroughPixelShader();
+
+  DX9Stream* inputStream = inputStreams[0];
+  int inputWidth = inputStream->getWidth();
+  int inputHeight = inputStream->getHeight();
+
+  DX9Texture* reductionBuffer = runtime->getReductionBuffer();
+  int reductionBufferWidth = reductionBuffer->getWidth();
+  int reductionBufferHeight = reductionBuffer->getHeight();
+  result = getDevice()->SetRenderTarget( 0, reductionBuffer->getSurfaceHandle() );
+  DX9CheckResult( result );
+
+  result = getDevice()->BeginScene();
+  DX9CheckResult( result );
+
+  result = getDevice()->SetVertexShader( passthroughVertexShader->getHandle() );
+  DX9CheckResult( result );
+
+  // TIM: TODO: set up workspace constant
+
+  // Constants can be set up once and then used for each
+  // reduction pass
+  for( int i = 0; i < constantCount; i++ )
+  {
+    result = getDevice()->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
+    DX9CheckResult( result );
+  }
+
+  // first pass - just copy the data into the reduction buffer...
+  result = getDevice()->SetPixelShader( passthroughPixelShader->getHandle() );
+  DX9CheckResult( result );
+
+  inputRects[0] = inputStream->getTextureSubRect( 0, 0, inputWidth, inputHeight );
+  outputRect = reductionBuffer->getTextureSubRect( 0, 0, inputWidth, inputHeight );
+  result = getDevice()->SetTexture( 0, inputStream->getTextureHandle() );
+  DX9CheckResult( result );
+  runtime->execute( outputRect, inputRects );
+
+  // remaining passes - 'fold' the data in half repeatedly...
+  result = getDevice()->SetPixelShader( passthroughPixelShader->getHandle() );
+  DX9CheckResult( result );
+
+  result = getDevice()->SetTexture( 0, reductionBuffer->getTextureHandle() );
+  DX9CheckResult( result );
+  result = getDevice()->SetTexture( 0, reductionBuffer->getTextureHandle() );
+  DX9CheckResult( result );
+  int remainingWidth = inputWidth;
+  int remainingHeight = inputHeight;
+
+  while( remainingWidth > 1 )
+  {
+    int columnsToRemove = remainingWidth/2;
+    inputRects[0] = reductionBuffer->getTextureSubRect( 0, 0, columnsToRemove, remainingHeight );
+    inputRects[1] = reductionBuffer->getTextureSubRect( remainingWidth-columnsToRemove, 0, remainingWidth, remainingHeight );
+    outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, columnsToRemove, remainingHeight );
+    runtime->execute( outputRect, inputRects );
+    remainingWidth -= columnsToRemove;
+  }
+  while( remainingHeight > 1 )
+  {
+    int rowsToRemove = remainingHeight/2;
+    inputRects[0] = reductionBuffer->getTextureSubRect( 0, 0, remainingWidth, rowsToRemove );
+    inputRects[1] = reductionBuffer->getTextureSubRect( 0, remainingHeight-rowsToRemove, remainingWidth, remainingHeight );
+    outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, remainingWidth, rowsToRemove );
+    runtime->execute( outputRect, inputRects );
+    remainingHeight -= rowsToRemove;
+  }
+
+  result = getDevice()->EndScene();
+  DX9CheckResult( result );
+  
+  float4 reductionResult;
+  reductionBuffer->getTopLeftPixel( reductionResult );
+  if( outputReductionType == __BRTFLOAT )
+    *((float*)&outputReductionData) = *((float*)&reductionResult);
+  else if( outputReductionType == __BRTFLOAT2 )
+    *((float2*)&outputReductionData) = *((float2*)&reductionResult);
+  else if( outputReductionType == __BRTFLOAT3 )
+    *((float3*)&outputReductionData) = *((float3*)&reductionResult);
+  else if( outputReductionType == __BRTFLOAT4 )
+    *((float4*)&outputReductionData) = *((float4*)&reductionResult);
+  else
+    DX9Fail("Invalid reduction target type for DX9");
+
+  //result = getDevice()->Present( NULL, NULL, NULL, NULL );
+  //DX9CheckResult( result );
+
+  ClearInputs();
+}
+
 DX9Kernel::~DX9Kernel() {
   // Does nothing
 }
@@ -193,4 +295,14 @@ void DX9Kernel::PushTexCoord( const DX9Rect& r )
   int textureUnit = argumentTexCoordIndex++;
   DX9Trace("PushTexCoord[%d]",textureUnit);
   inputRects[textureUnit] = r;
+}
+
+void DX9Kernel::ClearInputs()
+{
+  argumentStreamIndex = 0;
+  argumentSamplerIndex = 0;
+  argumentTexCoordIndex = 0;
+  argumentConstantIndex = 0;
+  argumentOutputIndex = 0;
+  argumentReductionIndex = 0;
 }

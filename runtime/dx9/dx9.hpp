@@ -11,21 +11,6 @@ namespace brook {
 
   extern const char* DX9_RUNTIME_STRING;
 
-  // TIM: 'helper' struct for defining the bounds
-  // of a stream in its texture:
-  struct DX9Rect
-  {
-    DX9Rect() {}
-    DX9Rect( float inLeft, float inTop, float inRight, float inBottom )
-      : left(inLeft), top(inTop), right(inRight), bottom(inBottom) {}
-    
-    operator float*() { return (float*)this; }
-      
-    operator const float*() const { return (const float*)this; }
-
-    float left, top, right, bottom;
-  };
-
   class DX9Kernel : public Kernel {
   public:
     DX9Kernel(DX9RunTime* runtime, const void* source[]);
@@ -38,6 +23,7 @@ namespace brook {
     virtual void PushReduce(void * input, __BRTStreamType);
     virtual void PushOutput(Stream *s);
     virtual void Map();
+    virtual void Reduce();
     virtual void Release() {}
 
   private:
@@ -51,19 +37,25 @@ namespace brook {
 
     void PushSampler( DX9Stream* s );
     void PushTexCoord( const DX9Rect& r );
+    void ClearInputs();
 
+    int argumentStreamIndex;
     int argumentSamplerIndex;
     int argumentTexCoordIndex;
     int argumentConstantIndex;
     int argumentOutputIndex;
+    int argumentReductionIndex;
 
     DX9RunTime* runtime;
     DX9PixelShader* pixelShader;
     DX9Rect inputRects[8]; // TIM: TODO: named constant?
     float4 inputConstants[8];
     IDirect3DTexture9* inputTextures[8];
+    DX9Stream* inputStreams[8];
     DX9Rect outputRect;
     IDirect3DSurface9* outputSurface;
+    void* outputReductionData;
+    __BRTStreamType outputReductionType;
   };
 
   class DX9Stream : public Stream {
@@ -78,6 +70,10 @@ namespace brook {
     const DX9Rect& getInputRect() { return inputRect; }
     const DX9Rect& getOutputRect() { return outputRect; }
     const float4& getGatherConstant() { return gatherConstant; }
+    int getWidth();
+    int getHeight();
+    DX9Rect getTextureSubRect( int l, int t, int r, int b );
+    DX9Rect getSurfaceSubRect( int l, int t, int r, int b );
 
   private:
     virtual ~DX9Stream ();
@@ -101,14 +97,22 @@ namespace brook {
     DX9VertexShader* getPassthroughVertexShader() {
       return passthroughVertexShader;
     }
+    DX9PixelShader* getPassthroughPixelShader() {
+      return passthroughPixelShader;
+    }
+    DX9Texture* getReductionBuffer();
 
     void execute( const DX9Rect& outputRect, const DX9Rect* inputRects );
 
   private:
+    static const int kReductionBufferSize = 1024;
+
     void initializeVertexBuffer();
 
     DX9Window* window;
     DX9VertexShader* passthroughVertexShader;
+    DX9PixelShader* passthroughPixelShader;
+    DX9Texture* reductionBuffer;
     IDirect3D9* direct3D;
     IDirect3DDevice9* device;
     IDirect3DVertexBuffer9* vertexBuffer;

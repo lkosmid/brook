@@ -144,3 +144,51 @@ LPDIRECT3DSURFACE9 DX9Texture::getSurfaceHandle()
 	return surfaceHandle;
 }
 
+DX9Rect DX9Texture::getTextureSubRect( int l, int t, int r, int b ) {
+  DX9Rect result;
+  result.left = (float)(l) / (float)(width);
+  result.top = 1.0f - (float)(t) / (float)(height);
+  result.right = (float)(r) / (float)(width);
+  result.bottom = 1.0f - (float)(b) / (float)(height);
+  return result;
+}
+
+DX9Rect DX9Texture::getSurfaceSubRect( int l, int t, int r, int b ) {
+  DX9Rect result;
+  result.left = -1.0f + (float)(2*l) / (float)(width);
+  result.top = -1.0f + (float)(2*t) / (float)(height);
+  result.right = -1.0f + (float)(2*r) / (float)(width);
+  result.bottom = -1.0f + (float)(2*b) / (float)(height);
+  return result;
+}
+
+void DX9Texture::getTopLeftPixel( float4& outResult ) {
+	HRESULT result;
+
+	result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
+	DX9CheckResult( result );
+
+	D3DLOCKED_RECT info;
+	result = shadowSurface->LockRect( &info, NULL, D3DLOCK_READONLY );
+	DX9CheckResult( result );
+
+	int pitch = info.Pitch;
+	if( pitch % 4 != 0 )
+		throw 1;
+	int pitchFloats = pitch / 4;
+	const float* inputLine = (const float*)info.pBits;
+
+	float* output = (float*)&outResult;
+
+	const float* inputPixel = inputLine;
+	const float* input = inputPixel;
+
+  for( int c = 0; c < components; c++ )
+	{
+	  *output++ = *input++;
+	}
+
+	result = shadowSurface->UnlockRect();
+	DX9CheckResult( result );
+}
+

@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include <brt.hpp>
+
 namespace brook {
 
   class DX9RunTime;
@@ -18,6 +20,21 @@ namespace brook {
   class DX9Window;
   class DX9VertexShader;
   class DX9PixelShader;
+
+  // TIM: 'helper' struct for defining the bounds
+  // of a stream in its texture:
+  struct DX9Rect
+  {
+    DX9Rect() {}
+    DX9Rect( float inLeft, float inTop, float inRight, float inBottom )
+      : left(inLeft), top(inTop), right(inRight), bottom(inBottom) {}
+    
+    operator float*() { return (float*)this; }
+      
+    operator const float*() const { return (const float*)this; }
+
+    float left, top, right, bottom;
+  };
 
   inline void DX9Trace( const char* inFormat, ... )
   {
