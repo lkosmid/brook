@@ -77,7 +77,7 @@ void SetupMillisTimer(void) {
   }
   else {
     timerRes = timeCaps.wPeriodMin;
-    std::cout << "Set timer resolution to " << timeCaps.wPeriodMin << "ms.\n";
+    std::cout << "(* Set timer resolution to " << timeCaps.wPeriodMin << "ms. << "*)\n";
   }
 
 }
@@ -117,7 +117,7 @@ main(int argc, char *argv[])
    std::cout << std::endl;
    RunKernel_Time(length);
    std::cout << std::endl;
-   // Blas_Time(length);
+   // Blas_Time(length, 0);
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);
    //Matmult4x4_1way_Time(length);
