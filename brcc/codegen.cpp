@@ -5,6 +5,7 @@
  *      .[ch] files required to invoke it.  It converts to CG and feeds that
  *      through a CG compiler.
  */
+#include <memory>
 
 #ifdef _WIN32
 #pragma warning(disable:4786)
@@ -1609,13 +1610,17 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
   std::auto_ptr<SplitCompiler> compiler;
   switch( target )
   {
-  case CODEGEN_PS20:
-    compiler = std::auto_ptr<SplitCompiler>( new SplitCompilerHLSL() );
+  case CODEGEN_PS20:{
+    std::auto_ptr<SplitCompiler> tmp( new SplitCompilerHLSL() );
+    compiler = tmp;
     break;
+   }
   case CODEGEN_FP30:
-  case CODEGEN_ARB:
-    compiler = std::auto_ptr<SplitCompiler>( new SplitCompilerCg( target ) );
+  case CODEGEN_ARB:{
+    std::auto_ptr<SplitCompiler> tmp( new SplitCompilerCg( target ) );
+    compiler = tmp;
     break;
+   }
   }
 
   SplitTree splitTree( inFunctionDef, *compiler );

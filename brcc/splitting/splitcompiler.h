@@ -9,7 +9,7 @@
 
 #include <vector>
 #include <iostream>
-
+#include <string>
 class SplitTree;
 class SplitNode;
 

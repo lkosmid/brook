@@ -574,7 +574,7 @@ class Decl
   public:
     Decl( Symbol* sym = (Symbol*) NULL );
     Decl( Type* type );
-    ~Decl();
+    virtual ~Decl();
 
     Type*   extend( Type* type );
 
