@@ -283,14 +283,15 @@ class NewIndexExpr :public IndexExpr {public:
     }
         
 };
+void ConvertToTIndexExprConverter(Expression * e);
 class IndexExprConverter{public:
     Expression * operator()(Expression * e) {
         IndexExpr *ie;
         IndexExpr * ret=NULL;
         if (e->etype==ET_IndexExpr&&(ie=dynamic_cast<IndexExpr*>(e))) {
             ret = new NewIndexExpr (ie->array->dup(),ie->_subscript->dup(),e->location);
-            ret->array->findExpr(ConvertToT<IndexExprConverter>);
-            ret->_subscript->findExpr(ConvertToT<IndexExprConverter>);            
+            ret->array->findExpr(&ConvertToTIndexExprConverter);
+            ret->_subscript->findExpr(&ConvertToTIndexExprConverter);            
         }
         CastExpr * ce;
         if (e->etype==ET_CastExpr&&(ce=dynamic_cast<CastExpr*>(e))) {
@@ -344,7 +345,7 @@ class NewArrayConstant:public ArrayConstant {public:
         out << ")";
     }
 };
-
+void ConvertToTConstantExprConverter (Expression *);
 class ConstantExprConverter{public:
     Expression * operator()(Expression * e) {
         Constant *con;
@@ -382,7 +383,7 @@ class ConstantExprConverter{public:
                 ret=aret;
                 for (unsigned int i=0;i<ac->items.size();++i){
                     Expression * expr=ac->items[i]->dup();
-                    expr->findExpr(ConvertToT<ConstantExprConverter>);
+                    expr->findExpr(ConvertToTConstantExprConverter);
                     aret->addElement(expr);                    
                 }
                 break;
@@ -460,6 +461,7 @@ public:
     }
     virtual void findExpr( fnExprCallback cb ) { next->findExpr(cb); }    
 };
+void COnvertToTMaskConverter (Expression * e);
 template <class ConverterFunctor> void ConvertToT (Expression * expression) {
     if (ArrayBlacklist.find(expression)==ArrayBlacklist.end()) {
         Expression * e = ConverterFunctor()(expression);
@@ -470,25 +472,42 @@ template <class ConverterFunctor> void ConvertToT (Expression * expression) {
             memcpy (&location[0],&expression->location,sizeof(Location));
             memcpy (expression,k,sizeof(Expression));//DANGEROUS but we don't have access to the code
             memcpy (&expression->location,&location[0],sizeof(Location));
-            e->findExpr(ConvertToT<MaskConverter>);
+            e->findExpr(ConvertToTMaskConverter);
             
         }
     }
 }
+
+void ConvertToTMaskConverter (Expression * e) {
+	ConvertToT<MaskConverter>(e);
+}
 void FindMask (Statement * s) {
-    s->findExpr(ConvertToT<MaskConverter>);
+    s->findExpr(&ConvertToTMaskConverter);
+}
+void ConvertToTSwizzleConverter (Expression * e) {
+	ConvertToT<SwizzleConverter>(e);//this function is created because VC++ can't take the address of a template function and "know" its type...blame ole billyG
 }
 void FindSwizzle (Statement * s) {
-    s->findExpr(ConvertToT<SwizzleConverter>);
+    s->findExpr((fnExprCallback)&ConvertToTSwizzleConverter);
+}
+void ConvertToTQuestionColonConverter (Expression * e) {
+	ConvertToT<QuestionColonConverter>(e);//this function is created because VC++ can't take the address of a template function and "know" its type...blame ole billyG
 }
 void FindQuestionColon (Statement * s) {
-    s->findExpr(ConvertToT<QuestionColonConverter>);
+    s->findExpr((fnExprCallback)&ConvertToTQuestionColonConverter);
+}
+void ConvertToTIndexExprConverter (Expression * e) {
+	ConvertToT<IndexExprConverter>(e);//this function is created because VC++ can't take the address of a template function and "know" its type...blame ole billyG
 }
 void FindIndexExpr (Statement * s) {
-    s->findExpr(ConvertToT<IndexExprConverter>);
+    s->findExpr((fnExprCallback)&ConvertToTIndexExprConverter);
+}
+void ConvertToTConstantExprConverter (Expression * e) {
+	ConvertToT<ConstantExprConverter>(e);//this function is created because VC++ can't take the address of a template function and "know" its type...blame ole billyG
 }
 void FindConstantExpr (Statement * s) {
-    s->findExpr(ConvertToT<ConstantExprConverter>);
+	void (*tmp)(class Expression *) = &ConvertToTConstantExprConverter;
+    s->findExpr(tmp);
 }
 void RestoreTypes(BRTCPUKernelDef *cpuDef){
 	ArrayBlacklist.clear();
@@ -496,14 +515,14 @@ void RestoreTypes(BRTCPUKernelDef *cpuDef){
 }
 
 void compileCpp(BRTCPUKernelDef *cpuDef) {
-    cpuDef->findStemnt(FindMask);
+    cpuDef->findStemnt(&FindMask);
     RestoreTypes(cpuDef);
-    cpuDef->findStemnt (FindSwizzle);
+    cpuDef->findStemnt (&FindSwizzle);
     RestoreTypes(cpuDef);
-    cpuDef->findStemnt (FindQuestionColon);
+    cpuDef->findStemnt (&FindQuestionColon);
     RestoreTypes(cpuDef);
-    cpuDef->findStemnt (FindIndexExpr);
+    cpuDef->findStemnt (&FindIndexExpr);
     RestoreTypes(cpuDef);
-    cpuDef->findStemnt (FindConstantExpr);
+    cpuDef->findStemnt (&FindConstantExpr);
     RestoreTypes(cpuDef);
 }
