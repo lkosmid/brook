@@ -5,55 +5,37 @@
 
 #include <stdio.h>
 
-typedef struct Particle_t {
-	float3 position;
-	float3 velocity;
-} Particle;
+typedef struct Pair_t {
+  float first;
+  float second;
+} Pair;
 
-kernel void advanceParticles( Particle p<>, float t, float3 a, out Particle result<> )
-{
-	result.velocity = p.velocity + a*t;
-	result.position = p.position + p.velocity*t;
+kernel void sumPairs( Pair p<>, out float result<> ) {
+  result = p.first + p.second;
 }
 
 int main() {
+  Pair pairs< 100 >;
+  float output< 100 >;
+  Pair pairs_data[100];
+  float output_data[100];
+  int i;
 
-	Particle particles< 100 >;
-	Particle particles_data[100];
-	float timeDelta = 0.1f;
-	float3 acceleration = float3( 0, -9.8, 0 );
-	const char* format = "%6.2f ";
-	int i;
+  for( i = 0; i < 100; i++ )
+  {
+    pairs_data[i].first = (float)i;
+    pairs_data[i].second = (float)(i*100);
+  }
+
+  streamRead( pairs, pairs_data );
+  sumPairs( pairs, output );
+  streamWrite( output, output_data );
 	
 	for( i = 0; i < 100; i++ )
 	{
-		particles_data[i].position.x = 0.0f;
-		particles_data[i].position.y = (float)i;
-		particles_data[i].position.z = 0.0f;
-		particles_data[i].velocity.x = (float)i;
-		particles_data[i].velocity.y = 5.0f;
-		particles_data[i].velocity.z = (float)(-i);
-	}
-	
-	streamRead( particles, particles_data );
-	
-	for( i = 0; i < 10; i++ )
-	{
-		advanceParticles( particles, timeDelta, acceleration, particles );
-	}
-	
-	streamWrite( particles, particles_data );
-	
-	for( i = 0; i < 100; i++ )
-	{
-		printf( "{ " );
-		printf( format, particles_data[i].position.x );
-		printf( format, particles_data[i].position.y );
-		printf( format, particles_data[i].position.z );
-		printf( format, particles_data[i].velocity.x );
-		printf( format, particles_data[i].velocity.y );
-		printf( format, particles_data[i].velocity.z );
-		printf( "}\n" );
+		printf( "%6.1f ", output_data[i] );
+    if( i % 10 == 9 )
+      printf("\n");
 	}
 	
 	return 0;
