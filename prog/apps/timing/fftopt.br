@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "main.h"
 extern int debug_fft;
+extern float2 * data;
 kernel void mult_complex1(float2 a <>, float2 b <>, out float2 c <>)
 {
   c.x = a.x*b.x - a.y*b.y;
@@ -14,7 +15,7 @@ kernel void mult_complex2(float4 a <>, float2 b <>, out float4 c <>)
   c.yw = a.xz*b.yy + a.yw*b.xx;
 
 }
-#define DOTIMES 2
+extern int DOTIMES;
 kernel void DoDFTHorizontalInner (float2 r<>, 
                                   float2 t<>, 
                                   float2 W <>, 
@@ -196,21 +197,7 @@ void computeFFT2d(float2 *input,
 
 
 }
-static float2 * getData(int N, int M) {
-   int seed = 214098127;
-   int i,j;
-   float2 * ret;
-   ret = (float2*)malloc(N*M*sizeof(float2));
-   for (i=0;i<N;++i) {
-      for (j=0;j<M;++j) {
-         seed+=24101491;
-         ret[i*M+j]=float2((float)(seed%4096),0);
-         seed%=9420409;
-      }
-   }
-   return ret;
-}
-static float2 * data = getData(4096,4096);
+
 #define PrintResults(sstart, sstop, name) \
      printf("%9d    %6d        %6.2f        (* %s *)\\n", \
           M, (int) (sstop - sstart), \
@@ -231,11 +218,3 @@ void doOptFFT(int logN) {
    //FftwTransform2d(data,N,M,1,1);
 }
 
-void  doFFTW (int logN) {
-   int logM = logN;
-   int N = (1<<logN);
-   int M = (1<<logM);
-   //   float2 * output=0;
-   //   compute2dFFT(data,output,logN,logM,N,M,FFT_2D);
-   FftwTransform2d(data,N,M,1,1);
-}

@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include "main.h"
 extern int debug_fft;
+extern float2 * data;
 kernel void mult_complex(float2 a <>, float2 b <>, out float2 c <>)
 {
   c.x = a.x*b.x - a.y*b.y;
   c.y = a.x*b.y + a.y*b.x;
 
 }
-#define DOTIMES 2
+extern int DOTIMES;
+
 kernel void DoDFTHelper (float2 r<>, 
                          float2 t<>, 
                          float2 W <>, 
@@ -176,21 +178,6 @@ void compute2dFFT(float2 *input,
 
 
 }
-float2 * getData(int N, int M) {
-   int seed = 214098127;
-   int i,j;
-   float2 * ret;
-   ret = (float2*)malloc(N*M*sizeof(float2));
-   for (i=0;i<N;++i) {
-      for (j=0;j<M;++j) {
-         seed+=24101491;
-         ret[i*M+j]=float2((float)(seed%4096),0);
-         seed%=9420409;
-      }
-   }
-   return ret;
-}
-float2 * data = getData(4096,4096);
 #define PrintResults(sstart, sstop, name) \
      printf("%9d    %6d        %6.2f        (* %s *)\\n", \
           M, (int) (sstop - sstart), \
