@@ -147,7 +147,7 @@ GLStream::Write(void *data)
      
      glViewport (0, 0, width, height);
      
-     if (width == height == 1) {
+     if (width == 1 && height == 1) {
         glBegin(GL_TRIANGLES);
         glTexCoord2f(0.5f, 0.5f);
         glVertex2f(-1.0f, -1.0f);
