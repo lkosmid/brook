@@ -102,7 +102,7 @@ float myrand () {
    *seed = (*seed +26129357)%rand_max;
    if (*seed<(rand_max/2))
       return 1;
-   else return -1;
+   else return 0;
 }
 
 void readPPM3dSlice(const ppm &fp, 
