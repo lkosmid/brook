@@ -2,15 +2,17 @@
 #define FILEIO_H
 
 #include <stdio.h>
+#include <brook/brook.hpp>      /* For float3 */
+
 #include "Types.h"
 #include "HMatrix3.h"
 #include "Bitvector.h"
 
 typedef struct Grid {
    Tuple3i      dim;
-   Tuple3f      min;
-   Tuple3f      max;
-   Tuple3f      vsize;
+   float3       min;
+   float3       max;
+   float3       vsize;
 
    int          nTris;
 

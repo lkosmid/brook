@@ -1,0 +1,75 @@
+/* *************************************************************************
+ * Copyright (C) 2004 Jeremy Sugerman
+ * All Rights Reserved
+ * *************************************************************************/
+
+/*
+ * tracerays.brh --
+ *
+ *      Prototypes for the various kernels used by the raytracer
+ */
+
+#ifndef __TRACERAYS_BRHI__
+#define __TRACERAYS_BRHI__
+
+/*
+ * XXX I'm a bad person.  The struct definitions need to be visible here or
+ * brcc gets unhappy generating prototypes for struct based streams
+ * (reasonable).  However, I can't just have them here because they also
+ * need to be visible in C/C++ files, which can't parse pre-brcc kernel
+ * declarations.  Thus, they live in a separate file.
+ *
+ * However, it gets worse.  The .br file needs the types at the time brcc is
+ * run (for the same reason this file does), but then it's also going to get
+ * them post-brcc when the .cpp is compiled and then the compiler is going
+ * to complain about redefinition (even though the definitions haven't
+ * changed).  Hence this ugly dance.  I'm sorry.  --Jeremy.
+ */
+
+#define POUND   #
+POUND ifndef __STREAMTYPES_H__
+POUND define __STREAMTYPES_H__
+#include "streamTypes.h"
+POUND endif
+
+
+kernel void
+krnGenEyeRays(float3 lookfrom, float3 u, float3 v, float3 w,
+              float2 txty, float2 txty2, float3 grid_min, float3 grid_max,
+              float2 wpos_norm<>, out Ray ray<>);
+
+kernel void
+krnSetupTraversal(Ray ray<>,
+                  float3 grid_min, float3 grid_vsize, float3 grid_dim,
+                  out TraversalDataDyn travdatdyn<>,
+                  out TraversalDataStatic travdatstatic<>,
+                  out RayState raystate<>);
+
+kernel void
+krnTraverseVoxel(Ray ray<>, TraversalDataStatic travdatstatic<>,
+                 TraversalDataDyn travdatdynold<>, RayState oldraystate<>,
+                 GridTrilistOffset listoffset[], float3 grid_dim,
+                 out TraversalDataDyn travdatdyn<>, out RayState raystate<>);
+
+kernel void
+krnIntersectTriangle(Ray ray<>, Triangle tris[], RayState oldraystate<>,
+                     GridTrilist trilist[], out Hit candidatehit<>);
+
+kernel void
+krnValidateIntersection(Ray ray<>, Hit candidatehit<>,
+                        float3 grid_min, float3 grid_vsize, float3 grid_dim,
+                        Hit oldhit<>, TraversalDataDyn travdatdyn<>,
+                        RayState oldraystate<>, GridTrilist trilist[],
+                        out Hit hit<>, out RayState raystate<>);
+
+kernel void
+krnBruteIntersectTriangle(Ray ray<>, Triangle tris[], float idx,
+                          Hit oldhit<>,TraversalDataDyn travdatdyn<>,
+                          RayState oldraystate<>,
+                          out Hit hit<>, out RayState raystate<>);
+
+kernel void
+krnShadeHits(Ray ray<>, Hit hit<>, Triangle tris[],
+             ShadingInfo shadinf[], float3 pointlight,
+             RayState oldraystate<>, out Pixel pixel<>);
+#endif
