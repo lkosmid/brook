@@ -6,7 +6,7 @@ REGRESSIONDIRS := accumulate allocate constant convert_iter_to_stream \
 		  read_write reduce reduce_basic reducetostream \
 		  replication_stride struct_gather struct_input \
 		  struct_output sum toy scatter scan vout pack_vout \
-		  domain_streamreadwrite read_write_domain
+		  domain_streamreadwrite read_write_domain streamcopy
 
 
 #ifdef BRT_RUNTIME
