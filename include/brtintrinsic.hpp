@@ -224,7 +224,7 @@ inline float isinf_float (float x) {
 #endif
 }
   BININTRINSIC(atan2,atan2)
-  BININTRINSIC(fmod,fmodf)
+  BININTRINSIC(fmod,fmod)
   BININTRINSIC(pow,pow)
   UNINTRINSICMEMBER(any,any,__BrtFloat1);
   UNINTRINSICMEMBER(all,all,__BrtFloat1);
