@@ -6,9 +6,12 @@ endif
 BIN        := bin
 BUILT      := built
 INC        := include
+DEP        := depends
 BINDIR     := $(ROOTDIR)/$(BIN)
 OBJDIR 	   := $(BUILT)
 INCLUDEDIR := $(ROOTDIR)/$(INC)
+DEPDIR     := $(DEP)
+FASTDEPS   := $(ROOTDIR)/scripts/fastdep.pl
 
 ECHO	 := echo
 MKDIR    := mkdir
@@ -29,6 +32,9 @@ LDFLAGS   += $(LD_DEBUG_FLAG)
 OBJS      := $(addprefix $(OBJDIR)/, $(FILES))
 OBJS      := $(addsuffix $(OBJSUFFIX), $(OBJS))
 
+DEPS      := $(FILES)
+DEPS      := $(addprefix $(DEPDIR)/, $(DEPS))
+DEPS      := $(addsuffix .depend, $(DEPS))
 
 ifdef STATIC_LIBRARY
 BINARY_NAME := $(STATIC_LIBRARY)
@@ -51,12 +57,13 @@ endif
 endif
 endif
 
-ifndef SUBDIRS
-
-all: arch
-
+ifdef BINARY
+all: subdirs arch
 else
+all: subdirs
+endif
 
+##  Build subdirectories  ##
 SUBDIRS_ALL = $(foreach dir, $(SUBDIRS), $(dir).subdir)
 
 subdirs: $(SUBDIRS_ALL)
@@ -64,19 +71,39 @@ subdirs: $(SUBDIRS_ALL)
 $(SUBDIRS_ALL):
 	@$(MAKE) -C $(basename $@) --no-print-directory
 
-endif
+##  Build Binary ##
+arch: $(PRECOMP) makedirs dep
 
-FRAGMENT_PROGRAMS += $(addsuffix .fp, $(BROOK_FILES))
-FRAGMENT_PROGRAMS += $(addsuffix .fp, $(CG_FILES))
+recurse: $(BINDIR)/$(BINARY)
 
-arch: $(PRECOMP) makedirs $(BINDIR)/$(BINARY) $(FRAGMENT_PROGRAMS)
+dep: $(DEPS)
+	@$(MAKE) --no-print-directory recurse INCLUDEDEPS=1
 
+##  Make directories for build files ##
 makedirs:
 	@if test ! -d $(OBJDIR); then $(MKDIR) $(OBJDIR); fi
 	@if test ! -d $(BINDIR); then $(MKDIR) $(BINDIR); fi
+	@if test ! -d $(DEPDIR); then $(MKDIR) $(DEPDIR); fi
 
 .SUFFIXES : $(OBJSUFFIX) .c .cpp .br
 
+## Make dependencies
+$(DEPDIR)/%.depend: %.c
+	@$(MAKE_DEPDIR)
+	@$(ECHO) "Rebuilding dependencies for $<"
+	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
+
+$(DEPDIR)/%.depend: %.cpp
+	@$(MAKE_DEPDIR)
+	@$(ECHO) "Rebuilding dependencies for $<"
+	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
+
+## Include dependencies
+ifdef INCLUDEDEPS
+include $(DEPS)
+endif
+
+##  Compile .c files  ##
 $(OBJDIR)/%$(OBJSUFFIX): %.c
 ifndef COMPILER_ECHOS
 	@$(ECHO) $<
@@ -84,15 +111,21 @@ endif
 	$(CC) $(CFLAGS) $(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
 
+##  Compile .cpp files ##
 $(OBJDIR)/%$(OBJSUFFIX): %.cpp
 ifndef COMPILER_ECHOS
 	@$(ECHO) $<
 endif
 	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
-.br.c:
+
+##  Compile .br files ##
+.br.cpp:
+	@$(ECHO) $<
 	$(ROOTDIR)/bin/brcc$(BINSUFFIX) $<
 
+
+##  Link  ##
 $(BINDIR)/$(BINARY):  $(ADDITIONAL_DEPENDANCIES) $(OBJS)
 	@$(ECHO) Building $@
 ifdef STATIC_LIBRARY
@@ -102,16 +135,19 @@ else
 endif
 
 
+## Clean BRCC generated .cpp files ##
 BR_FILES_CLEAN   = $(addsuffix .br-clean, $(FILES))
-
 %.br-clean:
 	@if test -f $*.br; then rm -rf $*.c $*.h; fi	
 
+## Clean
 clean: $(BR_FILES_CLEAN)
 ifdef SUBDIRS
 	@for i in $(SUBDIRS); do $(MAKE) --no-print-directory -C $$i clean; done
-else
-	@rm -rf $(OBJDIR) $(BINDIR)/$(BINARY) $(SLOP) *.proto.cpp $(BINDIR)/$(BINARY_NAME).pdb *~ *MCTEMPFILE* $(FRAGMENT_PROGRAMS)
+endif
+ifdef BINARY
+	@rm -rf $(OBJDIR) $(BINDIR)/$(BINARY) $(SLOP) 
+	@rm -rf $(BINDIR)/$(BINARY_NAME).pdb *~ $(DEPDIR)
 endif
 
 ifndef VERBOSE

@@ -5,6 +5,7 @@ COMPILER_ECHOS   := 1
 CC               := cl
 LD               := link
 AR               := lib
+PERL             := perl
 OBJSUFFIX        := .obj
 LIBPREFIX        := 
 SHARED_LIBSUFFIX := .dll

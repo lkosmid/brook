@@ -3,6 +3,7 @@
 CC               := g++ 
 LD               := g++
 AR               := ar
+PERL             := perl
 OBJSUFFIX        := .o
 LIBPREFIX        := lib
 SHARED_LIBSUFFIX := .so
