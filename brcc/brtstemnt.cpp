@@ -269,12 +269,29 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    std::set<unsigned int >::iterator endvout
       = voutFunctions[FunctionName()->name].end();
    std::set<unsigned int >::iterator iter;
+   std::set<unsigned int >::iterator inneriter;
+   bool limited_vout=false;
+   unsigned int limited_vout_counter=0;
+   unsigned int numlimits=0;
+   for (iter = beginvout;iter!=endvout;++iter) {
+      Decl * decl = ft->args[*iter];
+      Expression * vout_limit = decl->form->getQualifiers().vout;
+      if (vout_limit) {
+         if (limited_vout||beginvout==iter) {
+            limited_vout=true;
+            numlimits++;
+         }
+         else
+            limited_vout=false;
+      }         
+   }
    
    for (iter = beginvout;iter!=endvout;++iter) {
       Decl * decl = ft->args[*iter];
       Expression * vout_limit = decl->form->getQualifiers().vout;
       
       if (vout_limit) {
+        if (limited_vout_counter==0) out << "     if (";
         bool useparen=(vout_limit->precedence() < 
                        RelExpr(RO_Less,
                                NULL,
@@ -282,16 +299,25 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
                                vout_limit->location).precedence());
         // the above is a simple check for the common expressions.
         // no need to get fancy here for parens are ok in this case.
-        out <<"    if (__vout_counter >= ";
+        out <<"(__vout_counter >= ";
         if (useparen) out << "(";
         vout_limit->print(out);
         if (useparen) out << ")";
-        out <<") {"<<std::endl;
-        out <<"      ";
-        out <<getDeclStream(decl,"_outputs")<<".push_back(0);"<<std::endl;
-        out <<"      ";
-        out <<"break;"<<std::endl;
-        out <<"    }"<<std::endl;
+        out << ")";
+        limited_vout_counter++;
+        if (limited_vout_counter==numlimits) {
+           out <<") {"<<std::endl;
+           for (inneriter = beginvout;inneriter!=endvout;++inneriter) {
+              Decl * decl = ft->args[*inneriter];
+              out <<"      ";
+              out <<getDeclStream(decl,"_outputs")<<".push_back(0);"<<std::endl;
+           }
+           out <<"      ";              
+           out <<"break;"<<std::endl;
+           out <<"    }"<<std::endl;
+        }else {
+           out << "&&";
+        }
       }else {
          out << "    "<<getDeclStream(decl,"_values")<< " = ";
 

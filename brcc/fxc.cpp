@@ -134,13 +134,14 @@ compile_fxc (const char *shader, CodeGenTarget target, ShaderResourceUsage* outU
     const char* instructionLine = strstr( comments, "// approximately" );
     assert( instructionLine );
 
+	const char* nextLine = strstr( instructionLine, "\n" );
     const char* textureCount = strstr( instructionLine, "(" );
-    if( textureCount )
+    if( (textureCount && !nextLine) || (textureCount && textureCount < nextLine) )
     {
       textureCount += strlen("(");
 
       const char* arithmeticCount = strstr( textureCount, ", " );
-      assert( arithmeticCount );
+      //assert( arithmeticCount );
       arithmeticCount += strlen(", ");
 
       outUsage->arithmeticInstructionCount = atoi( arithmeticCount );
