@@ -1,3 +1,4 @@
+128 repetitions
 fixed w/ 1 gath of 65536 vals: 0.066000 s BW 484.85 Mbytes/s
 fixed w/ 2 gath of 65536 vals: 0.135000 s BW 355.56 Mbytes/s
 fixed w/ 3 gath of 65536 vals: 0.212000 s BW 301.89 Mbytes/s
