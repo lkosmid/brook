@@ -1768,6 +1768,11 @@ CodeGen_GenerateCode(Type *retType, const char *name,
   {
     generateReductionTechniques( args, nArgs, name, target, true, techniques );
     generateReductionTechniques( args, nArgs, name, target, false, techniques );
+    
+    //TIM: huge hack to get a not address-trans version available
+    globals.enableGPUAddressTranslation = false;
+    generateReductionTechniques( args, nArgs, name, target, false, techniques );
+    globals.enableGPUAddressTranslation = true;
 
   }
   else

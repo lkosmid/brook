@@ -49,6 +49,7 @@ namespace brook {
         unsigned int getTextureWidth() const {return _textureWidth; }
         unsigned int getTextureHeight() const {return _textureHeight; }
         const unsigned int* getReversedExtents() const { return &_reversedExtents[0]; }
+        bool requiresAddressTranslation() const { return _requiresAddressTranslation; }
 
         void getOutputRegion(
             const unsigned int* inDomainMin,
@@ -196,6 +197,10 @@ namespace brook {
             return _data->getReversedExtents();
         }
 
+        bool requiresAddressTranslation() const {
+            return _data->requiresAddressTranslation();
+        }
+
         void getOutputRegion( GPURegion& outRegion );
 
         void getStreamInterpolant( unsigned int _textureWidth,
@@ -214,100 +219,6 @@ namespace brook {
         unsigned int _domainMin[kMaximumRank];
         unsigned int _domainMax[kMaximumRank];
     };
-
-  /* TIM: must be split... */
-#if 0
-  class GPUStream : public Stream {
-  public:
-    typedef GPUContext::TextureFormat TextureFormat;
-    typedef GPUContext::TextureHandle TextureHandle;
-
-    static GPUStream* create( GPURuntime* inRuntime,
-                              unsigned int inFieldCount, 
-                              const StreamType inFieldTypes[],
-                              unsigned int inDimensionCount, 
-                              const unsigned int inExtents[] );
-
-    virtual void Read( const void* inData );
-    virtual void Write( void* outData );
-    virtual Stream* Domain(int min, int max);
-    virtual Stream* Domain(const int2& min, const int2& max);
-    virtual Stream* Domain(const int3& min, const int3& max);
-    virtual Stream* Domain(const int4& min, const int4& max);
-
-    virtual void* getData (unsigned int flags);
-    virtual void releaseData(unsigned int flags);
-
-    virtual const unsigned int* getExtents() const { return &_extents[0]; }
-    virtual unsigned int getDimension() const { return _rank; }
-    virtual unsigned int getTotalSize() const { return _totalSize; }
-    virtual unsigned int getFieldCount() const { return _fields.size(); }
-    virtual StreamType getIndexedFieldType(unsigned int i) const {
-      return _fields[i].elementType;
-    }
-
-    void getDefaultInterpolant(GPUInterpolant &interpolant) const {
-      interpolant = _defaultInterpolant;
-    }
-
-    void getOutputRegion(GPURegion &region) const {
-      region = _outputRegion;
-    }
-
-    void getStreamInterpolant (unsigned int _textureWidth,
-                               unsigned int _textureHeight,
-                               GPUInterpolant &_interpolant);
-
-    TextureHandle getIndexedFieldTexture( size_t inIndex );
-
-    float4 getIndexofConstant() const { return _indexofConstant; }
-    float4 getGatherConstant() const { return _gatherConstant; }
-
-    unsigned int getWidth() const {return _textureWidth; }
-    unsigned int getHeight() const {return _textureHeight; }
-
-  private:
-    GPUStream( GPURuntime* inRuntime );
-    bool initialize(
-      unsigned int inFieldCount, const StreamType inFieldTypes[],
-      unsigned int inDimensionCount, const unsigned int inExtents[] );
-    virtual ~GPUStream ();
-
-    class Field
-    {
-    public:
-      Field( StreamType inElementType, 
-             unsigned int inComponentCount, 
-             TextureHandle inTexture )
-        : elementType(inElementType), componentCount(inComponentCount), 
-          texture(inTexture)
-      {}
-
-      StreamType elementType;
-      unsigned int componentCount;
-      TextureHandle texture;
-    };
-
-    GPURuntime* _runtime;
-    GPUContext* _context;
-
-    unsigned int _rank;
-    unsigned int _totalSize;
-    std::vector<unsigned int> _extents;
-    std::vector<unsigned int> _reversedExtents;
-    std::vector<Field> _fields;
-
-    unsigned int _textureWidth, _textureHeight;
-
-    GPUInterpolant _defaultInterpolant;
-    GPURegion      _outputRegion;
-    float4         _indexofConstant;
-    float4         _gatherConstant;
-
-    size_t _cpuDataSize;
-    void* _cpuData;
-  };
-#endif
 
 }
 

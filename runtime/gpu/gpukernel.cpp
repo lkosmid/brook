@@ -213,11 +213,57 @@ namespace brook
     unsigned int outRank = outputStream->getRank();
     const unsigned int* outReversed = outputStream->getReversedExtents();
 
-    bool requiresOutputAddressTranslation = false;
+    bool requiresBaseAddressTranslation = false;
     bool requiresInputAddressTranslation = false;
 
+    if( outputStream->requiresAddressTranslation() )
+        requiresBaseAddressTranslation = true;
+
+    size_t arg;
+
+    size_t streamArgumentCount = _streamArguments.size();
+    for( arg = 0; arg < streamArgumentCount; arg++ )
+    {
+        GPUStream* stream = _streamArguments[arg];
+        bool mismatch = stream->requiresAddressTranslation();
+
+        if( !mismatch )
+        {
+            unsigned int rank = stream->getRank();
+            if( rank != outRank )
+                mismatch = true;
+
+            if( !mismatch )
+            {
+                for( unsigned int r = 0; r < rank; r++ )
+                {
+                    unsigned int extent = stream->getExtents()[r];
+                    unsigned int outExtent = outputStream->getExtents()[r];
+                    if( extent != outExtent )
+                        mismatch = true;
+                }
+            }
+        }
+
+        if( mismatch )
+        {
+            requiresBaseAddressTranslation = true;
+            requiresInputAddressTranslation = true;
+            break;
+        }
+    }
+    size_t gatherArgumentCount = _gatherArguments.size();
+    for( arg = 0; arg < gatherArgumentCount; arg++ )
+    {
+        if( _gatherArguments[arg]->requiresAddressTranslation() )
+        {
+            requiresBaseAddressTranslation = true;
+            break;
+        }
+    }
+
     bool requiresAddressTranslation =
-        requiresOutputAddressTranslation || requiresInputAddressTranslation;
+        requiresBaseAddressTranslation || requiresInputAddressTranslation;
     if( requiresAddressTranslation )
     {
         // set up additional "global" constants/interpolants
@@ -279,16 +325,23 @@ namespace brook
     for( size_t t = 0; t < techniqueCount && !done; t++ )
       {
         Technique& technique = _techniques[t];
-        if( technique.inputAddressTranslation == false )
-          {
-            _context->beginScene();
-            
-            executeTechnique( technique );
-            
-            _context->endScene();
-            
-            done = true;
-          }
+
+        bool techniqueTrans = technique.outputAddressTranslation || technique.inputAddressTranslation;
+        bool techniqueInputTrans = technique.inputAddressTranslation;
+
+        if( requiresAddressTranslation != techniqueTrans )
+            continue;
+
+        if( requiresInputAddressTranslation != techniqueInputTrans )
+            continue;
+
+        _context->beginScene();
+        
+        executeTechnique( technique );
+        
+        _context->endScene();
+        
+        done = true;
       }
     if( !done )
       GPUAssert( false, "No appropriate map technique found" );
