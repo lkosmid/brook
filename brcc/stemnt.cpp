@@ -304,6 +304,10 @@ Statement::dup0() const
 void
 Statement::print(std::ostream& out, int level) const
 {
+
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* Statement:" ;
@@ -594,6 +598,9 @@ IfStemnt::dup0() const
 void
 IfStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* IfStemnt:" ;
@@ -681,6 +688,9 @@ SwitchStemnt::dup0() const
 void
 SwitchStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* SwitchStemnt:" ;
@@ -759,6 +769,9 @@ ForStemnt::dup0() const
 void
 ForStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* ForStemnt:" ;
@@ -855,6 +868,9 @@ WhileStemnt::dup0() const
 void
 WhileStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* WhileStemnt:" ;
@@ -930,6 +946,9 @@ DoWhileStemnt::dup0() const
 void
 DoWhileStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* DoWhileStemnt:" ;
@@ -1010,6 +1029,9 @@ GotoStemnt::dup0() const
 void
 GotoStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* GotoStemnt:" ;
@@ -1055,6 +1077,9 @@ ReturnStemnt::dup0() const
 void
 ReturnStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* ReturnStemnt:" ;
@@ -1186,6 +1211,9 @@ DeclStemnt::convertToTypedef()
 void
 DeclStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* DeclStemnt:" ;
@@ -1254,6 +1282,9 @@ TypedefStemnt::~TypedefStemnt()
 void
 TypedefStemnt::print(std::ostream& out, int level) const
 {
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* TypedefStemnt:" ;
@@ -1378,6 +1409,9 @@ Block::print(std::ostream& out, int level) const
 {
     bool       isDecl;
     Statement *stemnt;
+
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
 
     if (Project::gDebug)
     {
@@ -1524,6 +1558,10 @@ FunctionDef::dup0() const
 void
 FunctionDef::print(std::ostream& out, int) const
 {
+
+   if (globals.printLineDirectives) 
+      location.printLineDirective(out);
+
     if (Project::gDebug)
     {
         out << "/* FunctionDef:" ;

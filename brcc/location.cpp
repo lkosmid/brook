@@ -55,7 +55,12 @@ Location::printLocation(std::ostream& p) const
 void
 Location::printLineDirective(std::ostream& p) const
 {
-   p << "#line " << line << " \"" << file << "\"" << std::endl;
+
+   // IAN:  I'm really not sure if we want line or line+1
+   // experimentally on Windows, line+1 seems to work right
+   // in vis studio but more work is needed here...
+   p << std::endl << "#line " << line+1 
+     << " \"" << file << "\"" << std::endl;
 }
 
 
