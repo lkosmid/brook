@@ -7,13 +7,17 @@ public:
 	__ConstXSpecified(const __BrtArray<VALUE,dims,copy_data> *const parent):parent(parent) {
 		indices[dims]=0;		
 	}
+	/* nightmare returns
+	typedef typename GetValueOf<VALUE>::type TYPE;	
+	TYPE getAt(unsigned int i) const{ return GetAt((VALUE)*this,i);}
+	*/
 	template <class T> __ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
 		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
 			indices[indices[dims]++]=(int)a.getAt(i);
 		}
 		return *this;
 	}
-	
+	const VALUE& cast()const;
 	operator VALUE () const;
 };
 template <class VALUE, unsigned int dims, bool copy_data> class __XSpecified {
@@ -30,7 +34,12 @@ public:
 		}
 		return *this;
 	}
+/* nightmare	
+	typedef typename GetValueOf<VALUE>::type TYPE;	
+	TYPE getAt(unsigned int i)const { return GetAt((VALUE)*this,i);}
+*/
 	operator VALUE () const;
+	VALUE& cast()const;	
 	VALUE &operator =  (const VALUE &f)const;
 	VALUE &operator += (const VALUE &f)const;
 	VALUE &operator *= (const VALUE &f)const;
@@ -90,10 +99,10 @@ public:
 		}
 		return total;
 	}
-	VALUE get(const unsigned int * indices)const {
+	const VALUE &get(const unsigned int * indices)const {
 		return data[this->linearaddresscalc(indices)];
 	}
-	VALUE&get (const unsigned int *indices) {
+	VALUE& get (const unsigned int *indices) {
 		return data[this->linearaddresscalc(indices)];
 	}
 	template <class T> __ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &i) const{
@@ -111,6 +120,12 @@ template <class VALUE, unsigned int dims, bool copy_data> __XSpecified<VALUE,dim
 	return parent->get(indices);
 }
 template <class VALUE, unsigned int dims, bool copy_data> __ConstXSpecified<VALUE,dims,copy_data>::operator VALUE ()const {
+	return parent->get(indices);
+}
+template <class VALUE, unsigned int dims, bool copy_data> VALUE &__XSpecified<VALUE,dims,copy_data>::cast ()const {
+	return parent->get(indices);
+}
+template <class VALUE, unsigned int dims, bool copy_data> const VALUE & __ConstXSpecified<VALUE,dims,copy_data>::cast ()const {
 	return parent->get(indices);
 }
 

@@ -1,13 +1,13 @@
 #include <iostream>
 #include <math.h>
  
-template <class T, class B> T singlequestioncolon (const B& a, const T&b, const T&c){
+template <class T, class B> static T singlequestioncolon (const B& a, const T&b, const T&c){
 	return a.questioncolon(b,c);
 };
-template <> float singlequestioncolon (const char & a, const float &b, const float&c) {
+template <> static float singlequestioncolon (const char & a, const float &b, const float&c) {
 	return a?b:c;
 }
-template <> float singlequestioncolon (const float & a, const float &b, const float&c) {
+template <> static float singlequestioncolon (const float & a, const float &b, const float&c) {
 	return a?b:c;
 }
 
@@ -85,19 +85,19 @@ template <> class GetValueOf <int> {public:
 template <> class GetValueOf <char> {public:
 	typedef char type;
 };
-template <class T> typename GetValueOf<T>::type GetAt (const T & in,int i) {
+template <class T> static typename GetValueOf<T>::type GetAt (const T & in,int i) {
 	return in.getAt(i);
 }
-template <> float GetAt (const float & in, int i) {
+template <> static float GetAt (const float & in, int i) {
 	return in;
 }
-template <> double GetAt (const double & in, int i) {
+template <> static double GetAt (const double & in, int i) {
 	return in;
 }
-template <> char GetAt(const char & in, int i) {
+template <> static char GetAt(const char & in, int i) {
 	return in;
 }
-template <> int GetAt(const int & in, int i) {
+template <> static int GetAt(const int & in, int i) {
 	return in;
 }
 class MaskX {public:
@@ -122,6 +122,9 @@ template <class T> class InitializeClass {public:
 		return T(a,b,c,d);
 	}
 };
+template <> class InitializeClass<bool> {public:
+	template <class V> float operator () (const V&a, const V&b, const V&c, const V&d) {return a;}
+};
 template <> class InitializeClass<float> {public:
 	template <class V> float operator () (const V&a, const V&b, const V&c, const V&d) {return a;}
 };
@@ -129,10 +132,10 @@ template <> class InitializeClass<double> {public:
 	template <class V> double operator () (const V&a, const V&b, const V&c, const V&d) {return a;}
 };
 template <> class InitializeClass<int> {public:
-	template <class V> int operator () (const V&a, const V&b, const V&c, const V&d) {return a;}
+	template <class V> int operator () (const V&a, const V&b, const V&c, const V&d) {return (int)a;}
 };
 template <> class InitializeClass<char> {public:
-	template <class V> char operator () (const V&a, const V&b, const V&c, const V&d) {return a;}
+	template <class V> char operator () (const V&a, const V&b, const V&c, const V&d) {return (char)a;}
 };
 
 
