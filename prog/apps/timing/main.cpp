@@ -42,6 +42,7 @@ static const struct timingEntry tests[] = {
    { "fftslow", doFFT },
    { "fft",     doOptFFT },
    { "fftw",    doFFTW },
+   { "fft1d",   fft1d},
    { "red",     Reduction_Time}
 };
 static const int numTests = sizeof tests / sizeof tests[0];

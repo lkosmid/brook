@@ -37,7 +37,7 @@ brook::stream &getW(int k, int N, bool vertical) {
    if (rawW==rawWstream.end()) {
       rW = new float2 [N/2];
       for (int i=0;i<N/2;++i) {
-         float theta = 2*3.1415926536*i/N;
+         float theta = (float)(2*3.1415926536*i/N);
          rW[i].x=cos(theta);
          rW[i].y=sin(theta);
       }
