@@ -309,8 +309,9 @@ float * bitReversedIndices (int logN) {
   int i,N = (1<< logN);
   float * s_array;
   s_array = (float*)calloc(N,sizeof(float));
-  for (i=0;i<N;++i) {
-    s_array[i]=(float)BitReverse(i,logN);
+  s_array[0]=0;
+  for (i=1;i<N;++i) {
+    s_array[i]=(float)BitReverse(N-i,logN);
   }
   return s_array;
 }
