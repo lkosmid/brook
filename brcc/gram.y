@@ -2199,6 +2199,10 @@ dimension_constraint:  constant
         {
             $$ = $1;
         }
+          | LPAREN expr RPAREN
+        {
+           $$ = $2;
+        }
           | ident
         { 
             $$ = new Variable ($1,NoLocation);
