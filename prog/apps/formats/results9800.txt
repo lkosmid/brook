@@ -1,97 +1,96 @@
-128 repetitions
-fixed w/ 1 gath of 65536 vals: 0.066000 s BW 484.85 Mbytes/s
-fixed w/ 2 gath of 65536 vals: 0.135000 s BW 355.56 Mbytes/s
-fixed w/ 3 gath of 65536 vals: 0.212000 s BW 301.89 Mbytes/s
-fixed w/ 4 gath of 65536 vals: 0.300000 s BW 266.67 Mbytes/s
-fixed w/ 5 gath of 65536 vals: 0.399000 s BW 240.60 Mbytes/s
-fixed w/ 6 gath of 65536 vals: 0.510000 s BW 219.61 Mbytes/s
-fixed w/ 7 gath of 65536 vals: 0.632000 s BW 202.53 Mbytes/s
-fixed w/ 8 gath of 65536 vals: 0.764000 s BW 188.48 Mbytes/s
-fixed2 w/ 1 gath of 65536 vals: 0.067000 s BW 1910.45 Mbytes/s
-fixed2 w/ 2 gath of 65536 vals: 0.145000 s BW 1324.14 Mbytes/s
-fixed2 w/ 3 gath of 65536 vals: 0.234000 s BW 1094.02 Mbytes/s
-fixed2 w/ 4 gath of 65536 vals: 0.341000 s BW 938.42 Mbytes/s
-fixed2 w/ 5 gath of 65536 vals: 0.463000 s BW 829.37 Mbytes/s
-fixed2 w/ 6 gath of 65536 vals: 0.602000 s BW 744.19 Mbytes/s
-fixed2 w/ 7 gath of 65536 vals: 0.763000 s BW 671.04 Mbytes/s
-fixed2 w/ 8 gath of 65536 vals: 0.945000 s BW 609.52 Mbytes/s
-fixed3 w/ 1 gath of 65536 vals: 0.069000 s BW 1855.07 Mbytes/s
-fixed3 w/ 2 gath of 65536 vals: 0.151000 s BW 1271.52 Mbytes/s
-fixed3 w/ 3 gath of 65536 vals: 0.248000 s BW 1032.26 Mbytes/s
-fixed3 w/ 4 gath of 65536 vals: 0.364000 s BW 879.12 Mbytes/s
-fixed3 w/ 5 gath of 65536 vals: 0.506000 s BW 758.89 Mbytes/s
-fixed3 w/ 6 gath of 65536 vals: 0.674000 s BW 664.69 Mbytes/s
-fixed3 w/ 7 gath of 65536 vals: 0.868000 s BW 589.86 Mbytes/s
-fixed3 w/ 8 gath of 65536 vals: 1.084000 s BW 531.37 Mbytes/s
-fixed4 w/ 1 gath of 65536 vals: 0.069000 s BW 1855.07 Mbytes/s
-fixed4 w/ 2 gath of 65536 vals: 0.151000 s BW 1271.52 Mbytes/s
-fixed4 w/ 3 gath of 65536 vals: 0.248000 s BW 1032.26 Mbytes/s
-fixed4 w/ 4 gath of 65536 vals: 0.364000 s BW 879.12 Mbytes/s
-fixed4 w/ 5 gath of 65536 vals: 0.506000 s BW 758.89 Mbytes/s
-fixed4 w/ 6 gath of 65536 vals: 0.674000 s BW 664.69 Mbytes/s
-fixed4 w/ 7 gath of 65536 vals: 0.867000 s BW 590.54 Mbytes/s
-fixed4 w/ 8 gath of 65536 vals: 1.084000 s BW 531.37 Mbytes/s
-shortfixed w/ 1 gath of 65536 vals: 0.067000 s BW 955.22 Mbytes/s
-shortfixed w/ 2 gath of 65536 vals: 0.144000 s BW 666.67 Mbytes/s
-shortfixed w/ 3 gath of 65536 vals: 0.234000 s BW 547.01 Mbytes/s
-shortfixed w/ 4 gath of 65536 vals: 0.340000 s BW 470.59 Mbytes/s
-shortfixed w/ 5 gath of 65536 vals: 0.462000 s BW 415.58 Mbytes/s
-shortfixed w/ 6 gath of 65536 vals: 0.601000 s BW 372.71 Mbytes/s
-shortfixed w/ 7 gath of 65536 vals: 0.761000 s BW 336.40 Mbytes/s
-shortfixed w/ 8 gath of 65536 vals: 0.943000 s BW 305.41 Mbytes/s
-shortfixed2 w/ 1 gath of 65536 vals: 0.069000 s BW 3710.14 Mbytes/s
-shortfixed2 w/ 2 gath of 65536 vals: 0.150000 s BW 2560.00 Mbytes/s
-shortfixed2 w/ 3 gath of 65536 vals: 0.247000 s BW 2072.87 Mbytes/s
-shortfixed2 w/ 4 gath of 65536 vals: 0.364000 s BW 1758.24 Mbytes/s
-shortfixed2 w/ 5 gath of 65536 vals: 0.506000 s BW 1517.79 Mbytes/s
-shortfixed2 w/ 6 gath of 65536 vals: 0.675000 s BW 1327.41 Mbytes/s
-shortfixed2 w/ 7 gath of 65536 vals: 0.869000 s BW 1178.37 Mbytes/s
-shortfixed2 w/ 8 gath of 65536 vals: 1.086000 s BW 1060.77 Mbytes/s
-shortfixed3 w/ 1 gath of 65536 vals: 0.071000 s BW 3605.63 Mbytes/s
-shortfixed3 w/ 2 gath of 65536 vals: 0.156000 s BW 2461.54 Mbytes/s
-shortfixed3 w/ 3 gath of 65536 vals: 0.270000 s BW 1896.30 Mbytes/s
-shortfixed3 w/ 4 gath of 65536 vals: 0.409000 s BW 1564.79 Mbytes/s
-shortfixed3 w/ 5 gath of 65536 vals: 0.576000 s BW 1333.33 Mbytes/s
-shortfixed3 w/ 6 gath of 65536 vals: 0.770000 s BW 1163.64 Mbytes/s
-shortfixed3 w/ 7 gath of 65536 vals: 0.992000 s BW 1032.26 Mbytes/s
-shortfixed3 w/ 8 gath of 65536 vals: 1.241000 s BW 928.28 Mbytes/s
-shortfixed4 w/ 1 gath of 65536 vals: 0.072000 s BW 3555.56 Mbytes/s
-shortfixed4 w/ 2 gath of 65536 vals: 0.157000 s BW 2445.86 Mbytes/s
-shortfixed4 w/ 3 gath of 65536 vals: 0.271000 s BW 1889.30 Mbytes/s
-shortfixed4 w/ 4 gath of 65536 vals: 0.409000 s BW 1564.79 Mbytes/s
-shortfixed4 w/ 5 gath of 65536 vals: 0.576000 s BW 1333.33 Mbytes/s
-shortfixed4 w/ 6 gath of 65536 vals: 0.769000 s BW 1165.15 Mbytes/s
-shortfixed4 w/ 7 gath of 65536 vals: 0.992000 s BW 1032.26 Mbytes/s
-shortfixed4 w/ 8 gath of 65536 vals: 1.242000 s BW 927.54 Mbytes/s
-float w/ 1 gath of 65536 vals: 0.069000 s BW 1855.07 Mbytes/s
-float w/ 2 gath of 65536 vals: 0.149000 s BW 1288.59 Mbytes/s
-float w/ 3 gath of 65536 vals: 0.247000 s BW 1036.44 Mbytes/s
-float w/ 4 gath of 65536 vals: 0.363000 s BW 881.54 Mbytes/s
-float w/ 5 gath of 65536 vals: 0.505000 s BW 760.40 Mbytes/s
-float w/ 6 gath of 65536 vals: 0.673000 s BW 665.68 Mbytes/s
-float w/ 7 gath of 65536 vals: 0.867000 s BW 590.54 Mbytes/s
-float w/ 8 gath of 65536 vals: 1.083000 s BW 531.86 Mbytes/s
-float2 w/ 1 gath of 65536 vals: 0.085000 s BW 3011.76 Mbytes/s
-float2 w/ 2 gath of 65536 vals: 0.203000 s BW 1891.63 Mbytes/s
-float2 w/ 3 gath of 65536 vals: 0.358000 s BW 1430.17 Mbytes/s
-float2 w/ 4 gath of 65536 vals: 0.555000 s BW 1153.15 Mbytes/s
-float2 w/ 5 gath of 65536 vals: 0.789000 s BW 973.38 Mbytes/s
-float2 w/ 6 gath of 65536 vals: 1.067000 s BW 839.74 Mbytes/s
-float2 w/ 7 gath of 65536 vals: 1.386000 s BW 738.82 Mbytes/s
-float2 w/ 8 gath of 65536 vals: 1.743000 s BW 660.93 Mbytes/s
-float3 w/ 1 gath of 65536 vals: 0.086000 s BW 4465.12 Mbytes/s
-float3 w/ 2 gath of 65536 vals: 0.203000 s BW 2837.44 Mbytes/s
-float3 w/ 3 gath of 65536 vals: 0.358000 s BW 2145.25 Mbytes/s
-float3 w/ 4 gath of 65536 vals: 0.555000 s BW 1729.73 Mbytes/s
-float3 w/ 5 gath of 65536 vals: 0.789000 s BW 1460.08 Mbytes/s
-float3 w/ 6 gath of 65536 vals: 1.066000 s BW 1260.79 Mbytes/s
-float3 w/ 7 gath of 65536 vals: 1.384000 s BW 1109.83 Mbytes/s
-float3 w/ 8 gath of 65536 vals: 1.740000 s BW 993.10 Mbytes/s
-float4 w/ 1 gath of 65536 vals: 0.085000 s BW 6023.53 Mbytes/s
-float4 w/ 2 gath of 65536 vals: 0.202000 s BW 3801.98 Mbytes/s
-float4 w/ 3 gath of 65536 vals: 0.357000 s BW 2868.35 Mbytes/s
-float4 w/ 4 gath of 65536 vals: 0.554000 s BW 2310.47 Mbytes/s
-float4 w/ 5 gath of 65536 vals: 0.788000 s BW 1949.24 Mbytes/s
-float4 w/ 6 gath of 65536 vals: 1.066000 s BW 1681.05 Mbytes/s
-float4 w/ 7 gath of 65536 vals: 1.383000 s BW 1480.84 Mbytes/s
-float4 w/ 8 gath of 65536 vals: 1.739000 s BW 1324.90 Mbytes/s
+fixed w/ 1 rd of 65536 #'s 256 reps: 0.066000 sec 484.85 Mbytes/s
+fixed w/ 2 rd of 65536 #'s 256 reps: 0.135000 sec 355.56 Mbytes/s
+fixed w/ 3 rd of 65536 #'s 256 reps: 0.212000 sec 301.89 Mbytes/s
+fixed w/ 4 rd of 65536 #'s 256 reps: 0.300000 sec 266.67 Mbytes/s
+fixed w/ 5 rd of 65536 #'s 256 reps: 0.400000 sec 240.00 Mbytes/s
+fixed w/ 6 rd of 65536 #'s 256 reps: 0.510000 sec 219.61 Mbytes/s
+fixed w/ 7 rd of 65536 #'s 256 reps: 0.632000 sec 202.53 Mbytes/s
+fixed w/ 8 rd of 65536 #'s 256 reps: 0.764000 sec 188.48 Mbytes/s
+fixed2 w/ 1 rd of 65536 #'s 256 reps: 0.067000 sec 1910.45 Mbytes/s
+fixed2 w/ 2 rd of 65536 #'s 256 reps: 0.144000 sec 1333.33 Mbytes/s
+fixed2 w/ 3 rd of 65536 #'s 256 reps: 0.233000 sec 1098.71 Mbytes/s
+fixed2 w/ 4 rd of 65536 #'s 256 reps: 0.340000 sec 941.18 Mbytes/s
+fixed2 w/ 5 rd of 65536 #'s 256 reps: 0.462000 sec 831.17 Mbytes/s
+fixed2 w/ 6 rd of 65536 #'s 256 reps: 0.602000 sec 744.19 Mbytes/s
+fixed2 w/ 7 rd of 65536 #'s 256 reps: 0.763000 sec 671.04 Mbytes/s
+fixed2 w/ 8 rd of 65536 #'s 256 reps: 0.945000 sec 609.52 Mbytes/s
+fixed3 w/ 1 rd of 65536 #'s 256 reps: 0.069000 sec 1855.07 Mbytes/s
+fixed3 w/ 2 rd of 65536 #'s 256 reps: 0.150000 sec 1280.00 Mbytes/s
+fixed3 w/ 3 rd of 65536 #'s 256 reps: 0.248000 sec 1032.26 Mbytes/s
+fixed3 w/ 4 rd of 65536 #'s 256 reps: 0.364000 sec 879.12 Mbytes/s
+fixed3 w/ 5 rd of 65536 #'s 256 reps: 0.505000 sec 760.40 Mbytes/s
+fixed3 w/ 6 rd of 65536 #'s 256 reps: 0.674000 sec 664.69 Mbytes/s
+fixed3 w/ 7 rd of 65536 #'s 256 reps: 0.867000 sec 590.54 Mbytes/s
+fixed3 w/ 8 rd of 65536 #'s 256 reps: 1.084000 sec 531.37 Mbytes/s
+fixed4 w/ 1 rd of 65536 #'s 256 reps: 0.069000 sec 1855.07 Mbytes/s
+fixed4 w/ 2 rd of 65536 #'s 256 reps: 0.151000 sec 1271.52 Mbytes/s
+fixed4 w/ 3 rd of 65536 #'s 256 reps: 0.248000 sec 1032.26 Mbytes/s
+fixed4 w/ 4 rd of 65536 #'s 256 reps: 0.364000 sec 879.12 Mbytes/s
+fixed4 w/ 5 rd of 65536 #'s 256 reps: 0.505000 sec 760.40 Mbytes/s
+fixed4 w/ 6 rd of 65536 #'s 256 reps: 0.674000 sec 664.69 Mbytes/s
+fixed4 w/ 7 rd of 65536 #'s 256 reps: 0.868000 sec 589.86 Mbytes/s
+fixed4 w/ 8 rd of 65536 #'s 256 reps: 1.084000 sec 531.37 Mbytes/s
+shortfixed w/ 1 rd of 65536 #'s 256 reps: 0.067000 sec 955.22 Mbytes/s
+shortfixed w/ 2 rd of 65536 #'s 256 reps: 0.144000 sec 666.67 Mbytes/s
+shortfixed w/ 3 rd of 65536 #'s 256 reps: 0.234000 sec 547.01 Mbytes/s
+shortfixed w/ 4 rd of 65536 #'s 256 reps: 0.341000 sec 469.21 Mbytes/s
+shortfixed w/ 5 rd of 65536 #'s 256 reps: 0.462000 sec 415.58 Mbytes/s
+shortfixed w/ 6 rd of 65536 #'s 256 reps: 0.601000 sec 372.71 Mbytes/s
+shortfixed w/ 7 rd of 65536 #'s 256 reps: 0.762000 sec 335.96 Mbytes/s
+shortfixed w/ 8 rd of 65536 #'s 256 reps: 0.944000 sec 305.08 Mbytes/s
+shortfixed2 w/ 1 rd of 65536 #'s 256 reps: 0.069000 sec 3710.14 Mbytes/s
+shortfixed2 w/ 2 rd of 65536 #'s 256 reps: 0.150000 sec 2560.00 Mbytes/s
+shortfixed2 w/ 3 rd of 65536 #'s 256 reps: 0.247000 sec 2072.87 Mbytes/s
+shortfixed2 w/ 4 rd of 65536 #'s 256 reps: 0.364000 sec 1758.24 Mbytes/s
+shortfixed2 w/ 5 rd of 65536 #'s 256 reps: 0.506000 sec 1517.79 Mbytes/s
+shortfixed2 w/ 6 rd of 65536 #'s 256 reps: 0.675000 sec 1327.41 Mbytes/s
+shortfixed2 w/ 7 rd of 65536 #'s 256 reps: 0.869000 sec 1178.37 Mbytes/s
+shortfixed2 w/ 8 rd of 65536 #'s 256 reps: 1.086000 sec 1060.77 Mbytes/s
+shortfixed3 w/ 1 rd of 65536 #'s 256 reps: 0.071000 sec 3605.63 Mbytes/s
+shortfixed3 w/ 2 rd of 65536 #'s 256 reps: 0.157000 sec 2445.86 Mbytes/s
+shortfixed3 w/ 3 rd of 65536 #'s 256 reps: 0.270000 sec 1896.30 Mbytes/s
+shortfixed3 w/ 4 rd of 65536 #'s 256 reps: 0.409000 sec 1564.79 Mbytes/s
+shortfixed3 w/ 5 rd of 65536 #'s 256 reps: 0.576000 sec 1333.33 Mbytes/s
+shortfixed3 w/ 6 rd of 65536 #'s 256 reps: 0.770000 sec 1163.64 Mbytes/s
+shortfixed3 w/ 7 rd of 65536 #'s 256 reps: 0.992000 sec 1032.26 Mbytes/s
+shortfixed3 w/ 8 rd of 65536 #'s 256 reps: 1.241000 sec 928.28 Mbytes/s
+shortfixed4 w/ 1 rd of 65536 #'s 256 reps: 0.072000 sec 3555.56 Mbytes/s
+shortfixed4 w/ 2 rd of 65536 #'s 256 reps: 0.157000 sec 2445.86 Mbytes/s
+shortfixed4 w/ 3 rd of 65536 #'s 256 reps: 0.271000 sec 1889.30 Mbytes/s
+shortfixed4 w/ 4 rd of 65536 #'s 256 reps: 0.410000 sec 1560.98 Mbytes/s
+shortfixed4 w/ 5 rd of 65536 #'s 256 reps: 0.576000 sec 1333.33 Mbytes/s
+shortfixed4 w/ 6 rd of 65536 #'s 256 reps: 0.770000 sec 1163.64 Mbytes/s
+shortfixed4 w/ 7 rd of 65536 #'s 256 reps: 0.992000 sec 1032.26 Mbytes/s
+shortfixed4 w/ 8 rd of 65536 #'s 256 reps: 1.242000 sec 927.54 Mbytes/s
+float w/ 1 rd of 65536 #'s 256 reps: 0.069000 sec 1855.07 Mbytes/s
+float w/ 2 rd of 65536 #'s 256 reps: 0.149000 sec 1288.59 Mbytes/s
+float w/ 3 rd of 65536 #'s 256 reps: 0.247000 sec 1036.44 Mbytes/s
+float w/ 4 rd of 65536 #'s 256 reps: 0.363000 sec 881.54 Mbytes/s
+float w/ 5 rd of 65536 #'s 256 reps: 0.505000 sec 760.40 Mbytes/s
+float w/ 6 rd of 65536 #'s 256 reps: 0.674000 sec 664.69 Mbytes/s
+float w/ 7 rd of 65536 #'s 256 reps: 0.868000 sec 589.86 Mbytes/s
+float w/ 8 rd of 65536 #'s 256 reps: 1.084000 sec 531.37 Mbytes/s
+float2 w/ 1 rd of 65536 #'s 256 reps: 0.086000 sec 2976.74 Mbytes/s
+float2 w/ 2 rd of 65536 #'s 256 reps: 0.204000 sec 1882.35 Mbytes/s
+float2 w/ 3 rd of 65536 #'s 256 reps: 0.359000 sec 1426.18 Mbytes/s
+float2 w/ 4 rd of 65536 #'s 256 reps: 0.555000 sec 1153.15 Mbytes/s
+float2 w/ 5 rd of 65536 #'s 256 reps: 0.790000 sec 972.15 Mbytes/s
+float2 w/ 6 rd of 65536 #'s 256 reps: 1.068000 sec 838.95 Mbytes/s
+float2 w/ 7 rd of 65536 #'s 256 reps: 1.386000 sec 738.82 Mbytes/s
+float2 w/ 8 rd of 65536 #'s 256 reps: 1.744000 sec 660.55 Mbytes/s
+float3 w/ 1 rd of 65536 #'s 256 reps: 0.085000 sec 4517.65 Mbytes/s
+float3 w/ 2 rd of 65536 #'s 256 reps: 0.203000 sec 2837.44 Mbytes/s
+float3 w/ 3 rd of 65536 #'s 256 reps: 0.358000 sec 2145.25 Mbytes/s
+float3 w/ 4 rd of 65536 #'s 256 reps: 0.554000 sec 1732.85 Mbytes/s
+float3 w/ 5 rd of 65536 #'s 256 reps: 0.789000 sec 1460.08 Mbytes/s
+float3 w/ 6 rd of 65536 #'s 256 reps: 1.066000 sec 1260.79 Mbytes/s
+float3 w/ 7 rd of 65536 #'s 256 reps: 1.384000 sec 1109.83 Mbytes/s
+float3 w/ 8 rd of 65536 #'s 256 reps: 1.740000 sec 993.10 Mbytes/s
+float4 w/ 1 rd of 65536 #'s 256 reps: 0.085000 sec 6023.53 Mbytes/s
+float4 w/ 2 rd of 65536 #'s 256 reps: 0.202000 sec 3801.98 Mbytes/s
+float4 w/ 3 rd of 65536 #'s 256 reps: 0.357000 sec 2868.35 Mbytes/s
+float4 w/ 4 rd of 65536 #'s 256 reps: 0.554000 sec 2310.47 Mbytes/s
+float4 w/ 5 rd of 65536 #'s 256 reps: 0.788000 sec 1949.24 Mbytes/s
+float4 w/ 6 rd of 65536 #'s 256 reps: 1.066000 sec 1681.05 Mbytes/s
+float4 w/ 7 rd of 65536 #'s 256 reps: 1.383000 sec 1480.84 Mbytes/s
+float4 w/ 8 rd of 65536 #'s 256 reps: 1.739000 sec 1324.90 Mbytes/s
