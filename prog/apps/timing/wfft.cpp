@@ -40,7 +40,6 @@ brook::stream &getW(int k, int N, bool vertical) {
          float theta = 2*3.1415926536*i/N;
          rW[i].x=cos(theta);
          rW[i].y=sin(theta);
-         printf ("[[[%f %f]]]",rW[i].x,rW[i].y);
       }
       rawWstream[N]=rW;
    }else {

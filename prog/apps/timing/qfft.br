@@ -39,42 +39,25 @@ DFTX (float4 s[][],
       float2 otherW<>,
         float2 StrideNo4,
         out float4 s_prime<>, iter float2 indexR<>, iter float2 indexI<>) {
-  float2 index = {floor((indexof s_prime).x/2),(indexof s_prime).y};
+  float2 temp= round(fmod((indexof s_prime).x,2))==1;
   float4 r,t;
-  float2 temp,twiddle;
-  twiddle = W[(indexof s_prime).x-fmod((indexof s_prime).x,StrideNo4.x)];
-  temp = float2(StrideNo4.y,0);
   r = s[indexR]; t = s[indexI];
-  printf (twiddle.x,twiddle.y, otherW.x,otherW.y);
-  //  printf(indexI.x, indexI.y, (index+temp).x, (index+temp).y);
-  //  print(indexR.x, indexR.y, index.x, index.y);
-  temp.x = round(fmod((indexof s_prime).x,2))==1;
-  DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,twiddle,s_prime);
+  DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,otherW,s_prime);
 } 
 
 
-kernel void DoDFTVerticalInner (float4 r<>,
-                                float4 t<>,
-                                float2 W<>,
-                                out float4 s_prime<>) {
-   if (round(fmod((indexof s_prime).y,2))==1) {
-      mult_complex2(r-t,W,s_prime);
-   }else {
-      s_prime=r+t;
-   }
-}
 kernel void
 DFTY (float4 s[][], 
         float2 W[],
       float2 otherW<>,
         float2 StrideNo2,
         out float4 s_prime<>, iter float2 indexR<>, iter float2 indexI<>) {
-  float2 index = {(indexof s_prime).x,floor((indexof s_prime).y/2)};
-  float2 temp,twiddle;
-  twiddle = W[index.y-fmod(index.y,StrideNo2.x)];
-  temp = float2(0,StrideNo2.y);
-  print (twiddle.x,twiddle.y, otherW.x,otherW.y);
-  DoDFTVerticalInner (s[indexR],s[indexI],twiddle,s_prime);
+   float4 r =  s[indexR]; float4 t = s[indexI];
+   if (round(fmod((indexof s_prime).y,2))==1) {
+      mult_complex2(r-t,otherW,s_prime);
+   }else {
+      s_prime=r+t;
+   }
 } 
 
 kernel void bitReverseXo2Y (out float4 s_out<>,
