@@ -113,7 +113,7 @@ kernel void valueAtfloat (float value[][],
    else 
       output = value[index];
 }
-kernel void NanToBoolRightfloat (float value[][], 
+kernel void StartScanfloat (float value[][], 
                             out float output<>, 
                             float sign,
                             float2 maxvalue) {
@@ -124,7 +124,7 @@ kernel void NanToBoolRightfloat (float value[][],
    output = (isinf(value[indexof(output)].x)?1:0) 
       + (isinf(neighbor.x)?1:0);
 }
-kernel void NanToRightfloat (float value [][],
+kernel void Scanfloat (float value [][],
                                 out float output<>,
                                 float twotoi,
                                 float2 maxvalue) {
@@ -133,16 +133,6 @@ kernel void NanToRightfloat (float value [][],
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = round(value[indexof(output)]+neighbor);
-}
-kernel void CountToRightfloat (float value [][],
-                                  out float output<>,
-                                  float twotoi,
-                                  float2 maxvalue) {
-   float2 nextPlaceToLook;
-   float neighbor;
-   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
-   valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
 }
 
 kernel void GatherGuessfloat(float scatterindex[][],
@@ -205,7 +195,7 @@ kernel void UpdateGuessfloat(float scatterindex[][],
                        sign);
 }
 
-kernel void RelativeGatherfloat(out float output<>,
+kernel void RelGatherfloat(out float output<>,
                                 float gatherindex[][],
                                 float value[][],
                                 float inf<>,
@@ -246,10 +236,10 @@ float shiftValuesfloat(float list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat (list_stream,ret_stream,(float)sign,maxvalue);   
+   StartScanfloat (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
      streamSwap(ret_stream,tmp_stream);      
-     NanToRightfloat(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     Scanfloat(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(ret_stream,"scattering...");
    {
@@ -293,7 +283,7 @@ float shiftValuesfloat(float list_stream <>,
       if (1) {
         float proper_output_stream<width,LENGTH>;
         if (width) {
-          RelativeGatherfloat(proper_output_stream,
+          RelGatherfloat(proper_output_stream,
                                  guess_stream,
                                  list_stream,
                                  *sentinelStream(2),
@@ -1117,7 +1107,7 @@ kernel void valueAtfloat2 (float2 value[][],
    else 
       output = value[index];
 }
-kernel void NanToBoolRightfloat2 (float2 value[][], 
+kernel void StartScanfloat2 (float2 value[][], 
                             out float output<>, 
                             float sign,
                             float2 maxvalue) {
@@ -1128,7 +1118,7 @@ kernel void NanToBoolRightfloat2 (float2 value[][],
    output = (isinf(value[indexof(output)].x)?1:0) 
       + (isinf(neighbor.x)?1:0);
 }
-kernel void NanToRightfloat2 (float value [][],
+kernel void Scanfloat2 (float value [][],
                                 out float output<>,
                                 float twotoi,
                                 float2 maxvalue) {
@@ -1137,16 +1127,6 @@ kernel void NanToRightfloat2 (float value [][],
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = round(value[indexof(output)]+neighbor);
-}
-kernel void CountToRightfloat2 (float2 value [][],
-                                  out float2 output<>,
-                                  float twotoi,
-                                  float2 maxvalue) {
-   float2 nextPlaceToLook;
-   float2 neighbor;
-   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
-   valueAtfloat2(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
 }
 
 kernel void GatherGuessfloat2(float scatterindex[][],
@@ -1209,7 +1189,7 @@ kernel void UpdateGuessfloat2(float scatterindex[][],
                        sign);
 }
 
-kernel void RelativeGatherfloat2(out float2 output<>,
+kernel void RelGatherfloat2(out float2 output<>,
                                 float gatherindex[][],
                                 float2 value[][],
                                 float inf<>,
@@ -1250,10 +1230,10 @@ float shiftValuesfloat2(float2 list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat2 (list_stream,ret_stream,(float)sign,maxvalue);   
+   StartScanfloat2 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
      streamSwap(ret_stream,tmp_stream);      
-     NanToRightfloat2(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     Scanfloat2(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(ret_stream,"scattering...");
    {
@@ -1297,7 +1277,7 @@ float shiftValuesfloat2(float2 list_stream <>,
       if (1) {
         float2 proper_output_stream<width,LENGTH>;
         if (width) {
-          RelativeGatherfloat2(proper_output_stream,
+          RelGatherfloat2(proper_output_stream,
                                  guess_stream,
                                  list_stream,
                                  *sentinelStream(2),
@@ -2121,7 +2101,7 @@ kernel void valueAtfloat3 (float3 value[][],
    else 
       output = value[index];
 }
-kernel void NanToBoolRightfloat3 (float3 value[][], 
+kernel void StartScanfloat3 (float3 value[][], 
                             out float output<>, 
                             float sign,
                             float2 maxvalue) {
@@ -2132,7 +2112,7 @@ kernel void NanToBoolRightfloat3 (float3 value[][],
    output = (isinf(value[indexof(output)].x)?1:0) 
       + (isinf(neighbor.x)?1:0);
 }
-kernel void NanToRightfloat3 (float value [][],
+kernel void Scanfloat3 (float value [][],
                                 out float output<>,
                                 float twotoi,
                                 float2 maxvalue) {
@@ -2141,16 +2121,6 @@ kernel void NanToRightfloat3 (float value [][],
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = round(value[indexof(output)]+neighbor);
-}
-kernel void CountToRightfloat3 (float3 value [][],
-                                  out float3 output<>,
-                                  float twotoi,
-                                  float2 maxvalue) {
-   float2 nextPlaceToLook;
-   float3 neighbor;
-   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
-   valueAtfloat3(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
 }
 
 kernel void GatherGuessfloat3(float scatterindex[][],
@@ -2213,7 +2183,7 @@ kernel void UpdateGuessfloat3(float scatterindex[][],
                        sign);
 }
 
-kernel void RelativeGatherfloat3(out float3 output<>,
+kernel void RelGatherfloat3(out float3 output<>,
                                 float gatherindex[][],
                                 float3 value[][],
                                 float inf<>,
@@ -2254,10 +2224,10 @@ float shiftValuesfloat3(float3 list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat3 (list_stream,ret_stream,(float)sign,maxvalue);   
+   StartScanfloat3 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
      streamSwap(ret_stream,tmp_stream);      
-     NanToRightfloat3(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     Scanfloat3(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(ret_stream,"scattering...");
    {
@@ -2301,7 +2271,7 @@ float shiftValuesfloat3(float3 list_stream <>,
       if (1) {
         float3 proper_output_stream<width,LENGTH>;
         if (width) {
-          RelativeGatherfloat3(proper_output_stream,
+          RelGatherfloat3(proper_output_stream,
                                  guess_stream,
                                  list_stream,
                                  *sentinelStream(2),
@@ -3125,7 +3095,7 @@ kernel void valueAtfloat4 (float4 value[][],
    else 
       output = value[index];
 }
-kernel void NanToBoolRightfloat4 (float4 value[][], 
+kernel void StartScanfloat4 (float4 value[][], 
                             out float output<>, 
                             float sign,
                             float2 maxvalue) {
@@ -3136,7 +3106,7 @@ kernel void NanToBoolRightfloat4 (float4 value[][],
    output = (isinf(value[indexof(output)].x)?1:0) 
       + (isinf(neighbor.x)?1:0);
 }
-kernel void NanToRightfloat4 (float value [][],
+kernel void Scanfloat4 (float value [][],
                                 out float output<>,
                                 float twotoi,
                                 float2 maxvalue) {
@@ -3145,16 +3115,6 @@ kernel void NanToRightfloat4 (float value [][],
    getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
    valueAtfloat(value,nextPlaceToLook,neighbor,maxvalue,0);
    output = round(value[indexof(output)]+neighbor);
-}
-kernel void CountToRightfloat4 (float4 value [][],
-                                  out float4 output<>,
-                                  float twotoi,
-                                  float2 maxvalue) {
-   float2 nextPlaceToLook;
-   float4 neighbor;
-   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
-   valueAtfloat4(value,nextPlaceToLook,neighbor,maxvalue,0);
-   output = value[indexof(output)]+neighbor;
 }
 
 kernel void GatherGuessfloat4(float scatterindex[][],
@@ -3217,7 +3177,7 @@ kernel void UpdateGuessfloat4(float scatterindex[][],
                        sign);
 }
 
-kernel void RelativeGatherfloat4(out float4 output<>,
+kernel void RelGatherfloat4(out float4 output<>,
                                 float gatherindex[][],
                                 float4 value[][],
                                 float inf<>,
@@ -3258,10 +3218,10 @@ float shiftValuesfloat4(float4 list_stream <>,
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
-   NanToBoolRightfloat4 (list_stream,ret_stream,(float)sign,maxvalue);   
+   StartScanfloat4 (list_stream,ret_stream,(float)sign,maxvalue);   
    for (i=1;i<logN;++i) {
      streamSwap(ret_stream,tmp_stream);      
-     NanToRightfloat4(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
+     Scanfloat4(tmp_stream,ret_stream,(float)sign*(1<<i),maxvalue);
    }
    debugStreamPrint(ret_stream,"scattering...");
    {
@@ -3305,7 +3265,7 @@ float shiftValuesfloat4(float4 list_stream <>,
       if (1) {
         float4 proper_output_stream<width,LENGTH>;
         if (width) {
-          RelativeGatherfloat4(proper_output_stream,
+          RelGatherfloat4(proper_output_stream,
                                  guess_stream,
                                  list_stream,
                                  *sentinelStream(2),
