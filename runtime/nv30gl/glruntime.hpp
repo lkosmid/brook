@@ -84,6 +84,7 @@ RUNTIME_BONUS_NV_FNS
 #define GL_RGBA_FLOAT32_ATI             0X8814
 #define GL_RGB_FLOAT32_ATI              0X8815
 #define GL_ALPHA_FLOAT32_ATI            0X8816
+#define GL_INTENSITY_FLOAT32_ATI        0X8817
 #define GL_LUMINANCE_ALPHA_FLOAT32_ATI  0X8819
 
 namespace brook {
@@ -104,6 +105,8 @@ namespace brook {
    typedef struct{
       float x, y, z, w;
    } glfloat4;
+
+   enum GLArch {ARCH_ATI, ARCH_NV30, ARCH_UNKNOWN};
       
    void __check_gl(int line, char *file);
 #define CHECK_GL() __check_gl(__LINE__, __FILE__);
@@ -147,6 +150,11 @@ namespace brook {
       void RecomputeTexCoords(unsigned int w, unsigned int h,
                               glfloat4 f1[], glfloat4 f2[]);
       void IssueMapTexCoords(glfloat4 f1[], glfloat4 f2[]);
+
+      void (*ComputeTexCoords) (unsigned int w, unsigned int h, bool is_1D_iter,
+                                float x1, float y1, float z1, float w1,
+                                float x2, float y2, float z2, float w2,
+                                glfloat4 &f1, glfloat4 &f2);
 
       GLRunTime *runtime;
 
@@ -209,8 +217,10 @@ namespace brook {
         if (!runonce) {
            if (strstr((const char *) glGetString(GL_EXTENSIONS), 
                       "ATI_texture_float")) {
-              lookup[1] = GL_ALPHA_FLOAT32_ATI;
-              lookup[2] = GL_LUMINANCE_ALPHA_FLOAT32_ATI;
+              lookup[1] = GL_INTENSITY_FLOAT32_ATI;
+              /* ATI does not have a RG type and cgc expects float2 to 
+              ** be stored xy. */
+              lookup[2] = GL_RGB_FLOAT32_ATI;  
               lookup[3] = GL_RGB_FLOAT32_ATI;
               lookup[4] = GL_RGBA_FLOAT32_ATI;
            } else {
@@ -240,7 +250,9 @@ namespace brook {
         if (!runonce) {
            if (strstr((const char *) glGetString(GL_EXTENSIONS), 
                       "ATI_texture_float")) {
-              lookup[1] = GL_ALPHA;
+              // This was different but I'm trying this out
+              // It might be slow from a performance standpoint
+              lookup[1] = GL_RED;
               lookup[2] = GL_LUMINANCE_ALPHA;
               lookup[3] = GL_RGB;
               lookup[4] = GL_RGBA;
@@ -335,6 +347,8 @@ namespace brook {
       * it.  Otherwise, hands off!
       */
      GLStream *streamlist;
+
+     GLArch arch;
 
   protected:
 
