@@ -99,9 +99,10 @@ BRTKernelDef::printStub(std::ostream& out) const
       if (fType->args[i]->isStream() &&
           fType->args[i]->form->getQualifiers() & TQ_Out) {
             out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
-      } else if (fType->args[i]->isStream() ||
-                 fType->args[i]->isArray()) {
+      } else if (fType->args[i]->isStream()) {
          out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
+      } else if (fType->args[i]->isArray()) {
+         out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
       } else {
          out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
       }

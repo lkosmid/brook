@@ -37,8 +37,8 @@ int main () {
   streamRead(b, data_b);
   streamRead(d, data_d);
 
-/*  foo(a,b,c,d,e); */
-  foo(a,b,c,d_broken,e);
+  foo(a,b,c,d,e);
+  //foo(a,b,c,d_broken,e);
 
   streamWrite(e, data_e);
   
