@@ -12,7 +12,7 @@
 #include "brtdecl.h"
 #include "brtstemnt.h"
 #include "main.h"
-#include "brook2cpp.h"
+#include "b2ctransform.h"
 using std::cout;
 using std::endl;
 

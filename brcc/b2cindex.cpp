@@ -5,7 +5,7 @@
 
 #include "ctool.h"
 #include "brtexpress.h"
-#include "brook2cpp.h"
+#include "b2ctransform.h"
 
 
 std::map <std::string, functionProperties> FunctionProp;
