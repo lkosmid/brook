@@ -265,7 +265,8 @@ BRTGPUKernelCode::printCodeForType(std::ostream& out,
 
    assert (fDef->decl->form->type == TT_Function);
    fType = (FunctionType *) fDef->decl->form;
-
+   fprintf (stderr, 
+	"Generating code for %s...\n",fDef->FunctionName()->name.c_str());
    fpcode = CodeGen_GenerateCode(fType->subType,
                                  fDef->FunctionName()->name.c_str(),
                                  fType->args, fType->nArgs,
