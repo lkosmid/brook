@@ -351,9 +351,11 @@ public:
         return vec<VALUE,1>(unsafeGetAt(X));
     }    
     template <class BRT_TYPE> 
-      vec<typename BRT_TYPE::TYPE,tsize> questioncolon(const BRT_TYPE &b, 
+      vec<typename BRT_TYPE::TYPE,
+          LUB<BRT_TYPE::size,tsize>::size> questioncolon(const BRT_TYPE &b, 
 						const BRT_TYPE &c)const {
-        return vec<GCCTYPENAME BRT_TYPE::TYPE,tsize>
+        return vec<GCCTYPENAME BRT_TYPE::TYPE,
+                   LUB<BRT_TYPE::size,tsize>::size>
             (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
              singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
