@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = subdivision
-FILES = loop voutfloatN vout1dfloatN 
+FILES = loop model plyload voutfloatN vout1dfloatN 
 #nurbs subdivision 
 LIBRARIES = $(RUNTIME_LIBS)
 BRCCFLAGS = 
