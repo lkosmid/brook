@@ -142,7 +142,8 @@ foreach $file ( @files ) {
     print "$obj: $deps\n";
   }
 
-  $brfile = $file;
-  $brfile =~ s/\.cpp$/.br/;
-  print "$file: $brfile \$(ROOTDIR)/bin/brcc\$(BINSUFFIX)\n" if -e ($brfile);
+  if ($file =~ /(.*)\.cpp$/) {
+     $brfile = "$1.br";
+     print "$file: $brfile \$(ROOTDIR)/bin/brcc\$(BINSUFFIX)\n" if -e ($brfile);
+  }
 }
