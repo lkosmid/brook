@@ -263,20 +263,27 @@ BRTGPUKernelCode::ConvertGathers (Expression *expr) {
 void
 BRTFP30KernelCode::printCode(std::ostream& out) const
 {
-   printCodeForType(out, false);
+   printCodeForType(out, CODEGEN_FP30);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BRTARBKernelCode::printCode(std::ostream& out) const
+{
+   printCodeForType(out, CODEGEN_ARB);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTPS20KernelCode::printCode(std::ostream& out) const
 {
-   printCodeForType(out, true);
+   printCodeForType(out, CODEGEN_PS20);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTGPUKernelCode::printCodeForType(std::ostream& out,
-                                   bool ps20_not_fp30) const
+                                   CodeGenTarget target) const
 {
    FunctionType *fType;
    std::ostringstream wrapOut;
@@ -285,7 +292,7 @@ BRTGPUKernelCode::printCodeForType(std::ostream& out,
    if( globals.enableKernelSplitting )
    {
     // TIM: insert attempt to build a split tree
-    CodeGen_SplitAndEmitCode( fDef, ps20_not_fp30, out );
+    CodeGen_SplitAndEmitCode( fDef, target, out );
    }
    else
    {
@@ -301,8 +308,7 @@ BRTGPUKernelCode::printCodeForType(std::ostream& out,
     fpcode = CodeGen_GenerateCode(fType->subType,
                                   fDef->FunctionName()->name.c_str(),
                                   fType->args, fType->nArgs,
-                                  wrapOut.str().c_str(),
-                                  ps20_not_fp30);
+                                  wrapOut.str().c_str(), target);
     out << fpcode;
     free(fpcode);
    }

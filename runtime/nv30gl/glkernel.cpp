@@ -9,8 +9,9 @@
 
 using namespace brook;
 
-GLKernel::GLKernel(GLRunTime * runtime, const void *sourcelist[])
-   : runtime((GLRunTime *) runtime)
+void
+GLKernel::Initialize(GLRunTime * runtime, const void *sourcelist[],
+                     const char *shaderLang)
 {
    unsigned int i,j;
    const ::brook::desc::gpu_kernel_desc* kernelDesc = NULL;
@@ -27,8 +28,7 @@ GLKernel::GLKernel(GLRunTime * runtime, const void *sourcelist[])
 
       kernelDesc = (const ::brook::desc::gpu_kernel_desc*)(sourcelist[i+1]);
 
-      if (strncmp(nameString, "fp30", strlen("fp30")) == 0) break;
-      if (strncmp(nameString, "arb", strlen("arb")) == 0) break;
+      if (strncmp(nameString, shaderLang, strlen(shaderLang)) == 0) break;
    }
 
    if (sourcelist[i] == NULL ||

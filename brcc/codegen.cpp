@@ -29,6 +29,7 @@ extern "C" {
 #include "brtkernel.h"
 #include "b2ctransform.h"
 #include "splitting/splitting.h"
+#include "codegen.h"
 #include "brtdecl.h"
 
 // structures to store information about the resources
@@ -1235,13 +1236,14 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
  */
 static std::set<std::string> cg_warnings;
 static char *
-compile_cg_code (const char *cgcode) {
+compile_cg_code (const char *cgcode, bool generateARB) {
 
-  char *argv[16] = { "cgc", "-profile", "fp30",
+  char *argv[16] = { "cgc", "-profile", NULL,
                      "-DUSERECT", "-quiet", NULL };
   char *fpcode, *endline, *startline;
-
   char* tempCode = strdup( cgcode );
+
+  argv[2] = generateARB ? "arbfp1" : "fp30";
   fpcode = Subprocess_Run(argv, tempCode);
   free( tempCode );
   if (fpcode == NULL) {
@@ -1251,11 +1253,10 @@ compile_cg_code (const char *cgcode) {
   }
 
   // cgc has this annoying feature that it outputs warnings
-  // and errors to stdout rather than stderr.  So lets 
+  // and errors to stdout rather than stderr.  So lets
   // figure out where the fragment code really starts...
-  startline = strstr (fpcode, "!!FP1.0");
+  startline = strstr (fpcode, "!!");
   if (startline) {
-
     // Find where the fragment code really ends
     /* Tolerate CRLF or LF line endings. */
     endline = strstr (startline, "\nEND\n");
@@ -1263,9 +1264,9 @@ compile_cg_code (const char *cgcode) {
       endline = strstr (startline, "\nEND\r\n");
     }
   }
-   
+
   if (!startline || !endline ) {
-      fprintf(stderr, "Unable to parse returned CG Code: [35;1m%s[0m\n",
+      fprintf(stderr, "Unable to parse returned CG Code: %s\n",
 	      fpcode);
       return NULL;
   }
@@ -1561,7 +1562,10 @@ int getShaderOutputCount( int argumentCount, Decl** arguments, bool& outIsReduct
  *      Note: The caller is responsible for free()ing the returned string.
  */
 
-static char* generateShaderPass( Decl** args, int nArgs, const char* name, int firstOutput, int outputCount, bool ps20_not_fp30, bool fullAddressTrans, int reductionFactor, pass_info& outPass )
+static char*
+generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
+                   int outputCount, CodeGenTarget target, bool fullAddressTrans,
+                   int reductionFactor, pass_info& outPass)
 {
 
   char* fpcode;
@@ -1583,10 +1587,14 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
       }
     }
     if (globals.verbose) {
-      fprintf(stderr, "Generating %s code for %s outputs [%d, %d).\n",
-        ps20_not_fp30 ? "ps20" : "fp30", name, firstOutput, firstOutput+outputCount);
+       fprintf(stderr, "Generating %s code for %s outputs [%d, %d).\n",
+               CodeGen_TargetName(target), name, firstOutput, firstOutput+outputCount);
     }
-    fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
+    if (target == CODEGEN_PS20) {
+       fpcode = compile_hlsl_code(shadercode);
+    } else {
+       fpcode = compile_cg_code(shadercode, target == CODEGEN_ARB);
+    }
     if (fpcode==NULL) {
       fprintf (stderr,"for kernel %s.\n",
         name);
@@ -1602,8 +1610,9 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
 
     // TIM: the argument-info string is obsolete, and should go
     // away once all runtimes parse the new info...
-    fpcode_with_brccinfo = append_argument_information(ps20_not_fp30?"//":"##",
-                                fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
+    fpcode_with_brccinfo =
+       append_argument_information(target == CODEGEN_PS20 ? "//" : "##",
+                                   fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
     free(fpcode);
 
     if (globals.verbose)
@@ -1616,13 +1625,16 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
   return fpcode_with_brccinfo;
 }
 
-bool generateShaderTechnique( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans, int reductionFactor,
-                             technique_info& outTechnique )
+
+static bool
+generateShaderTechnique(Decl** args, int nArgs, const char* name,
+                        CodeGenTarget target, bool fullAddressTrans,
+                        int reductionFactor, technique_info& outTechnique )
 {
   bool isReduction = false;
   int outputCount = getShaderOutputCount( nArgs, args, isReduction );
   int maxOutputsPerPass = 1;
-  if( ps20_not_fp30 && !isReduction && globals.allowDX9MultiOut )
+  if( target == CODEGEN_PS20 && !isReduction && globals.allowDX9MultiOut )
     maxOutputsPerPass = 4;
 
   outTechnique.reductionFactor = reductionFactor;
@@ -1647,7 +1659,10 @@ bool generateShaderTechnique( Decl** args, int nArgs, const char* name, bool ps2
     while( outputsToWrite > 0 )
     {
       pass_info pass;
-      shaderString = generateShaderPass( args, nArgs, name, firstOutput, outputsToWrite, ps20_not_fp30, fullAddressTrans, reductionFactor, pass );
+      shaderString = generateShaderPass(args, nArgs, name, firstOutput,
+                                        outputsToWrite, target,
+                                        fullAddressTrans, reductionFactor,
+                                        pass);
       if( shaderString )
       {
         pass.shader = shaderString;
@@ -1669,8 +1684,11 @@ bool generateShaderTechnique( Decl** args, int nArgs, const char* name, bool ps2
   return true;
 }
 
-static bool generateReductionTechniques( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans,
-                                        std::vector<technique_info>& ioTechniques )
+
+static bool
+generateReductionTechniques(Decl** args, int nArgs, const char* name,
+                            CodeGenTarget target, bool fullAddressTrans,
+                            std::vector<technique_info>& ioTechniques)
 {
   bool isReduction = false;
   int outputCount = getShaderOutputCount( nArgs, args, isReduction );
@@ -1678,7 +1696,7 @@ static bool generateReductionTechniques( Decl** args, int nArgs, const char* nam
   if( !isReduction )
   {
     technique_info technique;
-    if( !generateShaderTechnique( args, nArgs, name, ps20_not_fp30, fullAddressTrans, 0, technique ) )
+    if( !generateShaderTechnique( args, nArgs, name, target, fullAddressTrans, 0, technique ) )
       return false;
     ioTechniques.push_back( technique );
     return true;
@@ -1688,7 +1706,7 @@ static bool generateReductionTechniques( Decl** args, int nArgs, const char* nam
   while( reductionFactor <= 8 ) // TIM: evil unnamed constant... :)
   {
     technique_info technique;
-    if(!generateShaderTechnique( args, nArgs, name, ps20_not_fp30, fullAddressTrans, reductionFactor, technique ))
+    if(!generateShaderTechnique( args, nArgs, name, target, fullAddressTrans, reductionFactor, technique ))
     {
       if( reductionFactor == 2 ) return false;
     }
@@ -1705,24 +1723,24 @@ static bool generateReductionTechniques( Decl** args, int nArgs, const char* nam
 
 char *
 CodeGen_GenerateCode(Type *retType, const char *name,
-                     Decl **args, int nArgs, const char *body, 
-                     bool ps20_not_fp30)
+                     Decl **args, int nArgs, const char *body,
+                     CodeGenTarget target)
 {
   std::vector<technique_info> techniques;
 
   if( globals.enableGPUAddressTranslation )
   {
-    generateReductionTechniques( args, nArgs, name, ps20_not_fp30, true, techniques );
-    generateReductionTechniques( args, nArgs, name, ps20_not_fp30, false, techniques );
+    generateReductionTechniques( args, nArgs, name, target, true, techniques );
+    generateReductionTechniques( args, nArgs, name, target, false, techniques );
 
   }
   else
   {
-    generateReductionTechniques( args, nArgs, name, ps20_not_fp30, false, techniques );
+    generateReductionTechniques( args, nArgs, name, target, false, techniques );
   }
 
-  char* c_code = generate_c_code( techniques, name,
-    ps20_not_fp30?"ps20":"fp30");
+  char* c_code = generate_c_code(techniques, name,
+                                 CodeGen_TargetName(target));
 
   if (globals.verbose)
     std::cerr << "***Produced this C code:\n" << c_code;
@@ -1734,12 +1752,15 @@ CodeGen_GenerateCode(Type *retType, const char *name,
 *	CodeGen_SplitAndEmitCode
 *  A simplified entry point for generating shaders that need to be split.
 */
-void CodeGen_SplitAndEmitCode( FunctionDef* inFunctionDef, bool inIsDirectX, std::ostream& inStream ) {
+void
+CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
+                         CodeGenTarget target, std::ostream& inStream ) {
   SplitTree* splitTree = new SplitTree( inFunctionDef );
 
   std::string functionName = inFunctionDef->FunctionName()->name;
 
   std::stringstream shaderStream;
+  std::string assemblerString;
 
   shaderStream << "#ifdef USERECT\n";
   shaderStream << "#define _stype   samplerRECT\n";
@@ -1773,10 +1794,16 @@ void CodeGen_SplitAndEmitCode( FunctionDef* inFunctionDef, bool inIsDirectX, std
   }
 
   if( globals.verbose ) {
-    std::cerr << "Generating " << (inIsDirectX ? "ps20" : "fp30")
+    std::cerr << "Generating " << CodeGen_TargetName(target)
       << " code for " << functionName << "." << std::endl;
   }
-  std::string assemblerString = (inIsDirectX ? compile_hlsl_code : compile_cg_code)(shaderString.c_str());
+
+  if (target == CODEGEN_PS20) {
+    assemblerString = compile_hlsl_code(shaderString.c_str());
+  } else {
+    assemblerString = compile_cg_code(shaderString.c_str(),
+                                      target == CODEGEN_ARB);
+  }
 
   if( globals.verbose )
     std::cerr << "***Produced this assembly:\n" << assemblerString << std::endl;
@@ -1784,8 +1811,7 @@ void CodeGen_SplitAndEmitCode( FunctionDef* inFunctionDef, bool inIsDirectX, std
   std::vector<std::string> passStrings;
   passStrings.push_back( assemblerString );
 
-  //char* c_code = generate_c_code( passStrings, functionName.c_str(), inIsDirectX?"ps20":"fp30" );
+  //char* c_code = generate_c_code(passStrings, functionName.c_str(),
+  //                               CodeGen_TargetName(target));
   //inStream << c_code << std::endl;
 }
-
-                                

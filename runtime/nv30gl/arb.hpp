@@ -17,7 +17,7 @@ namespace brook {
    class ARBKernel : public GLKernel {
    public:
       ARBKernel(ARBRunTime *runtime, const void *sourcelist[])
-         : GLKernel(runtime, sourcelist) { /* All done in GLKernel() */ }
+         : GLKernel(runtime) { Initialize(runtime, sourcelist, "arb"); }
       virtual ~ARBKernel() { /* Everything is done in ~GLKernel() */ };
 
 

@@ -25,7 +25,7 @@ namespace brook {
    class NV30GLKernel : public GLKernel {
    public:
       NV30GLKernel(NV30GLRunTime *runtime, const void *sourcelist[])
-         : GLKernel(runtime, sourcelist) { /* All done in GLKernel() */ }
+         : GLKernel(runtime) { Initialize(runtime, sourcelist, "fp30"); }
       virtual ~NV30GLKernel() { /* Everything is done in ~GLKernel() */ };
 
 

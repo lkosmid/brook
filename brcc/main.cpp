@@ -141,7 +141,8 @@ parse_args (int argc, char *argv[]) {
 
   // The default build targets
   if (globals.target == 0)
-     globals.target = TARGET_PS20 | TARGET_CPU | TARGET_MULTITHREADED_CPU | TARGET_FP30;
+     globals.target = TARGET_PS20 | TARGET_CPU | TARGET_MULTITHREADED_CPU |
+                      TARGET_FP30 | TARGET_ARB;
 
   argv += optind;
   argc -= optind;

@@ -10,6 +10,7 @@
 #include "dup.h"
 #include "stemnt.h"
 #include "b2ctransform.h"
+#include "codegen.h"
 
 class BRTKernelCode;
 typedef Dup<BRTKernelCode> DupableBRTKernelCode;
@@ -50,7 +51,7 @@ public:
    static Expression *ConvertGathers(Expression *e);
    
    void printCodeForType(std::ostream& out, 
-                         bool ps20_not_fp30) const;
+                         CodeGenTarget target) const;
    
    virtual BRTKernelCode *dup0() const = 0;
    virtual void printCode(std::ostream& out) const = 0;
@@ -66,6 +67,15 @@ class BRTFP30KernelCode : public BRTGPUKernelCode
     void printCode(std::ostream& out) const;
 };
 
+class BRTARBKernelCode : public BRTGPUKernelCode
+{
+  public:
+    BRTARBKernelCode(const FunctionDef& fDef) : BRTGPUKernelCode(fDef) {}
+   ~BRTARBKernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
+
+    BRTKernelCode *dup0() const { return new BRTARBKernelCode(*this->fDef); }
+    void printCode(std::ostream& out) const;
+};
 
 class BRTPS20KernelCode : public BRTGPUKernelCode
 {

@@ -3,8 +3,8 @@
 
 #define TARGET_CPU      (1<<0)
 #define TARGET_PS20     (1<<1)
-#define TARGET_FP30     (1<<2)  
-#define TARGET_ARB      (1<<3)  /* XXX Not yet */
+#define TARGET_FP30     (1<<2)
+#define TARGET_ARB      (1<<3)
 #define TARGET_MULTITHREADED_CPU (1<<4)
 struct globals_struct {
   globals_struct() {

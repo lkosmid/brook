@@ -132,8 +132,14 @@ namespace brook {
       }
 
    protected:
+      GLKernel(GLRunTime *r) : runtime(r) {
+         /* Initialize() must be called before anything useful is done */
+      }
+
       virtual void BindParameter(const float x, const float y,
                                  const float z, const float w) = 0;
+      void Initialize(GLRunTime *runtime, const void *sourcelist[],
+                      const char *shaderLang);
       void ResetStateMachine();
       void ReduceScalar();
       void ReduceStream();
