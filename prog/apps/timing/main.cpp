@@ -15,6 +15,9 @@
 #include "fft2d.h"
 //#include "sparse.h"
 #include "matmult4x4.h"
+#include "reduction.h"
+
+
 
 typedef void (*timingFn) (int length);
 
@@ -33,9 +36,10 @@ static const struct timingEntry tests[] = {
    { "mm4_1w_t",Matmult4x4_1wayPretransposed_Time},
    { "mm4_4w",  Matmult4x4_4way_Time },
    { "mm4_4w_t",Matmult4x4_4wayPretransposed_Time },
-   { "fftslow",     doFFT },
+   { "fftslow", doFFT },
    { "fft",     doOptFFT },
-   { "fftw",     doFFTW },
+   { "fftw",    doFFTW },
+   { "red",     Reduction_Time}
 };
 static const int numTests = sizeof tests / sizeof tests[0];
 
