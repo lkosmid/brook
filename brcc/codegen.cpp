@@ -116,18 +116,21 @@ CodeGen_Init(void) {
    switch (globals.favorcompiler) {
    case COMPILER_DEFAULT:
       shadercompile[CODEGEN_PS20] = compile_fxc;
+      shadercompile[CODEGEN_PS30] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
       break;
    case COMPILER_CGC:
       shadercompile[CODEGEN_PS20] = compile_cgc;
+      shadercompile[CODEGEN_PS30] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_cgc;
       break;
    case COMPILER_FXC:
       shadercompile[CODEGEN_PS20] = compile_fxc;
+      shadercompile[CODEGEN_PS30] = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
@@ -1580,10 +1583,19 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
      if (globals.verbose)
         std::cerr << "***Produced this assembly:\n" << fpcode << "\n";
      
+     const char* commentString = "##";
+     switch(target)
+     {
+     case CODEGEN_PS20:
+     case CODEGEN_PS30:
+         commentString = "//";
+         break;
+     }
+
      // TIM: the argument-info string is obsolete, and should go
      // away once all runtimes parse the new info...
      fpcode_with_brccinfo =
-       append_argument_information(target == CODEGEN_PS20 ? "//" : "##",
+       append_argument_information(commentString,
                                    fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
     free(fpcode);
 

@@ -302,6 +302,8 @@ namespace brook
   {
     if( strcmp( "ps20", inNameString ) == 0 )
         return 1;
+    if( _supportsPS30 && strcmp( "ps30", inNameString ) == 0 )
+        return 2;
     return -1;
   }
 

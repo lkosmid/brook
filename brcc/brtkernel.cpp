@@ -290,6 +290,13 @@ BRTPS20KernelCode::printCode(std::ostream& out) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
+BRTPS30KernelCode::printCode(std::ostream& out) const
+{
+   printCodeForType(out, CODEGEN_PS30);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
 BRTGPUKernelCode::printCodeForType(std::ostream& out,
                                    CodeGenTarget target) const
 {

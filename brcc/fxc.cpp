@@ -42,8 +42,24 @@ compile_fxc (const char *name,
   char validate[]="/Vd";
   char software[]="/Tps_2_sw";
   char hardware[]="/Tps_2_0";
+  char ps30_targetstring[]="/Tps_3_0";
   char nothin[]=""; //gcc does not like ?: with ""
-  char *argv[] = { "fxc", inValidate ? hardware : software,
+
+  char* targetstring = "";
+  switch (target) {
+  case CODEGEN_PS20:
+  case CODEGEN_ARB: 
+     targetstring = hardware;
+     break;
+  case CODEGEN_PS30:
+     targetstring = ps30_targetstring;
+     break;
+  default: 
+     fprintf(stderr, "Unsupported fxc target.\n");
+     return NULL;
+  }
+
+  char *argv[] = { "fxc", targetstring,
                    inValidate ? nothin : validate, "/nologo", 0, 0, 
                    "/DFXC=1", NULL };
   char *fpcode,  *errcode;
@@ -58,16 +74,6 @@ compile_fxc (const char *name,
   }
   fwrite(shader, sizeof(char), strlen(shader), fp);
   fclose(fp);
-  
-  switch (target) {
-  case CODEGEN_PS20:
-  case CODEGEN_ARB: 
-     break;
-  case CODEGEN_FP30:
-  default: 
-     fprintf(stderr, "Unsupported fxc target.\n");
-     return NULL;
-  }
   
   argv[kOutputFileArgument] = strdup ((std::string("/Fc") + outputfname).c_str());
   argv[kInputFileArgument]  = strdup (inputfname.c_str());
