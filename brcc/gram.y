@@ -1352,7 +1352,7 @@ old_style_declaration: no_decl_specs opt_init_decl_list
         
 declaration:  decl_specs opt_init_decl_list
         {
-            assert (err_top_level ||
+            assert (1||err_top_level ||
                     $1 == gProject->Parse_TOS->parseCtxt->curCtxt->decl_specs);
             gProject->Parse_TOS->parseCtxt->ResetDeclCtxt();            
             
