@@ -1,4 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
 extern void sort (struct __BRTStream *list_stream,int WIDTH, int LENGTH);
+
 void __printf_cpu_inner(float inx, float iny, float outx, float outy) {
    printf("%g %g -> %g %g\n",inx,iny,outx,outy);
 }

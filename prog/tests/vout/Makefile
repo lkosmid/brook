@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = vout
-FILES = vout testvout
+FILES = testvout vout
 LIBRARIES = $(RUNTIME_LIBS)
 
 include $(ROOTDIR)/common.mk

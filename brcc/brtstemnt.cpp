@@ -123,6 +123,104 @@ bool incrementBoolVec(std::vector<bool> &vec) {
    }
    return !carry;
 }
+static std::string getDeclStream(Decl * vout,std::string append="_stream") {
+   std::string temp = vout->name->name;
+   unsigned int i = temp.find("_stream");
+   if (i==std::string::npos) {
+      return temp+"_stream";
+   }
+   return temp.substr(0,i)+append;
+}
+void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
+   FunctionType* ft = static_cast<FunctionType*>(decl->form);
+   std::set<unsigned int > *vouts= &voutFunctions[FunctionName()->name];
+   std::set<unsigned int >::iterator iter;
+   out << "  float2 __vout_counter(0.0f, 1.0f / (float)floor (.5));";
+   out << std::endl;
+   out << "  int maxextents[2]={0,0};"<<std::endl;
+   int i=0;   
+   for (bool found=0;i<ft->nArgs;++i) {
+      if ((ft->args[i]->form->getQualifiers()&TQ_Out)==0
+          &&ft->args[i]->isStream()
+          && vouts->find(i)==vouts->end()) {
+         std::string name = ft->args[i]->name->name;
+         if (!found) {
+            out << "  unsigned int __dimension = "<<name<<"->getDimension();";
+            out << std::endl;
+         }
+         out << "  assert ("<<name<<"->getDimension()==2);" << std::endl;
+         out << "  maxDimension(maxextents,"<<name<<"->getExtents(),";
+         out << name << "->getDimension());" << std::endl;
+         found=true;
+      }
+   }
+   for (iter = vouts->begin();iter!=vouts->end();++iter) {
+      out << "  std::vector<__BRTStream *> ";
+      out<<getDeclStream(ft->args[*iter],"_outputs")<<";";
+      out << std::endl;
+      out << "  bool "<<getDeclStream(ft->args[*iter],"_values")<<" = true;";
+      out << std::endl;
+   }
+   out << "  while (";
+   iter = vouts->begin();
+   out << getDeclStream (ft->args[*iter++],"_values");
+   for (;iter!=vouts->end();++iter) {
+      out << " || " << getDeclStream (ft->args[*iter],"_values");
+   }
+   out << ") {"<<std::endl;
+   for (iter = vouts->begin();iter!=vouts->end();++iter) {
+      out << "    if ("<<getDeclStream(ft->args[*iter],"_values")<<")";
+      out << std::endl;
+      out << "      "<<getDeclStream(ft->args[*iter],"_outputs");
+      out << ".push_back (new __BRTStream (maxextents, ";
+      out << "__dimension, ";
+      out << ft->args[*iter]->name->name<<"->getStreamType()));"<<std::endl;
+      
+   }
+}
+void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
+   out << "    __vout_counter.x+=1.0f;"<<std::endl;
+   FunctionType* ft = static_cast<FunctionType*>(decl->form);
+   std::set<unsigned int >::iterator beginvout
+      = voutFunctions[FunctionName()->name].begin();
+   std::set<unsigned int >::iterator endvout
+      = voutFunctions[FunctionName()->name].end();
+   std::set<unsigned int >::iterator iter;
+   for (iter = beginvout;iter!=endvout;++iter) {
+      Decl * decl = ft->args[*iter];
+      out << "    "<<getDeclStream(decl,"_values")<< " = ";
+      out << " finiteValueProduced ("<<getDeclStream(decl,"_outputs");
+      out << ".back())?1:0;"<<std::endl;
+   }
+   out << "  }"<<std::endl;
+   for (iter = beginvout;iter!=endvout;++iter) {
+      Decl * decl = ft->args[*iter];
+      out<< "  __BRTStream "<<getDeclStream(decl,"_temp")<<"(";
+      out<< decl->name->name<< "->getStreamType(),1,1,-1);"<<std::endl;
+      out<< "  combineStreams(&"<<getDeclStream(decl,"_outputs")<<"[0],";
+      out<< std::endl;
+      out<< "                 "<<getDeclStream(decl,"_outputs")<<".size()-1,";
+      out<< std::endl;
+      out<< "                 maxextents[0],";
+      out<< std::endl;
+      out<< "                 maxextents[1],";
+      out<< std::endl;
+      out<< "                 &"<<getDeclStream(decl,"_temp")<<");";
+      out<< std::endl;
+      out<< "  shiftValues(&"<<getDeclStream(decl,"_temp")<<",";
+      out<< std::endl;
+      out<< "              &"<< decl->name->name<<",";
+      out<< std::endl;
+      out<< "              "<<getDeclStream (decl,"_temp");
+      out<< "->getExtents()[0],";
+      out<<std::endl;
+      out<< "              "<<getDeclStream (decl,"_temp");
+      out<< "->getExtents()[1],";
+      out <<std::endl;
+      out<< "              -1);"<<std::endl; 
+      
+   }
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BRTKernelDef::printStub(std::ostream& out) const
@@ -135,6 +233,19 @@ BRTKernelDef::printStub(std::ostream& out) const
    std::vector <bool> streamOrVal;
    NumArgs=fType->nArgs;
    bool vout=voutFunctions.find(FunctionName()->name)!=voutFunctions.end();
+   if (vout) {
+      out << "extern int finiteValueProduced (struct __BRTStream * input);\n"
+             "extern float shiftValues(struct __BRTStream *list_stream,\n"
+             "                         struct __BRTStream *output_stream,\n"
+             "                         int WIDTH, \n"
+             "                         int LENGTH, \n"
+             "                         int sign);\n"
+             "void combineStreams (struct __BRTStream **streams,\n"
+             "                     unsigned int num,\n"
+             "                     unsigned int width, \n"
+             "                     unsigned int length,\n"
+             "                     struct __BRTStream * output) ;\n";
+   }
    if (vout) {
       NumArgs--;
    }
@@ -180,10 +291,6 @@ BRTKernelDef::printStub(std::ostream& out) const
          }
       }
       out << ") {\n";
-      if (vout) {
-         out << "  float2 __vout_counter(0.0f, 1.0f / (float)floor (.5));";
-         out << std::endl;
-      }
       out << "  static const void *__" << *FunctionName() << "_fp[] = {";
       out << std::endl;
       out << "     \"fp30\", __" << *FunctionName() << "_fp30," << std::endl;
@@ -206,12 +313,24 @@ BRTKernelDef::printStub(std::ostream& out) const
       
       out << "  static __BRTKernel k("
           << "__" << *FunctionName() << "_fp);\n\n";
+      if (vout) {
+         PrintVoutPrefix(out);
+      }
       for (i=0; i < fType->nArgs; i++) {
          if (vout)
             out <<"  ";//nice spacing
          if (recursiveIsStream(fType->args[i]->form) &&
              (fType->args[i]->form->getQualifiers()&TQ_Out)!=0) {
-            out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
+            
+            if (voutFunctions.find(FunctionName()->name)==voutFunctions.end()
+                ||  voutFunctions[FunctionName()->name].find(i)
+                    == voutFunctions[FunctionName()->name].end()) {
+               out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
+            }else {
+               out << "  k->PushOutput(*" << getDeclStream(fType->args[i],
+                                                           "_outputs");
+               out << ".back());\n";
+            }
          } else if ((fType->args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
             out << "  k->PushReduce(&" << *fType->args[i]->name;
             out << ", __BRTReductionType(&" << *fType->args[i]->name <<"));\n";
@@ -225,11 +344,15 @@ BRTKernelDef::printStub(std::ostream& out) const
             out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
          }
       }
+      if (vout)
+         out <<"  ";//nice spacing
       if (decl->isReduce()) {
          out << "  k->Reduce();\n";
       }else {
          out << "  k->Map();\n";
       }
+      if (vout)
+         PrintVoutPostfix(out);
       out << "\n}\n\n";
    }while (incrementBoolVec(streamOrVal));
 }

@@ -46,7 +46,7 @@ int main () {
   foo(a,b,c,d,e);
   //foo(a,b,c,d_broken,e);
 
-  streamPrint(e, -1);
-  printf ("\n");
+  streamPrint(e);
+
   return 0;
 }

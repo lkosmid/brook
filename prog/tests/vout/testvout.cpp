@@ -272,11 +272,11 @@ void  foo (const __BRTStream& a,
      "cpu", (void *) __foo_cpu,
      NULL, NULL };
   static __BRTKernel k(__foo_fp);
-  std::vector<__BRTStream*> __e_outputs;//get max dimension
   assert (a->getDimension()==2);
   int maxextents[2]={0,0};
   maxDimension(maxextents,a->getExtents(),a->getDimension());
   maxDimension(maxextents,b->getExtents(),b->getDimension());
+  std::vector<__BRTStream*> __e_outputs;//get max dimension
   bool __e_values=true;
   while(__e_values) {
      if (__e_values)
