@@ -211,10 +211,10 @@ OGLContext::get1DInterpolant( const float4 &start,
   f1.z = z1 - shiftz;
   f1.w = w1 - shiftw;
 
-  f2.x = (2*x2-x1) + shiftx;
-  f2.y = (2*y2-y1) + shifty;
-  f2.z = (2*z2-z1) + shiftz;
-  f2.w = (2*w2-w1) + shiftw;
+  f2.x = (x1+2*sx) - shiftx;
+  f2.y = (y1+2*sy) - shifty;
+  f2.z = (z1+2*sz) - shiftz;
+  f2.w = (w1+2*sw) - shiftw;
 
   interpolant.vertices[0] = f1;
   interpolant.vertices[1] = f2; 
@@ -246,15 +246,15 @@ OGLContext::get2DInterpolant( const float2 &start,
   float sx = x2-x1;
   float sy = y2-y1;
   float ratiox = sx / w;
-  float ratioy = sy / w;
+  float ratioy = sy / h;
   float shiftx = ratiox * 0.5f;
   float shifty = ratioy * 0.5f;
 
   f1.x = x1 - shiftx;
   f1.y = y1 - shifty;
 
-  f2.x = (2*x2-x1) + shiftx;
-  f2.y = (2*y2-y1) + shifty;
+  f2.x = (x1+2*sx) - shiftx;
+  f2.y = (y1+2*sy) - shifty;
 
   if (h==1) {
     interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
@@ -298,7 +298,7 @@ OGLContext::getStreamInterpolant( const TextureHandle texture,
   OGLTexture *oglTexture = (OGLTexture *) texture;
 
   float2 start(0.5f, 0.5f);
-  float2 end(w-0.5f, h-0.5f);
+  float2 end(w+0.5f, h+0.5f);
 
   get2DInterpolant(  start, end, w, h, interpolant); 
 }
@@ -346,7 +346,7 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   for (i=0; i<numInterpolants; i++) 
     glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
                           (GLfloat *) &(interpolants[i].vertices[1]));
-  glVertex2f(3.0f, 1.0f);
+  glVertex2f(3.0f, -1.0f);
   for (i=0; i<numInterpolants; i++) 
     glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
                           (GLfloat *) &(interpolants[i].vertices[2]));
