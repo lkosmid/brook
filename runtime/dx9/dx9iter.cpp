@@ -39,8 +39,8 @@ DX9Iter::DX9Iter( DX9RunTime * runtime,
     float maxY = ranges[3];
     rect.left = minX;
     rect.right = maxX;
-    rect.top = minY;
-    rect.bottom = maxY;
+    rect.bottom = minY;
+    rect.top = maxY;
   }
 }
 
