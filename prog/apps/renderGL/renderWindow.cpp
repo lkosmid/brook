@@ -69,7 +69,7 @@ RenderWindow::RenderWindow()
   // rendering device...
   brook::initialize( "ogl", (void*) glContext );
 
-  hackStreamRestoreContext();
+  brook::bind();
 
   // Create streams
   fluidStream0 = stream::create<float4>( kFluidSize, kFluidSize );
@@ -120,7 +120,7 @@ void RenderWindow::handleIdle()
     float controlHeight = -5.0f;
     controlConstant = float4( (float)mouseX, (float)mouseY, controlHeight, controlRadius*controlRadius );
   }
-  hackStreamRestoreContext();
+  brook::bind();
 
   simulationKernel( fluidStream0, fluidStream0, controlConstant, fluidStream1 );
 
@@ -143,6 +143,7 @@ void RenderWindow::handleIdle()
 
   // render
 
+  brook::unbind();
   context->bind();
 
   if( !context->beginScene() ) return;

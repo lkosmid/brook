@@ -307,9 +307,22 @@ namespace brook {
 
   class Runtime;
 
+  /* start up the brook runtime with a given implemention */
   void initialize( const char* inRuntimeName, 
                    void* inContextValue = 0 );
+
+  /* shut down the brook runtime, (shouldn't often be needed) */
   void finalize();
+
+  /* tell brook to complete any queued operations on the gpu */
+  void finish();
+
+  /* inform brook that the client intends to use the gpu (e.g. to render) */
+  void unbind();
+
+  /* inform brook that the client is done with the gpu, and wants to use brook again */
+  void bind();
+
   Runtime* createRuntime( bool useAddressTranslation );
 
 
@@ -685,8 +698,6 @@ void streamDisableWriteMask();
 void streamSetWriteMask( ::brook::stream& );
 void streamBeginWriteQuery();
 int streamEndWriteQuery();
-
-void hackStreamRestoreContext();
 
 #endif
 

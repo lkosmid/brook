@@ -23,6 +23,11 @@ namespace brook {
                              const float ranges[])=0;
     virtual ~Runtime() {}
 
+    // new entry points needed by C++ brook API
+    virtual void finish() = 0;
+    virtual void unbind() = 0;
+    virtual void bind() = 0;
+
     // TIM: hacky magick for raytracer
     virtual void hackEnableWriteMask() { assert(false); throw 1; }
     virtual void hackDisableWriteMask() { assert(false); throw 1; }
@@ -33,10 +38,6 @@ namespace brook {
     static Runtime* GetInstance( const char* inRuntimeName = 0, 
                                  void* inContextValue = 0, 
                                  bool addressTranslation = false );
-
-    // TIM: magick to allow re-setting the context after
-    // rendering operations
-    virtual void hackRestoreContext() { assert(false); throw 1; }
 
   private:
     friend void brook::finalize();

@@ -64,11 +64,13 @@ namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
 
+  /* start up the brook runtime with a given implemention */
   void initialize( const char* inRuntimeName, void* inContextValue )
   {
     Runtime::GetInstance( inRuntimeName, inContextValue, false );
   }
 
+  /* shut down the brook runtime, (shouldn't often be needed) */
   void finalize()
   {
      Runtime*& runtime = Runtime::GetInstanceRef();
@@ -77,6 +79,24 @@ namespace brook {
         delete runtime;
         runtime = NULL;
      }
+  }
+
+  /* tell brook to complete any queued operations on the gpu */
+  void finish()
+  {
+     Runtime::GetInstance()->finish();
+  }
+
+  /* inform brook that the client intends to use the gpu (e.g. to render) */
+  void unbind()
+  {
+     Runtime::GetInstance()->unbind();
+  }
+
+  /* inform brook that the client is done with the gpu, and wants to use brook again */
+  void bind()
+  {
+     Runtime::GetInstance()->bind();
   }
 
   Runtime* createRuntime( bool addressTranslation )
@@ -746,9 +766,3 @@ int streamEndWriteQuery()
   return runtime->hackEndWriteQuery();
 }
 
-void hackStreamRestoreContext()
-{
-  using namespace brook;
-  Runtime* runtime = Runtime::GetInstance();
-  runtime->hackRestoreContext();
-}
