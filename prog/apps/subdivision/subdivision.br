@@ -1,85 +1,84 @@
-#include <stdio.h>
-#include <stdlib.h>
 
-kernel float3 eval (float2 param<>, float4 data[][]) {
-  //  float half=.5;
-  float3 ret = data[param].xyz;//lerp (data[param+1].xyz,data[param].xyz,half.xxx);
-  return ret;
-}
-kernel void divide (float4 division<>,
-                    float4 data[][],
-                    float4 triangles[][],
-                    out float4 outvert<>) {
-  outvert=float4(1.0f,1.0f,1.0f,1.0f);;
-}
-kernel void dontDivide (float4 division<>,
-                        float4 data[][],
-                        float4 triangles[][],
-                        out float3 outvert<>) {
-  float4 index = {fmod((indexof outvert).x,3.0),0,0,0};
-  if (index.x+.5>3.0) index=0;
-  index.xy+=division.xy;
-  outvert = triangles[index].xyz;
-}
-kernel void shouldDivide (float4 triangles<>,
-                          float4 trianglesGather[][],
-                          float4 data[][], 
-                          iter float2 Aindex<>,
-                          iter float2 Bindex<>,
-                          iter float2 Cindex<>,
-                          iter float2 Pindex<>,
-                          float width,
-                          float widthminusone,
-                          float percentErrorSquared,
-                          vout[1] float4 division<>,
-                          vout[1] float4 nondivision<>) {
-  float half=.5;
-  float4 A=triangles;
-  float4 B=trianglesGather[Bindex];  
-  float4 Parametric = trianglesGather[Pindex];
-  
-  float2 a={abs(A.w),abs(B.w)};
-  float2 b=Parametric.xy;
-  float2 c=Parametric.zw;
-  float4 C = trianglesGather[Cindex];
-  float3 AB = lerp (A.xyz,B.xyz,half.xxx);
-  float3 AC = lerp (A.xyz,C.xyz,half.xxx);
-  float3 BC = lerp (B.xyz,C.xyz,half.xxx);
+typedef struct Triangle_t{
+  float4 A;
+  float4 B;
+  float4 C;
+} Triangle;
 
-  float3 ab = eval (lerp(a,b,half.xx),data);
-  float3 ac = eval (lerp(a,c,half.xx),data);
-  float3 bc = eval (lerp(b,c,half.xx),data);
-  float abABlen= dot(AB-ab,AB-ab);
-  float bcBClen= dot(BC-bc,BC-bc);
-  float acAClen= dot(ac-AC,ac-AC);
-  
-  float ABlen = dot(AB,AB);
-  float BClen = dot(BC,BC);
-  float AClen = dot(AC,AC);
-  division.xy = Aindex.xy;
-  division.z = 0;
-  division.w = (float)(acAClen>AClen*percentErrorSquared||C.w<0);
-  division.w *= 4;
-  division.w+= 2.0f*(float)(bcBClen>BClen*percentErrorSquared||B.w<0);
-  division.w += (float)(abABlen>ABlen*percentErrorSquared||A.w<0);
-  if (division.w>0) {      
-    push(division);
-  }else {
-    nondivision=division;
-    push(nondivision);
-  }          
+
+kernel void UniformSubdivide (Triangle input<>, Triangle neighbors[], out Triangle outputA<>, out Triangle outputB<>, out Triangle outputC<>, out Triangle outputD<>, float round) {
+  outputA=outputB=outputC=outputD=input;
   
 }
 
-int main (int argc, char ** argv) {
-   int i;
-   char use_vout_amplify=1;
+
+kernel float4 calculatePlane (Triangle input) {
+  float4 inputPlane;
+  inputPlane.xyz = normalize(cross(input.C.xyz-input.A.xyz,
+                                   input.B.xyz-input.A.xyz));
+  inputPlane.w = -dot(input.A.xyz,inputPlane.xyz);
+  return inputPlane;
+}
+kernel float signedDistancePlane (float4 plane, float3 point) {
+  return dot(plane.xyz,point)-plane.w;
+}
+kernel float distancePlane (float4 plane, float3 point) {
+  return abs(signedDistancePlane(plane,point));
+}
+kernel void shouldSubdivide (Triangle input<>,
+                             Triangle A<>,
+                             Triangle B<>,
+                             Triangle C<>,
+                             Triangle D<>,
+                             out float whichEdges <>) {
+  
+  float threshold=.025;
+  float4 inputPlane = calculatePlane(input);
+
+  whichEdges=0;
+  if (distancePlane(inputPlane,A.B.xyz)>threshold)
+    //||distancePlane(inputPlane,B.A.xyz)>threshold
+    whichEdges+=1;
+  if (distancePlane(inputPlane,B.C.xyz)>threshold)
+    //      ||distancePlane(inputPlane,C.B.xyz)>threshold
+    whichEdges+=2;
+  if (distancePlane(inputPlane,C.A.xyz)>threshold)
+    //||distancePlane(inputPlane,A.C.xyz)>threshold      
+    whichEdges+=4;
+}
+
+
+kernel void subdivisionIndices(float whichEdges<>,
+                               vout[4] float2 indices<>) {
+  float first=0;
+  indices=(indexof whichEdges).xy;
+  if (whichEdges<8) {
+    push(indices);
+  }
+  indices=-(indices.xy+.25);
+  if (whichEdges>0.25) {
+    push(indices);
+  }
+  if (whichEdges>2.75&&whichEdges!=4) {
+    push(indices);
+  }
+  if (whichEdges>6.75) {
+    push(indices);      
+  }
+}
+
+extern int mainurbs(int argc, char ** argv);
+
+int main (int argc, char **  argv) {
+  int i;
+   char nurbs=1;
    for (i=0;i<argc;++i) {
      char match=0;
      int j;
-     if (strcmp(argv[i],"-noamplify")==0) {
+     if (strcmp(argv[i],"-nurbs")==0) {
        match=1;
-       use_vout_amplify=0;
+       nurbs=1;
+       
      }
      if (match) {
        for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
@@ -87,8 +86,8 @@ int main (int argc, char ** argv) {
        i--;
      }
    }
+   if (nurbs)
+     return mainurbs(argc,argv);
 
-   return 0;   
- }
-
-
+  return 0;
+}
