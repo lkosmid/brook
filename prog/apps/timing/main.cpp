@@ -12,6 +12,7 @@
 #include "runkernel.h"
 #include "blas.h"
 #include "sparse.h"
+#include "matmult4x4.h"
 
 
 /*
@@ -83,6 +84,8 @@ main(int argc, char *argv[])
    //Blas_Time(length);
    //SpMatVec_Time(length);
    //ConjGrad_Time(length);
+   //Matmult4x4_1way_Time(length);
+   //Matmult4x4_4way_Time(length);
 
    //char c;
    //std::cerr << "Press <ENTER> to exit\n";

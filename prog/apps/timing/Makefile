@@ -1,6 +1,6 @@
 ROOTDIR = ../../..
 EXECUTABLE = timing
-FILES = main readwrite runkernel blas sparse
+FILES = main readwrite runkernel blas sparse oneway_matmult_4x4 fourway_matmult_4x4
 LIBRARIES = $(RUNTIME_LIBS)
 GRAPHDIR = graphs
 SLOP = graphs
