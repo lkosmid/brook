@@ -125,14 +125,14 @@ void DX9Kernel::Map() {
   DX9CheckResult( result );
   result = getDevice()->SetVertexShader( vertexShader->getHandle() );
   DX9CheckResult( result );
-
-  for( int i = 0; i < streamCount; i++ )
+  int i;
+  for( i = 0; i < streamCount; i++ )
   {
     result = getDevice()->SetTexture( i, inputTextures[i] );
     DX9CheckResult( result );
   }
 
-  for( int i = 0; i < constantCount; i++ )
+  for( i = 0; i < constantCount; i++ )
   {
     result = getDevice()->SetPixelShaderConstantF( i, (float*)&(inputConstants[i]), 1 );
     DX9CheckResult( result );
