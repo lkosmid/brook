@@ -8,11 +8,11 @@ public:
 		indices[dims]=0;		
 	}
 	template <class T> __ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
-                int i=T::size-1;
+                int max=T::size;
                 int cur_dimension=indices[dims];
                 if (dims-cur_dimension<T::size)
-                        i=dims-cur_dimension-1;
-		for (;i>=0;--i,++cur_dimension){
+                        max=dims-cur_dimension;
+		for (int i=0;i<max;++i,++cur_dimension){
 			indices[cur_dimension]=(unsigned int)a.unsafeGetAt(i);
 		}
                 indices[dims]=cur_dimension;
@@ -30,11 +30,11 @@ public:
 		this->parent=parent;
 	}
 	template <class T> __XSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
-                int i=T::size-1;
+                int max=T::size;
                 int cur_dimension=indices[dims];
                 if (dims-cur_dimension<T::size)
-                        i=dims-cur_dimension-1;
-		for (;i>=0;--i,++cur_dimension){
+                        max=dims-cur_dimension;
+		for (int i=0;i<max;++i,++cur_dimension){
 			indices[cur_dimension]=(unsigned int)a.getAt(i);
 		}
                 indices[dims]=cur_dimension;
