@@ -30,7 +30,7 @@ typedef int mycomplex;
 typedef int myplan;
 #define mycomplex fftwf_complex
 #define myplan fftwf_plan
-int DOTIMES=2;
+int DOTIMES=128;
 
 #ifdef USE_FFTW
 mycomplex * getMaxData () {
