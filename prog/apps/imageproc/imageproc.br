@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 kernel void process_img( float img[][],  float mask[3][3],
-                 iter float2 it<>, out float2 o_img<> ) {
+                 iter float2 it<>, out float o_img<> ) {
     float2 t0 = float2(-1.0f, -1.0f);
     float2 t1 = float2(-1.0f, 0.0f);
     float2 t2 = float2(-1.0f, 1.0f);
@@ -17,16 +17,16 @@ kernel void process_img( float img[][],  float mask[3][3],
     float2 t6 = float2(1.0f, -1.0f);
     float2 t7 = float2(1.0f, 0.0f);
     float2 t8 = float2(1.0f, 1.0f);
-
-    o_img  = img[it+t0] * mask[0][0];
-    o_img += img[it+t1] * mask[1][0];
-    o_img += img[it+t2] * mask[2][0];
-    o_img += img[it+t3] * mask[0][1];
-    o_img += img[it+t4] * mask[1][1];
-    o_img += img[it+t5] * mask[2][1];
-    o_img += img[it+t6] * mask[0][2];
-    o_img += img[it+t7] * mask[1][2];
-    o_img += img[it+t8] * mask[2][2];
+    o_img  = img[it+t0] * mask[t0+1];
+    
+    o_img += img[it+t1] * mask[t1+1];
+    o_img += img[it+t2] * mask[t2+1];
+    o_img += img[it+t3] * mask[t3+1];
+    o_img += img[it+t4] * mask[t4+1];
+    o_img += img[it+t5] * mask[t5+1];
+    o_img += img[it+t6] * mask[t6+1];
+    o_img += img[it+t7] * mask[t7+1];
+    o_img += img[it+t8] * mask[t8+1];
 }
 
 int main(int argc, char* argv[]) {
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
         // Fill the input with random numbers
         for(i=0; i<insize; i++){
             for(j=0; j<insize; j++){
-                input[i*insize+j] = (unsigned char)rand();
+              input[i*insize+j] = i*insize+j;//(unsigned char)rand();
             }  
         }
 
@@ -89,6 +89,7 @@ int main(int argc, char* argv[]) {
 
         streamRead(img, inputf);
         streamRead(mask_stream, mask);
+        streamPrint (mask_stream);
         process_img(img, mask_stream, it, o_img );
         streamWrite(o_img, outputf);
 
