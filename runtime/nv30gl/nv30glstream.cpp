@@ -43,8 +43,9 @@ NV30GLStream::NV30GLStream (NV30GLRunTime *rt,
     fprintf (stderr, "NV30GL: Unsupported stream type created\n");
     exit(1);
   }
-  
+
   glGenTextures(1, &id);
+  
   glActiveTextureARB(GL_TEXTURE0_ARB+15);
   glBindTexture (GL_TEXTURE_RECTANGLE_NV, id);
   
@@ -133,9 +134,11 @@ NV30GLStream::GLReadData (void *data) {
           glVertex2f(-1.0f, 3.0f);
           glEnd();
        }
+       glFinish();
        glReadPixels (0, 0, width, height, GLformat[ncomp],
                      GL_FLOAT, data);
 #else
+       glFinish();
        glGetTexImage(GL_TEXTURE_RECTANGLE_NV, 0, GLformat[ncomp],
                      GL_FLOAT, data);
 #endif

@@ -15,7 +15,8 @@ static const char passthrough[] =        \
 "MOVR o[COLR], R0;\n"                    \
 "END\n";
 
-NV30GLRunTime::NV30GLRunTime() {
+NV30GLRunTime::NV30GLRunTime()
+{
 
   // Create a window
   createWindow();
@@ -25,7 +26,7 @@ NV30GLRunTime::NV30GLRunTime() {
   
   initglfunc();
 
-  createPBuffer();
+  createPBuffer(4);
 
   // Initial GL State
   glDrawBuffer(GL_FRONT);

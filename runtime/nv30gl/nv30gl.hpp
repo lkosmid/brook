@@ -23,6 +23,8 @@ extern PFNWGLGETPBUFFERDCARBPROC       wglGetPbufferDCARB;
 extern PFNWGLCHOOSEPIXELFORMATARBPROC  wglChoosePixelFormatARB;
 extern PFNWGLBINDTEXIMAGEARBPROC       wglBindTexImageARB;
 extern PFNWGLRELEASETEXIMAGEARBPROC    wglReleaseTexImageARB;
+extern PFNWGLRELEASEPBUFFERDCARBPROC   wglReleasePbufferDCARB;
+extern PFNWGLDESTROYPBUFFERARBPROC     wglDestroyPbufferARB;
 extern PFNGLMULTITEXCOORD2FARBPROC     glMultiTexCoord2fARB;
 extern PFNGLMULTITEXCOORD4FARBPROC     glMultiTexCoord4fARB;
 extern PFNGLACTIVETEXTUREARBPROC       glActiveTextureARB;
@@ -32,7 +34,6 @@ extern PFNGLBINDPROGRAMNVPROC          glBindProgramNV;
 extern PFNGLPROGRAMNAMEDPARAMETER4FNVPROC
                             glProgramNamedParameter4fNV;
 #endif 
-
 
 namespace brook {
 
@@ -190,19 +191,22 @@ void __check_gl(int line, char *file);
                              int dims, int e[],float r[]);
      ~NV30GLRunTime();
 
-
      NV30GLStream *streamlist;
 
 #ifdef _WIN32
      HWND hwnd;
+     HDC  hdc_window;
      HGLRC hglrc_window;
      HGLRC hpbufferglrc;
      HPBUFFERARB hpbuffer;
+     HDC hpbufferdc;
 #else
      Display    *pDisplay;
      GLXPbuffer  glxPbuffer;
      GLXContext  glxContext;
 #endif
+
+     int pbuffer_ncomp;
 
      GLuint passthrough_id;
 
@@ -213,7 +217,7 @@ void __check_gl(int line, char *file);
 
      void createWindow(void);
      void createWindowGLContext(void);
-     void createPBuffer(void);
+     void createPBuffer(int ncomponents);
 
   };
 }

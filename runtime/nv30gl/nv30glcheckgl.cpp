@@ -33,12 +33,13 @@ void brook::__check_gl(int line, char *file) {
          NV30GLRunTime *rt = (NV30GLRunTime *) RunTime::GetInstance();
          NV30GLStream *s;
          int w = NV30GLRunTime::workspace;
-         int mem = w * w * 4 * sizeof (float);
+         int mem = w * w * rt->pbuffer_ncomp * sizeof (float);
 
          std::cerr << "\n\nNV30GL Memory Usage\n"
                    << "***********************************\n"
                    << "Workspace (" << w << " x " << w
-                   << " x 4): " << mem/(1024*1024) << " MB\n";
+                   << " x " << rt->pbuffer_ncomp << "): " 
+                   << mem/(1024*1024) << " MB\n";
 
          for (s=rt->streamlist; s; s=s->next) {
             int size = s->width*s->height*s->ncomp*sizeof(float);

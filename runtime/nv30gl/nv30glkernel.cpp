@@ -391,10 +391,10 @@ void NV30GLKernel::Map() {
    int w, h;
    nvfloat4 f1[8], f2[8];
 
-   if (outstream == NULL) {
-      fprintf (stderr, "No output stream specified for kernel\n");
-      exit(1);
-   }
+   assert(outstream);
+
+   if (runtime->pbuffer_ncomp != outstream->ncomp)
+      runtime->createPBuffer(outstream->ncomp);
    
    w = outstream->width;
    h = outstream->height;

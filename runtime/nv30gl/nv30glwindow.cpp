@@ -38,8 +38,8 @@ NV30GLRunTime::createWindow (void) {
   ** the window is never shown nor rendered 
   ** into.
   */
-  const int window_width = 100;
-  const int window_height = 100;
+  const int window_width = 10;
+  const int window_height = 10;
   const int window_x = 0;
   const int window_y = 0;
    
@@ -132,129 +132,158 @@ bSetupPixelFormat( HDC hdc )
 void
 NV30GLRunTime::createWindowGLContext(void) {
 #ifdef WIN32
-  HDC hdc;
 
   assert(hwnd);
-  hdc = GetDC( hwnd);
+  hdc_window = GetDC( hwnd);
   
-  assert(bSetupPixelFormat( hdc ) );
+  assert(bSetupPixelFormat( hdc_window ) );
   
-  hglrc_window = wglCreateContext( hdc );
+  hglrc_window = wglCreateContext( hdc_window );
   assert(hglrc_window);
  
-  assert(wglMakeCurrent( hdc, hglrc_window ));
+  assert(wglMakeCurrent( hdc_window, hglrc_window ));
 #endif
 }
 
 
 void
-NV30GLRunTime::createPBuffer (void) {
+NV30GLRunTime::createPBuffer (int ncomponents) {
 
 #ifdef WIN32
-  int pixelformat;
-  int piAttribList[] = {0,0};
-  float fAttributes[] = {0, 0};
-  int iAttributes[30] = { WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE,
-			  WGL_FLOAT_COMPONENTS_NV, GL_TRUE,
-                          WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB,
-			  WGL_COLOR_BITS_ARB,      128,
-			  WGL_ALPHA_BITS_ARB,      32,
-			  WGL_DEPTH_BITS_ARB,      0,
-			  WGL_STENCIL_BITS_ARB,    0, 
-			  WGL_DOUBLE_BUFFER_ARB,   GL_FALSE,
-                          WGL_SUPPORT_OPENGL_ARB,  GL_TRUE,
-			  0,                       0};
-  unsigned int numFormats;
-  BOOL status;
+   static int pixelformat[4];
+   static int first;
+   static const int piAttribList[] = {0,0};
+   static const float fAttributes[] = {0, 0};
 
-  HDC hdc = wglGetCurrentDC();
-  HDC hpbufferdc;
-  
-  status = wglChoosePixelFormatARB(hdc, iAttributes, fAttributes, 1,
-				   &pixelformat, &numFormats);
-  
-  if ( numFormats == 0 ) {
-     MessageBox( NULL, 
-                 "ChoosePixelFormat failed to find a format", 
-                 "Error", MB_OK ); 
-     exit(1);
-  }
-
-  if ( !status ) 
-    {
-      MessageBox( NULL, "wglChoosePixelFormatARB failed", "Error", MB_OK ); 
+   if (!first) {
+      BOOL status;
+      int iAttributes[30] = { WGL_RED_BITS_ARB,        0,
+                              WGL_GREEN_BITS_ARB,      0,
+                              WGL_BLUE_BITS_ARB,       0,
+                              WGL_ALPHA_BITS_ARB,      0,
+                              WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE,
+                              WGL_FLOAT_COMPONENTS_NV, GL_TRUE,
+                              WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB,
+                              WGL_DEPTH_BITS_ARB,      0,
+                              WGL_STENCIL_BITS_ARB,    0, 
+                              WGL_DOUBLE_BUFFER_ARB,   GL_FALSE,
+                              WGL_SUPPORT_OPENGL_ARB,  GL_TRUE,
+                              0,                       0};
+      unsigned int numFormats;
+      
+      for (int i=0; i<4; i++) {
+         for (int j=0; j<4; j++)
+            iAttributes[1+j*2] = (j<=i)?32:0;
+         
+         status = wglChoosePixelFormatARB(hdc_window, iAttributes, 
+                                          fAttributes, 1,
+                                          pixelformat+i, &numFormats);
+         
+         if ( numFormats == 0  || !status) {
+            fprintf(stderr, "NV30GL: ChoosePixelFormat failed to find format\n");
+            exit(1);
+         }
+      }  
+   }
+   
+   if (first) {
+      assert(wglMakeCurrent (hpbufferdc, NULL));
+      assert(wglReleasePbufferDCARB (hpbuffer, hpbufferdc));
+      assert(wglDestroyPbufferARB (hpbuffer));
+   }
+   
+   hpbuffer = wglCreatePbufferARB(hdc_window,
+                                  pixelformat[ncomponents-1],
+                                  workspace, workspace,
+                                  piAttribList);
+   
+   if ( !hpbuffer ) {
+      unsigned int nv_err = GetLastError();
+      fprintf (stderr, "NV30GL:  Failed to create pbuffer.\n");
+      if (nv_err == ERROR_INVALID_HANDLE)
+         fprintf (stderr, "GetLastError: ERROR_INVALID_HANDLE\n");
+      else if (nv_err == ERROR_INVALID_DATA)
+         fprintf (stderr, "GetLastError: ERROR_INVALID_DATA\n");
+      else
+         fprintf (stderr, "GetLastError: 0x%x\n", nv_err);
       exit(1);
-    }
-  
-  hpbuffer = wglCreatePbufferARB(hdc,
-				 pixelformat,
-				 workspace, workspace,
-				 piAttribList);
-  
-  if ( !hpbuffer ) 
-    {
+   }
+   
+   hpbufferdc = wglGetPbufferDCARB (hpbuffer);
+   assert (hpbufferdc);
+   
+   if (!first)
+      hpbufferglrc = wglCreateContext( hpbufferdc );
+   assert (hpbufferglrc);
+   
+   if (!wglMakeCurrent( hpbufferdc, hpbufferglrc )) {
+      fprintf( stderr, "NV30GL:  MakeCurrent Failed.\n");
       fprintf (stderr, "GetLastError: 0x%x\n", GetLastError());
-      MessageBox( NULL, "Failed to create pbuffer",
-                  "wglCreatePbufferARB Error",
-		  MB_OK | MB_ICONINFORMATION );
-      exit(1);
-    }
-  
-  hpbufferdc = wglGetPbufferDCARB (hpbuffer);
-  assert (hpbufferdc);
-  
-  hpbufferglrc = wglCreateContext( hpbufferdc );
-  assert (hpbufferglrc);
+      assert(0);
+   }
 
-  if (!wglMakeCurrent( hpbufferdc, hpbufferglrc )) {
-     fprintf (stderr, "GetLastError: 0x%x\n", GetLastError());
-     assert(0);
-  }
-
-  CHECK_GL();
-
+   CHECK_GL();
 
 #else
 
   /* GLX Pbuffer creation */
 
-  Display   *pDisplay = XOpenDisplay(NULL); 
-  int iScreen = DefaultScreen(pDisplay);
+  static Display   *pDisplay;
+  static int iScreen;
   
-  GLXFBConfig *glxConfig;
-  int iConfigCount;   
-  
-  int pfAttribList[] = 
-    {
-      GLX_RED_SIZE,               32,
-      GLX_GREEN_SIZE,             32,
-      GLX_BLUE_SIZE,              32,
-      GLX_ALPHA_SIZE,             32,
-      GLX_STENCIL_SIZE,           0,
-      GLX_DEPTH_SIZE,             0,
-      GLX_FLOAT_COMPONENTS_NV,    true,
-      GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT,
-      0,
-    };
-  
-  glxConfig = glXChooseFBConfig(pDisplay, 
-				iScreen, 
-				pfAttribList, 
-				&iConfigCount);
-  if (!glxConfig) {
-    fprintf(stderr, "NV30GL:  glXChooseFBConfig() failed\n");
-    exit(1);
-  }
-  
-  int pbAttribList[] =  {
-    GLX_PRESERVED_CONTENTS, true,
-    GLX_PBUFFER_WIDTH, workspace,
-    GLX_PBUFFER_HEIGHT, workspace,
-    0,
+  GLXFBConfig *glxConfig[4];
+
+  static const int pbAttribList[] =  {
+     GLX_PRESERVED_CONTENTS, true,
+     GLX_PBUFFER_WIDTH, workspace,
+     GLX_PBUFFER_HEIGHT, workspace,
+     0,
   };
   
+  static int first;
+ 
+  if (!first) {
+     int iConfigCount;   
+     int pfAttribList[] = 
+        {
+           GLX_RED_SIZE,               0,
+           GLX_GREEN_SIZE,             0,
+           GLX_BLUE_SIZE,              0,
+           GLX_ALPHA_SIZE,             0,
+           GLX_STENCIL_SIZE,           0,
+           GLX_DEPTH_SIZE,             0,
+           GLX_FLOAT_COMPONENTS_NV,    true,
+           GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT,
+           0,
+        };
+
+     pDisplay = XOpenDisplay(NULL);
+     iScreen  = DefaultScreen(pDisplay);
+
+     for (int i=0; i<4; i++) {
+         for (int j=0; j<4; j++)
+            pfAttribList[1+j*2] = (j<=i)?32:0;
+
+        glxConfig[i] = glXChooseFBConfig(pDisplay, 
+                                         iScreen, 
+                                         pfAttribList, 
+                                         &iConfigCount);
+
+        if (!glxConfig[i]) {
+           fprintf(stderr, "NV30GL:  glXChooseFBConfig() failed\n");
+           exit(1);
+        }        
+     }
+  }
+
+     
+  if (first) {
+     glXMakeCurrent(pDisplay, glxPbuffer, NULL);
+     glXDeletePbuffer(pDisplay, glxPbuffer);
+  }
+
   glxPbuffer = glXCreatePbuffer(pDisplay, 
-				glxConfig[0], 
+				glxConfig[ncomponents-1][0], 
 				pbAttribList);
   
   if (!glxPbuffer) {
@@ -262,17 +291,22 @@ NV30GLRunTime::createPBuffer (void) {
     exit(1);
   }
   
-  glxContext = glXCreateNewContext(pDisplay, 
-				   glxConfig[0], 
-				   GLX_RGBA_TYPE, 
-				   0, true);
-  if (!glxConfig) {
-    fprintf(stderr, "NV30GL: glXCreateContextWithConfig() failed\n");
-    exit (1);
+  if (!first) {
+     glxContext = glXCreateNewContext(pDisplay, 
+                                      glxConfig[0], 
+                                      GLX_RGBA_TYPE, 
+                                      0, true);
+     if (!glxConfig) {
+        fprintf(stderr, "NV30GL: glXCreateContextWithConfig() failed\n");
+        exit (1);
+     }
   }
-  
+     
   glXMakeCurrent(pDisplay, glxPbuffer, glxContext);
+
 
 #endif
 
+  pbuffer_ncomp = ncomponents;
+  first = 1;
 }
