@@ -361,7 +361,7 @@ void BlacklistType (Type **t) {
     }
     FunctionType * ft;
     if ((*t)->type==TT_Function&&(ft = static_cast<FunctionType *>(*t))) {
-		for (int i=0;i<ft->nArgs;++i) {
+		for (unsigned int i=0;i<ft->nArgs;++i) {
 			BlacklistType(&ft->args[i]->form);
 		}
 		BlacklistType(&ft->subType);

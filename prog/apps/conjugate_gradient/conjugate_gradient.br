@@ -51,15 +51,15 @@ kernel void scaleAdd(float a<>, float b<>, float scale, out float c<>) {
   c = a + (scale*b);
 }
 
-void kernel subtract(float a<>, float b<>, out float c<>) {
+kernel void subtract(float a<>, float b<>, out float c<>) {
   c = a - b;
 }
 
-void kernel copy(float a<>, out float b<>) {
+kernel void copy(float a<>, out float b<>) {
   b = a;
 }
 
-reduce void sum(float a<>, reduce float result) {
+reduce void sum(float a<>, reduce float result<>) {
   result += a;
 }
 

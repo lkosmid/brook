@@ -24,7 +24,7 @@ bool reduceNeeded (const FunctionDef * fd) {
    Type * form = fd->decl->form;
    assert (form->isFunction());
    FunctionType* func = static_cast<FunctionType *>(form);
-   for (int i=0;i<func->nArgs;++i) {
+   for (unsigned int i=0;i<func->nArgs;++i) {
       if (func->args[i]->isReduce())
          return true;
    }
@@ -200,7 +200,7 @@ static Expression * ConvertReduceToGets(FunctionCall* func, FunctionType * type)
    Expression * mstream=NULL;
    unsigned int reduceloc=0,streamloc=0;
    std::string reducename;
-   for (int i=0;i<type->nArgs;++i) {
+   for (unsigned int i=0;i<type->nArgs;++i) {
       if (type->args[i]->isReduce()) {
          if (func->args[i]->etype==ET_Variable) {
             Variable * v = static_cast<Variable*>(func->args[i]);
@@ -288,7 +288,7 @@ void FindFirstReduceFunctionCall (Statement * s) {
 }
 void addReductionBools (FunctionDef *fDef) {
    FunctionType * t = static_cast<FunctionType*>(fDef->decl->form);
-   for (int i=0;i<t->nArgs;++i) {
+   for (unsigned int i=0;i<t->nArgs;++i) {
       if (t->args[i]->isReduce()) {
          DeclStemnt * ds = new DeclStemnt(fDef->location);
          ds->next = fDef->head;
@@ -330,7 +330,7 @@ void BrookCombine_ConvertKernel(FunctionDef *fDef) {
    if (1) {
       FunctionType*  func=static_cast<FunctionType*>(fDef->decl->form);
       std::vector <Decl *>AdditionalDecl;
-      for (int i=0;i<func->nArgs;++i) {
+      for (unsigned int i=0;i<func->nArgs;++i) {
          if (func->args[i]->isReduce()) {
             AdditionalDecl.push_back(func->args[i]->dup());
             AdditionalDecl.back()->name->name=

@@ -83,7 +83,7 @@ kernel void sparse_matmult_product( float index<>, float x[][], float A<>, out f
 }
 
 
-reduce void sum(float a<>, reduce float result) {
+reduce void sum(float a<>, reduce float result<>) {
   result += a;
 }
 

@@ -8,7 +8,7 @@ FunctionDef *IdentifyVoutFunc(FunctionDef * fd){
    FunctionType * ft = static_cast<FunctionType* >(fd->decl->form);
    bool foundvout=false;
    std::set<unsigned int> vouts;
-   for (int i=0;i<ft->nArgs;++i) {
+   for (unsigned int i=0;i<ft->nArgs;++i) {
       if ((ft->args[i]->form->getQualifiers()&TQ_Vout)!=0) {
          foundvout=true;
          vouts.insert(i);
@@ -77,7 +77,7 @@ FunctionDef * TransformVoutToOut (FunctionDef * fd) {
 Symbol * findSentinel (FunctionType * ft) {
    Symbol * ret = new Symbol;
    ret->name="__inf";
-   for (int i=0;i<ft->nArgs;++i) {
+   for (unsigned int i=0;i<ft->nArgs;++i) {
       if (ft->args[i]->name->name=="__inf"){
          ret->entry = mk_paramdecl("__inf",ft->args[i]);
          return ret;
@@ -127,7 +127,7 @@ Statement * InitialInfSet (std::string fname,
    return expr;
 }
 Decl * findVoutCounter (FunctionType * ft) {
-   for (int i=0;i<ft->nArgs;++i) {
+   for (unsigned int i=0;i<ft->nArgs;++i) {
       if (ft->args[i]->name->name=="__vout_counter")
          return ft->args[i];
    }

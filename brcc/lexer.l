@@ -216,10 +216,6 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->storage = ST_Static;
                       return(err_tok = STATIC);
                     }
-<INITIAL>"kernel"   {
-                      lvalp->storage = ST_Kernel;
-                      return(err_tok = KERNEL);
-                    }
 <INITIAL>"typedef"  {
                       lvalp->storage = ST_Typedef;
                       return(err_tok = TYPEDEF);
@@ -248,6 +244,10 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
 <INITIAL>"iter"     {
                       lvalp->typeQual = TQ_Iter;
                       return(err_tok = ITER);
+                    }
+<INITIAL>"kernel"   {
+                      lvalp->typeQual = TQ_Kernel;
+                      return(err_tok = KERNEL);
                     }
 
 <INITIAL>"void"     {

@@ -4,7 +4,7 @@
 // streams, gathers, and constants.
 
 #include <stdio.h>
-kernel void FiniteTest(float a, out float4 e<>, float inf) {
+kernel void FiniteTest(float a<>, out float4 e<>, float inf) {
    e.x = isfinite(a);
    e.y = isnan(a);
    e.z = isinf(a);

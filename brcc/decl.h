@@ -123,9 +123,10 @@ struct TypeQual{
    static TypeQual ReturnConst() {TypeQual ret;ret.init(0x0001);return ret;}
    static TypeQual ReturnVolatile() {TypeQual ret;ret.init(0x0002);return ret;}
    static TypeQual ReturnOut() {TypeQual ret;ret.init(0x0004);return ret;}
-   static TypeQual ReturnReduce() {TypeQual ret;ret.init(0x0008);return ret;}   
+   static TypeQual ReturnReduce() {TypeQual ret;ret.init(0x0008);return ret;}
    static TypeQual ReturnVout() {TypeQual ret;ret.init(0x0010);return ret;}
    static TypeQual ReturnIter() {TypeQual ret;ret.init(0x0020);return ret;}
+   static TypeQual ReturnKernel() {TypeQual ret;ret.init(0x0040);return ret;}
 };
 
 const TypeQual TQ_None=TypeQual::ReturnNone();
@@ -135,6 +136,7 @@ const TypeQual TQ_Out=TypeQual::ReturnOut();
 const TypeQual TQ_Reduce=TypeQual::ReturnReduce();
 const TypeQual TQ_Vout=TypeQual::ReturnVout();
 const TypeQual TQ_Iter=TypeQual::ReturnIter();
+const TypeQual TQ_Kernel=TypeQual::ReturnKernel();
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 enum StorageType
@@ -145,7 +147,6 @@ enum StorageType
     ST_Register,
     ST_Static,
     ST_Typedef,
-    ST_Kernel
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -294,7 +295,7 @@ class Type : public DupableType
 
     virtual bool lookup( Symbol* sym ) const { return false; }
 
-    virtual TypeQual getQualifiers( void ) = 0;
+    virtual TypeQual getQualifiers( void ) const = 0;
     virtual BaseType *getBase( void ) = 0;
 
     bool    isBaseType() const { return (type == TT_Base); }
@@ -302,6 +303,10 @@ class Type : public DupableType
     bool    isFunction() const { return (type == TT_Function); }
     bool    isArray() const { return (type == TT_Array); }
     bool    isStream() const { return (type == TT_Stream); }
+    bool    isReduce() const { return (getQualifiers() & TQ_Reduce) != 0; }
+    bool    isKernel() const {
+       return ((getQualifiers() & (TQ_Reduce|TQ_Kernel)) != 0);
+    }
 
     // Delete all types stored in this list.
     static void    DeleteTypeList(Type* typelist);
@@ -342,7 +347,7 @@ class BaseType : public Type
 
     bool lookup( Symbol* sym ) const;
 
-    TypeQual getQualifiers( void );
+    TypeQual getQualifiers( void ) const;
     BaseType *getBase( void );
 
     BaseTypeSpec    typemask;
@@ -386,7 +391,7 @@ class PtrType : public Type
 
     bool lookup( Symbol* sym ) const;
 
-    TypeQual getQualifiers( void );
+    TypeQual getQualifiers( void ) const;
     BaseType *getBase( void );
 
     TypeQual        qualifier;
@@ -423,7 +428,7 @@ class ArrayType : public Type
 
     bool lookup( Symbol* sym ) const;
 
-    TypeQual getQualifiers( void );
+    TypeQual getQualifiers( void ) const;
     BaseType *getBase( void );
 
     Type           *subType;
@@ -459,7 +464,7 @@ class BitFieldType : public Type
 
     bool lookup( Symbol* sym ) const;
 
-    TypeQual getQualifiers( void );
+    TypeQual getQualifiers( void ) const;
     BaseType *getBase( void );
 
     Expression     *size;
@@ -497,11 +502,11 @@ class FunctionType : public Type
 
     bool lookup( Symbol* sym ) const;
 
-    TypeQual getQualifiers( void );
+    TypeQual getQualifiers( void ) const;
     BaseType *getBase( void );
 
     bool            KnR_decl;    // old-style function declaration?
-    int             nArgs;
+    unsigned int    nArgs;
     int             size;
     Decl          **args;
 
@@ -533,7 +538,7 @@ class StreamType : public Type
 
     bool lookup( Symbol* sym ) const;
 
-    TypeQual getQualifiers( void );
+    TypeQual getQualifiers( void ) const;
     BaseType *getBase( void );
 
     Type           *subType;
@@ -574,11 +579,8 @@ class Decl
 
     bool    isTypedef() const { return (storage == ST_Typedef); }
     bool    isStatic() const { return (storage == ST_Static); }
-    bool    isReduce() const {return (form->getQualifiers()&TQ_Reduce)!=0;}
-    bool    isKernel() const {
-       /// XXX Fixme: A kernel is not a reduce...but in the CPU side they are the same --Daniel
-       return (storage == ST_Kernel)||isReduce(); 
-    }
+    bool    isReduce() const { return (form->getQualifiers()&TQ_Reduce)!=0; }
+    bool    isKernel() const { return form->isKernel(); }
     bool    isStream() const {
        return (form->type == TT_Stream || form->type == TT_BrtStream); }
     bool    isArray() const {

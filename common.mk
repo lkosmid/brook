@@ -1,4 +1,3 @@
-BRCCFLAGS := -m -y
 ifndef ROOTDIR
 ROOTDIR := .
 endif
@@ -192,7 +191,7 @@ ifdef REGRESSIONDIRS
 
 regression:
 	@for i in $(REGRESSIONDIRS); do \
-		$(MAKE) --no-print-directory -C $$i regression; \
+		$(MAKE) --no-print-directory -C $$i regression || exit 17; \
 	done
 
 else

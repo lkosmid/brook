@@ -140,7 +140,7 @@ BrtStreamType::lookup( Symbol* sym ) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 TypeQual
-BrtStreamType::getQualifiers( void )
+BrtStreamType::getQualifiers( void ) const
 {
    return base->getQualifiers();
 }

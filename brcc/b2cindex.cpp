@@ -38,12 +38,12 @@ Expression *indexOfKeyword (Expression* e) {
 void addCurrentArgs(FunctionDef * fd) {
    FunctionType * f = static_cast<FunctionType*>(fd->decl->form);
    currentArgs.clear();
-   for (int i=0;i<f->nArgs;++i) {
+   for (unsigned int i=0;i<f->nArgs;++i) {
       currentArgs[f->args[i]->name->name]=i;
    }
 }
 FunctionDef * needIndexOf (FunctionDef * fd) {
-   if (fd->decl->storage==ST_Kernel) {
+   if (fd->decl->isKernel()) {
       currentName = fd->FunctionName()->name;
       addCurrentArgs (fd);
       fd->findExpr (&indexOfKeyword);
@@ -86,7 +86,7 @@ Expression * callIndexOf(Expression * e) {
    return e;
 }
 FunctionDef * recursiveNeedIndexOf(FunctionDef*  fd) {
-   if (fd->decl->storage==ST_Kernel) {
+   if (fd->decl->isKernel()) {
       currentName = fd->FunctionName()->name;
       addCurrentArgs (fd);
       fd->findExpr(&callIndexOf);
@@ -142,7 +142,7 @@ Expression * changeFunctionCallToPassIndexOf(Expression* e) {
    return e;
    }
 FunctionDef * changeFunctionCallForIndexOf (FunctionDef * fd) {
-   if (fd->decl->storage==ST_Kernel) {
+   if (fd->decl->isKernel()) {
       fd->findExpr(&changeFunctionCallToPassIndexOf);
    }
    return NULL;

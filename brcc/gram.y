@@ -74,8 +74,8 @@ extern int err_top_level;
 %token <loc>        INVALID
 
 /* the reserved words */
-%token <typeQual>   CONST VOLATILE OUT REDUCE VOUT ITER
-%token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF KERNEL
+%token <typeQual>   CONST VOLATILE OUT REDUCE VOUT ITER KERNEL
+%token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF
 %token <base>       VOID CHAR SHORT INT LONG DOUBLE SGNED UNSGNED
 /* IMPORTANT: Keep all the FLOATN's next to each other in order! */
 %token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4
@@ -128,7 +128,7 @@ extern int err_top_level;
 %type  <symbol>      tag_ref
 %type  <symbol>      field_ident
 
-%type  <storage>     storage_class global_storage_class local_storage_class local_or_global_storage_class
+%type  <storage>     storage_class local_storage_class local_or_global_storage_class
 %type  <typeQual>    type_qual type_qual_token type_qual_list opt_type_qual_list
 
 %type  <base>        type_spec type_spec_reentrance 
@@ -1444,15 +1444,11 @@ local_or_global_storage_class: EXTRN
                              | TYPEDEF
         ;
 
-global_storage_class: KERNEL
-        ;
-
 local_storage_class: AUTO
                    | REGISTR
         ;
         
 storage_class: local_or_global_storage_class
-             | global_storage_class
              | local_storage_class
         {
             if (! gProject->Parse_TOS->transUnit ||
@@ -1681,6 +1677,7 @@ type_qual_token: CONST
                | OUT
                | REDUCE
                | ITER
+               | KERNEL
                | VOUT LBRCKT opt_const_expr RBRCKT
         {
            TypeQual r($1);

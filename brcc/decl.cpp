@@ -71,10 +71,6 @@ printStorage( std::ostream& out, StorageType storage )
         case ST_Extern:
             out << "extern ";
             break;
-
-        case ST_Kernel:
-            out << "kernel ";
-            break;
     }
 }
 
@@ -477,7 +473,7 @@ BaseType::lookup( Symbol* sym ) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 TypeQual
-BaseType::getQualifiers( void )
+BaseType::getQualifiers( void ) const
 {
    return qualifier;
 }
@@ -591,7 +587,7 @@ PtrType::lookup( Symbol* sym ) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 TypeQual
-PtrType::getQualifiers( void )
+PtrType::getQualifiers( void ) const
 {
    return qualifier;
 }
@@ -699,7 +695,7 @@ ArrayType::lookup( Symbol* sym ) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 TypeQual
-ArrayType::getQualifiers( void )
+ArrayType::getQualifiers( void ) const
 {
    return subType->getQualifiers();
 }
@@ -808,7 +804,7 @@ BitFieldType::lookup( Symbol* sym ) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 TypeQual
-BitFieldType::getQualifiers( void )
+BitFieldType::getQualifiers( void ) const
 {
    return subType->getQualifiers();
 }
@@ -829,7 +825,7 @@ FunctionType::FunctionType(Decl *args_list)
         
 FunctionType::~FunctionType()
 {
-    for (int j=0; j < nArgs; j++)
+    for (unsigned int j=0; j < nArgs; j++)
     {
         delete args[j];
     }
@@ -850,7 +846,7 @@ FunctionType::dup0() const
     ret->args = new Decl* [size];
     ret->KnR_decl = KnR_decl;
 
-    for (int j=0; j < nArgs; j++)
+    for (unsigned int j=0; j < nArgs; j++)
         ret->addArg(args[j]->dup());
 
     ret->subType = subType->dup();
@@ -903,7 +899,7 @@ FunctionType::printAfter( std::ostream& out ) const
         if (nArgs > 0)
         {
             out << *(args[0]->name);
-            for (int j=1; j < nArgs; j++)
+            for (unsigned int j=1; j < nArgs; j++)
             {
                 out << ", ";
                 out << *(args[j]->name);
@@ -912,7 +908,7 @@ FunctionType::printAfter( std::ostream& out ) const
     
         out << ")\n";
 
-        for (int j=0; j < nArgs; j++)
+        for (unsigned int j=0; j < nArgs; j++)
         {
             args[j]->print(out,true);
             out << ";\n";
@@ -925,7 +921,7 @@ FunctionType::printAfter( std::ostream& out ) const
         if (nArgs > 0)
         {
             args[0]->print(out,true);
-            for (int j=1; j < nArgs; j++)
+            for (unsigned int j=1; j < nArgs; j++)
             {
                 out << ", ";
                 args[j]->print(out,true);
@@ -964,7 +960,7 @@ FunctionType::addArg(Decl *arg)
 
         args = new Decl* [size];
 
-        for (int j=0; j < nArgs; j++)
+        for (unsigned int j=0; j < nArgs; j++)
         {
             args[j] = oldArgs[j];
         }
@@ -998,7 +994,7 @@ FunctionType::findExpr( fnExprCallback cb )
     if (subType)
         subType->findExpr(cb);
 
-    for (int j=0; j < nArgs; j++)
+    for (unsigned int j=0; j < nArgs; j++)
     {
         args[j]->findExpr(cb);
     }
@@ -1016,7 +1012,7 @@ FunctionType::lookup( Symbol* sym ) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 TypeQual
-FunctionType::getQualifiers( void )
+FunctionType::getQualifiers( void ) const
 {
    return subType->getQualifiers();
 }

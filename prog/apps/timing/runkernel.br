@@ -281,8 +281,8 @@ RunKernelHardWorkCPU(int streamLength, float4 c, float4 *input, float4 *output)
 static void
 RunKernelKickBRT(void)
 {
-   float d[1] = { 12.34f };
-   float s<1>, o<1>;
+   float4 d[1] = { float4(12.34f, 12.34f, 12.34f, 12.34f) };
+   float4 s<1>, o<1>;
 
    streamRead(s, d);
    RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);

@@ -40,7 +40,7 @@ unsigned int getReferenceStream(FunctionDef * fDef) {
    FunctionType * ft= static_cast<FunctionType*>(fDef->decl->form);
    unsigned int ret=0;
    bool found=false;
-   for (int i=0;i<ft->nArgs;++i) {
+   for (unsigned int i=0;i<ft->nArgs;++i) {
       if (ft->args[i]->isReduce())
          continue;
       if (ft->args[i]->isStream()){
@@ -87,7 +87,7 @@ int getGatherStructureSamplerCount( Type* form );
 // This function prints the code of an internally callable kernel
 // from within another kernel.
 void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
-   int i;
+   unsigned int i;
    std::string myvoid("void  ");
    FunctionType * ft = static_cast<FunctionType *>(fDef->decl->form);
    out << myvoid;
@@ -760,12 +760,12 @@ BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
     assert (form->isFunction());
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     std::vector<PrintCPUArg> myArgs;
-    {for (int i=0;i<func->nArgs;++i) {
+    for (unsigned int i=0;i<func->nArgs;++i) {
         myArgs.push_back(PrintCPUArg(func->args[i],
                                      i,
                                      shadowOutput,
                                      fDef->decl->isReduce()));
-    }}
+    }
     return myArgs;
 }
 

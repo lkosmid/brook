@@ -139,7 +139,7 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
    out << "  brook::Stream * __inf = *sentinelStream(1);";
    out << std::endl;
    out << "  int maxextents[2]={0,0};"<<std::endl;
-   int i=0;   
+   unsigned int i=0;   
    for (bool found=0;i<ft->nArgs;++i) {
       if ((ft->args[i]->form->getQualifiers()&TQ_Out)==0
           &&ft->args[i]->isStream()
@@ -273,7 +273,7 @@ void
 BRTKernelDef::printStub(std::ostream& out) const
 {
    FunctionType *fType;
-   int i,NumArgs;
+   unsigned int i,NumArgs;
    bool vout=voutFunctions.find(FunctionName()->name)!=voutFunctions.end();
    if (vout) {
       printPrototypes (out,"float");
@@ -408,7 +408,7 @@ BRTKernelDef::CheckSemantics() const
 
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
-   for (int i = 0; i < fType->nArgs; i++) {
+   for (unsigned int i = 0; i < fType->nArgs; i++) {
       if (!fType->args[i]->isStream() &&
             (fType->args[i]->form->getQualifiers() & TQ_Iter) != 0) {
          std::cerr << location << "'";
@@ -450,7 +450,7 @@ BRTMapKernelDef::CheckSemantics() const
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
 
-   for (int i = 0; i < fType->nArgs; i++) {
+   for (unsigned int i = 0; i < fType->nArgs; i++) {
       if (fType->args[i]->isReduce()) {
          std::cerr << location << "Reduce arguments are not allowed in "
                    << *FunctionName() << ": ";
@@ -504,7 +504,7 @@ BRTReduceKernelDef::CheckSemantics() const
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
 
-   for (int i = 0; i < fType->nArgs; i++) {
+   for (unsigned int i = 0; i < fType->nArgs; i++) {
       if (fType->args[i]->isReduce()) {
          if (reduceArg != NULL) {
             std::cerr << location << "Multiple reduce arguments in "

@@ -34,12 +34,16 @@ usage (void) {
   fprintf (stderr, "Brook CG Compiler\n");
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
   fprintf (stderr,
-        "brcc [-hvnd] [-o prefix] [-w workspace] [-p shader ] foo.br\n\n"
+        "brcc [-hvndktyAN] [-o prefix] [-w workspace] [-p shader ] foo.br\n\n"
         "\t-h\t\thelp (print this message)\n"
         "\t-v\t\tverbose (print intermediate generated code)\n"
         "\t-n\t\tno codegen (just parse and reemit the input)\n"
         "\t-d\t\tdebug (print cTool internal state)\n"
         "\t-k\t\tkeep generated fragment program (in foo.cg)\n"
+        "\t-t\t\tdisable kernel call type checking\n"
+        "\t-y\t\temit code for ATI 4-output hardware\n"
+        "\t-A\t\tenable address virtualization (experimental)\n"
+        "\t-N\t\tsupport kernels calling other kernels\n"
         "\t-o prefix\tprefix prepended to all output files\n"
         "\t-w workspace\tworkspace size (16 - 2048, default 1024)\n"
         "\t-p shader\tcpu / ps20 / fp30 (can specify multiple)\n"
@@ -66,7 +70,7 @@ parse_args (int argc, char *argv[]) {
    */
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-  while ((opt = getopt(argc, argv, "d:hkmnyAo:p:vw")) != EOF) {
+  while ((opt = getopt(argc, argv, "d:hkmntyANo:p:vw")) != EOF) {
      switch(opt) {
      case 'h':
         usage();
@@ -80,12 +84,18 @@ parse_args (int argc, char *argv[]) {
      case 'n':
         globals.parseOnly = true;
         break;
+     case 't':
+        globals.noTypeChecks = true;
+        break;
     // TIM: totally hacked
      case 'y':
         globals.allowDX9MultiOut = true;
         break;
      case 'A':
         globals.enableGPUAddressTranslation = true;
+        break;
+     case 'N':
+        globals.allowKernelToKernel = true;
         break;
      case 'o':
 	if (outputprefix) usage();

@@ -53,7 +53,7 @@ public:
   
   bool lookup( Symbol* sym ) const;
 
-  TypeQual getQualifiers( void );
+  TypeQual getQualifiers( void ) const;
   BaseType *getBase( void );
  
   BaseType       *base;
@@ -88,7 +88,7 @@ public:
 
   bool lookup( Symbol* sym ) const { return base ? base->lookup(sym) : false; }
 
-  TypeQual getQualifiers( void ) { return base->getQualifiers(); }
+  TypeQual getQualifiers( void ) const { return base->getQualifiers(); }
   BaseType *getBase( void ) { return base; }
 
   BaseType       *base;

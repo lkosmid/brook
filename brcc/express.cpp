@@ -36,12 +36,14 @@
 #include <iomanip>
 #include <iostream>
 
+#include "main.h"
 #include "config.h"
 #include "express.h"
 #include "decl.h"
 
 #include "gram.h"
 #include "token.h"
+#include "stemnt.h"
 
 //#define SHOW_TYPES
 
@@ -777,9 +779,122 @@ FunctionCall::~FunctionCall()
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool
+FunctionCall::checkKernelCall(Type *argType, unsigned int n)
+{
+    Variable *var = (Variable *) function;
+    FunctionType *k;
+    Decl *kArg;
+
+    if (globals.noTypeChecks) {
+       return true;
+    }
+
+    assert(function->type->isKernel());
+    assert(function->etype == ET_Variable);
+    assert(var->name->entry->IsFctDecl());
+    assert(var->name->entry->u2FunctionDef);
+    assert(var->name->entry->u2FunctionDef->decl->form->type == TT_Function);
+    k = (FunctionType *) var->name->entry->u2FunctionDef->decl->form;
+
+    /*
+     * We can't do strict number of argument checking when kernel that use
+     * indexof call other kernels (indexof apparently requires tunneling
+     * extra information to the subfunction).  We can however, always be
+     * certain any bonus arguments are not streams.  In the worst case, the
+     * next pass C++ compiler will hopefully catch any argument counting
+     * errors.  --Jeremy.
+     */
+
+    if (n >= k->nArgs) {
+       if (!globals.allowKernelToKernel || argType->type == TT_Stream) {
+          std::cerr << location << "Too many arguments (" << n + 1
+                    << ") to "
+                    << *var->name->entry->u2FunctionDef->decl->name
+                    << " (expects " << k->nArgs << ")\n";
+          return false;
+       }
+       return true;
+    }
+
+    /*
+     * cTool doesn't do typing for complex expressions so we'll skip
+     * cases where it isn't available
+     */
+
+    if (argType == NULL) {
+       if (globals.verbose) {
+          std::cerr << location << "Skipping type checks for arg " << n
+                    << ", no type information available.\n";
+       }
+       return true;
+    }
+
+    kArg = k->args[n];
+
+    /*
+     * Check for scalar / non-scalar mismatches.
+     *       - Reduction parameters can have scalars passed to streams.
+     *       - Gathers mean that streams or arrays can be passed to arrays
+     *       - Kernel to kernel calls mean scalars can be passed to
+     *         non-scalars and vice versa most anywhere.  Ick.
+     */
+
+    if (kArg->form->type != argType->type &&
+        !(argType->type == TT_Stream && kArg->form->type == TT_Array) &&
+        !(function->type->isReduce() && kArg->form->isReduce() &&
+          argType->type == TT_Base && kArg->form->type == TT_Stream) &&
+        !(globals.allowKernelToKernel &&
+          argType->type == TT_Base && kArg->form->type == TT_Stream) &&
+        !(globals.allowKernelToKernel &&
+          argType->type == TT_Stream && kArg->form->type == TT_Base)) {
+       std::cerr << location << "Stream/Non-stream mismatch on argument "
+                 << n << " to "
+                 << *var->name->entry->u2FunctionDef->decl->name
+                 << " got ";
+       argType->printType(std::cerr, NULL, true, 0);
+       std::cerr << ", need ";
+       kArg->form->printType(std::cerr, NULL, true, 0);
+       std::cerr << ".\n";
+       return false;
+    }
+
+    /*
+     * Check base types.
+     *       - We'll allow ints to be promoted to floats, but not much else.
+     */
+
+    if (argType->getBase()->typemask != kArg->form->getBase()->typemask &&
+        !((argType->getBase()->typemask & BT_Int) &&
+          (kArg->form->getBase()->typemask & BT_Float))) {
+       std::cerr << location << "Base type mismatch on argument "
+                 << n << " to "
+                 << *var->name->entry->u2FunctionDef->decl->name
+                 << " got ";
+       argType->getBase()->printType(std::cerr, NULL, true, 0);
+       std::cerr << ", need ";
+       kArg->form->getBase()->printType(std::cerr, NULL, true, 0);
+       std::cerr << ".\n";
+       return false;
+    }
+
+    return true;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionCall::addArg( Expression *arg )
 {
+    /*
+     * Type-check arguments to kernels (the C++ compiler will do type
+     * checking for the rest of the function calls).
+     */
+
+    if (function->type && function->type->isKernel() &&
+        !checkKernelCall(arg->type, args.size())) {
+       assert(0);
+    }
+
     args.push_back(arg);
 }
 

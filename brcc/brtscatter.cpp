@@ -146,7 +146,7 @@ BRTScatterDef::print(std::ostream& out, int) const {
    unsigned int inindex=0,retindex=0;
    unsigned int i;
 
-   for (int j=0;j<decl->nArgs;++j) {
+   for (unsigned int j=0;j<decl->nArgs;++j) {
       if (decl->args[j]->form->type!=TT_Stream) {
          extraArgs.push_back(j);
       } else if ((decl->args[j]->form->getQualifiers()&TQ_Reduce)!=0) {
@@ -221,7 +221,7 @@ BRTScatterDef::print(std::ostream& out, int) const {
      out << std::endl;
      indent(out,2);
      out << "__"<<name<<"_cpu_inner (";
-     for (int i=0;i<decl->nArgs;++i) {
+     for (unsigned int i=0;i<decl->nArgs;++i) {
        if (i!=0) 
          out << ", ";
        out << decl->args[i]->name->name;

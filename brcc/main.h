@@ -21,6 +21,8 @@ struct globals_struct {
   int workspace;
   bool allowDX9MultiOut;
   bool enableGPUAddressTranslation;
+  bool allowKernelToKernel;
+  bool noTypeChecks;
 };
 
 extern struct globals_struct globals;
