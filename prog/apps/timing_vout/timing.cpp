@@ -23,7 +23,7 @@ void WriteSummary() {
 
       if (num||j==0) {
         here--;
-        *here='0'+num%10;
+        *here='0'+(char)(num%10);
       }
       else
         break;
@@ -129,8 +129,7 @@ void SetupMillisTimer(int argc, char* *argv) {
     timerRes = timeCaps.wPeriodMin;
     //std::cout << "(* Set timer resolution to " << timeCaps.wPeriodMin << " ms. *)\n";
   }
-  GenSetupMillisTimer(argc,argv)
-
+  GenSetupMillisTimer(argc,argv);
 }
 void CleanupMillisTimer(void) {
   if ((int64)timeEndPeriod((unsigned int)timerRes) == (int64)TIMERR_NOCANDO) {

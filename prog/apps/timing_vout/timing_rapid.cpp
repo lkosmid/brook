@@ -133,7 +133,7 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
   float  stretchX;
   unsigned int  alloc_intersections = 16;
   float toagg[65536]={0};
-  ::brook::stream agg(::brook::getStreamType(( float  *)0), 1 , 1,-1);
+  ::brook::stream agg(::brook::getStreamType(( float4  *)0), 1 , 1,-1);
   
   ::brook::stream m1(::brook::getStreamType(( TransposedBBox  *)0), bboxwidt1 , bboxheit1,-1);
   ::brook::stream m2(::brook::getStreamType(( BBox  *)0), bboxwidt2 , bboxheit2,-1);
@@ -230,8 +230,7 @@ unsigned int  doCollide(unsigned int  widt1, unsigned int  heit1, Tri  *t1, unsi
         Collide(trav,m1,m2,nextNode,hits);
       }else {
 
-        
-        CollideNoCompact(trav,m1,m2,nextNodeT[iter],hitsT[iter],iter>0?nextNodeT[iter-1]:nextNodeT[iter+1]);
+        CollideNoCompact(trav,m1,m2,nextNodeT[iter],hitsT[iter],iter>0?nextNodeT[iter-1]:nextNodeT[iter]);
       }
       if (rr==0){
         hitsL.push_back(hits);
