@@ -4,8 +4,6 @@ Off the cuff
    * Emit #line directives in the emitted cpp file.
    	- Hard unless done in every single statement.
 
-   * Kernel to kernel calls?
-
    * Fix (boost) priority of 'indexof'
 
    * Command line / env override of paths to cgc / fxc?
@@ -13,16 +11,12 @@ Off the cuff
 Medium
 ------
 
-   * Incorporate reductions.  Find a sample program the uses reductions.
-
-   * Be able to compile some beefier programs.
-
-   * Other language extensions?
-
-   * Be able to switch between backends (fallback to cpp).
-
    * Type verification for kernel calls (not passing float streams as float2
      streams, etc.)
+
+   * Typedef support (e.g. "typedef float stream<10>").
+
+   * Struct support (where all fields are floatN) to kernels.
    
 Long
 ----
