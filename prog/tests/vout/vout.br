@@ -257,22 +257,24 @@ float shiftValuesBRT_TYPE(BRT_TYPE list_stream <>,
       LogNMinusK=logN-2;
       i= logN-1;//could make this k! rather than N
       // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-      EstablishGuessBRT_TYPE(ret_stream,
-                             guess_stream,
-                             list_stream,
-                             (float)(1 << LogNMinusK),
-                             maxvalue,
-                             (float)(1<<i),
-                             (float)sign);
-      for (i=1;i<logN;++i) {
-         LogNMinusK=logN-1-i;
-         UpdateGuessBRT_TYPE (ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
+      if (width) {
+        EstablishGuessBRT_TYPE(ret_stream,
+                               guess_stream,
+                               list_stream,
+                               (float)(1 << LogNMinusK),
+                               maxvalue,
+                               (float)(1<<i),
+                               (float)sign);
+        for (i=1;i<logN;++i) {
+          LogNMinusK=logN-1-i;
+          UpdateGuessBRT_TYPE (ret_stream,//scatter values
+                               guess_stream,//new guess
+                               list_stream,//actual values
+                               (float)(1<<LogNMinusK),
+                               maxvalue,
+                               guess_stream,//old guess
+                               (float)sign);
+        }
       }
       debugStreamPrint(guess_stream,"Gather Value");
       if (1) {
