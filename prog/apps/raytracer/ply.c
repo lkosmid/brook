@@ -465,7 +465,7 @@ Entry:
 
 void put_element_ply(PlyFile *plyfile, void *elem_ptr)
 {
-  int i,j,k;
+  int j,k;
   FILE *fp = plyfile->fp;
   PlyElement *elem;
   PlyProperty *prop;
@@ -661,7 +661,7 @@ PlyFile *ply_read(FILE *fp, int *nelems, char ***elem_names)
         plyfile->file_type = PLY_BINARY_LE;
       else
         return (NULL);
-      plyfile->version = atof (words[2]);
+      plyfile->version = (float)atof (words[2]);
       found_format = 1;
     }
     else if (equal_strings (words[0], "element"))
@@ -1310,8 +1310,6 @@ Compare two strings.  Returns 1 if they are the same, 0 if not.
 
 int equal_strings(char *s1, char *s2)
 {
-  int i;
-
   while (*s1 && *s2)
     if (*s1++ != *s2++)
       return (0);
@@ -1416,7 +1414,7 @@ Entry:
 
 void ascii_get_element(PlyFile *plyfile, char *elem_ptr)
 {
-  int i,j,k;
+  int j,k;
   PlyElement *elem;
   PlyProperty *prop;
   char **words;
@@ -1551,7 +1549,7 @@ Entry:
 
 void binary_get_element(PlyFile *plyfile, char *elem_ptr)
 {
-  int i,j,k;
+  int j,k;
   PlyElement *elem;
   PlyProperty *prop;
   FILE *fp = plyfile->fp;
@@ -1703,7 +1701,6 @@ Exit:
 char **get_words(FILE *fp, int *nwords, char **orig_line)
 {
 #define BIG_STRING 4096
-  int i,j;
   static char str[BIG_STRING];
   static char str_copy[BIG_STRING];
   char **words;
@@ -1915,7 +1912,7 @@ void write_binary_item(
       fwrite (&uint_val, 4, 1, fp);
       break;
     case Float32:
-      float_val = double_val;
+      float_val = (float)double_val;
       fwrite (&float_val, 4, 1, fp);
       break;
     case Float64:
@@ -2024,13 +2021,13 @@ void get_stored_item(
       break;
     case Float32:
       *double_val = *((float *) ptr);
-      *int_val = *double_val;
-      *uint_val = *double_val;
+      *int_val = (int)*double_val;
+      *uint_val = (unsigned int)*double_val;
       break;
     case Float64:
       *double_val = *((double *) ptr);
-      *int_val = *double_val;
-      *uint_val = *double_val;
+      *int_val = (int)*double_val;
+      *uint_val = (unsigned int)*double_val;
       break;
     default:
       fprintf (stderr, "get_stored_item: bad type = %d\n", type);
@@ -2106,14 +2103,14 @@ void get_binary_item(
     case Float32:
       fread (ptr, 4, 1, fp);
       *double_val = *((float *) ptr);
-      *int_val = *double_val;
-      *uint_val = *double_val;
+      *int_val = (int)*double_val;
+      *uint_val = (unsigned int)*double_val;
       break;
     case Float64:
       fread (ptr, 8, 1, fp);
       *double_val = *((double *) ptr);
-      *int_val = *double_val;
-      *uint_val = *double_val;
+      *int_val = (int)*double_val;
+      *uint_val = (unsigned int)*double_val;
       break;
     default:
       fprintf (stderr, "get_binary_item: bad type = %d\n", type);
@@ -2231,7 +2228,7 @@ void store_item (
       break;
     case Float32:
       pfloat = (float *) item;
-      *pfloat = double_val;
+      *pfloat = (float)double_val;
       break;
     case Float64:
       pdouble = (double *) item;
@@ -2316,8 +2313,6 @@ Entry:
 
 void add_property (PlyFile *plyfile, char **words, int nwords)
 {
-  int prop_type;
-  int count_type;
   PlyProperty *prop;
   PlyElement *elem;
 
@@ -2765,9 +2760,7 @@ void describe_element_ply(
   int nelems
 )
 {
-  int i;
   PlyElement *elem;
-  PlyProperty *prop;
 
   /* look for appropriate element */
   elem = find_element (plyfile, elem_name);
@@ -3049,8 +3042,6 @@ Entry:
 
 void start_props_ply (PlyFile *ply, PlyPropRules *rules)
 {
-  int i;
-  int count;
   PlyElement *elem = rules->elem;
 
   /* save pointer to the rules in the PLY object */
