@@ -16,7 +16,7 @@ kernel void moutCalculateSpringForces(
 	out float3 outForce<> )
 {
 	float3 relativePosition = inPosition0.xyz - inPosition1.xyz;
-	float3 relativeVelocity = inVelocity0.xyz - inVelocity1.xyz;
+//	float3 relativeVelocity = inVelocity0.xyz - inVelocity1.xyz;
 	
 	float l2 = dot( relativePosition, relativePosition );
 	float il = rsqrt( l2 );
@@ -24,7 +24,7 @@ kernel void moutCalculateSpringForces(
 	float3 springAxis = relativePosition * il;
 	float perturbation = l - inRestLength;
 	
-	float velocityInSpring = dot( springAxis, relativeVelocity );
+//	float velocityInSpring = dot( springAxis, relativeVelocity );
 	
 //	float strength = inSpringConstant*perturbation
 //		+ inDampingConstant*velocityInSpring;
@@ -83,7 +83,6 @@ kernel void moutUpdateParticles(
 	float2 minIndex;
 	float2 aboveMin;
 	float2 belowMax;
-	float leftOffset, topOffset, rightOffset, bottomOffset;
 	float leftInRange, topInRange, rightInRange, bottomInRange;
 	float2 leftIndex, topIndex, rightIndex, bottomIndex;
 	float4 leftPos, topPos, rightPos, bottomPos;

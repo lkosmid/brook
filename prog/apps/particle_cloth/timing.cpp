@@ -71,5 +71,19 @@ void CleanupMillisTimer(void) {
 }
 
 #else
-#error "Please implement GetTime() for this platform"
+#include <unistd.h>
+#include <sys/time.h>
+void SetupMillisTimer(void) {}
+void CleanupMillisTimer(void) {}
+int64 GetTime (void) {
+  struct timeval tv;
+  timerRes = 1000;
+  gettimeofday(&tv,NULL);
+  int64 temp = tv.tv_usec;
+  temp+=tv.tv_sec*1000000;
+  return temp;
+}
+unsigned int GetTimeMillis () {
+  return (unsigned int)(GetTime ()/1000);
+}
 #endif

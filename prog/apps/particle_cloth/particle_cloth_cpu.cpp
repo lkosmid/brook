@@ -320,7 +320,6 @@ void cpuIterate( int inSize, int inIterations, int& outMicroseconds )
   
   int i;
 //  int j;
-  float3 p;
   CPUDynamicParticle* dynamicParticles;
   CPUStaticParticle* staticParticles;
   float3* forces;

@@ -205,9 +205,7 @@ void initializeParticles(
 
 void gpuIterate( int inSize, int inIterations, int* outMicroseconds )
 {
-  int springSize = 2*inSize;
   int particleCount = inSize*inSize;
-  int springCount = 4*particleCount;
   float floatSize = inSize + 0.0f;
   
   DynamicParticle dynamicParticles< inSize, inSize >;
@@ -229,7 +227,6 @@ void gpuIterate( int inSize, int inIterations, int* outMicroseconds )
   
   int i;
 //  int j;
-  float3 p;
   DynamicParticle* dynamicParticles_data;
   StaticParticle* staticParticles_data;
   float3* force_data;

@@ -83,7 +83,6 @@ void UpdateTime() {
 	  dblnewtime = 0.;
   else
 	  dblnewtime = ((double)newtime)/((double)freq);
-  static double ftime = firsttime = dblnewtime;
 #elif 1
   struct timeval tv;
   (void) gettimeofday(&tv, 0);
@@ -91,12 +90,10 @@ void UpdateTime() {
   lasttime = newtime;
   newtime = (double)tv.tv_sec + (double)tv.tv_usec * 1.e-6;
   elapsedtime = newtime-lasttime;
-  static double ftime = firsttime = newtime;
 #elif defined(HAVE_SDL)
   lasttime = newtime;
   newtime = SDL_GetTicks() * 1.e-3;
   elapsedtime = newtime-lasttime;
-  static double ftime = firsttime = newtime;
 #else
 # error "We have no way to determine the time on this system."
 #endif
