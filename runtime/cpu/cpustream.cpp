@@ -1,8 +1,8 @@
-#pragma warning(disable:4786)
-#include "cpu.hpp"
 #ifdef _WIN32
+#pragma warning(disable:4786)
 //the above warning disables visual studio's annoying habit of warning when using the standard set lib
 #endif
+#include "cpu.hpp"
 #include <map>
 #include <string>
 #include <iostream>
