@@ -163,7 +163,7 @@ public:
     return _graphParents.size() > 1;
   }
 
-  virtual bool isTrivial() { return false; }
+  virtual bool canBeSaved() { return true; }
 
 protected:
   void addChild( SplitNode* inNode );
@@ -255,7 +255,7 @@ public:
 
   virtual const char* getComponentTypeName() { return "s"; }
 
-  virtual bool isTrivial() { return true; }
+  virtual bool canBeSaved() { return false; }
 };
 
 class InputConstantSplitNode : public InputSplitNode
@@ -268,8 +268,6 @@ public:
   virtual void printAnnotationInfo( std::ostream& inStream );
 
   virtual const char* getComponentTypeName() { return "c"; }
-
-  virtual bool isTrivial() { return true; }
 };
 
 class InputInterpolantSplitNode : public InputSplitNode
@@ -282,8 +280,6 @@ public:
     virtual void printAnnotationInfo( std::ostream& inStream );
 
     virtual const char* getComponentTypeName() { return "t"; }
-
-    virtual bool isTrivial() { return true; }
 };
 /*
 class OutputSplitNode : public SplitNode
@@ -411,8 +407,6 @@ public:
 
   virtual SplitNode* getValueNode() { return _assignedValue ? _assignedValue : _value; }
 
-  virtual bool isTrivial() { return true; }
-
 private:
   InputInterpolantSplitNode* _value;
 };
@@ -487,8 +481,6 @@ public:
 
   virtual void printTemporaryExpression( std::ostream& inStream );
   virtual void printExpression( std::ostream& inStream );
-
-  virtual bool isTrivial() { return true; }
 
 private:
   std::string value;

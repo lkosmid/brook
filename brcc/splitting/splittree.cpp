@@ -31,11 +31,11 @@ SplitTree::~SplitTree()
 {
 }
 
-static std::ofstream dumpFile;
+//static std::ofstream dumpFile;
 
 void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::ostream& inStream )
 {
-  dumpFile.open( "dump.txt" );
+//  dumpFile.open( "dump.txt" );
 
 //  preRdsMagic();
 
@@ -94,7 +94,7 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
 
   inStream << "\t)";*/
 
-  dumpFile.close();
+//  dumpFile.close();
 }
 
 void SplitTree::rdsMergePasses()
@@ -118,8 +118,12 @@ void SplitTree::rdsMergePasses()
   }
 
   // now that we have all the passes, lets start building up potential merges...
-  bool didMerge = false;
-  do {
+  bool didMerge = true;
+  while( didMerge )
+  {
+    std::cout << "." << std::endl;
+
+    didMerge = false;
 
     float bestScore = 0;
     SplitPassInfo* bestA = 0;
@@ -136,6 +140,8 @@ void SplitTree::rdsMergePasses()
 
         SplitPassInfo* merged = rdsMergePasses( a, b );
         if( merged == NULL ) continue;
+
+        std::cout << "*";
 
         float score = (a->cost + b->cost) - merged->cost;
 
@@ -154,6 +160,8 @@ void SplitTree::rdsMergePasses()
 
     if( bestMerged != NULL )
     {
+      didMerge = true;
+
       _passes.erase( bestA );
       _passes.erase( bestB );
 
@@ -168,12 +176,12 @@ void SplitTree::rdsMergePasses()
         (*i)->_assignedPass = bestMerged;
     }
 
-  } while( didMerge );
+  }
 }
 
 SplitPassInfo* SplitTree::rdsCreatePass( SplitNode* inNode )
 {
-  dumpFile << "CREATE MERGE PASS " << inNode->getTemporaryID() << std::endl << "% ";
+//  dumpFile << "CREATE MERGE PASS " << inNode->getTemporaryID() << std::endl << "% ";
 //  inNode->dump( dumpFile );
 //  dumpFile << std::endl;
 
@@ -187,7 +195,7 @@ SplitPassInfo* SplitTree::rdsCreatePass( SplitNode* inNode )
 
   result->cost = heuristics.cost;
 
-  dumpFile << "CREATED " << (void*)result << std::endl;
+//  dumpFile << "CREATED " << (void*)result << " with cost " << result->cost << std::endl;
 
   inNode->_assignedPass = result;
 
@@ -284,7 +292,7 @@ void SplitTree::rdsAccumulatePassDescendentsRec( SplitNode* inNode, SplitPassInf
 
 SplitPassInfo* SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB )
 {
-  dumpFile << "MERGE PASSES " << (void*)inA << " , " << (void*)inB << std::endl;
+//  dumpFile << "MERGE PASSES " << (void*)inA << " , " << (void*)inB << std::endl;
 
   // TIM: TODO: check basic validity
 
@@ -304,7 +312,7 @@ SplitPassInfo* SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB
   if( intersectionResult.size() != 0 )
     return NULL;
 
-  dumpFile << "passed early check" << std::endl;
+//  dumpFile << "passed early check" << std::endl;
 
   // we can merge two passes as long as
 
@@ -365,7 +373,7 @@ SplitPassInfo* SplitTree::rdsMergePasses( SplitPassInfo* inA, SplitPassInfo* inB
 
   result->descendents.swap( tempY );
 
-  dumpFile << "CREATED " << (void*)result << std::endl;
+//  dumpFile << "CREATED " << (void*)result << " with cost " << result->cost << std::endl;
 
   return result;
 }
@@ -401,43 +409,6 @@ void SplitTree::unmark( int inMarkBit ) const
   _outputPositionInterpolant->unmark( markBit );
 }
 
-void SplitTree::preRdsMagic()
-{
-  preRdsMagic( _pseudoRoot );
-}
-
-void SplitTree::preRdsMagic( SplitNode* inNode )
-{
-//  std::cerr << "pre-RDS magic for :";
-//  inNode->dump( std::cerr );
-//  std::cerr << std::endl;
-
-  // we only collect MR nodes worth considering...
-  if( inNode->_graphParents.size() > 1 && !inNode->isTrivial() )
-    inNode->_isMRNodeWorthConsidering = true;
-
-  if( rdsCompile( inNode ) )
-  {
-//    std::cerr << "succesful compile... its magic!" << std::endl;
-
-    // it all can be done in one pass,
-    // so there is no need to ever
-    // look into this subtree
-    inNode->_isMagic = true;
-  }
-  else
-  {
-//    std::cerr << "iterating over it's children, of which there are " << inNode->_pdtChildren.size() << std::endl;
-
-    // we might have to split this node
-    // so we had better make sure
-    // that it's MR descendants
-    // get added to our listing...
-    for( NodeList::iterator c = inNode->_pdtChildren.begin(); c != inNode->_pdtChildren.end(); ++c )
-      preRdsMagic( *c );
-  }
-}
-
 void SplitTree::rdsSearch()
 {
 
@@ -469,6 +440,12 @@ void SplitTree::rdsSearch()
 
     std::cout << "search step is considering node " << (void*)node <<
       " - number " << index++ << " of " << count << std::endl;
+
+    if( !node->canBeSaved() )
+    {
+      std::cout << "trivial, skipping" << std::endl;
+      continue;
+    }
 
     bool trySave = true;
     bool tryRecompute = true;
@@ -547,7 +524,7 @@ void SplitTree::rdsSearch()
         (*j)->_wasSavedRecompute = (*j)->_wasSaved;
       }}
     }
-//    dumpFile << "####### recompute cost is " << saveCost << std::endl;
+//    dumpFile << "####### recompute cost is " << recomputeCost << std::endl;
 
     if( saveCost < recomputeCost )
     {
@@ -573,7 +550,8 @@ void SplitTree::rdsSearch()
 
   // use the resulting configuration
   // for one final compile pass
-  rdsCompileConfiguration();
+  float finalCost = rdsCompileConfiguration();
+//  dumpFile << "final cost is " << finalCost << std::endl;
 }
 
 float SplitTree::rdsCompileConfiguration()
@@ -883,7 +861,7 @@ bool SplitTree::rdsCompile( SplitNode* inNode, SplitShaderHeuristics& outHeurist
   }
 
   // TIM: we really need to handle this better:
-  if( inNode->getGraphChildCount() == 0 )
+  if( !inNode->canBeSaved() )
   {
     outHeuristics.cost = 0;
     outHeuristics.recompute = true;

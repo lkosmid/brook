@@ -46,16 +46,16 @@ void SplitCompilerHLSL::compileShader( const std::string& inHighLevelCode, std::
   int constantCount = usage.constantRegisterCount;
   int temporaryCount = usage.temporaryRegisterCount;
 
-  static const float passCost = 100.0f;
-  static const float textureInstructionCost = 0.0f;
-  static const float arithmeticInstructionCost = 0.0f;
+  static const float passCost = 32.0f;
+  static const float textureInstructionCost = 3.0f;
+  static const float arithmeticInstructionCost = 1.0f;
 //  static const float passCost = 15.7f;
 //  static const float textureInstructionCost = 1.36f;
 //  static const float arithmeticInstructionCost = 1.0f;
   static const float samplerCost = 0.0f;
-  static const float interpolantCost = 0.0f;
-  static const float constantCost = 0.0f;
-  static const float temporaryCost = 0.0f;
+  static const float interpolantCost = 0.2f;
+  static const float constantCost = 0.1f;
+  static const float temporaryCost = 0.2f;
 
   float shaderCost = passCost
     + textureInstructionCost*textureInstructionCount
