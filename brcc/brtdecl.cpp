@@ -358,7 +358,7 @@ void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) con
 
     out << "__BrtArray<";
     
-    subtype->printType(out,&nothing,true,level,(subtype->getBase()->typemask&(BT_Float|BT_Float2|BT_Float3|BT_Float4))?this->raw:true);       
+    subtype->printType(out,&nothing,true,level,(subtype->getBase()->typemask&(BT_ShortFixed|BT_Fixed|BT_Fixed2|BT_ShortFixed2|BT_ShortFixed3|BT_Fixed3|BT_ShortFixed4|BT_Fixed4))?true:this->raw);       
    
   }else {
     out << "Array"<<dimension<<"d<";

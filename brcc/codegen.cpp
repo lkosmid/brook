@@ -995,6 +995,16 @@ generate_shader_support(std::ostream& shader)
   shader << "float4 __gather_shortfixed4( _stype s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
   shader << "float4 __gather_shortfixed4( _stype s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
 
+
+  shader << "float __gather_fixed( _stype s[1], float i ) { return __sample1(s[0],i).x; }\n";
+  shader << "float __gather_fixed( _stype s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
+  shader << "float2 __gather_fixed2( _stype s[1], float i ) { return __sample1(s[0],i).xy; }\n";
+  shader << "float2 __gather_fixed2( _stype s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
+  shader << "float3 __gather_fixed3( _stype s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
+  shader << "float3 __gather_fixed3( _stype s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
+  shader << "float4 __gather_fixed4( _stype s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_fixed4( _stype s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+
   if (globals.enableGPUAddressTranslation) {
     shader << "\n\n";
 
