@@ -10,34 +10,38 @@ void __kprintf_cpu_inner(float f) {
 }
 /* This kernel should make a matrix of 1 and a diagonal of 0's*/
 kernel void
-iterator_test (float d<>, iter float iterator<>, out float e<>)
+iterator_test (float2 d<>, iter float2 iterator<>, out float2 e<>)
 {
-   kprintf(iterator);
    e = iterator + d;
 }
 
 int
 main (int argc, char *argv[]) {
-   iter float2 ian<200, 100> = BRTIter(0.0f, 0.0f, 200.0f, 100.0f);
+   iter float2 ian<20, 10> = BRTIter(0.0f, 0.0f, 200.0f, 100.0f);
    iter float tim<10> = BRTIter(0.0f, 200.0f);
-   float d<10>;
-   float e<10>;
+   float2 d<20, 10>;
+   float2 e<20, 10>;
 
-   float data_d[10];
-   float data_e[10];
-   int i;
+   float2 data_d[20][10];
+   float2 data_e[20][10];
+   int i,j;
 
-   for (i=0; i<10; i++) {
-      data_d[i] = ((float) i) / 100.0f;
+   for (i=0; i<20; i++) {
+      for (j=0; j<10; j++) {
+         data_d[i][j].x = i*1000;
+         data_d[i][j].y = j*1000;
+      }
    }
 
    streamRead(d, data_d);
-   iterator_test(d,tim,e);
+   iterator_test(d,ian,e);
    streamWrite(e, data_e);
 
-   for (i=0; i<10; i++) {
-      printf("%3.2f ", data_e[i]);
+   for (i=0; i<20; i++) {
+      for (j=0; j<10; j++) {
+         printf("{%3.2f,%3.2f} ", data_e[i][j].x,data_e[i][j].y);
+      }
+      printf("\n");
    }
-   printf("\n");
    return 0;
 }
