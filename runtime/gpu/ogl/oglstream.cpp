@@ -22,7 +22,8 @@ OGLContext::copy_to_pbuffer(OGLTexture *texture) {
   wnd->bindPbuffer(texture->components());
   
   glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,  
-                   (unsigned int) _passthroughPixelShader);
+                   (unsigned int) getPassthroughPixelShader());
+
   glActiveTextureARB(GL_TEXTURE0_ARB);
   glBindTexture (GL_TEXTURE_RECTANGLE_NV, texture->id());
 

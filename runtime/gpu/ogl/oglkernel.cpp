@@ -15,7 +15,7 @@
 using namespace brook;
 
 static const char passthrough_vertex[] = 
-"put code here";
+"not used";
 
 static const char passthrough_pixel[] =
 "!!ARBfp1.0\n"
@@ -23,6 +23,7 @@ static const char passthrough_pixel[] =
 "OUTPUT oColor = result.color;\n"
 "TEX oColor, tex0, texture[0], RECT;\n"
 "END\n";
+
 
 GPUContext::VertexShaderHandle 
 OGLContext::getPassthroughVertexShader(void) {
@@ -42,7 +43,6 @@ OGLContext::getPassthroughVertexShader(void) {
   return (GPUContext::VertexShaderHandle) 1;
 #endif
 }
-
 
 GPUContext::PixelShaderHandle 
 OGLContext::getPassthroughPixelShader() {

@@ -25,6 +25,8 @@ OGLContext::init (const int   (*viAttribList)[4][64],
   _passthroughVertexShader = NULL;
   _passthroughPixelShader = NULL;
 
+  glEnable(GL_FRAGMENT_PROGRAM_ARB);
+
   glGetIntegerv(GL_MAX_TEXTURE_UNITS, &i);
   _slopTextureUnit = (unsigned int) (i-1);
 }
@@ -35,7 +37,7 @@ OGLContext::OGLContext():
   _passthroughPixelShader(0), _outputTexture(NULL),
   _slopTextureUnit(0), currentPbufferComponents(-1)
 {}
-     
+
 
 OGLContext::~OGLContext() {
   if (wnd)
