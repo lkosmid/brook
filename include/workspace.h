@@ -1,0 +1,7 @@
+#ifndef WORKSPACE_H
+#define WORKSPACE_H
+
+#define WORKSPACE 1024
+#define WORKSPACE_INV 0.0009765625
+
+#endif
