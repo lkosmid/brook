@@ -174,7 +174,12 @@ int main (int argc, char ** argv) {
                     0,0,0,1};
   srand(1);
   std::vector <bsp_polygon> model;
+  std::vector<Tri> triangles;
+  std::vector<BBox> bboxes;
   LoadPly ("bunny.ply",model);
+  csRapidCollider collide(model);
+  collide.createBrookGeometry(bboxes,triangles);
+  printf ("Num BBoxes %d Num Triangles %d",bboxes.size(),triangles.size());
   testOBB();
   for (unsigned int k=0;k<12;++k) {
   SetTriangles(SIZEX*SIZEY,a,b);
