@@ -134,8 +134,8 @@ void SplitTree::printTechnique( const SplitTechniqueDesc& inTechniqueDesc, std::
   std::cout << "time split " << timeSplitCounter << std::endl;
   std::cout << "time compile " << timeCompilingCounter << std::endl;
   std::cout << "time print " << timePrintingCounter << std::endl;
-
-  dumpPassConfiguration( std::ofstream("configuration.dump") );
+  std::ofstream cdump("configuration.dump");
+  dumpPassConfiguration(cdump  );
 
   for( PassSet::iterator p = _passes.begin(); p != _passes.end(); ++p )
     rdsPrintPass( *p, inStream );
