@@ -17,28 +17,30 @@ static void __print_cpu_inner (float a, float b, float c, float d) {
 }
 */
 
-kernel void mult_complex1(float2 a <>, float2 b <>, out float2 c <>)
+kernel float2 mult_complex1(float2 a <>, float2 b <>)
 {
-  c.x = a.x*b.x - a.y*b.y;
-  c.y = a.x*b.y + a.y*b.x;
-
+  float2 negpos = {-1,1};
+  return a.xx*b.xy+negpos*a.yy*b.yx;
+    //  c.x = a.x*b.x - a.y*b.y;
+    //  c.y = a.x*b.y + a.y*b.x;
 }
 
-kernel void mult_complex2(float4 a <>, float2 b <>, out float4 c <>)
+kernel float4 mult_complex2(float4 a <>, float2 b <>)
 {
-  c.xz = a.xz*b.xx - a.yw*b.yy;
-  c.yw = a.xz*b.yy + a.yw*b.xx;
+  float4 negpos={-1,1,-1,1};
+  return a.xxzz*b.xyxy +negpos*a.yyww*b.yxyx;
+  //  c.xz = a.xz*b.xx - a.yw*b.yy;
+  //  c.yw = a.xz*b.yy + a.yw*b.xx;
 
 }
 #define DOTIMES 1
-kernel void DoDFTHorizontalInner (float2 r<>, 
+kernel float4 DoDFTHorizontalInner (float2 r<>, 
                                   float2 t<>, 
-                                  float2 W <>, 
-                                  out float4 s_prime<>) {
-  float2 temp;
-  s_prime.xy = r+t ;
-  mult_complex1 ((r-t), W, temp);
-  s_prime.zw = temp;
+                                  float2 W <>) {
+  float4 ret;
+  ret.xy = r+t ;
+  ret.zw = mult_complex1 ((r-t), W);
+  return ret;
 }
 
 kernel void
@@ -51,7 +53,7 @@ DFTX (float4 s[][],
   float2 temp= round(fmod(s_index.x,2))==1;
   float4 r,t;
   r = s[indexR]; t = s[indexI];
-  DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W,s_prime);
+  s_prime=DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W);
 } 
 
 
@@ -64,7 +66,7 @@ DFTY (float4 s[][],
       iter float2 s_index<>) {
    float4 r =  s[indexR]; 
    float4 t = s[indexI];
-   mult_complex2(r-t,W,s_prime);
+   s_prime=mult_complex2(r-t,W);
    if (round(fmod(s_index.y,2))!=1) {
      //overwrite s_prime
      s_prime=r+t;
@@ -146,7 +148,7 @@ float4 * bitReversedIndices (int logN, int logM) {
   return s_array;
 }
 
-
+/*
 kernel void UntangleFrag(float4 input[][], out float4 output<>, float2 NNo2) {
     float4 H1 = input[indexof(output)];
     float2 outputindex = {(indexof output).x,NNo2.x-(indexof output).y};
@@ -181,7 +183,7 @@ kernel void DoubleFrag(float4 input[][], out float4 output<>, float2 NNo2,
     else
         output = F;
 }
-
+*/
 #define FFT_HORIZONTAL 0
 #define FFT_VERTICAL 1
 #define FFT_2D 2
@@ -340,6 +342,7 @@ void doOptFFT(int logN, int logM, float2 * data, char edgedetect) {
    int M = (1<<logM);
    start = GetTimeMillis();
    blur2d(data,data,logM,logN,M,N,edgedetect); 
+
    stop = GetTimeMillis();
    //FftwTransform2d(data,N,M,1,1);
 }

@@ -34,6 +34,8 @@ class BRTKernelCode : public DupableBRTKernelCode
     virtual void printInnerCode(std::ostream&out)const=0;
     friend std::ostream& operator<< (std::ostream& o, const BRTKernelCode& k);
     FunctionDef *fDef;
+    bool standAloneKernel()const;
+    virtual void onlyPrintInner(std::ostream &out)const{}
 };
 
 
@@ -139,7 +141,7 @@ class BRTCPUKernelCode : public BRTKernelCode
                                    FunctionDef*fDef,
                                    bool shadowOutput,
                                    std::string origname);
-
+   void onlyPrintInner(std::ostream &out)const;
 };
 
 #endif  /* STEMNT_H */

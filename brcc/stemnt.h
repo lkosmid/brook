@@ -429,8 +429,10 @@ class FunctionDef : public Block
 
     void findExpr( fnExprCallback cb );
 
-    Symbol  *FunctionName() const;
+    bool returnsVoid() const;
 
+    Symbol  *FunctionName() const;
+ 
     Decl          *decl;    // The declaration.
 };
 

@@ -62,8 +62,15 @@ unsigned int getReferenceStream(FunctionDef * fDef) {
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 std::ostream&
 operator<< (std::ostream& o, const BRTKernelCode& k) {
-   k.printCode(o);
+   if (k.standAloneKernel())
+      k.printCode(o);
+   else
+      k.onlyPrintInner(o);
    return o;
+}
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool BRTKernelCode::standAloneKernel()const {
+   return fDef->returnsVoid();
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -90,7 +97,8 @@ void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
    unsigned int i;
    std::string myvoid("void  ");
    FunctionType * ft = static_cast<FunctionType *>(fDef->decl->form);
-   out << myvoid;
+   //out << myvoid;
+   ft->printBase(out,0);
    out << fDef->decl->name->name<< " (";
    std::string blank (whiteout(myvoid + fDef->decl->name->name +" ("));
    for (i=0;i<ft->nArgs;++i) {
@@ -781,7 +789,8 @@ void BRTCPUKernelCode::printInnerFunction (std::ostream & out,
     assert (form->isFunction());
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     std::string myvoid("void  ");
-    out << myvoid;
+    //out << myvoid;
+    func->printBase(out,0);
     Symbol enhanced_name;
     enhanced_name.name = fullname;
     func->printBefore(out,&enhanced_name,0);
@@ -1115,7 +1124,18 @@ void BRTCPUKernelCode::printNdTightLoop(std::ostream&out,
     }}
     out << "}"<<std::endl;
 }
+void BRTCPUKernelCode::onlyPrintInner(std::ostream & out)const {
+    FunctionDef * fDef = static_cast<FunctionDef*>(this->fDef->dup());
 
+    Brook2Cpp_ConvertKernel(fDef);
+    std::vector<PrintCPUArg> myArgs=getPrintableArgs(fDef,false);
+    printInnerFunction (out,
+                        "__"+fDef->decl->name->name+"_cpu_inner",
+                        fDef,
+                        false,
+                        this->fDef->decl->name->name);
+    delete fDef;
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const
 {

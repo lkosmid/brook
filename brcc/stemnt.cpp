@@ -1482,6 +1482,12 @@ FunctionDef::~FunctionDef()
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool FunctionDef::returnsVoid()const {
+   FunctionType * ft = static_cast<FunctionType*>(decl->form);
+   return (decl->form->getBase()->typemask&BT_Void)&&ft->subType->isBaseType();
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Statement*
 FunctionDef::dup0() const
 {

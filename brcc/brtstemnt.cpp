@@ -92,21 +92,14 @@ BRTKernelDef::print(std::ostream& out, int) const
     * XXX I have no idea why this is here instead of in
     * BRTCPUKernel::print().  It's CPU only and needs to be suppressed when
     * the CPU target is suppressed.  --Jeremy.
+    * The scatter functions need to be there whether or not the CPU target is repressed
+    * For the fallback requirement --Daniel
     */
    if (decl->isReduce()) {
-      if (globals.target & TARGET_CPU) {
-         BRTCPUReduceCode crc(*this);
-         BRTScatterDef sd(*crc.fDef);
-         sd.print(out,0);
-      } else {
-         /*
-          * XXX The multi-threaded CPU is globbed onto CPU.  It really should be
-          * its own target type and its own class.  Oh well.
-          */
-
-         out << "static const char *__"
-             << *FunctionName() << "_ndcpu = NULL;\n\n";
-      }
+     BRTCPUReduceCode crc(*this);
+     BRTScatterDef sd(*crc.fDef);
+     sd.print(out,0); 
+     // this is needed for CPU fallback for scatter whether or not CPU is enabled
    }
 
    printStub(out);
@@ -272,6 +265,7 @@ static void printPrototypes(std::ostream & out, std::string type) {
 void
 BRTKernelDef::printStub(std::ostream& out) const
 {
+  if (!returnsVoid())return;
    FunctionType *fType;
    unsigned int i,NumArgs;
    bool vout=voutFunctions.find(FunctionName()->name)!=voutFunctions.end();
@@ -429,13 +423,6 @@ BRTKernelDef::CheckSemantics() const
       }
 */
    }
-   if (!fType->subType->isBaseType() ||
-      ((BaseType *) fType->subType)->typemask != BT_Void) {
-      std::cerr << location << "Illegal return type for kernel "
-                << *FunctionName() << ": " << fType->subType
-                << ". Must be void.\n";
-      return false;
-   }
 
    return true;
 }
@@ -486,7 +473,7 @@ BRTMapKernelDef::CheckSemantics() const
       }
    }
 
-   if (outArg == NULL) {
+   if (outArg == NULL&&returnsVoid()) {
       std::cerr << location << "Warning: " << *FunctionName()
                 << " has no output.\n";
    }
