@@ -89,7 +89,6 @@ int main(int argc, char* argv[]) {
 
         streamRead(img, inputf);
         streamRead(mask_stream, mask);
-        streamPrint (mask_stream);
         process_img(img, mask_stream, it, o_img );
         streamWrite(o_img, outputf);
 
