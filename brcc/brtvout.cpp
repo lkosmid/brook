@@ -1,7 +1,8 @@
 #include "brtvout.h"
 
 #include "ctool.h"
-
+//#define INF_SENTINEL
+#define SENTINEL_VALUE 18446321861244485632.0
 VoutFunctionType voutFunctions;
 
 FunctionDef *IdentifyVoutFunc(FunctionDef * fd){
@@ -47,6 +48,7 @@ FunctionDef * TransformHeader (FunctionDef * fd) {
    Decl * VoutCounter =  new Decl (voutCounter);
    VoutCounter->form = new BaseType (BT_Float);
    ft->addArg(VoutCounter);
+#ifdef INF_SENTINEL
    Symbol * Inf = new Symbol;
    Inf->name = "__inf";
    Decl * InfDecl =  new Decl (Inf);
@@ -54,6 +56,7 @@ FunctionDef * TransformHeader (FunctionDef * fd) {
    streamtype->extend(new BaseType(BT_Float));
    InfDecl->form=streamtype;
    ft->addArg(InfDecl);
+#endif
    return NULL;
 }
 FunctionDef * TransformVoutToOut (FunctionDef * fd) {
@@ -101,10 +104,14 @@ Statement * InitialInfSet (std::string fname,
       expr = new ExpressionStemnt
          (new AssignExpr (AO_Equal,
                           new Variable(vout_sym,location),
+#ifdef INF_SENTINEL
                           new IndexExpr (new Variable(findSentinel(ft),
                                                       location),
                                          new FloatConstant(0.0,location),
                                          location),
+#else
+                          new FloatConstant(SENTINEL_VALUE,location),
+#endif
                           location),
           location);
       ++iter;
@@ -117,9 +124,14 @@ Statement * InitialInfSet (std::string fname,
                        expr->expression,
                        new AssignExpr (AO_Equal,
                                        new Variable(vout_sym,location),
+#ifdef INF_SENTINEL
                                        new Variable
                                        (findSentinel(ft),
                                         location),
+#else
+                                       new FloatConstant(SENTINEL_VALUE,
+                                                         location),
+#endif
                                        location),  
                        location);
 

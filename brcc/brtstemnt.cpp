@@ -129,7 +129,9 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
    std::set<unsigned int > *vouts= &voutFunctions[FunctionName()->name];
    std::set<unsigned int >::iterator iter;
    out << "  float __vout_counter=0.0f;"<<std::endl;
+#ifdef INF_SENTINEL
    out << "  brook::Stream * __inf = *sentinelStream(1);";
+#endif //INF_SENTINEL
    out << std::endl;
    out << "  int maxextents[2]={0,0};"<<std::endl;
    unsigned int i=0;   
@@ -346,7 +348,13 @@ BRTKernelDef::printStub(std::ostream& out) const
 
    }
    if (vout) {
-     NumArgs-=2;//one for counter one for innf
+      for (int i=NumArgs-1;i>=0;--i) {
+         if (fType->args[i]->name->name=="__inf"||
+             fType->args[i]->name->name=="__vout_counter")
+            NumArgs--;
+         else
+            break;
+      }
    }
    for (i = 0; i < NumArgs; i++) {
       if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
