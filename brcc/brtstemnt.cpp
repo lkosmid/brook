@@ -20,45 +20,44 @@
 #include "codegen.h"
 #include "main.h"
 
-
 //FIXME eventually we'll want to code-transform to do the following 2 functions
 bool recursiveIsGather(Type * form) {
-   bool ret=(form->type==TT_Array)&&(form->getQualifiers()&TQ_Reduce)==0;
-   bool isarray=ret;
-   Type * t=form;
-   while (isarray) {
-      t =static_cast<ArrayType *>(t)->subType;
-      isarray= (t->type==TT_Array);
-   }
-   return ret&&t->type!=TT_Stream;
+  bool ret=(form->type==TT_Array)&&(form->getQualifiers()&TQ_Reduce)==0;
+  bool isarray=ret;
+  Type * t=form;
+  while (isarray) {
+    t =static_cast<ArrayType *>(t)->subType;
+    isarray= (t->type==TT_Array);
+  }
+  return ret&&t->type!=TT_Stream;
 }
 
 
 bool recursiveIsStream(Type* form) {
-   return (form->type==TT_Stream);
+  return (form->type==TT_Stream);
 }
 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BRTKernelDef::BRTKernelDef(const FunctionDef& fDef)
-   : FunctionDef(fDef.location)
+  : FunctionDef(fDef.location)
 {
-   LabelVector::const_iterator j;
-   
-   type = ST_BRTKernel;
-   decl = fDef.decl->dup();
-   
-   for (Statement *stemnt=fDef.head; stemnt; stemnt=stemnt->next) {
-      add(stemnt->dup());
-   }
-   
-   for (j=fDef.labels.begin(); j != fDef.labels.end(); j++) {
-      addLabel((*j)->dup());
-   }
-   
-   if (!CheckSemantics()) {
-      assert(false);
-   }
+  LabelVector::const_iterator j;
+  
+  type = ST_BRTKernel;
+  decl = fDef.decl->dup();
+  
+  for (Statement *stemnt=fDef.head; stemnt; stemnt=stemnt->next) {
+    add(stemnt->dup());
+  }
+  
+  for (j=fDef.labels.begin(); j != fDef.labels.end(); j++) {
+    addLabel((*j)->dup());
+  }
+  
+  if (!CheckSemantics()) {
+    assert(false);
+  }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -88,7 +87,7 @@ BRTKernelDef::print(std::ostream& out, int) const
       if (globals.target & TARGET_##a) {                             \
          BRTKernelCode *var;                                         \
             var = decl->isReduce() ? new BRT##a##ReduceCode(*this) : \
-                                  new BRT##a##KernelCode(*this);     \
+                                     new BRT##a##KernelCode(*this);  \
          out << *var << std::endl;                                   \
          delete var;                                                 \
       } else {                                                       \
@@ -107,24 +106,8 @@ BRTKernelDef::print(std::ostream& out, int) const
    PRINT_CODE(CPU,  cpu);
 #undef PRINT_CODE
 
-   /*
-    * XXX I have no idea why this is here instead of in
-    * BRTCPUKernel::print().  It's CPU only and needs to be suppressed when
-    * the CPU target is suppressed.  --Jeremy.
-    * The scatter functions need to be there whether or not the CPU target is repressed
-    * For the fallback requirement --Daniel
-    */
-   if (decl->isReduce()) {
-     BRTCPUReduceCode crc(*this);
-     BRTScatterDef sd(*crc.fDef);
-     sd.print(out,0); 
-     // this is needed for CPU fallback for scatter whether or not CPU is enabled
-   }
-
    printStub(out);
 }
-
-
 
 bool incrementBoolVec(std::vector<bool> &vec) {
    if (vec.empty()) return false;
@@ -135,6 +118,7 @@ bool incrementBoolVec(std::vector<bool> &vec) {
    }
    return !carry;
 }
+
 static std::string getDeclStream(Decl * vout,std::string append="_stream") {
    std::string temp = vout->name->name;
    unsigned int i = temp.find("_stream");
@@ -143,10 +127,12 @@ static std::string getDeclStream(Decl * vout,std::string append="_stream") {
    }
    return temp.substr(0,i)+append;
 }
+
 void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
    FunctionType* ft = static_cast<FunctionType*>(decl->form);
    std::set<unsigned int > *vouts= &voutFunctions[FunctionName()->name];
    std::set<unsigned int >::iterator iter;
+
    out << "  float __vout_counter=0.0f;"<<std::endl;
 #ifdef INF_SENTINEL
    out << "  brook::Stream * __inf = *sentinelStream(1);";
@@ -155,6 +141,7 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
 #endif //INF_SENTINEL
    out << std::endl;
    out << "  int maxextents[2]={0,0};"<<std::endl;
+
    unsigned int i=0;   
    for (bool found=0;i<ft->nArgs;++i) {
       if ((ft->args[i]->form->getQualifiers()&TQ_Out)==0
@@ -171,6 +158,7 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
          found=true;
       }
    }
+
    for (iter = vouts->begin();iter!=vouts->end();++iter) {
       out << "  std:: vector <__BRTStreamType> ";
       std::string typevector = getDeclStream(ft->args[*iter],"_types");
@@ -189,12 +177,14 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
       out << "  bool "<<getDeclStream(ft->args[*iter],"_values")<<" = true;";
       out << std::endl;
    }
+
    out << "  while (";
    iter = vouts->begin();
    out << getDeclStream (ft->args[*iter++],"_values");
    for (;iter!=vouts->end();++iter) {
       out << " || " << getDeclStream (ft->args[*iter],"_values");
    }
+
    out << ") {"<<std::endl;
    for (iter = vouts->begin();iter!=vouts->end();++iter) {
       std::string typevector = getDeclStream(ft->args[*iter],"_types");
@@ -206,6 +196,7 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
       out <<std::endl;      
    }
 }
+
 std::string undecoratedBase(Decl * decl) {
    BaseType * base = decl->form->getBase();
    BaseTypeSpec typemask = base->typemask;
@@ -218,6 +209,7 @@ std::string undecoratedBase(Decl * decl) {
    return "float";
          
 }
+
 std::string getDimensionString (int dim) {
       std::string dimensionstring;
       if (dim!=2) {
@@ -227,6 +219,7 @@ std::string getDimensionString (int dim) {
 
       return dimensionstring;
 }
+
 void BRTKernelDef::PrintVoutDimensionalShift(std::ostream &out, 
                                              Decl* decl,
                                              unsigned int dim) const {
@@ -265,6 +258,7 @@ void BRTKernelDef::PrintVoutDimensionalShift(std::ostream &out,
       for (;i<2;++i) out << "                 1,";
       out<< "                -1);"<<std::endl; 
 }
+
 extern bool isFilter(Expression *);
 void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
    out << "    __vout_counter+=1.0f;"<<std::endl;
@@ -359,6 +353,7 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
       out << "  }"<<std::endl;
    }
 }
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static void printPrototypes(std::ostream & out, std::string type) {
    int i;
@@ -381,6 +376,7 @@ static void printPrototypes(std::ostream & out, std::string type) {
       
    }
 }
+
 void
 BRTKernelDef::printStub(std::ostream& out) const
 {
@@ -399,9 +395,6 @@ BRTKernelDef::printStub(std::ostream& out) const
    std::vector <bool> streamOrVal;
    NumArgs=fType->nArgs;
 
-   if (vout) {
-
-   }
    if (vout) {
       for (int i=NumArgs-1;i>=0;--i) {
          if (fType->args[i]->name->name=="__inf"||
@@ -471,22 +464,9 @@ BRTKernelDef::printStub(std::ostream& out) const
       out << "     \"ps2a\", __" << *FunctionName() << "_ps2a," << std::endl;
       out << "     \"ps30\", __" << *FunctionName() << "_ps30," << std::endl;
       out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;
-      if (this->decl->isReduce()||reduceNeeded(this)) {
-         out << "     \"ndcpu\", (void *) __" << *FunctionName() << "_ndcpu,"<<std::endl;
-         if (globals.target&TARGET_MULTITHREADED_CPU) {//only make combiner if needed
-            out << "     \"combine\", (void *) __";
-            out << *FunctionName() << "__combine_cpu,";
-            out << std::endl;
-         }
-      }
-      if ((globals.target&TARGET_MULTITHREADED_CPU)==0) {
-         out << "     \"combine\", 0,";//this signals to runtime
-         //not to use multithreading
-         out << std::endl;
-      }
       out << "     NULL, NULL };"<<std::endl;
       
-      out << "  static __BRTKernel k("
+      out << "  static ::brook::kernel  __k("
           << "__" << *FunctionName() << "_fp);\n\n";
       if (vout) {
          PrintVoutPrefix(out);
@@ -500,31 +480,31 @@ BRTKernelDef::printStub(std::ostream& out) const
             if (voutFunctions.find(FunctionName()->name)==voutFunctions.end()
                 ||  voutFunctions[FunctionName()->name].find(i)
                     == voutFunctions[FunctionName()->name].end()) {
-               out << "  k->PushOutput(" << *fType->args[i]->name << ");\n";
+               out << "  __k->PushOutput(" << *fType->args[i]->name << ");\n";
             }else {
-               out << "  k->PushOutput(*" << getDeclStream(fType->args[i],
+               out << "  __k->PushOutput(*" << getDeclStream(fType->args[i],
                                                            "_outputs");
                out << ".back());\n";
             }
          } else if ((fType->args[i]->form->getQualifiers() & TQ_Reduce)!=0) {
-            out << "  k->PushReduce(&" << *fType->args[i]->name;
+            out << "  __k->PushReduce(&" << *fType->args[i]->name;
             out << ", __BRTReductionType(&" << *fType->args[i]->name <<"));\n";
          } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
-            out << "  k->PushIter(" << *fType->args[i]->name << ");\n";
+            out << "  __k->PushIter(" << *fType->args[i]->name << ");\n";
          } else if (recursiveIsStream(fType->args[i]->form)) {
-            out << "  k->PushStream(" << *fType->args[i]->name << ");\n";
+            out << "  __k->PushStream(" << *fType->args[i]->name << ");\n";
          } else if (recursiveIsGather(fType->args[i]->form)) {
-            out << "  k->PushGatherStream(" << *fType->args[i]->name << ");\n";
+            out << "  __k->PushGatherStream(" << *fType->args[i]->name << ");\n";
          } else {
-            out << "  k->PushConstant(" << *fType->args[i]->name << ");\n";
+            out << "  __k->PushConstant(" << *fType->args[i]->name << ");\n";
          }
       }
       if (vout)
          out <<"  ";//nice spacing
       if (decl->isReduce()) {
-         out << "  k->Reduce();\n";
+         out << "  __k->Reduce();\n";
       }else {
-         out << "  k->Map();\n";
+         out << "  __k->Map();\n";
       }
       if (vout)
          PrintVoutPostfix(out);

@@ -15,8 +15,10 @@ namespace brook {
         GPUStreamData( GPURuntime* inRuntime );
 
         bool initialize(
-            int inFieldCount, const __BRTStreamType* inFieldTypes,
-            int inDimensionCount, const int* inExtents );
+            unsigned int inFieldCount, 
+            const StreamType* inFieldTypes,
+            unsigned int inDimensionCount, 
+            const unsigned int* inExtents );
 
         void acquireReference();
         void releaseReference();
@@ -29,8 +31,8 @@ namespace brook {
         const unsigned int* getExtents() const { return &_extents[0]; }
         unsigned int getRank() const { return _rank; }
         unsigned int getTotalSize() const { return _totalSize; }
-        int getFieldCount() const { return (int)_fields.size(); }
-        __BRTStreamType getIndexedFieldType(int i) const {
+        unsigned int getFieldCount() const { return _fields.size(); }
+        StreamType getIndexedFieldType(unsigned int i) const {
             return _fields[i].elementType;
         }
         unsigned int getElementSize() const {
@@ -67,16 +69,16 @@ namespace brook {
         class Field
         {
         public:
-            Field( __BRTStreamType inElementType, 
-                   int inComponentCount, 
+            Field( StreamType inElementType, 
+                   unsigned int inComponentCount, 
                    TextureHandle inTexture )
                 : elementType(inElementType), 
                   componentCount(inComponentCount), 
                   texture(inTexture)
             {}
 
-            __BRTStreamType elementType;
-            int componentCount;
+            StreamType elementType;
+            unsigned int componentCount;
             TextureHandle texture;
         };
 
@@ -109,10 +111,10 @@ namespace brook {
         typedef GPUContext::TextureHandle TextureHandle;
 
         static GPUStream* GPUStream::create( GPURuntime* inRuntime,
-                        int inFieldCount, 
-                        const __BRTStreamType* inFieldTypes,
-                        int inDimensionCount, 
-                        const int* inExtents );
+                        unsigned int inFieldCount, 
+                        const StreamType* inFieldTypes,
+                        unsigned int inDimensionCount, 
+                        const unsigned int* inExtents );
 
         GPUStream( GPUStreamData* inData );
         GPUStream( GPUStreamData* inData,
@@ -132,6 +134,14 @@ namespace brook {
         virtual Stream* Domain(const int3& min, const int3& max);
         virtual Stream* Domain(const int4& min, const int4& max);
 
+      virtual const unsigned int * getDomainMin() const {
+        return _domainMin;
+      }
+
+      virtual const unsigned int * getDomainMax() const {
+        return _domainMax;
+      }
+
         virtual void* getData (unsigned int flags);
         virtual void releaseData(unsigned int flags);
 
@@ -147,11 +157,11 @@ namespace brook {
             return _data->getTotalSize();
         }
         
-        virtual int getFieldCount() const {
+        virtual unsigned int getFieldCount() const {
             return _data->getFieldCount();
         }
 
-        virtual __BRTStreamType getIndexedFieldType(int i) const {
+        virtual StreamType getIndexedFieldType(unsigned int i) const {
             return _data->getIndexedFieldType(i);
         }
 
@@ -194,17 +204,18 @@ namespace brook {
         unsigned int _domainMax[kMaximumRank];
     };
 
-    /* TIM: must be split...
+  /* TIM: must be split... */
+#if 0
   class GPUStream : public Stream {
   public:
     typedef GPUContext::TextureFormat TextureFormat;
     typedef GPUContext::TextureHandle TextureHandle;
 
     static GPUStream* create( GPURuntime* inRuntime,
-                              int inFieldCount, 
-                              const __BRTStreamType* inFieldTypes,
-                              int inDimensionCount, 
-                              const int* inExtents );
+                              unsigned int inFieldCount, 
+                              const StreamType inFieldTypes[],
+                              unsigned int inDimensionCount, 
+                              const unsigned int inExtents[] );
 
     virtual void Read( const void* inData );
     virtual void Write( void* outData );
@@ -219,8 +230,8 @@ namespace brook {
     virtual const unsigned int* getExtents() const { return &_extents[0]; }
     virtual unsigned int getDimension() const { return _rank; }
     virtual unsigned int getTotalSize() const { return _totalSize; }
-    virtual int getFieldCount() const { return (int)_fields.size(); }
-    virtual __BRTStreamType getIndexedFieldType(int i) const {
+    virtual unsigned int getFieldCount() const { return _fields.size(); }
+    virtual StreamType getIndexedFieldType(unsigned int i) const {
       return _fields[i].elementType;
     }
 
@@ -244,23 +255,25 @@ namespace brook {
     unsigned int getWidth() const {return _textureWidth; }
     unsigned int getHeight() const {return _textureHeight; }
 
-
   private:
     GPUStream( GPURuntime* inRuntime );
     bool initialize(
-      int inFieldCount, const __BRTStreamType* inFieldTypes,
-      int inDimensionCount, const int* inExtents );
+      unsigned int inFieldCount, const StreamType inFieldTypes[],
+      unsigned int inDimensionCount, const unsigned int inExtents[] );
     virtual ~GPUStream ();
 
     class Field
     {
     public:
-      Field( __BRTStreamType inElementType, int inComponentCount, TextureHandle inTexture )
-        : elementType(inElementType), componentCount(inComponentCount), texture(inTexture)
+      Field( StreamType inElementType, 
+             unsigned int inComponentCount, 
+             TextureHandle inTexture )
+        : elementType(inElementType), componentCount(inComponentCount), 
+          texture(inTexture)
       {}
 
-      __BRTStreamType elementType;
-      int componentCount;
+      StreamType elementType;
+      unsigned int componentCount;
       TextureHandle texture;
     };
 
@@ -277,12 +290,14 @@ namespace brook {
 
     GPUInterpolant _defaultInterpolant;
     GPURegion      _outputRegion;
-    float4 _indexofConstant;
-    float4 _gatherConstant;
+    float4         _indexofConstant;
+    float4         _gatherConstant;
 
     size_t _cpuDataSize;
     void* _cpuData;
-  };*/
+  };
+#endif
+
 }
 
 #endif

@@ -248,7 +248,7 @@ BrtIterType::printType( std::ostream& out, Symbol *name,
     out << *name;
 
   // TIM: add initializer as constructor
-  out << "(";
+  out << "(::brook::";
 
   if (base->getBase()->typemask&BT_Float4) {
     out << "__BRTFLOAT4, ";
@@ -328,69 +328,61 @@ BrtIterType::findExpr( fnExprCallback cb )
    }
 }
 
-
-
-
-
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 CPUGatherType::CPUGatherType(ArrayType &t,bool copy_on_write) {
-	dimension=0;
-	at = &t;
-	this->copy_on_write=copy_on_write;
-	subtype = at;
-	while (subtype->type==TT_Array) {
-		dimension +=1;
-		subtype = static_cast<const ArrayType*>(subtype)->subType;
-	}
+  dimension=0;
+  at = &t;
+  this->copy_on_write=copy_on_write;
+  subtype = at;
+  while (subtype->type==TT_Array) {
+    dimension +=1;
+    subtype = static_cast<const ArrayType*>(subtype)->subType;
+  }
 }
+
 void CPUGatherType::printSubtype(std::ostream&out,Symbol *name,bool showBase,int level) const {
-    subtype->printType(out,name,showBase,level);
-	
+  subtype->printType(out,name,showBase,level); 
 }
+
 void CPUGatherType::printType(std::ostream &out, Symbol * name, bool showBase, int level) const
 {
-	printBefore(out,name,level);
-	printAfter(out);	
-	
+  printBefore(out,name,level);
+  printAfter(out);	 
 }
-void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) const {
-	if (!copy_on_write) {
-           Symbol nothing;nothing.name="";
-           if (dimension==1) {
-              out << "__BrtArray1d<";
-		printSubtype(out,&nothing,true,level);              
-           }else if (dimension==2) {
-              out << "__BrtArray2d<";
-		printSubtype(out,&nothing,true,level);
-           }else {
-		out << "__BrtArray<";
 
-		printSubtype(out,&nothing,true,level);
-		out << ", "<<dimension <<"  , false";		
-           }
-	}else {
-		out << "Array"<<dimension<<"d<";
-		
-		at->printBase(out,level);
-		
-		
-		const Type * t = at;
-		for (unsigned int i=0;i<dimension&&i<3;i++) {
-			if (i!=0)
-			out <<"	 ";
-			out <<", ";
-			const ArrayType *a =static_cast<const ArrayType *>(t);
-			a->size->print(out);
-			t = a->subType;			
-		}
-	}
-	out << "> "; 
-	out << *name;
+void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) const {
+  if (!copy_on_write) {
+    Symbol nothing;nothing.name="";
+
+    out << "__BrtArray<";
+      
+    printSubtype(out,&nothing,true,level);
+   
+  }else {
+    out << "Array"<<dimension<<"d<";
+    
+    at->printBase(out,level);
+        
+    const Type * t = at;
+    for (unsigned int i=0;i<dimension&&i<3;i++) {
+      if (i!=0)
+        out <<"	 ";
+      out <<", ";
+      const ArrayType *a =static_cast<const ArrayType *>(t);
+      a->size->print(out);
+      t = a->subType;			
+    }
+  }
+  out << "> "; 
+
+  if (name)
+    out << *name;
 }
+
 void CPUGatherType::printAfter(std::ostream &out) const{
-		//nothing happens
-		//you fail to obtain anything
-		//...
+  //nothing happens
+  //you fail to obtain anything
+  //...
 }
 
 BrtKernelType::BrtKernelType(FunctionType *functionType)

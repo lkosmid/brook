@@ -294,13 +294,6 @@ ConvertToBrtStreams(Statement *s)
 }
 
 
-static void
-ConvertToBrtScatters(Statement *s)
-{
-   s->findExpr(ConvertToBrtScatterCalls);
-}
-
-
 /*
  * ConvertToBrtFunctions --
  *
@@ -411,9 +404,7 @@ main(int argc, char *argv[])
          Brook2Cpp_IdentifyIndexOf(tu);
          transform_vout(tu);
          tu->findStemnt(ConvertToBrtStreams);
-         tu->findStemnt(ConvertToBrtScatters);
          tu->findFunctionDef(ConvertToBrtFunctions);
-
          tu->findStemnt(ConvertToBrtDecls);
       }
 

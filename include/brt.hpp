@@ -7,7 +7,9 @@ extern "C" {
 #include <assert.h>
 };
 
-//vector is needed by the output of the compilation
+#include "kerneldesc.hpp"
+#include <brtvector.hpp>
+
 typedef struct float2 {
   float2(float _x, float _y) { x = _x; y = _y; }
   float2(void) {}
@@ -72,51 +74,101 @@ enum __BRTStreamType {
 float getSentinel();
 
 namespace brook {
-  class Kernel;
+
   class StreamInterface;
   class Stream;
   class Iter;
+  class Kernel;
+
   class stream;
   class iter;
+  class kernel;
 
   static const unsigned int MAXPROGLENGTH = 1024*32;
-  static const unsigned int MAXSTREAMDIMS = 8;
+  static const unsigned int MAXSTREsAMDIMS = 8;
 
-  void initialize( const char* inRuntimeName, void* inContextValue = 0 );
+  enum StreamType {
+    __BRTNONE=-1,
+    __BRTSTREAM=0, //stream of stream is illegal. Used in reduce to stream.
+    __BRTFLOAT=1,
+    __BRTFLOAT2=2,
+    __BRTFLOAT3=3,
+    __BRTFLOAT4=4,
+  };
 
-    class StreamInterface {
+  template<typename T>
+  const ::brook::StreamType* getStreamType(T* unused=0);
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(float*) {
+    static const ::brook::StreamType result[] = {__BRTFLOAT, __BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(float2*) {
+    static const ::brook::StreamType result[] = {__BRTFLOAT2, __BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const StreamType* getStreamType(float3*) {
+    static const ::brook::StreamType result[] = {__BRTFLOAT3, __BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(float4*) {
+    static const ::brook::StreamType result[] = {__BRTFLOAT4, __BRTNONE};
+    return result;
+  }
+
+ 
+  /****************************************************/
+  /*****           Runtime routines            ********/
+
+  class Runtime;
+
+  void initialize( const char* inRuntimeName, 
+                   void* inContextValue = 0 );
+  Runtime* createRuntime( bool useAddressTranslation );
+
+
+  /************************************************/
+  /**********       Stream classes      ***********/
+
+  class StreamInterface {
   private:
     size_t referenceCount;
+
   protected:
     StreamInterface()
       : referenceCount(1) {}
     virtual ~StreamInterface(){}
+
   public:
     void acquireReference() { referenceCount++; }
     void releaseReference() {
       if( --referenceCount == 0 ) delete this;
     }
-
+    
     enum USAGEFLAGS {NONE=0x0,READ=0x1,WRITE=0x2,READWRITE=0x3};
+
     virtual void * getData (unsigned int flags)=0;
     virtual void releaseData(unsigned int flags)=0;
     virtual void readItem(void * p,unsigned int * index);
+    virtual void * fetchItemPtr (void *data, unsigned int * index);
+
     virtual const unsigned int * getExtents() const=0;
     virtual unsigned int getDimension() const {return 0;}
     virtual const unsigned int * getDomainMin() const {assert(0); return 0;}
     virtual const unsigned int * getDomainMax() const {assert(0); return 0;}
 
     unsigned int getElementSize() const;
-    virtual int getFieldCount() const = 0;
-    virtual __BRTStreamType getIndexedFieldType(int i) const=0;
+    virtual unsigned int getFieldCount() const = 0;
+    virtual StreamType getIndexedFieldType(unsigned int i) const=0;
 
-    // functions for getting at low-level representation,
-    // so that an application can render and simulate
-    virtual void* getIndexedFieldRenderData(int i) const { return 0; }
-    virtual void synchronizeRenderData() {}
-
-    //virtual __BRTStreamType getStreamType ()const=0;
-    virtual unsigned int getTotalSize() const {
+    virtual unsigned int         getTotalSize() const {
        unsigned int ret=1;
        unsigned int dim=getDimension();
        const unsigned int * extents = getExtents();
@@ -125,6 +177,24 @@ namespace brook {
        }
        return ret;
     }
+
+    // functions for getting at low-level representation,
+    // so that an application can render and simulate
+    virtual void * getIndexedFieldRenderData(unsigned int i) const { return 0; }
+    virtual void   synchronizeRenderData() {}
+
+    /* Used CPU Runtime Only */
+    virtual void * fetchElem(const unsigned int pos[], 
+                             const unsigned int bounds[],
+                             unsigned int dim) {
+      assert (0); return (void *) 0;
+    }
+
+    __BrtFloat4 
+    StreamInterface::computeIndexOf(unsigned int linear_index);
+
+    virtual bool   isCPU() const  { return false; }
+
   };
 
   class Stream : public StreamInterface {
@@ -147,73 +217,85 @@ namespace brook {
     
     //virtual unsigned int getStride() const {return sizeof(float)*getStreamType();}
     //virtual __BRTStreamType getStreamType ()const{return type;}
+
   protected:
     virtual ~Stream() {}
   };
 
   class Iter : public StreamInterface {
   public:
-    Iter (__BRTStreamType type) {this->type=type;}
-    virtual int getFieldCount() const { return 1; }
-    virtual __BRTStreamType getIndexedFieldType(int i) const {
+    Iter (::brook::StreamType type) {this->type=type;}
+    virtual unsigned int getFieldCount() const { return 1; }
+    virtual ::brook::StreamType getIndexedFieldType(unsigned int i) const {
       assert(i == 0);
       return type;
     }
-
-//    virtual __BRTStreamType getStreamType ()const{return type;}
+    
   protected:
-    __BRTStreamType type;
+    ::brook::StreamType type;
     virtual ~Iter() {}
   };
-  template<typename T>
-  const __BRTStreamType* getStreamType(T* unused=0);
 
-  template<>
-  inline const __BRTStreamType* getStreamType(float*) {
-    static const __BRTStreamType result[] = {__BRTFLOAT,__BRTNONE};
-    return result;
-  }
+  /*** Main Kernel Class ***/
 
-  template<>
-  inline const __BRTStreamType* getStreamType(float2*) {
-    static const __BRTStreamType result[] = {__BRTFLOAT2,__BRTNONE};
-    return result;
-  }
+  class Kernel {
+  public:
+    Kernel() {}
+    virtual void PushStream(::brook::Stream *s) = 0;
+    virtual void PushIter(class Iter * v) = 0;
+    virtual void PushConstant(const float &val) = 0;  
+    virtual void PushConstant(const float2 &val) = 0;  
+    virtual void PushConstant(const float3 &val) = 0; 
+    virtual void PushConstant(const float4 &val) = 0;
+    virtual void PushReduce (void * val,  ::brook::StreamType type)=0;
+    virtual void PushGatherStream(::brook::Stream *s) = 0;
+    virtual void PushOutput(::brook::Stream *s) = 0;
+    virtual void Map() = 0;
+    virtual void Reduce() = 0;
+    virtual void Release() {delete this;}
 
-  template<>
-  inline const __BRTStreamType* getStreamType(float3*) {
-    static const __BRTStreamType result[] = {__BRTFLOAT3,__BRTNONE};
-    return result;
-  }
+    // CPU version only
+    virtual bool   Continue() {assert (0); return false;}
+    virtual void * FetchElem(StreamInterface *s) {
+      assert (0); return (void *) 0;
+    }
 
-  template<>
-  inline const __BRTStreamType* getStreamType(float4*) {
-    static const __BRTStreamType result[] = {__BRTFLOAT4,__BRTNONE};
-    return result;
-  }
+  protected:
+    virtual ~Kernel() {}
+  };
+
+
+  /*************************************************************/
+  /****     Stub classes for initialization               ******/
 
   class stream
   {
   public:
     stream();
-    stream( const stream& );
-    stream& operator=( const stream& );
+    stream( const ::brook::stream& );
+    stream& operator=( const ::brook::stream& );
 
     // easy-to-use constructors for C++ interface
     template<typename T>
-    static stream create( int inExtent0 ) {
-      return stream( ::brook::getStreamType((T*)0), inExtent0, -1 );
+    static ::brook::stream create( int inExtent0 ) {
+      return stream( getStreamType((T*)0), inExtent0, -1 );
     }
 
     template<typename T>
-    static stream create( int y, int x ) {
+    static ::brook::stream create( int y, int x ) {
       return stream( ::brook::getStreamType((T*)0), y, x, -1 );
     }
 
+    // for domain
+    stream(::brook::Stream *s) {_stream = s;}
+
     // standard constructors for BRCC-generated code
-    stream(const __BRTStreamType*,...);
-    stream(int * extents,int dims,const __BRTStreamType *type);
+    stream(const ::brook::StreamType*,...);
+    stream(const unsigned int extents[],
+           unsigned int dims,
+           const ::brook::StreamType *type);
     stream( const ::brook::iter& );
+
     ~stream();
 
     void swap(::brook::stream& other) {
@@ -225,7 +307,6 @@ namespace brook {
     operator ::brook::Stream*() const {
       return _stream;
     }
-
 
     operator ::brook::StreamInterface*() const {
       return _stream;
@@ -260,36 +341,13 @@ namespace brook {
     }
 
   private:
-    stream(::brook::Stream *s)
-      : _stream(s) {}
 
     ::brook::Stream* _stream;
   };
 
-  class Kernel {
-  public:
-    Kernel() {}
-    virtual void PushStream(Stream *s) = 0;
-    virtual void PushIter(class Iter * v) = 0;
-    virtual void PushConstant(const float &val) = 0;  
-    virtual void PushConstant(const float2 &val) = 0;  
-    virtual void PushConstant(const float3 &val) = 0; 
-    virtual void PushConstant(const float4 &val) = 0;
-    virtual void PushReduce (void * val,  __BRTStreamType type)=0;
-    virtual void PushGatherStream(Stream *s) = 0;
-    virtual void PushOutput(Stream *s) = 0;
-    virtual void Map() = 0;
-    virtual void Reduce() {Map();}
-    virtual void Release() {delete this;}
-
-  protected:
-    virtual ~Kernel() {}
-  };
-
-
   class iter {
   public:
-    iter(__BRTStreamType,...);
+    iter(::brook::StreamType, ...);
     ~iter() {
       if(_iter) _iter->releaseReference();
     }
@@ -311,77 +369,110 @@ namespace brook {
     ::brook::Iter* _iter;
   };
 
-  class RunTime;
-  RunTime* createRunTime( bool useAddressTranslation );
-}
 
-// TIM: legacy support?
-typedef ::brook::stream __BRTStream;
-typedef ::brook::iter __BRTIter;
+  class kernel {
+  public:
+    
+    kernel(const void* code[]);
+    
+    ~kernel() {
+      if( _kernel != 0 )
+        _kernel->Release();
+    }
+    
+    operator brook::Kernel*() const {
+      return _kernel;
+    }
+    
+    brook::Kernel* operator->() const {
+      return _kernel;
+    }
+    
+  private:
+    kernel( const kernel& ); // no copy constructor
+    brook::Kernel* _kernel;
+  };
 
-class __BRTKernel {
-public:
-  __BRTKernel(const void* code[]);
-  ~__BRTKernel()
-  {
-    if( kernel != 0 )
-      kernel->Release();
-  }
 
-  operator brook::Kernel*() const {
-    return kernel;
-  }
-
-
-  brook::Kernel* operator->() const {
-    return kernel;
-  }
-
-private:
-  __BRTKernel( const __BRTKernel& ); // no copy constructor
-  brook::Kernel* kernel;
-};
-inline static void maxDimension(int * out, 
-                                const unsigned int * in,
-                                int dims) {
-   for (int i=0;i<dims;++i) {
+#if 0
+  /* For vout */
+  inline static void maxDimension(int * out, 
+                                  const unsigned int * in,
+                                  int dims) {
+    for (int i=0;i<dims;++i) {
       if (in[i]>(unsigned int)out[i])out[i]=in[i];
-   }
+    }
+  }
+  float getSentinel();
+  ::brook::Stream* sentinelStream(int dim);
+ #endif
+
+
+  void readItem(brook::StreamInterface *s, void * p, ... );
 }
-__BRTStream* sentinelStream(int dim);
-inline static void streamRead( brook::Stream *s, void *p) {
+
+/***********************************************************/
+/*******      S T R E A M      O P E R A T O R S       *****/
+
+void streamPrint(brook::StreamInterface*s, bool flatten=false);
+
+inline static float4 streamSize(::brook::stream &s) {
+  unsigned int i;
+  const unsigned int * extents = s->getExtents();
+  unsigned int dim             = s->getDimension();
+  
+  float4 ret(0.0f,0.0f,0.0f,0.0f);
+  
+  switch (s->getDimension()) {
+  case 3:
+    ret.z=(float)extents[dim-3];
+  case 2:
+    ret.y=(float)extents[dim-2];
+  case 1:
+    ret.x=(float)extents[dim-1];
+    break;
+  case 4:
+  default:
+    for (i=0;i<dim-3;++i) ret.w+=(float)extents[i];
+    ret.z=(float)extents[dim-3];
+    ret.y=(float)extents[dim-2];
+    ret.x=(float)extents[dim-1];
+    break;
+  }
+  return ret;
+}
+
+typedef ::brook::iter __BRTIter;
+  
+inline static void streamRead( ::brook::Stream *s, void *p) {
   s->Read(p);
 }
-void streamPrint(brook::StreamInterface*s, bool flatten=false);
-inline static void streamWrite( brook::Stream *s, void *p) {
+
+inline static void streamWrite( ::brook::Stream *s, void *p) {
   s->Write(p);
 }
 
-void readItem(brook::StreamInterface *s, void * p, ... );
-inline static float4 streamSize(::brook::stream &s) {
-   float4 ret(0.0f,0.0f,0.0f,0.0f);
-   const unsigned int * extents = s->getExtents();
-   unsigned int dim = s->getDimension();
-   switch (s->getDimension()) {
-   case 3:
-      ret.z=(float)extents[dim-3];
-   case 2:
-      ret.y=(float)extents[dim-2];
-   case 1:
-      ret.x=(float)extents[dim-1];
-      break;
-   case 4:
-   default:{
-      for (unsigned int i=0;i<dim-3;++i) ret.w+=(float)extents[i];
-      ret.z=(float)extents[dim-3];
-      ret.y=(float)extents[dim-2];
-      ret.x=(float)extents[dim-1];
-      break;
-   }
-   }
-   return ret;
+inline static void streamSwap( ::brook::stream &x, ::brook::stream &y) {
+  x.swap(y);
 }
-inline static void streamSwap(::brook::stream &x, ::brook::stream &y) {
-   x.swap(y);
-}
+
+
+#define streamGatherOp(a,b,c,d) \
+  __streamGatherOrScatterOp(a,b,c, \
+    (void (*)(void *, void *))__##d##_cpu_inner,true)
+
+#define streamScatterOp(a,b,c,d) \
+  __streamGatherOrScatterOp(a,b,c, \
+    (void (*)(void *, void *))__##d##_cpu_inner,false)
+
+void __streamGatherOrScatterOp (::brook::StreamInterface *dst, 
+                                ::brook::StreamInterface *index,
+                                ::brook::StreamInterface *src,
+                                void (*func) (void *, void *),
+                                bool GatherNotScatter);
+
+#define indexof(a) (__indexof((void *) &a))
+__BrtFloat4 __indexof (void *);
+
 #endif
+

@@ -43,8 +43,8 @@ namespace brook
   }
 
   Stream* GPURuntime::CreateStream(
-    int fieldCount, const __BRTStreamType fieldTypes[],
-    int dims, const int extents[])
+    unsigned int fieldCount, const StreamType fieldTypes[],
+    unsigned int dims, const unsigned int extents[])
   {
     Stream* result = GPUStream::create( this, fieldCount, fieldTypes, dims, extents );
     GPUAssert( result != NULL, "Unable to allocate a stream, exiting." );
@@ -52,7 +52,8 @@ namespace brook
   }
 
   Iter* GPURuntime::CreateIter(
-    __BRTStreamType type, int dims, int extents[], float r[] )
+    StreamType type, unsigned int dims, 
+    const unsigned int extents[], const float r[] )
   {
     Iter* result = GPUIterator::create( this, type, dims, extents , r );
     GPUAssert( result != NULL, "Unable to allocate an iterator, exiting." );
@@ -100,4 +101,5 @@ namespace brook
     return _reductionTargetBuffer;
   }
 }
+
 

@@ -3,7 +3,7 @@ ROOTDIR = ..
 EXECUTABLE = brcc
 FILES = context decl express parseenv project stemnt symbol token \
 	location brtdecl lexer gram main getopt brtexpress codegen \
-	subprocess brtstemnt b2ctransform brtkernel b2creduce brtscatter \
+	subprocess brtstemnt b2ctransform brtkernel b2creduce \
 	b2cindex brtreduce brtgather brtvout fxc cgc \
         ps2arb ps2arb_lexer ps2arb_gram ps2arb_intermediate print_arb
 

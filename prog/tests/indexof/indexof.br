@@ -12,20 +12,20 @@ extern void streamRead();
 extern void streamWrite();
 
 kernel void
-bar(float d_prime<>, float d[10][10], out float e<>, float4 indexofe)
+bar(float d_prime<>, float d[10][10], out float4 e<>, float4 indexofe)
 {
   /* this test should make a matrix of 1 and a diagonal of 0's*/
-  e = ((d_prime == d[indexof(d_prime)]) &&
-       (d_prime == d[indexof(d_prime).xy]) &&
-       (d_prime == d[indexof d_prime.xy]) &&
-       !(d_prime == d[1?(indexofe).yx:indexofe.zz]));
+  e = float4(d[indexof(d_prime)],
+             d[indexof(d_prime).xy],
+             d[indexof(d_prime).xy],
+             d[1?(indexofe).xy:indexofe.zz]);
 }
 
 
 kernel void
-foo(float mydprime<>, float d[10][10],out float e<>)
+foo(float d_prime<>, float d[10][10],out float4 e<>)
 {
-   bar(mydprime,d,e,indexof(e));
+   bar(d_prime,d,e,indexof(e));
 }
 
 kernel void
@@ -37,24 +37,28 @@ test(float a<>, out float b<>)
 
 int main(void)
 {
-  float data_d[10][10], data_e[10][10];
-  float d<10, 10>, e<10, 10>;
+  float data_d[10][10];
+  float d<10, 10>;
+  float c<10,10>;
+  float4 e<10, 10>;
+  float4 data_e[10][10];
+  float data_c[10][10];
   int i,j;
 
   for (i=0; i<10; i++) {
     for (j=0; j<10; j++) {
-      data_d[i][j] = ((float) i) / 100.0f;
+      data_d[i][j] = ((float) i*10+j);
     }
   }
 
   streamRead(d, data_d);
-  test(d,e);
-  streamWrite(e, data_e);
+  test(d,c);
+  streamWrite(c, data_c);
 
   printf("Here are the results from the simple indexof test:\n");
   for (i=0; i<10; i++) {
     for (j=0; j<10; j++) {
-      printf ("%3.2f  ", (float)(int)data_e[i][j]);
+      printf ("%3.2f  ", (float)(int)data_c[i][j]);
     }
     printf ("\n");
   }
@@ -66,9 +70,15 @@ int main(void)
   printf("Here are the results from the advanced indexof test:\n");
   for (i=0; i<10; i++) {
     for (j=0; j<10; j++) {
-      printf ("%3.2f  ", data_e[i][j]);
+      if (!(j%2))
+        printf ("\n");
+
+      printf ("%3.2f %3.2f %3.2f %3.2f\t", 
+              data_e[i][j].x, data_e[i][j].y,
+              data_e[i][j].z, data_e[i][j].w);
     }
-    printf ("\n");
   }
+  printf("\n");
+
   return 0;
 }

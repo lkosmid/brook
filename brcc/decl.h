@@ -487,7 +487,9 @@ class FunctionType : public Type
 
     Type* extend(Type *extension);
     virtual Type ** getSubType() {return &subType;}
-    bool printStructureStreamHelperType( std::ostream& out, const std::string& name ) const {
+
+    bool printStructureStreamHelperType( std::ostream& out, 
+                                         const std::string& name ) const {
       return false;
     }
 

@@ -182,7 +182,7 @@ namespace brook
     pushArgument( sGatherArgumentType, gatherArgumentIndex );
   }
 
-  void GPUKernel::PushReduce( void* outValue, __BRTStreamType inType )
+  void GPUKernel::PushReduce( void* outValue, StreamType inType )
   {
     ReduceArgumentInfo argument( outValue, inType );
 
@@ -252,7 +252,7 @@ namespace brook
       "Must have one and only one reduction output." );
 
     ReduceArgumentInfo reduceArgument = _reduceArguments[0];
-    __BRTStreamType outputReductionType = reduceArgument.type;
+    StreamType outputReductionType = reduceArgument.type;
     void* outputReductionData = reduceArgument.data;
 
     if( outputReductionType == __BRTSTREAM )

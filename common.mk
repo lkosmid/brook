@@ -24,9 +24,9 @@ include $(ROOTDIR)/config/$(OS).mk
 CFLAGS    += $(C_INCLUDE_FLAG). $(C_INCLUDE_FLAG)$(INCLUDEDIR)
 
 ifdef RELEASE
-CFLAGS    +=  $(C_RELEASE_FLAG)
+CFLAGS    +=  $(C_RELEASE_FLAG) $(SPACE)
 else
-CFLAGS    +=  $(C_DEBUG_FLAG)
+CFLAGS    +=  $(C_DEBUG_FLAG) $(SPACE)
 endif
 
 LDFLAGS   += $(LD_LIBDIR_FLAG)$(ROOTDIR)/$(BIN)
@@ -190,7 +190,7 @@ ifdef BINARY
 	rm -rf $(BINDIR)/$(BINARY_NAME).pdb $(DEPDIR)
 	rm -rf $(BINARY_NAME).output
 endif
-	rm -rf *~ .#* #*
+	rm -rf *~ *.pdb .#* #*
 	rm -rf $(SLOP)
 
 ## Regression testing ##

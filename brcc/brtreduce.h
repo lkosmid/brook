@@ -42,7 +42,6 @@ class BRTARBReduceCode : public BRTARBKernelCode
     void printCode(std::ostream& out) const;
 };
 
-
 class BRTPS20ReduceCode : public BRTPS20KernelCode
 {
   public:
@@ -85,14 +84,8 @@ class BRTPS30ReduceCode : public BRTPS30KernelCode
 
 class BRTCPUReduceCode : public BRTCPUKernelCode
 {
-  public:
-    BRTCPUReduceCode(const FunctionDef& _fDef) : BRTCPUKernelCode(_fDef) {}
-   ~BRTCPUReduceCode() { /* Nothing, ~BRTReduceCode() does all the work */ }
-
-    BRTKernelCode *dup0() const { 
-       return new BRTCPUReduceCode(*this->fDef); 
-    }
-    void printCode(std::ostream& out) const;
+public: 
+  BRTCPUReduceCode(const FunctionDef& fDef) : BRTCPUKernelCode(fDef) {};
 };
 
 #endif  /* STEMNT_H */

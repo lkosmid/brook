@@ -14,8 +14,15 @@ reduce void mydec1(float a <>, reduce float b <> ) {
 reduce void myfetch(float4 a <>, reduce float4 b <> ) {
   b = a;
 }
+reduce void myinc(float4 a <>, reduce float4 b <> ) {
+  float4 one = float4(1.0f, 1.0f, 1.0f, 1.0f);
+  b = a + one;
+}
 reduce void myfetch1(float a <>, reduce float b <> ) {
   b = a;
+}
+reduce void myinc1(float a <>, reduce float b <> ) {
+  b = a + 1;
 }
 
 void print_dataf (float4 data_f [2][2]) {
@@ -31,19 +38,29 @@ void print_dataf (float4 data_f [2][2]) {
         printf("\n");
      }
 }
+
+void printarray1 (float data[][10]) {
+  unsigned int i,j;
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f ", data[i][j]);
+    }
+    printf ("\n");
+  }
+}
+
 int main () {
 
-  float a<10, 10>;
+  float  a<10, 10>;
   float2 b<10, 10>;
-  float d<10, 10>;
-  float e<10, 10>;
+  float  e<10, 10>;
   float4 f<2,2>;
   float4 g<2,2>;
   float2 index<2,2>;
-  float data_a[10][10];
+
+  float  data_a[10][10];
   float2 data_b[10][10];
-  float data_d[10][10];
-  float data_e[10][10];
+  float  data_e[10][10];
   float4 data_f[2][2]={ { float4(0,0,0,0), float4(1,-1,1,-1) },
                         { float4(2,-2,2,-2), float4(3,-3,3,-3) } };
   float4 data_g[2][2];
@@ -56,50 +73,36 @@ int main () {
       data_a[i][j] = (float)(i+10*j);
       data_b[i][j].x = (float)(9-(i));
       data_b[i][j].y = (float)(9-(j));
-
-      data_d[i][j] = (float)(10*i+j);
     }
 
+  /***** Test 1 *******/
   streamRead(a, data_a);
   streamRead(b, data_b);
-  streamRead(d, data_d);
-  streamRead(f, data_f);
-  streamRead(index, data_i); 
+  
   streamGatherOp(e,b,a,mydec1);
-  streamGatherOp(e,b,a,STREAM_GATHER_FLOAT_INC);
   streamGatherOp(e,b,a,mydec1);
-  streamGatherOp(e,b,a,myfetch1);
-  streamGatherOp(g,index,f,myfetch);
-  streamWrite(g,data_g);
-  streamWrite(f,data_f);
+  
   streamWrite(e, data_e);
-  streamGatherOp(g,index,f,STREAM_GATHER_FETCH);  
-  streamWrite(f,data_f);
-  streamWrite(g,data_g);
-  print_dataf(data_f);
+  streamWrite(a, data_a);
+  printarray1(data_e);
+  printarray1(data_a);
   printf ("\n");
+
+  /****** Test 2 *****/
+  streamRead(index, data_i); 
+  streamRead(f, data_f);
+
+  streamGatherOp(g,index,f,myinc);
+
+  streamWrite(g,data_g);
+  streamWrite(f,data_f);
+
   print_dataf(data_g);
   printf ("\n");
-  streamGatherOp(g,index,f,STREAM_GATHER_FLOAT_INC);  
-  streamWrite(f,data_f);
-  streamWrite(g,data_g);
+
   print_dataf(data_f);
   printf ("\n");
-  print_dataf(data_g);
-  printf ("\n");
-  streamGatherOp(g,index,f,mydec);  
-  streamWrite(f,data_f);
-  streamWrite(g,data_g);
-  print_dataf(data_f);
-  printf ("\n");
-  print_dataf(data_g);
-  printf("\n\n");
-  for (i=0; i<10; i++) {
-    for (j=0; j<10; j++) {
-      printf ("%3.2f ", data_e[i][j]);
-    }
-    printf ("\n");
-  }
+
   return 0;
 }
 

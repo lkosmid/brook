@@ -651,15 +651,19 @@ ArrayType::printBefore( std::ostream& out, Symbol *name, int level ) const
 void
 ArrayType::printAfter( std::ostream& out ) const
 {
+
+  if (type != TT_BrtStream) {
+
     out << (type == TT_Array ? "[" : "<");
 
     if (size)
         size->print(out);
 
     out << (type == TT_Array ? "]" : ">");
+  }
     
-    if (subType)
-        subType->printAfter(out);
+  if (subType)
+    subType->printAfter(out);
 }
 
 void
@@ -821,7 +825,8 @@ BitFieldType::getBase( void )
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 FunctionType::FunctionType(Decl *args_list)
-  : Type(TT_Function), KnR_decl(false), nArgs(0), size(0), args(NULL), subType(NULL)
+  : Type(TT_Function), KnR_decl(false), nArgs(0), 
+    size(0), args(NULL), subType(NULL)
 {
    addArgs (args_list);
 }
@@ -1710,9 +1715,9 @@ bool Decl::printStructureStreamShape(std::ostream& out)
   std::ostringstream stringout;
 
   stringout << "\nnamespace brook {\n";
-  stringout << "\ttemplate<> const __BRTStreamType* getStreamType(";
+  stringout << "\ttemplate<> const StreamType* getStreamType(";
   stringout << name->name << "*) {\n";
-  stringout << "\t\tstatic const __BRTStreamType result[] = {";
+  stringout << "\t\tstatic const StreamType result[] = {";
   if(!form->printStructureStreamShape( stringout ))
     return false;
   stringout << "__BRTNONE};\n";

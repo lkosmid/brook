@@ -34,9 +34,11 @@ class BRTKernelCode : public DupableBRTKernelCode
     virtual void printCode(std::ostream& out) const = 0;
     virtual void printInnerCode(std::ostream&out)const=0;
     friend std::ostream& operator<< (std::ostream& o, const BRTKernelCode& k);
+
     FunctionDef *fDef;
-    bool standAloneKernel()const;
-    virtual void onlyPrintInner(std::ostream &out)const{}
+    bool standAloneKernel() const;
+
+    virtual void onlyPrintInner(std::ostream &out) const{}
 };
 
 
@@ -47,6 +49,7 @@ public:
    ~BRTGPUKernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
    
    void printInnerCode(std::ostream&out)const;
+
    /* static so it can be passed as a findExpr() callback */
    static Expression *ConvertGathers(Expression *e);
    
@@ -130,70 +133,17 @@ class BRTPS30KernelCode : public BRTGPUKernelCode
 
 class BRTCPUKernelCode : public BRTKernelCode
 {
-  public:
-	class PrintCPUArg {
-		Decl * a;
-		unsigned int index;
-		bool shadowOutput;
-		bool reduceFunc;
-	public:
-		Decl * getDecl(){return a;}
-		bool isGather();
-		bool isArrayType();
-                bool isStream();
-		PrintCPUArg(Decl * arg,unsigned int index, bool shadow, bool reduceFunc)
-				:a(arg),index(index){
-			this->reduceFunc=reduceFunc;
-			shadowOutput=shadow;
-		}
-		enum STAGE {HEADER,DEF,CLEANUP};
-		bool useShadowOutput()const ;
-                void Increment(std::ostream&out, bool nDcube, unsigned int ref,std::string fname);
-                void Use (std::ostream&out, bool nDcube, unsigned int ref);
-                void ResetNewLine(std::ostream&out,bool nDcube,unsigned int ref,std::string fname);
-		void InitialSet(std::ostream&out, bool nDcube, unsigned int ref);
-		void printDimensionlessGatherStream(std::ostream&out,STAGE s);
-		void printArrayStream(std::ostream &out, STAGE s);
-		void printShadowArg(std::ostream&out,STAGE s);
-		void printNormalArg(std::ostream&out,STAGE s);
-		void printCPUVanilla(std::ostream & out,STAGE s);
-		void printCPU(std::ostream & out, STAGE s);
-	};
-	
-    BRTCPUKernelCode(const FunctionDef& _fDef) : BRTKernelCode(_fDef) {}
-   ~BRTCPUKernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
+public:
+  
+  BRTCPUKernelCode(const FunctionDef& _fDef) : BRTKernelCode(_fDef) {}
+  ~BRTCPUKernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
+  
+  BRTKernelCode *dup0() const { 
+    return new BRTCPUKernelCode(*this->fDef); 
+  }
 
-    BRTKernelCode *dup0() const { 
-       return new BRTCPUKernelCode(*this->fDef); 
-    }
-    static std::vector<PrintCPUArg>getPrintableArgs(FunctionDef * fDef,
-                                                    bool shadowOutput);
-    void incrementIndexOf(std::ostream &out)const;
-    void incrementAllLocals(std::ostream &out,
-                            bool nDcube,
-                            std::vector<PrintCPUArg>)const;
-   void initializeIndexOf(std::ostream &out,
-                          unsigned int ref,
-                          bool nDcube)const;
-    void printIndexOfCallingArgs(std::ostream & out)const;
-    void printCombineCode(std::ostream& out)const;
-    void printCombineInnerLoop(std::ostream & out) const;
-    void printTightLoop(std::ostream&out, 
-                        FunctionDef * fDef, 
-                        std::vector<PrintCPUArg> args,
-                        bool reduceneeded)const;
-    void printNdTightLoop(std::ostream&out, 
-                          FunctionDef * fDef, 
-                          std::vector<PrintCPUArg> args,
-                          bool reduceneeded)const;
-    void printCode(std::ostream& out) const;
-    void printInnerCode(std::ostream&out)const;
-    static void printInnerFunction(std::ostream&out,
-                                   std::string fullname,
-                                   FunctionDef*fDef,
-                                   bool shadowOutput,
-                                   std::string origname);
-   void onlyPrintInner(std::ostream &out)const;
+  void printCode(std::ostream& out) const;
+  void printInnerCode(std::ostream& out) const;
 };
 
 #endif  /* STEMNT_H */

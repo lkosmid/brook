@@ -487,7 +487,7 @@ Project::parse( const char* path, bool use_cpp, /* =true */
     if (!fp)
         return NULL;
     std::string content =ReadFile(fp);
-    ComputeGatherIntrinsics(content,path,cpp_file);
+    //ComputeGatherIntrinsics(content,path,cpp_file);
     
     std::istringstream myfile(content);
     Parse_TOS = new ParseEnv(&myfile, &std::cerr, path);

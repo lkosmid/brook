@@ -212,14 +212,26 @@ BrtIndexofExpr::dup0() const
     return ret;
 }
 
+// Ian:  I'm so sorry about this...
+extern bool horrible_horrible_indexof_hack;
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 BrtIndexofExpr::print(std::ostream& out) const
 {
-  std::string bak = expr->name->name;
-  expr->name->name="__indexof_"+bak;
-  expr->print(out);
-  expr->name->name=bak;
+
+  // Ian:  I'm so sorry about this...
+  if (horrible_horrible_indexof_hack) {
+    std::string bak = expr->name->name;
+    out << "indexof(";
+    expr->print(out);
+    out << ")";
+  } else {
+    std::string bak = expr->name->name;
+    expr->name->name="__indexof_"+bak;
+    expr->print(out);
+    expr->name->name=bak;
+  }
 
 #ifdef    SHOW_TYPES
     if (type != NULL)

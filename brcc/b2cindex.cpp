@@ -126,6 +126,10 @@ Decl* getIndexOfDecl(std::string name, BaseTypeSpec baset) {
    return ret;
 }
 Expression * changeFunctionCallToPassIndexOf(Expression* e) {
+
+  // Turned off passing indexof for cpu backend
+  return e;
+
    if (e->etype==ET_FunctionCall) {
       
       FunctionCall * fc = static_cast<FunctionCall*>(e);
@@ -150,7 +154,10 @@ Expression * changeFunctionCallToPassIndexOf(Expression* e) {
                }
                if (appropriate) {
                   Symbol * s = new Symbol;
+
+                  // s->name="__indexof_"+v->name->name;
                   s->name="__indexof_"+v->name->name;
+
                   s->entry=mk_vardecl(s->name,IndexOf);
                   fc->addArg(new Variable(s,e->location));                  
                }else {

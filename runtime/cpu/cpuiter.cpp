@@ -13,24 +13,27 @@ namespace brook {
    // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
    // This will create a the local CPU stream with the appropriate data
    // that fulfills the ranges specified by the program.
-   void CPUIter::allocateStream(int dims, 
-                                int extents[],
-                                float ranges[]) {
+   void CPUIter::allocateStream(unsigned int dims, 
+                                const unsigned int extents[],
+                                const float ranges[]) {
       float * data = (float*)malloc (stream.getTotalSize()*sizeof(float)*type);
+      float epsilon = 1.0f/1000000.0f;
+      
       if (dims<2) {
-         for (int i=0;i<extents[0];++i) {
-            for (int j=0;j<type;++j) {
-               data[i*type+j]=lerp(i,extents[0],ranges[j],ranges[j+type]);
+         for (unsigned int i=0;i<extents[0];++i) {
+            for (unsigned int j=0;j<(unsigned int) type;++j) {
+               data[i*type+j]=lerp(i,extents[0],ranges[j],ranges[j+type]) +
+                 epsilon;
             }
          }
       }else if (dims==2){
          //now we know dims == data type;
-         int i[2]={0,0};
+         unsigned int i[2]={0,0};
          for (i[0]=0;i[0]<extents[0];++i[0]) {
             for (i[1]=0;i[1]<extents[1];++i[1]) {
                for (unsigned int k=0;k<2;++k) {
                   float f= lerp (i[k],extents[k],ranges[1-k],ranges[3-k]);
-                  data[(i[0]*extents[1]+i[1])*2+1-k]=f;
+                  data[(i[0]*extents[1]+i[1])*2+1-k]=f + epsilon;
                }
             }
          }

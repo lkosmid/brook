@@ -26,7 +26,7 @@ namespace brook {
     virtual void PushConstant( const float3& inValue ); 
     virtual void PushConstant( const float4& inValue );
     virtual void PushGatherStream( Stream* inStream );
-    virtual void PushReduce( void* outValue, __BRTStreamType inType );
+    virtual void PushReduce( void* outValue, StreamType inType );
     virtual void PushOutput(Stream *s);
     virtual void Map();
     virtual void Reduce();
@@ -39,6 +39,10 @@ namespace brook {
     bool initialize( const void* inSource[] );
     bool initialize( const ::brook::desc::gpu_kernel_desc* inDescriptor );
     virtual ~GPUKernel();
+
+
+    /******************************************************************/
+    /**********     Argument Type Classes                **************/
 
     class ArgumentType
     {
@@ -69,8 +73,7 @@ namespace brook {
                           size_t inIndex, 
                           size_t inComponent );
     };
-
-    friend class StreamArgumentType;//internal classes are not friendly enough
+    
     class IteratorArgumentType : public ArgumentType
     {
     public:
@@ -83,7 +86,6 @@ namespace brook {
                           size_t inComponent );
     };
 
-    friend class IteratorArgumentType; //internal classes are not friends
     class ConstantArgumentType : public ArgumentType
     {
     public:
@@ -91,7 +93,6 @@ namespace brook {
                           size_t inIndex, 
                           size_t inComponent );
     };
-    friend class ConstantArgumentType; //internal classes are not friends
 
     class GatherArgumentType : public ArgumentType
     {
@@ -103,8 +104,7 @@ namespace brook {
                           size_t inIndex, 
                           size_t inComponent );
     };
-    friend class GatherArgumentType; //internal classes are not friends
-
+    
     class OutputArgumentType : public ArgumentType
     {
     public:
@@ -119,13 +119,21 @@ namespace brook {
                           size_t inIndex,
                           size_t inComponent );
     };
-    friend class OutputArgumentType; //internal classes are not friends
 
     class ReduceArgumentType : public ArgumentType
     {
     public:
     };
-    friend class ReduceArgumentType; //internal classes are not friends
+
+    //internal classes are not friendly enough
+    friend class StreamArgumentType;
+    friend class IteratorArgumentType; 
+    friend class ConstantArgumentType;
+    friend class GatherArgumentType; 
+    friend class OutputArgumentType; 
+    friend class ReduceArgumentType;
+
+    /***************************************************************/
 
     class ArgumentInfo
     {
@@ -174,6 +182,7 @@ namespace brook {
     };
     typedef std::vector<Input> InputList;
 
+
     class Pass
     {
     public:
@@ -215,12 +224,12 @@ namespace brook {
     class ReduceArgumentInfo
     {
     public:
-      ReduceArgumentInfo( void* inData, __BRTStreamType inType )
+      ReduceArgumentInfo( void* inData, StreamType inType )
         : data(inData), type(inType)
       {}
 
       void* data;
-      __BRTStreamType type;
+      StreamType type;
     };
 
     // The full generality of BrookGPU reductions

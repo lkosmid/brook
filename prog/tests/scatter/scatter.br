@@ -1,36 +1,65 @@
-// scatter.br
-// Regression test for scatter functionality.
-// Also tests CPU fallback for runtimes that
-// don't support native scatter.
+// gatherop.br
+// Tests the gatherop runtime function, as well
+// as fallback onto the CPU runtime when a
+// GPU runtime cannot support native gatherop.
 
 #include <stdio.h>
 
-reduce void mymult(float a <>, reduce float b <> ) {
-   b*=a;
+reduce void mydec(float4 a <>, reduce float4 b <> ) {
+   b -= a;
 }
-reduce void mygets(float a <>, reduce float b<> , float c) {
-   b=a*c;
+reduce void mydec1(float a <>, reduce float b <> ) {
+   b -= a;
+}
+reduce void myinc(float4 a <>, reduce float4 b <> ) {
+   b += a;
+}
+reduce void myinc1(float a <>, reduce float b <> ) {
+   b += a;
 }
 
+void print_dataf (float4 data_f [2][2]) {
+   int i,j;
+     for (i=0;i<2;++i) {
+        for (j=0;j<2;++j) {
+           printf("{%3.2f %3.2f %3.2f %3.2f}",
+                  data_f[i][j].x,
+                  data_f[i][j].y,
+                  data_f[i][j].z,
+                  data_f[i][j].w);
+        }
+        printf("\n");
+     }
+}
+
+void printarray1 (float data[][10]) {
+  unsigned int i,j;
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f ", data[i][j]);
+    }
+    printf ("\n");
+  }
+}
 
 int main () {
 
-  float a<10, 10>;
+  float  a<10, 10>;
   float2 b<10, 10>;
-  float d<10, 10>;
-  float e<10, 10>;
+  float  e<10, 10>;
   float4 f<2,2>;
   float4 g<2,2>;
   float2 index<2,2>;
-  float data_a[10][10];
+
+  float  data_a[10][10];
   float2 data_b[10][10];
-  float data_d[10][10];
-  float data_e[10][10];
-  float4 data_f[2][2]= { { float4(0,0,0,0), float4(1,-1,1,-1)},
-                         { float4(2,-2,2,-2), float4(3,-3,3,-3) } };
-  float4 data_g[2][2];
-  float2 data_i[2][2]={ { float2(0,1), float2(1,0) },
-                        { float2(1,1), float2(0,0) } };
+  float  data_e[10][10];
+  float4 data_f[2][2]={ { float4(0,0,0,0), float4(1,-1,1,-1) },    
+                        { float4(2,-2,2,-2), float4(3,-3,3,-3) } };
+  float4 data_g[2][2]={ { float4(3,2,1,0), float4(5,6,7,8) },    
+                        { float4(6,4,2,0), float4(1,2,3,4) } };
+  float2 data_i[2][2]={ { float2(0,1),float2(1,0) },
+                        { float2(1,1),float2(0,0) } };
   int i,j;
 
   for (i=0; i<10; i++)
@@ -38,37 +67,33 @@ int main () {
       data_a[i][j] = (float)(i+10*j);
       data_b[i][j].x = (float)(9-(i));
       data_b[i][j].y = (float)(9-(j));
-      data_d[i][j] = (float)(10*i+j);
+      data_e[i][j] = 5.0f;
     }
 
+  /***** Test 1 *******/
   streamRead(a, data_a);
   streamRead(b, data_b);
-  streamRead(d, data_d);
-  streamRead(f, data_f);
-  streamRead(index, data_i); 
-  streamScatterOp(a,b,e,mygets(1));
-  streamScatterOp(a,b,e,mymult);
-  streamScatterOp(f,index,g,STREAM_SCATTER_ASSIGN);
-  //  streamScatterOp(f,i,g,STREAM_SCATTER_FLOAT_MUL);
-  streamWrite(g,data_g);
+  streamRead(e, data_e);
+  
+  streamScatterOp(e,b,a,mydec1);
+  
   streamWrite(e, data_e);
-  for (i=0;i<2;++i) {
-     for (j=0;j<2;++j) {
-        printf("{%3.2f %3.2f %3.2f %3.2f}",
-               data_g[i][j].x,
-               data_g[i][j].y,
-               data_g[i][j].z,
-               data_g[i][j].w);
-     }
-     printf("\n");
-  }
-  printf("\n\n");
-  for (i=0; i<10; i++) {
-    for (j=0; j<10; j++) {
-      printf ("%3.2f ", data_e[i][j]);
-    }
-    printf ("\n");
-  }
+
+  printarray1(data_e);
+  printf ("\n");
+
+  /****** Test 2 *****/
+  streamRead(index, data_i); 
+  streamRead(f, data_f);
+  streamRead(g, data_g);
+
+  streamScatterOp(g,index,f,myinc);
+
+  streamWrite(g,data_g);
+
+  print_dataf(data_g);
+  printf ("\n");
+
   return 0;
 }
 

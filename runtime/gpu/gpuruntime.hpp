@@ -13,23 +13,24 @@ namespace brook
     kGPUReductionTempBuffer_Slop,
     kGPUReductionTempBufferCount
   };
-  typedef int GPUReductionTempBufferID;
+  typedef unsigned int GPUReductionTempBufferID;
 
-  class GPURuntime : public RunTime
+  class GPURuntime : public Runtime
   {
   public:
 
     virtual Kernel* CreateKernel(const void*[]);
-    virtual Stream* CreateStream(
-      int fieldCount, const __BRTStreamType fieldTypes[],
-      int dims, const int extents[]);
-    virtual Iter* CreateIter(__BRTStreamType type, 
-      int dims, 
-      int extents[],
-      float range[]);
+    virtual Stream* CreateStream(unsigned int fieldCount,
+                                 const StreamType fieldTypes[],
+                                 unsigned int dims, 
+                                 const unsigned int extents[]);
+    virtual Iter* CreateIter(StreamType type, 
+                             unsigned int dims, 
+                             const unsigned int extents[],
+                             const float range[]);
     virtual ~GPURuntime();
 
-    // internal GPURuntime methods (not in RunTime interface)
+    // internal GPURuntime methods (not in Runtime interface)
     GPUContext* getContext() { return _context; }
     GPUContext::TextureHandle getReductionTempBuffer(
       GPUReductionTempBufferID inBufferID,

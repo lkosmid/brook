@@ -10,8 +10,11 @@ static float lerp (unsigned int i, unsigned int end,float lower,float upper) {
    return (1-frac)*lower+frac*upper;
 }
 
-GPUIterator* GPUIterator::create( GPURuntime* inRuntime, __BRTStreamType inElementType,
-  int inDimensionCount, int* inExtents, float* inRanges )
+GPUIterator* GPUIterator::create( GPURuntime* inRuntime, 
+                                  StreamType inElementType,
+                                  unsigned int inDimensionCount, 
+                                  const unsigned int inExtents[],
+                                  const float inRanges[] )
 {
   GPUIterator* result = new GPUIterator( inRuntime, inElementType );
   if( result->initialize( inDimensionCount, inExtents, inRanges ) )
@@ -20,12 +23,14 @@ GPUIterator* GPUIterator::create( GPURuntime* inRuntime, __BRTStreamType inEleme
   return NULL;
 }
 
-GPUIterator::GPUIterator( GPURuntime* inRuntime, __BRTStreamType inElementType )
-  : Iter(inElementType), _context(inRuntime->getContext()), _cpuBuffer(NULL) 
+GPUIterator::GPUIterator( GPURuntime* inRuntime, StreamType inElementType )
+  : Iter(inElementType), _context(inRuntime->getContext()), _cpuBuffer(NULL)
 {
 }
 
-bool GPUIterator::initialize( int inDimensionCount, int* inExtents, float* inRanges )
+bool GPUIterator::initialize( unsigned int inDimensionCount, 
+                              const unsigned int inExtents[], 
+                              const float inRanges[] )
 {
   _dimensionCount = inDimensionCount;
   if( (_dimensionCount <= 0) || (_dimensionCount > 2) )
@@ -70,10 +75,12 @@ bool GPUIterator::initialize( int inDimensionCount, int* inExtents, float* inRan
 
     _extents[i] = extent;
     _totalSize *= _extents[i];
+    _domainMax[i] = _extents[i];
+    _domainMin[i] = 0;
   }
 
-  int rangeCount = _componentCount*2;
-  for( int r = 0; r < rangeCount; r++ )
+  unsigned int rangeCount = _componentCount*2;
+  for( unsigned int r = 0; r < rangeCount; r++ )
     _ranges[r] = inRanges[r];
 
   if( _dimensionCount == 1 )
@@ -182,7 +189,7 @@ void* GPUIterator::getData (unsigned int flags)
     {
       for( i[1] = 0; i[1] < _extents[1]; i[1]++ )
       {
-        for( int k = 0; k < 2; k++ )
+        for( unsigned int k = 0; k < 2; k++ )
           *data++ = lerp( i[1-k], _extents[1-k], _ranges[k], _ranges[2+k] );
       }
     }

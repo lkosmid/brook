@@ -28,194 +28,198 @@ Expression *ConvertToTMaskConverter (Expression * e);
 //set of items we do not want to change to int1 objects.
 std::set<Expression *> ArrayBlacklist;
 
-//the following function translates Assign Ops to equivalent Binary Ops for mask
+// the following function translates Assign Ops to 
+// equivalent Binary Ops for mask
 BinaryOp TranslatePlusGets (AssignOp ae) {
-                BinaryOp bo=BO_Assign;
-                switch (ae) {
-                case AO_Equal:
-                    break;
-                case AO_PlusEql:
-                    bo=BO_Plus;
-                    break;
-                case AO_MinusEql:
-                    bo= BO_Minus;
-                    break;
-                case AO_DivEql:
-                    bo=BO_Div;
-                    break;
-                case AO_MultEql:
-                   bo=BO_Mult;
-                   break;
-                case AO_ModEql:
-                    bo=BO_Mod;
-                    break;
-                case AO_ShlEql:
-                    bo = BO_Shl;
-                    break;
-                case AO_ShrEql:
-                    bo = BO_Shr;
-                    break;
-                case AO_BitAndEql:
-                    bo = BO_BitAnd;
-                    break;
-                case AO_BitXorEql:
-                    bo = BO_BitXor;
-                    break;
-                case AO_BitOrEql:
-                    bo = BO_BitOr;
-                    break;
-                }
-                return bo;
+  BinaryOp bo=BO_Assign;
+  switch (ae) {
+  case AO_Equal:
+    break;
+  case AO_PlusEql:
+    bo=BO_Plus;
+    break;
+  case AO_MinusEql:
+    bo= BO_Minus;
+    break;
+  case AO_DivEql:
+    bo=BO_Div;
+    break;
+  case AO_MultEql:
+    bo=BO_Mult;
+    break;
+  case AO_ModEql:
+    bo=BO_Mod;
+    break;
+  case AO_ShlEql:
+    bo = BO_Shl;
+    break;
+  case AO_ShrEql:
+    bo = BO_Shr;
+    break;
+  case AO_BitAndEql:
+    bo = BO_BitAnd;
+    break;
+  case AO_BitXorEql:
+    bo = BO_BitXor;
+    break;
+  case AO_BitOrEql:
+    bo = BO_BitOr;
+    break;
+  }
+  return bo;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //the following function sees if the member operator target looks like a mask
 bool looksLikeMask (std::string s) {
-    if (s.length()<=4) {
-        for (unsigned int i=0;i<s.length();++i) {
-            if (s[i]!='x'&&s[i]!='y'&&s[i]!='z'&&s[i]!='w'&&
-                s[i]!='r'&&s[i]!='g'&&s[i]!='b'&&s[i]!='a'){
-                return false;
-            }
-        }
-        return true;
+  if (s.length()<=4) {
+    for (unsigned int i=0;i<s.length();++i) {
+      if (s[i]!='x'&&s[i]!='y'&&s[i]!='z'&&s[i]!='w'&&
+          s[i]!='r'&&s[i]!='g'&&s[i]!='b'&&s[i]!='a'){
+        return false;
+      }
     }
-    return false;
+    return true;
+  }
+  return false;
 }
 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //the following translates a letter for a swizzle into a number
 int translateSwizzle (char mask) {
-    switch (mask) {
-    case 'y':
-    case 'g':
-        return 1;
-    case 'z':
-    case 'b':
-        return 2;
-    case 'w':
-    case 'a':
-        return 3;
-    default:
-        return 0;
-    }
+  switch (mask) {
+  case 'y':
+  case 'g':
+    return 1;
+  case 'z':
+  case 'b':
+    return 2;
+  case 'w':
+  case 'a':
+    return 3;
+  default:
+    return 0;
+  }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //the following translates a mask into a mask.
 std::string translateMask (int swizzle) {
-    switch (swizzle) {
-    case 3:
-        return "maskW";
-    case 2:
-        return "maskZ";
-    case 1:
-        return "maskY";
-    default:
-        return "maskX";
-    }
+  switch (swizzle) {
+  case 3:
+    return "maskW";
+  case 2:
+    return "maskZ";
+  case 1:
+    return "maskY";
+  default:
+    return "maskX";
+  }
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //The following class replaces a lval.mask = rval into lval.mask(rval)
 class MaskExpr : public AssignExpr {
-  public:
-    std::string mask;
-	Expression * emask;
-    MaskExpr( Expression *lExpr, 
-              Expression *rExpr, 
-              std::string mask, 
-              const Location& l, 
-              Expression *emask=NULL ):
-        AssignExpr(AO_Equal,lExpr,rExpr,l) {
-        this->mask=mask;
-		this->emask=emask;
+public:
+  std::string mask;
+  Expression * emask;
+  MaskExpr( Expression *lExpr, 
+            Expression *rExpr, 
+            std::string mask, 
+            const Location& l, 
+            Expression *emask=NULL ):
+    AssignExpr(AO_Equal,lExpr,rExpr,l) {
+    this->mask=mask;
+    this->emask=emask;
+  }
+  
+  ~MaskExpr(){
+    if (emask)
+      delete emask;
+  }
+  
+  void findExpr(fnExprCallback cb) {
+    this->BinaryExpr::findExpr(cb);
+    if (emask){
+      emask= (cb)(emask);
+      emask->findExpr(cb);
+    }			
+  }
+  
+  Expression *lValue() const { return leftExpr(); }
+  Expression *rValue() const { return rightExpr(); }
+  
+  int precedence() const { return emask?16:16;/*maybe left expr's prec*/ }
+  
+  Expression *dup0()  const {
+    MaskExpr *ret = new MaskExpr(_leftExpr->dup(),
+                                 _rightExpr->dup(),
+                                 mask, 
+                                 location,
+                                 emask?emask->dup():NULL);
+    ret->type = type;  
+    return ret;
+  }
+  
+  void print(std::ostream& out) const{
+    if (lValue()->precedence()<precedence())
+      out << "(" << *lValue() << ")";
+    else
+      out << *lValue();
+    unsigned int length=1;
+    if (!emask)
+      length = mask.length();
+    out << ".mask"<< length<<"(";
+    int commaprecedence = BinaryExpr(BO_Comma,0,0,location).precedence(); 
+    if (rValue()->precedence()<commaprecedence/*comma*/)
+      out << "(" <<*rValue() <<")";
+    else
+      out << *rValue();
+    for (unsigned int i=0;i<4&&i<length;++i) {
+      out << ",";
+      if (emask) {
+        out << *emask;
+      }else{
+        out << translateMask(translateSwizzle(mask[i]));
+      }
     }
-    ~MaskExpr(){
-		if (emask)
-			delete emask;
-	}
-    void findExpr(fnExprCallback cb) {
-		this->BinaryExpr::findExpr(cb);
-		if (emask){
-			emask= (cb)(emask);
-			emask->findExpr(cb);
-		}			
-	}
-    Expression *lValue() const { return leftExpr(); }
-    Expression *rValue() const { return rightExpr(); }
-
-    int precedence() const { return emask?16:16;/*maybe left expr's prec*/ }
-
-    Expression *dup0()  const {
-        MaskExpr *ret = new MaskExpr(_leftExpr->dup(),
-                                     _rightExpr->dup(),
-                                     mask, 
-                                     location,
-									 emask?emask->dup():NULL);
-        ret->type = type;  
-        return ret;
-    }
-    
-    void print(std::ostream& out) const{
-        if (lValue()->precedence()<precedence())
-            out << "(" << *lValue() << ")";
-        else
-            out << *lValue();
-		unsigned int length=1;
-		if (!emask)
-			length = mask.length();
-        out << ".mask"<< length<<"(";
-        int commaprecedence = BinaryExpr(BO_Comma,0,0,location).precedence(); 
-        if (rValue()->precedence()<commaprecedence/*comma*/)
-            out << "(" <<*rValue() <<")";
-        else
-            out << *rValue();
-        for (unsigned int i=0;i<4&&i<length;++i) {
-            out << ",";
-			if (emask) {
-				out << *emask;
-			}else{
-				out << translateMask(translateSwizzle(mask[i]));
-			}
-        }
-        out << ")";
-    }
-
+    out << ")";
+  }
+  
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // the following class translates the Trinary ?: expr into a function call
 class NewQuestionColon :public TrinaryExpr {public:
-    NewQuestionColon (Expression * c, 
-                      Expression * t, 
-                      Expression * f, 
-                      const Location &l)
-      :TrinaryExpr(c,t,f,l) {
-    }
-
-    Expression * dup0() const {
-        return new NewQuestionColon(condExpr()->dup(),
-                                    trueExpr()->dup(),
-                                    falseExpr()->dup(),
-                                    location);
-    }
-    int precedence() const {return 3;}
-    void print(std::ostream &out) const {
-        int memberprecedence = BinaryExpr(BO_Member,0,0,location).precedence();
-        if (condExpr()->precedence()<memberprecedence)/*member*/ 
-            out << "(";
-        out<<*condExpr();
-        if (condExpr()->precedence()<memberprecedence) /*member*/
-            out << ")";        
-        out<<".questioncolon(";
-        out<<*trueExpr();
-        out << ",";
-        out << *falseExpr();
-        out << ")";
-    }
-        
+  NewQuestionColon (Expression * c, 
+                    Expression * t, 
+                    Expression * f, 
+                    const Location &l)
+    :TrinaryExpr(c,t,f,l) {
+  }
+  
+  Expression * dup0() const {
+    return new NewQuestionColon(condExpr()->dup(),
+                                trueExpr()->dup(),
+                                falseExpr()->dup(),
+                                location);
+  }
+  int precedence() const {return 3;}
+  void print(std::ostream &out) const {
+    int memberprecedence = BinaryExpr(BO_Member,0,0,location).precedence();
+    if (condExpr()->precedence()<memberprecedence)/*member*/ 
+      out << "(";
+    out<<*condExpr();
+    if (condExpr()->precedence()<memberprecedence) /*member*/
+      out << ")";        
+    out<<".questioncolon(";
+    out<<*trueExpr();
+    out << ",";
+    out << *falseExpr();
+    out << ")";
+  }
+  
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -240,73 +244,84 @@ class BaseType1:public BaseType {public:
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   // Do not recusively translate an integer
-    BaseType1(const BaseType &t):BaseType(t){
-	ArrayBlacklist.insert((Expression *)this);
-    }
-
+  BaseType1(const BaseType &t):BaseType(t){
+    ArrayBlacklist.insert((Expression *)this);
+  }
+  
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+oo+
   // Upon destruction, delete it from the blacklist
-    BaseType1::~BaseType1() {
-	std::set<Expression *>::iterator i = ArrayBlacklist.find((Expression *)this);
-	if (i!=ArrayBlacklist.end())
-	    ArrayBlacklist.erase(i);
-    }
+  BaseType1::~BaseType1() {
+    std::set<Expression *>::iterator i = ArrayBlacklist.find((Expression *)this);
+    if (i!=ArrayBlacklist.end())
+      ArrayBlacklist.erase(i);
+  }
+  
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   // to duplicate, follow the duplication procedure of the normal base type.
-	Type * BaseType1::dup0()const {
-		BaseType * ret =new BaseType1 (*this);
-         ret->storage = storage; 
-         ret->qualifier = qualifier; 
-         ret->typemask = typemask; 
-         ret->tag = tag->dup();
-         ret->typeName = typeName->dup();
-         ret->stDefn = stDefn->dup();
-         ret->enDefn = enDefn->dup();
-         return ret;
-	}
+  Type * BaseType1::dup0()const {
+    BaseType * ret =new BaseType1 (*this);
+    ret->storage = storage; 
+    ret->qualifier = qualifier; 
+    ret->typemask = typemask; 
+    ret->tag = tag->dup();
+    ret->typeName = typeName->dup();
+    ret->stDefn = stDefn->dup();
+    ret->enDefn = enDefn->dup();
+    return ret;
+  }
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-  //to print out the base type, see if it falls into the set of classes with BRT replacements
-    virtual void printBase(std::ostream& out, int level) const {
-        //this->printQual(out,qualifier);
-	int special = BT_Char|BT_Int|BT_Float|BT_Float2|BT_Float3|BT_Float4|BT_Long|BT_UserType|BT_Struct;
-	if ((typemask&special)!=0){
-		if ((qualifier &TQ_Const)!=0)
-			out << "const ";
-		if ((qualifier &TQ_Volatile)!=0)
-			out << "volatile ";
-		
-		if (typemask & BT_Char)
-			out << "__BrtChar1 ";
-		else if (typemask & BT_Float)
-			out << "__BrtFloat1 ";
-		else if (typemask & BT_Float2)
-			out << "__BrtFloat2 ";
-		else if (typemask & BT_Float3)
-			out << "__BrtFloat3 ";
-		else if (typemask & BT_Float4)
-			out << "__BrtFloat4 ";
-		else if (typemask & BT_UserType)
-    {
-      out << "__cpustruct_" << *typeName;
+  // to print out the base type, see if it falls into the set 
+  // of classes with BRT replacements
+  virtual void printBase(std::ostream& out, int level) const {
+
+    int special =
+      BT_Char     |
+      BT_Int      |
+      BT_Float    |
+      BT_Float2   |
+      BT_Float3   |
+      BT_Float4   |
+      BT_Long     |
+      BT_UserType |
+      BT_Struct;
+
+    if ((typemask&special)!=0){
+      if ((qualifier &TQ_Const)!=0)
+        out << "const ";
+      if ((qualifier &TQ_Volatile)!=0)
+        out << "volatile ";
+      
+      if (typemask & BT_Char)
+        out << "__BrtChar1 ";
+      else if (typemask & BT_Float)
+        out << "__BrtFloat1 ";
+      else if (typemask & BT_Float2)
+        out << "__BrtFloat2 ";
+      else if (typemask & BT_Float3)
+        out << "__BrtFloat3 ";
+      else if (typemask & BT_Float4)
+        out << "__BrtFloat4 ";
+      else if (typemask & BT_UserType)
+        {
+          out << "__cpustruct_" << *typeName;
+        }
+      else if (typemask & BT_Struct)
+        {
+          // TIM: hope they didn't define the struct inline...
+          out << "struct __cpustruct_" << *tag;
+        }
+      else
+        out << "__BrtInt1 ";
+      
+      if ((qualifier & TQ_Out)!=0){
+        //out << "&";
+      }
+    } else {
+      //no BRT equivalent fallback
+      BaseType::printBase(out,level);
     }
-    else if (typemask & BT_Struct)
-    {
-      // TIM: hope they didn't define the struct inline...
-      out << "struct __cpustruct_" << *tag;
-    }
-    else
-			out << "__BrtInt1 ";
-		
-		if ((qualifier &TQ_Out)!=0){
-			//out << "&";
-		}
-		
-	}else {
-               //no BRT equivalent fallback
-		BaseType::printBase(out,level);
-	}
-	}
+  }
 };
 
 
@@ -318,83 +333,96 @@ Expression *ArrayBlacklister(Expression * e) {
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-//this function makes a type's size expressions off limits so that they are not transformed
+// this function makes a type's size expressions off limits 
+// so that they are not transformed
 void BlacklistType(Type **t);
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-//this function does the same as above but since they require **, it needs to look at a stored BaseType
+// this function does the same as above but since they require **, 
+// it needs to look at a stored BaseType
 void BlacklistBaseType (BaseType **t) {
-	*t = new BaseType1(**t);
+  *t = new BaseType1(**t);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-// This function goes through a type looking for array bounds to mark those to not be touched
+// This function goes through a type looking for array 
+// bounds to mark those to not be touched
 void BlacklistType (Type **t) {
-	if (!t)
-		return;
-    if (!(*t))
-        return;
-    BaseType * basei ;
-    
-    if ((*t)->type==TT_Base&&(basei= static_cast<BaseType *>(*t))) {
-		*t = new BaseType1(*basei);
-		//delete base;
-    }
-    ArrayType *at ;
-    if ((*t)->type==TT_Array&&(at = static_cast<ArrayType *>(*t))) {
-	if (at->size) {
-	    ArrayBlacklister(at->size);	
-	    at->size->findExpr(ArrayBlacklister);
-	}
-    }
-	if ((*t)->type==TT_Array||(*t)->type==TT_Stream)//this takes care of Streams as well as arrays    
-	    BlacklistType(&(static_cast<ArrayType *>(*t)->subType));
-	if ((*t)->type==TT_Pointer)
-	    BlacklistType (&(static_cast<PtrType *>(*t)->subType));
-	if ((*t)->type==TT_BitField)
-	    BlacklistType (&(static_cast<BitFieldType *>(*t)->subType));
-    BrtStreamType * st;
+  if (!t)
+    return;
+  if (!(*t))
+    return;
+  
+  BaseType * basei ;
+  
+  if ((*t)->type==TT_Base && (basei = static_cast<BaseType *>(*t))) {
+    *t = new BaseType1(*basei);
+    //delete base;
+  }
 
-    if ((*t)->type==TT_BrtStream && (st = static_cast<BrtStreamType *>(*t))) {
-        BlacklistBaseType(&st->base);
-        
+  ArrayType *at ;
+  if ((*t)->type==TT_Array && (at = static_cast<ArrayType *>(*t))) {
+    if (at->size) {
+      ArrayBlacklister(at->size);	
+      at->size->findExpr(ArrayBlacklister);
     }
-    FunctionType * ft;
-    if ((*t)->type==TT_Function&&(ft = static_cast<FunctionType *>(*t))) {
-		for (unsigned int i=0;i<ft->nArgs;++i) {
-			BlacklistType(&ft->args[i]->form);
-		}
-		BlacklistType(&ft->subType);
+  }
+
+  //this takes care of Streams as well as arrays
+  if ((*t)->type == TT_Array || (*t)->type==TT_Stream) {
+    BlacklistType(&(static_cast<ArrayType *>(*t)->subType));
+  }
+
+  if ((*t)->type==TT_Pointer)
+    BlacklistType (&(static_cast<PtrType *>(*t)->subType));
+  
+  if ((*t)->type==TT_BitField)
+    BlacklistType (&(static_cast<BitFieldType *>(*t)->subType));
+  
+  BrtStreamType * st;
+  
+  if ((*t)->type==TT_BrtStream && (st = static_cast<BrtStreamType *>(*t)))
+    BlacklistBaseType(&st->base);
+  
+  FunctionType * ft;
+  if ((*t)->type==TT_Function && (ft = static_cast<FunctionType *>(*t))) {
+    for (unsigned int i=0;i<ft->nArgs;++i) {
+      BlacklistType(&ft->args[i]->form);
     }
-    
-    
+    BlacklistType(&ft->subType);
+  }
+
 }
+
 Expression *ModifyConstructorType (Expression *e) {
-	if (e->etype==ET_ConstructorExpr) {
-		ConstructorExpr * ce= static_cast<ConstructorExpr*>(e);
-		if (ce) {
-			BlacklistBaseType(&ce->_bType);
-		}
-	}
-	return e;
-}
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-//This finds all types so that sizes may not be altered
-void FindTypesDecl (Statement * s) {
-    DeclStemnt * ds;
-	s->findExpr(&ModifyConstructorType);
-    if (s->isDeclaration()&&(ds=static_cast<DeclStemnt*>(s))) {
-        for (unsigned int i=0;i<ds->decls.size();++i) {
-            BlacklistType(&ds->decls[i]->form);
-        }
-//        ds->print(std::cout,0);        
+  if (e->etype==ET_ConstructorExpr) {
+    ConstructorExpr * ce= static_cast<ConstructorExpr*>(e);
+    if (ce) {
+      BlacklistBaseType(&ce->_bType);
     }
-    FunctionDef * fd;
-    if (s->isFuncDef() && (fd = static_cast<FunctionDef *>(s))) {
-        BlacklistType(&fd->decl->form);
-	}
-   
+  }
+  return e;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// This finds all types so that sizes may not be altered
+void FindTypesDecl (Statement * s) {
+  DeclStemnt * ds;
+
+  s->findExpr(&ModifyConstructorType);
+  
+  if (s->isDeclaration() && (ds=static_cast<DeclStemnt*>(s))) {
+    for (unsigned int i=0;i<ds->decls.size();++i) {
+      BlacklistType(&ds->decls[i]->form);
+    }
+  }
+
+  FunctionDef * fd;
+  if (s->isFuncDef() && (fd = static_cast<FunctionDef *>(s))) {
+    BlacklistType(&fd->decl->form);
+  } 
+}
+
 extern bool recursiveIsGather(Type *t);
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This class overrides the index expr with one that prints [(int)<lookupExpr>]
@@ -793,8 +821,8 @@ void FindConstantExpr (Statement * s) {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void RestoreTypes(FunctionDef *fDef){
-	ArrayBlacklist.clear();
-	fDef->findStemnt (FindTypesDecl);
+  ArrayBlacklist.clear();
+  fDef->findStemnt (FindTypesDecl);
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -819,18 +847,18 @@ void FindFunctionCall (Statement * s) {
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void Brook2Cpp_ConvertKernel(FunctionDef *fDef) {
-    changeFunctionCallForIndexOf(fDef);
-    RestoreTypes(fDef);
-    fDef->findStemnt(&FindMask);
-    RestoreTypes(fDef);
-    fDef->findStemnt (&FindSwizzle);
-    RestoreTypes(fDef);
-    fDef->findStemnt (&FindQuestionColon);
-    RestoreTypes(fDef);
-    fDef->findStemnt (&FindIndexExpr);
-    RestoreTypes(fDef);
-    fDef->findStemnt (&FindConstantExpr);
-    RestoreTypes(fDef);
-    fDef->findStemnt(&FindFunctionCall);
-    RestoreTypes(fDef);
+  changeFunctionCallForIndexOf(fDef);
+  RestoreTypes(fDef);
+  fDef->findStemnt(&FindMask);
+  RestoreTypes(fDef);
+  fDef->findStemnt (&FindSwizzle);
+  RestoreTypes(fDef);
+  fDef->findStemnt (&FindQuestionColon);
+  RestoreTypes(fDef);
+  fDef->findStemnt (&FindIndexExpr);
+  RestoreTypes(fDef);
+  fDef->findStemnt (&FindConstantExpr);
+  RestoreTypes(fDef);
+  fDef->findStemnt(&FindFunctionCall);
+  RestoreTypes(fDef);
 }
