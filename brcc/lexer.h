@@ -39,10 +39,10 @@ class TransUnit;
 /**************************************************************************/
 
 /* Maximum length for strings and identifiers */
-#define MAX_STRING_LEN      512
+#define MAX_STRING_LEN      2048
 
 /* If we allow a comment as a token, we need to let them be larger. */
-#define MAX_TOKN_LEN        512
+#define MAX_TOKN_LEN        2048
 
 /**************************************************************************/
 

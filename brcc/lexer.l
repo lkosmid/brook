@@ -522,15 +522,15 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                          return(err_tok = PP_DIR);
                        }
 
-<PP>[^\n\\]+           {
-                         int n = yyleng;
-                         if (tokn_ptr + n < tokn_end) {
-                             memcpy(tokn_ptr,yytext,n);
-                             tokn_ptr += n;
-                         } else {
-                            yywarn("Preprocessor directive too long");
-			 }
-                       }
+<PP>([^\n\\]|\\[^\r\n])+ {
+			    int n = yyleng;
+			    if (tokn_ptr + n < tokn_end) {
+				memcpy(tokn_ptr,yytext,n);
+				tokn_ptr += n;
+			    } else {
+			       yywarn("Preprocessor directive too long");
+			    }
+                         }
 
 <INITIAL>{alpha}{alphanum}*  {    /* Identifier */
 
