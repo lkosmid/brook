@@ -26,6 +26,7 @@ Software Prerequisites
 	- flex
 	- bison
 	- bin-utils
+        - perl (for Makefile dependencies)
 
    * Alternatively, running with the GPU runtimes requires the following:
    	- Microsoft Visual C++ version 6 or 7 (preferably 7)
@@ -39,7 +40,8 @@ Software Prerequisites
 		- make
 		- flex
 		- bison
-     
+                - perl
+
      BRCC will look for cgc and fxc (the HLSL compiler from the DirectX 9
      SDK) in the path.  Following the default installations, cgc.exe is in
      C:\Program Files\NVIDIA Corporation\Cg\bin and fxc.exe is in
