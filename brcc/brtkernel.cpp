@@ -459,7 +459,7 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 		indent(out,3);
 		out << "ratioiter"<<index<<"=0;"<<std::endl;
 		indent(out,3);
-                out << "++iter"<<index<<";"<<std::endl;
+                out << "iter"<<index<<"+=scale"<<index<<";"<<std::endl;
                 indent(out,2);
                 out << "}"<<std::endl;
 	}else {
@@ -470,8 +470,12 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
               indent(out,3);
               out << "ratioiter"<<index<<"=0;"<<std::endl;
               indent(out,3);
+              out << "iter"<<index<<"+=scale"<<index<<";"<<std::endl;
+           }else {
+              out << "iter"<<index<<"++;"<<std::endl;
            }
-           out << "++iter"<<index<<";"<<std::endl;
+           
+           
            if (ref!=index) {
               indent(out,2);
               out << "}"<<std::endl;			
@@ -501,6 +505,12 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
               out << "unsigned int ratio"<<index<<" = extents["<<ref<<"]";
               out << "[dim-1]";
               out << "/extents["<<index<<"][dim-1];"<<std::endl;
+              indent(out,1);
+              out << "unsigned int scale"<<index<<"=extents["<<index<<"][dim-1]";
+              out << "/extents["<<ref<<"][dim-1];";
+              out << std::endl;
+              indent(out,1);
+              out <<"if (scale"<<index<<"<1) scale"<<index<<" = 1;"<<std::endl;
               indent(out,1);
               out << "unsigned int ratioiter"<<index<<" = 0;"<<std::endl;
            }
