@@ -369,7 +369,7 @@ int main(int argc, char **argv)
         // To support the `in-place' perfect-shuffle algorithm
         if (1) {           
            float fN=N;
-           iter float iterstream<N> = iter (0.0f,fN);
+           static iter float iterstream<N> = iter (0.0f,fN);
            flattenS(s, s_prime,iterstream);           
         }
         // update the PassCounter
