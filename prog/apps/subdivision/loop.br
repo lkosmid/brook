@@ -278,7 +278,7 @@ kernel void splitTriangles (Tri triangles[][],
 }
 
 
-
+/* obsolete
 
 kernel void reorgSplitTriangles (SplitTri splittri<>,
                                  Neighbor newnei<>,
@@ -363,7 +363,7 @@ kernel void reorgSplitTriangles (SplitTri splittri<>,
   smallEnough(triC,neighborC,triC,neighborC,epsilon);
   smallEnough(triD,neighborD,triD,neighborD,epsilon);
 }
-
+*/
 
 kernel void linearReorgSplitTriangles (SplitTri splittri<>,
                                        Neighbor newnei<>,
@@ -485,17 +485,35 @@ void subdivide (Neighbor (*neighbors)<>,
     float2 shouldNotProduce<2048,0>;
     produceTriP(*triangles,shouldProduce,shouldNotProduce);
     {
-      int sizey=3*toi(streamSize(shouldNotProduce).x);
-      float3 outputTri<2048,sizey>;
-      writeFinalTriangles(*triangles,shouldNotProduce,outputTri);
-      if (streamSize(shouldProduce).x) {
-        subdivide(neighbors,triangles,output,epsilon);
-      } 
-      sizey = output->size;
-      expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
-                                              streamSize(outputTri).y));
-      streamWrite(outputTri,output->v+sizey);    
-      
+      int sizeDivide=toi(streamSize(shouldProduce).x);
+      {
+        Neighbor sharedNeighbors<2048,sizeDivide>;
+        Neighbor newNeighbors<2048,(sizeDivide*4)>;
+        SplitTri sharedTriangles <2048,sizeDivide>;
+        Tri newTriangles<2048,(sizeDivide*4)>;
+        computeNeighbors(*neighbors,*triangles,shouldProduce,sharedNeighbors);
+        splitTriangles(*triangles,*neighbors,shouldProduce,sharedTriangles);
+        linearReorgSplitTriangles(sharedTriangles,
+                                  sharedNeighbors,
+                                  newTriangles,
+                                  newNeighbors,
+                                  epsilon);
+        streamSwap(*triangles,newTriangles);
+        streamSwap(*neighbors,newNeighbors);
+      }
+      {
+        int sizey=3*toi(streamSize(shouldNotProduce).x);
+        float3 outputTri<2048,sizey>;
+
+        writeFinalTriangles(*triangles,shouldNotProduce,outputTri);      
+        if (streamSize(shouldProduce).x) {
+          subdivide(neighbors,triangles,output,epsilon);
+        } 
+        sizey = output->size;
+        expandVertexArray(output,(unsigned int)(streamSize(outputTri).x*
+                                                streamSize(outputTri).y));
+        streamWrite(outputTri,output->v+sizey);   
+      }       
     }
   }
   /*

@@ -3,6 +3,6 @@ EXECUTABLE = subdivision
 FILES = loop voutfloatN vout1dfloatN 
 #nurbs subdivision 
 LIBRARIES = $(RUNTIME_LIBS)
-BRCCFLAGS = -k
+BRCCFLAGS = 
 include $(ROOTDIR)/common.mk
 
