@@ -34,13 +34,16 @@ typedef void (APIENTRYP PFNGLMULTITEXCOORD4FVARBPROC) (GLenum target, const GLfl
 
 #ifndef GL_ARB_multitexture
 typedef void (APIENTRYP PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
-#define GL_TEXTURE0                       0x84C0
 #define GL_TEXTURE0_ARB                   0x84C0
 #define GL_MAX_TEXTURE_UNITS              0x84E2
 #define RUNTIME_BONUS_GL_FNS_2 \
    XXX(PFNGLACTIVETEXTUREARBPROC,      glActiveTextureARB)
 #else
 #define RUNTIME_BONUS_GL_FNS_2
+#endif
+
+#ifndef GL_TEXTURE0
+#define GL_TEXTURE0 GL_TEXTURE0_ARB
 #endif
 
 #ifndef GL_ARB_vertex_program

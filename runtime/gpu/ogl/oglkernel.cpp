@@ -21,7 +21,7 @@ OGLPixelShader::OGLPixelShader(unsigned int _id):
   id(_id), largest_constant(0) {
   unsigned int i;
   
-  for (i=0; i<MAXCONSTANTS; i++)
+  for (i=0; i<(unsigned int) MAXCONSTANTS; i++)
     constants[i] = float4(0.0f, 0.0f, 0.0f, 0.0f);;
 }
   
@@ -126,7 +126,7 @@ OGLContext::bindConstant( PixelShaderHandle ps,
   glProgramLocalParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, inIndex,
                                 (const float *) &inValue);
 
-  GPUAssert(inIndex < OGLPixelShader::MAXCONSTANTS, 
+  GPUAssert(inIndex < (unsigned int) OGLPixelShader::MAXCONSTANTS, 
             "Too many constants used in kernel");
 
   if (inIndex >= oglps->largest_constant)

@@ -15,7 +15,7 @@ namespace brook {
   {
   public:
     OGLPixelShader(unsigned int id);
-    static const int MAXCONSTANTS = 256;
+    static const unsigned int MAXCONSTANTS = 256;
     unsigned int id;
     float4 constants[256];
     unsigned int largest_constant;
