@@ -55,27 +55,27 @@ namespace brook {
       GPUFatRect getInterpolant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
       float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
     };
-
+    friend class StreamArgumentType;//internal classes are not friendly enough
     class IteratorArgumentType : public ArgumentType
     {
     public:
       GPUFatRect getInterpolant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
       float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
     };
-
+    friend class IteratorArgumentType; //internal classes are not friends
     class ConstantArgumentType : public ArgumentType
     {
     public:
       float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
     };
-
+    friend class ConstantArgumentType; //internal classes are not friends
     class GatherArgumentType : public ArgumentType
     {
     public:
       TextureHandle getTexture( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
       float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
     };
-
+    friend class GatherArgumentType; //internal classes are not friends
     class OutputArgumentType : public ArgumentType
     {
     public:
@@ -83,7 +83,7 @@ namespace brook {
       GPUFatRect getInterpolant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
       float4 getConstant( GPUKernel* inKernel, size_t inIndex, size_t inComponent );
     };
-
+    friend class OutputArgumentType; //internal classes are not friends
     class ArgumentInfo
     {
     public:
