@@ -192,10 +192,13 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                     }
 
 <INITIAL>"//"[^*].*$ { /* C++ style comment */
+#if 0
+			 /* Brook supports C++ comments.  --Jeremy. */
                          if (cpp_comment_warn){
                              cpp_comment_warn = 0;
                              yywarn("C++ style comment encountered");
                          }
+#endif
                      }
 
 <INITIAL>"auto"     {
