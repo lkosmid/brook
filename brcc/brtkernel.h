@@ -70,15 +70,20 @@ class BRTCPUKernelCode : public BRTKernelCode
 		Decl * a;
 		unsigned int index;
 		bool shadowOutput;
+		bool reduceFunc;
 	public:
 		Decl * getDecl(){return a;}
 		bool isGather();
 		bool isArrayType();
-		PrintCPUArg(Decl * arg,unsigned int index, bool shadow)
+                bool isStream();
+		PrintCPUArg(Decl * arg,unsigned int index, bool shadow, bool reduceFunc)
 				:a(arg),index(index){
+			this->reduceFunc=reduceFunc;
 			shadowOutput=shadow;
 		}
 		enum STAGE {HEADER,DEF,USE,CLEANUP};
+		void Increment(std::ostream&out, bool nDcube, unsigned int ref);
+		void InitialSet(std::ostream&out, bool nDcube, unsigned int ref);
 		void printDimensionlessGatherStream(std::ostream&out,STAGE s);
 		void printArrayStream(std::ostream &out, STAGE s);
 		void printShadowArg(std::ostream&out,STAGE s);

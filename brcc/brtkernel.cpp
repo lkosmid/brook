@@ -173,6 +173,9 @@ bool BRTCPUKernelCode::PrintCPUArg::isGather() {
 bool BRTCPUKernelCode::PrintCPUArg::isArrayType() {
       return recursiveIsArrayType(a->form);
 }
+bool BRTCPUKernelCode::PrintCPUArg::isStream() {
+   return a->isStream();
+}
 void PrintAccessStream(std::ostream &out, 
                        unsigned int index,
                        std::string function, 
@@ -235,8 +238,97 @@ void BRTCPUKernelCode::PrintCPUArg::printDimensionlessGatherStream(std::ostream&
 	  break;
         }
 }
-
-void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s) {
+void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out, 
+                                              bool nDcube, 
+                                              unsigned int ref) {
+	if (a->isReduce())
+		return;
+	if (!a->isStream())
+		return;
+	bool isOut = (a->form->getQualifiers()&TQ_Out)!=0;
+	if (!nDcube&&(reduceFunc||isOut)) {
+           indent(out,2);
+           out << "++arg"<<index<<";"<<std::endl;
+	}else if (!nDcube) {
+		indent(out,2);		
+		out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){";
+                out << std::endl;
+		indent(out,3);
+		out << "ratioiter"<<index<<"=0;";
+		indent(out,3);
+		out << "if (++iter"<<index<<"%extents["<<index<<"][0]==0) {";
+                out << std::endl;
+		indent(out,4);
+		out << "iter"<<index<<"=getIndexOf(i+mapbegin,";
+                out << "extents["<<index<<"],";
+                out << "dims["<<ref<<"], extents["<<ref<<"]);";
+		out << std::endl;
+		indent(out,3);
+		out << "}"<<std::endl;
+		indent(out,2);
+		out << "}"<<std::endl;
+	}else {
+		indent(out,2);
+		if(!isOut){
+			out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){"<<std::endl;
+			indent(out,3);
+			out << "ratioiter=0;"<<std::endl;
+			indent(out,3);
+		}
+		out << "++arg"<<index<<";"<<std::endl;
+		indent(out,!isOut?2:3);
+		out << "if (arg"<<index<<" == x"<<index<<") {"<<std::endl;
+		indent(out,!isOut?3:4);
+		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapend,";
+                out << "extents["<<index<<"], ";
+                out << "dims["<<ref<<"], extents["<<ref<<"]);";
+		out << std::endl;
+		indent(out,!isOut?3:4);
+		out << "x"<<index<<" = arg"<<index<<" + delta_x"<<index<<";"<<std::endl;
+		indent(out,!isOut?2:3);
+		out << "}"<<std::endl;
+		if (!isOut) {
+			indent(out,2);
+			out << "}"<<std::endl;			
+		}
+	}
+}
+void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out, 
+                                               bool nDcube, 
+                                               unsigned int ref) {
+	if (a->isReduce())
+		return;
+	if (!a->isStream())
+		return;
+	if (!nDcube&&(reduceFunc||(a->form->getQualifiers()&TQ_Out)!=0)) {
+           indent(out,1);
+           out << "arg"<<index<<"+=mapbegin;"<<std::endl;
+	}else {
+           indent(out,1);
+           out << "unsigned int ratio"<<index<<" = extents["<<ref<<"][0]";
+           out << "/extents["<<index<<"][0];"<<std::endl;
+           indent(out,1);
+           out << "unsigned int ratioiter"<<index<<" = 0;"<<std::endl;
+           indent (out,1);
+           out << "unsigned int iter"<<index<<" = getIndexOf(";
+           if (nDcube) 
+              out << "mapbegin,";
+           else
+              out << "0, mapbegin, mapend, ";
+           out << "extents["<<index<<"], ";
+           out << "dims["<<ref<<"], extents["<<ref<<"]);"<<std::endl;
+           indent(out,1);
+           if (nDcube) {
+              out << "unsigned int x_delta"<<index<<" = arg"<<index<<" + mapend[0] - mapbegin[0];";
+              out << std::endl;
+              indent(out,1);
+              out << "unsigned int x"<<index<<" = ";
+              out << "arg"<<index<<" + x_delta"<<index<<";"<<std::endl;
+           }
+	}
+}
+void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, 
+                                                     STAGE s) {
         Type * t=a->form;
         bool isOut = (t->getQualifiers()&TQ_Out)!=0;
 	//temporarily dissect type.
@@ -271,17 +363,21 @@ void BRTCPUKernelCode::PrintCPUArg::printArrayStream(std::ostream &out, STAGE s)
                                                      "brook::Stream::WRITE":
                                                      "brook::Stream::READ");
 
-               out<<"; arg"<<index<<"+=mapbegin;";
+
             }else {
                out << "args["<<index<<"];";
             }
             break;
         }
         case USE:{
-            out <<"*arg"<<index;
-            if (isStream)
-               out <<"++";
-            break;
+			if (isStream&&(reduceFunc||isOut)) {
+				out <<"*arg"<<index;
+			}else if (!isStream) {
+                           out << "*arg"<<index;
+                        }else {
+				out << "*(arg"<<index<<" + iter"<<index<<")";
+			}
+			break;
         }
 	case CLEANUP:
            break;
@@ -346,16 +442,20 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
                PrintAccessStream(out,index,"getData",isOut?
                                  "brook::Stream::WRITE":
                                  "brook::Stream::READ");
-               out<<"; arg"<<index<<"+=mapbegin;";
+               out << ";";
             }else {
                out << "args["<<index<<"];";
             }
             break;
         case USE:
-                out <<"*arg"<<index;
-                if (isStream)
-                    out <<"++";
-            break;
+			if (isStream&&(reduceFunc||isOut)) {
+				out <<"*arg"<<index;
+			}else if (!isStream) {
+                           out << "*arg"<<index;
+                        }else{
+                           out << "*(arg"<<index<<" + iter"<<index<<")";
+			}
+			break;
 	case CLEANUP:
            break;
         default:
@@ -371,7 +471,8 @@ void BRTCPUKernelCode::PrintCPUArg::printNormalArg(std::ostream&out,STAGE s){
 }
     
    //redirects call
-void BRTCPUKernelCode::PrintCPUArg::printCPUVanilla(std::ostream & out,STAGE s){
+void BRTCPUKernelCode::PrintCPUArg::printCPUVanilla(std::ostream & out,
+                                                    STAGE s){
         if(isGather())
 	  printDimensionlessGatherStream(out,s);
 	else if (isArrayType())
@@ -379,7 +480,8 @@ void BRTCPUKernelCode::PrintCPUArg::printCPUVanilla(std::ostream & out,STAGE s){
         else
 	  printNormalArg(out,s);
 }
-void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out, STAGE s) {
+void BRTCPUKernelCode::PrintCPUArg::printCPU(std::ostream & out, 
+                                             STAGE s) {
       Type * t = a->form;
       if (shadowOutput&&(t->getQualifiers()&TQ_Out)!=0) {
          printShadowArg(out,s);
@@ -397,13 +499,14 @@ std::string whiteout (std::string s) {
    }
    return s;
 }
-std::vector<BRTCPUKernelCode::PrintCPUArg> BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
+std::vector<BRTCPUKernelCode::PrintCPUArg> 
+BRTCPUKernelCode::getPrintableArgs (FunctionDef * fDef,bool shadowOutput) {
     Type * form = fDef->decl->form;
     assert (form->isFunction());
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     std::vector<PrintCPUArg> myArgs;
     {for (int i=0;i<func->nArgs;++i) {
-        myArgs.push_back(PrintCPUArg(func->args[i],i,shadowOutput));
+        myArgs.push_back(PrintCPUArg(func->args[i],i,shadowOutput,fDef->decl->isReduce()));
     }}  
     return myArgs;
 }
@@ -473,7 +576,7 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
     out << whiteOut << "const std::vector<unsigned int>&dims,"<<std::endl;
     out << whiteOut << "unsigned int mapbegin) {"<<std::endl;
     indent(out,1);
-    out << "unsigned int i= mapbegin;"<<std::endl;
+    out << "unsigned int i= 0;"<<std::endl;
     initializeIndexOf(out);
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
@@ -560,15 +663,32 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     out << long_name << "const std::vector<unsigned int>&dims,"<<std::endl;
     out << long_name<<"unsigned int mapbegin, "<<std::endl;
     out << long_name<< "unsigned int mapend) {"<<std::endl;
+    int reference_stream=-1;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
+        if ((reference_stream==-1||
+             (myArgs[i].getDecl()->form->getQualifiers()&TQ_Out)!=0)&&
+            myArgs[i].isStream()){
+           reference_stream=i;
+        }
     }}
+    if (reference_stream==-1) {
+       std::cerr << "Error ";
+       fDef->location.printLocation(out);
+       std::cerr << " No stream present in kernel or reduce."<<std::endl;
+       return;
+    }
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+          myArgs[i].InitialSet(out,false,reference_stream);
+    }}
+
     initializeIndexOf(out);
-	indent(out,1); out << "unsigned int i=mapbegin;"<<std::endl;
+    indent(out,1); out << "unsigned int i=0; "<<std::endl;
+    indent(out,1); out << "unsigned int iend=mapend-mapbegin;"<<std::endl;
     if (reduceneeded) {
-       indent(out,1); out << "if (i<mapend) {"<<std::endl;
+       indent(out,1); out << "if (iend) {"<<std::endl;
        
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
        out << std::endl;
@@ -581,11 +701,14 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
        printIndexOfCallingArgs(out);
        out << ");"<<std::endl;
        indent(out,2); out << "i++;"<<std::endl;;
+       {for (unsigned int i=0;i<myArgs.size();++i) {
+          myArgs[i].Increment(out,false,reference_stream);
+       }}
        incrementIndexOf(out);
        indent(out,1); out <<"}"<<std::endl;
     }
     indent(out,1);
-    out << "for (;i<mapend;++i) {";
+    out << "while (i<iend) {";
     out << std::endl;
     indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner (";
     out<<std::endl;
@@ -597,7 +720,13 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     }}
     printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;
+    indent(out,2);
+    out << "++i;"<<std::endl;
     incrementIndexOf(out);
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+       myArgs[i].Increment(out,false,reference_stream);
+    }}
+
     indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);

@@ -213,8 +213,9 @@ void DX9Kernel::ReduceToStream()
 
 static void DumpBuffer( float4* buffer )
 {
+  int i;
   DX9Print( "Left Buffer:\n" );
-  for( int i = 0; i < 11; i++ )
+  for( i = 0; i < 11; i++ )
   {
     for( int j = 0; j < 11; j++ )
     {
@@ -224,7 +225,7 @@ static void DumpBuffer( float4* buffer )
     DX9Print( "\n" );
   }
   DX9Print( "Right Buffer:\n" );
-  for( int i = 0; i < 11; i++ )
+  for( i = 0; i < 11; i++ )
   {
     for( int j = 0; j < 11; j++ )
     {
