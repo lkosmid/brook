@@ -15,7 +15,7 @@ PFNGLGENPROGRAMSNVPROC          glGenProgramsNV;
 PFNGLLOADPROGRAMNVPROC          glLoadProgramNV;
 PFNGLBINDPROGRAMNVPROC          glBindProgramNV;
 PFNGLPROGRAMNAMEDPARAMETER4FNVPROC  glProgramNamedParameter4fNV;
-#define   XXX(B,A) A = (B) wglGetProcAddress((const GLubyte *)#A); assert(A);
+#define   XXX(B,A) A = (B) wglGetProcAddress(#A); assert(A);
 #endif
 
 
