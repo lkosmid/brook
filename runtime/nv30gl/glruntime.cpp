@@ -40,9 +40,7 @@ GLRunTime::GLRunTime()
 #else
    //   arch = ARCH_NV30;
 #endif
-#ifdef _WIN32
    initglfunc();
-#endif
    createPBuffer(4);
 #ifndef _WIN32
    arch = getGLArch();      

@@ -3558,7 +3558,7 @@ GLEE_EXTERN GLboolean GLeeInit()
         pglWindowPos3svARB = (PFNGLWINDOWPOS3SVARBPROC) __GLeeGetProcAddress("glWindowPos3svARB");
 #endif
     }
-    if (__GLeeCheckExtension("GL_ARB_vertex_program", &extensionNames) )
+    if (__GLeeCheckExtension("GL_ARB_vertex_program", &extensionNames)||1 )
     {
         GLEE_ARB_vertex_program = GL_TRUE;
 #ifdef __GLEE_GL_ARB_vertex_program

@@ -10,7 +10,8 @@
 #define _GLRUNTIME_HPP_
 #include "../runtime.hpp"
 #include "GLee.h"
-
+#include <stdio.h>
+#include <stdlib.h>
 #define GL_MAX_TEXCOORDS        8
 #define GL_MAX_CONSTS           128
 
@@ -41,9 +42,8 @@ namespace brook {
    void __check_gl(int line, char *file);
 #define CHECK_GL() __check_gl(__LINE__, __FILE__);
 
-#ifdef WIN32
    void initglfunc(void);
-#endif
+
 
    class GLKernel : public Kernel {
    public:
