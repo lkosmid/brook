@@ -173,18 +173,18 @@ void compute2dFFT(float2 *input,
          }
    }
    if (1) {
-            bitReverseXY(s_out,indicesXo2YXp1o2Xm2,s);      
+//            bitReverseXY(s_out,indicesXo2YXp1o2Xm2,s);      
+            streamSwap(s_out,s);
    }
    }
    free(rawindices);
    if (output)
-      streamWrite(s_out,output);
-   else {
-      if (debug_fft) {
+      streamWrite(s_out,output); 
+   if (debug_fft) {
         printf("\nStream Output\n");
         streamPrint(s_out);
-      }
    }
+   
 
 
 }
