@@ -23,7 +23,7 @@ int main (int argc, char ** argv) {
   std::vector <bsp_polygon> model;
   std::vector<Tri> triangles;
   std::vector<BBox> bboxes;
-  LoadPly ("bunny.ply",model);
+  LoadPly (argc>1?argv[1]:"bunny.ply",model);
   csRapidCollider collide(model);
   collide.createBrookGeometry(bboxes,triangles);
   collide.CollideRecursive(const_cast<csCdBBox*>( collide.GetBbox()),
