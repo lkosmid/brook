@@ -54,7 +54,7 @@ static Expression* FunctionCallToAssign(FunctionCall *func,
       Location l (func->location);
       Expression * mreduce=func->args[reduce]->dup();
       Expression * mstream=func->args[stream]->dup();
-      delete func;
+      //delete func;
       return new AssignExpr(AO_Equal,
                             mreduce,
                             mstream,
@@ -109,9 +109,9 @@ static Expression * ConvertReduceToGets(FunctionCall* func, FunctionType * type)
       }
    }
    if (mreduce&&mstream) {
-      (*ModifyFunctionCall)(func,reduceloc,streamloc);
+      Expression * e =(*ModifyFunctionCall)(func,reduceloc,streamloc);
       reducenames.insert(reducenameval(reducename,func));
-               
+      return e;               
    }
    return func;
 }

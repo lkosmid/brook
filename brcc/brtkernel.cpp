@@ -164,6 +164,7 @@ bool recursiveIsArrayType(Type * form) {
 class PrintCPUArg {
     Decl * a;
     unsigned int index;
+   bool shadowOutput;
 public:
      bool isGather() {
        return recursiveIsGather(a->form);
@@ -171,7 +172,10 @@ public:
     bool isArrayType() {
       return recursiveIsArrayType(a->form);
     }
-    PrintCPUArg(Decl * arg,unsigned int index):a(arg),index(index){}
+    PrintCPUArg(Decl * arg,unsigned int index, bool shadow)
+       :a(arg),index(index){
+       shadowOutput=shadow;
+    }
     enum STAGE {HEADER,DEF,USE,CLEANUP};
   
    //this function determines if the size actually is specified for this dim
@@ -291,6 +295,24 @@ public:
 	  break;
         }
     }
+    void printShadowArg(std::ostream&out,STAGE s) {
+       Type * t = a->form;
+       bool isStream = (t->type==TT_Stream);        
+       switch(s) {
+       case HEADER:
+          printCPUVanilla(out,s);
+          break;
+       case DEF:
+          if (isStream)
+             t=static_cast<ArrayType*>(t)->subType;
+          printType(out,t,false,"arg"+tostring(index));
+          out << ";";
+          break;
+       case USE:
+          out << "arg"<<index;
+          break;
+       }
+    }  
    //standard args, not gather or scatter
     void printNormalArg(std::ostream&out,STAGE s){
         Type * t = a->form;
@@ -330,7 +352,7 @@ public:
     }
     
    //redirects call
-    void printCPU(std::ostream & out,STAGE s){
+    void printCPUVanilla(std::ostream & out,STAGE s){
         if(isGather())
 	  printDimensionlessGatherStream(out,s);
 	else if (isArrayType())
@@ -338,6 +360,14 @@ public:
         else
 	  printNormalArg(out,s);
     }
+   void printCPU(std::ostream & out, STAGE s) {
+      Type * t = a->form;
+      if (shadowOutput&&(t->getQualifiers()&TQ_Out)!=0) {
+         printShadowArg(out,s);
+      }else {
+         printCPUVanilla(out,s);
+      }
+   }
 
 };
 
@@ -349,14 +379,12 @@ std::string whiteout (std::string s) {
    }
    return s;
 }
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-void
-BRTCPUKernelCode::printCode(std::ostream& out) const
-{
-    bool copy_on_write=false;
-    bool dims_specified=false;        
-  /* We've already transformed everything, so just print ourselves */
-    Type * form = fDef->decl->form;
+void printInnerFunction (std::ostream & out,
+                         std::string name,
+                         FunctionDef *fDef, 
+                         std::vector<PrintCPUArg>&myArgs,
+                         bool shadowOutput) {
+   Type * form = fDef->decl->form;
     assert (form->isFunction());
     FunctionType* func = static_cast<FunctionType *>(form->dup());
     std::string myvoid("void  ");
@@ -365,9 +393,8 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu_inner";
     func->printBefore(out,&enhanced_name,0);
     out << " (";
-    std::vector<PrintCPUArg> myArgs;
     {for (int i=0;i<func->nArgs;++i) {
-        myArgs.push_back(PrintCPUArg(func->args[i],i));
+        myArgs.push_back(PrintCPUArg(func->args[i],i,shadowOutput));
     }}
     {
        std::string long_name(whiteout(myvoid+enhanced_name.name+" ("));
@@ -378,10 +405,42 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
     }}
     out << ")";    
     fDef->Block::print(out,0);
-    //we don't want to automatically print this for it would say "kernel void" which means Nothing
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
+BRTCPUKernelCode::printCode(std::ostream& out) const
+{
+    bool copy_on_write=false;
+    bool dims_specified=false;        
+  /* We've already transformed everything, so just print ourselves */
+ 
+    std::vector<PrintCPUArg> myArgs;
+    FunctionDef * baseCase = static_cast<FunctionDef*>(this->fDef->dup());
+    
+    Brook2Cpp_ConvertKernel(this->fDef);
+
+    printInnerFunction (out,
+                        "__"+fDef->decl->name->name+"_cpu_inner",
+                        fDef,
+                        myArgs,
+                        shadowOutput);    
+    {
+       std::vector<PrintCPUArg>temp;
+       BrookReduce_ConvertKernel(baseCase);
+       Brook2Cpp_ConvertKernel(baseCase);
+       printInnerFunction (out,
+                           "__"+baseCase->decl->name->name+"_cpu_inner",
+                           baseCase,
+                           temp,
+                           shadowOutput);
+    }
+   //we don't want to automatically print this for it would say "kernel void" which means Nothing
+    Symbol enhanced_name;
     enhanced_name.name = "__"+fDef->decl->name->name + "_cpu";
+    std::string myvoid("void  ");
     out << myvoid;
-    func->printBefore(out,&enhanced_name,0);
+    fDef->decl->form->printBefore(out,&enhanced_name,0);
     out << " (";
     std::string long_name (whiteout(myvoid + enhanced_name.name+" ("));
     out << "const std::vector<void *>&args,"<<std::endl;
@@ -392,8 +451,24 @@ BRTCPUKernelCode::printCode(std::ostream& out) const
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
         out << std::endl;
     }}
+    bool reduceneeded=true;
+    if (reduceneeded) {
+       indent(out,1); out << "if (mapbegin!=0&&mapbegin<mapend) {"<<std::endl;
+       indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
+       out << std::endl;
+       {for (unsigned int i=0;i<myArgs.size();++i) {
+          if (i!=0)
+             out <<","<<std::endl;
+          indent(out,3);
+          myArgs[i].printCPU(out,PrintCPUArg::USE);
+       }}
+       out << ");"<<std::endl;
+       indent(out,2); out << "mapbegin+=1;"<<std::endl;;
+       indent(out,1); out <<"}"<<std::endl;
+    }
     indent(out,1);
-    out << "for (unsigned int i=mapbegin;i<mapend;++i) {"<<std::endl;
+    out << "for (unsigned int i=mapbegin";
+    out <<";i<mapend;++i) {"<<std::endl;
     indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner (";
     out<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
