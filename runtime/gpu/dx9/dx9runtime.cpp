@@ -761,6 +761,11 @@ namespace brook
     _boundTextures[inIndex] = texture;
     HRESULT result = _device->SetTexture( inIndex, texture->getTextureHandle() );
     GPUAssert( !FAILED(result), "SetTexture failed" );
+
+    result = _device->SetSamplerState( inIndex, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP );
+    GPUAssert( !FAILED(result), "SetSamplerState failed" );
+    result = _device->SetSamplerState( inIndex, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP );
+    GPUAssert( !FAILED(result), "SetSamplerState failed" );
   }
 
   void GPUContextDX9Impl::bindOutput( size_t inIndex, TextureHandle inTexture )
