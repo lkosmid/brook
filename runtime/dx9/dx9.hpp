@@ -191,9 +191,9 @@ namespace brook {
 //    IDirect3DSurface9* getSurfaceHandle();
 
     int getSubstreamCount();
-    DX9Texture* getIndexedTexture( int inIndex );
-    IDirect3DTexture9* getIndexedTextureHandle( int inIndex );
-    IDirect3DSurface9* getIndexedSurfaceHandle( int inIndex );
+    DX9Texture* getIndexedTexture( int inIndex ) const;
+    IDirect3DTexture9* getIndexedTextureHandle( int inIndex ) const;
+    IDirect3DSurface9* getIndexedSurfaceHandle( int inIndex ) const;
 
     const DX9FatRect& getInputRect() { return inputRect; }
     const DX9FatRect& getOutputRect() { return outputRect; }
@@ -220,6 +220,13 @@ namespace brook {
      virtual int getFieldCount() const { return (int)fields.size(); }
      virtual __BRTStreamType getIndexedFieldType(int i) const {
        return fields[i].elementType;
+     }
+
+     virtual void* getIndexedFieldRenderData(int i) const {
+       return (void*)getIndexedTextureHandle(i);
+     }
+     virtual void synchronizeRenderData() {
+       validateGPUData();
      }
 
      void validateGPUData();
@@ -274,7 +281,7 @@ namespace brook {
 
   class DX9RunTime : public RunTime {
   public:
-    static DX9RunTime* create( bool inAddressTranslation );
+    static DX9RunTime* create( bool inAddressTranslation, void* inContextValue = 0 );
 
     virtual Kernel* CreateKernel(const void*[]);
     virtual Stream* CreateStream(
@@ -304,7 +311,7 @@ namespace brook {
 
   private:
     DX9RunTime( bool addressTranslation );
-    bool initialize();
+    bool initialize( void* inContextValue );
 
     void initializeVertexBuffer();
 

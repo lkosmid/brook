@@ -223,15 +223,15 @@ int DX9Stream::getSubstreamCount() {
   return (int)fields.size();
 }
 
-DX9Texture* DX9Stream::getIndexedTexture( int inIndex ) {
+DX9Texture* DX9Stream::getIndexedTexture( int inIndex ) const {
   return fields[inIndex].texture;
 }
 
-IDirect3DTexture9* DX9Stream::getIndexedTextureHandle( int inIndex ) {
+IDirect3DTexture9* DX9Stream::getIndexedTextureHandle( int inIndex ) const {
   return fields[inIndex].texture->getTextureHandle();
 }
 
-IDirect3DSurface9* DX9Stream::getIndexedSurfaceHandle( int inIndex ) {
+IDirect3DSurface9* DX9Stream::getIndexedSurfaceHandle( int inIndex ) const {
   return fields[inIndex].texture->getSurfaceHandle();
 }
 

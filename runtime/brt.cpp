@@ -50,20 +50,25 @@ namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
 
+  void initialize( const char* inRuntimeName, void* inContextValue )
+  {
+    RunTime::GetInstance( inRuntimeName, inContextValue, false );
+  }
+
   RunTime* createRunTime( bool addressTranslation )
   {
-    return RunTime::GetInstance( addressTranslation );
+    return RunTime::GetInstance( 0, 0, addressTranslation );
   }
     
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-  RunTime* RunTime::GetInstance( bool addressTranslation ) {
-    static RunTime* sResult = CreateInstance( addressTranslation );
+  RunTime* RunTime::GetInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation ) {
+    static RunTime* sResult = CreateInstance( inRuntimeName, inContextValue, addressTranslation );
     return sResult;
   }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-  RunTime* RunTime::CreateInstance( bool addressTranslation ) {
-    char *env = getenv(RUNTIME_ENV_VAR);
+  RunTime* RunTime::CreateInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation ) {
+    const char *env = inRuntimeName != NULL ? inRuntimeName : getenv(RUNTIME_ENV_VAR);
 
     if (!env) {
       fprintf (stderr,"*****WARNING*****WARNING*******\n");
@@ -98,7 +103,7 @@ namespace brook {
 #ifdef BUILD_DX9
     if (!strcmp(env, DX9_RUNTIME_STRING))
     {
-      RunTime* result = DX9RunTime::create( addressTranslation );
+      RunTime* result = DX9RunTime::create( addressTranslation, inContextValue );
       if( result != NULL ) return result;
       fprintf(stderr, 
 	      "Unable to initialize DX9 runtime, falling back to CPU\n");

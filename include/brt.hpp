@@ -45,6 +45,8 @@ namespace brook {
   static const unsigned int MAXPROGLENGTH = 1024*32;
   static const unsigned int MAXSTREAMDIMS = 8;
 
+  void initialize( const char* inRuntimeName, void* inContextValue = 0 );
+
   class Kernel {
   public:
     Kernel() {}
@@ -81,6 +83,11 @@ namespace brook {
     unsigned int getElementSize() const;
     virtual int getFieldCount() const = 0;
     virtual __BRTStreamType getIndexedFieldType(int i) const=0;
+
+    // functions for getting at low-level representation,
+    // so that an application can render and simulate
+    virtual void* getIndexedFieldRenderData(int i) const { return 0; }
+    virtual void synchronizeRenderData() {}
 
     //virtual __BRTStreamType getStreamType ()const=0;
     virtual unsigned int getTotalSize() const {

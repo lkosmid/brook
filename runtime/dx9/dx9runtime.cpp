@@ -42,10 +42,10 @@ static const char* kPassthroughPixelShaderSource =
 "mov oC0, r0\n"
 ;
 
-DX9RunTime* DX9RunTime::create( bool inAddressTranslation )
+DX9RunTime* DX9RunTime::create( bool inAddressTranslation, void* inContextValue )
 {
   DX9RunTime* result = new DX9RunTime( inAddressTranslation );
-  if( result->initialize() )
+  if( result->initialize( inContextValue ) )
     return result;
   delete result;
   return NULL;
@@ -67,38 +67,48 @@ DX9RunTime::DX9RunTime( bool inAddressTranslation )
 {
 }
 
-bool DX9RunTime::initialize()
+bool DX9RunTime::initialize( void* inContextValue )
 {
-  window = DX9Window::create();
-  if( window == NULL )
+  HRESULT result;
+  if( inContextValue != NULL ) // user-supplied context
   {
-    DX9Warn("Could not create offscreen window.");
-    return false;
+    window = NULL;
+    direct3D = NULL;
+    device = (IDirect3DDevice9*)(inContextValue);
   }
-  HWND windowHandle = window->getWindowHandle();
-
-	direct3D = Direct3DCreate9( D3D_SDK_VERSION );
-  if( direct3D == NULL )
+  else
   {
-    DX9Warn("Could not create Direct3D interface.");
-    return false;
-  }
+    window = DX9Window::create();
+    if( window == NULL )
+    {
+      DX9Warn("Could not create offscreen window.");
+      return false;
+    }
+    HWND windowHandle = window->getWindowHandle();
 
-	D3DPRESENT_PARAMETERS deviceDesc;
-	ZeroMemory( &deviceDesc, sizeof(deviceDesc) );
+	  direct3D = Direct3DCreate9( D3D_SDK_VERSION );
+    if( direct3D == NULL )
+    {
+      DX9Warn("Could not create Direct3D interface.");
+      return false;
+    }
 
-	deviceDesc.Windowed = TRUE;
-	deviceDesc.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	deviceDesc.BackBufferFormat = D3DFMT_UNKNOWN;
-	deviceDesc.EnableAutoDepthStencil = FALSE;
-	deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
+	  D3DPRESENT_PARAMETERS deviceDesc;
+	  ZeroMemory( &deviceDesc, sizeof(deviceDesc) );
 
-	HRESULT result = direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
-		D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &device );
-  if( FAILED(result) )
-  {
-    DX9Warn("Could not create Direct3D device.");
-    return false;
+	  deviceDesc.Windowed = TRUE;
+	  deviceDesc.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	  deviceDesc.BackBufferFormat = D3DFMT_UNKNOWN;
+	  deviceDesc.EnableAutoDepthStencil = FALSE;
+	  deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
+
+	  result = direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
+		  D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &device );
+    if( FAILED(result) )
+    {
+      DX9Warn("Could not create Direct3D device.");
+      return false;
+    }
   }
 
 	// TIM: set up initial state
