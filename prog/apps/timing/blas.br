@@ -7,7 +7,7 @@
 
 #define MAX_DIM         2048
 
-#define DO_VERIFY       1 
+#define DO_VERIFY       1
 
 #define EPS             1e-3f
 
@@ -230,9 +230,10 @@ void do_saxpy(int length, int num_iter, int* timing, float* flops) {
        if (!fequals(y[i], num_iter * alpha*x[i] + tmp[i], EPS)) {
           printf("[%d] expected: %f got: %f\n", i, num_iter * alpha*x[i] + tmp[i]);
 	  printf("Asserting...\n");
+	  fflush(stdout);
 	  assert(0);
-       }
      }
+   }
 
      printf("Verified SAXPY results to be correct!\n");
    }
