@@ -649,3 +649,39 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
   free(buf1);
   free(buf2);
 }
+
+// TIM: adding conditional magick for raytracer
+void streamEnableWriteMask()
+{
+  using namespace brook;
+  Runtime* runtime = Runtime::GetInstance();
+  runtime->hackEnableWriteMask();
+}
+
+void streamDisableWriteMask()
+{
+  using namespace brook;
+  Runtime* runtime = Runtime::GetInstance();
+  runtime->hackDisableWriteMask();
+}
+
+void streamSetWriteMask( ::brook::stream& inStream )
+{
+  using namespace brook;
+  Runtime* runtime = Runtime::GetInstance();
+  runtime->hackSetWriteMask( (Stream*) inStream );
+}
+
+void streamBeginWriteQuery()
+{
+  using namespace brook;
+  Runtime* runtime = Runtime::GetInstance();
+  runtime->hackBeginWriteQuery();
+}
+
+int streamEndWriteQuery()
+{
+  using namespace brook;
+  Runtime* runtime = Runtime::GetInstance();
+  return runtime->hackEndWriteQuery();
+}

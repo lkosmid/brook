@@ -14,6 +14,10 @@ namespace brook
 {
   static const float kInterpolantBias = 0.05f;
 
+  static const float kDefaultDepth = 0.5f;
+  static const float kTrueWriteMaskDepth = 0.75f;
+  static const float kFalseWriteMaskDepth = 0.25f;
+
   static const char* kPassthroughVertexShaderSource =
     "vs.1.1\n"
     "dcl_position v0\n"
@@ -41,6 +45,37 @@ namespace brook
     "dcl t0.xy\n"
     "dcl_2d s0\n"
     "texld r0, t0, s0\n"
+    "mov oC0, r0\n"
+    ;
+/*
+  static const char* kUpdateWriteMaskPixelShaderSource =
+    "ps_2_0\n"
+    "def c0, 1, 0, 0, 10.0\n"
+//    "dcl t0.xy\n"
+//    "dcl_2d s0\n"
+//    "texld r0, t0, s0\n"
+//    "mul r0.w, r0.x, r0.x\n"
+//    "cmp r0.w, -r0.w, c0.x, c0.y\n"
+
+    "mov r0.w, c0.w\n"
+
+    "mov oDepth, r0.w\n"
+    "mov r0, c0.y\n"
+    "mov oC0, r0\n"
+    ;
+*/
+
+  static const char* kUpdateWriteMaskPixelShaderSource =
+    "ps_2_0\n"
+    "def c0, 0, 1, 0, 0\n"
+    "dcl t0.xy\n"
+    "dcl_2d s0\n"
+    "texld r0, t0, s0\n"
+    "mul r0.w, r0.x, r0.x\n"
+    "cmp r0.w, -r0.w, c0.x, c0.y\n"
+    "mov r0, -r0.w\n"
+    "texkill r0\n"
+    "mov r0, c0.x\n"
     "mov oC0, r0\n"
     ;
 
@@ -183,9 +218,16 @@ namespace brook
     virtual void* getTextureRenderData( TextureHandle inTexture );
     virtual void synchronizeTextureRenderData( TextureHandle inTexture );
 
-	virtual unsigned int getMaximumOutputCount() const {
+    virtual unsigned int getMaximumOutputCount() const {
       return _maximumOutputCount;
-	}
+    }
+
+    // TIM: hacky magick for raytracer
+    virtual void hackEnableWriteMask();
+    virtual void hackDisableWriteMask();
+    virtual void hackSetWriteMask( TextureHandle inTexture );
+    virtual void hackBeginWriteQuery();
+    virtual int hackEndWriteQuery();
 
   private:
     GPUContextDX9Impl();
@@ -216,6 +258,26 @@ namespace brook
     bool _isNV;
     bool _isATI;
 	bool _shouldBiasInterpolants;
+
+    // TIM: hacky state for write-masking and occlusion culling
+    void enableZTest();
+    void disableZTest();
+    void restoreZTest();
+    void enableZWrite();
+    void disableZWrite();
+
+    bool _zTestEnabled;
+    bool _zWriteEnabled;
+    bool _writeMaskEnabled;
+    IDirect3DQuery9* _occlusionQuery;
+
+    PixelShaderHandle _updateWriteMaskPixelShader;
+    TextureHandle _depthStencilOutput;
+    IDirect3DSurface9* _depthStencilSurface;
+    int _depthStencilWidth;
+    int _depthStencilHeight;
+
+    float _depthToWrite;
   };
 
   GPURuntimeDX9* GPURuntimeDX9::create( void* inContextValue )
@@ -338,17 +400,37 @@ namespace brook
     result = _device->SetRenderState( D3DRS_ZENABLE, D3DZB_FALSE );
     GPUAssert( !FAILED(result), "SetRenderState failed" );
 
+    result = _device->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
+    GPUAssert( !FAILED(result), "SetRenderState failed" );
+
+    result = _device->SetRenderState( D3DRS_ZFUNC, D3DCMP_LESS );
+    GPUAssert( !FAILED(result), "SetRenderState failed" );
+
     _passthroughVertexShader = createVertexShader( kPassthroughVertexShaderSource );
     _passthroughPixelShader = createPixelShader( kPassthroughPixelShaderSource );
+    _updateWriteMaskPixelShader = createPixelShader( kUpdateWriteMaskPixelShaderSource );
 
-	_maximumOutputCount = _deviceCaps.NumSimultaneousRTs;
+    _maximumOutputCount = _deviceCaps.NumSimultaneousRTs;
 
-	_boundOutputs.resize( _maximumOutputCount );
+    _boundOutputs.resize( _maximumOutputCount );
     for( size_t i = 0; i < _maximumOutputCount; i++ )
       _boundOutputs[i] = NULL;
     for( size_t t = 0; t < kMaximumSamplerCount; t++ )
       _boundTextures[t] = NULL;
 
+    // TIM: hacky occlusion cull and write-mask state
+    _zTestEnabled = false;
+    _zWriteEnabled = false;
+    _writeMaskEnabled = false;
+
+    result = _device->CreateQuery( D3DQUERYTYPE_OCCLUSION, &_occlusionQuery );
+    GPUAssert( !FAILED(result), "CreateQuery failed" );
+
+    _depthStencilSurface = NULL;
+    _depthStencilOutput = NULL;
+    _depthStencilWidth = _depthStencilHeight = 0;
+
+    _depthToWrite = kDefaultDepth;
 
     return true;
   }
@@ -619,18 +701,23 @@ namespace brook
   GPUContextDX9Impl::TextureHandle GPUContextDX9Impl::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat )
   {
     int components;
+    DX9Texture::ComponentType componentType;
     switch( inFormat )
     {
     case kTextureFormat_Float1:
+    case kTextureFormat_UByte1:
       components = 1;
       break;
     case kTextureFormat_Float2:
+    case kTextureFormat_UByte2:
       components = 2;
       break;
     case kTextureFormat_Float3:
+    case kTextureFormat_UByte3:
       components = 3;
       break;
     case kTextureFormat_Float4:
+    case kTextureFormat_UByte4:
       components = 4;
       break;
     default:
@@ -638,7 +725,26 @@ namespace brook
       return 0;
       break;
     }
-    DX9Texture* result = DX9Texture::create( this, inWidth, inHeight, components );
+    switch( inFormat )
+    {
+    case kTextureFormat_Float1:
+    case kTextureFormat_Float2:
+    case kTextureFormat_Float3:
+    case kTextureFormat_Float4:
+      componentType = DX9Texture::kComponentType_Float;
+      break;
+    case kTextureFormat_UByte1:
+    case kTextureFormat_UByte2:
+    case kTextureFormat_UByte3:
+    case kTextureFormat_UByte4:
+      componentType = DX9Texture::kComponentType_UByte;
+      break;
+    default:
+      GPUError("Unknown format for DX9 Texture");
+      return 0;
+      break;
+    }
+    DX9Texture* result = DX9Texture::create( this, inWidth, inHeight, components, componentType );
     return result;
   }
 
@@ -813,6 +919,173 @@ namespace brook
     texture->validateCachedData();
   }
 
+  // TIM: hacky magick for raytracer
+  void GPUContextDX9Impl::enableZTest()
+  {
+    if( _zTestEnabled ) return;
+    HRESULT result = _device->SetRenderState( D3DRS_ZENABLE, D3DZB_TRUE );
+    DX9AssertResult( result, "SetRenderState failed" );
+    _zTestEnabled = true;
+  }
+
+  void GPUContextDX9Impl::disableZTest()
+  {
+    if( !_zTestEnabled ) return;
+    HRESULT result = _device->SetRenderState( D3DRS_ZENABLE, D3DZB_FALSE );
+    DX9AssertResult( result, "SetRenderState failed" );
+    _zTestEnabled = false;
+  }
+
+  void GPUContextDX9Impl::restoreZTest()
+  {
+    if( _writeMaskEnabled )
+      enableZTest();
+    else
+      disableZTest();
+  }
+
+  void GPUContextDX9Impl::enableZWrite()
+  {
+    if( _zWriteEnabled ) return;
+    HRESULT result = _device->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+    GPUAssert( !FAILED(result), "SetRenderState failed" );
+    _zWriteEnabled = true;
+  }
+
+  void GPUContextDX9Impl::disableZWrite()
+  {
+    if( !_zWriteEnabled ) return;
+    HRESULT result = _device->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
+    GPUAssert( !FAILED(result), "SetRenderState failed" );
+    _zWriteEnabled = false;
+  }
+
+  void GPUContextDX9Impl::hackEnableWriteMask()
+  {
+    if( _writeMaskEnabled ) return;
+    _writeMaskEnabled = true;
+    restoreZTest();
+  }
+
+  void GPUContextDX9Impl::hackDisableWriteMask()
+  {
+    if( !_writeMaskEnabled ) return;
+    _writeMaskEnabled = false;
+    restoreZTest();
+  }
+
+  void GPUContextDX9Impl::hackSetWriteMask( TextureHandle inTexture )
+  {
+    HRESULT result;
+
+    DX9Texture* dx9Texture = (DX9Texture*) inTexture;
+    int textureWidth = dx9Texture->getWidth();
+    int textureHeight = dx9Texture->getHeight();
+
+    bool needToClear = false;
+    if( textureWidth != _depthStencilWidth
+      || textureHeight != _depthStencilHeight )
+    {
+      if( _depthStencilSurface )
+        _depthStencilSurface->Release();
+
+      if( _depthStencilOutput )
+        releaseTexture( _depthStencilOutput );
+
+      _depthStencilWidth = textureWidth;
+      _depthStencilHeight = textureHeight;
+
+      result = _device->CreateDepthStencilSurface(
+        _depthStencilWidth,
+        _depthStencilHeight,
+        D3DFMT_D24S8,
+        D3DMULTISAMPLE_NONE,
+        0,
+        FALSE,
+        &_depthStencilSurface,
+        NULL );
+      DX9AssertResult( result, "CreateDepthStencilSurface failed" );
+
+      result = _device->SetDepthStencilSurface( _depthStencilSurface );
+      DX9AssertResult( result, "SetDepthStencilSurface failed" );
+
+      _depthStencilOutput = createTexture2D(
+        _depthStencilWidth,
+        _depthStencilHeight,
+        kTextureFormat_UByte1 );
+
+      needToClear = true;
+    }
+
+    if( !_writeMaskEnabled )
+      needToClear = true;
+
+    // TIM: TODO: figure out how to get that data
+    // into the z-buffer
+
+    beginScene();
+
+    result = _device->SetDepthStencilSurface( _depthStencilSurface );
+    DX9AssertResult( result, "SetDepthStencilSurface failed" );
+
+    enableZTest();
+    enableZWrite();
+
+    GPURegion outputRegion;
+    GPUInterpolant inputInterpolant;
+
+    size_t domainMin[2] = {0,0};
+    size_t domainMax[2] = {_depthStencilHeight,_depthStencilWidth};
+
+    getStreamOutputRegion( _depthStencilOutput, 2, domainMin, domainMax, outputRegion );
+    getStreamInterpolant( inTexture, 2, domainMin, domainMax,
+      _depthStencilWidth, _depthStencilHeight, inputInterpolant );
+
+    bindOutput( 0, _depthStencilOutput );
+    for( size_t i = 1; i < getMaximumOutputCount(); i++ )
+      disableOutput( i );
+    bindTexture( 0, inTexture );
+    bindVertexShader( getPassthroughVertexShader() );
+    bindPixelShader( _updateWriteMaskPixelShader );
+//    bindPixelShader( getPassthroughPixelShader() );
+
+    if( needToClear )
+    {
+      result = _device->Clear( 0, 0, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, kTrueWriteMaskDepth, 0 );
+      DX9AssertResult( result, "Clear failed" );
+    }
+
+    _depthToWrite = kFalseWriteMaskDepth;
+    drawRectangle( outputRegion, &inputInterpolant, 1 );
+    _depthToWrite = kDefaultDepth;
+
+    disableZWrite();
+    restoreZTest();
+
+    endScene();
+  }
+
+  void GPUContextDX9Impl::hackBeginWriteQuery()
+  {
+    _occlusionQuery->Issue( D3DISSUE_BEGIN );
+  }
+
+  int GPUContextDX9Impl::hackEndWriteQuery()
+  {
+    _occlusionQuery->Issue( D3DISSUE_END );
+
+    DWORD queryResult = 0;
+    while(true)
+    {
+      HRESULT result = _occlusionQuery->GetData(
+        (void*) &queryResult, (DWORD) sizeof(queryResult), D3DGETDATA_FLUSH );
+      if( result != S_FALSE )
+        return (int) queryResult;
+    }
+    GPUError("unreachable");
+    return 0;
+  }
+
   void GPUContextDX9Impl::drawRectangle(
     const GPURegion& inOutputRegion, 
     const GPUInterpolant* inInterpolants, 
@@ -824,6 +1097,8 @@ namespace brook
     unsigned int minY = inOutputRegion.viewport.minY;
     unsigned int maxX = inOutputRegion.viewport.maxX;
     unsigned int maxY = inOutputRegion.viewport.maxY;
+
+//    std::cerr << "depth to write: " << _depthToWrite << std::endl;
 
     GPULOG(4) << "[ <" << minX << ", " << minY << ">, <" << maxX << ", " << maxY << "> )";
 
@@ -866,7 +1141,7 @@ namespace brook
       // TIM: bad
       vertex.position.x = position.x;
       vertex.position.y = position.y;
-      vertex.position.z = 0.5f;
+      vertex.position.z = _depthToWrite;
       vertex.position.w = 1.0f;
 
       GPULOGPRINT(4) << "v[" << i << "] pos=<" << position.x << ", " << position.y << ">";

@@ -113,6 +113,32 @@ namespace brook
     }
     return _reductionTargetBuffer;
   }
+
+  // TIM: hacky magick for raytracer
+  void GPURuntime::hackEnableWriteMask() {
+    _context->hackEnableWriteMask();
+  }
+
+  void GPURuntime::hackDisableWriteMask() {
+    _context->hackDisableWriteMask();
+  }
+
+  void GPURuntime::hackSetWriteMask( Stream* inStream )
+  {
+    GPUAssert( inStream, "NULL stream provided to hackSetWriteMask" );
+    GPUAssert( inStream->getFieldCount() == 1, "only one field allowed for write mask" );
+    GPUStream* gpuStream = (GPUStream*) inStream;
+    GPUContext::TextureHandle textureHandle = gpuStream->getIndexedFieldTexture( 0 );
+    _context->hackSetWriteMask( textureHandle );
+  }
+
+  void GPURuntime::hackBeginWriteQuery() {
+    _context->hackBeginWriteQuery();
+  }
+
+  int GPURuntime::hackEndWriteQuery() {
+    return _context->hackEndWriteQuery();
+  }
 }
 
 

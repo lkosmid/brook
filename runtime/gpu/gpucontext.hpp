@@ -22,7 +22,11 @@ namespace brook {
       kTextureFormat_Float1,
       kTextureFormat_Float2,
       kTextureFormat_Float3,
-      kTextureFormat_Float4
+      kTextureFormat_Float4,
+      kTextureFormat_UByte1,
+      kTextureFormat_UByte2,
+      kTextureFormat_UByte3,
+      kTextureFormat_UByte4
     };
 
     virtual int
@@ -217,6 +221,13 @@ namespace brook {
     /* hacky functions for rendering - will be deprecated soon */
     virtual void* getTextureRenderData( TextureHandle inTexture ) = 0;
     virtual void synchronizeTextureRenderData( TextureHandle inTexture ) = 0;
+
+    // TIM: hacky magick for raytracer
+    virtual void hackEnableWriteMask() { GPUError("unimplemented"); throw 1; }
+    virtual void hackDisableWriteMask() { GPUError("unimplemented"); throw 1; }
+    virtual void hackSetWriteMask( TextureHandle ) { GPUError("unimplemented"); throw 1; }
+    virtual void hackBeginWriteQuery() { GPUError("unimplemented"); throw 1; }
+    virtual int hackEndWriteQuery() { GPUError("unimplemented"); throw 1; }
   };
 }
 

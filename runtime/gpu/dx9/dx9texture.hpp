@@ -9,7 +9,17 @@ namespace brook
     class DX9Texture
     {
     public:
-        static DX9Texture* create( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents );
+        enum ComponentType
+        {
+          kComponentType_Float = 0,
+          kComponentType_UByte = 1
+        };
+
+        static DX9Texture* create(
+          GPUContextDX9* inContext,
+          int inWidth, int inHeight,
+          int inComponents,
+          ComponentType inComponentType = kComponentType_Float );
         ~DX9Texture();
 
         int getWidth() { return width; }
@@ -38,7 +48,8 @@ namespace brook
         }
 
     private:
-        DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents );
+      DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents,
+        ComponentType inComponentType = kComponentType_Float  );
         bool initialize();
 
         void flushCachedToShadow();
@@ -80,6 +91,8 @@ namespace brook
         int height;
         int components;
         int internalComponents;
+        ComponentType componentType;
+        int componentSize;
         LPDIRECT3DTEXTURE9 textureHandle;
         LPDIRECT3DSURFACE9 surfaceHandle;
 

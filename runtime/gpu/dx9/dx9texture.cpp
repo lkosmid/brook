@@ -3,35 +3,61 @@
 
 using namespace brook;
 
-DX9Texture::DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents )
+static const int kComponentSizes[] =
+{
+  sizeof(float),
+  sizeof(unsigned char)
+};
+
+DX9Texture::DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inComponentType )
 	: width(inWidth),
   height(inHeight),
   components(inComponents),
   internalComponents(inComponents),
+  componentType(inComponentType),
+  componentSize(0),
   dirtyFlags(0),
   device(NULL),
   textureHandle(NULL),
   surfaceHandle(NULL),
   shadowSurface(NULL)
 {
+  componentSize = kComponentSizes[ componentType ];
+
     _context = inContext;
 	device = _context->getDevice();
     device->AddRef();
 }
 
-static D3DFORMAT getFormatForComponentCount( int inComponentCount )
+static D3DFORMAT getFormatForComponentCount( int inComponentCount, DX9Texture::ComponentType inType )
 {
-  switch( inComponentCount )
+  if( inType == DX9Texture::kComponentType_Float )
   {
-  case 1:
-    return D3DFMT_R32F;
-  case 2:
-    return D3DFMT_G32R32F;
-  case 4:
-    return D3DFMT_A32B32G32R32F;
-  default:
-    return D3DFMT_UNKNOWN;
+    switch( inComponentCount )
+    {
+    case 1:
+      return D3DFMT_R32F;
+    case 2:
+      return D3DFMT_G32R32F;
+    case 4:
+      return D3DFMT_A32B32G32R32F;
+    default:
+      return D3DFMT_UNKNOWN;
+    }
   }
+  else if( inType == DX9Texture::kComponentType_UByte )
+  {
+    switch( inComponentCount )
+    {
+    case 1:
+      return D3DFMT_L8;
+    case 4:
+      return D3DFMT_A8R8G8B8;
+    default:
+      return D3DFMT_UNKNOWN;
+    }
+  }
+  return D3DFMT_UNKNOWN;
 }
 
 bool DX9Texture::initialize()
@@ -42,7 +68,7 @@ bool DX9Texture::initialize()
   bool validFormat = false;
   for( int i = components; i <= 4 && !validFormat; i++ )
   {
-      dxFormat = getFormatForComponentCount( i );
+      dxFormat = getFormatForComponentCount( i, componentType );
       if( dxFormat != D3DFMT_UNKNOWN
           && _context->isRenderTextureFormatValid( dxFormat ) )
       {
@@ -52,15 +78,15 @@ bool DX9Texture::initialize()
   }
   if( !validFormat )
   {
-    DX9WARN << "Could not find supported floating-point texture format." << std::endl;
+    DX9WARN << "Could not find supported texture format." << std::endl;
     return false;
   }
 
 	result = device->CreateTexture( width, height, 1, D3DUSAGE_RENDERTARGET, dxFormat, D3DPOOL_DEFAULT, &textureHandle, NULL );
   if( FAILED( result ) )
   {
-    DX9WARN << "Unable to create floating-point render target texture of size "
-      << width << " by " << height << " by float" << components << ".";
+    DX9WARN << "Unable to create render target texture of size "
+      << width << " by " << height << " by " << (componentType == kComponentType_Float ? "float" : "ubyte") << components << ".";
     return false;
   }
 	result = textureHandle->GetSurfaceLevel( 0, &surfaceHandle );
@@ -89,10 +115,10 @@ DX9Texture::~DX9Texture()
     device->Release();
 }
 
-DX9Texture* DX9Texture::create( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents  )
+DX9Texture* DX9Texture::create( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inType  )
 {
   DX9PROFILE("DX9Texture::create")
-  DX9Texture* result = new DX9Texture( inContext, inWidth, inHeight, inComponents );
+  DX9Texture* result = new DX9Texture( inContext, inWidth, inHeight, inComponents, inType );
   if( result->initialize() )
     return result;
   delete result;
@@ -183,8 +209,8 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
     DX9AssertResult( result, "LockRect failed" );
 
     copyData( outData, domainWidth*inStride, inStride,
-      info.pBits, info.Pitch, internalComponents*sizeof(float),
-      domainWidth, domainHeight, components*sizeof(float) );
+      info.pBits, info.Pitch, internalComponents*componentSize,
+      domainWidth, domainHeight, components*componentSize );
 
     result = shadowSurface->UnlockRect();
     DX9AssertResult( result, "UnlockRect failed" );
@@ -210,13 +236,13 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
     if( isWholeBuffer )
     {
       copyAllDataAT( outData, width*inStride, inStride,
-        info.pBits, info.Pitch, internalComponents*sizeof(float),
-        width, height, components*sizeof(float), inRank, inExtents  );
+        info.pBits, info.Pitch, internalComponents*componentSize,
+        width, height, components*componentSize, inRank, inExtents  );
     }
     else
     {
-      getDataAT( outData, inRank, inDomainMin, inDomainMax, inExtents, components*sizeof(float),
-        info.pBits, info.Pitch, rectWidth, rectHeight, internalComponents*sizeof(float), baseX, baseY );
+      getDataAT( outData, inRank, inDomainMin, inDomainMax, inExtents, components*componentSize,
+        info.pBits, info.Pitch, rectWidth, rectHeight, internalComponents*componentSize, baseX, baseY );
     }
 
     result = shadowSurface->UnlockRect();
@@ -254,9 +280,9 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
 	  result = shadowSurface->LockRect( &info, &rectToLock, 0 );
 	  DX9AssertResult( result, "LockRect failed" );
 
-    copyData( info.pBits, info.Pitch, internalComponents*sizeof(float),
+    copyData( info.pBits, info.Pitch, internalComponents*componentSize,
       inData, domainWidth*inStride, inStride,
-      domainWidth, domainHeight, components*sizeof(float) );
+      domainWidth, domainHeight, components*componentSize );
 
 	  result = shadowSurface->UnlockRect();
 	  DX9AssertResult( result, "UnlockRect failed" );
@@ -289,14 +315,14 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
 
     if( isWholeBuffer )
     {
-      copyAllDataAT( info.pBits, info.Pitch, internalComponents*sizeof(float),
+      copyAllDataAT( info.pBits, info.Pitch, internalComponents*componentSize,
         inData, width*inStride, inStride,
-        width, height, components*sizeof(float), inRank, inExtents  );
+        width, height, components*componentSize, inRank, inExtents  );
     }
     else
     {
-      setDataAT( inData, inRank, inDomainMin, inDomainMax, inExtents, components*sizeof(float),
-        info.pBits, info.Pitch, rectWidth, rectHeight, internalComponents*sizeof(float), baseX, baseY );
+      setDataAT( inData, inRank, inDomainMin, inDomainMax, inExtents, components*componentSize,
+        info.pBits, info.Pitch, rectWidth, rectHeight, internalComponents*componentSize, baseX, baseY );
     }
 
     result = shadowSurface->UnlockRect();
@@ -352,7 +378,7 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride, size_t toElementS
   char* outputLine = (char*)toBuffer;
   const char* inputLine = (const char*)fromBuffer;
 
-  size_t componentCount = elementSize / sizeof(float);
+//  size_t componentCount = elementSize / sizeof(float);
 
   for( size_t y = 0; y < rowCount; y++ )
   {
@@ -361,9 +387,9 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride, size_t toElementS
     for( size_t x = 0; x < columnCount; x++ )
     {
       // TIM: for now we assume floating-point components
-      float* output = (float*) outputPixel;
-      const float* input = (const float*) inputPixel;
-      for( size_t c = 0; c < componentCount; c++ )
+      char* output = outputPixel;
+      const char* input = inputPixel;
+      for( size_t i = 0; i < elementSize; i++ )
         *output++ = *input++;
 
       inputPixel += fromElementStride;
@@ -432,7 +458,7 @@ void DX9Texture::copyAllDataAT( void* toBuffer, size_t toRowStride, size_t toEle
   char* outputLine = (char*)toBuffer;
   const char* inputLine = (const char*)fromBuffer;
 
-  size_t componentCount = elementSize / sizeof(float);
+//  size_t componentCount = elementSize / sizeof(float);
 
   size_t copiedElementCount = 0;
   for( size_t y = 0; y < rowCount; y++ )
@@ -443,9 +469,9 @@ void DX9Texture::copyAllDataAT( void* toBuffer, size_t toRowStride, size_t toEle
     {
 
       // TIM: for now we assume floating-point components
-      float* output = (float*) outputPixel;
-      const float* input = (const float*) inputPixel;
-      for( size_t c = 0; c < componentCount; c++ )
+      char* output = outputPixel;
+      const char* input = inputPixel;
+      for( size_t i = 0; i < elementSize; i++ )
         *output++ = *input++;
 
       inputPixel += fromElementStride;
@@ -510,10 +536,10 @@ void DX9Texture::getDataAT( void* streamData, unsigned int streamRank,
           size_t textureY = (offsetX / textureWidth) - textureBaseY;
           size_t textureOffset = textureY * textureLineStride + textureX * textureElementStride;
 
-          const float* textureElement = (const float*) (textureBuffer + textureOffset);
-          float* streamElement = (float*) (streamBuffer + streamOffset);
+          const char* textureElement = (textureBuffer + textureOffset);
+          char* streamElement = (streamBuffer + streamOffset);
 
-          for( int c = 0; c < components; c++ )
+          for( int i = 0; i < components*componentSize; i++ )
             *streamElement++ = *textureElement++;
         }
       }
@@ -571,10 +597,10 @@ void DX9Texture::setDataAT( const void* streamData, unsigned int streamRank,
           size_t textureY = (offsetX / textureWidth) - textureBaseY;
           size_t textureOffset = textureY * textureLineStride + textureX * textureElementStride;
 
-          float* textureElement = (float*) (textureBuffer + textureOffset);
-          const float* streamElement = (const float*) (streamBuffer + streamOffset);
+          char* textureElement = (textureBuffer + textureOffset);
+          const char* streamElement = (streamBuffer + streamOffset);
 
-          for( int c = 0; c < components; c++ )
+          for( int c = 0; c < components*componentSize; c++ )
             *textureElement++ = *streamElement++;
         }
       }

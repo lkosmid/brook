@@ -472,5 +472,12 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
 #define indexof(a) (__indexof((void *) &a))
 __BrtFloat4 __indexof (void *);
 
+// TIM: adding conditional magick for raytracer
+void streamEnableWriteMask();
+void streamDisableWriteMask();
+void streamSetWriteMask( ::brook::stream& );
+void streamBeginWriteQuery();
+int streamEndWriteQuery();
+
 #endif
 

@@ -30,6 +30,13 @@ namespace brook
                              const float range[]);
     virtual ~GPURuntime();
 
+    // TIM: hacky magick for raytracer
+    virtual void hackEnableWriteMask();
+    virtual void hackDisableWriteMask();
+    virtual void hackSetWriteMask( Stream* );
+    virtual void hackBeginWriteQuery();
+    virtual int hackEndWriteQuery();
+
     // internal GPURuntime methods (not in Runtime interface)
     GPUContext* getContext() { return _context; }
     GPUContext::TextureHandle getReductionTempBuffer(

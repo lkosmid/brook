@@ -23,6 +23,13 @@ namespace brook {
                              const float ranges[])=0;
     virtual ~Runtime() {}
 
+    // TIM: hacky magick for raytracer
+    virtual void hackEnableWriteMask() { assert(false); throw 1; }
+    virtual void hackDisableWriteMask() { assert(false); throw 1; }
+    virtual void hackSetWriteMask( Stream* ) { assert(false); throw 1; }
+    virtual void hackBeginWriteQuery() { assert(false); throw 1; }
+    virtual int hackEndWriteQuery() { assert(false); throw 1; }
+
     static Runtime* GetInstance( const char* inRuntimeName = 0, 
                                  void* inContextValue = 0, 
                                  bool addressTranslation = false );
