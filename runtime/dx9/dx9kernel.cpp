@@ -38,8 +38,12 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
 
 void DX9Kernel::PushStream(Stream *s) {
   DX9Stream* stream = (DX9Stream*)s;
-  int arg = argumentStreamIndex++;
-  inputStreams[arg] = stream;
+
+  // reduction stream is always the first/last/only stream pushed
+  inputReductionStream = stream;
+  inputReductionStreamSamplerIndex = argumentSamplerIndex;
+  inputReductionStreamTexCoordIndex = argumentTexCoordIndex;
+
   PushSampler( stream );
   PushTexCoord( stream->getInputRect() );
 }
@@ -49,6 +53,9 @@ void DX9Kernel::PushReduce(void * val, __BRTStreamType type) {
   argumentReductionIndex++;
   outputReductionData = val;
   outputReductionType = type;
+
+  outputReductionVarSamplerIndex = argumentSamplerIndex++;
+  outputReductionVarTexCoordIndex = argumentTexCoordIndex++;
 }
 
 void DX9Kernel::PushConstant(const float &val) {
@@ -198,7 +205,6 @@ void DX9Kernel::PushTexCoord( const DX9Rect& r )
 
 void DX9Kernel::ClearInputs()
 {
-  argumentStreamIndex = 0;
   argumentSamplerIndex = 0;
   argumentTexCoordIndex = 0;
   argumentConstantIndex = 0;
@@ -211,28 +217,33 @@ void DX9Kernel::ReduceToStream()
   DX9Fail("Can't reduce to stream right now");
 }
 
-static void DumpBuffer( float4* buffer )
+static void DumpBuffer( float4* buffer, int leftW, int leftH, int rightW, int rightH )
 {
-  int i;
   DX9Print( "Left Buffer:\n" );
-  for( i = 0; i < 11; i++ )
+  if( leftW != 0 )
   {
-    for( int j = 0; j < 11; j++ )
+    for( int i = 0; i < leftH; i++ )
     {
-      float4 value = buffer[i*kDX9ReductionBufferWidth + j];
-      DX9Print( "{%4.1f %4.1f %4.1f} ", value.x, value.y, value.z );
+      for( int j = 0; j < leftW; j++ )
+      {
+        float4 value = buffer[i*kDX9ReductionBufferWidth + j];
+        DX9Print( "{%6.3f %6.3f %6.3f %6.3f} ", value.x, value.y, value.z, value.w );
+      }
+      DX9Print( "\n" );
     }
-    DX9Print( "\n" );
   }
   DX9Print( "Right Buffer:\n" );
-  for( i = 0; i < 11; i++ )
+  if( rightW != 0 )
   {
-    for( int j = 0; j < 11; j++ )
+    for( int i = 0; i < rightH; i++ )
     {
-      float4 value = buffer[i*kDX9ReductionBufferWidth + (kDX9ReductionBufferWidth/2) + j];
-      DX9Print( "{%4.1f %4.1f %4.1f} ", value.x, value.y, value.z );
+      for( int j = 0; j < rightW; j++ )
+      {
+        float4 value = buffer[i*kDX9ReductionBufferWidth + (kDX9ReductionBufferWidth/2) + j];
+        DX9Print( "{%6.3f %6.3f %6.3f %6.3f} ", value.x, value.y, value.z, value.w );
+      }
+      DX9Print( "\n" );
     }
-    DX9Print( "\n" );
   }
 }
 
@@ -240,15 +251,12 @@ void DX9Kernel::ReduceToValue()
 {
   HRESULT result;
 
-  int streamCount = argumentStreamIndex;
   int constantCount = argumentConstantIndex;
   int outputCount = argumentOutputIndex;
   int reductionCount = argumentReductionIndex;
+  int samplerCount = argumentSamplerIndex;
 
   // inspect the input stuff:
-  if( streamCount != 1 )
-    DX9Fail("Only one input sampler allowed on DX9 reduction");
-
   if( reductionCount != 1 )
     DX9Fail("Must have one and only one reduction argument");
 
@@ -258,7 +266,11 @@ void DX9Kernel::ReduceToValue()
   DX9VertexShader* passthroughVertexShader = runtime->getPassthroughVertexShader();
   DX9PixelShader* passthroughPixelShader = runtime->getPassthroughPixelShader();
 
-  DX9Stream* inputStream = inputStreams[0];
+  DX9Stream* inputStream = inputReductionStream;
+  int sampler0 = inputReductionStreamSamplerIndex;
+  int sampler1 = outputReductionVarSamplerIndex;
+  int tex0 = inputReductionStreamTexCoordIndex;
+  int tex1 = outputReductionVarTexCoordIndex;
   int inputWidth = inputStream->getWidth();
   int inputHeight = inputStream->getHeight();
 
@@ -298,15 +310,18 @@ void DX9Kernel::ReduceToValue()
   // remaining passes - fold the data in half as needed
   result = getDevice()->SetPixelShader( pixelShader->getHandle() );
   DX9CheckResult( result );
+  
+  for( int i = 0; i < samplerCount; i++ )
+  {
+    if( i == sampler0 || i == sampler1 ) continue;
+    result = getDevice()->SetTexture( i, inputTextures[i] );
+    DX9CheckResult( result );
+  }
 
-  result = getDevice()->SetTexture( 0, reductionBuffer->getTextureHandle() );
+  result = getDevice()->SetTexture( sampler0, reductionBuffer->getTextureHandle() );
   DX9CheckResult( result );
-  result = getDevice()->SetTexture( 1, reductionBuffer->getTextureHandle() );
+  result = getDevice()->SetTexture( sampler1, reductionBuffer->getTextureHandle() );
   DX9CheckResult( result );
-
-//  float4* buffer = new float4[kDX9ReductionBufferWidth*kDX9ReductionBufferHeight];
-//  reductionBuffer->getData( (float*)buffer );
-//  DumpBuffer( buffer );
 
   int remainingWidth = inputWidth;
   int remainingHeight = inputHeight;
@@ -316,62 +331,9 @@ void DX9Kernel::ReduceToValue()
   static const int kSideOffsets[2] = {0,kDX9ReductionBufferWidth/2};
   int coreWidth = inputWidth;
 
-  while( remainingWidth > 1 )
-  {
-    DX9Trace("core = %d, slopL = %d, slopR = %d, remain = %d",
-      coreWidth, slopWidths[0], slopWidths[1], remainingWidth );
-
-    int currentSideWidth = coreWidth + slopWidths[currentSide];
-    int widthToMove = currentSideWidth / 2;
-    
-    slopWidths[currentSide] = currentSideWidth - 2*widthToMove;
-    remainingWidth -= widthToMove;
-    coreWidth = widthToMove;
-
-    inputRects[0] = reductionBuffer->getInterlacedTextureSubRect(
-      kSideOffsets[currentSide] + slopWidths[currentSide], 0,
-      kSideOffsets[currentSide] + currentSideWidth, remainingHeight, 2, 1 );
-    inputRects[1] = reductionBuffer->getInterlacedTextureSubRect(
-      kSideOffsets[currentSide] + slopWidths[currentSide]+1, 0,
-      kSideOffsets[currentSide] + currentSideWidth+1, remainingHeight, 2, 1 );
-    currentSide = 1 - currentSide;
-    outputRect = reductionBuffer->getSurfaceSubRect(
-      kSideOffsets[currentSide] + slopWidths[currentSide], 0,
-      kSideOffsets[currentSide] + slopWidths[currentSide] + widthToMove, remainingHeight );
-    runtime->execute( outputRect, inputRects );
-//    reductionBuffer->getData( (float*)buffer );
-//    DumpBuffer( buffer );
-  }
-
-  int slopHeights[2] = {0,0};
-  int coreHeight = inputHeight;
-
-  while( remainingHeight > 1 )
-  {
-    DX9Trace("core = %d, slopL = %d, slopR = %d, remain = %d",
-      coreHeight, slopHeights[0], slopHeights[1], remainingHeight );
-
-    int currentSideHeight = coreHeight + slopHeights[currentSide];
-    int heightToMove = currentSideHeight / 2;
-    
-    slopHeights[currentSide] = currentSideHeight - 2*heightToMove;
-    remainingHeight -= heightToMove;
-    coreHeight = heightToMove;
-
-    inputRects[0] = reductionBuffer->getInterlacedTextureSubRect(
-      kSideOffsets[currentSide], slopHeights[currentSide],
-      kSideOffsets[currentSide] + remainingWidth, currentSideHeight, 1, 2 );
-    inputRects[1] = reductionBuffer->getInterlacedTextureSubRect(
-      kSideOffsets[currentSide], slopHeights[currentSide]+1,
-      kSideOffsets[currentSide] + remainingWidth, currentSideHeight+1, 1, 2 );
-    currentSide = 1 - currentSide;
-    outputRect = reductionBuffer->getSurfaceSubRect(
-      kSideOffsets[currentSide], slopHeights[currentSide],
-      kSideOffsets[currentSide] + remainingWidth, slopHeights[currentSide] + heightToMove );
-    runtime->execute( outputRect, inputRects );
-//    reductionBuffer->getData( (float*)buffer );
-//    DumpBuffer( buffer );
-  }
+  int extents[2] = {inputWidth, inputHeight};
+  ReduceDimensionToOne( currentSide, tex0, tex1, 2, 0, extents );
+  ReduceDimensionToOne( currentSide, tex0, tex1, 2, 1, extents );
 
   result = getDevice()->EndScene();
   DX9CheckResult( result );
@@ -392,112 +354,62 @@ void DX9Kernel::ReduceToValue()
   ClearInputs();
 }
 
-/* TIM: old implementation, works for commutative ops
-void DX9Kernel::ReduceToValue()
+void DX9Kernel::ReduceDimensionToOne( int& ioReductionBufferSide,
+      int inReductionTex0, int inReductionTex1,
+      int inDimensionCount, int inDimensionToReduce, int* ioRemainingExtents )
 {
-  HRESULT result;
-
-  int streamCount = argumentStreamIndex;
-  int constantCount = argumentConstantIndex;
-  int outputCount = argumentOutputIndex;
-  int reductionCount = argumentReductionIndex;
-
-  // inspect the input stuff:
-  if( streamCount != 1 )
-    DX9Fail("Only one input sampler allowed on DX9 reduction");
-
-  if( reductionCount != 1 )
-    DX9Fail("Must have one and only one reduction argument");
-
-  if( outputCount != 0 )
-    DX9Fail("Can't have any other outputs during a reduction");
-
-  DX9VertexShader* passthroughVertexShader = runtime->getPassthroughVertexShader();
-  DX9PixelShader* passthroughPixelShader = runtime->getPassthroughPixelShader();
-
-  DX9Stream* inputStream = inputStreams[0];
-  int inputWidth = inputStream->getWidth();
-  int inputHeight = inputStream->getHeight();
-
+  int tex0 = inReductionTex0;
+  int tex1 = inReductionTex1;
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
-  int reductionBufferWidth = reductionBuffer->getWidth();
-  int reductionBufferHeight = reductionBuffer->getHeight();
-  result = getDevice()->SetRenderTarget( 0, reductionBuffer->getSurfaceHandle() );
-  DX9CheckResult( result );
 
-  result = getDevice()->BeginScene();
-  DX9CheckResult( result );
+  int currentSide = ioReductionBufferSide;
+  int dim = inDimensionToReduce;
 
-  result = getDevice()->SetVertexShader( passthroughVertexShader->getHandle() );
-  DX9CheckResult( result );
+  int remainingExtent = ioRemainingExtents[dim];
+  int remainingOtherExtent = ioRemainingExtents[1-dim]; // TIM: assumes 2-dimensional
 
-  // TIM: TODO: set up workspace constant
+  int slopExtents[2] = {0,0};
+  static const int kSideOffsets[2] = {0,kDX9ReductionBufferWidth/2};
+  int coreExtent = remainingExtent;
 
-  // Constants can be set up once and then used for each
-  // reduction pass
-  for( int i = 0; i < constantCount; i++ )
+  while( remainingExtent > 1 )
   {
-    result = getDevice()->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
-    DX9CheckResult( result );
+    // edge case - we have a single element on each side
+    // of the reduction buffer
+    if( (coreExtent == 0) && (slopExtents[0] == 1) && (slopExtents[1] == 1) )
+    {
+      inputRects[tex0] = reductionBuffer->getReductionTextureSubRect( kSideOffsets[0],
+        0, 0, 1, remainingOtherExtent, 1, 1, dim );
+      inputRects[tex0] = reductionBuffer->getReductionTextureSubRect( kSideOffsets[1],
+        0, 0, 1, remainingOtherExtent, 1, 1, dim );
+      outputRect = reductionBuffer->getReductionSurfaceSubRect( kSideOffsets[0],
+        0, 0, 1, remainingOtherExtent, dim );
+      runtime->execute( outputRect, inputRects );
+      currentSide = 0;
+      break;
+    }
+
+    int currentSideExtent = coreExtent + slopExtents[currentSide];
+    int extentToMove = currentSideExtent / 2;
+
+    slopExtents[currentSide] = currentSideExtent - 2*extentToMove;
+    remainingExtent -= extentToMove;
+    coreExtent = extentToMove;
+
+    inputRects[tex0] = reductionBuffer->getReductionTextureSubRect( kSideOffsets[currentSide],
+      slopExtents[currentSide], 0,
+      currentSideExtent, remainingOtherExtent, 2, 1, dim );
+    inputRects[tex1] = reductionBuffer->getReductionTextureSubRect( kSideOffsets[currentSide],
+      slopExtents[currentSide]+1, 0,
+      currentSideExtent+1, remainingOtherExtent, 2, 1, dim );
+    currentSide = 1 - currentSide;
+    outputRect = reductionBuffer->getReductionSurfaceSubRect( kSideOffsets[currentSide],
+      slopExtents[currentSide], 0,
+      slopExtents[currentSide] + extentToMove, remainingOtherExtent, dim );
+    runtime->execute( outputRect, inputRects );
   }
 
-  // first pass - just copy the data into the reduction buffer...
-  // this step *could* be elliminated in the future
-  result = getDevice()->SetPixelShader( passthroughPixelShader->getHandle() );
-  DX9CheckResult( result );
+  ioReductionBufferSide = currentSide;
+  ioRemainingExtents[dim] = 1;
 
-  inputRects[0] = inputStream->getTextureSubRect( 0, 0, inputWidth, inputHeight );
-  outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, inputWidth, inputHeight );
-  result = getDevice()->SetTexture( 0, inputStream->getTextureHandle() );
-  DX9CheckResult( result );
-  runtime->execute( outputRect, inputRects );
-
-  // remaining passes - fold the data in half as needed
-  result = getDevice()->SetPixelShader( pixelShader->getHandle() );
-  DX9CheckResult( result );
-
-  result = getDevice()->SetTexture( 0, reductionBuffer->getTextureHandle() );
-  DX9CheckResult( result );
-  result = getDevice()->SetTexture( 1, reductionBuffer->getTextureHandle() );
-  DX9CheckResult( result );
-  int remainingWidth = inputWidth;
-  int remainingHeight = inputHeight;
-
-  while( remainingWidth > 1 )
-  {
-    int columnsToRemove = remainingWidth/2;
-    inputRects[0] = reductionBuffer->getTextureSubRect( 0, 0, columnsToRemove, remainingHeight );
-    inputRects[1] = reductionBuffer->getTextureSubRect( remainingWidth-columnsToRemove, 0, remainingWidth, remainingHeight );
-    outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, columnsToRemove, remainingHeight );
-    runtime->execute( outputRect, inputRects );
-    remainingWidth -= columnsToRemove;
-  }
-  while( remainingHeight > 1 )
-  {
-    int rowsToRemove = remainingHeight/2;
-    inputRects[0] = reductionBuffer->getTextureSubRect( 0, 0, remainingWidth, rowsToRemove );
-    inputRects[1] = reductionBuffer->getTextureSubRect( 0, remainingHeight-rowsToRemove, remainingWidth, remainingHeight );
-    outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, remainingWidth, rowsToRemove );
-    runtime->execute( outputRect, inputRects );
-    remainingHeight -= rowsToRemove;
-   } 
-
-  result = getDevice()->EndScene();
-  DX9CheckResult( result );
-
-  float4 reductionResult = {-1,-1,-1,-1};
-  reductionBuffer->getTopLeftPixel( reductionResult );
-  if( outputReductionType == __BRTFLOAT )
-    *((float*)outputReductionData) = *((float*)&reductionResult);
-  else if( outputReductionType == __BRTFLOAT2 )
-    *((float2*)outputReductionData) = *((float2*)&reductionResult);
-  else if( outputReductionType == __BRTFLOAT3 )
-    *((float3*)outputReductionData) = *((float3*)&reductionResult);
-  else if( outputReductionType == __BRTFLOAT4 )
-    *((float4*)outputReductionData) = *((float4*)&reductionResult);
-  else
-    DX9Fail("Invalid reduction target type for DX9");
-
-  ClearInputs();
 }
-*/

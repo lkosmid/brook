@@ -47,7 +47,10 @@ namespace brook {
     void ReduceToStream();
     void ReduceToValue();
 
-    int argumentStreamIndex;
+    void ReduceDimensionToOne( int& ioReductionBufferSide,
+      int inReductionTex0, int inReductionTex1,
+      int inDimensionCount, int inDimensionToReduce, int* ioRemainingExtents );
+
     int argumentSamplerIndex;
     int argumentTexCoordIndex;
     int argumentConstantIndex;
@@ -59,11 +62,16 @@ namespace brook {
     DX9Rect inputRects[8]; // TIM: TODO: named constant?
     float4 inputConstants[8];
     IDirect3DTexture9* inputTextures[8];
-    DX9Stream* inputStreams[8];
     DX9Rect outputRect;
     IDirect3DSurface9* outputSurface;
     void* outputReductionData;
     __BRTStreamType outputReductionType;
+
+    DX9Stream* inputReductionStream;
+    int inputReductionStreamSamplerIndex;
+    int inputReductionStreamTexCoordIndex;
+    int outputReductionVarSamplerIndex;
+    int outputReductionVarTexCoordIndex;
   };
 
   class DX9Stream : public Stream {
