@@ -74,10 +74,6 @@ printStorage( std::ostream& out, StorageType storage )
         case ST_Kernel:
             out << "kernel ";
             break;
-
-        case ST_Stream:
-            out << "stream ";
-            break;
     }
 }
 
