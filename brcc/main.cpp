@@ -119,7 +119,7 @@ parse_args (int argc, char *argv[]) {
   }
 
   globals.coutputname = (char *) malloc (strlen(outputprefix) +
-					 strlen(".c") + 1);
+					 strlen(".cpp") + 1);
   sprintf (globals.coutputname, "%s.c",outputprefix);
   globals.houtputname = (char *) malloc (strlen(outputprefix) +
 					 strlen(".h") + 1);
