@@ -15,6 +15,10 @@
     License along with this library; if not, write to the Free
     Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+#ifdef _WIN32
+#pragma warning(disable:4786)
+//debug symbol warning
+#endif
 
 // The following classes are utility classes for the RAPID collision detection
 // algorithm. The code is based on the UNC implementation of the RAPID

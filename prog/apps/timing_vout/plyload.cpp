@@ -22,7 +22,8 @@ void LoadPly (const char * file,vector<Tri> &ret) {
   fscanf(fp,"element face %d\n",&numface);
   while (1==fscanf(fp,"propert%c %*[^\n]\n",&mchar));
   fscanf(fp,"end_header\n");
-  for (int i=0;i<numvertex;++i) {
+  int i;
+  for ( i=0;i<numvertex;++i) {
     tri_vertex_t in;
     fscanf(fp,"%f %f %f",&in.x,&in.y,&in.z);
     for (int i=3;i<propertycount;++i) {
@@ -30,7 +31,7 @@ void LoadPly (const char * file,vector<Tri> &ret) {
     }
     vertices.push_back(in);
   }
-  for (int i=0;i<numface;++i) {
+  for ( i=0;i<numface;++i) {
     int num=0;
     int a,b,c,count=0;
     fscanf(fp,"%d",&num);
