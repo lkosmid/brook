@@ -203,7 +203,6 @@ namespace brook {
      const unsigned int * domain_min = getDomainMin();
      const unsigned int * extents = getExtents();
      unsigned int dim = getDimension();
-     unsigned int size = getElementSize();
      int i;
 
      assert (dim > 0 && dim <= 4);
@@ -500,8 +499,6 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
   // Get Domain properties.
   const unsigned int *index_dmin = index->getDomainMin();
   const unsigned int *index_dmax = index->getDomainMax();
-  const unsigned int *src_dmin   = src->getDomainMin();
-  const unsigned int *src_dmax   = src->getDomainMax();
   const unsigned int *dst_dmin   = dst->getDomainMin();
   const unsigned int *dst_dmax   = dst->getDomainMax();
 
@@ -541,7 +538,7 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
 
   // The index type must match the number of dimensions
   // in the source, i.e. float4 index for a 4D stream
-  assert (index_type == src_dims);
+  assert (index_type == (int) src_dims);
 
   // The index dimensionality must match the 
   // output dimensionality.
