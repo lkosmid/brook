@@ -266,6 +266,8 @@ compile_cg_code (char *cgcode) {
 
   fpcode = Subprocess_Run(argv, cgcode);
   if (fpcode == NULL) {
+     fprintf(stderr, "Unable to run %s, skipping fp30 / nv30gl target.\n",
+             argv[0]);
      return NULL;
   }
 
@@ -316,6 +318,8 @@ compile_hlsl_code (char *hlslcode) {
   errcode = Subprocess_Run(argv, NULL);
   if (!globals.keepFiles) remove(globals.shaderoutputname);
   if (errcode == NULL) {
+     fprintf(stderr, "Unable to run %s, skipping ps20 / dx9 target.\n",
+             argv[0]);
      remove(argv[3]+3);
      return NULL;
   }

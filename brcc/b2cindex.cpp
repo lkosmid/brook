@@ -109,7 +109,6 @@ Expression * changeFunctionCallToPassIndexOf(Expression* e) {
          if (FunctionProp.find(v->name->name)!=FunctionProp.end()) {
             functionProperties fp = FunctionProp[v->name->name];
             static Decl *IndexOf=getIndexOfDecl("indexof",BT_Float4);
-            static Decl *LinearIndexOf=getIndexOfDecl("linearindexof",BT_Int);
             functionProperties::iterator i=fp.begin();
             functionProperties::iterator end=fp.end();
             for (;i!=end;++i) {

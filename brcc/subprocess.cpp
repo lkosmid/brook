@@ -111,7 +111,7 @@ Subprocess_Run(char *argv[], char *input)
 
 #if WIN32
   if ((pid = _spawnvp(P_NOWAIT, argv[0], argv)) == -1) {
-    fprintf( stderr, "Unable to start %s\n", argv[0]);
+    if (debug) fprintf( stderr, "Unable to start %s\n", argv[0]);
     return NULL;
   }
 
@@ -121,7 +121,7 @@ Subprocess_Run(char *argv[], char *input)
        close (hStdInPipe[WRITE_HANDLE]);
 
        if (execvp(argv[0], argv) == -1) {
-	    fprintf( stderr, "Unable to start %s\n",argv[0] );
+            if (debug) fprintf( stderr, "Unable to start %s\n",argv[0] );
 	    exit(-1);
        }
        /* Unreached... */
@@ -224,11 +224,11 @@ Subprocess_Run(char *argv[], char *input)
   _cwait(&ret, pid, WAIT_CHILD);
 #else
   waitpid(pid, &ret, 0);
-  ret = WIFEXITED(ret) ? 0 : WEXITSTATUS(ret);
+  ret = WIFEXITED(ret) ? WEXITSTATUS(ret) : -1;
 #endif
 
   if (ret != 0) {
-    fprintf (stderr, "%s exited with an error (%#x):\n", argv[0], ret);
+    if (debug) fprintf (stderr, "%s exited with an error (%#x):\n", argv[0], ret);
     fwrite (output, strlen(output), 1, stderr);
     return NULL;
   }
