@@ -1,4 +1,4 @@
-#include <dx9.hpp>
+#include "dx9.hpp"
 
 #include "dx9pixelshader.hpp"
 #include "dx9vertexshader.hpp"
@@ -8,7 +8,7 @@ using namespace brook;
 static const char* PIXEL_SHADER_NAME_STRING = "ps20";
 
 DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
-  : runtime(runtime), argumentIndex(0)
+  : runtime(runtime), argumentStreamIndex(0), argumentConstantIndex(0), argumentOutputIndex(0)
 {
   DX9Trace("DX9Kernel::DX9Kernel");
   
@@ -31,15 +31,16 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
 }
 
 void DX9Kernel::PushStream(const Stream *s) {
-  DX9Trace("SetInput");
-  int arg = argumentIndex++;
+  DX9Trace("PushInput");
+  int arg = argumentStreamIndex++;
 
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DTexture9* textureHandle = stream->getTextureHandle();
 
-  int textureUnit = mapArgumentToTextureUnit( arg );
+  int textureUnit = arg;
   inputTextures[textureUnit] = textureHandle;
   inputRects[textureUnit] = stream->getInputRect();
+  DX9Trace("PushInput - end");
 }
 
 void DX9Kernel::PushConstant(const float &val) {
@@ -71,25 +72,25 @@ void DX9Kernel::PushConstant(const float3 &val) {
 
 void DX9Kernel::PushConstant(const float4 &val) {
   DX9Trace("PushConstant");
-  int arg = argumentIndex++;
-  int constantIndex = mapArgumentToConstantIndex( arg );
+  int arg = argumentConstantIndex++;
+  int constantIndex = arg;
   inputConstants[constantIndex] = val;
 }
 
 void DX9Kernel::PushGatherStream(const Stream *s) {
   DX9Trace("PushGatherStream");
-  int arg = argumentIndex++;
+  int arg = argumentStreamIndex++;
   
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DTexture9* textureHandle = stream->getTextureHandle();
 
-  int textureUnit = mapArgumentToTextureUnit( arg );
+  int textureUnit = arg;
   inputTextures[textureUnit] = textureHandle;
 }
 
 void DX9Kernel::PushOutput(const Stream *s) {
   DX9Trace("PushOutput");
-  int arg = argumentIndex++;
+  int arg = argumentOutputIndex++;
 
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DSurface9* surfaceHandle = stream->getSurfaceHandle();
@@ -102,13 +103,20 @@ void DX9Kernel::Map() {
   DX9Trace("Map");
   HRESULT result;
 
+  int streamCount = argumentStreamIndex;
+  int constantCount = argumentConstantIndex;
+  int outputCount = argumentOutputIndex;
+  argumentStreamIndex = 0;
+  argumentConstantIndex = 0;
+  argumentOutputIndex = 0;
+
   DX9VertexShader* vertexShader = runtime->getPassthroughVertexShader();
 
   result = getDevice()->SetRenderTarget( 0, outputSurface );
   DX9CheckResult( result );
 
-  result = getDevice()->Clear( 0, NULL, D3DCLEAR_TARGET, 0xFF0000FF, 1.0f, 0 );
-  DX9CheckResult( result );
+//  result = getDevice()->Clear( 0, NULL, D3DCLEAR_TARGET, 0xFF0000FF, 1.0f, 0 );
+//  DX9CheckResult( result );
 
   result = getDevice()->BeginScene();
   DX9CheckResult( result );
@@ -118,13 +126,13 @@ void DX9Kernel::Map() {
   result = getDevice()->SetVertexShader( vertexShader->getHandle() );
   DX9CheckResult( result );
 
-  for( int i = 0; i < 8; i++ )
+  for( int i = 0; i < streamCount; i++ )
   {
     result = getDevice()->SetTexture( i, inputTextures[i] );
     DX9CheckResult( result );
   }
 
-  for( int i = 0; i < 8; i++ )
+  for( int i = 0; i < constantCount; i++ )
   {
     result = getDevice()->SetPixelShaderConstantF( i, (float*)&(inputConstants[i]), 1 );
     DX9CheckResult( result );
@@ -156,14 +164,4 @@ void DX9Kernel::initialize( const char* source ) {
     inputRects[i] = DX9Rect(0,0,0,0);
     inputTextures[i] = NULL;
   }
-}
-
-int DX9Kernel::mapArgumentToTextureUnit( int arg ) {
-  // TIM: totally hacked for now
-  return arg-1;
-}
-
-int DX9Kernel::mapArgumentToConstantIndex( int arg ) {
-  // TIM: totally hacked for now
-  return arg-1;
 }

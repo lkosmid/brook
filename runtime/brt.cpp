@@ -1,13 +1,13 @@
 // brt.cpp
-#include <brt.hpp>
+#include "brt.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
 
-#include <dx9/dx9.hpp>
-#include <nv30gl/nv30gl.hpp>
+#include "dx9/dx9.hpp"
+#include "nv30gl/nv30gl.hpp"
 
 namespace brook {
 

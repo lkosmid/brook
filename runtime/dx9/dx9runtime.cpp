@@ -1,5 +1,5 @@
-#include <dx9.hpp>
-#include <dx9base.hpp>
+#include "dx9.hpp"
+#include "dx9base.hpp"
 
 #include "dx9window.hpp"
 #include "dx9vertexshader.hpp"

@@ -1,4 +1,4 @@
-#include <nv30gl.hpp>
+#include "nv30gl.hpp"
 // TIM: missing include file?
 //#include <brtcommon.hpp>
 #include "../common.h"

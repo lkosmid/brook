@@ -19,7 +19,7 @@ namespace brook {
     virtual void PushGatherStream(const Stream *s);
     virtual void PushOutput(const Stream *s);
     virtual void Map();
-    virtual void Release();
+    virtual void Release() {}
     
   private:
     virtual ~NV30GLKernel();
@@ -30,7 +30,7 @@ namespace brook {
     NV30GLStream (const char type[], int dims, int extents[]);
     virtual void Read(const void* inData);
     virtual void Write(void* outData);
-    virtual void Release();
+    virtual void Release() {}
 
   private:
     virtual ~NV30GLStream ();

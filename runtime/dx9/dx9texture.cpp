@@ -1,7 +1,7 @@
 // dx9texture.cpp
-#include <dx9texture.hpp>
+#include "dx9texture.hpp"
 
-#include <dx9.hpp>
+#include "dx9.hpp"
 
 using namespace brook;
 

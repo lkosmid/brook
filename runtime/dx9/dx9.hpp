@@ -4,6 +4,9 @@
 #include "../brt.hpp"
 #include "dx9base.hpp"
 
+#pragma comment(lib,"d3d9")
+#pragma comment(lib,"d3dx9")
+
 namespace brook {
 
   extern const char* DX9_RUNTIME_STRING;
@@ -40,15 +43,16 @@ namespace brook {
     virtual ~DX9Kernel();
     IDirect3DDevice9* getDevice();
     void initialize( const char* source );
-    int mapArgumentToTextureUnit( int arg );
-    int mapArgumentToConstantIndex( int arg );
+
+    int argumentStreamIndex;
+    int argumentConstantIndex;
+    int argumentOutputIndex;
 
     DX9RunTime* runtime;
     DX9PixelShader* pixelShader;
     DX9Rect inputRects[8]; // TIM: TODO: named constant?
     float4 inputConstants[8];
     IDirect3DTexture9* inputTextures[8];
-    int argumentIndex;
     DX9Rect outputRect;
     IDirect3DSurface9* outputSurface;
   };
