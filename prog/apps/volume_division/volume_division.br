@@ -1,7 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ppm3d.h"
-
+kernel void processSlice (float prevslice[][], 
+                   float curslice<>, 
+                   float curgather[][],
+                   float nextslice[][],
+                   vout [1]float v<>) {
+  
+}
 int main (int argc, char ** argv) {
    float * volumetrics=NULL;
    if (argc<2) {
@@ -22,26 +28,28 @@ int main (int argc, char ** argv) {
       }
       slice = mallocSlice(dat);
       {
-         int i;
+         unsigned int i;
          float prev <(dat.height),(dat.width)>;
          float cur<(dat.height),(dat.width)>;
          float next<(dat.height),(dat.width)>;
          float v<1,(dat.width)>;
          readPPM3dSlice(dat,0,slice);
-         streamRead(cur,dat);
+         streamRead(cur,slice);
          readPPM3dSlice(dat,1,slice);
-         streamRead(next,dat);
+         streamRead(next,slice);
  
-         processSlice(cur,cur,next,v);
+         processSlice(cur,cur,cur,next,v);
+         streamWrite(v,consolidateVertices(dat,streamSize(v)));
          for (i=1;i<dat.depth-1;++i) {
             readPPM3dSlice(dat,i+1,slice);
             streamSwap(cur,next);
             streamSwap(next,prev);
             streamRead(next,slice);
-            processSlice(prev,cur,next,v);
+            processSlice(prev,cur,cur,next,v);
+            streamWrite(v,consolidateVertices(dat,streamSize(v)));
          }
-         processSlice(prev,cur,cur,v);
-         
+         processSlice(cur,next,next,next,v);
+         streamWrite(v,consolidateVertices(dat,streamSize(v)));         
       }
       free(slice);
    }

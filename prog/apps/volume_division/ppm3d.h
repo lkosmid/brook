@@ -36,7 +36,7 @@ float * mallocSlice (const ppm &fp) {
 void readPPM3dSlice(const ppm &fp, 
                    unsigned int whichslice,
                    float *data) {
-   int size = fp.width*fp.height;
+   unsigned int size = fp.width*fp.height;
    if (fp.fp) {
       char * readindata = (char *) data;
       fseek (fp.fp,fp.start+whichslice*size*sizeof(char),SEEK_SET);
@@ -67,11 +67,10 @@ unsigned int findNaN(std::vector<float4> v) {
       pos+=1;
    return pos;
 }
-void consolidateVertices(ppm &fp, float3 v<>) {
-   float4 ss = streamSize(v);
+float4* consolidateVertices(ppm &fp,float4 ss/*stream size*/) {
    unsigned int size = (unsigned int)ss.x*(unsigned int)ss.y;
-   unsigned int nanloc= findNan(fp.vertices);
+   unsigned int nanloc= findNaN(fp.vertices);
    unsigned int newguys = size-(fp.vertices.size()-nanloc);
-   fp.vertices.insert(fp.vertices.end(),newguys,0);
-   streamWrite(v,&fp.vertices[nanloc]);
+   fp.vertices.insert(fp.vertices.end(),newguys,float4(0,0,0,0));
+   return &fp.vertices[nanloc];
 }
