@@ -134,11 +134,11 @@ BrtGatherExpr::print (std::ostream& out) const
 
    if( globals.enableGPUAddressTranslation )
    {
+     out << ", __gatherdomainmin_";
+     base->print(out);
      out << ", __gatherlinearize_";
      base->print(out);
-     out << ", __gatherreshape_";
-     base->print(out);
-     out << ", __gatherhack_";
+     out << ", __gathertexshape_";
      base->print(out);
      out << "))";
    }

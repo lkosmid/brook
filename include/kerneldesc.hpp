@@ -50,7 +50,8 @@ namespace brook
     {
       kGatherConstant_Shape = 0,
       kGatherConstant_ATLinearize,
-      kGatherConstant_ATInvTextureShape
+      kGatherConstant_ATTextureShape,
+      kGatherConstant_ATDomainMin
     };
 
     // Iterator Arguments

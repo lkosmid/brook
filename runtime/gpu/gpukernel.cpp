@@ -1260,43 +1260,13 @@ namespace brook
         }
         break;
     case kStreamConstant_ATLinearize:
-        {
-            float4 result(0,0,0,0);
-            unsigned int rank = stream->getRank();
-            const unsigned int* reversedExtents = stream->getReversedExtents();
-            unsigned int stride = 1;
-            for( unsigned int r = 0; r < rank; r++ )
-            {
-                ((float*)&result)[r] = (float)(stride);
-                stride *= reversedExtents[r];
-            }
-            return result;
-        }
+        return stream->getATLinearizeConstant();
         break;
     case kStreamConstant_ATTextureShape:
-        {
-            float4 result(0,0,0,0);
-            unsigned int textureWidth = stream->getTextureWidth();
-            unsigned int textureHeight = stream->getTextureHeight();
-            result.x = 1.0f / (float)textureWidth;
-            result.y = 1.0f / (float)textureHeight;
-            result.z = (float)textureWidth;
-            result.w = (float)textureHeight;
-            return result;
-        }
+        return stream->getATTextureShapeConstant();
         break;
     case kStreamConstant_ATDomainMin:
-        {
-            float4 result(0,0,0,0);
-            unsigned int rank = stream->getRank();
-            const unsigned int* domainMin = stream->getDomainMin();
-            for( unsigned int r = 0; r < rank; r++ )
-            {
-                unsigned int d = rank - (r+1);
-                ((float*)&result)[r] = (float)domainMin[d];
-            }
-            return result;
-        }
+        return stream->getATDomainMinConstant();
         break;
     }
     GPUError("not implemented");
@@ -1351,21 +1321,15 @@ namespace brook
     case kGatherConstant_Shape:
       return stream->getGatherConstant();
       break;
-/*    case kGatherConstant_ATLinearize:
-      return inKernel->_context->getATLinearizeConstant(
-            stream->getTextureWidth(),
-            stream->getTextureHeight(),
-            stream->getRank(),
-            stream->getReversedExtents()
-          );
-      break;
-    case kGatherConstant_ATReshape:
-      return inKernel->_context->getATReshapeConstant(
-            stream->getTextureWidth(),
-            stream->getTextureHeight(),
-            stream->getRank(),
-            stream->getReversedExtents()
-          );*/
+    case kGatherConstant_ATLinearize:
+        return stream->getATLinearizeConstant();
+        break;
+    case kGatherConstant_ATTextureShape:
+        return stream->getATTextureShapeConstant();
+        break;
+    case kGatherConstant_ATDomainMin:
+        return stream->getATDomainMinConstant();
+        break;
       break;
     }
     GPUError("not implemented");

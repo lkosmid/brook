@@ -207,6 +207,10 @@ namespace brook {
                                    unsigned int _textureHeight,
                                    GPUInterpolant &_interpolant );
 
+        float4 getATLinearizeConstant();
+        float4 getATTextureShapeConstant();
+        float4 getATDomainMinConstant();
+
 
   private:
         virtual ~GPUStream ();

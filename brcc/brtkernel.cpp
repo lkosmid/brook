@@ -90,8 +90,8 @@ void BRTGPUKernelCode::printInnerCode (std::ostream&out) const {
       
       if( globals.enableGPUAddressTranslation ) {
         out << "float4 __gatherlinearize_" << nam->name;
-        out << ", float2 __gatherreshape_" << nam->name;
-        out << ", float4 __gatherhack_" << nam->name;
+        out << ", float4 __gathertexshape_" << nam->name;
+        out << ", float4 __gatherdomainmin_" << nam->name;
       } else {
         out << blank << "float4 _const_"<<nam->name<<"_scalebias";
       }

@@ -777,7 +777,7 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      shader << positionName << " = ";
 #define TIMISnotCRAZY
 #ifdef TIMISCRAZY
-     shader << "float3(_tex_" << positionName << "_pos,0);\n";
+     shader << "float4(_tex_" << positionName << "_pos,0,0);\n";
 #else
      BaseType* base = inForm->getBase();
      switch(base->typemask) {
@@ -867,12 +867,8 @@ generate_shader_support(std::ostream& shader)
     shader << "\treturn floor( (indexofoutput*streamIndexofNumer + 0.5)*streamIndexofInvDenom ); }\n";
 
     shader << "float2 __calculatetexpos( float4 streamIndex, float4 streamDomainMin,\n";
-    shader << "float4 linearizeConst, float4 textureShapeConst, float hackConst ) {\n";
+    shader << "float4 linearizeConst, float4 textureShapeConst ) {\n";
     shader << "float linearIndex = dot( streamIndex + streamDomainMin, linearizeConst ) + 0.5;\n";
-//    shader << "#ifndef USERECT\n";
-//    shader << "//HLSL codegen bug workaround\n";
-//    shader << "\tlinearIndex *= hackConst;\n";
-//    shader << "#endif\n";
     shader << "float2 texIndex;\n";
     shader << "texIndex.y = floor( linearIndex * textureShapeConst.x );\n";
     shader << "texIndex.x = floor( linearIndex - texIndex.y * textureShapeConst.z );\n";
@@ -884,7 +880,7 @@ generate_shader_support(std::ostream& shader)
 #ifndef TIMISCRAZY
     shader << "return texCoord;\n}\n\n";
 #else
-    shader << "return texCoord;\n}\n\n";
+    shader << "return streamIndex.y;\n}\n\n";
 #endif
 
     shader << "void __calculateoutputpos( float2 interpolant, float2 linearize,\n";
@@ -912,14 +908,14 @@ generate_shader_support(std::ostream& shader)
     shader << "}\n\n";
 #endif
 
-    shader << "float2 __gatherindex1( float1 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0,0,0), domainConst, linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex2( float2 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0,0), domainConst, linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex3( float3 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
-    shader << "\treturn __calculatetexpos( float4(index,0), domainConst, linearizeConst, reshapeConst, hackConst ); }\n";
-    shader << "float2 __gatherindex4( float4 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst, float hackConst ) {\n";
-    shader << "\treturn __calculatetexpos( index, domainConst, linearizeConst, reshapeConst, hackConst ); }\n";
+    shader << "float2 __gatherindex1( float1 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0,0,0), domainConst, linearizeConst, reshapeConst ); }\n";
+    shader << "float2 __gatherindex2( float2 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0,0), domainConst, linearizeConst, reshapeConst ); }\n";
+    shader << "float2 __gatherindex3( float3 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst ) {\n";
+    shader << "\treturn __calculatetexpos( float4(index,0), domainConst, linearizeConst, reshapeConst ); }\n";
+    shader << "float2 __gatherindex4( float4 index, float4 domainConst, float4 linearizeConst, float4 reshapeConst ) {\n";
+    shader << "\treturn __calculatetexpos( index, domainConst, linearizeConst, reshapeConst ); }\n";
   }
 
   shader << "\n\n";
@@ -1083,12 +1079,16 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg, int i,
       shader << "uniform float4 __gatherlinearize_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader << ",\n\t\t";
-      shader << "uniform float2 __gatherreshape_" << argName;
+      shader << "uniform float4 __gathertexshape_" << argName;
+      shader << " : register(c" << constreg++ << ")";
+      shader <<  ",\n\t\t";
+      shader << "uniform float4 __gatherdomainmin_" << argName;
       shader << " : register(c" << constreg++ << ")";
       shader <<  ",\n\t\t";
 
       outPass.addConstant( (i+1), "kGatherConstant_ATLinearize" );
-      outPass.addConstant( (i+1), "kGatherConstant_ATReshape" );
+      outPass.addConstant( (i+1), "kGatherConstant_ATTextureShape" );
+      outPass.addConstant( (i+1), "kGatherConstant_ATDomainMin" );
    } else {
       // TIM: TODO: handle multi-sampler array for gathers...
       shader << "uniform _stype " << argName;
@@ -1303,7 +1303,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
                shader << "__calculatetexpos( __indexof_" << argName << ", ";
                shader << "__streamdomainmin_" << argName << ", ";
                shader << "__streamlinearize_" << argName << ", ";
-               shader << "__streamtextureshape_" << argName << ", __hackconst );\n";
+               shader << "__streamtextureshape_" << argName << " );\n";
             }
           }
 
@@ -1343,8 +1343,8 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
       {
         kernelBodyStream << name;
         kernelBodyStream << ", __gatherlinearize_" << name;
-        kernelBodyStream << ", __gatherreshape_" << name;
-        kernelBodyStream << ", __hackconst";
+        kernelBodyStream << ", __gathertexshape_" << name;
+        kernelBodyStream << ", __gatherdomainmin_" << name;
       }
       else
       {

@@ -364,6 +364,45 @@ namespace brook
         _textureWidth, _textureHeight, _interpolant );
   }
 
+    float4 GPUStream::getATLinearizeConstant()
+    {
+        float4 result(0,0,0,0);
+        unsigned int rank = getRank();
+        const unsigned int* reversedExtents = getReversedExtents();
+        unsigned int stride = 1;
+        for( unsigned int r = 0; r < rank; r++ )
+        {
+            ((float*)&result)[r] = (float)(stride);
+            stride *= reversedExtents[r];
+        }
+        return result;
+    }
+
+    float4 GPUStream::getATTextureShapeConstant()
+    {
+        float4 result(0,0,0,0);
+        unsigned int textureWidth = getTextureWidth();
+        unsigned int textureHeight = getTextureHeight();
+        result.x = 1.0f / (float)textureWidth;
+        result.y = 1.0f / (float)textureHeight;
+        result.z = (float)textureWidth;
+        result.w = (float)textureHeight;
+        return result;
+    }
+
+    float4 GPUStream::getATDomainMinConstant()
+    {
+        float4 result(0,0,0,0);
+        unsigned int rank = getRank();
+        const unsigned int* domainMin = getDomainMin();
+        for( unsigned int r = 0; r < rank; r++ )
+        {
+            unsigned int d = rank - (r+1);
+            ((float*)&result)[r] = (float)domainMin[d];
+        }
+        return result;
+    }
+
   Stream* GPUStream::Domain(int inMin, int inMax)
   {
       GPUAssert( getDimension() == 1, "Expected stream with rank of 1" );
