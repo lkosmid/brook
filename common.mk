@@ -168,10 +168,11 @@ ifdef SUBDIRS
 	@for i in $(SUBDIRS); do $(MAKE) --no-print-directory -C $$i clean; done
 endif
 ifdef BINARY
-	@rm -rf $(OBJDIR) $(BINDIR)/$(BINARY) $(SLOP) 
-	@rm -rf $(BINDIR)/$(BINARY_NAME).pdb *~ $(DEPDIR)
+	@rm -rf $(OBJDIR) $(BINDIR)/$(BINARY)
+	@rm -rf $(BINDIR)/$(BINARY_NAME).pdb $(DEPDIR)
 	@rm -rf $(BINARY_NAME).output
 endif
+	@rm -rf *~ .#* $(SLOP)
 
 ## Regression testing ##
 

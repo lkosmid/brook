@@ -1,6 +1,6 @@
 				 Brook GPU
 
-(Last Revised 15 December 2003)
+(Last Revised 16 December 2003)
 
 Hardware Prerequisites
 
@@ -27,8 +27,9 @@ Software Prerequisites
 
    * Alternatively, running with the GPU runtimes requires the following:
    	- Microsoft Visual C++ version 6 or 7 (preferably 7)
+          (cl.exe must execute from the command line)
 	- Microsoft DirectX 9 SDK
-	  (http://www.microsoft.com/windows/directx/default.aspx)
+	  (http://msdn.microsoft.com/library/default.asp?url=/downloads/list/directx.asp)
 	- NVIDIA's Cg Compiler (at least version 1.1)
 	  (http://developer.nvidia.com/object/cg_toolkit.html)
 	- Up-to-date ATI or NVIDIA video drivers
@@ -40,7 +41,7 @@ Software Prerequisites
      BRCC will look for cgc and fxc (the HLSL compiler from the DirectX 9
      SDK) in the path.  Following the default installations, cgc.exe is in
      C:\Program Files\NVIDIA Corporation\Cg\bin and fxc.exe is in
-     C:\DX90SDK\Bin\DXUtils.
+     C:\DX90SDK\Utilities.
 
      Additionally, compiling the DirectX runtime requires your INCLUDE and
      LIB paths include the DirectX 9 directories.  With the default
