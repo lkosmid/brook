@@ -99,27 +99,38 @@ BRTKernelDef::printStub(std::ostream& out) const
 
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
-
+   unsigned int num_templates=0;
+   for (i = 0; i < fType->nArgs; i++) {
+      if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0) {
+         num_templates++;
+      }
+   }
+   if (num_templates) {//to do codegen
+      out << "template <";
+      for (unsigned int i=0;i<num_templates;++i) {
+         if (i!=0)
+            out << ", ";
+         out << "class _T"<<i;
+      }
+      out <<">"<<std::endl;
+   }
    fType->subType->printType(out, NULL, true, 0);
    out << " " << *FunctionName() << " (";
-
+   num_templates=0;   
    for (i = 0; i < fType->nArgs; i++) {
       if (i) out << ",\n\t\t";
 
       if (recursiveIsStream(fType->args[i]->form) || recursiveIsGather(fType->args[i]->form)) {
          out << "const __BRTStream& " << *fType->args[i]->name;
-      } else {
-         bool reduction = (fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0;
-         if (!reduction)
-            out << "const ";
+      } else if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
+         out << "_T"<<num_templates<<" &" << fType->args[i]->name->name;
+      }else {
+         out << "const ";
          Symbol name;name.name = fType->args[i]->name->name;
          //XXX -- C++ backend needs values to be passed by value...
          // It's a one time per kernel call hit--worth it to keep
          // Values from being aliased --Daniel
          //hence we only do the & for reduction vars
-         if (reduction&&fType->args[i]->form->type!=TT_Array)
-            //arrays are automatically pass by ref. - Daniel
-            name.name= "& "+name.name;
          fType->args[i]->form->printType(out,&name,true,0);
       }
    }
@@ -139,7 +150,6 @@ BRTKernelDef::printStub(std::ostream& out) const
 
    out << "  static __BRTKernel k("
        << "__" << *FunctionName() << "_fp);\n\n";
-
    for (i=0; i < fType->nArgs; i++) {
       if (recursiveIsStream(fType->args[i]->form) &&
           (fType->args[i]->form->getQualifiers()&TQ_Out)!=0) {
