@@ -158,12 +158,12 @@ namespace brook{
     }
   void* CPUKernel::staticSubMap (void * inp) {
     subMapInput * submap = (subMapInput*)inp;
-    (*submap->thus->func)(submap->thus->args,
+    (*submap->thus->func)(*submap,
                           submap->thus->extents,
                           submap->thus->dims,
                           submap->mapbegin,
                           submap->mapend);
-    free (submap);
+    delete submap;
     return 0;
   }
     void CPUKernel::ThreadMap(unsigned int numThreads) {
@@ -172,11 +172,7 @@ namespace brook{
        unsigned int cur=0;
        unsigned int step = totalsize/numThreads;
        unsigned int remainder = totalsize%numThreads;
-       subMapInput * subMapRange = (subMapInput*)malloc(sizeof(subMapInput));
-       subMapRange->thus=this;
-       subMapRange->mapbegin=cur;
-       subMapRange->mapend=step;
-       staticSubMap(subMapRange);
+       staticSubMap(new subMapInput(this,args,cur,step));
        cur+=step;
        std::vector<void *>reductionbackup;
        for (j=reductions.begin();
@@ -190,9 +186,8 @@ namespace brook{
           unsigned int thisstep=step;
           if (i<remainder)
              thisstep++;//leap year
-          //fork!
-          
-          subMap(cur,thisstep);
+          //fork!          
+          staticSubMap(new subMapInput(this,args,cur,thisstep));
           cur+=thisstep;
           for (j=reductions.begin();j!=reductions.end();++j) {
              args[j->which]=((char *)args[j->which])+(j->type*sizeof(float));
@@ -228,16 +223,16 @@ namespace brook{
           }
        }
     }
-  void CPUKernel::ReduceToStream (unsigned int cur, 
+  void CPUKernel::ReduceToStream (vector<void *>&myargs,
+                                  unsigned int cur, 
                                   unsigned int curfinal,
                                   const unsigned int *extent,
                                   unsigned int rdim,
                                   unsigned int *mapbegin,
                                   const unsigned int *mag)const{
-    vector<void *> myargs(args);
     std::vector<ReductionArg>::const_iterator j;
     for (j=reductions.begin();j!=reductions.end();++j) {
-      myargs[(*j).which]=(char*)args[(*j).which]+
+      myargs[(*j).which]=(char*)myargs[(*j).which]+
         cur*(*j).stream->getStride();
     }
     for (;cur<curfinal;++cur) {
@@ -260,13 +255,14 @@ namespace brook{
   }
   void * CPUKernel::staticReduceToStream(void * inp) {
     reduceToStreamInput * red = (reduceToStreamInput*)inp;
-    red->thus->ReduceToStream(red->cur,
+    red->thus->ReduceToStream(*red,
+                              red->cur,
                               red->curfinal,
                               red->extent,
                               red->rdim,
                               red->mapbegin,
                               red->mag);
-    free(red);
+    delete red;
     return 0;
   }
   static void calcLocation(unsigned int * rez, 
@@ -335,13 +331,14 @@ namespace brook{
             unsigned int curfinal=cur+step;
             if (threads<remainder) curfinal++;
             unsigned int * mapbegin=e+threads*dim;
-            reduceToStreamInput * red;
-            red=(reduceToStreamInput* )malloc(sizeof(reduceToStreamInput));
-            red->thus=this;
-            red->cur=cur;red->curfinal=curfinal;
-            red->extent=extent;
-            red->rdim=rdim;red->mapbegin=mapbegin;red->mag=mag;
-            CPUKernel::staticReduceToStream(red);
+            CPUKernel::staticReduceToStream(new reduceToStreamInput(this,
+                                                                    args,
+                                                                    cur,
+                                                                    curfinal,
+                                                                    extent,
+                                                                    rdim,
+                                                                    mapbegin,
+                                                                    mag));
             
             cur=curfinal;
             //forkborkborkbork

@@ -9,7 +9,7 @@ kernel void foo (float d_prime<>, float b<>, float4 c,
   e = ((d_prime==d[indexof(d_prime)])
        &&(d_prime==d[indexof(d_prime)])
        &&(d_prime==d[(indexof d_prime ).xy])
-       &&(d_prime!=d[(indexof d_prime ).yx]));
+       &&!(d_prime==d[(indexof d_prime ).yx]));
   /* this test should make a matrix of 1 and a diagonal of 0's*/
 }
 

@@ -64,23 +64,44 @@ namespace brook {
        bool multiThread;
        void Cleanup();
        void ThreadMap(unsigned int numThreads);
-       void ReduceToStream(unsigned int cur,
+       void ReduceToStream(vector<void *>&args,
+                           unsigned int cur,
                            unsigned int curfinal,
                            const unsigned int * extent,
                            unsigned int rdim,
                            unsigned int *mapbegin,
                            const unsigned int * mag)const;
-       struct reduceToStreamInput{
+       struct reduceToStreamInput:public std::vector<void*>{
           const CPUKernel * thus;
           unsigned int cur,curfinal;
           const unsigned int *extent;
           unsigned int rdim;
           unsigned int * mapbegin;
           const unsigned int * mag;             
+          reduceToStreamInput (const CPUKernel * thus,
+                               const std::vector<void*>&args,
+                               unsigned int cur,
+                               unsigned int curfinal,
+                               const unsigned int *extent,
+                               unsigned int rdim,
+                               unsigned int *begin,
+                               const unsigned int * mag) 
+
+             :vector<void*>(args),thus(thus),
+              cur(cur),curfinal(curfinal),
+              extent(extent),rdim(rdim),mapbegin(begin),mag(mag)
+          {}
        };
        //frees reduceToStreamInput, input
        static void * staticReduceToStream(void * inp);
-       struct subMapInput {
+       class subMapInput:public std::vector<void*> {
+       public:
+          subMapInput(const CPUKernel *thus,
+                      const std::vector<void *> &args,
+                      unsigned int begin,
+                      unsigned int end):
+             vector<void*>(args),thus(thus),mapbegin(begin),mapend(end)
+          {}
           const CPUKernel * thus;
           unsigned int mapbegin;
           unsigned int mapend;             
