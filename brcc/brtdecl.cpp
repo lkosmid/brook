@@ -1,35 +1,3 @@
-
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-
-    CTool Library
-    Copyright (C) 1998-2001	Shaun Flisakowski
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 1, or (at your option)
-    any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-/*  o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-    o+
-    o+     File:         decl.cpp
-    o+
-    o+     Programmer:   Shaun Flisakowski
-    o+     Date:         Aug 9, 1998
-    o+
-    o+     A high-level view of declarations.
-    o+
-    o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o  */
-
 #include <cassert>
 #include <cstring>
 
@@ -43,9 +11,14 @@
 
 #include "brtdecl.h"
 
+BrtStreamType::BrtStreamType()
+  : Type(TT_BrtStream)
+{
+}
 
-BrtStreamType::BrtStreamType(const ArrayType *t) {
-  
+BrtStreamType::BrtStreamType(const ArrayType *t)
+  : Type(TT_BrtStream)
+{
   const ArrayType *p;
 
   // First find the base type of the array;
@@ -59,7 +32,6 @@ BrtStreamType::BrtStreamType(const ArrayType *t) {
   assert (p->subType->isBaseType());
 
   base = (BaseType *) p->subType->dup0();
-
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -75,8 +47,13 @@ BrtStreamType::~BrtStreamType()
 Type*
 BrtStreamType::dup0() const
 {
-  assert (0);
-  return NULL;
+  BrtStreamType *r = new BrtStreamType();
+  r->base = (BaseType *) base->dup0();
+
+  for (unsigned int i=0; i<dims.size(); i++)
+    r->dims.push_back(dims[i]->dup0());
+  
+  return r;
 }
 
 void 
@@ -86,10 +63,6 @@ BrtStreamType::printType( std::ostream& out, Symbol *name,
   out << "__BrookStream ";
   if (name) 
     out << *name;
-  
-  out << " @@@ ";
-  base->printBase (out, level);
-  out << " @@@ ";
 }
 
 void
@@ -99,6 +72,20 @@ BrtStreamType::printForm(std::ostream& out) const
     if (base)
         base->printBase(out, 0);
 }
+
+void
+BrtStreamType::printInitializer(std::ostream& out) const
+{
+  out << "__BrtCreateStream(\"";
+  base->printBase(out, 0);
+  out << "\",";
+  for (unsigned int i=0; i<dims.size(); i++) {
+    dims[i]->print(out);
+    out << ",";
+  }
+  out << "-1)";
+} 
+  
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void

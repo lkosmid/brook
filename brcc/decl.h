@@ -122,7 +122,10 @@ enum TypeType
     TT_Array,       // an array of T
     TT_Stream,      // a stream of T
     TT_BitField,    // a bitfield
-    TT_Function     // <args> -> <result>
+    TT_Function,    // <args> -> <result>
+
+    TT_BrtStream
+
 
     /*    These are now considered TT_Base
     TT_Struct,     

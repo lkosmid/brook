@@ -20,6 +20,7 @@ class BrtStreamType : public Type
 {
 public:
   BrtStreamType(const ArrayType *t);
+  BrtStreamType();
   
   ~BrtStreamType();
   
@@ -35,6 +36,8 @@ public:
 		  bool showBase, int level ) const;
 
   void printForm(std::ostream& out) const;
+
+  void printInitializer(std::ostream& out) const;
 
   void registerComponents() { }
   

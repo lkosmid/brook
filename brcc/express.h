@@ -73,6 +73,8 @@ enum ExpressionType
     ET_IndexExpr,            // x[y]...[]
 
     ET_ConstructorExpr,      // float2(x, y)
+
+    ET_BrtStreamInitializer  // __BrtCreateStream(...)
 };
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

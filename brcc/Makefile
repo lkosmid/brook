@@ -2,7 +2,7 @@
 ROOTDIR = ..
 EXECUTABLE = brcc
 FILES = context decl express parseenv project stemnt symbol token \
-	location brtdecl lexer gram main getopt
+	location brtdecl lexer gram main getopt brtexpress
 
 CPP_PATH = /usr/bin/cpp
 SLOP = lexer.cpp gram.cpp gram.output gram.h

@@ -53,6 +53,7 @@
 #include    "project.h"
 
 #include    "brtdecl.h"
+#include    "brtexpress.h"
 
 /*  ###############################################################  */
 

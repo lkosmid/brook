@@ -138,10 +138,12 @@ void ConvertToBrtStream (Statement *stemnt) {
     if (form->type != TT_Stream) continue;
     ArrayType *tarray = (ArrayType *) form;
 
-    BrtStreamType *brtStream = new BrtStreamType (tarray);
-    
+    BrtStreamType *brtStream = new BrtStreamType (tarray);    
     decl->form = brtStream;
+    assert (decl->initializer == NULL);
 
+    decl->initializer = new BrtStreamInitializer(brtStream, 
+						 stemnt->location);
   }
 }
 
