@@ -1,11 +1,36 @@
 
+
+#include "oglfunc.hpp"
+
 #ifdef WIN32
-#include <windows.h>
+
+#ifndef WGL_NV_float_buffer
+#define WGL_FLOAT_COMPONENTS_NV        0x20B0
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_R_NV 0x20B1
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RG_NV 0x20B2
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGB_NV 0x20B3
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGBA_NV 0x20B4
+#define WGL_TEXTURE_FLOAT_R_NV         0x20B5
+#define WGL_TEXTURE_FLOAT_RG_NV        0x20B6
+#define WGL_TEXTURE_FLOAT_RGB_NV       0x20B7
+#define WGL_TEXTURE_FLOAT_RGBA_NV      0x20B8
 #endif
 
-#include <GL/gl.h>
-#include "glext.h"
-#include "wglext.h"
+#ifndef WGL_NV_render_texture_rectangle
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_RGB_NV 0x20A0
+#define WGL_BIND_TO_TEXTURE_RECTANGLE_RGBA_NV 0x20A1
+#define WGL_TEXTURE_RECTANGLE_NV       0x20A2
+#endif
+
+#endif
+
+#ifndef GL_NV_float_buffer
+#define GL_FLOAT_R32_NV                   0x8885
+#define GL_FLOAT_RG32_NV                  0x8887
+#define GL_FLOAT_RGB32_NV                 0x8889
+#define GL_FLOAT_RGBA32_NV                0x888B
+#define GL_TEXTURE_FLOAT_COMPONENTS_NV    0x888C
+#endif
 
 #include "nvcontext.hpp"
 
@@ -38,6 +63,7 @@ NVTexture::NVTexture ( size_t inWidth,
 
 
 static const int nviAttribList[4][64] = {
+#ifdef WIN32
   {  WGL_FLOAT_COMPONENTS_NV,                     GL_TRUE, 
      WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_R_NV,    GL_TRUE,
      0,0},
@@ -50,10 +76,12 @@ static const int nviAttribList[4][64] = {
   {  WGL_FLOAT_COMPONENTS_NV,                     GL_TRUE, 
      WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGBA_NV, GL_TRUE,
      0,0}
+#endif
 };
 
 
 static const int nvpiAttribList[4][16] = {
+#ifdef WIN32
   {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_R_NV,
      WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
      0,0},
@@ -66,6 +94,7 @@ static const int nvpiAttribList[4][16] = {
   {  WGL_TEXTURE_FORMAT_ARB, WGL_TEXTURE_FLOAT_RGBA_NV,
      WGL_TEXTURE_TARGET_ARB, WGL_TEXTURE_RECTANGLE_NV,
      0,0}
+#endif
 };
 
 
@@ -95,8 +124,11 @@ int
 NVContext::getShaderFormatRank (const char *name) const {
   if( strcmp(name, "arb") == 0 )
       return 1;
-  if( strcmp(name, "fp40") == 0 )
-      return 2;
+  if( strcmp(name, "fp30") == 0 )
+     return 2;
+  if( supportsFP40 &&
+      strcmp(name, "fp40") == 0 )
+      return 3;
   return -1;
 }
 
@@ -122,6 +154,8 @@ NVContext::isCompatibleContext () {
   const char *ext = (const char *) glGetString(GL_EXTENSIONS);
   int p;
 
+  assert(ext);
+
   for (p = 0; *nvext[p]; p++) {
     if (!strstr(ext, nvext[p]))
       return false;
@@ -132,6 +166,7 @@ NVContext::isCompatibleContext () {
 bool
 NVContext::isVendorContext () {
   const char *vendor = (const char *) glGetString(GL_VENDOR);
+  assert (vendor);
   return strstr(vendor, "NVIDIA") != NULL;
 }
 

@@ -1,6 +1,7 @@
 // ogltexture.hpp
 
-#pragma once
+#ifndef OGLTEXTURE_HPP
+#define OGLTEXTURE_HPP
 
 #include "../gpucontext.hpp"
 
@@ -89,4 +90,7 @@ namespace brook {
   };
 
 }
+
+#endif
+
 

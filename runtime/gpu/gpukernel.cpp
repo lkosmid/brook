@@ -739,8 +739,6 @@ namespace brook
     size_t otherExtent = ioState.currentExtents[1-dim];
 
     TextureHandle slopBuffer = ioState.slopBuffer;
-    size_t slopWidth = ioState.slopBufferWidth;
-    size_t slopHeight = ioState.slopBufferHeight;
     TextureHandle inputBuffer = ioState.reductionBuffers[ioState.whichBuffer];
 
     // TIM: we are using the destination buffer both as an input and an output

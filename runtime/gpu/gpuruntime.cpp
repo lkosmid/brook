@@ -100,3 +100,4 @@ namespace brook
     return _reductionTargetBuffer;
   }
 }
+

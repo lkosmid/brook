@@ -30,7 +30,7 @@ bool OGLRuntime::initialize(void)
               "Hardware cannot be both ATI and NV\n");
   }
   if (!isNV && !isATI)
-    return NULL;
+    return false;
 
   delete wnd;
 

@@ -40,7 +40,7 @@ compile_fxc (const char *name,
   static const int kInputFileArgument = 5;
   static const int kOutputFileArgument = 4;
   char validate[]="/Vd";
-  char software[]="/Tps_2_sw";
+  //char software[]="/Tps_2_sw";
   char hardware[]="/Tps_2_0";
   char ps2b[]="/Tps_2_b";
   char ps30_targetstring[]="/Tps_3_0";
@@ -90,12 +90,30 @@ compile_fxc (const char *name,
 
   if (errcode == NULL) {
     fprintf(stderr, "%s resulted in an error,"
-            "skipping ps20 / dx9 target ", argv[0]);
-    
-     remove(argv[kOutputFileArgument]+3);
-     free(argv[kOutputFileArgument]);
-     free(argv[kInputFileArgument]);
-     return NULL;
+            "skipping ", argv[0]);
+
+    switch (target) {
+    case CODEGEN_PS2B:
+       fprintf(stderr, "PS2B target.");
+       break;
+    case CODEGEN_PS20:
+       fprintf(stderr, "PS20 target.");
+       break;
+    case CODEGEN_ARB:
+       fprintf(stderr, "ARB target.");
+       break;
+    case CODEGEN_PS30:
+       fprintf(stderr, "PS30 target.");
+       break;
+    default:
+       break;
+    }   
+    fprintf(stderr, "\n");
+
+    remove(argv[kOutputFileArgument]+3);
+    free(argv[kOutputFileArgument]);
+    free(argv[kInputFileArgument]);
+    return NULL;
   }
 
   if (globals.verbose)

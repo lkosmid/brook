@@ -115,6 +115,7 @@ void
 CodeGen_Init(void) {
    switch (globals.favorcompiler) {
    case COMPILER_DEFAULT:
+#ifdef WIN32
       shadercompile[CODEGEN_PS20] = compile_fxc;
       shadercompile[CODEGEN_PS2B] = compile_fxc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
@@ -122,6 +123,7 @@ CodeGen_Init(void) {
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
       break;
+#endif
    case COMPILER_CGC:
       shadercompile[CODEGEN_PS20] = compile_cgc;
       shadercompile[CODEGEN_PS2B] = compile_cgc;
@@ -1547,8 +1549,8 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
   char* fpcode_with_brccinfo;
   char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor, outPass );
   if (shadercode) {
-    if (globals.verbose)
-      std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
+     //if (globals.verbose)
+     // std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
 
     if (globals.keepFiles) {
       std::ofstream out;
@@ -1583,8 +1585,8 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
   }
   
   if (fpcode) {
-     if (globals.verbose)
-        std::cerr << "***Produced this assembly:\n" << fpcode << "\n";
+     // if (globals.verbose)
+     //   std::cerr << "***Produced this assembly:\n" << fpcode << "\n";
      
      const char* commentString = "##";
      switch(target)
@@ -1592,8 +1594,10 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
      case CODEGEN_PS20:
      case CODEGEN_PS2B:
      case CODEGEN_PS30:
-         commentString = "//";
-         break;
+       commentString = "//";
+       break;
+     default:
+       break;
      }
 
      // TIM: the argument-info string is obsolete, and should go
@@ -1603,9 +1607,9 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
                                    fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
     free(fpcode);
 
-    if (globals.verbose)
-      std::cerr << "***Produced this instrumented assembly:\n"
-      << fpcode_with_brccinfo << "\n";
+    // if (globals.verbose)
+    //  std::cerr << "***Produced this instrumented assembly:\n"
+    //  << fpcode_with_brccinfo << "\n";
   } else {
     fpcode_with_brccinfo = NULL;
   }
@@ -1733,8 +1737,8 @@ CodeGen_GenerateCode(Type *retType, const char *name,
   char* c_code = generate_c_code(techniques, name,
                                  CodeGen_TargetName(target));
 
-  if (globals.verbose)
-    std::cerr << "***Produced this C code:\n" << c_code;
+  // if (globals.verbose)
+  //  std::cerr << "***Produced this C code:\n" << c_code;
 
   return c_code;
 }
@@ -1754,17 +1758,22 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
   switch( target )
   {
   case CODEGEN_PS20:
-  case CODEGEN_PS2B:{
+  case CODEGEN_PS2B:
+  case CODEGEN_PS30: {
     std::auto_ptr<SplitCompiler> tmp( new SplitCompilerHLSL() );
     compiler = tmp;
     break;
    }
   case CODEGEN_FP30:
+  case CODEGEN_FP40:
   case CODEGEN_ARB:{
     std::auto_ptr<SplitCompiler> tmp( new SplitCompilerCg( target ) );
     compiler = tmp;
     break;
    }
+  default:
+    assert(0);
+    break;
   }
 
   SplitTree splitTree( inFunctionDef, *compiler );

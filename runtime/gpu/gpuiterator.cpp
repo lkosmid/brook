@@ -21,7 +21,7 @@ GPUIterator* GPUIterator::create( GPURuntime* inRuntime, __BRTStreamType inEleme
 }
 
 GPUIterator::GPUIterator( GPURuntime* inRuntime, __BRTStreamType inElementType )
-  : Iter(inElementType), _cpuBuffer(NULL), _context(inRuntime->getContext())
+  : Iter(inElementType), _context(inRuntime->getContext()), _cpuBuffer(NULL) 
 {
 }
 

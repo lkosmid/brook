@@ -1,18 +1,30 @@
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#include <GL/gl.h>
-
 #include "aticontext.hpp"
 
-#include "wglATI.h"
-//#include "glATI.h"
+#include "oglfunc.hpp"
 
-#include "glext.h"
-#include "wglext.h"
+#ifdef WIN32
 
+#ifndef WGL_ATI_pixel_format_float
+#define WGL_TYPE_RGBA_FLOAT_ATI             0x21A0
+#define GL_TYPE_RGBA_FLOAT_ATI              0x8820
+#endif
+
+#ifndef WGL_ARB_pixel_format
+#define WGL_PIXEL_TYPE_ARB             0x2013
+#endif
+
+#endif
+
+
+#ifndef GL_ATI_texture_float
+#define GL_RGBA_FLOAT32_ATI               0x8814
+#define GL_RGB_FLOAT32_ATI                0x8815
+#define GL_ALPHA_FLOAT32_ATI              0x8816
+#define GL_INTENSITY_FLOAT32_ATI          0x8817
+#define GL_LUMINANCE_FLOAT32_ATI          0x8818
+#define GL_LUMINANCE_ALPHA_FLOAT32_ATI    0x8819
+#endif
 
 using namespace brook;
 
@@ -41,10 +53,12 @@ ATITexture::ATITexture ( size_t inWidth,
 }
 
 static const int atiiAttribList[4][64] = {
+#ifdef WIN32
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 },
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 },
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 },
   { WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_FLOAT_ATI, 0, 0 }
+#endif
 };
 
 

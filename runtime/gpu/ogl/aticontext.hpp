@@ -1,6 +1,7 @@
 // aticontext.hpp
 
-#pragma once
+#ifndef ATICONTEXT_HPP
+#define ATICONTEXT_HPP
 
 #include "oglcontext.hpp"
 #include "ogltexture.hpp"
@@ -46,4 +47,6 @@ namespace brook {
     ATIContext();
   };
 }
+
+#endif
 

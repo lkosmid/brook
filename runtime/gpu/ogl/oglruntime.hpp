@@ -5,7 +5,6 @@
 #include "../gpuruntime.hpp"
 
 #define ARB_RUNTIME_STRING "arb"
-#define NV30GL_RUNTIME_STRING "nv30gl"
 
 namespace brook
 {

@@ -49,9 +49,10 @@ compile_cgc (const char * /*name*/,
   char fp40[]="fp40";
   char ps20[]="ps_2_0";
   char ps2b[]="ps_2_x";
-  char ps2b_opt[] = "-profileopts NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
-  char userect[]="-DUSERECT=1";
-  char maxindirections[]="-profileopts MaxTexIndirections=4";
+  char profileopts[] = "-profileopts";
+  char ps2b_opt[] = "NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
+  char userect[] ="-DUSERECT=1";
+  char maxindirections[]="MaxTexIndirections=4";
 
   switch (target) {
   case CODEGEN_PS20:
@@ -59,7 +60,8 @@ compile_cgc (const char * /*name*/,
      break;
   case CODEGEN_PS2B:
      argv[4] = ps2b;
-     argv[5] = ps2b_opt;
+     argv[5] = profileopts;
+     argv[6] = ps2b_opt;
      break;
   case CODEGEN_FP30:
      argv[4] = fp30;
@@ -72,7 +74,8 @@ compile_cgc (const char * /*name*/,
   case CODEGEN_ARB:
      argv[4] = arbfp;
      argv[5] = userect;
-     argv[6] = maxindirections;
+     argv[6] = profileopts;
+     argv[7] = maxindirections;
      break;
   default: 
      fprintf(stderr, "Unsupported Cgc target.\n");
@@ -85,8 +88,28 @@ compile_cgc (const char * /*name*/,
   free( tempCode );
 
   if (fpcode == NULL) {
-     fprintf(stderr, "%s resulted in an error, skipping fp30 / nv30gl target ",
+     fprintf(stderr, "%s resulted in an error, skipping ",
              argv[0]);
+
+    switch (target) {
+    case CODEGEN_PS2B:
+       fprintf(stderr, "PS2B target.");
+       break;
+    case CODEGEN_PS20:
+       fprintf(stderr, "PS20 target.");
+       break;
+    case CODEGEN_ARB:
+       fprintf(stderr, "ARB target.");
+       break;
+    case CODEGEN_PS30:
+       fprintf(stderr, "PS30 target.");
+       break;
+    default:
+       break;
+    }   
+    fprintf(stderr, "\n");
+
+
      return NULL;
   }
 

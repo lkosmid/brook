@@ -1,12 +1,5 @@
 
-
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#include <GL/gl.h>
-#include "glext.h"
-
+#include "oglfunc.hpp"
 #include "oglcontext.hpp"
 #include "oglwindow.hpp"
 
@@ -33,9 +26,10 @@ OGLContext::init (const int   (*viAttribList)[4][64],
 
 
 OGLContext::OGLContext():
-  wnd(NULL), _passthroughVertexShader(0),
+  _passthroughVertexShader(0),
   _passthroughPixelShader(0), _outputTexture(NULL),
-  _slopTextureUnit(0), currentPbufferComponents(-1)
+  _slopTextureUnit(0), currentPbufferComponents(-1), 
+  wnd(NULL)
 {}
 
 

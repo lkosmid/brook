@@ -10,6 +10,7 @@ LIBRARIES := cpu gpu ogl gpu-dx9
 else 
 ifeq ($(OS), Linux)
 SUBDIRS :=  cpu gpu
+LIBRARIES := cpu gpu ogl
 else
 SUBDIRS := cpu
 endif

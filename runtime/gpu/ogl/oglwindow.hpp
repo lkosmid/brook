@@ -1,14 +1,13 @@
 // oglwindow.hpp
-
-#pragma once
+#ifndef OGLWINDOW_HPP
+#define OGLWINDOW_HPP
 
 #ifdef WIN32
 #include <windows.h>
-#include <GL/gl.h>
-#include "wglext.h"
+#else
+#include <X11/Xlib.h>
+#include <GL/glx.h>
 #endif
-
-
 
 namespace brook {
   
@@ -33,11 +32,28 @@ namespace brook {
     HWND hwnd;
     HDC hwindowdc;
     HDC hpbufferdc;
+#else
+
+     Display   *pDisplay;
+     int iScreen;
+     Window     glxWindow;
+     Colormap cmap;
+     XVisualInfo *visual;
+
+     GLXFBConfig *glxConfig[4];
+     GLXPbuffer  glxPbuffer;
+     GLXContext  glxContext;
 #endif
     
     int pixelformat[4];
     int piAttribList[4][16];
     unsigned int currentPbufferComponents;
+
+
   };
 
 }
+
+
+#endif
+

@@ -1,6 +1,7 @@
 // nvcontext.hpp
 
-#pragma once
+#ifndef NVCONTEXT_H
+#define NVCONTEXT_H
 
 #include "oglcontext.hpp"
 #include "ogltexture.hpp"
@@ -47,4 +48,6 @@ namespace brook {
     bool supportsFP40;
   };
 }
+
+#endif
 

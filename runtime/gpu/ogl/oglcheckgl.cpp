@@ -6,14 +6,8 @@
 #include <iomanip>
 #include <assert.h>
 
-
 #include "oglcheckgl.hpp"
-
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#include <GL/gl.h>
+#include "oglfunc.hpp"
 
 static const unsigned int nglErrors = 6;
 

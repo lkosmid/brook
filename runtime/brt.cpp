@@ -8,30 +8,12 @@
 #include <math.h>
 #include <float.h>
 
-#define USE_GPU
-
 #ifdef BUILD_DX9
-#ifdef USE_GPU
 #include "gpu/dx9/dx9runtime.hpp"
-#else
-#include "dx9/dx9.hpp"
-#endif
-#endif
-
-#ifdef BUILD_NV30GL
-#ifdef USE_GPU
-#include "gpu/ogl/oglruntime.hpp"
-#else
-#include "nv30gl/nv30gl.hpp"
-#endif
 #endif
 
 #ifdef BUILD_ARB
-#ifdef USE_GPU
 #include "gpu/ogl/oglruntime.hpp"
-#else
-#include "nv30gl/arb.hpp"
-#endif
 #endif
 
 #include "cpu/cpu.hpp"
@@ -134,11 +116,7 @@ namespace brook {
 #ifdef BUILD_DX9
     if (!strcmp(env, DX9_RUNTIME_STRING))
     {
-#ifdef USE_GPU
       RunTime* result = GPURuntimeDX9::create();
-#else
-      RunTime* result = DX9RunTime::create( addressTranslation, inContextValue );
-#endif
       if( result )
         return result;
 
@@ -148,29 +126,9 @@ namespace brook {
     }
 #endif
 
-#ifdef BUILD_NV30GL
-    if (!strcmp(env, NV30GL_RUNTIME_STRING)) {
-#ifdef USE_GPU
-      RunTime* result = OGLRuntime::create();
-#else
-      RunTime* result = new NV30GLRunTime();
-#endif
-      if( result )
-        return result;
-
-      fprintf(stderr, 
-	      "Unable to initialize NV30GL runtime, falling back to CPU\n");
-      return new CPURunTime(false);
-    }
-#endif
-
 #ifdef BUILD_ARB
     if (!strcmp(env, ARB_RUNTIME_STRING)) {
-#ifdef USE_GPU
       RunTime* result = OGLRuntime::create();
-#else
-      RunTime* result = new ARBRunTime();
-#endif
       if( result )
         return result;
 

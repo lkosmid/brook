@@ -1,5 +1,6 @@
 
-#pragma once
+#ifndef OGLCHECKGL_HPP
+#define OGLCHECKGL_HPP
 
 namespace brook {
 
@@ -8,3 +9,7 @@ namespace brook {
   void __check_gl(int line, char *file);
 
 }
+
+
+#endif
+

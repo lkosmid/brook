@@ -60,14 +60,19 @@ namespace brook {
             unsigned int inOutputHeight,
             GPUInterpolant &outInterpolant );
 
-    private:
         ~GPUStreamData();
+
+    private:
 
         class Field
         {
         public:
-            Field( __BRTStreamType inElementType, int inComponentCount, TextureHandle inTexture )
-                : elementType(inElementType), componentCount(inComponentCount), texture(inTexture)
+            Field( __BRTStreamType inElementType, 
+                   int inComponentCount, 
+                   TextureHandle inTexture )
+                : elementType(inElementType), 
+                  componentCount(inComponentCount), 
+                  texture(inTexture)
             {}
 
             __BRTStreamType elementType;
@@ -90,10 +95,10 @@ namespace brook {
         GPUInterpolant _defaultInterpolant;
         GPURegion _outputRegion;
 
-        size_t _cpuDataSize;
-        void* _cpuData;
-
         unsigned int _referenceCount;
+        void* _cpuData;
+        size_t _cpuDataSize;
+
     };
 
     class GPUStream :

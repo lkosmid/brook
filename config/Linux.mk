@@ -13,7 +13,7 @@ BINSUFFIX        :=
 
 SYSTEM_LIBS      := 
 
-CFLAGS           += -DBUILD_NV30GL -DBUILD_ARB
+CFLAGS           += -DBUILD_ARB
 C_INCLUDE_FLAG   := -I  
 C_DEBUG_FLAG     := -g3 -Wall 
 C_RELEASE_FLAG   := -O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -frerun-loop-opt 
@@ -33,6 +33,6 @@ LIBRARIES        +=
 ARFLAGS		 := -rc 
 AR_OUTPUT_FLAG	 := 
 
-RUNTIME_LIBS     := brook cpu nv30gl X11 Xmu Xt GL GLU
+RUNTIME_LIBS     := brook ogl cpu gpu X11 Xmu Xt GL GLU
 
 RANLIB           := ranlib

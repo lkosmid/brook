@@ -4,24 +4,35 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#include <GL/gl.h>
-#include "glext.h"
-#include "wglext.h"
-
-#include "oglwindow.hpp"
-#include "oglfunc.hpp"
 #include "../gpucontext.hpp"
+
+#include "oglfunc.hpp"
+#include "oglwindow.hpp"
 
 using namespace brook;
 
 static const char window_name[] = "Brook GL Render Window";
 
-
 #ifdef WIN32
+
+#ifndef WGL_ARB_pixel_format
+#define WGL_ACCELERATION_ARB           0x2003
+#define WGL_SUPPORT_OPENGL_ARB         0x2010
+#define WGL_DOUBLE_BUFFER_ARB          0x2011
+#define WGL_COLOR_BITS_ARB             0x2014
+#define WGL_RED_BITS_ARB               0x2015
+#define WGL_GREEN_BITS_ARB             0x2017
+#define WGL_BLUE_BITS_ARB              0x2019
+#define WGL_DEPTH_BITS_ARB             0x2022
+#define WGL_ALPHA_BITS_ARB             0x201B
+#define WGL_STENCIL_BITS_ARB           0x2023
+#define WGL_AUX_BUFFERS_ARB            0x2024
+#define WGL_FULL_ACCELERATION_ARB      0x2027
+#endif
+
+#ifndef WGL_ARB_pbuffer
+#define WGL_DRAW_TO_PBUFFER_ARB        0x202D
+#endif
 
 #define CRGBA(c,r,g,b,a) \
   WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE, \
@@ -277,8 +288,8 @@ appendVendorAttribs( int   iAttribList[4][64],
 
 void 
 OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
-                         const float (*vfAttribList)[4][16],
-                         const int   (*vpiAttribList)[4][16]) {
+                        const float (*vfAttribList)[4][16],
+                        const int   (*vpiAttribList)[4][16]) {
 
   int   (*iAttribList)[64]  = (int   (*)[64]) malloc (sizeof(baseiAttribList));
   float (*fAttribList)[16]  = (float (*)[16]) malloc (sizeof(basefAttribList));
@@ -389,17 +400,233 @@ OGLWindow::bindPbuffer(unsigned int numComponents) {
 
 #else
 
-void
-OGLWindow::initPbuffer() {
-  GPUError("Yet to be implemented");
+/* Linux version */
+
+#include <X11/Xlib.h>
+#include <GL/gl.h>
+#include <GL/glx.h>
+#define GLX_FLOAT_COMPONENTS_NV         0x20B0
+
+OGLWindow::OGLWindow() {
+#if 0
+  int attrib[] = { GLX_RGBA, None };
+  XSetWindowAttributes swa;
+
+  pDisplay = XOpenDisplay(NULL);
+
+  if (pDisplay == NULL) {
+    fprintf (stderr, "Could not connect to X Server.\n");
+    exit(1);
+  }
+    
+  iScreen  = DefaultScreen(pDisplay);
+
+  visual = glXChooseVisual(pDisplay, iScreen, attrib);
+  if (visual == NULL) {
+    fprintf (stderr, "Could not create window visual.\n");
+    exit(1);
+  }
+
+  glxContext = glXCreateContext(pDisplay, 
+                                visual, 
+                                0, true);  
+  
+  if (glxContext == NULL) {
+    fprintf (stderr, "Could not create GL Context.\n");
+    exit(1);
+  }
+
+  cmap = XCreateColormap (pDisplay, 
+                          RootWindow(pDisplay, iScreen),
+                          visual->visual, AllocNone);
+
+  swa.border_pixel = 0;
+  swa.colormap = cmap;
+
+  glxWindow = XCreateWindow(pDisplay,
+                            RootWindow(pDisplay, iScreen),
+                            0, 0, 1, 1, 0, visual->depth, InputOutput,
+                            visual->visual, CWBorderPixel | CWColormap,
+                            &swa);
+
+
+  fprintf (stderr, "OGLWindow: glXMakeCurrent\n");
+  if (!glXMakeCurrent(pDisplay, glxWindow, glxContext)) {
+    fprintf (stderr, "OGLWindow: Could not make current.\n");
+    exit(1);
+  }
+
+  glFinish();
+
+#endif
+
+  initPbuffer(NULL, NULL, NULL);
+  
 }
 
 
 void
-OGLWindow::bindPbuffer(int ncomponents)
+OGLWindow::initPbuffer(const int   (*/*unused*/)[4][64],
+                       const float (*/*unused*/)[4][16],
+                       const int   (*/*unused*/)[4][16]) {
+  int iConfigCount;   
+  int i;
+
+  static const int pbAttribList[] =
+    {
+      GLX_PRESERVED_CONTENTS, true,
+      GLX_PBUFFER_WIDTH, 2048,
+      GLX_PBUFFER_HEIGHT, 2048,
+      0
+    };
+
+  static bool initialized = false;
+
+  // Sadly everything is static
+  if (initialized)
+     return;
+
+  pDisplay = XOpenDisplay(NULL);
+
+  if (pDisplay == NULL) {
+    fprintf (stderr, "Could not connect to X Server.\n");
+    exit(1);
+  }
+    
+  iScreen  = DefaultScreen(pDisplay);
+
+  for (i=0; i<4; i++) {
+    int pfAttribList[] = 
+      {
+        GLX_RED_SIZE,               32,
+        GLX_GREEN_SIZE,             (i>0)?32:0,
+        GLX_BLUE_SIZE,              (i>1)?32:0,
+        GLX_ALPHA_SIZE,             (i>2)?32:0,
+        GLX_STENCIL_SIZE,           0,
+        GLX_DEPTH_SIZE,             0,
+        GLX_FLOAT_COMPONENTS_NV,    1,
+        GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT,
+        0,
+      };
+
+    glxConfig[i] = glXChooseFBConfig(pDisplay, 
+                                     iScreen, 
+                                     pfAttribList, 
+                                     &iConfigCount);
+    
+    if (iConfigCount == 0) {
+      fprintf (stderr, "OGL Window: No floating point pbuffer "
+               "format found for float%d.\n", i+1);
+      exit(1);
+    }
+
+    if (!glxConfig[i] || !glxConfig[i][0]) {
+      fprintf(stderr, "OGL Window:  glXChooseFBConfig() failed\n");
+      exit(1);
+    }   
+
+  }
+  
+  glxPbuffer = glXCreatePbuffer(pDisplay, 
+				glxConfig[3][0], 
+				pbAttribList);
+  
+  if (!glxPbuffer) {
+    fprintf(stderr, "OGL Window: glXCreatePbuffer() failed\n");
+    exit(1);
+  }
+  
+  // Default to the 4 component
+  glxContext = glXCreateNewContext(pDisplay, 
+                                   glxConfig[3][0], 
+                                   GLX_RGBA_TYPE, 
+                                   0, true);
+  if (!glxConfig) {
+    fprintf(stderr, "OGL Window: glXCreateContextWithConfig() failed\n");
+    exit (1);
+  }
+     
+  fprintf (stderr, "initPbuffer: glXMakeCurrent\n");
+
+  if (!glXMakeCurrent(pDisplay, glxPbuffer, glxContext)) {
+    fprintf (stderr, "initPbuffer: glXMakeCurrent Failed\n");
+    exit(1);
+  }
+  
+  glFinish();
+
+  currentPbufferComponents = 4;
+  initialized = true;
+  
+}
+
+
+void
+OGLWindow::bindPbuffer(unsigned int ncomponents)
 {
-  GPUError("Yet to be implemented");
+
+  /* Sadly, Linux doesn't seem to like rebinding a
+  ** context to a different format pbuffer.  So 
+  ** we just run everything in a float4 pbuffer.
+  */
+
+#if 0
+  static const int pbAttribList[] =
+    {
+      GLX_PRESERVED_CONTENTS, true,
+      GLX_PBUFFER_WIDTH, 2048,
+      GLX_PBUFFER_HEIGHT, 2048,
+      0
+    };
+
+  if (currentPbufferComponents == ncomponents) 
+    return;
+
+  assert (ncomponents > 0 &&
+          ncomponents <= 4);
+
+  fprintf (stderr, "bindPbuffer: glXMakeCurrent None\n");
+  glXMakeCurrent(pDisplay, None, NULL);
+  glXDestroyPbuffer(pDisplay, glxPbuffer);
+
+  glxPbuffer = glXCreatePbuffer(pDisplay, 
+				glxConfig[ncomponents-1][0], 
+				pbAttribList);
+  
+  if (glxPbuffer == 0) {
+    fprintf (stderr, "Error: Could not create float%d pbuffer.\n",
+             ncomponents);
+  }
+
+  fprintf (stderr, "bindPbuffer: glXMakeCurrent\n");
+
+  if (!glXMakeCurrent(pDisplay, glxPbuffer, glxContext)) {
+    fprintf (stderr, "bindPbuffer: glXMakeCurrent Failed\n");
+    exit(1);
+  }
+
+  glFinish();
+
+  currentPbufferComponents = ncomponents;
+#endif
+
 }
+
+OGLWindow::~OGLWindow() 
+{
+#if 0
+  fprintf (stderr, "OGLWindow::~OGLWindow\n");
+
+  glXDestroyContext(pDisplay, glxContext);
+  if (glxPbuffer)
+    glXDestroyPbuffer(pDisplay, glxPbuffer);
+  XDestroyWindow(pDisplay, glxWindow);
+  XFreeColormap(pDisplay, cmap);
+  XFree(visual);
+  XCloseDisplay(pDisplay);
+#endif
+}
+
 
 #endif
 

@@ -1,13 +1,6 @@
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#include <GL/gl.h>
-#include "glext.h"
-
-#include "oglcontext.hpp"
 #include "oglfunc.hpp"
+#include "oglcontext.hpp"
 #include "oglcheckgl.hpp"
 #include "ogltexture.hpp"
 #include "oglwindow.hpp"
@@ -64,6 +57,10 @@ OGLContext::createPixelShader( const char* shader )
 {
   unsigned int id;
 
+
+  glFinish();
+  fprintf (stderr, "createPixelShader.\n");
+  
   // Allocate ids
   glGenProgramsARB(1, &id);
   glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, id);
@@ -107,6 +104,9 @@ OGLContext::createPixelShader( const char* shader )
     assert(0);
     exit(1);
   }
+
+  glFinish();
+  fprintf (stderr, "done createPixelShader.\n");
 
   return (GPUContext::PixelShaderHandle) id;
 }
@@ -337,7 +337,6 @@ OGLContext::getStreamOutputRegion( const TextureHandle texture,
                                    const unsigned int* domainMax,
                                    GPURegion &region) const
 {
-  OGLTexture* oglTexture = (OGLTexture*) texture;
   unsigned int minX, minY, maxX, maxY;
   if( rank == 1 )
   {
@@ -416,8 +415,14 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
 
   w = _outputTexture->width();
   h = _outputTexture->height();
+  glFinish();
+
+  fprintf (stderr, "bindPbuffer\n");
 
   wnd->bindPbuffer(_outputTexture->components());
+  glFinish();
+
+  fprintf (stderr, "drawRectangle\n");
   
   /*
    * We execute our kernel by using it to texture a triangle that
@@ -452,11 +457,18 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
             << ", " << outputRegion.vertices[v].y;
   }
   glEnd();
+  glFinish();
   CHECK_GL();
+
+  fprintf (stderr, "Copy data from pbuffer\n");
 
   /* Copy the output to the texture */
   glActiveTextureARB(GL_TEXTURE0+_slopTextureUnit);
   glBindTexture(GL_TEXTURE_RECTANGLE_NV, _outputTexture->id());
+
+  fprintf (stderr, "glCopyTexSubImage2D\n");
   glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, minX, minY, minX, minY, width, height);
   CHECK_GL();
+
+  fprintf (stderr, "Complete drawRectangle\n");
 }
