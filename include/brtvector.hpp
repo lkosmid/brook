@@ -100,6 +100,71 @@ template <> class LCM<int,char> {public:
 template <> class LCM<char,char> {public:
     typedef char type;
 };
+template <> class LCM<float,char> {public:
+    typedef float type;
+};
+template <> class LCM<char,float> {public:
+    typedef float type;
+};
+
+
+template <> class LCM<vec<int,1>,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,vec<int,1> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<int,1>,float> {public:
+    typedef float type;
+};
+template <> class LCM<int,vec<float,1> > {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<int,1> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,1>,int > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,1>,float> {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<float,1> > {public:
+    typedef float type;
+};
+
+template <> class LCM<char,vec<int,1> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<char,1>,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,vec<char,1> > {public:
+    typedef int type;
+};
+template <> class LCM<vec<int,1>,char> {public:
+    typedef int type;
+};
+template <> class LCM<char,vec<char,1> > {public:
+    typedef char type;
+};
+template <> class LCM<vec<char,1>,char> {public:
+    typedef char type;
+};
+template <> class LCM<float,vec<char,1> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,1>,char> {public:
+    typedef float type;
+};
+template <> class LCM<vec<char,1>,float> {public:
+    typedef float type;
+};
+template <> class LCM<char,vec<float,1> > {public:
+    typedef float type;
+};
+
+
 
 
 template <class A, class B> class COMMON_CHAR {
@@ -129,6 +194,71 @@ template <> class COMMON_CHAR<int,char> {public:
 template <> class COMMON_CHAR<char,char> {public:
     typedef char type;
 };
+template <> class COMMON_CHAR<float,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,float> {public:
+    typedef char type;
+};
+
+
+
+template <> class COMMON_CHAR<vec<int,1>,int> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<int,1> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,1>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<float,1> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<int,1> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,1>,int > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,1>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<float,1> > {public:
+    typedef char type;
+};
+
+template <> class COMMON_CHAR<char,vec<int,1> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,1>,int> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<int,vec<char,1> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<int,1>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,vec<char,1> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,1>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<float,vec<char,1> > {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<float,1>,char> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<vec<char,1>,float> {public:
+    typedef char type;
+};
+template <> class COMMON_CHAR<char,vec<float,1> > {public:
+    typedef char type;
+};
+
 
 template <class T> class GetValueOf {public:
     typedef typename T::TYPE type;
@@ -321,7 +451,7 @@ public:
       //for (unsigned int i=0;i<size;++i) 
       //      f[i]=VALUE();
     }
-#define TEMPLATIZED_FUNCTIONS
+#define GENERAL_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE> 
       vec (const BRT_TYPE &inx, 
 	   const BRT_TYPE &iny, 
@@ -337,7 +467,7 @@ public:
 				   const BRT_TYPE& inz) {
         f[0]=inx;if(size>1)f[1]=iny;if(size>2)f[2]=inz;if(size>3)f[3]=VALUE();
     }
-    template <class BRT_TYPE>vec (const BRT_TYPE& inx, const BRT_TYPE& iny) {
+    template <class BRT_TYPE> vec (const BRT_TYPE& inx, const BRT_TYPE& iny) {
         f[0]=inx;
         if (size>1) f[1]=iny;
         if (size>2) f[2]=VALUE();
@@ -364,6 +494,8 @@ public:
     ASSIGN_OP(*=);
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
+#undef GENERAL_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE>
       vec<VALUE,4> mask4 (const BRT_TYPE&in,MASKS X, MASKS Y,MASKS Z,MASKS W) {
         if (tsize>X)f[X]=in.getAt(0);
@@ -402,6 +534,8 @@ public:
              singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
              singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
     }
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+#define OPERATOR_TEMPLATIZED_FUNCTIONS
 #if defined (_MSC_VER) && (_MSC_VER <= 1200)
 #define TEMPL_TYPESIZE sizeof(BRT_TYPE)/sizeof(BRT_TYPE::TYPE)
 #else
@@ -430,9 +564,10 @@ public:
     BROOK_BINARY_OP(<=,COMMON_CHAR)
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
-    BROOK_BINARY_OP(==,COMMON_CHAR)            
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
-#undef TEMPLATIZED_FUNCTIONS
+#undef OPERATOR_TEMPLATIZED_FUNCTIONS
 };
 
 
