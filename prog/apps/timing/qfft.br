@@ -2,7 +2,7 @@
 #include "main.h"
 #include "wfft.h"
 extern int debug_fft;
-int split_bit_reverse=1;
+int split_bit_reverse=0;
 int do_untangle=0;
 extern float2 * data;
 /*
