@@ -145,11 +145,6 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
      //now we have to convert gathers that are passed into functions
      FunctionCall * fc = static_cast<FunctionCall*>(expr);
      if (fc->function->etype==ET_Variable) {
-#ifdef ONLY_RETURN_SEMANTICS
-        static std::set <FunctionCall *> used;
-        if (used.find(fc)!=used.end())
-           return expr;
-#endif
         Variable * function = static_cast<Variable*>(fc->function);
         if (function->name->entry&&function->name->entry->uVarDecl) {
            if (function->name->entry->uVarDecl->isKernel()&&
@@ -195,44 +190,9 @@ BRTPS20KernelCode::ConvertGathers (Expression *expr) {
                           ++i;
                           fc->args.insert(fc->args.begin()+i,NewGatherArg(v));
                        }
-#ifdef ONLY_RETURN_SEMANTICS
-                       else if ((v->name->entry->
-                                  uVarDecl->form->getQualifiers()&TQ_Out)!=0) {
-                          fc->args.erase(fc->args.begin()+i);
-                          i--;
-                       }
-#endif
                     }
                  }
               }
-#ifdef ONLY_RETURN_SEMANTICS
-              assert (function->name->entry->uVarDecl->form->type==
-                      TT_Function);
-              FunctionType * ft = static_cast<FunctionType*>
-                 (function->name->entry->uVarDecl->form);
-              std::vector <Decl *>outputs;
-              for (i=0;i<ft->nArgs;++i) {
-                 if ((ft->args[i]->form->getQualifiers()&TQ_Out)!=0) {
-                    outputs.push_back(ft->args[i]);
-                 }
-              }
-              for (i=0;i<outputs.size();++i) {
-                 Expression * tmp=fc->dup();
-                 used.insert(static_cast<FunctionCall*>(tmp));
-                 static_cast<Variable *>(static_cast<FunctionCall*>
-                                         (tmp)->function)->name->name+=
-                    "__"+outputs[i]->name->name;
-                 tmp = new AssignExpr(AO_Equal,
-                                      new Variable(outputs[i]->name->dup(),
-                                                   fc->location),
-                                      tmp,
-                                      fc->location);
-                 if (i!=0)
-                    expr = new BinaryExpr(BO_Comma,tmp,expr,fc->location);
-                 else
-                    expr=tmp;                 
-              }
-#endif
            }
         }
      }
