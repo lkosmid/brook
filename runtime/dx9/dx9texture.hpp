@@ -29,6 +29,9 @@ namespace brook {
       int axisInterlace, int otherInterlace, int axis );
     DX9Rect getReductionSurfaceSubRect( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int axis );
 
+    DX9Rect getReductionTextureRect( int axisMin, int axisMax, int otherMin, int otherMax, int axis );
+    DX9Rect getReductionSurfaceRect( int axisMin, int axisMax, int otherMin, int otherMax, int axis );
+
     LPDIRECT3DTEXTURE9 getTextureHandle() {
       return textureHandle;
     }

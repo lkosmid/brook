@@ -51,19 +51,52 @@ namespace brook {
 
     void ReduceToStream( DX9Texture* inOutputBuffer );
 
-    void ReduceDimension( int& ioReductionBufferSide,
-      int inReductionTex0, int inReductionTex1,
-      int inDimensionCount, int inDimensionToReduce,
-      int inExtentToReduceTo, int* ioRemainingExtents );
+    class ReductionState
+    {
+    public:
+      DX9Texture* inputTexture; // the texture we are reducing from
+      DX9Texture* outputTexture; // the texture we are reducing to
 
-    void BindReductionBaseState();
-    void CopyStreamIntoReductionBuffer( DX9Stream* inStream );
-    void BindReductionPassthroughState();
-    void BindReductionOperationState();
+      int whichBuffer; // -1 for inputTexture, 0,1 for reductionBuffers
+      DX9Texture* reductionBuffers[2];
+      DX9Texture* slopBuffer;
 
-    void DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int dim );
-    void DumpReduceDimensionState( int currentSide, int outputExtent,
-      int remainingExtent, int remainingOtherExtent, int slopBufferCount, int dim );
+      int leftTextureUnit;
+      int rightTextureUnit;
+
+      int leftSampler;
+      int rightSampler;
+
+      int currentDimension; // 0 for X, 1 for Y
+
+      // the sizes of the various buffers
+      int targetExtents[2];
+      int inputExtents[2];
+      int currentExtents[2];
+      int slopCount;
+    };
+
+    void bindReductionPassShader( int inFactor );
+    void beginReduction( ReductionState& ioState );
+    void executeReductionStep( ReductionState& ioState );
+    void executeSlopStep( ReductionState& ioState );
+    void endReduction( ReductionState& ioState );
+    void dumpReductionState( ReductionState& ioState );
+    void dumpReductionBuffer( DX9Texture* inBuffer, int inWidth, int inHeight );
+
+//    void ReduceDimension( int& ioReductionBufferSide,
+//      int inReductionTex0, int inReductionTex1,
+//      int inDimensionCount, int inDimensionToReduce,
+//      int inExtentToReduceTo, int* ioRemainingExtents );
+
+//    void BindReductionBaseState();
+//    void CopyStreamIntoReductionBuffer( DX9Stream* inStream );
+//    void BindReductionPassthroughState();
+//    void BindReductionOperationState();
+
+//    void DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int dim );
+//    void DumpReduceDimensionState( int currentSide, int outputExtent,
+//      int remainingExtent, int remainingOtherExtent, int slopBufferCount, int dim );
 
     int argumentIndex;
 
@@ -99,6 +132,17 @@ namespace brook {
     DX9Stream* mustMatchShapeStream;
     void matchStreamShape( DX9Stream* inStream );
     bool streamShapeMismatch;
+
+    class ReductionPass
+    {
+    public:
+      int reductionFactor;
+      std::vector<Pass> standardPasses;
+      std::vector<Pass> fullTranslationPasses;
+    };
+
+    std::vector<ReductionPass> reductionPasses;
+    void addReductionPass( int inReductionFactor, bool inFullTranslation, const Pass& inPass );
 
     void mapPass( const Pass& inPass );
 
@@ -249,7 +293,9 @@ namespace brook {
     DX9PixelShader* getPassthroughPixelShader() {
       return passthroughPixelShader;
     }
-    DX9Texture* getReductionBuffer();
+    DX9Texture* getReductionBuffer0( int inMinWidth, int inMinHeight );
+    DX9Texture* getReductionBuffer1( int inMinWidth, int inMinHeight );
+    DX9Texture* getSlopBuffer( int inMinWidth, int inMinHeight );
     DX9Texture* getReductionTargetBuffer();
 
     void execute( const DX9FatRect& outputRect, int inputRectCount, const DX9FatRect* inputRects );
@@ -266,7 +312,9 @@ namespace brook {
     DX9Window* window;
     DX9VertexShader* passthroughVertexShader;
     DX9PixelShader* passthroughPixelShader;
-    DX9Texture* reductionBuffer;
+    DX9Texture* reductionBuffer0;
+    DX9Texture* reductionBuffer1;
+    DX9Texture* slopBuffer;
     DX9Texture* reductionTargetBuffer;
     IDirect3D9* direct3D;
     IDirect3DDevice9* device;

@@ -486,7 +486,8 @@ static void printSwizzle( std::ostream& shader, Type* inForm )
 }
 #endif
 
-static void expandStreamStructureFetches( std::ostream& shader, const std::string& argumentName, const std::string& fieldName, StructDef* structure, int& ioIndex )
+static void expandStreamStructureFetches( std::ostream& shader, const std::string& argumentName, const std::string& fieldName, StructDef* structure, int& ioIndex,
+                                         const std::string& positionName )
 {
 	assert( !structure->isUnion() );
 
@@ -505,7 +506,7 @@ static void expandStreamStructureFetches( std::ostream& shader, const std::strin
 		StructDef* structure = findStructureDef( base );
 		if( structure )
 		{
-			expandStreamStructureFetches( shader, argumentName, subFieldName, structure, ioIndex );
+			expandStreamStructureFetches( shader, argumentName, subFieldName, structure, ioIndex, positionName );
 		}
 		else
 		{
@@ -530,15 +531,18 @@ static void expandStreamStructureFetches( std::ostream& shader, const std::strin
       }
 
       shader << "( __structsampler" << ioIndex++ << "_" << argumentName
-        << ", _tex_" << argumentName << "_pos );\n";
+        << ", _tex_" << positionName << "_pos );\n";
 		}
 	}
 }
 
-static void expandStreamFetches( std::ostream& shader, const std::string& argumentName, Type* inForm )
+static void expandStreamFetches( std::ostream& shader, const std::string& argumentName, Type* inForm,
+  const char* inPositionName = NULL )
 {
   StructDef* structure = NULL;
   Type* elementType = NULL;
+
+  std::string positionName = (inPositionName != NULL) ? inPositionName : argumentName;
 
   if( inForm->isStream() )
   {
@@ -558,11 +562,11 @@ static void expandStreamFetches( std::ostream& shader, const std::string& argume
 	if( structure )
 	{
 		int index = 0;
-		expandStreamStructureFetches( shader, argumentName, argumentName, structure, index );
+		expandStreamStructureFetches( shader, positionName, argumentName, structure, index, positionName );
 	}
 	else
 	{
-    shader << argumentName << " = ";
+    shader << positionName << " = ";
 
     BaseType* base = inForm->getBase();
     switch(base->typemask) {
@@ -584,14 +588,18 @@ static void expandStreamFetches( std::ostream& shader, const std::string& argume
     }
 
     shader << "(_tex_" << argumentName
-      << ", _tex_" << argumentName << "_pos );\n";
+      << ", _tex_" << positionName << "_pos );\n";
 	}
 }
 
 static char *
-generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFirstOutput, int inOutputCount, bool fullAddressTrans ) {
+generate_shader_code (Decl **args, int nArgs, const char* functionName,
+                      int inFirstOutput, int inOutputCount, bool fullAddressTrans, int reductionFactor ) {
+  const char xyzw[] = "xyzw";
   std::ostringstream shader;
   bool isReduction = false;
+  bool reductionArgumentComesBeforeStreamArgument = false;
+  std::vector<int> reductionStreamArguments;
   int texcoord, constreg, samplerreg, i;
 
   shader << "#ifdef USERECT\n";
@@ -779,32 +787,64 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
         }
       } else
       {
-
-    		exandStreamSamplerDecls( shader, (args[i]->name)->name, args[i]->form, samplerreg );
-
-        if( globals.enableGPUAddressTranslation )
+        if( isReduction )
         {
-          shader << ",\n\t\t";
-          shader << "uniform float4 __streamshape_" << argName;
-          shader << " : register(c" << constreg++ << ")";
-          shader << ",\n\t\t";
-          shader << "uniform float4 __streamlinearize_" << argName;
-          shader << " : register(c" << constreg++ << ")";
-          shader << ",\n\t\t";
-          shader << "uniform float2 __streamreshape_" << argName;
-          shader << " : register(c" << constreg++ << ")";
+          if( (qual & TQ_Reduce) != 0 && reductionStreamArguments.size() == 0 )
+            reductionArgumentComesBeforeStreamArgument = true;
+
+          // indexof is not allowed!!!
+          assert( !FunctionProp[functionName].contains(i) && "can't use indexof in a reduction" );
+
+          reductionStreamArguments.push_back( i );
+          exandStreamSamplerDecls( shader, args[i]->name->name, args[i]->form, samplerreg );
+
+          if( reductionStreamArguments.size() == 2 )
+          {
+            for( int r = 2; r < reductionFactor; r++ )
+            {
+              std::stringstream s;
+              s << "__reduce" << r;
+              std::string argName = s.str();
+
+              shader <<  ",\n\t\t";
+              shader << "float2 _tex_" << argName << "_pos : TEXCOORD"
+                  << texcoord++;
+            }
+          }
+
+          shader <<  ",\n\t\t";
+          shader << "float2 _tex_" << args[i]->name->name << "_pos : TEXCOORD"
+              << texcoord++;
         }
         else
         {
-          // Output a texcoord, and optional scale/bias
-          if( FunctionProp[functionName].contains(i) ) {
-            shader <<  ",\n\t\t";
-            shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
-                  << " : register (c" << constreg++ << ")";
+
+    		  exandStreamSamplerDecls( shader, (args[i]->name)->name, args[i]->form, samplerreg );
+
+          if( globals.enableGPUAddressTranslation )
+          {
+            shader << ",\n\t\t";
+            shader << "uniform float4 __streamshape_" << argName;
+            shader << " : register(c" << constreg++ << ")";
+            shader << ",\n\t\t";
+            shader << "uniform float4 __streamlinearize_" << argName;
+            shader << " : register(c" << constreg++ << ")";
+            shader << ",\n\t\t";
+            shader << "uniform float2 __streamreshape_" << argName;
+            shader << " : register(c" << constreg++ << ")";
           }
-          shader <<  ",\n\t\t";
-          shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
-              << texcoord++;
+          else
+          {
+            // Output a texcoord, and optional scale/bias
+            if( FunctionProp[functionName].contains(i) ) {
+              shader <<  ",\n\t\t";
+              shader << "uniform float4 _const_" << *args[i]->name << "_invscalebias"
+                    << " : register (c" << constreg++ << ")";
+            }
+            shader <<  ",\n\t\t";
+            shader << "float2 _tex_" << *args[i]->name << "_pos : TEXCOORD"
+                << texcoord++;
+          }
         }
       }
     } else if (args[i]->isArray()) {
@@ -941,27 +981,29 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
   // TIM: just call the body as a subroutine
   shader << std::endl;
 
-  shader << "\t" << functionName << "(\n";
-  shader << "\t\t";
+  std::stringstream kernelBodyStream;
+
+  kernelBodyStream << "\t" << functionName << "(\n";
+  kernelBodyStream << "\t\t";
 
   for (i=0; i < nArgs; i++) {
     if( i != 0 )
-      shader << ",\n\t\t";
+      kernelBodyStream << ",\n\t\t";
     std::string name = args[i]->name->name;
     if( args[i]->isArray() ) {
       if( globals.enableGPUAddressTranslation )
       {
-        shader << name;
-        shader << ", __gatherlinearize_" << name;
-        shader << ", __gatherreshape_" << name;
-        shader << ", __hackconst";
+        kernelBodyStream << name;
+        kernelBodyStream << ", __gatherlinearize_" << name;
+        kernelBodyStream << ", __gatherreshape_" << name;
+        kernelBodyStream << ", __hackconst";
       }
       else
       {
-        shader << name << ", __gatherconst_" << name;
+        kernelBodyStream << name << ", __gatherconst_" << name;
       }
     } else {
-      shader << name;
+      kernelBodyStream << name;
     }
   }
   std::set<unsigned int>::iterator indexofIterator=
@@ -970,12 +1012,67 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName, int inFi
     FunctionProp[ functionName ].end();
   for(; indexofIterator != indexofEnd; ++indexofIterator ) {
     if( (args[*indexofIterator]->form->getQualifiers() & TQ_Out) == 0 )
-      shader << ",\n\t\t__indexof_" << args[*indexofIterator]->name->name;
+      kernelBodyStream << ",\n\t\t__indexof_" << args[*indexofIterator]->name->name;
     else
-      shader << ",\n\n\t__indexofoutput";
+      kernelBodyStream << ",\n\n\t__indexofoutput";
   }
 
-  shader << " );\n\n";
+  kernelBodyStream << " );\n\n";
+
+  std::string kernelBody = kernelBodyStream.str();
+
+  // if we are doing a reduction, we may want to run the kernel
+  // body multiple times to reduce n values...
+  if( isReduction )
+  {
+    assert( reductionStreamArguments.size() == 2 );
+    int leftArgumentIndex = reductionStreamArguments[0];
+    std::string leftArgumentName = args[leftArgumentIndex]->name->name;
+    int rightArgumentIndex = reductionStreamArguments[1];
+    std::string rightArgumentName = args[rightArgumentIndex]->name->name;
+    Type* leftArgumentForm = args[leftArgumentIndex]->form;
+
+    // do additional fetches...
+    for( int r = 2; r < reductionFactor; r++ )
+    {
+      std::stringstream s;
+      s << "__reduce" << r;
+      std::string argName = s.str();
+
+      shader << "\t";
+      leftArgumentForm->printBase( shader, 0);
+      shader << " " << argName << ";\n";
+
+      // do a new fetch for the reduction arg
+      expandStreamFetches( shader, leftArgumentName, leftArgumentForm, argName.c_str() );
+    }
+
+    // save off the right arg...
+    shader << "\t";
+    leftArgumentForm->printBase(shader,0);
+    shader << " __saved = " << rightArgumentName << ";\n";
+
+    // do additional reduction ops
+    for( int r = 2; r < reductionFactor; r++ )
+    {
+      std::stringstream s;
+      s << "__reduce" << r;
+      std::string argName = s.str();
+
+      // shuffle stuff around... :)
+      shader << "\t" << rightArgumentName << " = " << argName << ";\n";
+      shader << kernelBody;
+      if( !reductionArgumentComesBeforeStreamArgument )
+        shader << "\t" << leftArgumentName << " = " << rightArgumentName << ";\n";
+    }
+
+    shader << "\t" << rightArgumentName << " = __saved;\n";
+    shader << kernelBody;
+  }
+  else
+  {
+    shader << kernelBody;
+  }
 
   /* do any output unpacking */
   outputReg = 0;
@@ -1143,7 +1240,7 @@ compile_hlsl_code (char *hlslcode) {
 static char *
 append_argument_information (const char *commentstring, char *fpcode,
                              Decl **args, int nArgs,
-                             const char* functionName, int firstOutput, int outputCount, bool fullAddressTrans )
+                             const char* functionName, int firstOutput, int outputCount, bool fullAddressTrans, int reductionFactor )
 {
   std::ostringstream fp;
 
@@ -1178,6 +1275,7 @@ append_argument_information (const char *commentstring, char *fpcode,
 
   fp << commentstring << "!!multipleOutputInfo:" << firstOutput << ":" << outputCount << ":" << std::endl;
   fp << commentstring << "!!fullAddressTrans:" << (fullAddressTrans ? 1 : 0 ) << ":" << std::endl;
+  fp << commentstring << "!!reductionFactor:" << reductionFactor << ":" << std::endl;
 
   return strdup(fp.str().c_str());
 }
@@ -1257,12 +1355,12 @@ int getShaderOutputCount( int argumentCount, Decl** arguments, bool& outIsReduct
  *      Note: The caller is responsible for free()ing the returned string.
  */
 
-static char* generateShaderPass( Decl** args, int nArgs, const char* name, int firstOutput, int outputCount, bool ps20_not_fp30, bool fullAddressTrans )
+static char* generateShaderPass( Decl** args, int nArgs, const char* name, int firstOutput, int outputCount, bool ps20_not_fp30, bool fullAddressTrans, int reductionFactor )
 {
   
     char* fpcode;
     char* fpcode_with_brccinfo;
-    char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount, fullAddressTrans );
+    char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
     if (shadercode) {
       if (globals.verbose)
         std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
@@ -1294,7 +1392,7 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
 
       fpcode_with_brccinfo =
         append_argument_information(ps20_not_fp30?"//":"##",
-                                    fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans );
+                                    fpcode, args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor );
       free(fpcode);
 
       if (globals.verbose)
@@ -1307,7 +1405,7 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
     return fpcode_with_brccinfo;
 }
 
-bool generateShaderPasses( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans,
+bool generateShaderPasses( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans, int reductionFactor,
                           std::vector<std::string>& ioShaderStrings )
 {
   bool isReduction = false;
@@ -1327,7 +1425,7 @@ bool generateShaderPasses( Decl** args, int nArgs, const char* name, bool ps20_n
     char* shaderString = NULL;
     while( outputsToWrite > 0 )
     {
-      shaderString = generateShaderPass( args, nArgs, name, firstOutput, outputsToWrite, ps20_not_fp30, fullAddressTrans );
+      shaderString = generateShaderPass( args, nArgs, name, firstOutput, outputsToWrite, ps20_not_fp30, fullAddressTrans, reductionFactor );
       if( shaderString ) break;
 
       // try again with fewer outputs
@@ -1346,6 +1444,40 @@ bool generateShaderPasses( Decl** args, int nArgs, const char* name, bool ps20_n
   return true;
 }
 
+static bool generateReductionPasses( Decl** args, int nArgs, const char* name, bool ps20_not_fp30, bool fullAddressTrans,
+                          std::vector<std::string>& ioShaderStrings )
+{
+  bool isReduction = false;
+  int outputCount = getShaderOutputCount( nArgs, args, isReduction );
+
+  if( !isReduction )
+  {
+    return generateShaderPasses( args, nArgs, name, ps20_not_fp30, fullAddressTrans, 0, ioShaderStrings );
+  }
+
+  int reductionFactor = 2;
+  while( reductionFactor <= 8 ) // TIM: evil unnamed constant... :)
+  {
+    std::vector<std::string> passStrings;
+    if(!generateShaderPasses( args, nArgs, name, ps20_not_fp30, fullAddressTrans, reductionFactor, ioShaderStrings ))
+    {
+      if( reductionFactor == 2 ) return false;
+    }
+    else
+    {
+      for( std::vector<std::string>::iterator i = passStrings.begin();
+        i != passStrings.end(); ++i )
+      {
+        ioShaderStrings.push_back( *i );
+      }
+    }
+
+    reductionFactor++;
+  }
+
+  return true;
+}
+
 char *
 CodeGen_GenerateCode(Type *retType, const char *name,
                      Decl **args, int nArgs, const char *body, 
@@ -1356,9 +1488,9 @@ CodeGen_GenerateCode(Type *retType, const char *name,
   if( globals.enableGPUAddressTranslation )
   {
     std::vector<std::string> fullTranslationStrings;
-    if( !generateShaderPasses( args, nArgs, name, ps20_not_fp30, true, fullTranslationStrings ) )
+    if( !generateReductionPasses( args, nArgs, name, ps20_not_fp30, true, fullTranslationStrings ) )
       fullTranslationStrings.clear();
-    if( !generateShaderPasses( args, nArgs, name, ps20_not_fp30, false, shaderStrings ) )
+    if( !generateReductionPasses( args, nArgs, name, ps20_not_fp30, false, shaderStrings ) )
       shaderStrings.clear();
 
     for( std::vector<std::string>::iterator i = fullTranslationStrings.begin();
@@ -1369,7 +1501,7 @@ CodeGen_GenerateCode(Type *retType, const char *name,
   }
   else
   {
-    if( !generateShaderPasses( args, nArgs, name, ps20_not_fp30, false, shaderStrings ) )
+    if( !generateReductionPasses( args, nArgs, name, ps20_not_fp30, false, shaderStrings ) )
       shaderStrings.clear();
   }
 

@@ -50,8 +50,9 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
    CHECK_GL();
 
    // look for our annotations...
+   int sourceIndex = 0; // TIM: evil hack
    for (j=0; j<npasses; j++) {
-     src = sources[j];
+     src = sources[sourceIndex++];
      std::string s = src;
      
      if (!j) {
@@ -143,6 +144,20 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
      }
      free(progcopy);
      
+     /* TIM: try to parse reduction stuff */
+     progcopy = strdup (src);
+     c = strstr(progcopy, "!!reductionFactor:");
+     c += strlen("!!reductionFactor:");
+     *(strstr(c,":")) = '\0';
+     int factor = atoi(c);
+     free(progcopy);
+     if( factor != 0 && factor != 2 )
+     {
+       /* TIM: remove this pass from consideration... */
+       npasses--;
+       j--;
+     }
+
      /* Load the program code */
      CHECK_GL();
    

@@ -88,22 +88,22 @@ int main () {
   
   streamWrite(quadresult,qresult);
   printf("begin adding float4 test ...\n");
-  printf("{%3.2f %3.2f %3.2f %3.2f}\n", output.x,output.y,output.z,output.w);
+  printf("{%3.0f %3.0f %3.0f %3.0f}\n", output.x,output.y,output.z,output.w);
   printf("matrix multiply: together is:\n");
-  printf("[%3.2f %3.2f]\n[%3.2f %3.2f]\n",result.x,result.y,result.z,result.w);
+  printf("[%3.0f %3.0f]\n[%3.0f %3.0f]\n",result.x,result.y,result.z,result.w);
   printf("-------------------------------\n");
-  printf("[%3.2f %3.2f]\n[%3.2f %3.2f]\n\n",
+  printf("[%3.0f %3.0f]\n[%3.0f %3.0f]\n\n",
          qresult[0][0].x,qresult[0][0].y,qresult[0][0].z,qresult[0][0].w);
-  printf("[%3.2f %3.2f]\n[%3.2f %3.2f]\n\n",
+  printf("[%3.0f %3.0f]\n[%3.0f %3.0f]\n\n",
          qresult[0][1].x,qresult[0][1].y,qresult[0][1].z,qresult[0][1].w);
-  printf("[%3.2f %3.2f]\n[%3.2f %3.2f]\n\n",
+  printf("[%3.0f %3.0f]\n[%3.0f %3.0f]\n\n",
            qresult[0][2].x,qresult[0][2].y,qresult[0][2].z,qresult[0][2].w);
-  printf("[%3.2f %3.2f]\n[%3.2f %3.2f]\n",
+  printf("[%3.0f %3.0f]\n[%3.0f %3.0f]\n",
            qresult[0][3].x,qresult[0][3].y,qresult[0][3].z,qresult[0][3].w);
   matrix_mult(result,quadresult);
   printf ("------------------------------\n");
   printf ("Two stage multiply gives:\n");
-  printf("[%3.2f %3.2f]\n[%3.2f %3.2f]\n",result.x,result.y,result.z,result.w);
+  printf("[%3.0f %3.0f]\n[%3.0f %3.0f]\n",result.x,result.y,result.z,result.w);
   
   return 0;
 }

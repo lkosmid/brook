@@ -104,7 +104,15 @@ bool DX9Kernel::initialize( const char** inProgramStrings )
     s = s.substr( s.find(":")+1 );
     int addressTrans = atoi( s.substr( 0, s.find(":") ).c_str() );
 
-    if( !addressTrans )
+    s = s.substr( s.find("!!reductionFactor") );
+    s = s.substr( s.find(":")+1 );
+    int reductionFactor = atoi( s.substr( 0, s.find(":") ).c_str() );
+
+    if( reductionFactor )
+    {
+      addReductionPass( reductionFactor, addressTrans != 0, pass );
+    }
+    else if( !addressTrans )
     {
       standardPasses.push_back(pass);
     }
@@ -117,6 +125,30 @@ bool DX9Kernel::initialize( const char** inProgramStrings )
   // initialize the output rects, just in case
   outputRect = DX9Rect(0,0,0,0);
   return true;
+}
+
+void DX9Kernel::addReductionPass( int inReductionFactor, bool inFullTranslation, const Pass& inPass )
+{
+  int reductionPassCount = reductionPasses.size();
+  for( int i = 0; i < reductionPassCount; i++ )
+  {
+    if( reductionPasses[i].reductionFactor != inReductionFactor ) continue;
+
+    if( inFullTranslation )
+      reductionPasses[i].fullTranslationPasses.push_back( inPass );
+    else
+      reductionPasses[i].standardPasses.push_back( inPass );
+    return;
+  }
+
+  // no such reduction pass
+  ReductionPass reductionPass;
+  reductionPass.reductionFactor = inReductionFactor;
+  if( inFullTranslation )
+    reductionPass.fullTranslationPasses.push_back( inPass );
+  else
+    reductionPass.standardPasses.push_back( inPass );
+  reductionPasses.push_back( reductionPass );
 }
 
 DX9Kernel::~DX9Kernel()
@@ -522,8 +554,6 @@ void DX9Kernel::matchStreamShape( DX9Stream* inStream )
 
 void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
 {
-  HRESULT result;
-
   DX9Texture* outputBuffer = inOutputBuffer;
   int outputWidth = outputBuffer->getWidth();
   int outputHeight = outputBuffer->getHeight();
@@ -537,60 +567,390 @@ void DX9Kernel::ReduceToStream( DX9Texture* inOutputBuffer )
     tex0 = tex1;
     tex1 = temp;
   }
+  int sampler0 = inputReductionStreamSamplerIndex;
+  int sampler1 = outputReductionVarSamplerIndex;
+  if( sampler0 > sampler1 )
+  {
+    int temp = sampler0;
+    sampler0 = sampler1;
+    sampler1 = temp;
+  }
   int inputWidth = inputStream->getTextureWidth();
   int inputHeight = inputStream->getTextureHeight();
 
-  DX9Assert( (inputWidth <= kDX9ReductionBufferWidth/2) && (inputHeight <= kDX9ReductionBufferHeight/2),
-    "A stream to be reduced was too large for the reduction buffer." );
+  int xFactor = inputWidth / outputWidth;
+  int yFactor = inputHeight / outputHeight;
+  
+  int firstDimension = 0;
+  int secondDimension = 1;
+  if( yFactor > xFactor )
+  {
+    firstDimension = 1;
+    secondDimension = 0;
+  }
 
-  DX9Texture* reductionBuffer = runtime->getReductionBuffer();
+  ReductionState state;
+  state.inputTexture = inputStream->getIndexedTexture(0);
+  state.outputTexture = outputBuffer;
+  state.whichBuffer = -1; // data starts in the input
+  state.reductionBuffers[0] = NULL;
+  state.reductionBuffers[1] = NULL;
+  state.slopBuffer = NULL;
+  state.leftTextureUnit = tex0;
+  state.rightTextureUnit = tex1;
+  state.leftSampler = sampler0;
+  state.rightSampler = sampler1;
+  state.currentDimension = firstDimension;
+  state.targetExtents[0] = outputWidth;
+  state.targetExtents[1] = outputHeight;
+  state.inputExtents[0] = inputWidth;
+  state.inputExtents[1] = inputHeight;
+  state.currentExtents[0] = inputWidth;
+  state.currentExtents[1] = inputHeight;
+  state.slopCount = 0;
 
+  beginReduction( state );
+
+  while( state.currentExtents[firstDimension] != state.targetExtents[firstDimension] )
+    executeReductionStep( state );
+  executeSlopStep( state );
+  state.currentDimension = secondDimension;
+  while( state.currentExtents[secondDimension] != state.targetExtents[secondDimension] )
+    executeReductionStep( state );
+  executeSlopStep( state );
+
+  endReduction( state );
+}
+
+void DX9Kernel::bindReductionPassShader( int inFactor )
+{
+  ReductionPass& reductionPass = reductionPasses[ inFactor - 2 ];
+  DX9Assert( reductionPass.standardPasses.size() == 1, "Must have single-pass completion for reductions" );
+  HRESULT result = device->SetPixelShader( reductionPass.standardPasses[0].pixelShader->getHandle() );
+  DX9AssertResult( result, "SetPixelShader failed" );
+}
+
+void DX9Kernel::beginReduction( ReductionState& ioState )
+{
+  HRESULT result;
+
+  ioState.inputTexture->validateCachedData();
+
+  // set up
   result = device->BeginScene();
   DX9AssertResult( result, "BeginScene failed" );
 
-  BindReductionBaseState();
-  CopyStreamIntoReductionBuffer( inputStream );
+  int constantCount = (int)inputConstants.size();
+  int outputCount = (int)outputStreams.size();
+  int reductionCount = (int)outputReductionTypes.size();
+  int samplerCount = (int)inputTextures.size();
 
-  BindReductionOperationState();
+  // inspect the input stuff:
+  DX9Assert( reductionCount == 1, "Number of 'reduce' arguments was not 1." );
+  DX9Assert( outputCount == 0, "'out' streams found in reduce function." );
 
-  int currentSide = 0;
-  int extents[2] = {inputWidth, inputHeight};
-  static const int kSideOffsets[2] = {0,kDX9ReductionBufferWidth/2};
-  ReduceDimension( currentSide, tex0, tex1, 2, 0, outputWidth, extents );
-  ReduceDimension( currentSide, tex0, tex1, 2, 1, outputHeight, extents );
+  DX9VertexShader* passthroughVertexShader = runtime->getPassthroughVertexShader();
+  result = device->SetVertexShader( passthroughVertexShader->getHandle() );
+  DX9AssertResult( result, "SetVertexShader failed" );
 
-  // finally copy the data out to the output buffer
-  BindReductionPassthroughState();
+  for( int i = 0; i < constantCount; i++ )
+  {
+    result = device->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
+    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
+  }
+
+  for( int i = 0; i < samplerCount; i++ )
+  {
+    if( i == ioState.leftSampler || i == ioState.rightSampler ) continue;
+    inputStreams[i]->validateGPUData();
+    result = device->SetTexture( i, inputTextures[i] );
+    DX9AssertResult( result, "SetTexture failed" );
+  }
+
+  dumpReductionState( ioState );
+}
+
+void DX9Kernel::executeReductionStep( ReductionState& ioState )
+{
+  DX9Trace( "Reduction Step" );
+
+  HRESULT result;
+
+  int dim = ioState.currentDimension;
+  int remainingFactor = ioState.currentExtents[dim] / ioState.targetExtents[dim];
+  int remainingExtent = ioState.currentExtents[dim];
+  int outputExtent = ioState.targetExtents[dim];
+  int otherExtent = ioState.currentExtents[1-dim];
+  int tex0 = ioState.leftTextureUnit;
+  int tex1 = ioState.rightTextureUnit;
+
+  int reductionPassCount = reductionPasses.size();
+  for( int r = reductionPassCount-1; r >= 0; r-- )
+  {
+    int passFactor = reductionPasses[r].reductionFactor;
+
+    int quotient = remainingFactor / passFactor;
+    int remainder = remainingFactor % passFactor;
+
+    if( quotient == 0 ) continue;
+    if( quotient == 1 || remainder <= 1 ) break;
+  }
+  int reductionFactor = reductionPasses[r].reductionFactor;
+  int slopFactor = (remainingFactor % reductionFactor);
+
+  int resultExtents[2];
+  resultExtents[0] = ioState.currentExtents[0];
+  resultExtents[1] = ioState.currentExtents[1];
+  resultExtents[dim] = outputExtent * (remainingFactor / reductionFactor);
+
+  // Set up the proper pixel shader
+  bindReductionPassShader( reductionFactor );
+
+  // bind the proper textures as the shader inputs
+  DX9Texture* slopBuffer = ioState.slopBuffer;
+  DX9Texture* inputBuffer = NULL;
+  if( ioState.whichBuffer == -1 )
+    inputBuffer = ioState.inputTexture;
+  else
+    inputBuffer = ioState.reductionBuffers[ioState.whichBuffer];
+
+  int nextBuffer = (ioState.whichBuffer + 1) % 2;
+  DX9Texture* outputBuffer = ioState.reductionBuffers[nextBuffer];
+  if( outputBuffer == NULL )
+  {
+    if( nextBuffer == 0 )
+      outputBuffer = runtime->getReductionBuffer0( resultExtents[0], resultExtents[1] );
+    else
+      outputBuffer = runtime->getReductionBuffer1( resultExtents[0], resultExtents[1] );
+    ioState.reductionBuffers[nextBuffer] = outputBuffer;
+  }
+
+  result = device->SetTexture( ioState.leftSampler, inputBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
+  result = device->SetTexture( ioState.rightSampler, inputBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
   result = device->SetRenderTarget( 0, outputBuffer->getSurfaceHandle() );
   DX9AssertResult( result, "SetRenderTarget failed" );
 
-  inputTextureRects[0] = reductionBuffer->getTextureSubRect(
-    kSideOffsets[currentSide], 0,
-    kSideOffsets[currentSide] + outputWidth, outputHeight );
-  outputRect = outputBuffer->getSurfaceSubRect( 0, 0, outputWidth, outputHeight );
+  if( (int)inputTextureRects.size() < reductionFactor )
+    inputTextureRects.resize( reductionFactor );
+
+  for( int i = 0; i < reductionFactor; i++ )
+  {
+    inputTextureRects[i] = inputBuffer->getReductionTextureRect(
+      i, remainingExtent+i, 0, otherExtent, dim );
+  }
+  int newExtent = resultExtents[dim];
+  ioState.currentExtents[dim] = newExtent;
+  outputRect = outputBuffer->getReductionSurfaceRect(
+    0, newExtent, 0, otherExtent, dim );
+
   runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
 
-  result = device->EndScene();
+  // move any slop out to the slop buffer
+  if( slopFactor )
+  {
+    if( slopBuffer == NULL )
+    {
+      int slopExtents[2];
+      slopExtents[dim] = outputExtent;
+      slopExtents[1-dim] = otherExtent;
+
+      slopBuffer = runtime->getSlopBuffer( slopExtents[0], slopExtents[1] );
+      ioState.slopBuffer = slopBuffer;
+    }
+
+    if( ioState.slopCount == 0 )
+    {
+      if( slopFactor > 1 )
+      {
+        bindReductionPassShader( slopFactor );
+        device->SetTexture( ioState.leftSampler, inputBuffer->getTextureHandle() );
+        device->SetTexture( ioState.rightSampler, inputBuffer->getTextureHandle() );
+
+        for( int i = 0; i < slopFactor; i++ )
+        {
+          int offset = slopFactor - i;
+          offset = remainingFactor - offset;
+          inputTextureRects[i] = inputBuffer->getReductionTextureRect(
+            offset, remainingExtent + offset, 0, otherExtent, dim );
+        }
+      }
+      else
+      {
+        device->SetPixelShader( runtime->getPassthroughPixelShader()->getHandle() );
+        device->SetTexture( 0, inputBuffer->getTextureHandle() );
+
+        int offset = remainingFactor-1;
+        inputTextureRects[0] = inputBuffer->getReductionTextureRect( offset, remainingExtent+offset, 0, otherExtent, dim );
+      }
+    }
+    else
+    {
+      bindReductionPassShader( slopFactor+1 ); // must exist for weird reasons... :)
+      device->SetTexture( ioState.leftSampler, inputBuffer->getTextureHandle() );
+      device->SetTexture( ioState.rightSampler, slopBuffer->getTextureHandle() );
+
+      for( int i = 0; i < slopFactor; i++ )
+      {
+        int offset = slopFactor - i;
+        offset = remainingFactor - offset;
+        inputTextureRects[i] = inputBuffer->getReductionTextureRect(
+          offset, remainingExtent + offset, 0, otherExtent, dim );
+      }
+      inputTextureRects[slopFactor] = slopBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim );
+    }
+    device->SetRenderTarget( 0, slopBuffer->getSurfaceHandle() );
+    outputRect = slopBuffer->getReductionSurfaceRect( 0, outputExtent, 0, otherExtent, dim );
+    runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
+    ioState.slopCount++;
+  }
+
+  ioState.whichBuffer = nextBuffer;
+
+  dumpReductionState( ioState );
+}
+
+void DX9Kernel::executeSlopStep( ReductionState& ioState )
+{
+  DX9Trace( "Slop Step" );
+
+  HRESULT result;
+
+  if( ioState.slopCount == 0 ) return;
+
+  int dim = ioState.currentDimension;
+  int outputExtent = ioState.currentExtents[dim];
+  int otherExtent = ioState.currentExtents[1-dim];
+  int tex0 = ioState.leftTextureUnit;
+  int tex1 = ioState.rightTextureUnit;
+
+  // bind the 2-argument reduction function
+  bindReductionPassShader( 2 );
+
+  // bind the buffers and rectangles needed
+  DX9Texture* slopBuffer = ioState.slopBuffer;
+  DX9Texture* inputBuffer = ioState.reductionBuffers[ioState.whichBuffer];
+  DX9Texture* outputBuffer = inputBuffer; // TIM: not future-proof
+
+  result = device->SetTexture( ioState.leftSampler, inputBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
+  result = device->SetTexture( ioState.rightSampler, slopBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
+  result = device->SetRenderTarget( 0, outputBuffer->getSurfaceHandle() );
+  DX9AssertResult( result, "SetRenderTarget failed" );
+
+  inputTextureRects[tex0] = inputBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim);
+  inputTextureRects[tex1] = slopBuffer->getReductionTextureRect( 0, outputExtent, 0, otherExtent, dim );
+  outputRect = outputBuffer->getReductionSurfaceRect( 0, outputExtent, 0, otherExtent, dim );
+
+  runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
+
+  ioState.slopCount = 0;
+
+  dumpReductionState( ioState );
+}
+
+void DX9Kernel::endReduction( ReductionState& ioState )
+{
+  int outputWidth = ioState.targetExtents[0];
+  int outputHeight = ioState.targetExtents[1];
+
+  DX9Texture* inputBuffer = ioState.reductionBuffers[ioState.whichBuffer];
+  DX9Texture* outputBuffer = ioState.outputTexture;
+
+  device->SetPixelShader( runtime->getPassthroughPixelShader()->getHandle() );
+  device->SetTexture( 0, inputBuffer->getTextureHandle() );
+  device->SetRenderTarget( 0, outputBuffer->getSurfaceHandle() );
+
+  inputTextureRects[0] = inputBuffer->getReductionTextureRect( 0, outputWidth, 0, outputHeight, 0 );
+  outputRect = outputBuffer->getReductionSurfaceRect( 0, outputWidth, 0, outputHeight, 0 );
+  runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
+
+  // clean up
+  HRESULT result = device->EndScene();
   DX9AssertResult( result, "EndScene failed" );
 
-  outputBuffer->markCachedDataChanged();
+  ioState.outputTexture->markCachedDataChanged();
+
+  DX9Trace( "************ Result *************" );
+  dumpReductionBuffer( outputBuffer, 1, 1 );
 
   ClearInputs();
 }
 
+void DX9Kernel::dumpReductionState( ReductionState& ioState )
+{
+  DX9Trace( "********************* Reduction Dump *************" );
+  int dim = ioState.currentDimension;
+  int buffer = ioState.whichBuffer;
+ 
+  if( buffer == -1 )
+  {
+    DX9Trace( "Input" );
+    dumpReductionBuffer( ioState.inputTexture,
+      ioState.currentExtents[0], ioState.currentExtents[1] );
+  }
+  else
+  {
+    DX9Trace( "Buffer" );
+    ioState.reductionBuffers[buffer]->markCachedDataChanged();
+    dumpReductionBuffer( ioState.reductionBuffers[buffer],
+      ioState.currentExtents[0], ioState.currentExtents[1] );
+  }
+
+  if( ioState.slopCount )
+  {
+    int slopExtents[2];
+    slopExtents[0] = ioState.currentExtents[0];
+    slopExtents[1] = ioState.currentExtents[1];
+    slopExtents[dim] = ioState.targetExtents[dim];
+
+    DX9Trace( "Slop" );
+    ioState.slopBuffer->markCachedDataChanged();
+    dumpReductionBuffer( ioState.slopBuffer, slopExtents[0], slopExtents[1] );
+  }
+}
+
+void DX9Kernel::dumpReductionBuffer( DX9Texture* inBuffer, int inWidth, int inHeight )
+{
+  static float4* data = new float4[2048*2048];
+
+  int bufferWidth = inBuffer->getWidth();
+  int bufferHeight = inBuffer->getHeight();
+
+  int w = inWidth;
+  int h = inHeight;
+  if( w == 0 )
+    w = bufferWidth;
+  if( h == 0 )
+    h = bufferHeight;
+
+  inBuffer->getData( (float*)data, sizeof(float4), bufferWidth*bufferHeight );
+
+  float4* line = data;
+  for( int y = 0; y < h; y++ )
+  {
+    float4* pixel = line;
+    for( int x = 0; x < w; x++ )
+    {
+      if( x > 0 && x % 5 == 0 )
+        DX9Print( "\n\t" );
+
+      float4 value = *pixel++;
+      DX9Print( "{%4.2f %4.2f %4.2f %4.2f} ", value.x, value.y, value.z, value.w );
+    }
+    line += bufferWidth;
+    DX9Print( "\n" );
+  }
+}
+
+/*
 void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
       int inReductionTex0, int inReductionTex1,
       int inDimensionCount, int inDimensionToReduce,
       int inExtentToReduceTo, int* ioRemainingExtents )
 {
-  // simple special case: reducing to a single value
-/*  if( inExtentToReduceTo == 1 )
-  {
-    ReduceDimensionToOne( ioReductionBufferSide, inReductionTex0, inReductionTex1,
-      inDimensionCount, inDimensionToReduce, ioRemainingExtents );
-    return;
-  }*/
-
   // general case, we need to deal with all kinds of ugliness :)
   int currentSide = ioReductionBufferSide;
   int tex0 = inReductionTex0;
@@ -689,55 +1049,6 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
   ioRemainingExtents[dim] = outputExtent;
 }
 
-void DX9Kernel::BindReductionBaseState()
-{
-  HRESULT result;
-  int constantCount = (int)inputConstants.size();
-  int outputCount = (int)outputStreams.size();
-  int reductionCount = (int)outputReductionTypes.size();
-
-  // inspect the input stuff:
-  DX9Assert( reductionCount == 1, "Number of 'reduce' arguments was not 1." );
-  DX9Assert( outputCount == 0, "'out' streams found in reduce function." );
-
-  DX9VertexShader* passthroughVertexShader = runtime->getPassthroughVertexShader();
-  result = device->SetVertexShader( passthroughVertexShader->getHandle() );
-  DX9AssertResult( result, "SetVertexShader failed" );
-
-  DX9Texture* reductionBuffer = runtime->getReductionBuffer();
-  result = device->SetRenderTarget( 0, reductionBuffer->getSurfaceHandle() );
-  DX9AssertResult( result, "SetRenderTarget failed" );
-
-  // TODO: workspace constant
-  for( int i = 0; i < constantCount; i++ )
-  {
-    result = device->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
-    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
-  }
-}
-
-void DX9Kernel::CopyStreamIntoReductionBuffer( DX9Stream* inStream )
-{
-  HRESULT result;
-  DX9Texture* reductionBuffer = runtime->getReductionBuffer();
-  DX9PixelShader* passthroughPixelShader = runtime->getPassthroughPixelShader();
-  result = device->SetPixelShader( passthroughPixelShader->getHandle() );
-  DX9AssertResult( result, "SetPixelShader failed" );
-
-  DX9Assert( inStream->getSubstreamCount() == 1,
-    "Only one-field streams can be reduced for now" );
-
-  int inputWidth = inStream->getTextureWidth();
-  int inputHeight = inStream->getTextureHeight();
-
-  inStream->validateGPUData();
-  result = device->SetTexture( 0, inStream->getIndexedTextureHandle(0) );
-  DX9AssertResult( result, "SetTexture failed" );
-  inputTextureRects[0] = inStream->getTextureSubRect( 0, 0, inputWidth, inputHeight );
-  outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, inputWidth, inputHeight );
-  runtime->execute( outputRect, (int)inputTextureRects.size(), &inputTextureRects[0] );
-}
-
 void DX9Kernel::BindReductionPassthroughState()
 {
   HRESULT result;
@@ -753,33 +1064,7 @@ void DX9Kernel::BindReductionPassthroughState()
   DX9AssertResult( result, "SetTexture failed" );
 }
 
-void DX9Kernel::BindReductionOperationState()
-{
-  HRESULT result;
-  int samplerCount = (int)inputTextures.size();
-  DX9Texture* reductionBuffer = runtime->getReductionBuffer();
 
-  DX9Assert( standardPasses.size() == 1, "Only a single output allowed for reductions right now" );
-
-  result = device->SetPixelShader( standardPasses[0].pixelShader->getHandle() );
-  DX9AssertResult( result, "SetPixelShader failed" );
-
-  int sampler0 = inputReductionStreamSamplerIndex;
-  int sampler1 = outputReductionVarSamplerIndex;
-
-  for( int i = 0; i < samplerCount; i++ )
-  {
-    if( i == sampler0 || i == sampler1 ) continue;
-    inputStreams[i]->validateGPUData();
-    result = device->SetTexture( i, inputTextures[i] );
-  DX9AssertResult( result, "SetTexture failed" );
-  }
-
-  result = device->SetTexture( sampler0, reductionBuffer->getTextureHandle() );
-  DX9AssertResult( result, "SetTexture failed" );
-  result = device->SetTexture( sampler1, reductionBuffer->getTextureHandle() );
-  DX9AssertResult( result, "SetTexture failed" );
-}
 
 void DX9Kernel::DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int dim )
 {
@@ -826,3 +1111,4 @@ void DX9Kernel::DumpReduceDimensionState(
       0, 0, outputExtent, remainingOtherExtent, dim );
   }
 }
+*/

@@ -299,3 +299,25 @@ DX9Rect DX9Texture::getReductionSurfaceSubRect( int xOffset, int yOffset, int ax
   return getSurfaceSubRect( rect[0], rect[1], rect[2], rect[3] );
 }
 
+DX9Rect DX9Texture::getReductionTextureRect( int axisMin, int axisMax, int otherMin, int otherMax, int axis )
+{
+  int rect[4];
+  rect[0 + (axis)] = axisMin;
+  rect[2 + (axis)] = axisMax;
+  rect[0 + (1-axis)] = otherMin;
+  rect[2 + (1-axis)] = otherMax;
+  return getInterlacedTextureSubRect( rect[0], rect[1], rect[2], rect[3], 1, 1 );
+
+}
+
+DX9Rect DX9Texture::getReductionSurfaceRect( int axisMin, int axisMax, int otherMin, int otherMax, int axis )
+{
+  int rect[4];
+  rect[0 + (axis)] = axisMin;
+  rect[2 + (axis)] = axisMax;
+  rect[0 + (1-axis)] = otherMin;
+  rect[2 + (1-axis)] = otherMax;
+  return getSurfaceSubRect( rect[0], rect[1], rect[2], rect[3] );
+}
+
+
