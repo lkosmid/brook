@@ -1,3 +1,11 @@
+#ifndef BRTVECTOR_HPP
+#define BRTVECTOR_HPP
+#if defined (_MSC_VER) && _MSC_VER <=1200 && !defined(VC6VECTOR_HPP)
+#include "vc6vector.hpp"
+//the above headerfile has the template functions automatically expanded.
+//not needed for recent compilers.
+#else
+
 #include <iostream>
 #include <math.h>
 template <class T, class B> static T singlequestioncolon (const B& a,
@@ -388,11 +396,14 @@ INITBASECLASS(unsigned char);
 #ifdef _MSC_VER
 #if _MSC_VER <= 1200
 #define GCCTYPENAME
+#define INTERNALTYPENAME
 #else
 #define GCCTYPENAME typename
+#define INTERNALTYPENAME typename
 #endif
 #else
 #define GCCTYPENAME typename
+#define INTERNALTYPENAME typename
 #endif
 
 
@@ -544,7 +555,7 @@ public:
 #define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class BRT_TYPE>          \
     vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,VALUE>::type, \
        LUB<TEMPL_TYPESIZE,tsize>::size> operator op (const BRT_TYPE &b)const{ \
-      return vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
+      return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
                                            VALUE>::type, \
 		 LUB<TEMPL_TYPESIZE,tsize>::size> \
                 (getAt(0) op b.getAt(0), \
@@ -667,3 +678,5 @@ MATRIXXY_CLASS(__BrtChar,1,2);
 MATRIXXY_CLASS(__BrtChar,1,1);
 
 #undef MATRIXXY_CLASS
+#endif
+#endif
