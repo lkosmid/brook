@@ -215,10 +215,21 @@ namespace brook{
           }
        }
     }
+  static void calcLocation(unsigned int * rez, 
+                           unsigned int cur, 
+                           unsigned int dim,
+                           const unsigned int *mag, 
+                           const unsigned int * extent) {
+    for (int i=dim-1;i>=0;--i) {
+      unsigned int sizei=extent[i]/mag[i];
+      rez[i]=(cur%sizei)*mag[i];
+      cur/=sizei;
+    }
+  }
     void CPUKernel::Map() {
+      unsigned int numThreads=16;
        if (!streamReduction){
           if (multiThread&&totalsize/2) {             
-             unsigned int numThreads=16;
              while (totalsize/numThreads==0)
                 numThreads/=2;
              ThreadMap(numThreads);             
@@ -231,37 +242,64 @@ namespace brook{
           const unsigned int * rextent = streamReduction->getExtents();
           unsigned int total = streamReduction->getTotalSize();
           std::vector<ReductionArg>::iterator j;
+          if (multiThread&&total) {
+            while (total/numThreads==0)
+              numThreads/=2;
+          }else numThreads=1;
+          unsigned int step=total/numThreads;
+          unsigned int remainder = total%numThreads;
+          
           for (j=reductions.begin();j!=reductions.end();++j) {
              assert ((*j).type==__BRTSTREAM);
              args[(*j).which]=(*j).stream->getData(brook::Stream::WRITE);
           }
+          
           unsigned int * buffer = (unsigned int *)
-             malloc(2*dim*sizeof(unsigned int));
-          unsigned int * e =buffer;
-          memset (e,0,sizeof(unsigned int)*2*dim);
-          unsigned int * mag = e+dim;
+             malloc(2*numThreads*dim*sizeof(unsigned int));
+          memset (buffer,0,sizeof(unsigned int)*(1+numThreads)*dim);
+          unsigned int * mag = buffer;
+          unsigned int * e =mag+dim;
+
           for (i=0;i<dim;++i) {
              if (i<rdim)
                 mag[i] = extent[i]/rextent[i];
              else
                 mag[i] = extent[i];             
           }
-          for (i=0;i<total;++i) {
-             (*nDfunc)(args,extents,dims,e,mag);
-             for (j=reductions.begin();j!=reductions.end();++j) {
-                args[(*j).which]=(char*)args[(*j).which]+
-                   (*j).stream->getStride();
-             }
-             e[rdim-1]+=mag[rdim-1];
-             unsigned int k;
-             for (k=rdim-1;k>=1;--k) {
-                if (e[k]>=extent[k]){
-                   e[k]=0;
-                   e[k-1]+=mag[k-1];                   
-                }else break;
-             }
+          unsigned int cur=step;
+          if (remainder) cur++;
+          for (i=1;i<numThreads;++i) {
+            unsigned int *loc = e+dim*i;
+            calcLocation(loc,cur,dim,mag,extent);
+            cur+=step;
+            if (i<remainder) {
+              cur++;
+            }
           }
-          free (e);
+          cur=0;
+          for (unsigned int threads=0;threads<numThreads;++threads) {
+            unsigned int curfinal=cur+step;
+            if (threads<remainder) curfinal++;
+            //fork
+            for (;cur<curfinal;++cur) {
+            //bork bork bork!!
+              unsigned int * mapbegin=e+threads*dim;
+              (*nDfunc)(args,extents,dims,mapbegin,mag);
+              for (j=reductions.begin();j!=reductions.end();++j) {
+                args[(*j).which]=(char*)args[(*j).which]+
+                  (*j).stream->getStride();
+              }
+              mapbegin[rdim-1]+=mag[rdim-1];
+              unsigned int k;
+              for (k=rdim-1;k>=1;--k) {
+                if (mapbegin[k]>=extent[k]){
+                  mapbegin[k]=0;
+                  mapbegin[k-1]+=mag[k-1];                   
+                }else break;
+              }
+            }
+          }
+          free (buffer);
           for (j=reductions.begin();j!=reductions.end();++j) {
              (*j).stream->releaseData(brook::Stream::WRITE);
           }
