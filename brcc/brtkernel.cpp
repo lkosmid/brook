@@ -216,12 +216,14 @@ public:
    //The following function is obsolete for now since static sized
    //arrays are no longer helpful
     void printArrayStream(std::ostream &out, STAGE s) {
+      printGatherStream(out,s);
+      return;
         Type * t=a->form;
 	//temporarily dissect type.
 	Type * u=t;
 	Type ** typeToRestore=NULL;
 	Type * originalTarget=NULL;
-	while (u->type==TT_Array) {
+	while (0&&u->type==TT_Array) {
 	  ArrayType * uu =static_cast<ArrayType*>(u);
 	  if (uu->subType->type==TT_Stream) {
 	    //now we hop to the base type;
