@@ -121,10 +121,18 @@ kernel void writeFinalTriangles (Tri triangles[][],
   else if (whichVertex>=1.5&&whichVertex<2.5)
     triList=tri.C.xyz;
 }
+kernel float4 addN(float3 inxyz, float inw) {
+   float4 x = float4(inxyz.x,
+                     inxyz.y,
+                     inxyz.z,
+                     inw);
+   return x;
+} 
+kernel float4 identity(float4 a, float b){return a;}
 kernel void splitTriangles (Tri triangles[][], 
                             Neighbor neighbors[][],
                             float2 i<>,
-                            Neighbor newneighbors<>,
+                            Neighbor newnei<>,
                             out Tri triA<>,
                             out Tri triB<>,
                             out Tri triC<>,
@@ -135,49 +143,112 @@ kernel void splitTriangles (Tri triangles[][],
                             out Neighbor neighborD<>) {
   Tri tri=triangles[i];
   Neighbor oldneighbors=neighbors[i];
-  float3 ac = lerp(lerp (tris.A.xyz,tris.C.xyz,.5),
-                   lerp (tris.B.xyz,oldneighbors.AC.xyz,.5),
-                   .25);  
-  float3 ab = lerp(lerp (tris.A.xyz,tris.B.xyz,.5),
-                   lerp(tris.C.xyz,oldneighbors.AB.xyz,.5),
-                   .25);  
-  float3 bc = lerp(lerp (tris.B.xyz,tris.C.xyz,.5),
-                   lerp(tris.A.xyz,oldneighbors.BC.xyz,.5),
-                   .25);
-  float3 a = lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,oldneighbors.AC,.5),
-                            lerp(tri.B.xyz,tri.C.xyz,.5),
-                            .5),
-                       lerp(oldneighbors.AAB,oldneighbors.AAC,.5),
-                       .33),
-                  tri.A.xyz,
-                  .625);
-  float3 b = lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,oldneighbors.BC,.5),
-                            lerp(tri.A.xyz,tri.C.xyz,.5),
-                            .5),
-                       lerp(oldneighbors.ABB,oldneighbors.BBC,.5),
-                       .33),
-                  tri.B.xyz,
-                  .625);
-  float3 c = lerp(lerp(lerp(lerp(oldneighbors.AC.xyz,oldneighbors.BC,.5),
-                            lerp(tri.A.xyz,tri.B.xyz,.5),
-                            .5),
-                       lerp(oldneighbors.ACC,oldneighbors.BCC,.5),
-                       .33),
-                  tri.C.xyz,
-                  .625);
-  triA.A=a;
-  triA.B=ab;
-  triA.C=ac;
-  triB.A= ab;
-  triB.B=b;
-  triB.C=bc;
-  triC.A=ac;
-  triC.B=ab;
-  triC.C=c;
-  neighborA.AB=AB.xyz;
-  neighborA.BBC=AB.xyz;
+  float4 ac = addN(lerp(lerp (tri.A.xyz,tri.C.xyz,.5),
+                        lerp (tri.B.xyz,oldneighbors.AC.xyz,.5),
+                        .25),
+                   1);
+  float4 ab = addN(lerp(lerp (tri.A.xyz,tri.B.xyz,.5),
+                        lerp(tri.C.xyz,oldneighbors.AB.xyz,.5),
+                        .25),
+                   1);
+  float4 bc = addN(lerp(lerp (tri.B.xyz,tri.C.xyz,.5),
+                        lerp(tri.A.xyz,oldneighbors.BC.xyz,.5),
+                        .25),
+                   1);
+  float4 a = addN(lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,oldneighbors.AC.xyz,.5),
+                                 lerp(tri.B.xyz,tri.C.xyz,.5),
+                                 .5),
+                            lerp(oldneighbors.AAB.xyz,oldneighbors.AAC.xyz,.5),
+                            .33),
+                       tri.A.xyz,
+                       .625),
+                  1);
+  float4 b = addN(lerp(lerp(lerp(lerp(oldneighbors.AB.xyz,oldneighbors.BC.xyz,.5),
+                                 lerp(tri.A.xyz,tri.C.xyz,.5),
+                                 .5),
+                            lerp(oldneighbors.ABB.xyz,oldneighbors.BBC.xyz,.5),
+                            .33),
+                       tri.B.xyz,
+                       .625),
+                  1);
+  float4 c = addN(lerp(lerp(lerp(lerp(oldneighbors.AC.xyz,
+                                      oldneighbors.BC.xyz,
+                                      .5),
+                                 lerp(tri.A.xyz,
+                                      tri.B.xyz,
+                                      .5),
+                                 .5),
+                            lerp(oldneighbors.ACC.xyz,oldneighbors.BCC.xyz,.5),
+                            .33),
+                       tri.C.xyz,
+                       .625),
+                  1);
+  float4 BC_C= {newnei.BC.w,
+                newnei.ACC.w,
+                newnei.BCC.w,1};
+  float4 AC_A = {newnei.AC.w,
+                 newnei.AAB.w,
+                 newnei.AAC.w,1};
+  float4 AB_B = {newnei.AB.w,
+                 newnei.BBC.w,
+                 newnei.ABB.w,1};
+  triA.A=identity(a,1);
+  triA.B=identity(ab,1);
+  triA.C=identity(ac,1);
+  triB.A= identity(ab,1);
+  triB.B=identity(b,1);
+  triB.C=identity(bc,1);
+  triC.A=identity(ac,1);
+  triC.B=identity(ab,1);
+  triC.C=identity(c,1);
+  triD.A=identity(bc,1);
+  triD.B=identity(ac,1);
+  triD.C=identity(ab,1);
+
+  neighborC.BCC=newnei.BCC;
+  neighborC.BC=BC_C;
+  neighborC.BBC = newnei.BC;
+  neighborC.ABB = b;
+  neighborC.AB = ab;
+  neighborC.AAB = a;
+  neighborC.AAC = AC_A;
+  neighborC.AC = newnei.AC;
+  neighborC.ACC = newnei.ACC;
+  
+  neighborB.BCC = BC_C;
+  neighborB.BC = newnei.BC;
+  neighborB.BBC=newnei.BBC;
+  neighborB.ABB=newnei.ABB;
+  neighborB.AB = AB_B;
+  neighborB.AAB = newnei.AB;
+  neighborB.AAC = a;
+  neighborB.AC = ac;
+  neighborB.ACC = c;
+
+  neighborA.BCC = c;
+  neighborA.BC = bc;
+  neighborA.BBC= b;
+  neighborA.ABB= AB_B;
+  neighborA.AB = newnei.AB;
+  neighborA.AAB =  newnei.AAB;
+  neighborA.AAC =  newnei.AAC;
+  neighborA.AC = AC_A;
+  neighborA.ACC = newnei.AC;
+
+  neighborD.BCC = newnei.AB;
+  neighborD.BC = a;
+  neighborD.BBC= AC_A;
+  neighborD.ABB= newnei.AC;
+  neighborD.AB = c;
+  neighborD.AAB = BC_C;
+  neighborD.AAC = newnei.BC;
+  neighborD.AC = b;
+  neighborD.ACC = AB_B;
 
 }
 int main () {
-   
+   return 0;
 }
+
+
+
