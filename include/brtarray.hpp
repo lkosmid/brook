@@ -4,28 +4,42 @@ template <class VALUE, unsigned int dims, bool copy_data> class ConstXSpecified 
 	unsigned int indices [dims+1];
 	const BrtArray<VALUE,dims,copy_data> *const parent;
 public:
-	ConstXSpecified(const BrtArray<VALUE,dims,copy_data> *const parent,unsigned int i):parent(parent) {
-		indices[0]=i;
-		indices[dims]=1;
-		
+	ConstXSpecified(const BrtArray<VALUE,dims,copy_data> *const parent):parent(parent) {
+		indices[dims]=0;		
 	}
+#if 0
 	ConstXSpecified<VALUE,dims,copy_data> operator [] (unsigned int i) {
 		indices[indices[dims]++]=i;
 		return *this;
 	}
+#endif
+	template <class T> ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
+		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
+			indices[indices[dims]++]=(int)a.getAt(i);
+		}
+		return *this;
+	}
+	
 	operator VALUE () const;
 };
 template <class VALUE, unsigned int dims, bool copy_data> class XSpecified {
 	unsigned int indices [dims+1];
 	BrtArray<VALUE,dims,copy_data> *parent;
 public:
-	XSpecified(BrtArray<VALUE,dims,copy_data> * parent,unsigned int i) {
-		indices[0]=i;
-		indices[dims]=1;
+	XSpecified(BrtArray<VALUE,dims,copy_data> * parent) {
+		indices[dims]=0;
 		this->parent=parent;
 	}
+#if 0
 	XSpecified<VALUE,dims,copy_data> operator [] (unsigned int i){
 		indices[indices[dims]++]=i;
+		return *this;
+	}
+#endif
+	template <class T> XSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
+		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
+			indices[indices[dims]++]=(int)a.getAt(i);
+		}
 		return *this;
 	}
 	operator VALUE () const;
@@ -94,12 +108,26 @@ public:
 	VALUE&get (const unsigned int *indices) {
 		return data[this->linearaddresscalc(indices)];
 	}
+#if 0
 	ConstXSpecified<VALUE,dims,copy_data> operator [] (unsigned int i)const {
 		return  ConstXSpecified<VALUE,dims,copy_data>(this,i);
 	}
+#endif
+	template <class T> ConstXSpecified<VALUE,dims,copy_data> operator [] (const T &i) const{
+		ConstXSpecified<VALUE,dims,copy_data> ret(this);
+		return ret[i];		
+	}
+
+#if 0
 	XSpecified<VALUE,dims,copy_data> operator [] (unsigned int i){
 		return  XSpecified<VALUE,dims,copy_data>(this,i);
 	}
+#endif
+	template <class T> XSpecified<VALUE,dims,copy_data> operator [] (const T &i){
+		XSpecified<VALUE,dims,copy_data> ret(this);
+		return ret[i];		
+	}
+	
 };
 
 template <class VALUE, unsigned int dims, bool copy_data> XSpecified<VALUE,dims,copy_data>::operator VALUE ()const {
