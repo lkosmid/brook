@@ -22,8 +22,8 @@ LDFLAGS           +=
 LD_LIBDIR_FLAG    := -L
 LD_SHARED_FLAG    := -shared   
 LD_OUTPUT_FLAG    := -o 
-LD_LIBLINK_PREFIX := -l 
-LD_LIBLINK_SUFFIX :=  
+LD_LIBLINK_PREFIX := $(ROOTDIR)/$(BIN)/lib
+LD_LIBLINK_SUFFIX := .a
 LD_DEBUG_FLAG     := 
 
 LIBRARIES         +=
