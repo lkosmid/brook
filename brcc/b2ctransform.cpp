@@ -610,23 +610,18 @@ public:
     }
     virtual void findExpr( fnExprCallback cb ) { next->findExpr(cb); }    
 };
-
-// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-template <class ConverterFunctor> Expression *ConvertToT (Expression * eexpr) {
-    Expression * expression = eexpr;
-    if (ArrayBlacklist.find(expression)==ArrayBlacklist.end()) {
-        Expression * e = ConverterFunctor()(expression);
-        if (e) {
-          return e;
-        }
-    }
-    return expression;
+#define CONVERTTO(NAME) Expression * ConvertToT##NAME(Expression * eexpr){ \
+	Expression * expression = eexpr; \
+	if (ArrayBlacklist.find(expression)==ArrayBlacklist.end()) { \
+		Expression * e = NAME()(expression); \
+		if (e) \
+			return e; \
+	} \
+	return expression; \
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Expression *ConvertToTMaskConverter (Expression * e) {
-	return ConvertToT<MaskConverter>(e);
-}
+CONVERTTO(MaskConverter)
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindMask (Statement * s) {
@@ -634,9 +629,7 @@ void FindMask (Statement * s) {
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Expression *ConvertToTSwizzleConverter (Expression * e) {
-	return ConvertToT<SwizzleConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
-}
+CONVERTTO(SwizzleConverter)
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindSwizzle (Statement * s) {
@@ -644,9 +637,7 @@ void FindSwizzle (Statement * s) {
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Expression *ConvertToTQuestionColonConverter (Expression * e) {
-	return ConvertToT<QuestionColonConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
-}
+CONVERTTO(QuestionColonConverter)
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindQuestionColon (Statement * s) {
@@ -654,9 +645,7 @@ void FindQuestionColon (Statement * s) {
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Expression *ConvertToTIndexExprConverter (Expression * e) {
-	return ConvertToT<IndexExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
-}
+CONVERTTO(IndexExprConverter)
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindIndexExpr (Statement * s) {
@@ -664,9 +653,7 @@ void FindIndexExpr (Statement * s) {
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-Expression *ConvertToTConstantExprConverter (Expression * e) {
-	return ConvertToT<ConstantExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
-}
+CONVERTTO(ConstantExprConverter)
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void FindConstantExpr (Statement * s) {
