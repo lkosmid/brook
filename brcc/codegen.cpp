@@ -101,7 +101,6 @@ generate_shader_code (Decl **args, int nArgs,
 
   /* Print the argument list */
 
-  bool first=false;
 
   for (i=0; i < nArgs; i++) {
     TypeQual qual = args[i]->form->getQualifiers();
