@@ -19,8 +19,9 @@ ADDITIONAL_DEPENDANCIES = gram.h ps2arb_gram.h
 include ../common.mk
 
 ps2arb_gram.cpp ps2arb_gram.h: ps2arb_gram.y
-	bison -pps2arb_ -d -ops2arb_gram.cpp ps2arb_gram.y
-	mv -f ps2arb_gram.hpp ps2arb_gram.h
+	bison -pps2arb_ -d  ps2arb_gram.y
+	-mv -f ps2arb_gram.tab.c ps2arb_gram.cpp
+	-mv -f ps2arb_gram.tab.h ps2arb_gram.h
 
 ps2arb_lexer.cpp: ps2arb_lexer.l ps2arb_gram.h
 	flex -Pps2arb_ -ops2arb_lexer.cpp ps2arb_lexer.l
@@ -28,10 +29,10 @@ ps2arb_lexer.cpp: ps2arb_lexer.l ps2arb_gram.h
 lexer.cpp: lexer.l gram.h
 	flex $<
 	rm -rf lexer.cpp
-	mv lex.yy.c lexer.cpp
+	-mv lex.yy.c lexer.cpp
 
 gram.cpp gram.h:  gram.y
 	bison -d -b gram $<
-	mv -f gram.tab.c gram.cpp
-	mv -f gram.tab.h gram.h
+	-mv -f gram.tab.c gram.cpp
+	-mv -f gram.tab.h gram.h
 # DO NOT DELETE
