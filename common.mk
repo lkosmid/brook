@@ -164,7 +164,8 @@ ifdef BINARY
 	@rm -rf $(BINDIR)/$(BINARY_NAME).pdb $(DEPDIR)
 	@rm -rf $(BINARY_NAME).output
 endif
-	@rm -rf *~ .#* #* $(SLOP)
+	@rm -rf *~ .#* #*
+	@rm -rf $(SLOP)
 
 ## Regression testing ##
 
