@@ -9,10 +9,11 @@ typedef struct traverser_t {
   float3 Translation; 
   float3 Rotationx;
   float3 Rotationy;
+  float3 Rotationz;
 }Traverser;
 
 typedef struct transposedbbox_t{
-  float3 transp_rotx;
+  float4 transp_rotx;
   float3 transp_roty;
   // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
   /// cross(Rotationx,Rotationy);
@@ -27,7 +28,7 @@ typedef struct transposedbbox_t{
 
 
 typedef struct bbox_t{
-  float3 Rotationx;
+  float4 Rotationx;
   float3 Rotationy;
   // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
   /// cross(Rotationx,Rotationy);
@@ -66,11 +67,13 @@ kernel void getMatrixTranspose(float3 rX<>, float3 rY<>, float3 rZ <>,
 
 kernel void matMult(float3 aX<>, float3 aY<>, float3 aZ<>,
                     float3 bX<>, float3 bY<>, float3 bZ<>,
-                    out float3 oX<>, out float3 oY<>) {
+                    out float3 oX<>, out float3 oY<>, out float3 oZ<>) {
   float3 t_bX,t_bY,t_bZ;
   getMatrixTranspose(bX,bY,bZ,t_bX,t_bY,t_bZ);
   oX = float3(dot(aX,t_bX), dot(aX,t_bY), dot(aX,t_bZ));
   oY = float3(dot(aY,t_bX), dot(aY,t_bY), dot(aY,t_bZ));
+  oZ = float3(dot(aZ,t_bX), dot(aZ,t_bY), dot(aZ,t_bZ));
+
 }
 kernel float3 matVecMult(float3 aX<>, float3 aY<>, float3 aZ<>,
                          float3 v<>) {
@@ -381,8 +384,7 @@ kernel void Collide (Traverser currentNode<>,
   BBox b2=b2Tree[currentNode.index.zw];
   if (!obb_disjoint(currentNode.Rotationx,
                     currentNode.Rotationy,
-                    cross (currentNode.Rotationx,
-                           currentNode.Rotationy),
+                    currentNode.Rotationz,
                     currentNode.Translation,
                     b1.Radius.xyz,
                     b2.Radius.xyz)) {
@@ -423,10 +425,10 @@ kernel void CollideOBB (Traverser currentNode<>,
   BBox b2=b2Tree[currentNode.index.zw];
   float b1Greaterb2 = GetBBSize(b1.Radius.xyz)>GetBBSize(b2.Radius.xyz)?1:0;
   float4 temp;
-  collide = obb_disjoint(currentNode.Rotationx,
+  collide = obb_disjoint(currentNode.Rotationx.xyz,
                          currentNode.Rotationy,
                          cross (currentNode.Rotationx,
-                                currentNode.Rotationy),
+                                currentNode.Rotationy.xyz)*currentNode.Rotationx.w,
                          currentNode.Translation,
                          b1.Radius.xyz,
                          b2.Radius.xyz)?0:1;
@@ -474,10 +476,10 @@ kernel void CollideHack (Traverser currentNode<>,
   BBox b2=b2Tree[currentNode.index.zw];
   float b1Greaterb2 = GetBBSize(b1.Radius.xyz)>GetBBSize(b2.Radius.xyz)?1:0;
   float4 temp;
-  float collide = obb_disjoint(currentNode.Rotationx,
+  float collide = obb_disjoint(currentNode.Rotationx.xyz,
                                currentNode.Rotationy,
-                               cross (currentNode.Rotationx,
-                                      currentNode.Rotationy),
+                               cross (currentNode.Rotationx.xyz,
+                                      currentNode.Rotationy)*currentNode.Rotationx.w,
                                currentNode.Translation,
                                b1.Radius.xyz,
                                b2.Radius.xyz)?0:1;
@@ -510,7 +512,10 @@ kernel void updateCurrentNode(float stretchX,
                               BBox bTree[][],
                               Traverser nodes[][],
                               out Traverser nextNode<>) {
-  float leftOrRightChild = modTwo(stretchX?(indexof nextNode).x:(indexof nextNode).y);
+  float2 leftOrRightChild = {modTwo(stretchX
+                                    ?
+                                    (indexof nextNode).x:(indexof nextNode).y),
+                             0};
   Traverser lastNode = nodes[curNodeIndices.xy];
   float2 aTreeIndex = (curNodeIndices.z>=0)
                         ?curNodeIndices.zw+leftOrRightChild
@@ -518,43 +523,44 @@ kernel void updateCurrentNode(float stretchX,
   float2 bTreeIndex = (curNodeIndices.z>=0)
                          ?lastNode.index.zw
                          :-curNodeIndices.zw-1+leftOrRightChild;
-  float3 lastNodeRotationz = cross(lastNode.Rotationx,
-                                   lastNode.Rotationy);
+  //  float3 lastNodeRotationz = cross(lastNode.Rotationx.xyz,
+  //                            lastNode.Rotationy)*lastNode.Rotationx.w;
   if (curNodeIndices.z>=0) {
     TransposedBBox a =aTree[aTreeIndex];
     /*
     float3 rot_transpX;
     float3 rot_transpY;
     float3 rot_transpZ;
-    float3 aRotationz = cross(a.Rotationx,a.Rotationy);
-    getMatrixTranspose (a.Rotationx,
+    float3 aRotationz = cross(a.Rotationx.xyz,a.Rotationy)*a.Rotationx.w;
+    getMatrixTranspose (a.Rotationx.xyz,
                         a.Rotationy,
                         aRotationz,
                         rot_transpX,rot_transpY,rot_transpZ);    
     */
-    float3 atransp_rotz = cross(a.transp_rotx,a.transp_roty);
+    float3 atransp_rotz = cross(a.transp_rotx.xyz,a.transp_roty)*a.transp_rotx.w;
     matMult(//rot_transpX,rot_transpY,rot_transpZ,
-            a.transp_rotx,a.transp_roty,atransp_rotz,
-            lastNode.Rotationx,lastNode.Rotationy,lastNodeRotationz,
-            nextNode.Rotationx,nextNode.Rotationy);
+            a.transp_rotx.xyz,a.transp_roty,atransp_rotz,
+            lastNode.Rotationx,lastNode.Rotationy,lastNode.Rotationz,
+            nextNode.Rotationx,nextNode.Rotationy,nextNode.Rotationz);
             
     nextNode.Translation=matVecMult(//rot_transpX,rot_transpY,rot_transpZ,
-                                    a.transp_rotx,a.transp_roty,atransp_rotz,
+                                    a.transp_rotx.xyz,a.transp_roty,atransp_rotz,
                                     lastNode.Translation-a.Translation);
   }else {
     BBox b =bTree[bTreeIndex];
-    float3 bRotationz = cross(b.Rotationx,b.Rotationy);
+    float3 bRotationz = cross(b.Rotationx.xyz,b.Rotationy)*b.Rotationx.w;
     matMult(lastNode.Rotationx,
             lastNode.Rotationy,
-            lastNodeRotationz,
-            b.Rotationx,
+            lastNode.Rotationz,
+            b.Rotationx.xyz,
             b.Rotationy,
             bRotationz,
             nextNode.Rotationx,
-            nextNode.Rotationy);            
+            nextNode.Rotationy,
+            nextNode.Rotationz);            
     nextNode.Translation=lastNode.Translation+matVecMult(lastNode.Rotationx,
                                                          lastNode.Rotationy,
-                                                         lastNodeRotationz,
+                                                         lastNode.Rotationz,
                                                          b.Translation);
     
   }
@@ -584,14 +590,14 @@ void copyTriangle(unsigned int howMany, float t1A<>,float t1B<>, float t1C<>, Tr
 void TransposeBBoxes (unsigned int howmany, BBox * bb) {
   unsigned int i;
   for (i=0;i<howmany;++i) {
-    float3 x = bb[i].Rotationx;
+    float4 x = bb[i].Rotationx;
     float3 y = bb[i].Rotationy;
     float3 z;
-    z = float3(x.y*y.z-x.z*y.y,
-               x.z*y.x-x.x*y.z,
-               x.x*y.y-x.y*y.x);
+    z = float3(x.w*(x.y*y.z-x.z*y.y),
+               x.w*(x.z*y.x-x.x*y.z),
+               x.w*(x.x*y.y-x.y*y.x));
     
-    bb[i].Rotationx = float3(x.x,y.x,z.x);
+    bb[i].Rotationx = float4(x.x,y.x,z.x,x.w);
     bb[i].Rotationy = float3(x.y,y.y,z.y);
     //bb[i].Rotationx = float3(x.z,y.z,z.z);
     
@@ -629,15 +635,16 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
   baseTraverser.Translation=trans;
   baseTraverser.Rotationx=rX;
   baseTraverser.Rotationy=rY;
+  baseTraverser.Rotationz=rZ;
   streamRead(trav,&baseTraverser);
   *intersections=(float4*)malloc(alloc_intersections*sizeof(float4));
   /*copyTriangle(widt1*heit1,t1A,t1B,t1C,t1);
     copyTriangle(widt2*heit2,t2A,t2B,t2C,t2);*/
   streamRead(t1List,t1);
   streamRead(t2List,t2);
+  streamRead(m2,bboxest2);
   TransposeBBoxes(bboxwidt1*bboxheit1,bboxest1);
   streamRead(m1,bboxest1);
-  streamRead(m2,bboxest2);
   
   do {
      Collide(trav,m1,m2,nextNode,hits);
@@ -645,7 +652,7 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
      ysize = (int)streamSize(nextNode).y;     
      stretchX= (ysize*2>2048)?1.0:0.0;
      if (stretchX) xsize*=2; else ysize*=2;
-     {
+     if (xsize&&ysize) {
         Traverser temp<ysize,xsize>;
         streamSwap(temp,trav);
         updateCurrentNode(stretchX,
@@ -655,22 +662,25 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
                           temp,
                           trav);
      }
-     CheckTriangleCollide(rX,rY,rZ,trans,
-                          hits,
-                          t1List,
-                          t2List,
-                          nextNode);
-     streamSwap(hits,nextNode);
      temp = (int)streamSize(hits).x*(int)streamSize(hits).y;
      if (temp) {
-        while (num_intersections+temp>alloc_intersections) {
+       CheckTriangleCollide(rX,rY,rZ,trans,
+                            hits,
+                            t1List,
+                            t2List,
+                            nextNode);
+       streamSwap(hits,nextNode);
+       temp = (int)streamSize(hits).x*(int)streamSize(hits).y;
+       if (temp) {
+         while (num_intersections+temp>alloc_intersections) {
            alloc_intersections*=2;
            *intersections= (float4*)realloc(*intersections,alloc_intersections*sizeof(float4));
-        }
-        streamWrite(hits,*intersections+num_intersections);
-        num_intersections+=temp;
+         }
+         streamWrite(hits,*intersections+num_intersections);
+         num_intersections+=temp;
+       }
      }
-  }while(streamSize(trav).x&&streamSize(trav).y);
+  }while(xsize&&ysize);
   return num_intersections;
 }
 

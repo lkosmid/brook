@@ -29,7 +29,7 @@ class csCdBBox;
 struct csCdTriangle;
 struct csCollisionPair;
 typedef struct bbox_t{
-  float3 Rotationx;
+  float4 Rotationx;
   float3 Rotationy;
   // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
   /// cross(Rotationx,Rotationy);
@@ -103,7 +103,7 @@ private:
   static bool firstHit;
 
   void GeometryInitialize (const std::vector<bsp_polygon> &mesh);
-  
+  friend int main(int argc, char ** argv);
 public:
   static int numHits;
   void createBrookGeometryRecurse(const csCdBBox *curr, BBox & curw, std::vector <BBox> &bbox, std::vector<Tri> & tri);

@@ -117,7 +117,11 @@ void csRapidCollider::createBrookGeometryRecurse(const csCdBBox *curr,
                                                  std::vector<Tri>&tri){
   curw.Children.x = (float)(bbox.size()%2048);
   curw.Children.y = (float)(bbox.size()/2048);
-  curw.Rotationx = tofloat3(curr->m_Rotation.Row1());
+  float3 tmp = tofloat3(curr->m_Rotation.Row1());
+  curw.Rotationx.x = tmp.x;
+  curw.Rotationx.y = tmp.y;
+  curw.Rotationx.z = tmp.z;
+  curw.Rotationx.w =((curr->m_Rotation.Row1() % curr->m_Rotation.Row2())*curr->m_Rotation.Row3()>.8)?1:-1;
   curw.Rotationy = tofloat3(curr->m_Rotation.Row2());
   //  curw.Rotationz = tofloat3(curr->m_Rotation.Row3());
   curw.Translation = tofloat3(curr->m_Translation);
@@ -141,13 +145,14 @@ void csRapidCollider::createBrookGeometryRecurse(const csCdBBox *curr,
     assert (curr->m_pTriangle==0);
     curw.Radius.w = 0;
     bbox.push_back(BBox());
+    unsigned int secondchild = bbox.size();
     bbox.push_back(BBox());
     createBrookGeometryRecurse(curr->m_pChild0,
                                *(bbox.end()-2),
                                bbox,
                                tri);
     createBrookGeometryRecurse(curr->m_pChild1,
-                               bbox.back(),
+                               bbox[secondchild],
                                bbox,
                                tri);
   }
@@ -966,7 +971,7 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
 	const csMatrix3& R, const csVector3& T)
 {
   int rc;      // return codes
-  if (csRapidCollider::firstHit && (csRapidCollider::numHits > 0))
+  if (0&&csRapidCollider::firstHit && (csRapidCollider::numHits > 0))
     return false;
 
   // test top level
@@ -1006,24 +1011,30 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
     // for each child, and store the transform into the collision
     // test queue.
 
-    csMatrix3 rot_transp = b1->m_pChild1->m_Rotation.GetTranspose ();
+    csMatrix3 rot_transp = b1->m_pChild0->m_Rotation.GetTranspose ();
+    cR = rot_transp * R;
+    cT = rot_transp * (T - b1->m_pChild0->m_Translation);
+
+    if ((rc = CollideRecursive (b1->m_pChild0, b2, cR, cT)) != false)
+      return rc;
+
+    rot_transp = b1->m_pChild1->m_Rotation.GetTranspose ();
     cR = rot_transp * R;
     cT = rot_transp * (T - b1->m_pChild1->m_Translation);
 
     if ((rc = CollideRecursive (b1->m_pChild1, b2, cR, cT)) != false)
       return rc;
 	
-    rot_transp = b1->m_pChild0->m_Rotation.GetTranspose ();
-    cR = rot_transp * R;
-    cT = rot_transp * (T - b1->m_pChild0->m_Translation);
-
-    if ((rc = CollideRecursive (b1->m_pChild0, b2, cR, cT)) != false)
-      return rc;
   }
   else
   {
     // here we descend to the children of b2.  See comments for
     // other 'if' clause for explanation.
+    cR = R * b2->m_pChild0->m_Rotation;
+    cT = ( R * b2->m_pChild0->m_Translation) + T;
+
+    if ((rc = CollideRecursive (b1, b2->m_pChild0, cR, cT)) != false)
+      return rc;
  
     cR = R * b2->m_pChild1->m_Rotation;
     cT = ( R * b2->m_pChild1->m_Translation) + T;
@@ -1031,11 +1042,6 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
     if ((rc = CollideRecursive (b1, b2->m_pChild1, cR, cT)) != false)
       return rc;
 	
-    cR = R * b2->m_pChild0->m_Rotation;
-    cT = ( R * b2->m_pChild0->m_Translation) + T;
-
-    if ((rc = CollideRecursive (b1, b2->m_pChild0, cR, cT)) != false)
-      return rc;
   }
 
   return false;
