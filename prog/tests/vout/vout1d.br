@@ -36,13 +36,13 @@ kernel void calculateIndexModulus1d (float4 index,
    which= floor(fmod(index.x,modulus)-offset);
 }
 kernel float getSentinel1d () {
-   return 18446321861244485632.0f;//1.0f/floor(0.5);
+   return -18446321861244485632.0f;//1.0f/floor(0.5);
 }
 kernel float isSentinel1d(float a<>) {
    return a==getSentinel1d();//isinf(a);
 }
 float isSentinel1d_float(float a) {
-  return a==18446321861244485632.0f;
+  return a==-18446321861244485632.0f;
 }
 #define isSentinel1d_float2(output) isSentinel1d_float(output.x)
 #define isSentinel1d_float3(output) isSentinel1d_float(output.x)
