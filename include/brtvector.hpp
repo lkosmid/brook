@@ -187,6 +187,42 @@ public:
     }
 };
 
+template <class T> class BracketType {public:
+  typedef T type;
+};
+template <> class BracketType <float> {public:
+  typedef vec<float,1> type;
+};
+template <> class BracketType <int> {public:
+  typedef vec<int,1> type;
+};
+template <> class BracketType <char> {public:
+  typedef vec<char,1> type;
+};
+
+template <class T> class BracketOp {public:
+  template <class U> T& operator ()(const U&u, unsigned int i) {
+    return u.getAt(i);
+  }
+  template <class U> T& operator () (U&u, unsigned int i) {
+    return u.getAt(i);
+  }
+};
+template <> class BracketOp <float> {public:
+  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
+  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+};
+template <> class BracketOp <int> {public:
+  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
+  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+};
+template <> class BracketOp <char> {public:
+  template <class U> U& operator ()(const U&u, unsigned int i) {return u;}
+  template <class U> U& operator () (U&u, unsigned int i) {return u;}
+};
+
+
+
 template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
     return Holder<T>(in).getAt(i);
 }
@@ -252,8 +288,9 @@ public:
       return a(getAt(0),getAt(1),getAt(2),getAt(3));
     }        
     const VALUE &getAt (unsigned int i) const{return f[i%size];}
-    const VALUE &operator [] (unsigned int i)const {return f[i%size];}
-    VALUE &operator [] (unsigned int i) {return f[i%size];}
+    VALUE &getAt (unsigned int i) {return f[i%size];}
+    const typename BracketType<VALUE>::type &operator [] (unsigned int i)const {return BracketOp<VALUE>()(*this,i);}
+    typename BracketType<VALUE>::type &operator [] (unsigned int i) {return BracketOp<VALUE>()(*this,i);}
     vec<VALUE,tsize>& cast() {
         return *this;
     }
@@ -283,9 +320,9 @@ public:
 #define ASSIGN_OP(op) template <class T> \
          vec<VALUE,tsize>& operator op (const T & in) {  \
         f[0] op GetAt<T>(in,0);  \
-        if (size>1) f[1] op GetAt<T>(in,1);  \
-        if (size>2) f[2] op GetAt<T>(in,2);  \
-        if (size>3) f[3] op GetAt<T>(in,3);  \
+        if (tsize>1) f[1] op GetAt<T>(in,1);  \
+        if (tsize>2) f[2] op GetAt<T>(in,2);  \
+        if (tsize>3) f[3] op GetAt<T>(in,3);  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -297,10 +334,10 @@ public:
 #undef ASSIGN_OP
     template <class T, class X, class Y, class Z, class W> 
       vec<VALUE,4> mask4 (const T&in,X,Y,Z,W) {
-        if (size>X::ref)f[X::ref]=in.getAt(0);
-        if (size>Y::ref)f[Y::ref]=in.getAt(1);
-        if (size>Z::ref)f[Z::ref]=in.getAt(2);
-        if (size>W::ref)f[W::ref]=in.getAt(3);
+        if (tsize>X::ref)f[X::ref]=in.getAt(0);
+        if (tsize>Y::ref)f[Y::ref]=in.getAt(1);
+        if (tsize>Z::ref)f[Z::ref]=in.getAt(2);
+        if (tsize>W::ref)f[W::ref]=in.getAt(3);
         return vec<VALUE,4>(getAt(X::ref),
                     getAt(Y::ref),
                     getAt(Z::ref),
@@ -308,20 +345,20 @@ public:
     }
     template <class T, class X, class Y, class Z> 
       vec<VALUE,3> mask3 (const T&in,X,Y,Z) {
-        if (size>X::ref)f[X::ref]=in.getAt(0);
-        if (size>Y::ref)f[Y::ref]=in.getAt(1);
-        if (size>Z::ref)f[Z::ref]=in.getAt(2);
+        if (tsize>X::ref)f[X::ref]=in.getAt(0);
+        if (tsize>Y::ref)f[Y::ref]=in.getAt(1);
+        if (tsize>Z::ref)f[Z::ref]=in.getAt(2);
         return vec<VALUE,3>(getAt(X::ref),getAt(Y::ref),getAt(Z::ref));
     }
     template <class T, class X, class Y> 
       vec<VALUE,2> mask2 (const T&in,X,Y) {
-        if (size>X::ref)f[X::ref]=in.getAt(0);
-        if (size>Y::ref)f[Y::ref]=in.getAt(1);
+        if (tsize>X::ref)f[X::ref]=in.getAt(0);
+        if (tsize>Y::ref)f[Y::ref]=in.getAt(1);
         return vec<VALUE,2>(getAt(X::ref),getAt(Y::ref));
     }
     template <class T, class X> 
       vec<VALUE,1> mask1 (const T&in,X) {
-        if (size>X::ref)f[X::ref]=in.getAt(0);
+        if (tsize>X::ref)f[X::ref]=in.getAt(0);
         return vec<VALUE,1>(getAt(X::ref));
     }    
     vec() {
