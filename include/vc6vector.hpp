@@ -12,22 +12,47 @@
 #include "type_promotion.hpp"
 template <class VALUE, unsigned int tsize> class vec;
 
-template <class T, class B> static T singlequestioncolon (const B& a,
+template <class T, class B> inline T singlequestioncolon (const B& a,
                                                           const T&b,
                                                           const T&c){
     return a.questioncolon(b,c);
 };
-template <> static float singlequestioncolon (const char & a,
+template <> inline float singlequestioncolon (const char & a,
                                               const float &b,
                                               const float&c) {
     return a?b:c;
 }
-template <> static float singlequestioncolon (const float & a,
+template <> inline float singlequestioncolon (const float & a,
                                               const float &b,
                                               const float&c) {
     return a?b:c;
 }
 
+template <> inline vec<float,1> singlequestioncolon (const vec<float,1> &a,
+                                                     const vec<float,1> &b,
+                                                     const vec<float,1> &c);
+template <> inline vec<float,2> singlequestioncolon (const vec<float,2> & a,
+                                                     const vec<float,2> &b,
+                                                     const vec<float,2> &c);
+template <> inline vec<float,3> singlequestioncolon (const vec<float,3> &a,
+                                                     const vec<float,3> &b,
+                                                     const vec<float,3> &c);
+template <> inline vec<float,4> singlequestioncolon (const vec<float,4> &a,
+                                                     const vec<float,4> &b,
+                                                     const vec<float,4> &c);
+
+inline float step_float (float a, float x){
+   return (float)((x>=a)?1.0f:0.0f);
+}
+inline float max_float(float x, float y) {
+   return (float)(x>y?x:y);
+}
+inline float min_float(float x, float y) {
+   return (float)(x<y?x:y);
+}
+inline float ldexp_float(float x, float y) {
+   return (float)ldexp(x,(int)y);
+}
 template <class T> class GetValueOf {public:
     typedef typename T::TYPE type;
 };
@@ -49,7 +74,7 @@ template <> class GetValueOf <char> {public:
 template <> class GetValueOf <bool> {public:
     typedef bool type;
 };
-#if defined (_MSC_VER) && _MSC_VER <=1200
+#if defined (_MSC_VER)
 template <class T> class Holder {
 public:
     static typename GetValueOf<T>::type getAt (const T&t, int i) {
@@ -174,10 +199,10 @@ public:
     const VALUE &unsafeGetAt (unsigned int i) const{return f[i];}
     VALUE &unsafeGetAt (unsigned int i) {return f[i];}
     typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
-    vec<VALUE,tsize>& cast() {
+    vec<VALUE,tsize>& gather() {
         return *this;
     }
-    const vec<VALUE,tsize>& cast() const{
+    const vec<VALUE,tsize>& gather() const{
         return *this;
     }
     template<class BRT_TYPE> BRT_TYPE castTo() {
@@ -186,6 +211,21 @@ public:
 					   getAt(2),
 					   getAt(3));
     }
+   vec<VALUE,1> any() const{
+      return vec<VALUE,1>(getAt(0)!=0.0f||getAt(1)!=0.0f||getAt(2)!=0.0f||getAt(3)!=0.0f);
+   }
+   vec<VALUE,1> all() const {
+      return vec<VALUE,1>(getAt(0)!=0.0f&&getAt(1)!=0.0f&&getAt(2)!=0.0f&&getAt(3)!=0.0f);
+   }
+   vec<VALUE,1> length() const {
+      unsigned int i;
+      VALUE tot = unsafeGetAt(0);
+      tot*=tot;
+      for (i=1;i<tsize;++i) {
+         tot+=unsafeGetAt(i)*unsafeGetAt(i);
+      }
+      return vec<VALUE,1>((VALUE)sqrt(tot));
+   }
 #define BROOK_UNARY_OP(op) vec<VALUE,tsize> operator op ()const { \
       return vec<VALUE, tsize > (op getAt(0),  \
                                  op getAt(1),  \
@@ -212,7 +252,7 @@ public:
         return vec<VALUE,1>(unsafeGetAt(x));
     }
     vec() {}
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const int &inx, 
@@ -243,10 +283,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const int & in) {  \
-        f[0] op GetAt<int>(in,0);  \
-        if (tsize>1) f[1] op GetAt<int>(in,1);  \
-        if (tsize>2) f[2] op GetAt<int>(in,2);  \
-        if (tsize>3) f[3] op GetAt<int>(in,3);  \
+        f[0] op (VALUE)(GetAt<int>(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<int>(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<int>(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<int>(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -257,7 +297,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const char &inx, 
@@ -288,10 +328,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const char & in) {  \
-        f[0] op GetAt<char>(in,0);  \
-        if (tsize>1) f[1] op GetAt<char>(in,1);  \
-        if (tsize>2) f[2] op GetAt<char>(in,2);  \
-        if (tsize>3) f[3] op GetAt<char>(in,3);  \
+        f[0] op (VALUE)(GetAt<char>(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<char>(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<char>(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<char>(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -302,7 +342,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const float &inx, 
@@ -333,10 +373,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const float & in) {  \
-        f[0] op GetAt<float>(in,0);  \
-        if (tsize>1) f[1] op GetAt<float>(in,1);  \
-        if (tsize>2) f[2] op GetAt<float>(in,2);  \
-        if (tsize>3) f[3] op GetAt<float>(in,3);  \
+        f[0] op (VALUE)(GetAt<float>(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<float>(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<float>(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<float>(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -347,7 +387,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const double &inx, 
@@ -378,10 +418,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const double & in) {  \
-        f[0] op GetAt<double>(in,0);  \
-        if (tsize>1) f[1] op GetAt<double>(in,1);  \
-        if (tsize>2) f[2] op GetAt<double>(in,2);  \
-        if (tsize>3) f[3] op GetAt<double>(in,3);  \
+        f[0] op (VALUE)(GetAt<double>(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<double>(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<double>(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<double>(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -392,7 +432,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const unsigned int &inx, 
@@ -423,10 +463,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const unsigned int & in) {  \
-        f[0] op GetAt<unsigned int>(in,0);  \
-        if (tsize>1) f[1] op GetAt<unsigned int>(in,1);  \
-        if (tsize>2) f[2] op GetAt<unsigned int>(in,2);  \
-        if (tsize>3) f[3] op GetAt<unsigned int>(in,3);  \
+        f[0] op (VALUE)(GetAt<unsigned int>(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<unsigned int>(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<unsigned int>(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<unsigned int>(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -437,7 +477,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,1>  &inx, 
@@ -468,10 +508,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<float,1>  & in) {  \
-        f[0] op GetAt<vec<float,1> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<float,1> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<float,1> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<float,1> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<float,1> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<float,1> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<float,1> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<float,1> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -482,7 +522,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,1>  &inx, 
@@ -513,10 +553,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<int,1>  & in) {  \
-        f[0] op GetAt<vec<int,1> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<int,1> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<int,1> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<int,1> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<int,1> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<int,1> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<int,1> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<int,1> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -527,7 +567,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,1>  &inx, 
@@ -558,10 +598,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<char,1>  & in) {  \
-        f[0] op GetAt<vec<char,1> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<char,1> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<char,1> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<char,1> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<char,1> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<char,1> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<char,1> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<char,1> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -572,7 +612,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,2>  &inx, 
@@ -603,10 +643,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<float,2>  & in) {  \
-        f[0] op GetAt<vec<float,2> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<float,2> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<float,2> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<float,2> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<float,2> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<float,2> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<float,2> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<float,2> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -617,7 +657,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,2>  &inx, 
@@ -648,10 +688,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<int,2>  & in) {  \
-        f[0] op GetAt<vec<int,2> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<int,2> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<int,2> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<int,2> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<int,2> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<int,2> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<int,2> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<int,2> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -662,7 +702,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,2>  &inx, 
@@ -693,10 +733,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<char,2>  & in) {  \
-        f[0] op GetAt<vec<char,2> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<char,2> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<char,2> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<char,2> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<char,2> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<char,2> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<char,2> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<char,2> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -707,7 +747,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,3>  &inx, 
@@ -738,10 +778,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<float,3>  & in) {  \
-        f[0] op GetAt<vec<float,3> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<float,3> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<float,3> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<float,3> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<float,3> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<float,3> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<float,3> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<float,3> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -752,7 +792,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,3>  &inx, 
@@ -783,10 +823,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<int,3>  & in) {  \
-        f[0] op GetAt<vec<int,3> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<int,3> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<int,3> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<int,3> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<int,3> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<int,3> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<int,3> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<int,3> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -797,7 +837,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,3>  &inx, 
@@ -828,10 +868,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<char,3>  & in) {  \
-        f[0] op GetAt<vec<char,3> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<char,3> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<char,3> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<char,3> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<char,3> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<char,3> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<char,3> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<char,3> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -842,7 +882,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<float,4>  &inx, 
@@ -873,10 +913,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<float,4>  & in) {  \
-        f[0] op GetAt<vec<float,4> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<float,4> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<float,4> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<float,4> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<float,4> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<float,4> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<float,4> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<float,4> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -887,7 +927,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<int,4>  &inx, 
@@ -918,10 +958,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<int,4>  & in) {  \
-        f[0] op GetAt<vec<int,4> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<int,4> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<int,4> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<int,4> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<int,4> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<int,4> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<int,4> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<int,4> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -932,7 +972,7 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 214 "brtvector.hpp"
+#line 254 "brtvector.hpp"
 #define GENERAL_TEMPLATIZED_FUNCTIONS
      
       vec (const vec<char,4>  &inx, 
@@ -963,10 +1003,10 @@ public:
     }        
 #define ASSIGN_OP(op)  \
          vec<VALUE,tsize>& operator op (const vec<char,4>  & in) {  \
-        f[0] op GetAt<vec<char,4> >(in,0);  \
-        if (tsize>1) f[1] op GetAt<vec<char,4> >(in,1);  \
-        if (tsize>2) f[2] op GetAt<vec<char,4> >(in,2);  \
-        if (tsize>3) f[3] op GetAt<vec<char,4> >(in,3);  \
+        f[0] op (VALUE)(GetAt<vec<char,4> >(in,0));  \
+        if (tsize>1) f[1] op (VALUE)(GetAt<vec<char,4> >(in,1));  \
+        if (tsize>2) f[2] op (VALUE)(GetAt<vec<char,4> >(in,2));  \
+        if (tsize>3) f[3] op (VALUE)(GetAt<vec<char,4> >(in,3));  \
         return *this;  \
     }
     ASSIGN_OP(=);
@@ -977,9 +1017,9 @@ public:
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
-#line 257 "brtvector.hpp"
+#line 297 "brtvector.hpp"
 
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,1> &in,int X, int Y,int Z,int W) {
@@ -1056,10 +1096,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<float,VALUE>::type,1> 
+    dot (const vec<float,1>  &b) const{
+      return vec< LCM<float,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<float,1> >(b,0) + 
+                                     getAt(1) * GetAt<vec<float,1> >(b,1) + 
+                                     getAt(2) * GetAt<vec<float,1> >(b,2) + 
+                                     getAt(3) * GetAt<vec<float,1> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<float,1> >(b,0) + 
+                                      getAt(1) * GetAt<vec<float,1> >(b,1) +
+                                      getAt(2) * GetAt<vec<float,1> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<float,1> >(b,0) + 
+                                      getAt(1) * GetAt<vec<float,1> >(b,1)):
+                 getAt(0) * GetAt<vec<float,1> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<float,VALUE>::type,1> 
+    distance (const vec<float,1>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<float,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<float,1>  &b)const{ \
+      return vec< TYPESPECIFIER<float, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<float,1> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<float,1> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<float,1> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<float,1> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,1> &in,int X, int Y,int Z,int W) {
@@ -1136,10 +1223,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<int,VALUE>::type,1> 
+    dot (const vec<int,1>  &b) const{
+      return vec< LCM<int,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<int,1> >(b,0) + 
+                                     getAt(1) * GetAt<vec<int,1> >(b,1) + 
+                                     getAt(2) * GetAt<vec<int,1> >(b,2) + 
+                                     getAt(3) * GetAt<vec<int,1> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<int,1> >(b,0) + 
+                                      getAt(1) * GetAt<vec<int,1> >(b,1) +
+                                      getAt(2) * GetAt<vec<int,1> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<int,1> >(b,0) + 
+                                      getAt(1) * GetAt<vec<int,1> >(b,1)):
+                 getAt(0) * GetAt<vec<int,1> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<int,VALUE>::type,1> 
+    distance (const vec<int,1>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<int,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<int,1>  &b)const{ \
+      return vec< TYPESPECIFIER<int, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<int,1> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<int,1> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<int,1> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<int,1> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,1> &in,int X, int Y,int Z,int W) {
@@ -1216,10 +1350,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<char,VALUE>::type,1> 
+    dot (const vec<char,1>  &b) const{
+      return vec< LCM<char,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<char,1> >(b,0) + 
+                                     getAt(1) * GetAt<vec<char,1> >(b,1) + 
+                                     getAt(2) * GetAt<vec<char,1> >(b,2) + 
+                                     getAt(3) * GetAt<vec<char,1> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<char,1> >(b,0) + 
+                                      getAt(1) * GetAt<vec<char,1> >(b,1) +
+                                      getAt(2) * GetAt<vec<char,1> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<char,1> >(b,0) + 
+                                      getAt(1) * GetAt<vec<char,1> >(b,1)):
+                 getAt(0) * GetAt<vec<char,1> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<char,VALUE>::type,1> 
+    distance (const vec<char,1>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<char,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<char,1>  &b)const{ \
+      return vec< TYPESPECIFIER<char, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<char,1> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<char,1> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<char,1> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<char,1> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,2> &in,int X, int Y,int Z,int W) {
@@ -1296,10 +1477,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<float,VALUE>::type,1> 
+    dot (const vec<float,2>  &b) const{
+      return vec< LCM<float,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<float,2> >(b,0) + 
+                                     getAt(1) * GetAt<vec<float,2> >(b,1) + 
+                                     getAt(2) * GetAt<vec<float,2> >(b,2) + 
+                                     getAt(3) * GetAt<vec<float,2> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<float,2> >(b,0) + 
+                                      getAt(1) * GetAt<vec<float,2> >(b,1) +
+                                      getAt(2) * GetAt<vec<float,2> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<float,2> >(b,0) + 
+                                      getAt(1) * GetAt<vec<float,2> >(b,1)):
+                 getAt(0) * GetAt<vec<float,2> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<float,VALUE>::type,1> 
+    distance (const vec<float,2>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<float,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<float,2>  &b)const{ \
+      return vec< TYPESPECIFIER<float, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<float,2> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<float,2> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<float,2> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<float,2> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,2> &in,int X, int Y,int Z,int W) {
@@ -1376,10 +1604,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<int,VALUE>::type,1> 
+    dot (const vec<int,2>  &b) const{
+      return vec< LCM<int,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<int,2> >(b,0) + 
+                                     getAt(1) * GetAt<vec<int,2> >(b,1) + 
+                                     getAt(2) * GetAt<vec<int,2> >(b,2) + 
+                                     getAt(3) * GetAt<vec<int,2> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<int,2> >(b,0) + 
+                                      getAt(1) * GetAt<vec<int,2> >(b,1) +
+                                      getAt(2) * GetAt<vec<int,2> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<int,2> >(b,0) + 
+                                      getAt(1) * GetAt<vec<int,2> >(b,1)):
+                 getAt(0) * GetAt<vec<int,2> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<int,VALUE>::type,1> 
+    distance (const vec<int,2>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<int,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<int,2>  &b)const{ \
+      return vec< TYPESPECIFIER<int, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<int,2> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<int,2> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<int,2> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<int,2> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,2> &in,int X, int Y,int Z,int W) {
@@ -1456,10 +1731,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<char,VALUE>::type,1> 
+    dot (const vec<char,2>  &b) const{
+      return vec< LCM<char,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<char,2> >(b,0) + 
+                                     getAt(1) * GetAt<vec<char,2> >(b,1) + 
+                                     getAt(2) * GetAt<vec<char,2> >(b,2) + 
+                                     getAt(3) * GetAt<vec<char,2> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<char,2> >(b,0) + 
+                                      getAt(1) * GetAt<vec<char,2> >(b,1) +
+                                      getAt(2) * GetAt<vec<char,2> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<char,2> >(b,0) + 
+                                      getAt(1) * GetAt<vec<char,2> >(b,1)):
+                 getAt(0) * GetAt<vec<char,2> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<char,VALUE>::type,1> 
+    distance (const vec<char,2>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<char,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<char,2>  &b)const{ \
+      return vec< TYPESPECIFIER<char, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<char,2> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<char,2> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<char,2> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<char,2> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,3> &in,int X, int Y,int Z,int W) {
@@ -1536,10 +1858,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<float,VALUE>::type,1> 
+    dot (const vec<float,3>  &b) const{
+      return vec< LCM<float,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<float,3> >(b,0) + 
+                                     getAt(1) * GetAt<vec<float,3> >(b,1) + 
+                                     getAt(2) * GetAt<vec<float,3> >(b,2) + 
+                                     getAt(3) * GetAt<vec<float,3> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<float,3> >(b,0) + 
+                                      getAt(1) * GetAt<vec<float,3> >(b,1) +
+                                      getAt(2) * GetAt<vec<float,3> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<float,3> >(b,0) + 
+                                      getAt(1) * GetAt<vec<float,3> >(b,1)):
+                 getAt(0) * GetAt<vec<float,3> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<float,VALUE>::type,1> 
+    distance (const vec<float,3>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<float,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<float,3>  &b)const{ \
+      return vec< TYPESPECIFIER<float, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<float,3> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<float,3> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<float,3> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<float,3> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,3> &in,int X, int Y,int Z,int W) {
@@ -1616,10 +1985,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<int,VALUE>::type,1> 
+    dot (const vec<int,3>  &b) const{
+      return vec< LCM<int,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<int,3> >(b,0) + 
+                                     getAt(1) * GetAt<vec<int,3> >(b,1) + 
+                                     getAt(2) * GetAt<vec<int,3> >(b,2) + 
+                                     getAt(3) * GetAt<vec<int,3> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<int,3> >(b,0) + 
+                                      getAt(1) * GetAt<vec<int,3> >(b,1) +
+                                      getAt(2) * GetAt<vec<int,3> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<int,3> >(b,0) + 
+                                      getAt(1) * GetAt<vec<int,3> >(b,1)):
+                 getAt(0) * GetAt<vec<int,3> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<int,VALUE>::type,1> 
+    distance (const vec<int,3>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<int,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<int,3>  &b)const{ \
+      return vec< TYPESPECIFIER<int, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<int,3> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<int,3> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<int,3> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<int,3> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,3> &in,int X, int Y,int Z,int W) {
@@ -1696,10 +2112,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<char,VALUE>::type,1> 
+    dot (const vec<char,3>  &b) const{
+      return vec< LCM<char,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<char,3> >(b,0) + 
+                                     getAt(1) * GetAt<vec<char,3> >(b,1) + 
+                                     getAt(2) * GetAt<vec<char,3> >(b,2) + 
+                                     getAt(3) * GetAt<vec<char,3> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<char,3> >(b,0) + 
+                                      getAt(1) * GetAt<vec<char,3> >(b,1) +
+                                      getAt(2) * GetAt<vec<char,3> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<char,3> >(b,0) + 
+                                      getAt(1) * GetAt<vec<char,3> >(b,1)):
+                 getAt(0) * GetAt<vec<char,3> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<char,VALUE>::type,1> 
+    distance (const vec<char,3>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<char,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<char,3>  &b)const{ \
+      return vec< TYPESPECIFIER<char, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<char,3> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<char,3> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<char,3> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<char,3> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<float,4> &in,int X, int Y,int Z,int W) {
@@ -1776,10 +2239,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<float,VALUE>::type,1> 
+    dot (const vec<float,4>  &b) const{
+      return vec< LCM<float,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<float,4> >(b,0) + 
+                                     getAt(1) * GetAt<vec<float,4> >(b,1) + 
+                                     getAt(2) * GetAt<vec<float,4> >(b,2) + 
+                                     getAt(3) * GetAt<vec<float,4> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<float,4> >(b,0) + 
+                                      getAt(1) * GetAt<vec<float,4> >(b,1) +
+                                      getAt(2) * GetAt<vec<float,4> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<float,4> >(b,0) + 
+                                      getAt(1) * GetAt<vec<float,4> >(b,1)):
+                 getAt(0) * GetAt<vec<float,4> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<float,VALUE>::type,1> 
+    distance (const vec<float,4>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<float,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<float,4>  &b)const{ \
+      return vec< TYPESPECIFIER<float, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<float,4> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<float,4> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<float,4> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<float,4> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<int,4> &in,int X, int Y,int Z,int W) {
@@ -1856,10 +2366,57 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<int,VALUE>::type,1> 
+    dot (const vec<int,4>  &b) const{
+      return vec< LCM<int,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<int,4> >(b,0) + 
+                                     getAt(1) * GetAt<vec<int,4> >(b,1) + 
+                                     getAt(2) * GetAt<vec<int,4> >(b,2) + 
+                                     getAt(3) * GetAt<vec<int,4> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<int,4> >(b,0) + 
+                                      getAt(1) * GetAt<vec<int,4> >(b,1) +
+                                      getAt(2) * GetAt<vec<int,4> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<int,4> >(b,0) + 
+                                      getAt(1) * GetAt<vec<int,4> >(b,1)):
+                 getAt(0) * GetAt<vec<int,4> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<int,VALUE>::type,1> 
+    distance (const vec<int,4>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<int,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<int,4>  &b)const{ \
+      return vec< TYPESPECIFIER<int, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<int,4> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<int,4> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<int,4> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<int,4> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 258 "brtvector.hpp"
+#line 298 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     
       vec<VALUE,4> mask4 (const vec<char,4> &in,int X, int Y,int Z,int W) {
@@ -1936,21 +2493,98 @@ public:
     BROOK_BINARY_OP(>=,COMMON_CHAR)        
     BROOK_BINARY_OP(!=,COMMON_CHAR)
     BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+
+    vec<typename LCM<char,VALUE>::type,1> 
+    dot (const vec<char,4>  &b) const{
+      return vec< LCM<char,
+                                           VALUE>::type, 1> 
+                ((LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==4?(getAt(0) * GetAt<vec<char,4> >(b,0) + 
+                                     getAt(1) * GetAt<vec<char,4> >(b,1) + 
+                                     getAt(2) * GetAt<vec<char,4> >(b,2) + 
+                                     getAt(3) * GetAt<vec<char,4> >(b,3)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==3?(getAt(0) * GetAt<vec<char,4> >(b,0) + 
+                                      getAt(1) * GetAt<vec<char,4> >(b,1) +
+                                      getAt(2) * GetAt<vec<char,4> >(b,2)):
+                 (LUB<TEMPL_TYPTESIZE,
+                     tsize>::size)==2?(getAt(0) * GetAt<vec<char,4> >(b,0) + 
+                                      getAt(1) * GetAt<vec<char,4> >(b,1)):
+                 getAt(0) * GetAt<vec<char,4> >(b,0));
+                 
+    }
+
+
+    vec<typename LCM<char,VALUE>::type,1> 
+    distance (const vec<char,4>  &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER)           \
+    vec<typename TYPESPECIFIER<char,VALUE>::type, \
+       LUB<TEMPL_TYPESIZE,tsize>::size> op (const vec<char,4>  &b)const{ \
+      return vec< TYPESPECIFIER<char, \
+                                           VALUE>::type, \
+		 LUB<TEMPL_TYPESIZE,tsize>::size> \
+                (subop(getAt(0) , GetAt<vec<char,4> >(b,0)), \
+                 subop(getAt(1) , GetAt<vec<char,4> >(b,1)), \
+                 subop(getAt(2) , GetAt<vec<char,4> >(b,2)), \
+                 subop(getAt(3) , GetAt<vec<char,4> >(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE
 #undef BROOK_BINARY_OP    
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
-#line 336 "brtvector.hpp"
-#line 336 "brtvector.hpp"
+#line 423 "brtvector.hpp"
+#line 423 "brtvector.hpp"
 
-#line 336 "brtvector.hpp"
+#line 423 "brtvector.hpp"
 
-#line 336 "brtvector.hpp"
+#line 423 "brtvector.hpp"
 
-#line 336 "brtvector.hpp"
+#line 423 "brtvector.hpp"
 
-#line 336 "brtvector.hpp"
+#line 423 "brtvector.hpp"
 
 };
+
+
+template <> inline vec<float,1> singlequestioncolon (const vec<float,1> &a,
+                                                     const vec<float,1> &b,
+                                                     const vec<float,1> &c) {
+    return a.unsafeGetAt(0)?b:c;
+}
+
+template <> inline vec<float,2> singlequestioncolon (const vec<float,2> & a,
+                                                     const vec<float,2> &b,
+                                                     const vec<float,2> &c) {
+    return vec<float,2> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1));
+}
+template <> inline vec<float,3> singlequestioncolon (const vec<float,3> &a,
+                                              const vec<float,3> &b,
+                                              const vec<float,3> &c) {
+    return vec<float,3> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1),
+                         a.unsafeGetAt(2)?b.unsafeGetAt(2):c.unsafeGetAt(2));
+}
+template <> inline vec<float,4> singlequestioncolon (const vec<float,4> &a,
+                                              const vec<float,4> &b,
+                                              const vec<float,4> &c) {
+    return vec<float,4> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1),
+                         a.unsafeGetAt(2)?b.unsafeGetAt(2):c.unsafeGetAt(2),
+                         a.unsafeGetAt(3)?b.unsafeGetAt(3):c.unsafeGetAt(3));
+}
+
 
 
 
@@ -2046,5 +2680,39 @@ MATRIXXY_CLASS(__BrtChar,1,2);
 MATRIXXY_CLASS(__BrtChar,1,1);
 
 #undef MATRIXXY_CLASS
+
+
+
+
 #endif
+inline static __BrtFloat4 computeIndexOf(unsigned int i,
+                                         unsigned int dim,
+                                         const unsigned int *extents){
+   return __BrtFloat4((float)(i%extents[dim-1]),
+                      dim>1?(float)((i/extents[dim-1])%extents[dim-2]):0.0f,
+                      dim>2?(float)((i/(extents[dim-2]*extents[dim-1]))
+                            %extents[dim-3]):0.0f,
+                      dim>3?(float)(i/(extents[dim-3]
+                                       *extents[dim-2]
+                                       *extents[dim-1])):0.0f
+                      );
+}
+
+inline static void incrementIndexOf(__BrtFloat4 &indexof,
+                                    unsigned int dim, 
+                                    const unsigned int *extents) {
+   indexof.unsafeGetAt(0)+=1;
+   if (indexof.unsafeGetAt(0)>=extents[dim-1]) {
+      indexof.unsafeGetAt(0)-=extents[dim-1];
+      indexof.unsafeGetAt(1)+=1;
+      if (dim>1&&indexof.unsafeGetAt(1)>=extents[dim-2]) {
+         indexof.unsafeGetAt(1)-=extents[dim-2];
+         indexof.unsafeGetAt(2)+=1;
+         if (dim>2&&indexof.unsafeGetAt(2)>=extents[dim-3]) {
+            indexof.unsafeGetAt(2)-=extents[dim-3];
+            indexof.unsafeGetAt(3)+=1;
+         }
+      }
+   }
+}
 #endif
