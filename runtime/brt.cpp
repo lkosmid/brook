@@ -49,7 +49,7 @@ inline float isnan_flt (float x) {
 #include "logger.hpp"
 
 float getSentinel() {
-   return (float)-18446321861244485632.0;
+   return (float)-1844632.18612444856320;
 } 
 namespace brook {
 
