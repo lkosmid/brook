@@ -1787,7 +1787,7 @@ bool Decl::printStructureStreamShape(std::ostream& out)
   std::ostringstream stringout;
 
   stringout << "\nnamespace brook {\n";
-  stringout << "\ttemplate<> const StreamType* getStreamType(";
+  stringout << "\ttemplate<> inline const StreamType* getStreamType(";
   stringout << name->name << "*) {\n";
   stringout << "\t\tstatic const StreamType result[] = {";
   if(!form->printStructureStreamShape( stringout ))
