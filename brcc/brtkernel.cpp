@@ -276,12 +276,13 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 		indent(out,3);
 		out << "ratioiter"<<index<<"=0;";
 		indent(out,3);
-		out << "if (++iter"<<index<<"%extents["<<index<<"][0]==0) {";
+		out << "if (++iter"<<index<<"%extents["<<index<<"]";
+                out << "[dim-1]==0) {";
                 out << std::endl;
 		indent(out,4);
 		out << "iter"<<index<<"=getIndexOf(i+mapbegin,";
                 out << "extents["<<index<<"],";
-                out << "dims["<<ref<<"], extents["<<ref<<"]);";
+                out << "dim, extents["<<ref<<"]);";
 		out << std::endl;
 		indent(out,3);
 		out << "}"<<std::endl;
@@ -301,7 +302,7 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 		indent(out,!isOut?3:4);
 		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapend,";
                 out << "extents["<<index<<"], ";
-                out << "dims["<<ref<<"], extents["<<ref<<"]);";
+                out << "dim, extents["<<ref<<"]);";
 		out << std::endl;
 		indent(out,!isOut?3:4);
 		out << "x"<<index<<" = arg"<<index<<" + delta_x"<<index<<";"<<std::endl;
@@ -325,8 +326,9 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
            out << "arg"<<index<<"+=mapbegin;"<<std::endl;
 	}else {
            indent(out,1);
-           out << "unsigned int ratio"<<index<<" = extents["<<ref<<"][0]";
-           out << "/extents["<<index<<"][0];"<<std::endl;
+           out << "unsigned int ratio"<<index<<" = extents["<<ref<<"]";
+           out << "[dim-1]";
+           out << "/extents["<<index<<"][dim-1];"<<std::endl;
            indent(out,1);
            out << "unsigned int ratioiter"<<index<<" = 0;"<<std::endl;
            indent (out,1);
@@ -336,10 +338,11 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
            else
               out << "0, mapbegin, mapend, ";
            out << "extents["<<index<<"], ";
-           out << "dims["<<ref<<"], extents["<<ref<<"]);"<<std::endl;
+           out << "dim, extents["<<ref<<"]);"<<std::endl;
            indent(out,1);
            if (nDcube) {
-              out << "unsigned int x_delta"<<index<<" = arg"<<index<<" + mapend[0] - mapbegin[0];";
+              out << "unsigned int x_delta"<<index<<" = ";
+              out << "arg"<<index<<" + mapend[0] - mapbegin[0];";
               out << std::endl;
               indent(out,1);
               out << "unsigned int x"<<index<<" = ";
@@ -604,6 +607,8 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out, bool print_inner) con
         out << std::endl;
     }}
     unsigned int reference_stream = getReferenceStream(this->fDef);
+    indent(out,1);
+    out << "unsigned int dim=dims["<<reference_stream<<"];"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].InitialSet(out,false,reference_stream);
     }}
@@ -693,6 +698,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
         out << std::endl;
     }}
     unsigned int reference_stream = getReferenceStream(this->fDef);
+    out << "unsigned int dim=dims["<<reference_stream<<"];"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
           myArgs[i].InitialSet(out,false,reference_stream);
     }}
