@@ -135,29 +135,22 @@ BrtStreamType::getBase( void )
 }
 
 
-CPUGatherType::CPUGatherType(const ArrayType &t,bool copy_on_write):ArrayType(*static_cast<ArrayType*>(t.dup())){
-	dimension=1;
+CPUGatherType::CPUGatherType(const ArrayType &t,bool copy_on_write) {
+	dimension=0;
+	at = &t;
 	this->copy_on_write=copy_on_write;
-	if (subType->type==TT_Array) {
-		CPUGatherType * at = new CPUGatherType(*static_cast<ArrayType*>(subType),copy_on_write);
-		subType = at;
-		dimension = at->dimension+1;
+	subtype = at;
+	while (subtype->type==TT_Array) {
+		dimension +=1;
+		subtype = static_cast<const ArrayType*>(subtype)->subType;
 	}
-}
-Type * CPUGatherType::dup0()const {
-	return new CPUGatherType (*this);
 }
 void CPUGatherType::printSubtype(std::ostream&out,Symbol *name,bool showBase,int level) const {
-	const Type *t = this;
-	while (t->type==TT_Array) {
-		t = static_cast<const ArrayType*> (t)->subType;
-	}
-	t->printType(out,name,showBase,level);
+    subtype->printType(out,name,showBase,level);
 	
 }
 void CPUGatherType::printType(std::ostream &out, Symbol * name, bool showBase, int level) const
 {
-
 	printBefore(out,name,level);
 	printAfter(out);	
 	
@@ -171,10 +164,10 @@ void CPUGatherType::printBefore(std::ostream & out, Symbol *name, int level) con
 	}else {
 		out << "Array"<<dimension<<"d<";
 		
-		printBase(out,level);
+		at->printBase(out,level);
 		
 		
-		const Type * t = this;
+		const Type * t = at;
 		for (unsigned int i=0;i<dimension&&i<3;i++) {
 			if (i!=0)
 			out <<"	 ";

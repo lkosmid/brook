@@ -52,9 +52,11 @@ public:
   ExprVector     dims;
 };
 
-class CPUGatherType:public ArrayType{public:
-	bool copy_on_write;
-	unsigned int dimension;
+class CPUGatherType{public:
+    const Type * at;
+    const Type * subtype;
+    bool copy_on_write;
+    unsigned int dimension;
 	CPUGatherType(const ArrayType &t,bool copy_on_write);
 	Type * dup0()const;
 	void printType(std::ostream & out, Symbol *name, bool showBase, int level) const;
