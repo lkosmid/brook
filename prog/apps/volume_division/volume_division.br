@@ -12,10 +12,11 @@ float __printf_cpu_inner (float a, float b, float c, float d) {
 kernel float eval (float3 loc<>) {  
   float  power;
   const float3 offset=20;
-  const float length=20;
   float3 center =loc-offset;
   power = dot(center,center);
   /*
+  {
+  const float length=20;
   center.x +=length;
   power += dot(center,center);
   center.y+=length;
@@ -32,6 +33,7 @@ kernel float eval (float3 loc<>) {
   power += dot(center,center);
   center.y+=length;
   power += dot(center,center);
+  }
   */
   {
 
@@ -49,15 +51,15 @@ kernel float evaluateNeighbors (float2 center<>,
                                 float2 opposing<>,
                                 float2 slice) {
 
-   float a=test(eval(float3(center.x,center.y,slice.x)),2.0f) +
-      test(eval(float3(center.x,opposing.y,slice.x)),4.0f) +
-      test(eval(float3(opposing.x,opposing.y,slice.x)),8.0f) +
-      test(eval(float3(opposing.x,center.y,slice.x)),16.0f) +
-      test(eval(float3(center.x,center.y,slice.y)),32.0f) +
-      test(eval(float3(center.x,opposing.y,slice.y)),64.0f) +
-      test(eval(float3(opposing.x,opposing.y,slice.y)),128.0f) +
-      test(eval(float3(opposing.x,center.y,slice.y)),256.0f);
-   return a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f)?a:0;
+   float a=test(eval(float3(center.x,center.y,slice.x)),1.0f) +
+      test(eval(float3(center.x,opposing.y,slice.x)),2.0f) +
+      test(eval(float3(opposing.x,opposing.y,slice.x)),4.0f) +
+      test(eval(float3(opposing.x,center.y,slice.x)),8.0f) +
+      test(eval(float3(center.x,center.y,slice.y)),16.0f) +
+      test(eval(float3(center.x,opposing.y,slice.y)),32.0f) +
+      test(eval(float3(opposing.x,opposing.y,slice.y)),64.0f) +
+      test(eval(float3(opposing.x,center.y,slice.y)),128.0f);
+   return a>1&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)?a:0;
     
 }
 kernel void processSlice (float curgather[][],
@@ -69,15 +71,15 @@ kernel void processSlice (float curgather[][],
                           iter float2 upforward<>,
                           float2 slice) {
   float a=
-    test(curgather[center],2.0f)+
-    test(curgather[up],4.0f)+
-    test(curgather[upforward],8.0f)+
-    test(curgather[forward],16.0f)+
-    test(nextslice[center],32.0f)+
-    test(nextslice[up],64.0f)+
-    test(nextslice[upforward],128.0f)+
-    test(nextslice[forward],256.0);
-  if (a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f)) {
+    test(curgather[center],1.0f)+
+    test(curgather[up],2.0f)+
+    test(curgather[upforward],4.0f)+
+    test(curgather[forward],8.0f)+
+    test(nextslice[center],16.0f)+
+    test(nextslice[up],32.0f)+
+    test(nextslice[upforward],64.0f)+
+    test(nextslice[forward],128.0);
+  if (a>1&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)) {
     vertex=float4(center.x,center.y,slice.x,a);
     push(vertex);
   }
@@ -91,15 +93,15 @@ kernel void processSliceNoCompact (float curgather[][],
                                    iter float2 upforward<>,
                                    float2 slice) {
   float a=
-    test(curgather[center],2.0f)+
-    test(curgather[up],4.0f)+
-    test(curgather[upforward],8.0f)+
-    test(curgather[forward],16.0f)+
-    test(nextslice[center],32.0f)+
-    test(nextslice[up],64.0f)+
-    test(nextslice[upforward],128.0f)+
-    test(nextslice[forward],256.0);
-  if (a>1&&a<(1.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+256.0f)) {
+    test(curgather[center],1.0f)+
+    test(curgather[up],2.0f)+
+    test(curgather[upforward],4.0f)+
+    test(curgather[forward],8.0f)+
+    test(nextslice[center],16.0f)+
+    test(nextslice[up],32.0f)+
+    test(nextslice[upforward],64.0f)+
+    test(nextslice[forward],128.0);
+  if (a>1&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)) {
     vertex=float4(center.x,center.y,slice.x,a);
   }else {
     vertex=float4(-1,-1,-1,-1);
@@ -128,6 +130,17 @@ kernel void processVirtualSliceNoCompact(out float4 vertex<>,
     vertex=float4(-1.0,-1.0f,-1.0f,-1.0f);
   }
 }
+typedef float Triangle[3];
+char volumeTriangles(Triangle tri[256]) {
+  //fill in with brilliant triangle computations
+  return 0;
+}
+Triangle* getVolumeTriangles () {
+  static Triangle tri[256];
+  static char eval =volumeTriangles(tri);
+  return tri;
+}
+
 float tof (int a) {
   return (float)a;
 }
