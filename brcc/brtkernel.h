@@ -98,9 +98,9 @@ class BRTCPUKernelCode : public BRTKernelCode
 		}
 		enum STAGE {HEADER,DEF,CLEANUP};
 		bool useShadowOutput()const ;
-		void Increment(std::ostream&out, bool nDcube, unsigned int ref);
+                void Increment(std::ostream&out, bool nDcube, unsigned int ref,std::string fname);
                 void Use (std::ostream&out, bool nDcube, unsigned int ref);
-		void ResetNewLine(std::ostream&out,bool nDcube,unsigned int ref);
+                void ResetNewLine(std::ostream&out,bool nDcube,unsigned int ref,std::string fname);
 		void InitialSet(std::ostream&out, bool nDcube, unsigned int ref);
 		void printDimensionlessGatherStream(std::ostream&out,STAGE s);
 		void printArrayStream(std::ostream &out, STAGE s);
@@ -122,7 +122,9 @@ class BRTCPUKernelCode : public BRTKernelCode
     void incrementAllLocals(std::ostream &out,
                             bool nDcube,
                             std::vector<PrintCPUArg>)const;
-    void initializeIndexOf(std::ostream &out)const;
+   void initializeIndexOf(std::ostream &out,
+                          unsigned int ref,
+                          bool nDcube)const;
     void printIndexOfCallingArgs(std::ostream & out)const;
     void printCombineCode(std::ostream& out)const;
     void printCombineInnerLoop(std::ostream & out) const;

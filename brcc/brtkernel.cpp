@@ -448,27 +448,51 @@ void BRTCPUKernelCode::
 // in the ndcube or entire map, as the case may be.
 void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
                                                  bool nDcube,
-                                                 unsigned int ref){
+                                                 unsigned int ref,
+                                                 std::string name){
 	if (a->isReduce())
 		return;
 	if (!a->isStream())
 		return;
 	bool isIter = (a->form->getQualifiers()&TQ_Iter)!=0;
-
-	if (!nDcube&&(ref==index||isIter))
-           return;
+        bool isIndexOf = (FunctionProp[name].contains(index));
+        if (!nDcube&&(ref==index||isIter)) {
+          if (isIndexOf) {
+            indent(out,3);
+            out << "indexof"<<index<<" = computeReferenceIndexOf(i+mapbegin, ";
+            out << "extents["<<index<<"],";
+            out << "dim);";
+            out << std::endl;           
+          }          
+          return;
+        }
 	if (!nDcube) {
            indent(out,3);
+
 		out << "iter"<<index<<"=getIndexOf(i+mapbegin,";
                 out << "extents["<<index<<"],";
                 out << "dim, extents["<<ref<<"]);";
 		out << std::endl;
+                if (isIndexOf) {
+                  out << "indexof"<<index<<" = computeIndexOf(i+mapbegin, ";
+                  out << "extents["<<index<<"], ";
+                  out << "dim, ";
+                  out << "extents["<<ref<<"]);";
+                  out << std::endl;  
+                }         
         }else {
            indent(out,3);
 		out << "iter"<<index<<" = getIndexOf(i, mapbegin, mapextents,";
                 out << "extents["<<index<<"], ";
                 out << "dim, extents["<<ref<<"]);";
 		out << std::endl;
+                if (isIndexOf) {
+                  out << "indexof"<<index<<" = computeIndexOf(i, ";
+                  out << "mapbegin, mapextents,";
+                  out << "extents["<<index<<"], ";
+                  out << "dim, extents["<<ref<<"]);";
+                  out << std::endl;
+                }
         }
 }
 
@@ -479,7 +503,8 @@ void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
 // simple output streams (no nd cube) may be incremented with a ++ operator
 void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
                                               bool nDcube,
-                                              unsigned int ref) {
+                                              unsigned int ref,
+                                              std::string name) {
 	if (a->isReduce())
 		return;
 	if (!a->isStream())
@@ -488,6 +513,8 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 	if (!nDcube&&(isIter||ref==index)) {
            indent(out,2);
            out << "++arg"<<index<<";"<<std::endl;
+           if (FunctionProp[name].contains (index))
+             out << "indexof"<<index<<".unsafeGetAt(0)++;\n";
 	}else if (!nDcube) {
 		indent(out,2);
 		out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){";
@@ -496,6 +523,11 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 		out << "ratioiter"<<index<<"=0;"<<std::endl;
 		indent(out,3);
                 out << "iter"<<index<<"+=scale"<<index<<";"<<std::endl;
+                if (FunctionProp[name].contains (index)){
+                  indent(out,2);
+                  out << "indexof"<<index<<".unsafeGetAt(0)+=scale"<<index<<";";
+                  out << std::endl;
+                }
                 indent(out,2);
                 out << "}"<<std::endl;
 	}else {
@@ -506,9 +538,16 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
               indent(out,3);
               out << "ratioiter"<<index<<"=0;"<<std::endl;
               indent(out,3);
-              out << "iter"<<index<<"+=scale"<<index<<";"<<std::endl;
+              out << "iter"<<index<<"+=scale"<<index<<";";
+              out <<std::endl;
+                if (FunctionProp[name].contains (index))
+                  out << "indexof"<<index<<".unsafeGetAt(0)+=scale"<<index<<";\n";
+
            }else {
               out << "iter"<<index<<"++;"<<std::endl;
+                if (FunctionProp[name].contains (index))
+                  out << "indexof"<<index<<".unsafeGetAt(0)++;\n";
+
            }
 
 
@@ -870,10 +909,10 @@ void BRTCPUKernelCode::printCombineCode(std::ostream &out) const
     out << whiteOut << "unsigned int mapbegin) {" << std::endl;
 
     indent(out,1);
-    initializeIndexOf(out);
 
     unsigned int reference_stream = getReferenceStream(this->fDef);
     unsigned int i;
+    initializeIndexOf(out,reference_stream,false);
     for (i=0; i < myArgs.size(); ++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
@@ -920,19 +959,31 @@ void BRTCPUKernelCode::printIndexOfCallingArgs(std::ostream & out)const {
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 // This function prints indexof definitions as necessary for the given function
 // The FunctionProp map determines the necessity by looking at the dag.
-void BRTCPUKernelCode::initializeIndexOf(std::ostream&out)const {
+void BRTCPUKernelCode::initializeIndexOf(std::ostream&out, 
+                                         unsigned int ref,
+                                         bool nDcube)const {
    std::string name = this->fDef->decl->name->name;
    functionProperties::iterator it=FunctionProp[name].begin();
    functionProperties::iterator end=FunctionProp[name].end();
    for (;it!=end;++it) {
       indent(out,1);
       out << ";"<<std::endl<<"__BrtFloat4 indexof"<<*it;
-      out << " = computeIndexOf(mapbegin, ";
-      PrintAccessStream(out,*it,"getDimension");
-      out << ", ";
-      PrintAccessStream(out,*it,"getExtents");
-      out << ");";
-      out <<std::endl;
+      if (nDcube) {
+                  out << " = computeIndexOf(0, ";
+                  out << "mapbegin, mapextents,";
+                  out << "extents["<<*it<<"], ";
+                  out << "dim, extents["<<ref<<"]);";
+                  out << std::endl;
+      }else {
+        out << " = computeIndexOf(mapbegin, ";
+        PrintAccessStream(out,*it,"getExtents");
+        out << ", ";
+        PrintAccessStream(out,*it,"getDimension");
+        out << ", ";
+        PrintAccessStream(out,ref,"getExtents");
+        out << ");";
+        out <<std::endl;
+      }
    }
 }
 
@@ -963,11 +1014,12 @@ void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
                                           bool nDcube,
                                           std::vector<PrintCPUArg> myArgs
                                           ) const{
+       std::string name = this->fDef->decl->name->name;
        indent(out,2); out << "i++;"<<std::endl;
-       incrementIndexOf(out);
+       //incrementIndexOf(out);
        unsigned int reference_stream = getReferenceStream(this->fDef);
        {for (unsigned int i=0;i<myArgs.size();++i) {
-          myArgs[i].Increment(out,nDcube,reference_stream);
+          myArgs[i].Increment(out,nDcube,reference_stream,name);
        }}
        indent(out,2);
        if (nDcube) {
@@ -976,7 +1028,7 @@ void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
           out << "if ((mapbegin+i)%newline==0) {"<<std::endl;
        }
        {for (unsigned int i=0;i<myArgs.size();++i) {
-          myArgs[i].ResetNewLine(out,nDcube,reference_stream);
+           myArgs[i].ResetNewLine(out,nDcube,reference_stream,name);
        }}
        indent(out,2);
        out << "}"<<std::endl;
@@ -1017,7 +1069,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
           myArgs[i].InitialSet(out,false,reference_stream);
     }}
 
-    initializeIndexOf(out);
+    initializeIndexOf(out,reference_stream,false);
     indent(out,1); out << "unsigned int i=0; "<<std::endl;
     if (reduceneeded) {
        indent(out,1); out << "if (mapextent) {"<<std::endl;
@@ -1095,7 +1147,7 @@ void BRTCPUKernelCode::printNdTightLoop(std::ostream&out,
           myArgs[i].InitialSet(out,true,reference_stream);
     }}
 
-    initializeIndexOf(out);
+    initializeIndexOf(out,reference_stream,true);
     indent(out,1); out << "i=0; "<<std::endl;
     if (reduceneeded) {
        indent(out,1); out << "if (mapextent) {"<<std::endl;
