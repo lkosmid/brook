@@ -333,7 +333,7 @@ class FunctionCall : public Expression
     FunctionCall(Expression *func, const Location& l );
    ~FunctionCall();
     
-    int  nArgs() const { return args.size(); }
+    int  nArgs() const { return (int)args.size(); }
 
     void addArg( Expression *arg );
     void addArgs( Expression *argList );
