@@ -167,7 +167,7 @@ void BRTKernelDef::PrintVoutPrefix(std::ostream & out) const{
       out << "    "<<typevector<<".push_back("<<ft->args[*iter]->name->name;
       out << "->getIndexedFieldType("<<streamiter<<"));\n";
       out << "  "<<typevector<<".push_back(__BRTNONE);\n";
-     out << "  std::vector<StreamHolder> ";
+     out << "  std::vector<brook::stream*> ";
       out<<getDeclStream(ft->args[*iter],"_outputs")<<";";
       out << std::endl;
       out << "  bool "<<getDeclStream(ft->args[*iter],"_values")<<" = true;";
@@ -215,7 +215,7 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
       Decl * decl = ft->args[*iter];
       out << "    "<<getDeclStream(decl,"_values")<< " = ";
       out << " finiteValueProduced";      
-      out << undecoratedBase(decl)<<"("<<getDeclStream(decl,"_outputs");
+      out << undecoratedBase(decl)<<"(*"<<getDeclStream(decl,"_outputs");
       out << ".back())?1:0;"<<std::endl;
    }
    out << "  }"<<std::endl;
@@ -234,12 +234,12 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
       out<< std::endl;
       out<< "                 maxextents[1],";
       out<< std::endl;
-      out<< "                 &"<<getDeclStream(decl,"_temp")<<");";
+      out<< "                 "<<getDeclStream(decl,"_temp")<<");";
       out<< std::endl;
       out<< "  shiftValues";
-      out << type << "(&"<<getDeclStream(decl,"_temp")<<",";
+      out << type << "("<<getDeclStream(decl,"_temp")<<",";
       out<< std::endl;
-      out<< "              &"<< decl->name->name<<",";
+      out<< "              "<< decl->name->name<<",";
       out<< std::endl;
       out<< "              "<<getDeclStream (decl,"_temp");
       out<< "->getExtents()[0],";
@@ -254,19 +254,19 @@ void BRTKernelDef::PrintVoutPostfix(std::ostream & out) const{
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 static void printPrototypes(std::ostream & out, std::string type) {
    out << "extern int finiteValueProduced" ;
-   out << type << " (StreamHolder input);\n"
+   out << type << " (brook::stream &input);\n"
       "extern float shiftValues";
-   out << type << "(StreamHolder list_stream,\n"
-      "                         StreamHolder output_stream,\n"
+   out << type << "(brook::stream &list_stream,\n"
+      "                         brook::stream& output_stream,\n"
       "                         int WIDTH, \n"
       "                         int LENGTH, \n"
       "                         int sign);\n"
       "void combineStreams";
-   out << type << "(StreamHolder *streams,\n"
+   out << type << "(brook::stream **streams,\n"
       "                     unsigned int num,\n"
       "                     unsigned int width, \n"
       "                     unsigned int length,\n"
-      "                     StreamHolder output) ;\n";
+      "                     brook::stream &output) ;\n";
    
 }
 void
