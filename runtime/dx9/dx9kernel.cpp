@@ -30,14 +30,13 @@ DX9Kernel::DX9Kernel(DX9RunTime* runtime, const char* source[])
 
 void DX9Kernel::SetInput(const int arg, const __BrookStream *s) {
   DX9Trace("SetInput");
+  HRESULT result;
 
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DTexture9* textureHandle = stream->getTextureHandle();
 
   int textureUnit = mapArgumentToTextureUnit( arg );
-  HRESULT result = getDevice()->SetTexture( textureUnit, textureHandle );
-  DX9CheckResult( result );
-
+  inputTextures[textureUnit] = textureHandle;
   inputRects[textureUnit] = stream->getInputRect();
 }
 
@@ -51,8 +50,7 @@ void DX9Kernel::SetConstantFloat(const int arg, const float &val) {
   value.w = 1;
 
   int constantIndex = mapArgumentToConstantIndex( arg );
-  HRESULT result = getDevice()->SetPixelShaderConstantF( constantIndex, (float*)&value, 1 );
-  DX9CheckResult( result );
+  inputConstants[constantIndex] = value;
 }
 
 void DX9Kernel::SetConstantFloat2(const int arg, const float2 &val) {
@@ -65,8 +63,7 @@ void DX9Kernel::SetConstantFloat2(const int arg, const float2 &val) {
   value.w = 1;
 
   int constantIndex = mapArgumentToConstantIndex( arg );
-  HRESULT result = getDevice()->SetPixelShaderConstantF( constantIndex, (float*)&value, 1 );
-  DX9CheckResult( result );
+  inputConstants[constantIndex] = value;
 }
 
 void DX9Kernel::SetConstantFloat3(const int arg, const float3 &val) {
@@ -79,8 +76,7 @@ void DX9Kernel::SetConstantFloat3(const int arg, const float3 &val) {
   value.w = 1;
 
   int constantIndex = mapArgumentToConstantIndex( arg );
-  HRESULT result = getDevice()->SetPixelShaderConstantF( constantIndex, (float*)&value, 1 );
-  DX9CheckResult( result );
+  inputConstants[constantIndex] = value;
 }
 
 void DX9Kernel::SetConstantFloat4(const int arg, const float4 &val) {
@@ -93,8 +89,7 @@ void DX9Kernel::SetConstantFloat4(const int arg, const float4 &val) {
   value.w = val.w;
 
   int constantIndex = mapArgumentToConstantIndex( arg );
-  HRESULT result = getDevice()->SetPixelShaderConstantF( constantIndex, (float*)&value, 1 );
-  DX9CheckResult( result );
+  inputConstants[constantIndex] = value;
 }
 
 void DX9Kernel::SetGatherInput(const int arg, const __BrookStream *s) {
@@ -104,8 +99,7 @@ void DX9Kernel::SetGatherInput(const int arg, const __BrookStream *s) {
   IDirect3DTexture9* textureHandle = stream->getTextureHandle();
 
   int textureUnit = mapArgumentToTextureUnit( arg );
-  HRESULT result = getDevice()->SetTexture( textureUnit, textureHandle );
-  DX9CheckResult( result );
+  inputTextures[textureUnit] = textureHandle;
 }
 
 void DX9Kernel::SetOutput(const __BrookStream *s) {
@@ -114,9 +108,7 @@ void DX9Kernel::SetOutput(const __BrookStream *s) {
   DX9Stream* stream = (DX9Stream*)s;
   IDirect3DSurface9* surfaceHandle = stream->getSurfaceHandle();
 
-  HRESULT result = getDevice()->SetRenderTarget( 0, surfaceHandle );
-  DX9CheckResult( result );
-
+  outputSurface = surfaceHandle;
   outputRect = stream->getOutputRect();
 }
 
@@ -126,6 +118,12 @@ void DX9Kernel::Exec(void) {
 
   DX9VertexShader* vertexShader = runtime->getPassthroughVertexShader();
 
+  result = getDevice()->SetRenderTarget( 0, outputSurface );
+  DX9CheckResult( result );
+
+  result = getDevice()->Clear( 0, NULL, D3DCLEAR_TARGET, 0xFF0000FF, 1.0f, 0 );
+  DX9CheckResult( result );
+
   result = getDevice()->BeginScene();
   DX9CheckResult( result );
 
@@ -133,6 +131,18 @@ void DX9Kernel::Exec(void) {
   DX9CheckResult( result );
   result = getDevice()->SetVertexShader( vertexShader->getHandle() );
   DX9CheckResult( result );
+
+  for( int i = 0; i < 8; i++ )
+  {
+    result = getDevice()->SetTexture( i, inputTextures[i] );
+    DX9CheckResult( result );
+  }
+
+  for( int i = 0; i < 8; i++ )
+  {
+    result = getDevice()->SetPixelShaderConstantF( i, (float*)&(inputConstants[i]), 1 );
+    DX9CheckResult( result );
+  }
 
   runtime->execute( outputRect, inputRects );
 
@@ -156,7 +166,10 @@ void DX9Kernel::initialize( const char* source ) {
   // TIM: initialize all the rects, just in case
   outputRect = DX9Rect(0,0,0,0);
   for( int i = 0; i < 8; i++ )
+  {
     inputRects[i] = DX9Rect(0,0,0,0);
+    inputTextures[i] = NULL;
+  }
 }
 
 int DX9Kernel::mapArgumentToTextureUnit( int arg ) {

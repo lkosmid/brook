@@ -43,7 +43,10 @@ private:
   DX9RunTime* runtime;
   DX9PixelShader* pixelShader;
   DX9Rect inputRects[8]; // TIM: TODO: named constant?
+  float4 inputConstants[8];
+  IDirect3DTexture9* inputTextures[8];
   DX9Rect outputRect;
+  IDirect3DSurface9* outputSurface;
 };
 
 class DX9Stream : public __BrookStream {

@@ -23,7 +23,8 @@ static const char* kPassthroughVertexShaderSource =
 "mov oT4, v5\n"
 "mov oT5, v6\n"
 "mov oT6, v7\n"
-"mov oT7, v8\n";
+"mov oT7, v8\n"
+;
 
 DX9RunTime::DX9RunTime() {
   // XXX: TO DO
@@ -76,32 +77,19 @@ DX9RunTime::~DX9RunTime() {
 }
 
 // TIM: this all needs to move somewhere else... I think...
-struct Vector2
-{
-  float x, y;
-};
-
-struct Vector4
-{
-  float x, y, z, w;
-};
 
 typedef unsigned short UInt16;
 
 struct DX9Vertex
 {
-  Vector4 position;
-  Vector2 texcoords[8]; // TIM: TODO: named constant
+  float4 position;
+  float2 texcoords[8]; // TIM: TODO: named constant
 };
 
 void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
 {
   HRESULT result;
   initializeVertexBuffer();
-
-
-//  result = device->BeginScene();
-//  DX9CheckResult( result );
 
   DX9Vertex* vertices;
   result = vertexBuffer->Lock( 0, 0, (void**)&vertices, D3DLOCK_DISCARD );
@@ -113,6 +101,7 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
     int xIndex = (i&0x01) ? 0 : 2;
     int yIndex = (i&0x02) ? 3 : 1;
 
+    // TIM: bad
     vertex.position.x = outputRect[xIndex];
     vertex.position.y = outputRect[yIndex];
     vertex.position.z = 0.5f;
@@ -137,17 +126,11 @@ void DX9RunTime::execute( const DX9Rect& outputRect, const DX9Rect* inputRects )
 
   result = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, 2 );
   DX9CheckResult( result );
-
-//  result = device->EndScene();
-//  DX9CheckResult( result );
-
-//  result = device->Present( NULL, NULL, NULL, NULL );
-//	DX9CheckResult( result );
 }
 
 static const D3DVERTEXELEMENT9 kDX9VertexElements[] =
 {
-	{ 0, 0, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+	{ 0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
 	{ 0, 4*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
 	{ 0, 6*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
 	{ 0, 8*sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 2 },
