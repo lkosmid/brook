@@ -1,6 +1,6 @@
 			    Brook GPU Release Notes
 
-This Fixed In This Release (12/19/03)
+Fixed In This Release (12/19/03)
 
    * nv30gl backend compiles and runs on Linux.  Requires Linux cgc compiler
      from NVIDIA and the latest drivers.
@@ -8,7 +8,7 @@ This Fixed In This Release (12/19/03)
    * Fixed nv30gl reduce to stream bug.  nv30gl now passes all regression 
      tests
 
-   * BRCC properly handles executing cgc and fxc even if they are not there.
+   * BRCC properly handles missing cgc and fxc.
      Produces reasonable error messages.
 
    * Make system includes Default.mk which only compiles cpu backend.
@@ -33,7 +33,7 @@ Known Issues In BRCC
      resulting C++ output.  This can make it hard to use #defines and macros
      in conjunction with kernels or stream constructs.
    
-   * GatherOps and ScatterOps require the CPU runtime and so programs using
+   * GatherOps and ScatterOps require the CPU runtime and programs using
      them must compile for at least the CPU target.
 
    * The 'indexof' operator has very low precedence and is generally only
