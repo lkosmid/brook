@@ -120,6 +120,32 @@ namespace brook {
     __BRTStreamType type;
     virtual ~Iter() {}
   };
+  template<typename T>
+  const __BRTStreamType* getStreamType(T* unused=0);
+
+  template<>
+  inline const __BRTStreamType* getStreamType(float*) {
+    static const __BRTStreamType result[] = {__BRTFLOAT,__BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const __BRTStreamType* getStreamType(float2*) {
+    static const __BRTStreamType result[] = {__BRTFLOAT2,__BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const __BRTStreamType* getStreamType(float3*) {
+    static const __BRTStreamType result[] = {__BRTFLOAT3,__BRTNONE};
+    return result;
+  }
+
+  template<>
+  inline const __BRTStreamType* getStreamType(float4*) {
+    static const __BRTStreamType result[] = {__BRTFLOAT4,__BRTNONE};
+    return result;
+  }
 
   class stream
   {
@@ -130,7 +156,7 @@ namespace brook {
 
     // easy-to-use constructors for C++ interface
     template<typename T>
-    static stream create( int x ) {
+    static stream create( int inExtent0 ) {
       return stream( ::brook::getStreamType((T*)0), inExtent0, -1 );
     }
 
@@ -188,32 +214,6 @@ namespace brook {
     virtual ~Kernel() {}
   };
 
-  template<typename T>
-  const __BRTStreamType* getStreamType(T* unused=0);
-
-  template<>
-  inline const __BRTStreamType* getStreamType(float*) {
-    static const __BRTStreamType result[] = {__BRTFLOAT,__BRTNONE};
-    return result;
-  }
-
-  template<>
-  inline const __BRTStreamType* getStreamType(float2*) {
-    static const __BRTStreamType result[] = {__BRTFLOAT2,__BRTNONE};
-    return result;
-  }
-
-  template<>
-  inline const __BRTStreamType* getStreamType(float3*) {
-    static const __BRTStreamType result[] = {__BRTFLOAT3,__BRTNONE};
-    return result;
-  }
-
-  template<>
-  inline const __BRTStreamType* getStreamType(float4*) {
-    static const __BRTStreamType result[] = {__BRTFLOAT4,__BRTNONE};
-    return result;
-  }
 
   class iter {
   public:

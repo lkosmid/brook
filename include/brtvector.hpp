@@ -443,6 +443,7 @@ template <class BRT_TYPE>
     BROOK_BINARY_OP(fmod,fmod,LCM)
     BROOK_BINARY_OP(pow,pow,LCM);
     BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(ldexp_float,ldexp_float,LCM);
     BROOK_BINARY_OP(min_float,min_float,LCM);
     BROOK_BINARY_OP(max_float,max_float,LCM);
 #undef TEMPL_TYPESIZE

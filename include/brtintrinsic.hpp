@@ -162,6 +162,7 @@ inline float radians_float (float x) {
 inline float saturate_float (float x) {
    return x>1.0f?1.0f:x<0.0f?0.0f:x;
 }
+
 inline float clamp_float(float x, float l, float u) {
    return x>u?u:x<l?l:x;
 }
