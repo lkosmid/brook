@@ -114,10 +114,14 @@ namespace brook {
 
   private:
      __BRTStreamType elementType;
+     int componentCount;
      int dimensionCount;
      unsigned int extents[2];
+     float ranges[8];
      int totalSize;
      DX9Rect rect;
+     void* cpuBuffer;
+     unsigned int cpuBufferSize;
   };
   class DX9Stream : public Stream {
   public:

@@ -397,13 +397,13 @@ void DX9Kernel::ReduceToValue()
   int coreWidth = inputWidth;
 
   int extents[2] = {inputWidth, inputHeight};
-  ReduceDimensionToOne( currentSide, tex0, tex1, 2, 0, extents );
-  ReduceDimensionToOne( currentSide, tex0, tex1, 2, 1, extents );
+  ReduceDimension( currentSide, tex0, tex1, 2, 0, 1, extents );
+  ReduceDimension( currentSide, tex0, tex1, 2, 1, 1, extents );
 
   result = getDevice()->EndScene();
   DX9CheckResult( result );
 
-  float4 reductionResult = {-1,-1,-1,-1};
+  float4 reductionResult;
   reductionBuffer->getPixelAt( kSideOffsets[currentSide], 0, reductionResult );
   if( outputReductionType == __BRTFLOAT )
     *((float*)outputReductionData) = *((float*)&reductionResult);
@@ -425,12 +425,12 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
       int inExtentToReduceTo, int* ioRemainingExtents )
 {
   // simple special case: reducing to a single value
-  if( inExtentToReduceTo == 1 )
+/*  if( inExtentToReduceTo == 1 )
   {
     ReduceDimensionToOne( ioReductionBufferSide, inReductionTex0, inReductionTex1,
       inDimensionCount, inDimensionToReduce, ioRemainingExtents );
     return;
-  }
+  }*/
 
   // general case, we need to deal with all kinds of ugliness :)
   int currentSide = ioReductionBufferSide;
@@ -443,6 +443,8 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
   int reductionFactor = inputExtent / outputExtent;
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
   static const int kSideOffsets[2] = {0,kDX9ReductionBufferWidth/2};
+
+  if( inputExtent == outputExtent ) return;
 
   DX9Assert( outputExtent < inputExtent, "Output extent must be less than input extent on reduce" );
   DX9Assert( (inputExtent % outputExtent) == 0, "Output extent must evenly divide input extent on reduce" );

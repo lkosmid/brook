@@ -79,25 +79,21 @@ void DX9Texture::getData( float* outData )
 
 void DX9Texture::markCachedDataChanged()
 {
-  DX9Trace("mark cached changed %x", this);
   dirtyFlags = kShadowDataDirty | kSystemDataDirty;
 }
 
 void DX9Texture::markShadowDataChanged()
 {
-  DX9Trace("mark shadow changed %x", this);
   dirtyFlags = kCachedDataDirty | kSystemDataDirty;
 }
 
 void DX9Texture::markSystemDataChanged()
 {
-  DX9Trace("mark system changed %x", this);
   dirtyFlags = kCachedDataDirty | kShadowDataDirty;
 }
 
 void DX9Texture::validateCachedData()
 {
-  DX9Trace("validate cached %x", this);
   if( !(dirtyFlags & kCachedDataDirty) ) return;
   if( dirtyFlags & kShadowDataDirty )
     flushSystemToShadow();
@@ -106,7 +102,6 @@ void DX9Texture::validateCachedData()
 
 void DX9Texture::validateSystemData()
 {
-  DX9Trace("validate system %x", this);
   if( !(dirtyFlags & kSystemDataDirty) ) return;
   if( dirtyFlags & kShadowDataDirty )
     flushCachedToShadow();
@@ -115,7 +110,6 @@ void DX9Texture::validateSystemData()
 
 void DX9Texture::flushCachedToShadow()
 {
-  DX9Trace("cached -> shadow %x", this);
   HRESULT result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
 	DX9CheckResult( result );
   dirtyFlags &= ~kCachedDataDirty;
@@ -123,14 +117,12 @@ void DX9Texture::flushCachedToShadow()
 
 void DX9Texture::flushShadowToSystem()
 {
-  DX9Trace("shadow -> system %x", this);
   getShadowData( getSystemDataBuffer() );
   dirtyFlags &= ~kSystemDataDirty;
 }
 
 void DX9Texture::flushSystemToShadow()
 {
-  DX9Trace("system -> shadow %x", this);
   setShadowData( getSystemDataBuffer() );
   dirtyFlags &= ~kShadowDataDirty;
 }
@@ -276,8 +268,6 @@ void DX9Texture::getPixelAt( int x, int y, float4& outResult ) {
 
 	float* output = (float*)&outResult;
 
-  DX9Trace( "pixel was: %f %f %f %f", outResult.x, outResult.y, outResult.z, outResult.w );
-
 	const float* inputPixel = inputLine + x*internalComponents;
 	const float* input = inputPixel;
 
@@ -285,8 +275,6 @@ void DX9Texture::getPixelAt( int x, int y, float4& outResult ) {
 	{
 	  *output++ = *input++;
 	}
-
-  DX9Trace( "pixel is: %f %f %f %f", outResult.x, outResult.y, outResult.z, outResult.w );
 
 	result = shadowSurface->UnlockRect();
 	DX9CheckResult( result );
