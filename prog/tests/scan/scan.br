@@ -6,7 +6,7 @@ kernel void valueAt (float value[][],
                              out float output<>,
                              float2 maxvalue,
                              float nothing) {
-   if (index.y>=maxvalue.y||index.y<-.1)
+   if (index.y>=maxvalue.y||index.y<-.125)
       output = nothing;
    else 
       output = value[index];
