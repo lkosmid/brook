@@ -1183,6 +1183,10 @@ int yyerror(char *s)
       << toksym(err_tok,0) << "'\n" << line;
     print_caret(line, gProject->Parse_TOS->yycolno);
 
+    /*
+     * This does _NOTHING_.  Bison, at least, ignores the return value of
+     * yyerror().  I don't know why cTool does this.  --Jeremy.
+     */
     if (++err_cnt >= 10){
         *gProject->Parse_TOS->yyerrstream
           << "Too many errors (" << err_cnt << " detected) - quitting.\n";

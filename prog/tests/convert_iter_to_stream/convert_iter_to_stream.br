@@ -9,7 +9,7 @@ kernel void copy( float input<>, out float output<> ) {
 
 int main()
 {
-	iter float iterator< 100 > = BRTIter( 0.0f, 25.0f );
+	iter float iterator< 100 > = iter( 0.0f, 25.0f );
 	float stream< 100 >;
 	float stream_data[100];
 	int i, j;

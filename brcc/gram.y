@@ -164,6 +164,7 @@ extern int err_top_level;
 %type  <value>       unary_expr unary_minus_expr unary_plus_expr
 %type  <value>       sizeof_expr indexof_expr addr_expr indirection_expr
 %type  <value>       preinc_expr predec_expr constructor_expr
+%type  <value>       iter_constructor_expr iter_constructor_arg
 
 %type  <value>       func_call cond_expr
 %type  <value>       opt_expr_list expr_list
@@ -927,6 +928,45 @@ constructor_expr: FLOAT2 LPAREN assign_expr COMMA assign_expr RPAREN
             delete $8;
             delete $10;
         }
+                | FLOAT2 LPAREN error RPAREN
+	{
+	   $$ = (Expression *) NULL;
+	}
+                | FLOAT3 LPAREN error RPAREN
+	{
+	   $$ = (Expression *) NULL;
+	}
+                | FLOAT4 LPAREN error RPAREN
+	{
+	   $$ = (Expression *) NULL;
+	}
+	;
+
+iter_constructor_arg: assign_expr
+		    | constructor_expr
+	;
+
+iter_constructor_expr: ITER LPAREN iter_constructor_arg COMMA
+				   iter_constructor_arg RPAREN
+	{
+	   Symbol *sym = new Symbol();
+	   Variable *var;
+
+	   sym->name = strdup("iter");
+	   var = new Variable(sym, *$2);
+	   $$ = new FunctionCall(var, *$2);
+
+	   ((FunctionCall *) $$)->addArg($3);
+	   ((FunctionCall *) $$)->addArg($5);
+
+           delete $2;
+           delete $4;
+           delete $6;
+	}
+		     | ITER LPAREN error RPAREN
+        {
+	   $$ = (Expression *) NULL;
+	}
 	;
 
 unary_expr:  postfix_expr
@@ -1608,6 +1648,7 @@ initializer_list:  initializer_reentrance
 
 initializer_reentrance:  assign_expr
                       |  constructor_expr
+                      |  iter_constructor_expr
                       |  LBRACE initializer_list opt_comma RBRACE
         {
             $$ = $2;

@@ -21,7 +21,7 @@ kernel void copy4( iter float4 i<>, out float4 output<> ) {
 
 void test1( int extent, float min, float max )
 {
-	iter float iterator< extent > = BRTIter( min, max );
+	iter float iterator< extent > = iter( min, max );
 	float stream< extent >;
 	float* stream_data;
 	int i, count;
@@ -46,7 +46,7 @@ void test1( int extent, float min, float max )
 void test2( int extent, float minX, float minY, float maxX, float maxY )
 {
 	iter float2 iterator< extent > =
-           BRTIter( float2(minX, minY), float2(maxX, maxY) );
+           iter( float2(minX, minY), float2(maxX, maxY) );
 	float2 stream< extent >;
 	float2* stream_data;
 	int i, count;
@@ -73,7 +73,7 @@ void test2( int extent, float minX, float minY, float maxX, float maxY )
 void test3( int extent, float minX, float minY, float minZ, float maxX, float maxY, float maxZ )
 {
 	iter float3 iterator< extent > =
-           BRTIter( float3(minX, minY, minZ), float3(maxX, maxY, maxZ) );
+           iter( float3(minX, minY, minZ), float3(maxX, maxY, maxZ) );
 	float3 stream< extent >;
 	float3* stream_data;
 	int i, count;
@@ -100,7 +100,7 @@ void test3( int extent, float minX, float minY, float minZ, float maxX, float ma
 void test4( int extent, float minX, float minY, float minZ, float minW, float maxX, float maxY, float maxZ, float maxW )
 {
 	iter float4 iterator< extent > =
-           BRTIter( float4(minX, minY, minZ, minW), float4(maxX, maxY, maxZ, maxW) );
+           iter( float4(minX, minY, minZ, minW), float4(maxX, maxY, maxZ, maxW) );
 	float4 stream< extent >;
 	float4* stream_data;
 	int i, count;

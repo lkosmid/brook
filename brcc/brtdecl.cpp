@@ -157,7 +157,7 @@ BrtIterType::BrtIterType(const ArrayType *stream, const FunctionCall *f)
   ExprVector::const_iterator i;
 
   assert(f->function->etype == ET_Variable);
-  assert(strcmp(((Variable *) f->function)->name->name.c_str(),"BRTIter") == 0);
+  assert(strcmp(((Variable *) f->function)->name->name.c_str(),"iter") == 0);
 
   // Drill down to the find the baseType and inflate our dimensions
   for (p = stream;

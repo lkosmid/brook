@@ -45,7 +45,7 @@ int main() {
     // NOTE: This should range from 1 to INSIZE-1
     //       Since the compiler is BROKEN and doesn't run the
     //       Preprocessor, YOU MUST DO THIS MANUALLY!!!
-    iter float2 it<OUTSIZE,OUTSIZE> = BRTIter( float2(1.0f, 1.0f), float2(INSIZE-1, INSIZE-1) );
+    iter float2 it<OUTSIZE,OUTSIZE> = iter( float2(1.0f, 1.0f), float2(INSIZE-1, INSIZE-1) );
     float img<INSIZE,INSIZE>;
     float o_img<OUTSIZE,OUTSIZE>;
     
