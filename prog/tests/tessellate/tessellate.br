@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "timing.h"
 #include "streamholder.h"
 
 kernel void curve (float2 inp<>, out float height<>) {
@@ -61,20 +62,26 @@ char * charmalloc (unsigned int  s) {
 float4 * float4malloc(float f) {
   return (float4 *)malloc((unsigned int)f);
 }
-
+int isdebug=0;
 void DrawLine (char * data, float x1, float y1, float x2, float y2, int width) {
   int lx,gx,ly,gy,i;
   lx = (int)(x1<x2?x1:x2);
   gx = (int)(x1<x2?x2:x1);
   ly = (int)(y1<y2?y1:y2);
   gy = (int)(y1<y2?y2:y1);
+  if (lx<0||ly<0||gx<0||gy<0) return;
   if (gx-lx<.25){
     for (i=ly;i<=gy;++i){      
+	if (isdebug)
       data[i*width+lx]+=63;
+        else
+      data[i*width+lx]=127;
     }
   }else if (gy-ly<.25) {
     for (i=lx;i<=gx;++i){
+      if (isdebug)
       data[ly*width+i]+=63;
+      else data[ly*width+i]=127;
     }
   }else {
     printf ("unsupported draw from %f %f to %f %f\n",x1,y1,x2,y2);
@@ -100,16 +107,19 @@ float tofd (double i) {
 	return (float)i;
 }
 extern void writePng(char* , char * ,int, int);
-#define STRIDE 4
+#define STRIDE 8
 #define SIZE 1024
 int main (int argc, char ** argv) {
   float toler = argc>1?tofd(atof(argv[1])):tofd(.1);
-  int limit = argc>2?atoi(argv[2]):tof(32);
+  int limit = argc>2?atoi(argv[2]):32;
   float4 input[4096]={float4(0,0,SIZE/2,SIZE/2),float4(0,SIZE/2,SIZE/2,SIZE),float4(SIZE/2,0,SIZE,SIZE/2),float4(SIZE/2,SIZE/2,SIZE,SIZE)};
   float lastsize;
   float4 polys<1,STRIDE>;
+  int ite;
+  for (ite=4;ite<4096;++ite) input[ite]=float4((float)1.0/floor(.5),(float)1.0/floor(.5),(float)1.0/floor(.5),(float)1.0/floor(.5));
   streamRead(polys,input);
-
+  SetupMillisTimer();
+  start = GetTimeMillis();
   do {
     int lastsizeint;
     lastsize=streamSize(polys).y;
@@ -128,10 +138,13 @@ int main (int argc, char ** argv) {
     char * data=charmalloc((SIZE+1)*(SIZE+1)*sizeof(char));
     memset(data,0,sizeof(char)*(1+SIZE)*(1+SIZE));
     streamWrite(polys,finaldata);    
+    stop = GetTimeMillis();
+
     Draw(finaldata,size,data,SIZE+1);
     writePng("polys.png",data,SIZE+1,SIZE+1);
     free (data);   
   }
   streamPrint(polys);
+  printf ("TIME FOR FUNCTION: %f .\n",(float)(stop-start));
   return 0;
 }
