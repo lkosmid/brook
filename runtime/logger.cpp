@@ -1,13 +1,13 @@
 // logger.cpp
 #include "logger.hpp"
-
+#include <stdlib.h>
 #include <fstream>
 
 namespace brook {
 namespace internal {
 
   Logger::Logger()
-    : stream(NULL), ownsStream(false), level(-1), prefix(NULL)
+     :  prefix(NULL),stream(NULL),ownsStream(false),level(-1)
   {
     const char* levelVariable = getenv("BRT_LOG_LEVEL");
     
