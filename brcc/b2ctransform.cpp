@@ -1,3 +1,7 @@
+/*
+ * b2ctransform.cpp --
+ * code to actually transform kernels to C++ code that can execute said kernels
+ */
 #ifdef _WIN32
 #pragma warning(disable:4786)
 //the above warning disables visual studio's annoying habit of warning when using the standard set lib

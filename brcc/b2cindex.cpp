@@ -1,3 +1,7 @@
+/*
+ * b2cindex
+ * constructs a DAG of functions that need indexof any particular stream
+ */
 #ifdef _WIN32
 #pragma warning(disable:4786)
 //the above warning disables visual studio's annoying habit of warning when using the standard set lib

@@ -1,8 +1,8 @@
 /*
- * brtkernel.h
+ * brtreduce.h
  *
- *      Header for the various BRT Kernel classes (objects responsible for
- *      compiling and emitting kernels for the various backends).
+ *      Header for the various BRT Reduce classes (objects responsible for
+ *      compiling and emitting reducers for the various backends).
  */
 #ifndef    _BRTREDUCE_H_
 #define    _BRTREDUCE_H_

@@ -1,3 +1,7 @@
+/*
+ * brtexpress.cpp -- 
+ *  the actual code to convert gathers streams and indexof exprs
+ */ 
 #include "brtexpress.h"
 
 BrtGatherExpr::BrtGatherExpr(const IndexExpr *expr) 

@@ -1,9 +1,9 @@
+/*
+ * b2creduce.cpp
+ * utility function for making base and combine code for reduction variables
+ * and functions
+ */
 #ifdef _WIN32
-        /* I don't see any extra warnings without this line using VC7's
-         * cl.exe.  If no one has any complaints, we should nuke this
-         * pragma.  --Jeremy. 12/2/2003
-         * VC6 makes pagelong warnings without it --Daniel
-         */
 #pragma warning(disable:4786)
 //the above warning disables visual studio's annoying habit of warning when using the standard set lib
 #endif

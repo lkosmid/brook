@@ -1,3 +1,8 @@
+/*
+ * brtexpress.h
+ * Gather, stream, and indexof exprs get transformed into these
+ */
+
 #ifndef BRTEXPRESS_H
 #define BRTEXPRESS_H
 

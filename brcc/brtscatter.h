@@ -1,7 +1,7 @@
 /*
- * brtstemnt.h
+ * brtscatter.h
  *
- *      Brook extensions to cTool's stemnt.h for kernel definitions.
+ *      Utility functions to print out the scatter fuctor for execution on CPU.
  */
 #ifndef    _BRTSCATTER_H_
 #define    _BRTSCATTER_H_

@@ -1,8 +1,7 @@
 /*
- * brtstemnt.cpp
+ * brtscatter.cpp
  *
- *      Brook extensions to cTool's stemnt.cpp.  Specifically, contains the
- *      BRTKernelDef class, which represents a kernel definition.
+ *      Actual code to convert reduce functions into scatter functors on CPU
  */
 #include <cstring>
 #include <cassert>

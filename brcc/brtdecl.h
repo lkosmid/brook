@@ -1,3 +1,8 @@
+/*
+ * brtdecl.h  --
+ * Stream type and gather type are operated on here
+ */
+
 #ifndef    BRTDECL_H
 #define    BRTDECL_H
 

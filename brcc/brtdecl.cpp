@@ -1,3 +1,8 @@
+/*
+ * brtdecl.cpp --
+ * Stream types and gather types are actually printed and dealt with here.
+ */
+
 #include <cassert>
 #include <cstring>
 

@@ -1,7 +1,7 @@
 /*
- * brook2cpp.h --
+ * b2ctransform.h --
  *
- *      Interface to brook2cpp-- transforms kernels into C++ code that can
+ *      Interface to brtvector.hpp-- transforms kernels into C++ code that can
  *      execute them on a CPU.
  */
 #ifndef __BROOK2CPP_H__
