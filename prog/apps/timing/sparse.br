@@ -8,7 +8,7 @@
 
 #define MAX_DIM     2048
 
-#define DO_VERIFY   1 
+#define DO_VERIFY   0 
 
 #define EPS 1e-3f
 
@@ -153,11 +153,12 @@ void spMatVec(int strmDim, float* A, float* Aind, float* x, float* y) {
 
 
 
-void SpMatVec_Time(int length) {
+void SpMatVec_Time(int length, int* times, float* flops) {
 
   int i,j, base;
   float val;
   float *x, *y, *A, *Aind;
+  int millisStart, millisStop;
 
   assert(length <= MAX_DIM);
 
@@ -172,9 +173,9 @@ void SpMatVec_Time(int length) {
   for (i=0;i<length;i++)
     x[i] = 1.0f;
 
-  start = GetTime();
+  millisStart = GetTimeMillis();
   spMatVec(length, A, Aind, x, y);
-  stop = GetTime();
+  millisStop = GetTimeMillis();
 
   printf("Time_spMatVec: computation took %d usecs. (%.2f MFLOPS)\n", (int)(stop-start), (13.0f*length)/(float)(stop-start) );
 
@@ -300,15 +301,14 @@ void ConjGrad_Time(int length) {
   fillArray(x, length, 0.0f);
   fillArray(b, length, 10.0f);
 
-  start = GetTime();
+  
   conjGrad(length, A, Aind, x, b, &max_iter, &eps);
-  stop = GetTime();
+ 
 
   if (DO_VERIFY) {
     printf("Stopped in %d iterations with res=%f\n", max_iter, eps);
   }
 
-  printf("Time_conjGrad: computation took %.5f secs.\n", (float)(stop-start) / 10e6f);
 
   free(x);
   free(b);
