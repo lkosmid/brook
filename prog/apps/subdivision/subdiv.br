@@ -70,7 +70,7 @@ kernel float triCombine(float b1<>, float b2<>) {
 kernel float uoDistance (float3 a<>, float3 b<>){
    float3 bigger = a>b?a:b;
    float3 smaller = (a>b)?b:a;
-   float3 bs = bigger-smaller
+   float3 bs = bigger-smaller;
    return dot(bs,bs);
 }
 kernel float3 avg (float3 a<>,float3 b<>) {
