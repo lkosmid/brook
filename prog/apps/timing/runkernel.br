@@ -91,27 +91,6 @@ RunKernelMemcpyKernel(float s<>, out float o<>)
 
 
 /*
- * RunKernelBonusKernel --
- *
- *      A second kernel so we can compare knees.
- *
- */
-
-kernel void
-RunKernelBonusKernel(float4 c, float4 s<>, out float4 o<>)
-{
-   o = c*s + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-   o = c*o + s; o = c*o + s; o = c*o + s; o = c*o + s;
-}
-
-
-/*
  * RunKernelHardWork --
  *
  *      Try for a kernel that will actually exercise the GPU
@@ -207,7 +186,6 @@ RunKernelKickBRT(void)
 
    streamRead(s, d);
    RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
-   RunKernelBonusKernel(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    streamWrite(o, d);
 }
 
@@ -219,13 +197,13 @@ RunKernelKickBRT(void)
  */
 
 static void
-RunKernelBuildSummary(int length, int verbose)
+RunKernelBuildSummary(int length, int verbose, int fast)
 {
    struct StatRecord kW, W, RkW, R100kW;
    float4 s<length, length>, o<length, length>, tiny<1, 1>;
    float4 *outData;
    float timeR, timeK;
-   int j, i;
+   int j, i, n;
 
    outData = (float4 *) malloc(length * length * sizeof *outData);
 
@@ -260,7 +238,8 @@ RunKernelBuildSummary(int length, int verbose)
    if (verbose) StatRecord_Print(&W, "W");
 
    StatRecord_Clear(&R100kW);
-   for (i = 0; i < 10; i++) {
+   n = fast ? 1 : 10;
+   for (i = 0; i < n; i++) {
       t1 = GetTimeTSC();
       streamRead(s, outData);
       for (j = 0; j < SMOOTHING; j++) {
@@ -334,7 +313,7 @@ RunKernelProcessTiming(char *name, float4 *data,
     *   - 4 floats per entry
     */
    printf64(CyclesToUsecs(stop - start));
-   printf("   %6.2f   %8.0f   %4d\t(* %s %d R%d %d %5.2f %5.2f *)\n",
+   printf(" %8.2f   %8.0f   %4d\t(* %s %d R%d %d %5.2f %5.2f *)\n",
           numFLOPs / elapsed, numFLOPs / 1000000,
           nRuns, name, length, nRuns, curOps, cur_R, cur_W);
 
@@ -413,7 +392,7 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
    RunKernelBuildData(&data2, streamLength * streamLength);
 
    if (curNEntries != streamLength * streamLength) {
-      RunKernelBuildSummary(streamLength, 1);
+      RunKernelBuildSummary(streamLength, 1, 0);
       UPDATE_CUR_OPS(streamLength * streamLength, data, RunKernelHardWork, s, o);
    }
 
@@ -428,59 +407,9 @@ RunKernel2D(char *logName, int streamLength, int nRuns)
    RunKernelProcessTiming(logName, data,
                           streamLength, streamLength * streamLength, nRuns);
 
-   /*
-   oldOps = curOps;
-   UPDATE_CUR_OPS(streamLength * streamLength, data2, RunKernelBonusKernel, s, o);
-   start = GetTimeTSC();
-   streamRead(s, data2);
-   for (i = 0; i < nRuns; i++) {
-      RunKernelBonusKernel(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
-   }
-   streamWrite(o, data2);
-   stop = GetTimeTSC();
-
-   RunKernelProcessTiming("RunK2DBonus", data2,
-                          streamLength, streamLength * streamLength, nRuns);
-   curOps = oldOps;
-   */
    free(data);
-
-   //RunKernel2DCPU("RunK2DCPU", streamLength, nRuns);
 }
 
-
-#if 0
-/*
- * RunKernel2DCPU --
- *
- *      Simple CPU implementation to see what comes from the CPU runtime and
- *      what's just that the CPU is slow.
- */
-
-static void
-RunKernel2DCPU(char *logName, int streamLength, int nRuns)
-{
-   float4 *data, *outData;
-   int i;
-
-   RunKernelBuildData(&data, streamLength * streamLength);
-   outData = (float4 *) malloc(streamLength * streamLength * sizeof *outData);
-
-   RunKernelHardWorkCPU(streamLength,
-                        float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
-   start = GetTimeTSC();
-   for (i = 0; i < nRuns; i++) {
-      RunKernelHardWorkCPU(streamLength,
-                           float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
-   }
-   stop = GetTimeTSC();
-
-   RunKernelProcessTiming(logName, outData, streamLength,
-                          streamLength * streamLength, nRuns);
-   free(data);
-   free(outData);
-}
-#endif
 
 /*
  * RunKernelDoRun --
@@ -584,7 +513,7 @@ RunKernelFindIdealGPUvsCPUSlope(void)
    RunKernelBuildData(&data, BIG_LENGTH * BIG_LENGTH);
    outData = (float4 *) malloc(BIG_LENGTH * BIG_LENGTH * sizeof *outData);
 
-   RunKernelBuildSummary(BIG_LENGTH, 1);
+   RunKernelBuildSummary(BIG_LENGTH, 1, 1);
 
    RunKernelHardWorkCPU(BIG_LENGTH,
                         float4(1.0f, 1.0f, 1.0f, 1.0f), data, outData);
