@@ -13,8 +13,8 @@ kernel float test(float vol<>,float index<>){
 }
 kernel float test4(float4 vol<>,float4 index<>){
   float4 zero4 = 0;
-  float4 point5=.5;
-  float4 tmp = (vol>point5)?index:zero4;
+  float4 isovalue=.39;
+  float4 tmp = (vol>isovalue)?index:zero4;
   return dot(tmp,1);
 }
 /* This kernel is for a synthetic dataset consisting of one sphere centered at
@@ -207,47 +207,54 @@ kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>,
                                             float nextgather[][]) {
   float2 why={0,1};
   float2 eks={1,0};
-
-  float4 curiso;
-  float4 nextiso;
+  float isovalue=.39;
+  float4 curiso,nextiso;
   float4 whichVolumeTriangle={round(fmod((indexof trianglesA).x,3)),vertices1.w,0,0};
   float3 vertices=vertices1.xyz;
   float mod5=round(fmod((indexof trianglesA).y,5));
-  curiso = float4(curgather[vertices1.xy],
-                  curgather[vertices1.xy+eks],
-                  curgather[vertices1.xy+1],
-                  curgather[vertices1.xy+why]);
-  nextiso = float4(nextgather[vertices1.xy],
-                   nextgather[vertices1.xy+eks],
-                   nextgather[vertices1.xy+1],
-                   nextgather[vertices1.xy+why]);
   if (mod5+.5>5)
      mod5=0;
-  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0))
+  if (!(whichVolumeTriangle.y<256&&whichVolumeTriangle.y>=0)) {
     whichVolumeTriangle.y=0;
-  if (whichVolumeTriangle.x+.5>3) whichVolumeTriangle.x=0;
-  whichVolumeTriangle.x+=mod5*3;
-  {
-    float4 interpz =interp (curiso,nextiso);
-    float4 cury = {curiso.x,curiso.y,nextiso.x,nextiso.y};
-    float4 curx = {curiso.x,curiso.w,nextiso.x,nextiso.w};
-    float4 nexty = {curiso.z,curiso.w,nextiso.z,nextiso.w};
-    float4 nextx = {curiso.y,curiso.z,nextiso.y,nextiso.z};
-    float4 interpy= interp(cury,nexty);
-    float4 interpx= interp(curx,nextx);
-    float4 config;
-    float4 one=1;
-    float4 hal=.5;
-    float4 mod;
-    config = volumeTriangles[whichVolumeTriangle].xyzz;
-    mod = config.xyzw * (config.xxxx==hal&&(config.yyyy==one||config.zzzz==one)?interpx:one);
-    mod = mod+
-      config.xyzw * (config.yyyy==hal&&(config.xxxx==one||config.zzzz==one)?interpy:one);
-    mod = mod+
-      config.xyzw * (config.zzzz==hal&&(config.xxxx==one||config.yyyy==one)?interpz:one);
-    
-    trianglesA=vertices.xyz+mod.xyz+mod.w;
   }
+  if (whichVolumeTriangle.x+.5>3) whichVolumeTriangle.x=0;
+  whichVolumeTriangle.x+=mod5*3; 
+
+  {
+    float3 config = volumeTriangles[whichVolumeTriangle].xyz;
+    float low,high,tmp;
+
+    if (config.z==.5) {
+      float2 lhGather = vertices.xy+config.xy;
+      low = curgather[lhGather];
+      high = nextgather[lhGather];
+      config.z =(isovalue-low)/(high-low);
+    }else {
+      float2 lowGather,highGather;
+      if (config.x==.5) {
+        lowGather=float2(vertices.x,vertices.y+config.y);
+        highGather=float2(vertices.x+1.0f,vertices.y+config.y);
+      } else if (config.y==.5) {
+        lowGather=float2(vertices.x+config.x,vertices.y);
+        highGather=float2(vertices.x+config.x,vertices.y+1.0f);
+      }
+      if (config.z==0) {
+        low = curgather[lowGather];
+        high = curgather[highGather];
+      }else {
+        low = nextgather[lowGather];
+        high= nextgather[highGather];
+      }
+      tmp = (isovalue-low)/(high-low);
+      if (config.x==.5) {
+        config.x=tmp;
+      }else if (config.y==.5){
+        config.y=tmp;
+      }
+    }    
+    trianglesA=vertices+config;
+  }
+  
 }/*
 kernel void processTrianglesNoCompactOneOut(out float3 trianglesA<>, 
                                       float4 vertices1<>,

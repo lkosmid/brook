@@ -1,13 +1,25 @@
+#line 1 "brtvector.hpp"
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 
+#line 1 "brtvector.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -79,6 +91,7 @@ kernel void calculateIndexModulus (float4 index,
 #define finite_float3(output) finite_float(output.x)
 #define finite_float4(output) finite_float(output.x)
 
+#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat (float input <>, 
                                    reduce float output<>) {
@@ -267,22 +280,24 @@ float shiftValuesfloat(float list_stream <>,
       LogNMinusK=logN-2;
       i= logN-1;//could make this k! rather than N
       // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-      EstablishGuessfloat(ret_stream,
-                             guess_stream,
-                             list_stream,
-                             (float)(1 << LogNMinusK),
-                             maxvalue,
-                             (float)(1<<i),
-                             (float)sign);
-      for (i=1;i<logN;++i) {
-         LogNMinusK=logN-1-i;
-         UpdateGuessfloat (ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
+      if (width) {
+        EstablishGuessfloat(ret_stream,
+                               guess_stream,
+                               list_stream,
+                               (float)(1 << LogNMinusK),
+                               maxvalue,
+                               (float)(1<<i),
+                               (float)sign);
+        for (i=1;i<logN;++i) {
+          LogNMinusK=logN-1-i;
+          UpdateGuessfloat (ret_stream,//scatter values
+                               guess_stream,//new guess
+                               list_stream,//actual values
+                               (float)(1<<LogNMinusK),
+                               maxvalue,
+                               guess_stream,//old guess
+                               (float)sign);
+        }
       }
       debugStreamPrint(guess_stream,"Gather Value");
       if (1) {
@@ -1081,6 +1096,7 @@ unsigned int totalCombineVoutfloat (float list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat2 (float2 input <>, 
                                    reduce float2 output<>) {
@@ -1269,22 +1285,24 @@ float shiftValuesfloat2(float2 list_stream <>,
       LogNMinusK=logN-2;
       i= logN-1;//could make this k! rather than N
       // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-      EstablishGuessfloat2(ret_stream,
-                             guess_stream,
-                             list_stream,
-                             (float)(1 << LogNMinusK),
-                             maxvalue,
-                             (float)(1<<i),
-                             (float)sign);
-      for (i=1;i<logN;++i) {
-         LogNMinusK=logN-1-i;
-         UpdateGuessfloat2 (ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
+      if (width) {
+        EstablishGuessfloat2(ret_stream,
+                               guess_stream,
+                               list_stream,
+                               (float)(1 << LogNMinusK),
+                               maxvalue,
+                               (float)(1<<i),
+                               (float)sign);
+        for (i=1;i<logN;++i) {
+          LogNMinusK=logN-1-i;
+          UpdateGuessfloat2 (ret_stream,//scatter values
+                               guess_stream,//new guess
+                               list_stream,//actual values
+                               (float)(1<<LogNMinusK),
+                               maxvalue,
+                               guess_stream,//old guess
+                               (float)sign);
+        }
       }
       debugStreamPrint(guess_stream,"Gather Value");
       if (1) {
@@ -2083,6 +2101,7 @@ unsigned int totalCombineVoutfloat2 (float2 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat3 (float3 input <>, 
                                    reduce float3 output<>) {
@@ -2271,22 +2290,24 @@ float shiftValuesfloat3(float3 list_stream <>,
       LogNMinusK=logN-2;
       i= logN-1;//could make this k! rather than N
       // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-      EstablishGuessfloat3(ret_stream,
-                             guess_stream,
-                             list_stream,
-                             (float)(1 << LogNMinusK),
-                             maxvalue,
-                             (float)(1<<i),
-                             (float)sign);
-      for (i=1;i<logN;++i) {
-         LogNMinusK=logN-1-i;
-         UpdateGuessfloat3 (ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
+      if (width) {
+        EstablishGuessfloat3(ret_stream,
+                               guess_stream,
+                               list_stream,
+                               (float)(1 << LogNMinusK),
+                               maxvalue,
+                               (float)(1<<i),
+                               (float)sign);
+        for (i=1;i<logN;++i) {
+          LogNMinusK=logN-1-i;
+          UpdateGuessfloat3 (ret_stream,//scatter values
+                               guess_stream,//new guess
+                               list_stream,//actual values
+                               (float)(1<<LogNMinusK),
+                               maxvalue,
+                               guess_stream,//old guess
+                               (float)sign);
+        }
       }
       debugStreamPrint(guess_stream,"Gather Value");
       if (1) {
@@ -3085,6 +3106,7 @@ unsigned int totalCombineVoutfloat3 (float3 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 72 "brtvector.hpp"
 #define VECTOR_TEMPLATIZED_FUNCTIONS
 reduce void valueProducedfloat4 (float4 input <>, 
                                    reduce float4 output<>) {
@@ -3273,22 +3295,24 @@ float shiftValuesfloat4(float4 list_stream <>,
       LogNMinusK=logN-2;
       i= logN-1;//could make this k! rather than N
       // where k = num elements pushed (N-logN%2?ret_stream,tmp_stream
-      EstablishGuessfloat4(ret_stream,
-                             guess_stream,
-                             list_stream,
-                             (float)(1 << LogNMinusK),
-                             maxvalue,
-                             (float)(1<<i),
-                             (float)sign);
-      for (i=1;i<logN;++i) {
-         LogNMinusK=logN-1-i;
-         UpdateGuessfloat4 (ret_stream,//scatter values
-                              guess_stream,//new guess
-                              list_stream,//actual values
-                              (float)(1<<LogNMinusK),
-                              maxvalue,
-                              guess_stream,//old guess
-                              (float)sign);
+      if (width) {
+        EstablishGuessfloat4(ret_stream,
+                               guess_stream,
+                               list_stream,
+                               (float)(1 << LogNMinusK),
+                               maxvalue,
+                               (float)(1<<i),
+                               (float)sign);
+        for (i=1;i<logN;++i) {
+          LogNMinusK=logN-1-i;
+          UpdateGuessfloat4 (ret_stream,//scatter values
+                               guess_stream,//new guess
+                               list_stream,//actual values
+                               (float)(1<<LogNMinusK),
+                               maxvalue,
+                               guess_stream,//old guess
+                               (float)sign);
+        }
       }
       debugStreamPrint(guess_stream,"Gather Value");
       if (1) {
@@ -4087,10 +4111,16 @@ unsigned int totalCombineVoutfloat4 (float4 list_stream<>,
                             output);
 }
 #undef VECTOR_TEMPLATIZED_FUNCTIONS
+#line 1075 "brtvector.hpp"
+#line 1075 "brtvector.hpp"
 
+#line 1075 "brtvector.hpp"
 
+#line 1075 "brtvector.hpp"
 
+#line 1075 "brtvector.hpp"
 
+#line 1075 "brtvector.hpp"
 
 
 
