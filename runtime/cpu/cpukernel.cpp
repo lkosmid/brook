@@ -330,14 +330,17 @@ namespace brook{
             unsigned int curfinal=cur+step;
             if (threads<remainder) curfinal++;
             unsigned int * mapbegin=e+threads*dim;
-            CPUKernel::staticReduceToStream(new reduceToStreamInput(this,
-                                                                    args,
-                                                                    cur,
-                                                                    curfinal,
-                                                                    extent,
-                                                                    rdim,
-                                                                    mapbegin,
-                                                                    mag));
+            if (threads!=numThreads-1)
+              CPUKernel::staticReduceToStream(new reduceToStreamInput(this,
+                                                                      args,
+                                                                      cur,
+                                                                      curfinal,
+                                                                      extent,
+                                                                      rdim,
+                                                                      mapbegin,
+                                                                      mag));
+            else
+              ReduceToStream(args,cur,curfinal,extent,rdim,mapbegin,mag);
             
             cur=curfinal;
             //forkborkborkbork
