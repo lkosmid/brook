@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "streamholder.h"
+kernel void valueAt (float value[][],
+                             float2 index,
+                             out float output<>,
+                             float2 maxvalue,
+                             float nothing) {
+   if (index.y>=maxvalue.y||index.y<0)
+      output = nothing;
+   else 
+      output = value[index];
+}
+
+kernel void getIndexAt(float4 inputindex<>,
+                       float shiftRight,
+                       float2 maxvalue,
+                       out float2 outputindex<>) {
+   float2 index;
+   index.x=inputindex.x+shiftRight;
+   index.y=inputindex.y+floor(index.x/maxvalue.x);
+   index.x=round(fmod(round(index.x),maxvalue.x));
+   if (index.x<=-.50)
+      index.x+=maxvalue.x;//only necessary if shiftRight<0
+   if (index.x+.25 >= maxvalue.x)
+     index.x = 0;//if fmod fails us
+   outputindex=index;
+   //   printf(maxvalue.x,maxvalue.y,outputindex.x,outputindex.y);
+}
+kernel void CountToRight (float value [][],
+                          out float output<>,
+                          float twotoi,
+                          float2 maxvalue) {
+   float2 nextPlaceToLook;
+   float neighbor;
+   getIndexAt(indexof(output),twotoi,maxvalue,nextPlaceToLook);
+   valueAt(value,nextPlaceToLook,neighbor,maxvalue,0);
+   output = value[indexof(output)]+neighbor;
+}
+
+void CountValues(struct StreamHolder list_stream,
+                 struct StreamHolder output_stream,
+                 int WIDTH, 
+                 int LENGTH, 
+                 int sign) {
+   float tmp_stream<WIDTH,LENGTH>;
+   unsigned int i;
+   float2 maxvalue;
+   unsigned int logN;
+   float maxshift=999;
+
+   maxvalue.x=LENGTH;maxvalue.y=WIDTH;
+   logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
+   CountToRight (*list_stream,output_stream,sign,maxvalue);   
+   for (i=1;i<logN;++i) {
+      printf ("\nStage %d\n",i);
+      streamPrint(i%2?output_stream:tmp_stream);
+      if (i%2)
+         CountToRight (output_stream,tmp_stream,sign*(1<<i),maxvalue);      
+      else
+         CountToRight (tmp_stream,output_stream,sign*(1<<i),maxvalue);
+   }
+   if (logN%2==0)
+     streamSwap(tmp_stream,*output_stream);
+}
+
+int main () {
+	float4 inputindex<4,3>;
+	float2 outputindex<4,3>;
+        float inputval<4,3>;
+	float outputval<4,3>;
+	float4 ind[4][3];
+	float2 max;
+        float val[4][3];
+	int i,j;
+	max.x=3;max.y=4;
+	for (i=0;i<4;++i) {
+		for (j=0;j<3;++j) {
+			ind[i][j].x=j;
+			ind[i][j].y=i;ind[i][j].z=ind[i][j].w=0;
+                        val[i][j]=0;
+		}
+	}
+        val[1][0]=1;val[3][0]=1;
+	streamRead(inputindex,ind);
+	streamRead(inputval,val);
+	if (0) {
+	streamPrint(inputindex);
+	printf ("\n");
+	getIndexAt(inputindex,-8,max,outputindex);
+	streamPrint(outputindex);
+	}else {
+		printf ("input\n");
+		streamPrint(inputval);
+		CountValues(&inputval,&outputval,4,3,-1);
+		printf ("\noutput\n");
+		streamPrint(outputval);		
+	}
+	printf("\n");
+	return 0;
+}
