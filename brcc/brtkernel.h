@@ -31,7 +31,7 @@ class BRTKernelCode : public DupableBRTKernelCode
 
     BRTKernelCode *dup0() const = 0;
     virtual void printCode(std::ostream& out) const = 0;
-
+    virtual void printInnerCode(std::ostream&out)const=0;
     friend std::ostream& operator<< (std::ostream& o, const BRTKernelCode& k);
 
     FunctionDef *fDef;
@@ -43,7 +43,7 @@ class BRTFP30KernelCode : public BRTKernelCode
   public:
     BRTFP30KernelCode(const FunctionDef& _fDef) : BRTKernelCode(_fDef) {};
    ~BRTFP30KernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
-
+    void printInnerCode(std::ostream&out)const;
     BRTKernelCode *dup0() const { return new BRTFP30KernelCode(*this->fDef); }
     void printCode(std::ostream& out) const;
 };
@@ -57,7 +57,7 @@ class BRTPS20KernelCode : public BRTKernelCode
 
     BRTKernelCode *dup0() const { return new BRTPS20KernelCode(*this->fDef); }
     void printCode(std::ostream& out) const;
-
+    void printInnerCode(std::ostream&out)const;
     /* static so it can be passed as a findExpr() callback */
     static Expression *ConvertGathers(Expression *e);
 };
@@ -120,7 +120,7 @@ class BRTCPUKernelCode : public BRTKernelCode
                           std::vector<PrintCPUArg> args,
                           bool reduceneeded)const;
     void printCode(std::ostream& out) const;
-	
+    void printInnerCode(std::ostream&out)const;
     static void printInnerFunction(std::ostream&out,
                                    std::string fullname,
                                    FunctionDef*fDef,

@@ -19,6 +19,7 @@
 #include "brtexpress.h"
 #include "codegen.h"
 #include "main.h"
+extern bool recursiveIsGather(Type*);
 
 unsigned int getReferenceStream(FunctionDef * fDef) {
    FunctionType * ft= static_cast<FunctionType*>(fDef->decl->form);
@@ -82,11 +83,121 @@ BRTPS20KernelCode::BRTPS20KernelCode(const FunctionDef& _fDef)
 {
    fDef->findExpr(ConvertGathers);
 }
+static Variable * NewGatherArg (Variable * v) {
+   Symbol * s = new Symbol;
+   s->name = v->name->name+"_scalebias";
+   return new Variable(s,v->location);
+   
+}
 
+
+void BRTPS20KernelCode::printInnerCode (std::ostream&out) const {
+
+}
+void BRTFP30KernelCode::printInnerCode (std::ostream&out) const {
+
+}
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 Expression *
 BRTPS20KernelCode::ConvertGathers (Expression *expr) {
   BrtGatherExpr *gather;
+  if (expr->etype == ET_FunctionCall) {
+     //now we have to convert gathers that are passed into functions
+     FunctionCall * fc = static_cast<FunctionCall*>(expr);
+     if (fc->function->etype==ET_Variable) {
+#ifdef ONLY_RETURN_SEMANTICS
+        static std::set <FunctionCall *> used;
+        if (used.find(fc)!=used.end())
+           return expr;
+#endif
+        Variable * function = static_cast<Variable*>(fc->function);
+        if (function->name->entry&&function->name->entry->uVarDecl) {
+           if (function->name->entry->uVarDecl->isKernel()&&
+               !function->name->entry->uVarDecl->isReduce()) {
+              std::set<unsigned int>::iterator iter=
+                 FunctionProp[function->name->name].begin();
+              std::set<unsigned int>::iterator iterend = 
+                 FunctionProp[function->name->name].end();
+              for (;iter!=iterend;++iter) {
+                 if (fc->args[*iter]->etype!=ET_Variable) {
+                    std::cerr<<"Error: ";
+                    fc->args[*iter]->location.printLocation(std::cerr);
+                    std::cerr<< "Argument "<<*iter+1<<" not a stream where";
+                    std::cerr<< "indexof used in subfunction";
+                 }else {
+                    Variable * v = static_cast<Variable*>(fc->args[*iter]);
+                    if (v->name->entry&&
+                        v->name->entry->uVarDecl){
+                       if (v->name->entry->uVarDecl->isStream()) {
+                          Decl * indexofDecl 
+                             = new Decl(new BaseType(BT_Float4));
+                          
+                          Symbol * indexofS = new Symbol;
+                          indexofS->name = "__indexof_"+v->name->name;
+                          indexofS->entry = mk_vardecl(indexofS->name,
+                                                       indexofDecl);
+                          fc->addArg(new Variable(indexofS,v->location));
+                       }else {
+                          std::cerr<< "Error: ";
+                          v->location.printLocation(std::cerr);
+                          std::cerr<<" Argument "<<*iter+1<<" not a stream";
+                          std::cerr<< "where indexof used in subfunction";
+                       }
+                    }
+                 }
+              }
+              unsigned int i;
+              for (i=0;i<fc->nArgs();++i) {
+                 if (fc->args[i]->etype==ET_Variable){
+                    Variable * v = static_cast<Variable*>(fc->args[i]);
+                    if (v->name->entry&&v->name->entry->uVarDecl) {
+                       if(recursiveIsGather(v->name->entry->uVarDecl->form)) {
+                          ++i;
+                          fc->args.insert(fc->args.begin()+i,NewGatherArg(v));
+                       }
+#ifdef ONLY_RETURN_SEMANTICS
+                       else if ((v->name->entry->
+                                  uVarDecl->form->getQualifiers()&TQ_Out)!=0) {
+                          fc->args.erase(fc->args.begin()+i);
+                          i--;
+                       }
+#endif
+                    }
+                 }
+              }
+#ifdef ONLY_RETURN_SEMANTICS
+              assert (function->name->entry->uVarDecl->form->type==
+                      TT_Function);
+              FunctionType * ft = static_cast<FunctionType*>
+                 (function->name->entry->uVarDecl->form);
+              std::vector <Decl *>outputs;
+              for (i=0;i<ft->nArgs;++i) {
+                 if ((ft->args[i]->form->getQualifiers()&TQ_Out)!=0) {
+                    outputs.push_back(ft->args[i]);
+                 }
+              }
+              for (i=0;i<outputs.size();++i) {
+                 Expression * tmp=fc->dup();
+                 used.insert(static_cast<FunctionCall*>(tmp));
+                 static_cast<Variable *>(static_cast<FunctionCall*>
+                                         (tmp)->function)->name->name+=
+                    "__"+outputs[i]->name->name;
+                 tmp = new AssignExpr(AO_Equal,
+                                      new Variable(outputs[i]->name->dup(),
+                                                   fc->location),
+                                      tmp,
+                                      fc->location);
+                 if (i!=0)
+                    expr = new BinaryExpr(BO_Comma,tmp,expr,fc->location);
+                 else
+                    expr=tmp;                 
+              }
+#endif
+           }
+        }
+     }
+     return expr;
+  }
   if (expr->etype == ET_IndexExpr) {
     
     if (globals.verbose) {
@@ -177,7 +288,6 @@ static Symbol getSymbol(std::string in) {
     return name;
 }
 
-extern bool recursiveIsGather(Type*);
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 bool recursiveIsArrayType(Type * form) {
@@ -193,6 +303,12 @@ bool recursiveIsArrayType(Type * form) {
 bool BRTCPUKernelCode::PrintCPUArg::isGather() {
 	return recursiveIsGather(a->form);
 }
+void BRTCPUKernelCode::printInnerCode (std::ostream&out) const {
+   out << "void  ";
+   FunctionDef * fDef= static_cast<FunctionDef*>(this->fDef->dup());
+   
+}
+
 bool BRTCPUKernelCode::PrintCPUArg::isArrayType() {
       return recursiveIsArrayType(a->form);
 }
