@@ -1,12 +1,31 @@
-
+/** The triangle struct has 3 float4's  the float3 of each point is that points position
+ *  The last value of the float4 indicates where 
+ */
 typedef struct Triangle_t{
   float4 A;
   float4 B;
   float4 C;
 } Triangle;
+//produces exactly four triangles for each input triangle. These triangles use the neighbor list to find the correct place
+//neighbors:
+//   [x . y . z . w ][x . y . z . w ][x . y . z . w][x . y . z . w][x . y . z . w][ x . y . z . w]
+//      AB       AC      BC              A0      A1     A2     A3      B0     B1       B2    B3    
+//...[x . y . z . w ][x . y . z . w ]
+//      C0      C1      C2     C3
+//
+//   [x . y . z . w ][x . y . z . w ][x . y . z . w][x . y . z . w][x . y . z . w][ x . y . z . w]
+//      AB       AC      BC    A0      A1      A2     B0     B1      B2     C0       C1       C2    
+//
+//        A0A1A2A3
+//      ____a_____
+//      \AC /\ AB/
+//       \ /  \ /
+//        /____\
+//       c \BC/ b
+// C0C1C2C3 \/  B1B2B3B4
+//
 
-
-kernel void UniformSubdivide (Triangle input<>, Triangle neighbors[], out Triangle outputA<>, out Triangle outputB<>, out Triangle outputC<>, out Triangle outputD<>, float round) {
+kernel void UniformSubdivide (Triangle input<>, float4 neighbors[][], out Triangle outputA<>, out Triangle outputB<>, out Triangle outputC<>, out Triangle outputD<>, float round) {
   outputA=outputB=outputC=outputD=input;
   
 }
@@ -25,6 +44,10 @@ kernel float signedDistancePlane (float4 plane, float3 point) {
 kernel float distancePlane (float4 plane, float3 point) {
   return abs(signedDistancePlane(plane,point));
 }
+
+// this kernel decides whether or not the four triangles are significant enough to subdivide.
+// each edge is considered individually: if the triangle should not be subdivided, then it is
+// not added into the bitmask.  Likewise 
 kernel void shouldSubdivide (Triangle input<>,
                              Triangle A<>,
                              Triangle B<>,
@@ -47,7 +70,7 @@ kernel void shouldSubdivide (Triangle input<>,
     whichEdges+=4;
 }
 
-
+// spits out the indices of the parent into a list the size of which is the number of triangles
 kernel void subdivisionIndices(float whichEdges<>,
                                vout[4] float2 indices<>) {
   float first=0;
@@ -57,20 +80,23 @@ kernel void subdivisionIndices(float whichEdges<>,
   }
   indices=-(indices.xy+.25);
   indices.x=-1;
-  indices.y=1;
+  indices.y=-1;
   if (whichEdges>0.25) {
     push(indices);
-  }
-  indices.y=2;
-  if (whichEdges>2.75&&whichEdges!=4) {
+    indices.y=-2;
     push(indices);
-  }
-  indices.y=3;
-  if (whichEdges>6.75) {
+    indices.y=-3;
     push(indices);      
   }
 }
-
+kernel void buildTriangleAndNeighborList (float whichEdges[][],
+                                          float2 outputToInputIndices[][],
+                                          float2 inputToOutputIndices[][],
+                                          float4 oldNeighborList[][],
+                                          out float4 neighborList<>) {
+  neighborList=0;
+}
+                                          
 extern int mainurbs(int argc, char ** argv);
 
 int main (int argc, char **  argv) {
