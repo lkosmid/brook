@@ -55,20 +55,20 @@ BRTScatterDef::print(std::ostream& out, int) const {
          in = decl->args[i]->name;
       }
    }
-   
+   out << "class ";
    if (extraArgs.empty())
       out << "__"; 
-   out << name << "{"<<endl;
+   out <<name << "{ public:"<<endl;
    FunctionDef * fdef = static_cast<FunctionDef *>(this->dup());
    Brook2Cpp_ConvertKernel(fdef);
    decl = static_cast<FunctionType*> (fdef->decl->form);   
    for (i=0;i<extraArgs.size();++i) {
-      decl->args[extraArgs[i]]->print(out,1);
-      out << endl;
+      decl->args[extraArgs[i]]->print(out,1,1);
+      out << ";"<<endl;
    }
    if (extraArgs.size()) {
       indent(out,1);
-      out << name << "("<<endl;
+      out << name << "(";
       for (i=0;i<extraArgs.size();++i) {
          decl->args[extraArgs[i]]->print(out,1);
       }
@@ -79,17 +79,14 @@ BRTScatterDef::print(std::ostream& out, int) const {
          std::string s=decl->args[extraArgs[i]]->name->name;
          out << s<<"("<<s<<")";
       }
-      out << "{}";
-   }
-   indent(out,1);
-   for (i=0;i<decl->nArgs;++i) {
-      if (decl->args[i]->form->type==TT_Stream) {
-      }
+      out << "{}"<<endl;
    }
    if (in&&ret){
-     out << "template <class T> void operator () (T &"<< in->name<<", ";
-     out << "                                     const T& "<<ret->name<<")";
-     fdef->Block::print(out,0);
+     indent(out,1);
+     out << "template <class T> void operator () (T &"<< ret->name<<", "<<endl;
+     indent(out,1);
+     out << "                                     const T& "<<in->name<<") const";
+     fdef->Block::print(out,1);
    }
    out << "}";
    if (extraArgs.empty())

@@ -18,7 +18,7 @@ extern "C" {
 
 #include "main.h"
 #include "ctool.h"
-
+#include "brtscatter.h"
 struct globals_struct globals;
 
 
@@ -181,7 +181,7 @@ FunctionDef *
 ConvertToBrtScatters(FunctionDef *fDef)
 {
    if (!fDef->decl->isScatter()) { return NULL; }
-   return new BRTKernelDef(*fDef);
+   return new BRTScatterDef(*fDef);
 }
 
 

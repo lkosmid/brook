@@ -1380,6 +1380,7 @@ local_or_global_storage_class: EXTRN
         ;
 
 global_storage_class: KERNEL
+                    | SCATTER
         ;
 
 local_storage_class: AUTO
