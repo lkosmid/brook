@@ -17,12 +17,7 @@
 BRTKernelDef::BRTKernelDef(const FunctionDef& fDef)
             : FunctionDef(fDef.location)
 {
-   FunctionType *fType;
    LabelVector::const_iterator j;
-
-   assert (fDef.decl->form->type == TT_Function);
-   fType = (FunctionType *) fDef.decl->form;
-   CodeGen_CheckSemantics(fType->subType, fType->args, fType->nArgs);
 
    type = ST_BRTKernel;
    decl = fDef.decl->dup();
@@ -33,6 +28,10 @@ BRTKernelDef::BRTKernelDef(const FunctionDef& fDef)
 
    for (j=fDef.labels.begin(); j != fDef.labels.end(); j++) {
       addLabel((*j)->dup());
+   }
+
+   if (!CheckSemantics()) {
+      assert(false);
    }
 }
 
@@ -70,15 +69,101 @@ void
 BRTKernelDef::printStub(std::ostream& out) const
 {
    FunctionType *fType;
-   char *stub;
+   int i;
 
    assert (decl->form->type == TT_Function);
    fType = (FunctionType *) decl->form;
 
-   stub = CodeGen_GenerateStub(fType->subType, FunctionName()->name.c_str(),
-                               fType->args, fType->nArgs);
-   out << stub;
-   free(stub);
+   fType->subType->printType(out, NULL, true, 0);
+   out << " " << *FunctionName() << " (";
+
+   for (i = 0; i < fType->nArgs; i++) {
+      if (i) out << ",\n\t\t";
+
+      if (fType->args[i]->isStream()) {
+         out << "const __BRTStream& " << *fType->args[i]->name;
+      } else {
+         out << "const ";
+         fType->args[i]->form->printBase(out, 0);
+         fType->args[i]->form->printBefore(out, NULL, 0);
+         out << "& " << *fType->args[i]->name;
+      }
+   }
+   out << ") {\n";
+
+   out << "  static __BRTKernel *__k;\n\n"
+       << "  if (!__k) __k = __BRTKernelDef("
+       << *FunctionName() << "_fp);\n\n";
+
+   for (i=0; i < fType->nArgs; i++) {
+      if (fType->args[i]->isStream()) {
+         if (fType->args[i]->form->getQualifiers() & TQ_Out) {
+            out << "  __k->PushOutput(" << *fType->args[i]->name << ");\n";
+         } else {
+            out << "  __k->PushStream(" << *fType->args[i]->name << ");\n";
+         }
+      } else {
+         out << "  __k->PushConstant(" << *fType->args[i]->name << ");\n";
+      }
+   }
+   out << "  __k->Map();\n";
+   out << "\n}\n\n";
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool
+BRTKernelDef::CheckSemantics() const
+{
+   FunctionType *fType;
+   Decl *outArg = NULL;
+
+   assert (decl->form->type == TT_Function);
+   fType = (FunctionType *) decl->form;
+
+   for (int i = 0; i < fType->nArgs; i++) {
+      BaseTypeSpec baseType;
+
+      if (fType->args[i]->form->getQualifiers() & TQ_Out) {
+         if (outArg) {
+            std::cerr << "Multiple outputs not supported: ";
+            outArg->print(std::cerr, true);
+            std::cerr << ", ";
+            fType->args[i]->print(std::cerr, true);
+            std::cerr << ".\n";
+            return false;
+         }
+         outArg = fType->args[i];
+
+         if (!fType->args[i]->isStream()) {
+            std::cerr << "Output is not a stream: ";
+            fType->args[i]->print(std::cerr, true);
+            std::cerr << ".\n";
+            return false;
+         }
+      }
+
+      baseType = fType->args[i]->form->getBase()->typemask;
+      if (baseType < BT_Float || baseType > BT_Float4) {
+         std::cerr << "Illegal type in ";
+         fType->args[i]->print(std::cerr, true);
+         std::cerr << ". (Must be floatN).\n";
+         return false;
+      }
+   }
+
+   /* check kernel return type */
+   if (!fType->subType->isBaseType() ||
+      ((BaseType *) fType->subType)->typemask != BT_Void) {
+      std::cerr << "Illegal kernel return type: " << fType->subType
+                << ". Must be void.\n";
+      return false;
+   }
+
+   if (outArg == NULL) {
+      std::cerr << "Warning, kernel has no output.\n";
+   }
+
+   return true;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

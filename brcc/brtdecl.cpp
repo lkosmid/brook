@@ -60,7 +60,7 @@ void
 BrtStreamType::printType( std::ostream& out, Symbol *name,
 			  bool showBase, int level ) const
 {
-  out << "__BrookStream ";
+  out << "__BRTStream ";
   if (name) 
     out << *name;
 }
@@ -76,7 +76,7 @@ BrtStreamType::printForm(std::ostream& out) const
 void
 BrtStreamType::printInitializer(std::ostream& out) const
 {
-  out << "__BrtCreateStream(\"";
+  out << "__BRTCreateStream(\"";
   base->printBase(out, 0);
   out << "\",";
   for (unsigned int i=0; i<dims.size(); i++) {

@@ -23,60 +23,6 @@ static const char fp30_assist[] =
 #include "v01/fp30_assist.cg.bin"
 ;
 
-/*
- * CodeGen_CheckSemantics --
- *
- *      Takes a kernel function and does semantic checking.
- */
-
-void
-CodeGen_CheckSemantics (Type *retType, Decl **args, int nArgs) {
-  Decl *outArg = NULL;
-
-  for (int i = 0; i < nArgs; i++) {
-     BaseTypeSpec baseType;
-
-     if (args[i]->form->getQualifiers() & TQ_Out) {
-        if (outArg) {
-           std::cerr << "Multiple outputs not supported: ";
-           outArg->print(std::cerr, true);
-           std::cerr << ", ";
-           args[i]->print(std::cerr, true);
-           std::cerr << ".\n";
-           exit(1);
-
-        }
-        outArg = args[i];
-
-        if (!args[i]->isStream()) {
-           std::cerr << "Output is not a stream: ";
-           args[i]->print(std::cerr, true);
-           std::cerr << ".\n";
-           exit(1);
-        }
-     }
-
-     baseType = args[i]->form->getBase()->typemask;
-     if (baseType < BT_Float || baseType > BT_Float4) {
-        std::cerr << "Illegal type in ";
-        args[i]->print(std::cerr, true);
-        std::cerr << ". (Must be floatN).\n";
-        exit(1);
-     }
-  }
-
-  /* check kernel return type */
-  if (!retType->isBaseType() || ((BaseType *) retType)->typemask != BT_Void) {
-     std::cerr << "Illegal kernel return type: " << retType
-               << ". Must be void.\n";
-     exit(1);
-  }
-
-  if (outArg == NULL) {
-     std::cerr << "Warning, kernel has no output.\n";
-  }
-}
-
 
 /*
  * generate_cg_code --
@@ -273,99 +219,19 @@ generate_c_fp_code(char *fpcode, const char *name)
 
   assert (name);
 
-  fp << "\nstatic const char " << name << "_fp[] =" << std::endl;
+  fp << "\nstatic const char *__" << name << "_fp[] = {" << std::endl;
 
-  fp << "\"";
+  fp << "\"fp30\", \"";
   while ((i = *fpcode++) != '\0') {
     if (i == '\n')
       fp << "\\n\"\n\"";
     else
       fp << (char) i;
   }
-  fp << "\";\n\n";
+  fp << "\",\n";
+  fp << "NULL, NULL};\n\n";
 
   return strdup(fp.str().c_str());
-}
-
-
-/*
- * CodeGen_GenerateStub --
- *
- *      Spits out a small wrapper function to setup the runtime and then
- *      invoke the kernel.
- */
-
-char *
-CodeGen_GenerateStub(Type *retType, const char *name, Decl **args, int nArgs)
-{
-  std::ostringstream cStub;
-  int i;
-
-  cStub << "static int __" << name << "_p = 0;\n\n";
-
-  retType->printType(cStub, NULL, true, 0);
-  cStub << " " << name << " (";
-
-  for (i = 0; i < nArgs; i++) {
-     if (i) cStub << ",\n\t";
-
-     if (args[i]->isStream()) {
-        cStub << "stream arg_" << i;
-     } else {
-        args[i]->form->printBase(cStub, 0);
-        args[i]->form->printBefore(cStub, NULL, 0);
-        cStub << " arg_" << i;
-     }
-  }
-  cStub << ") {\n";
-
-  cStub << "  if (!__" << name << "_p) __" << name << "_p = LoadKernelText("
-     << name << "_fp);\n";
-  cStub << "  KernelMap (p, ";
-  for (i=0; i < nArgs; i++) {
-    if (i) cStub << ", ";
-    cStub << "arg_" << i;
-  }
-  cStub << ");\n}\n\n";
-
-#if 0
-  /*
-   *  I don't know anything about reduce kernels and these hardcoded
-   * parameter positional meanings don't mean anything to me.  So, I'm
-   * ignoring them for now.  -Jeremy.
-   */
-
-  /* XXX is kernel a legal reduce kernel ? */
-
-  cStub << retType << " " << name << "_reduce (";
-  cStub << "stream arg_src,";
-  cStub << arglist->args[2]->type << " *arg_out";
-
-  for (i=3; i<arglist->len; i++) {
-    struct argtype *arg = arglist->args[i];
-    if (i) cStub << ",\n\t";
-    if (arg->modifier & MODIFIER_OUT)
-      cStub << arg->type << " *arg_" << i;
-    else if (arg->modifier & MODIFIER_STREAM ||
-	     arg->modifier & MODIFIER_GATHER)
-      cStub << "stream arg_" << i;
-    else
-      cStub << arg->type << " arg_" << i;
-   }
-  cStub << ") {\n";
-
-  cStub << "  if (!p) p = LoadKernelText(" << name << "_fp);\n";
-  cStub << "  KernelReduce (p, arg_src, arg_out";
-  for (i=3; i<arglist->len; i++) {
-    if (i) cStub << ",";
-    if (!arglist->args[i]->modifier)
-      cStub << "&";
-    cStub << "arg_" << i;
-  }
-  cStub << ");\n}\n\n";
-#endif
-
-  return strdup(cStub.str().c_str());
 }
 
 
@@ -406,7 +272,9 @@ CodeGen_GenerateHeader(Type *retType, const char *name, Decl **args, int nArgs)
 
 #if 0
   /*
-   * See the comment about reduce kernels in generate_c_code().
+   *  I don't know anything about reduce kernels and these hardcoded
+   * parameter positional meanings don't mean anything to me.  So, I'm
+   * ignoring them for now.  -Jeremy.
    */
 
   /*

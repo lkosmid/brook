@@ -7,12 +7,6 @@
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
 
-extern void
-CodeGen_CheckSemantics (Type *retType, Decl **args, int nArgs);
-
-extern char *
-CodeGen_GenerateStub(Type *retType, const char *name, Decl **args, int nArgs);
-
 extern char *
 CodeGen_GenerateCode(Type *retType, const char *name,
                      Decl **args, int nArgs, const char *body);

@@ -21,6 +21,8 @@ class BRTKernelDef : public FunctionDef
 
     virtual void printCode(std::ostream& out) const = 0;
     void printStub(std::ostream& out) const;
+
+    bool CheckSemantics(void) const;
 };
 
 
