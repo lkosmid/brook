@@ -1,6 +1,6 @@
 #include <brook.hpp>
 #include <stdio.h>
-#include "csgeom/rapcol.h"
+#include "rapcol.h"
 #include "prapid.h"
 extern void LoadPly (const char * file, std::vector<Tri> &ret);
 extern unsigned int doCollide(unsigned int wida, unsigned int heia, Tri * a,

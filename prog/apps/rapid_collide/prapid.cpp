@@ -127,7 +127,7 @@ void csRapidCollider::createBrookGeometryRecurse(const csCdBBox *curr,
   curw.Rotationx.x = tmp.x;
   curw.Rotationx.y = tmp.y;
   curw.Rotationx.z = tmp.z;
-  curw.Rotationx.w =((curr->m_Rotation.Row1() % curr->m_Rotation.Row2())*curr->m_Rotation.Row3()>.8)?1:-1;
+  curw.Rotationx.w =((curr->m_Rotation.Row1() % curr->m_Rotation.Row2())*curr->m_Rotation.Row3()>.8)?1.0f:-1.0f;
   curw.Rotationy = tofloat3(curr->m_Rotation.Row2());
   //  curw.Rotationz = tofloat3(curr->m_Rotation.Row3());
   curw.Translation = tofloat3(curr->m_Translation);
@@ -1077,13 +1077,12 @@ static void Bark() {
 int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
                                        const csMatrix3& R, const csVector3& T)
 {
-  int rc;      // return codes
   std::queue <csTraverser> breadth;
   
   unsigned int pass_count=0;
   unsigned int pass_size=1;
   unsigned int num_passes=0;
-  vector<csTraverser> temp_guide;
+  std::vector<csTraverser> temp_guide;
   breadth.push(csTraverser(b1,b2,R,T));
   while (breadth.size()) {
   if (pass_count==pass_size) {
@@ -1237,7 +1236,7 @@ public:
 int checkPassCorrectness(Traverser * traverser,int numTraverser, int numpass) {
   if (numpass==0||numpass==1||numpass>=(int)guide.size())
     return 1;
-  vector<csTraverser>* b = &guide[numpass];
+  std::vector<csTraverser>* b = &guide[numpass];
   std::sort(traverser,traverser+numTraverser,PassSorter());
   std::sort(b->begin(),b->end(),csPassSorter());
   int j=0;

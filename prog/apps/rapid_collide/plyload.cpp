@@ -1,10 +1,7 @@
 #include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include "csgeom/rapcol.h"
+#include "rapcol.h"
 #include <vector>
 #include <brook.hpp>
-using std::fstream;
 using std::vector;
 void LoadPly (const char * file,vector<Tri> &ret) {
   float ver;char mchar;
