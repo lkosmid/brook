@@ -136,29 +136,14 @@ kernel void max6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, floa
 
 
 kernel float3 add6(float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, float3 f<>){
-   float3 td,te,tf,oa,ob,oc,od,oe,of;
-   oa = min3(a,b);//least
-   ob = max3(a,b);//second least
-   oc = min3(c,d);
-   td = max3(c,d);
-   te = min3(e,f);
-   tf = max3(e,f);
-   oa = swap3(oa,oc,oc);
-   oa = swap3(oa,te,te);
-   te = swap3(te,ob,ob);
-   te = swap3(te,oc,oc);
-   te = swap3(te,td,td);
-   te = swap3(te,tf,tf);
-   oa += swap3(ob,te,te);
-   oc = swap3(oc,td,td);
-   oc = swap3(oc,te,te);
-   oa += swap3(oc,tf,tf);
-   od = mymin(td,te,tf);
-   oa +=od;
-   of = mymax(td,te,tf);
-   oe = mymed(td,te,tf,od,of);
-   oa+=oe;
-   return oa+of;
+  float3 ad = a+d;
+  float3 be = b+e;
+  float3 cf = c+f;
+  float3 mint = mymin(ad,be,cf);
+  float3 maxt = mymax(ad,be,cf);
+  float3 medt = mymed(ad,be,cf,maxt,mint);
+  medt = mint+medt;
+  return medt+maxt;
 }
 kernel void add6test (float3 a<>,float3 b<>, float3 c<>, float3 d<>, float3 e<>, float3 f<>, out float3 ooo<>) {
    ooo= add6(a,b,c,d,e,f);
@@ -462,12 +447,11 @@ kernel void splitTriangles (STri triangles[][],
       oldneighbors.AAC.w)       
      splittri.A.xyz = tri.A.xyz*an
         +anon*add6(oldneighbors.AB.xyz,
-                   oldneighbors.AC.xyz,
-                   oldneighbors.AAB.xyz,
-                   oldneighbors.AAC.xyz,
                    tri.B.xyz,
-                   tri.C.xyz);
-
+                   tri.C.xyz,
+                   oldneighbors.AC.xyz,
+                   oldneighbors.AAC.xyz,
+                   oldneighbors.AAB.xyz);
   splittri.B = tri.B;
   if(1)if(tri.A.w&&
       tri.B.w&&
@@ -476,12 +460,12 @@ kernel void splitTriangles (STri triangles[][],
       oldneighbors.ABB.w&&
       oldneighbors.BBC.w)        
     splittri.B.xyz= tri.B.xyz*bn
-       +bnon*add6(oldneighbors.AB.xyz,
-                  oldneighbors.BC.xyz,
-                  oldneighbors.ABB.xyz,
+       +bnon*add6(oldneighbors.ABB.xyz,
                   oldneighbors.BBC.xyz,
+                  oldneighbors.BC.xyz,
+                  tri.C.xyz,
                   tri.A.xyz,
-                  tri.C.xyz);
+                  oldneighbors.AB.xyz);
 
   splittri.C = tri.C;
   if(1)if(tri.C.w&&
@@ -491,12 +475,12 @@ kernel void splitTriangles (STri triangles[][],
       oldneighbors.ACC.w&&
       oldneighbors.BCC.w)       
      splittri.C.xyz = tri.C.xyz*cn
-        +cnon*add6(oldneighbors.AC.xyz,
+        +cnon*add6(tri.B.xyz,
                    oldneighbors.BC.xyz,
-                   oldneighbors.ACC.xyz,
                    oldneighbors.BCC.xyz,
-                   tri.A.xyz,
-                   tri.B.xyz);
+                   oldneighbors.ACC.xyz,
+                   oldneighbors.AC.xyz,
+                   tri.A.xyz);
 }
 /*
 void __printf_cpu_inner(float f) {

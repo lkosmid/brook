@@ -781,6 +781,13 @@ unsigned int bestWidth(unsigned int totalSize){
    bestHeiWid(totalSize,&hei,&wid);
    return wid;
 }
+inline double round_double (double x) {
+   double f = x-floor(x);
+   double g = ceil(x)-x;
+   return f==g?(x<0.0f?floor(x):ceil(x)):f<g?floor(x):ceil(x);
+}
+
+
 extern void computeFunctionCallPattern(float epsilon,
                                        int argc, char ** argv, int numTri,STri*triangles,Neighbor *neigh);
 unsigned int loadModelData(char* file,STri **triangles,Neighbor **neighbors);
@@ -864,7 +871,10 @@ int main (int argc, char**argv) {
  
   printf("%d\n", v.size);
   for(i=0; i<v.size; i++){
-    printf("%3.3f, %3.3f, %3.3f\n", v.v[i].x, v.v[i].y, v.v[i].z);
+    double x = v.v[i].x;
+    double y= v.v[i].y;
+    double z = v.v[i].z;
+    printf("%3.3lf, %3.3lf, %3.3lf\n", x, y, z);
   }
   vcount=numTriangles;
   for (i=0;i<(unsigned int)subdivisiondepth;++i) {
