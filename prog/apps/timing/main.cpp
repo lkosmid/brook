@@ -77,7 +77,7 @@ void SetupMillisTimer(void) {
   }
   else {
     timerRes = timeCaps.wPeriodMin;
-    std::cout << "(* Set timer resolution to " << timeCaps.wPeriodMin << "ms.*)\n";
+    std::cout << "(* Set timer resolution to " << timeCaps.wPeriodMin << " ms. *)\n";
   }
 
 }

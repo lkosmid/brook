@@ -34,25 +34,10 @@ RunKernelKickKernel(float s<>, out float o<>)
 
 
 /*
- * RunKernelDouble --
- *
- *      A dead simple 1D kernel.  Just double every element
- */
-
-kernel void
-RunKernelDouble(float4 s<>, out float4 o<>)
-{
-   o = s + s;
-}
-
-
-/*
  * RunKernelHardWork --
  *
  *      Try for a kernel that will actually exercise the GPU
  */
-
-static void RunKernelHardWork2(float4 c, ...) {}
 
 kernel void
 RunKernelHardWork(float4 c, float4 s<>, out float4 o<>)
@@ -152,49 +137,118 @@ RunKernelKickBRT(void)
 
 
 /*
+ * RunKernelBuildData --
+ *
+ *      Helper function that allocates memory and fills it with the stream
+ *      test pattern.
+ */
+
+static void
+RunKernelBuildData(float4 **data, int numEntries)
+{
+   int i;
+
+   *data = (float4 *) malloc(numEntries * sizeof **data);
+   assert(*data);
+
+   for (i = 0; i < numEntries; i++) {
+      (*data)[i].x = (*data)[i].y = (*data)[i].z = (*data)[i].w = (float) i;
+   }
+}
+
+
+/*
+ * RunKernelProcessTiming --
+ *
+ *      Interpret the numbers, calculate FLOPS, and check to make certain
+ *      the output is the expected transformation on the input.
+ *
+ *      NOTE: stop and start are tunnelled in as globals for the same ease
+ *      of implementation issue as the fact that they're declared in main.h
+ *      instead of here.
+ */
+
+static void
+RunKernelProcessTiming(char *name, float4 *data, int numEntries, int nRuns)
+{
+   float scale, elapsed;
+   int i;
+
+   elapsed = (float) (stop - start);
+
+   /*
+    * Our kernel does one assignment and n '1.0*output + input' so the
+    * result should be n*input and there will have been n + 1 ops in the
+    * kernel.
+    */
+   scale = numEntries > 1 ? data[1].x : 0.0f;
+   if (scale > 2048.0f) {
+      printf("(* Got back garbage!  data[1].x is %.2f\t\t%s *)\n",
+             data[1].x, name);
+      scale = 1.0f;
+   }
+
+   /*
+    * 'MFLOPS' calculation:
+    *   - numEntries * nRuns entries processed total
+    *   - calculations took elapsed usecs = elapsed/10^6 secs
+    *   - scale + 1 instructions
+    *   - 4 floats per entry
+    */
+   printf("%8I64d\t%6.2f\t\t%4d\t\t\t(* %s *)\n",
+          stop - start,
+          numEntries * nRuns / elapsed * (scale + 1.0f) * 4.0f,
+          nRuns, name);
+
+   for (i = 0; CHECK_MISMATCH && i < numEntries; i++) {
+      float expected = scale * i;
+      float cur = data[i].x;
+
+      /*
+       * Grr.  Tolerate precision errors so long as the result isn't
+       * wrong by more than 10%.  Since you start to see skipping around
+       * 2^24 on nv30 and around 2^17 on ATI, once we're dealing with
+       * reasonable scales and 1024x1024 streams, there are precision
+       * artifacts.  Sad.  --Jeremy.
+       */
+
+      if ((cur != expected &&
+           (cur - expected > 0.1f * expected || expected - cur > 0.f * cur)) ||
+          data[i].y != cur || data[i].z != cur || data[i].w != cur) {
+         printf("(* Mismatch %d/%d:\t\t%s *)\n"
+                "(* Expected %.2f, Got: %.2f %.2f %.2f %.2f\t\t%s *)\n",
+                 i, numEntries, name, expected,
+                 data[i].x, data[i].y, data[i].z, data[i].w, name);
+         return;
+      }
+   }
+}
+
+
+/*
  * RunKernel1D --
  *
  *      Runs a simple kernel on a 1D stream and times it.
  */
 
 static void
-RunKernel1D(int streamLength, int nRuns)
+RunKernel1D(char *logName, int streamLength, int nRuns)
 {
-   float4 *data;
    float4 s<streamLength>, o<streamLength>;
-   float elapsed;
-   int numBytes, i;
+   float4 *data;
+   int i;
 
-   numBytes = streamLength * sizeof(*data);
-   data = (float4 *) malloc(numBytes);
-   assert(data);
-
-   for (i = 0; i < streamLength; i++) {
-      data[i].x = data[i].y = data[i].z = data[i].w = (float) i;
-   }
+   RunKernelBuildData(&data, streamLength);
 
    start = GetTime();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
-      //RunKernelDouble(s, o);
       RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    }
    streamWrite(o, data);
    stop = GetTime();
-   elapsed = (stop - start) / 1.0f /*(float) nRuns*/;
 
-   printf("   %I64d\t\t%.2f\t\t%d\n",
-          stop - start, (float) (nRuns * streamLength / elapsed), nRuns);
-
-   for (i = 0; CHECK_MISMATCH && i < streamLength; i++) {
-      if (data[i].x != (float) 63*i || data[i].y != data[i].x ||
-          data[i].z != data[i].x || data[i].w != data[i].x) {
-         fprintf(stderr, "RunKernel1D: Mismatch %d/%d: %.2f %.2f %.2f %.2f\n",
-                 i, streamLength, data[i].x, data[i].y, data[i].z, data[i].w);
-         exit(1);
-      }
-   }
-
+   RunKernelProcessTiming(logName, data, streamLength, nRuns);
    free(data);
 }
 
@@ -206,52 +260,23 @@ RunKernel1D(int streamLength, int nRuns)
  */
 
 static void
-RunKernel2D(int streamLength, int nRuns)
+RunKernel2D(char *logName, int streamLength, int nRuns)
 {
-   float4 *data;
    float4 s<streamLength, streamLength>, o<streamLength, streamLength>;
-   float elapsed;
-   int numBytes, i, j;
+   float4 *data;
+   int i;
 
-   numBytes = streamLength * streamLength * sizeof(*data);
-   data = (float4 *) malloc(numBytes);
-   assert(data);
-
-   for (i = 0; i < streamLength; i++) {
-      for (j = 0; j < streamLength; j++) {
-         float4 *cur = (data + i*streamLength + j);
-
-         cur->x = cur->y = cur->z = cur->w = (float) (i*streamLength + j);
-      }
-   }
+   RunKernelBuildData(&data, streamLength * streamLength);
 
    start = GetTime();
    streamRead(s, data);
    for (i = 0; i < nRuns; i++) {
-      //RunKernelDouble(s, o);
       RunKernelHardWork(float4(1.0f, 1.0f, 1.0f, 1.0f), s, o);
    }
    streamWrite(o, data);
    stop = GetTime();
-   elapsed = (stop - start) / 1.0f /*(float) nRuns*/;
 
-   printf("   %I64d\t\t%.2f\t\t%d\n",
-          stop - start,
-          (float) (nRuns * streamLength * streamLength / elapsed), nRuns);
-
-   for (i = 0; CHECK_MISMATCH && i < streamLength; i++) {
-      for (j = 0; j < streamLength; j++) {
-         float4 *cur = (data + i*streamLength + j);
-
-         if (cur->x != (float) (63*(i*streamLength + j)) ||
-             cur->y != cur->x || cur->z != cur->x || cur->w != cur->x) {
-            fprintf(stderr, "RunKernel2D: Mismatch %d/%d: %.2f %.2f %.2f %.2f\n",
-                    i, streamLength, cur->x, cur->y, cur->z, cur->w);
-            exit(1);
-         }
-      }
-   }
-
+   RunKernelProcessTiming(logName, data, streamLength * streamLength, nRuns);
    free(data);
 }
 
@@ -266,7 +291,7 @@ RunKernel2D(int streamLength, int nRuns)
 void
 RunKernel_Time(int maxLength)
 {
-   static const int runLengths[] = { 1, 10, 50, 75, /*150, 200*/ };
+   static const int runLengths[] = { 1, 2, 4, 8, 10, 20, 40, 50, /*75, 150, 200*/ };
    static const int lengths[] = { 1, 4, 16, 64, 256, 512, 1024, 2048 };
    static const int numLengths = sizeof lengths / sizeof lengths[0];
    static const int numRunLengths = sizeof runLengths / sizeof runLengths[0];
@@ -275,31 +300,31 @@ RunKernel_Time(int maxLength)
    RunKernelKickBRT();
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
-      printf("(* RunKernel1D streamLength %d *)\n", lengths[i]);
-      printf("(* usecs\tMFloat4s/s\t\truns *)\n");
+      printf("(* RunKernel1D: length %d *)\n",lengths[i]);
+      printf("(* usecs\tMFLOPS\t\truns *)\n");
       for (j = 0; j < numRunLengths; j++) {
-         RunKernel1D(lengths[i], runLengths[j]);
+         RunKernel1D("RunK1D", lengths[i], runLengths[j]);
       }
       printf("\n");
    }
-   printf("(* RunKernel1D streamLength %d *)\n", maxLength);
-   printf("(* usecs\tMFloat4s/s\t\truns *)\n");
+   printf("(* RunKernel1D length %d *)\n", maxLength);
+   printf("(* usecs\tMFLOPS\t\truns *)\n");
    for (j = 0; j < numRunLengths; j++) {
-      RunKernel1D(maxLength, runLengths[j]);
+      RunKernel1D("RunK1D", maxLength, runLengths[j]);
    }
    printf("\n");
 
    for (i = 0; i < numLengths && lengths[i] < maxLength; i++) {
-      printf("(* RunKernel2D streamLength %d *)\n", lengths[i]);
-      printf("(* usecs\tMFloat4s/s\t\truns *)\n");
+      printf("(* RunKernel2D length %d *)\n",lengths[i]);
+      printf("(* usecs\tMFLOPS\t\truns *)\n");
       for (j = 0; j < numRunLengths; j++) {
-         RunKernel2D(lengths[i], runLengths[j]);
+         RunKernel2D("RunK2D", lengths[i], runLengths[j]);
       }
       printf("\n");
    }
-   printf("(* RunKernel2D streamLength %d *)\n", maxLength);
-   printf("(* usecs\tMFloat4s/s\t\truns *)\n");
+   printf("(* RunKernel2D length %d *)\n", maxLength);
+   printf("(* usecs\tMFLOPS\t\truns *)\n");
    for (j = 0; j < numRunLengths; j++) {
-      RunKernel2D(maxLength, runLengths[j]);
+      RunKernel2D("RunK2D", maxLength, runLengths[j]);
    }
 }
