@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 typedef struct Tri_t{
    float4 A; // the last value of A indicates whether the edge AB is small
    float4 B; // enough to stop subdividing.  B.w also indicates if BC is small
@@ -572,14 +574,37 @@ unsigned int bestWidth(unsigned int totalSize){
    bestHeiWid(totalSize,&hei,&wid);
    return wid;
 }
+extern void computeFunctionCallPattern(float epsilon,
+                                       int argc, char ** argv, int numTri,Tri*triangles,Neighbor *neigh);
 unsigned int loadModelData(char* file,Tri **triangles,Neighbor **neighbors);
 int main (int argc, char**argv) {
   unsigned int i = 0;
   float epsilon=.0001;
   Tri *triangledata = 0;
   Neighbor *neighbordata = 0;
-  unsigned int numTriangles = 
-     loadModelData(argc>1?argv[1]:"dragon.ply",&triangledata,&neighbordata);
+  unsigned int numTriangles;
+  for (i=0;i<argc;++i) {
+    char match=0;
+    int j;
+    if (strncmp(argv[i],"-epsilon",8)==0) {
+      epsilon = (float)atof(argv[i]+8);
+      match=1;
+    }
+    if (strncmp(argv[i],"-eps",4)==0) {
+      epsilon = (float)atof(argv[i]+4);
+      match=1;
+    }
+    if (match) {
+      for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
+      argc--;
+      i--;
+    }
+  }
+  
+  numTriangles = 
+    loadModelData(argc>1?argv[1]:"dragon.ply",&triangledata,&neighbordata);
+  computeFunctionCallPattern(epsilon,argc,argv,numTriangles,triangledata,neighbordata);
+  {
   Neighbor neighbors<bestHeight(numTriangles),bestWidth(numTriangles)>;
   Tri triangles<bestHeight(numTriangles),bestWidth(numTriangles)>;
   struct VertexArray v;
@@ -601,6 +626,7 @@ int main (int argc, char**argv) {
   }
   fprintf(stderr, "done\n");
   return 0;
+  }
 }
 
 
