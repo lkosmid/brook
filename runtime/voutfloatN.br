@@ -13,7 +13,6 @@
 #include <stdlib.h>
 
 static unsigned int debug_vout = 0;
-static unsigned int myglobalnum=16;
 
 void debugStreamPrint (struct __BRTStream *stream,char * title) {
    if (debug_vout) {
@@ -89,7 +88,7 @@ reduce void valueProducedfloat (float input <>,
 int finiteValueProducedfloat (struct __BRTStream * input) {
    float output;
    valueProducedfloat(*input,output);
-   return finite_float(output);
+   return (int)finite_float(output);
 }
 
 kernel void valueAtfloat (float value[][],
@@ -204,7 +203,6 @@ float shiftValuesfloat(struct __BRTStream *list_stream,
    float guess_stream<WIDTH,LENGTH>;
    unsigned int i;
    float2 maxvalue;
-   unsigned int seed=215891;
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift=999;
@@ -267,15 +265,19 @@ float shiftValuesfloat(struct __BRTStream *list_stream,
    }
    debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
    if (1) {
-      unsigned int size = LENGTH*WIDTH-maxshift;
-      unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
-      float proper_output_stream<width,LENGTH>;
-      RelativeGatherfloat(proper_output_stream,
-                          logN%2==0?ret_stream:guess_stream,
-                          *list_stream,
-                          float2(sign,1/floor(.5)),
-                          maxvalue);
-      streamSwap(*output_stream,proper_output_stream);
+      unsigned int size,width;
+      size = (unsigned int)LENGTH*(unsigned int)WIDTH
+         - (unsigned int) maxshift;
+      width = size/LENGTH+((size%LENGTH)?1:0);
+      if (1) {
+        float proper_output_stream<width,LENGTH>;
+        RelativeGatherfloat(proper_output_stream,
+                               logN%2==0?ret_stream:guess_stream,
+                               *list_stream,
+                               float2(sign,1/floor(.5)),
+                               maxvalue);
+        streamSwap(*output_stream,proper_output_stream);
+      }
       debugStreamPrint(output_stream, "Final Value");
    }
    return maxshift;
@@ -290,7 +292,6 @@ kernel void floatstreamCombine1(float input0[][],
                                 out float output <>) {
    float2 newindex;
    float whichmod;
-   indexof(output);
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
@@ -996,14 +997,13 @@ unsigned int  voutCombinefloat(struct __BRTStream *outleft_stream,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
                                struct __BRTStream * output){
-   unsigned int seed=1043210498210;
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
    maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
-                -maxshiftleft-maxshiftright);
+                -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
    if (1) {      
       unsigned int length = LENGTH;
       unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
@@ -1066,7 +1066,7 @@ reduce void valueProducedfloat2 (float2 input <>,
 int finiteValueProducedfloat2 (struct __BRTStream * input) {
    float2 output;
    valueProducedfloat2(*input,output);
-   return finite_float2(output);
+   return (int)finite_float2(output);
 }
 
 kernel void valueAtfloat2 (float2 value[][],
@@ -1181,7 +1181,6 @@ float shiftValuesfloat2(struct __BRTStream *list_stream,
    float guess_stream<WIDTH,LENGTH>;
    unsigned int i;
    float2 maxvalue;
-   unsigned int seed=215891;
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift=999;
@@ -1244,15 +1243,19 @@ float shiftValuesfloat2(struct __BRTStream *list_stream,
    }
    debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
    if (1) {
-      unsigned int size = LENGTH*WIDTH-maxshift;
-      unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
-      float2 proper_output_stream<width,LENGTH>;
-      RelativeGatherfloat2(proper_output_stream,
-                          logN%2==0?ret_stream:guess_stream,
-                          *list_stream,
-                          float2(sign,1/floor(.5)),
-                          maxvalue);
-      streamSwap(*output_stream,proper_output_stream);
+      unsigned int size,width;
+      size = (unsigned int)LENGTH*(unsigned int)WIDTH
+         - (unsigned int) maxshift;
+      width = size/LENGTH+((size%LENGTH)?1:0);
+      if (1) {
+        float2 proper_output_stream<width,LENGTH>;
+        RelativeGatherfloat2(proper_output_stream,
+                               logN%2==0?ret_stream:guess_stream,
+                               *list_stream,
+                               float2(sign,1/floor(.5)),
+                               maxvalue);
+        streamSwap(*output_stream,proper_output_stream);
+      }
       debugStreamPrint(output_stream, "Final Value");
    }
    return maxshift;
@@ -1267,7 +1270,6 @@ kernel void float2streamCombine1(float2 input0[][],
                                 out float2 output <>) {
    float2 newindex;
    float whichmod;
-   indexof(output);
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
@@ -1973,14 +1975,13 @@ unsigned int  voutCombinefloat2(struct __BRTStream *outleft_stream,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
                                struct __BRTStream * output){
-   unsigned int seed=1043210498210;
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
    maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
-                -maxshiftleft-maxshiftright);
+                -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
    if (1) {      
       unsigned int length = LENGTH;
       unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
@@ -2043,7 +2044,7 @@ reduce void valueProducedfloat3 (float3 input <>,
 int finiteValueProducedfloat3 (struct __BRTStream * input) {
    float3 output;
    valueProducedfloat3(*input,output);
-   return finite_float3(output);
+   return (int)finite_float3(output);
 }
 
 kernel void valueAtfloat3 (float3 value[][],
@@ -2158,7 +2159,6 @@ float shiftValuesfloat3(struct __BRTStream *list_stream,
    float guess_stream<WIDTH,LENGTH>;
    unsigned int i;
    float2 maxvalue;
-   unsigned int seed=215891;
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift=999;
@@ -2221,15 +2221,19 @@ float shiftValuesfloat3(struct __BRTStream *list_stream,
    }
    debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
    if (1) {
-      unsigned int size = LENGTH*WIDTH-maxshift;
-      unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
-      float3 proper_output_stream<width,LENGTH>;
-      RelativeGatherfloat3(proper_output_stream,
-                          logN%2==0?ret_stream:guess_stream,
-                          *list_stream,
-                          float2(sign,1/floor(.5)),
-                          maxvalue);
-      streamSwap(*output_stream,proper_output_stream);
+      unsigned int size,width;
+      size = (unsigned int)LENGTH*(unsigned int)WIDTH
+         - (unsigned int) maxshift;
+      width = size/LENGTH+((size%LENGTH)?1:0);
+      if (1) {
+        float3 proper_output_stream<width,LENGTH>;
+        RelativeGatherfloat3(proper_output_stream,
+                               logN%2==0?ret_stream:guess_stream,
+                               *list_stream,
+                               float2(sign,1/floor(.5)),
+                               maxvalue);
+        streamSwap(*output_stream,proper_output_stream);
+      }
       debugStreamPrint(output_stream, "Final Value");
    }
    return maxshift;
@@ -2244,7 +2248,6 @@ kernel void float3streamCombine1(float3 input0[][],
                                 out float3 output <>) {
    float2 newindex;
    float whichmod;
-   indexof(output);
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
@@ -2950,14 +2953,13 @@ unsigned int  voutCombinefloat3(struct __BRTStream *outleft_stream,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
                                struct __BRTStream * output){
-   unsigned int seed=1043210498210;
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
    maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
-                -maxshiftleft-maxshiftright);
+                -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
    if (1) {      
       unsigned int length = LENGTH;
       unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
@@ -3020,7 +3022,7 @@ reduce void valueProducedfloat4 (float4 input <>,
 int finiteValueProducedfloat4 (struct __BRTStream * input) {
    float4 output;
    valueProducedfloat4(*input,output);
-   return finite_float4(output);
+   return (int)finite_float4(output);
 }
 
 kernel void valueAtfloat4 (float4 value[][],
@@ -3135,7 +3137,6 @@ float shiftValuesfloat4(struct __BRTStream *list_stream,
    float guess_stream<WIDTH,LENGTH>;
    unsigned int i;
    float2 maxvalue;
-   unsigned int seed=215891;
    unsigned int logN;
    unsigned int LogNMinusK;
    float maxshift=999;
@@ -3198,15 +3199,19 @@ float shiftValuesfloat4(struct __BRTStream *list_stream,
    }
    debugStreamPrint(logN%2==0?&ret_stream:&guess_stream,"Gather Value");
    if (1) {
-      unsigned int size = LENGTH*WIDTH-maxshift;
-      unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
-      float4 proper_output_stream<width,LENGTH>;
-      RelativeGatherfloat4(proper_output_stream,
-                          logN%2==0?ret_stream:guess_stream,
-                          *list_stream,
-                          float2(sign,1/floor(.5)),
-                          maxvalue);
-      streamSwap(*output_stream,proper_output_stream);
+      unsigned int size,width;
+      size = (unsigned int)LENGTH*(unsigned int)WIDTH
+         - (unsigned int) maxshift;
+      width = size/LENGTH+((size%LENGTH)?1:0);
+      if (1) {
+        float4 proper_output_stream<width,LENGTH>;
+        RelativeGatherfloat4(proper_output_stream,
+                               logN%2==0?ret_stream:guess_stream,
+                               *list_stream,
+                               float2(sign,1/floor(.5)),
+                               maxvalue);
+        streamSwap(*output_stream,proper_output_stream);
+      }
       debugStreamPrint(output_stream, "Final Value");
    }
    return maxshift;
@@ -3221,7 +3226,6 @@ kernel void float4streamCombine1(float4 input0[][],
                                 out float4 output <>) {
    float2 newindex;
    float whichmod;
-   indexof(output);
    calculateDividedIndex(indexof(output), modulus, length, newindex);
    calculateIndexModulus(indexof(output), 
                          modulus,
@@ -3927,14 +3931,13 @@ unsigned int  voutCombinefloat4(struct __BRTStream *outleft_stream,
                                unsigned int RIGHTWIDTH,
                                unsigned int LENGTH,
                                struct __BRTStream * output){
-   unsigned int seed=1043210498210;
    unsigned int totalsize;
    float2 maxleftvalue,maxrightvalue;
    maxleftvalue.x=LENGTH;maxleftvalue.y=LEFTWIDTH;
    maxrightvalue.x=LENGTH;maxrightvalue.y=RIGHTWIDTH;
    totalsize = (LEFTWIDTH*LENGTH
                 +RIGHTWIDTH*LENGTH
-                -maxshiftleft-maxshiftright);
+                -(unsigned int)maxshiftleft-(unsigned int)maxshiftright);
    if (1) {      
       unsigned int length = LENGTH;
       unsigned int width = totalsize/length+((totalsize%length!=0)?1:0);
