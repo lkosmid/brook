@@ -71,14 +71,10 @@ kernel float uoDistance (float3 a<>, float3 b<>){
    return dot(bigger-smaller,bigger-smaller);
 }
 kernel float3 avg (float3 a<>,float3 b<>) {
-   float3 bigger = a>b?a:b;
-   float3 smaller = a>b?b:a;
-   return .5*(smaller+bigger);
+   return .5*(a+b);
 }
 kernel float4 avg4 (float4 a<>,float4 b<>) {
-   float4 bigger = a>b?a:b;
-   float4 smaller = a>b?b:a;
-   return .5*(smaller+bigger);
+   return .5*(a+b);
 }
 //if the model is missing a neighbor then all 3 components will be zero
 //i.e. if a model has 4 or 5 neighbors only
