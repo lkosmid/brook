@@ -1,24 +1,15 @@
 #ifndef HANDVECTOR_HPP
 #define HANDVECTOR_HPP
+#if 0
+//the template one is still faster than my hand coded one!!!
+//change #if 0 to #if 1
+#include "brtvector.hpp"
+typedef __BrtFloat1 Float1;
+#else
 #include <iostream>
 #include <math.h>
 #include "type_promotion.hpp"
 
-template <class T, class B> static T singlequestioncolon (const B& a,
-                                                          const T&b,
-                                                          const T&c){
-    return a.questioncolon(b,c);
-};
-template <> static float singlequestioncolon (const char & a,
-                                              const float &b,
-                                              const float&c) {
-    return a?b:c;
-}
-template <> static float singlequestioncolon (const float & a,
-                                              const float &b,
-                                              const float&c) {
-    return a?b:c;
-}
 class Float1;
 template <class T> class GetValueOf {public:
     typedef typename T::TYPE type;
@@ -316,4 +307,5 @@ std::ostream& operator<< (std::ostream& os, const Float1 & a){
   os << a.getAt(0);
   return os;
 }
+#endif
 #endif
