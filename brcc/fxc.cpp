@@ -55,8 +55,19 @@ compile_fxc (const char *name,
   case CODEGEN_PS2A:
     targetstring = ps2a;
     break;
-  case CODEGEN_PS20:
   case CODEGEN_ARB:
+    switch (globals.arch) {
+    case GPU_ARCH_X800:
+      targetstring = ps2b;
+      break;
+    case GPU_ARCH_6800:
+      targetstring = ps2a;
+      break;
+    default:
+      targetstring = hardware;
+    }
+    break;
+  case CODEGEN_PS20:
      targetstring = hardware;
      break;
   case CODEGEN_PS30:

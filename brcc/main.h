@@ -15,6 +15,10 @@
 #define COMPILER_CGC     1
 #define COMPILER_FXC     2
 
+#define GPU_ARCH_DEFAULT 0
+#define GPU_ARCH_X800    1
+#define GPU_ARCH_6800    2
+
 struct globals_struct {
   globals_struct() {
       verbose=false,parseOnly=false;
@@ -22,6 +26,7 @@ struct globals_struct {
       printLineDirectives=false,allowDX9MultiOut=false;
       enableGPUAddressTranslation=false;
       allowKernelToKernel=true,noTypeChecks=false;
+      favorcompiler=0,arch=0;
   }             
   bool verbose;
   bool parseOnly;
@@ -39,6 +44,7 @@ struct globals_struct {
   bool allowKernelToKernel;
   bool noTypeChecks;
   int favorcompiler;
+  int arch;
   // TIM: hacked flag for now
   bool enableKernelSplitting;
 };

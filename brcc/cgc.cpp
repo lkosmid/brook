@@ -53,7 +53,10 @@ compile_cgc (const char * /*name*/,
   char profileopts[] = "-profileopts";
   char ps2b_opt[] = "NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NoDependentReadLimit=0,NumInstructionSlots=512";
   char ps2a_opt[] = "NumTemps=22,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
-  char arbfp_opt[]= "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=96";
+
+  char arbfp_opt[]  = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=96";
+  char arbfp_x800[] = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=512";
+  char arbfp_6800[] = "NumInstructionSlots=2048";
   char userect[] ="-DUSERECT=1";
 
   switch (target) {
@@ -79,11 +82,22 @@ compile_cgc (const char * /*name*/,
      argv[5] = userect;
      break;
   case CODEGEN_ARB:
-     argv[4] = arbfp;
-     argv[5] = userect;
-     argv[6] = profileopts;
-     argv[7] = arbfp_opt;
-     break;
+    argv[4] = arbfp;
+    argv[5] = userect;
+    argv[6] = profileopts;
+
+    switch (globals.arch) {
+    case GPU_ARCH_X800:
+      argv[7] = arbfp_x800;
+      break;
+    case GPU_ARCH_6800:
+      argv[7] = arbfp_6800;
+      break;
+    default:
+      argv[7] = arbfp_opt;
+      break;
+    }
+    break;
   default: 
      fprintf(stderr, "Unsupported Cgc target.\n");
      return NULL;

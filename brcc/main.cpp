@@ -41,19 +41,20 @@ usage (void) {
   fprintf (stderr, "Version: 0.2  Built: %s, %s\n", __DATE__, __TIME__);
   fprintf (stderr,
         "brcc [-hvndktyAN] [-o prefix] [-w workspace] [-p shader ] foo.br\n\n"
-        "\t-h\t\thelp (print this message)\n"
-        "\t-v\t\tverbose (print intermediate generated code)\n"
-        "\t-n\t\tno codegen (just parse and reemit the input)\n"
-        "\t-d\t\tdebug (print cTool internal state)\n"
-        "\t-k\t\tkeep generated fragment program (in foo.cg)\n"
-        "\t-t\t\tdisable kernel call type checking\n"
-        "\t-y\t\temit code for ATI 4-output hardware\n"
-        "\t-A\t\tenable address virtualization (experimental)\n"
-        "\t-N\t\tdeny support for kernels calling other kernels\n"
-        "\t-o prefix\tprefix prepended to all output files\n"
-        "\t-w workspace\tworkspace size (16 - 2048, default 1024)\n"
-        "\t-p shader\tcpu/ps20/ps2a/ps2b/fp30/fp40/cpumt (can specify multiple)\n"
-        "\t-f compiler\tfavor a particular compiler (cgc / fxc / default)\n"  
+        "   -h            help (print this message)\n"
+        "   -v            verbose (print intermediate generated code)\n"
+        "   -n            no codegen (just parse and reemit the input)\n"
+        "   -d            debug (print cTool internal state)\n"
+        "   -k            keep generated fragment program (in foo.cg)\n"
+        "   -t            disable kernel call type checking\n"
+        "   -y            emit code for ATI 4-output hardware\n"
+        "   -A            enable address virtualization (experimental)\n"
+        "   -N            deny support for kernels calling other kernels\n"
+        "   -o prefix     prefix prepended to all output files\n"
+        "   -w workspace  workspace size (16 - 2048, default 1024)\n"
+        "   -p shader     cpu/ps20/ps2a/ps2b/arb/fp30/fp40 (can specify multiple)\n"
+        "   -f compiler   favor a particular compiler (cgc / fxc / default)\n"
+        "   -a arch       assume a particular GPU (default / x800 / 6800)\n"
         "\n");
 
   exit(1);
@@ -77,8 +78,18 @@ parse_args (int argc, char *argv[]) {
    */
   globals.workspace    = 1024;
   globals.compilername = argv[0];
-  while ((opt = getopt(argc, argv, "d:hkntyANSlf:o:p:vw")) != EOF) {
+  while ((opt = getopt(argc, argv, "d:hkntyANSla:f:o:p:vw")) != EOF) {
      switch(opt) {
+     case 'a':
+       if (strcasecmp (optarg, "default") == 0)
+         globals.arch = GPU_ARCH_DEFAULT;
+       else if (strcasecmp (optarg, "x800") == 0)
+         globals.arch = GPU_ARCH_X800;
+       else if (strcasecmp (optarg, "6800") == 0)
+         globals.arch = GPU_ARCH_6800;
+       else
+         usage();
+       break;
      case 'h':
         usage();
         break;
