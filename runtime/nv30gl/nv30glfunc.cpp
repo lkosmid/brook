@@ -2,11 +2,6 @@
 
 using namespace brook;
 
-PFNWGLCREATEPBUFFERARBPROC      brook::wglCreatePbufferARB;
-PFNWGLGETPBUFFERDCARBPROC       brook::wglGetPbufferDCARB;
-PFNWGLCHOOSEPIXELFORMATARBPROC  brook::wglChoosePixelFormatARB;
-PFNWGLBINDTEXIMAGEARBPROC       brook::wglBindTexImageARB;
-PFNWGLRELEASETEXIMAGEARBPROC    brook::wglReleaseTexImageARB;
 PFNGLACTIVETEXTUREARBPROC       brook::glActiveTextureARB;
 PFNGLGENPROGRAMSNVPROC          brook::glGenProgramsNV;
 PFNGLLOADPROGRAMNVPROC          brook::glLoadProgramNV;
@@ -15,14 +10,38 @@ PFNGLPROGRAMNAMEDPARAMETER4FNVPROC  brook::glProgramNamedParameter4fNV;
 PFNGLMULTITEXCOORD2FARBPROC     brook::glMultiTexCoord2fARB;
 PFNGLMULTITEXCOORD4FARBPROC     brook::glMultiTexCoord4fARB;
 
+#ifdef WIN32
+
+PFNWGLCREATEPBUFFERARBPROC      brook::wglCreatePbufferARB;
+PFNWGLGETPBUFFERDCARBPROC       brook::wglGetPbufferDCARB;
+PFNWGLCHOOSEPIXELFORMATARBPROC  brook::wglChoosePixelFormatARB;
+PFNWGLBINDTEXIMAGEARBPROC       brook::wglBindTexImageARB;
+PFNWGLRELEASETEXIMAGEARBPROC    brook::wglReleaseTexImageARB;
+
 #define   XXX(B,A) A = (B) wglGetProcAddress(#A); assert(A);
+#else
+
+PFNGLXCHOOSEFBCONFIGSGIX        brook::glXChooseFBConfigSGIX;
+PFNGLXDESTROYGLXPBUFFERSGIX     brook::glXDestroyGLXPbufferSGIX;
+PFNGLXCREATECONTEXTWITHCONFIGSGIX  brook::glXCreateContextWithConfigSGIX;
+
+#define   XXX(B,A) A = (B) glxGetProcAddress(#A); assert(A);
+#endif
+
 
 void brook::initglfunc(void) {
+#if WIN32
    XXX(PFNWGLCREATEPBUFFERARBPROC,     wglCreatePbufferARB);
    XXX(PFNWGLGETPBUFFERDCARBPROC,      wglGetPbufferDCARB);
    XXX(PFNWGLCHOOSEPIXELFORMATARBPROC, wglChoosePixelFormatARB);
    XXX(PFNWGLBINDTEXIMAGEARBPROC,      wglBindTexImageARB);
    XXX(PFNWGLRELEASETEXIMAGEARBPROC,   wglReleaseTexImageARB);
+#else
+   XXX(PFNGLXCHOOSEFBCONFIGSGIX,       glXChooseFBConfigSGIX);
+   XXX(PFNGLXDESTROYGLXPBUFFERSGIX,    glXDestroyGLXPbufferSGIX;
+   XXX(PFNGLXCREATECONTEXTWITHCONFIGSGIX, glXCreateContextWithConfigSGIX);
+#endif
+
    XXX(PFNGLACTIVETEXTUREARBPROC,      glActiveTextureARB);
    XXX(PFNGLGENPROGRAMSNVPROC,         glGenProgramsNV);
    XXX(PFNGLLOADPROGRAMNVPROC,         glLoadProgramNV);

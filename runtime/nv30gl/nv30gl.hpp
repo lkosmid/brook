@@ -3,11 +3,16 @@
 
 #include "../runtime.hpp"
 
+#ifdef WIN32
 #include <windows.h>
 #include <GL/gl.h>
+#include "wglext.h"
+#else
+#include <GL/gl.h>
+#include "glxext.h"
+#endif
 
 #include "glext.h"
-#include "wglext.h"
 
 namespace brook {
 
@@ -154,10 +159,17 @@ void __check_gl(int line, char *file);
                              int dims, int e[],float r[]);
      ~NV30GLRunTime();
 
+
+#ifdef _WIN32
      HWND hwnd;
      HGLRC hglrc_window;
      HGLRC hpbufferglrc;
      HPBUFFERARB hpbuffer;
+#else
+     Display    *pDisplay;
+     GLXPbuffer  glxPbuffer;
+     GLXContext  glxContext;
+#endif
 
      enum WORKSPACESIZE{
         workspace = 2048
