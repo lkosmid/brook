@@ -880,7 +880,10 @@ FunctionCall::checkKernelCallArg(Type *argType, unsigned int n)
 
     return true;
 }
-bool FunctionCall::checkKernelCall() {
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+bool 
+FunctionCall::checkKernelCall() {
   bool ret=true;
   if (function->type&&function->type->isKernel()) {
     for (unsigned int i=0;i<args.size();++i) {
@@ -894,6 +897,7 @@ bool FunctionCall::checkKernelCall() {
   }
   return ret;
 }
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 FunctionCall::addArg( Expression *arg )
