@@ -77,12 +77,16 @@ compile_cgc (const char *cgcode, CodeGenTarget target) {
   // figure out where the fragment code really starts...
   startline = strstr (fpcode, "!!");
   if (startline) {
-    // Find where the fragment code really ends
-    /* Tolerate CRLF or LF line endings. */
-    endline = strstr (startline, "\nEND\n");
-    if (!endline) {
-      endline = strstr (startline, "\nEND\r\n");
-    }
+     char *p, *q;
+     // Find where the fragment code really ends
+     /* Tolerate CRLF or LF line endings. */
+     /* strip out CR line endings */
+     for (p = q = fpcode; *p; p++) {
+        if (*p != '\r') *q++ = *p;
+     }
+     *q = *p;
+     
+     endline = strstr (fpcode, "\nEND\n");
   }
 
   if (!startline || !endline ) {

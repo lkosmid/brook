@@ -1,5 +1,8 @@
 lexer.cpp
 gram.h
 gram.cpp
+ps2arb_lexer.cpp
+ps2arb_gram.cpp
+ps2arb_gram.h
 depends
 built
