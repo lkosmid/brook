@@ -17,30 +17,23 @@ NV30GLRunTime::NV30GLRunTime() {
   // Create a window glcontext
   createWindowGLContext();
   
+  // Initialize gl extension function pointers
+  initglfunc();
+
   // Create our floating point workspace
   createPBuffer();
 
 }
 
 Kernel * 
-NV30GLRunTime::CreateKernel(const void*[]) {
-  // XXX: TO DO
-
-   fprintf (stderr, "NV30GL: Kernel creation not supported yet.\n");
-   exit(1);
-   
-   return (Kernel *) 0;
+NV30GLRunTime::CreateKernel(const void* sourcelist[]) {
+   return new NV30GLKernel (this, sourcelist);
 }
 
 Stream *
 NV30GLRunTime::CreateStream(__BRTStreamType type,
                             int dims, int extents[]) {
-   // XXX: TO DO
-
-   fprintf (stderr, "NV30GL: Stream creation not supported yet.\n");
-   exit(1);
-   
-   return (Stream *) 0;
+  return new NV30GLStream( this, type, dims, extents );
 }
 
 Iter * 

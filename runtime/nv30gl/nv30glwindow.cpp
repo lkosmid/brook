@@ -16,13 +16,6 @@ using namespace brook;
 */
 const char window_name[] = "Brook NV30GL Render Window";
 
-static PFNWGLCREATEPBUFFERARBPROC      wglCreatePbufferARB;
-static PFNWGLGETPBUFFERDCARBPROC       wglGetPbufferDCARB;
-static PFNWGLCHOOSEPIXELFORMATARBPROC  wglChoosePixelFormatARB;
-static PFNWGLBINDTEXIMAGEARBPROC       wglBindTexImageARB;
-static PFNWGLRELEASETEXIMAGEARBPROC    wglReleaseTexImageARB;
-
-
 void
 NV30GLRunTime::createWindow (void) {
   
