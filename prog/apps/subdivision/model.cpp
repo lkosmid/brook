@@ -32,18 +32,20 @@ void checkEdgeNeighbor2(const float4 &a, const float4 &alreadyhave, const float4
 	if (((t.B==a&&t.C==b)||(t.B==b&&t.C==a))&&(ne(t.A,alreadyhave)))
       c = t.A;
 }
-void checkNeighbors (Neighbor * a, Neighbor* b, unsigned int tListsize) {
+void checkNeighbors (Tri * t, Neighbor * a, Neighbor* b, unsigned int tListsize) {
   for (unsigned int i=0;i<tListsize;++i) {
     if (isinf_float(b[i].AB.x)||isinf_float(a[i].AB.x))
       continue;
 
     float4 * af = (float4*)(a+i);
     float4 * bf = (float4*)(b+i);
+    fprintf (stderr,"(%.3f %.3f %.3f) (%.3f %.3f %.3f) (%.3f %.3f %.3f)\n",t[i].A.x,t[i].A.y,t[i].A.z,t[i].B.x,t[i].B.y,t[i].B.z,t[i].C.x,t[i].C.y,t[i].C.z);
+    
     for (unsigned int j=0;j<9;++j) {
       if (ne(af[j],bf[j])) {
-        fprintf (stderr,"neighbor %d mismatch %.2f %.2f %.2f and %.2f %.2f %.2f\n",
+        fprintf (stderr,"neighbor %d mismatch %.3f %.3f %.3f and %.3f %.3f %.3f\n",
                 j,af[j].x,af[j].y,af[j].z,bf[j].x,bf[j].y,bf[j].z);
-      }//else printf("%d ok %.2f %.2f %.2f\n",j,af[j].x,af[j].y,af[j].z);
+      }else fprintf(stderr,"%d ok %.3f %.3f %.3f\n",j,af[j].x,af[j].y,af[j].z);
     }
   }
 }
