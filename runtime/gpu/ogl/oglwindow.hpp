@@ -10,7 +10,9 @@
 #endif
 
 #include "oglfunc.hpp"
-
+#ifndef WIN32
+typedef void *HGLRC; 
+#endif
 namespace brook {
   
   class OGLWindow {
@@ -29,7 +31,7 @@ namespace brook {
                      unsigned int numComponents);
 
     void makeCurrent();
-    void shareLists( HGLRC inContext );
+    void shareLists(HGLRC inContext );
     
   private:
     

@@ -50,19 +50,19 @@ atitypes[4][3] =   {{GL_LUMINANCE_FLOAT32_ATI,GL_LUMINANCE_FLOAT16_ATI,GL_LUMINA
                  {GL_RGBA_FLOAT32_ATI,GL_RGBA_FLOAT16_ATI,GL_RGBA}};
 
 static const unsigned int 
-atiformats[4][3] =  {{GL_RED,GL_RED,GL_LUMINANCE},
+atiformats[4][3] =  {{GL_RED,GL_RED,GL_RED},
                      {GL_RGBA,GL_LUMINANCE_ALPHA,GL_LUMINANCE_ALPHA},
                      {GL_RGB,GL_RGB,GL_RGB},
                      {GL_RGBA,GL_RGBA,GL_RGBA}};
 
 static const unsigned int 
 sizefactor[4][3] = { {1,1,1}, {4,2,2}, {3,3,3}, {4,4,4} };
-
-ATITexture::ATITexture ( size_t inWidth, 
-                       size_t inHeight, 
+static const unsigned int atomXize[4][3]={{4,2,1},{4,2,1},{4,2,1},{4,2,1}};
+ATITexture::ATITexture ( unsigned int inWidth, 
+                       unsigned int inHeight, 
                        GPUContext::TextureFormat inFormat) :
   OGLTexture(inWidth, inHeight, inFormat, 
-             atiformats, atitypes, sizefactor),
+             atiformats, atitypes, sizefactor,atomXize),
   _nativeFormat(atiformats[components()][elementType()]) 
 {
 }

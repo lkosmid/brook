@@ -787,6 +787,10 @@ OGLWindow::~OGLWindow()
 #endif
 }
 
+void OGLWindow::shareLists( HGLRC inContext )
+{
+//FIXME
+}
 
 #endif
 

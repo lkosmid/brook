@@ -74,7 +74,7 @@ OGLContext::setTextureData(TextureHandle inTexture,
                            const unsigned int* inDomainMin,
                            const unsigned int* inDomainMax,
                            const unsigned int* inExtents, bool inUsesAddressTranslation ) {
-  float *t;
+  void *t;
   
   OGLTexture *oglTexture = (OGLTexture *) inTexture;
   
@@ -98,14 +98,14 @@ OGLContext::setTextureData(TextureHandle inTexture,
                     rectW, //oglTexture->width(), 
                     rectH, //oglTexture->height(), 
                     oglTexture->nativeFormat(),
-                    GL_FLOAT, inData);
+                    oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, inData);
     return;
   }
   
   // TIM: could improve this in the domain case
   // by only allocating as much memory as the
   // domain needs
-  t = (float *) malloc (oglTexture->bytesize());
+  t = malloc (oglTexture->bytesize());
   if( !fullStream && inUsesAddressTranslation )
   {
     // TIM: hack to get the texture data into our buffer
@@ -114,7 +114,7 @@ OGLContext::setTextureData(TextureHandle inTexture,
     unsigned int texDomainMin[] = {0,0};
     unsigned int texDomainMax[] = { texH, texW };
     unsigned int texExtents[] = { texH, texW };
-    getTextureData( oglTexture, t, inStrideBytes, texW*texH, 2,
+    getTextureData( oglTexture,(float*) t, inStrideBytes, texW*texH, 2,
       texDomainMin, texDomainMax, texExtents, false );
 
     oglTexture->setATData(
@@ -124,7 +124,7 @@ OGLContext::setTextureData(TextureHandle inTexture,
       texW, //oglTexture->width(), 
       texH, //oglTexture->height(),  
       oglTexture->nativeFormat(),
-      GL_FLOAT, t);
+      oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, t);
 
   }
   else
@@ -138,7 +138,7 @@ OGLContext::setTextureData(TextureHandle inTexture,
                     maxX - minX, //oglTexture->width(), 
                     maxY - minY, //oglTexture->height(),  
                     oglTexture->nativeFormat(),
-                    GL_FLOAT, t);
+                    oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, t);
   }
   
   free(t);
@@ -154,7 +154,7 @@ OGLContext::getTextureData( TextureHandle inTexture,
                             const unsigned int* inDomainMin,
                             const unsigned int* inDomainMax,
                             const unsigned int* inExtents, bool inUsesAddressTranslation ) {
-   float *t = outData;
+   void *t = outData;
 
    OGLTexture *oglTexture = (OGLTexture *) inTexture;
 
@@ -170,17 +170,19 @@ OGLContext::getTextureData( TextureHandle inTexture,
                                               rectW, rectH,
                                               inComponentCount); 
    if (!fastPath)
-     t = (float *) malloc (oglTexture->bytesize());
+     t = malloc (oglTexture->bytesize());
 
    copy_to_pbuffer(oglTexture);
    CHECK_GL();
-   
+   glPixelStorei(GL_PACK_ALIGNMENT,1);   
    // read back the whole thing, 
+   unsigned int elemsize=oglTexture->numInternalComponents();//we're always reading from a float pbuffer, therefore we have to give it a reasonable constant for FLOAT, not for BYTE... luminance is wrong here.
+
    glReadPixels (minX, minY,
               rectW,
               rectH, 
-              oglTexture->nativeFormat(),
-              GL_FLOAT, t);
+              elemsize==1?GL_RED:(elemsize==3?GL_RGB:GL_RGBA),
+              oglTexture->elementType()==OGLTexture::OGL_FIXED?GL_UNSIGNED_BYTE:GL_FLOAT, t);
    CHECK_GL();
 
    if (!fastPath) {

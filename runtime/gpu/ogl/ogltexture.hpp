@@ -10,17 +10,18 @@ namespace brook {
   /* Virtual class for textures */
   class OGLTexture 
   {
-      enum OGLElementFormats{
-          OGL_FLOAT,
-          OGL_HALF,
-          OGL_FIXED,
-          OGL_NUMFORMATS
-      };
   public:
+    enum OGLElementFormats{
+       OGL_FLOAT,
+       OGL_HALF,
+       OGL_FIXED,
+       OGL_NUMFORMATS
+    };
+
     
     OGLTexture ( unsigned int inWidth, 
                  unsigned int inHeight, 
-                 GPUContext::TextureFormat inFormat ) :
+                 GPUContext::TextureFormat inFormat) :
       _width(inWidth), _height(inHeight), _format(inFormat)
     { }
 
@@ -30,7 +31,8 @@ namespace brook {
                  GPUContext::TextureFormat format,
                  const unsigned int glFormat[4][OGL_NUMFORMATS],
                  const unsigned int glType[4][OGL_NUMFORMATS],
-                 const unsigned int sizeFactor[4][OGL_NUMFORMATS]);
+                 const unsigned int sizeFactor[4][OGL_NUMFORMATS],
+                 const unsigned int atomSize[4][OGL_NUMFORMATS]);
 
     virtual ~OGLTexture ();
 
@@ -60,27 +62,29 @@ namespace brook {
     ** float2 as RGBA texture, etc.
     */
     virtual void 
-    copyToTextureFormat( const float *src, 
+    copyToTextureFormat( const void *src, 
                          unsigned int inStrideBytes, 
                          unsigned int inElemCount,
-                         float *dst) const;
+                         void *dst) const;
 
     /* Same as copyToTextureFormat except for 
     ** copying the data out of the packed format
     */
     virtual void 
-    copyFromTextureFormat( const float *src, 
+    copyFromTextureFormat( const void *src, 
                            unsigned int inStrideBytes, 
                            unsigned int inElemCount,
-                           float *dst) const;
+                           void *dst) const;
 
 
     /* Basic accessor functions */
     unsigned int width()                 const { return _width;    }
     unsigned int height()                const { return _height;   }
     unsigned int bytesize()              const { return _bytesize; }
+    unsigned int atomsize()              const { return _atomsize; }
     unsigned int components()            const { return _components; }
     unsigned int elementType()            const { return _elementType; }
+    unsigned int numInternalComponents() const {return _elemsize;}
     GPUContext::TextureFormat format()   const { return _format;   }
     unsigned int id()                    const { return _id;       }
 
@@ -97,14 +101,14 @@ namespace brook {
       int& outMinX, int& outMinY, int& outMaxX, int& outMaxY, size_t& outBaseOffset, bool& outFullStream, bool inUsesAddressTranslation );
 
     void setATData(
-      const float* inStreamData, unsigned int inStrideBytes, unsigned int inRank,
+      const void* inStreamData, unsigned int inStrideBytes, unsigned int inRank,
       const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
-      float* ioTextureData );
+      void* ioTextureData );
 
     void getATData(
-      float* outStreamData, unsigned int inStrideBytes, unsigned int inRank,
+      void* outStreamData, unsigned int inStrideBytes, unsigned int inRank,
       const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
-      const float* inTextureData );
+      const void* inTextureData );
 
 
   private:
@@ -112,13 +116,13 @@ namespace brook {
     unsigned int _components;
     OGLElementFormats _elementType;
     unsigned int _elemsize;
+    unsigned int _atomsize;
     GPUContext::TextureFormat _format;
     unsigned int _id;
     unsigned int _nativeFormat;
   };
 
 }
-
 #endif
 
 

@@ -53,26 +53,27 @@
 using namespace brook;
 
 static const unsigned int 
-nvtypes[4][3] =   {{GL_FLOAT_R32_NV,GL_FLOAT_R16_NV,GL_INTENSITY},
+nvtypes[4][3] =   {{GL_FLOAT_R32_NV,GL_FLOAT_R16_NV,GL_LUMINANCE8},
                    {GL_FLOAT_RGBA32_NV,GL_FLOAT_RG16_NV,GL_LUMINANCE_ALPHA},
-                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RGB16_NV,GL_RGB},
-                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RGBA16_NV,GL_RGBA}};
+                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RGB16_NV,GL_RGB8},
+                   {GL_FLOAT_RGBA32_NV,GL_FLOAT_RGBA16_NV,GL_RGBA8}};
 
 static const unsigned int 
-nvformats[4][3] =  { {GL_RED,GL_RED,GL_INTENSITY},
+nvformats[4][3] =  { {GL_RED,GL_RED,GL_LUMINANCE},
                   {GL_RGBA,GL_LUMINANCE_ALPHA,GL_LUMINANCE_ALPHA},
                   {GL_RGBA,GL_RGB,GL_RGB},
                   {GL_RGBA,GL_RGBA,GL_RGBA} };
 
 static const unsigned int 
 sizefactor[4][3] = { {1,1,1}, {4,2,2}, {4,3,3}, {4,4,4} };
-
+const static unsigned int 
+atomSize[4][3]={{4,2,1},{4,2,1},{4,2,1},{4,2,1}};
 
 NVTexture::NVTexture ( size_t inWidth, 
                        size_t inHeight, 
                        GPUContext::TextureFormat inFormat) :
   OGLTexture(inWidth, inHeight, inFormat, 
-             nvformats, nvtypes, sizefactor)
+             nvformats, nvtypes, sizefactor, atomSize)
 {
    _nativeFormat = nvformats[components()][elementType()]; 
 }

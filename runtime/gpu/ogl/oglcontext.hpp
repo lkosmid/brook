@@ -5,6 +5,9 @@
 #include "../gpucontext.hpp"
 
 #include "oglfunc.hpp"
+#ifndef WIN32
+typedef void *HGLRC; 
+#endif
 
 namespace brook {
    
@@ -178,7 +181,7 @@ namespace brook {
     }
 
     virtual void hackRestoreContext();
-    void shareLists( HGLRC inContext );
+    void shareLists(HGLRC                     inContext );
 
     virtual ~OGLContext();
 

@@ -6,16 +6,17 @@
 #include "oglcheckgl.hpp"
 
 using namespace brook;
-
 /* Allocates a floating point texture */ 
 OGLTexture::OGLTexture (unsigned int width,
                         unsigned int height,
                         GPUContext::TextureFormat format,
                         const unsigned int glFormat[4][OGL_NUMFORMATS],
                         const unsigned int glType[4][OGL_NUMFORMATS],
-                        const unsigned int sizeFactor[4][OGL_NUMFORMATS]):
+                        const unsigned int sizeFactor[4][OGL_NUMFORMATS],
+                        const unsigned int atomSize[4][OGL_NUMFORMATS]):
    _width(width), _height(height), _format(format) {
    _elementType=OGL_FLOAT;
+   
    switch (_format) {
    case GPUContext::kTextureFormat_Float1:
    case GPUContext::kTextureFormat_Float2:
@@ -60,8 +61,8 @@ OGLTexture::OGLTexture (unsigned int width,
    default: 
       GPUError("Unkown Texture Format");
    }
-   
-   _bytesize = _width*_height*sizeFactor[_components-1][_elementType]*sizeof(float);
+   _atomsize = atomSize[_components-1][_elementType];
+   _bytesize = _width*_height*sizeFactor[_components-1][_elementType]*_atomsize;
    _elemsize = sizeFactor[_components-1][_elementType];
    _nativeFormat = glFormat[_components-1][_elementType];
 
@@ -69,7 +70,8 @@ OGLTexture::OGLTexture (unsigned int width,
    glActiveTextureARB(GL_TEXTURE0_ARB);
    glBindTexture (GL_TEXTURE_RECTANGLE_NV, _id);
    CHECK_GL();
- 
+   glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+   glPixelStorei(GL_PACK_ALIGNMENT,1);
    // Create a texture with NULL data
    glTexImage2D (GL_TEXTURE_RECTANGLE_NV, 0, 
                  glType[_components-1][_elementType],
@@ -96,7 +98,7 @@ OGLTexture::isFastSetPath( unsigned int inStrideBytes,
                            unsigned int inWidth,
                            unsigned int inHeight,
                            unsigned int inElemCount ) const {
-   return (inStrideBytes == _elemsize*sizeof(float) &&
+   return (inStrideBytes == _elemsize*_atomsize &&
            inElemCount   == inWidth*inHeight);
 }
 
@@ -105,51 +107,27 @@ OGLTexture::isFastGetPath( unsigned int inStrideBytes,
                            unsigned int inWidth,
                            unsigned int inHeight,
                            unsigned int inElemCount ) const {
-   return (inStrideBytes == _elemsize*sizeof(float) &&
+   return (inStrideBytes == _elemsize*_atomsize &&
            inElemCount   == inWidth*inHeight);
 }
 
 
 void
-OGLTexture::copyToTextureFormat(const float *src, 
+OGLTexture::copyToTextureFormat(const void *src, 
                                 unsigned int srcStrideBytes, 
                                 unsigned int srcElemCount,
-                                float *dst) const {
+                                void *dst) const {
    unsigned int i;
    
    switch (_components) {
    case 1:
-      for (i=0; i<srcElemCount; i++) {
-         *dst = *src;
-         src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
-         dst += _elemsize;
-      }
-      break;
    case 2:
-      for (i=0; i<srcElemCount; i++) {
-         *dst = *src;
-         *(dst+1) = *(src+1);
-         src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
-         dst += _elemsize;
-      }
-      break;
    case 3:
-      for (i=0; i<srcElemCount; i++) {
-         *dst = *src;
-         *(dst+1) = *(src+1);
-         *(dst+2) = *(src+2);
-         src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
-         dst += _elemsize;
-      }
-      break;
    case 4:
       for (i=0; i<srcElemCount; i++) {
-         *dst = *src;
-         *(dst+1) = *(src+1);
-         *(dst+2) = *(src+2);
-         *(dst+3) = *(src+3);
-         src = (float *)(((unsigned char *) (src)) + srcStrideBytes);
-         dst += _elemsize;
+         memcpy(dst,src,_atomsize*_components);
+         src = (((unsigned char *) (src)) + srcStrideBytes);
+         dst = ((unsigned char *)dst) + _elemsize*_atomsize;
       }
       break;
    default: 
@@ -159,45 +137,21 @@ OGLTexture::copyToTextureFormat(const float *src,
 
 
 void
-OGLTexture::copyFromTextureFormat(const float *src, 
+OGLTexture::copyFromTextureFormat(const void *src, 
                                   unsigned int dstStrideBytes, 
                                   unsigned int dstElemCount,
-                                  float *dst) const {
+                                  void *dst) const {
    unsigned int i;
    
    switch (_components) {
    case 1:
-      for (i=0; i<dstElemCount; i++) {
-         *dst = *src;
-         dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
-         src += _elemsize;
-      }
-      break;
-   case 2:
-      for (i=0; i<dstElemCount; i++) {
-         *dst     = *src;
-         *(dst+1) = *(src+1);
-         dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
-         src += _elemsize;
-      }
-      break;
+   case 2: 
    case 3:
-      for (i=0; i<dstElemCount; i++) {
-         *dst     = *src;
-         *(dst+1) = *(src+1);
-         *(dst+2) = *(src+2);
-         dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
-         src += _elemsize;
-      }
-      break;
    case 4:
       for (i=0; i<dstElemCount; i++) {
-         *dst     = *src;
-         *(dst+1) = *(src+1);
-         *(dst+2) = *(src+2);
-         *(dst+3) = *(src+3);
-         dst = (float *)(((unsigned char *) (dst)) + dstStrideBytes);
-         src += _elemsize;
+         memcpy(dst,src,_atomsize*_components);
+         dst = (((unsigned char *) (dst)) + dstStrideBytes);
+         src = ((unsigned char *)src) + _elemsize*_atomsize;
       }
       break;
    default: 
@@ -268,9 +222,9 @@ void OGLTexture::getRectToCopy(
 }
 
 void OGLTexture::setATData(
-  const float* inStreamData, unsigned int inStrideBytes, unsigned int inRank,
+  const void* inStreamData, unsigned int inStrideBytes, unsigned int inRank,
   const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
-  float* ioTextureData )
+  void* ioTextureData )
 {
   // TIM: get all the fun information out of our streams
   size_t r;
@@ -279,7 +233,7 @@ void OGLTexture::setATData(
   size_t domainMax[4] = {1,1,1,1};
   size_t strides[4] = {0,0,0,0};
   size_t stride = 1;
-
+  const void *streamElement=inStreamData;
   for( r = 0; r < rank; r++ )
   {
     size_t d = rank - (r+1);
@@ -290,10 +244,9 @@ void OGLTexture::setATData(
     strides[r] = stride;
     stride *= streamExtent;
   }
-
-  size_t streamComponents = inStrideBytes / sizeof(float);
-
-  const float* streamElement = inStreamData;
+  
+  
+  const size_t componentSize = _atomsize*_elemsize;
   size_t x, y, z, w;
   for( w = domainMin[3]; w < domainMax[3]; w++ )
   {
@@ -308,10 +261,10 @@ void OGLTexture::setATData(
         {
           size_t streamIndex = offsetY + x*strides[0];
 
-          float* textureElement = ioTextureData + streamIndex*_elemsize;
-
-          for( size_t c = 0; c < streamComponents; c++ )
-            *textureElement++ = *streamElement++;
+          void* textureElement = ((unsigned char*)ioTextureData) + streamIndex*_components*_atomsize;
+          memcpy(textureElement,streamElement,componentSize);
+          streamElement=((unsigned char *)streamElement)+componentSize;
+          
         }
       }
     }
@@ -319,9 +272,9 @@ void OGLTexture::setATData(
 }
 
 void OGLTexture::getATData(
-  float* outStreamData, unsigned int inStrideBytes, unsigned int inRank,
+  void* outStreamData, unsigned int inStrideBytes, unsigned int inRank,
   const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
-  const float* inTextureData )
+  const void* inTextureData )
 {
   // TIM: get all the fun information out of our streams
   size_t r;
@@ -342,9 +295,9 @@ void OGLTexture::getATData(
     stride *= streamExtent;
   }
 
-  size_t streamComponents = inStrideBytes / sizeof(float);
-
-  float* streamElement = outStreamData;
+  const size_t streamElementSize = inStrideBytes;
+  const size_t copySize =  _atomsize*_elemsize;
+  void* streamElement = outStreamData;
   size_t x, y, z, w;
   for( w = domainMin[3]; w < domainMax[3]; w++ )
   {
@@ -358,11 +311,9 @@ void OGLTexture::getATData(
         for( x = domainMin[0]; x < domainMax[0]; x++ )
         {
           size_t streamIndex = offsetY + x*strides[0];
-
-          const float* textureElement = inTextureData + streamIndex*_elemsize;
-
-          for( size_t c = 0; c < streamComponents; c++ )
-            *streamElement++ = *textureElement++;
+          const void* textureElement = ((unsigned char*)inTextureData) + streamIndex*copySize;
+          memcpy(streamElement,textureElement,copySize);
+          streamElement=((unsigned char*)streamElement)+streamElementSize;
         }
       }
     }
