@@ -1,7 +1,7 @@
 ROOTDIR := ../..
 REGRESSIONDIRS := spMatrixVec
 SUBDIRS := $(REGRESSIONDIRS) PMLSeg benchmark bitonic_sort bsearch \
-	   conjugate_gradient imageproc particle_cloth timing
+	   conjugate_gradient imageproc particle_cloth timing raytracer
 
 include ../../config/DetectOS.mk
 
