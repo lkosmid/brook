@@ -33,21 +33,18 @@ vector<string3> VectorTypes() {
   PB("vec<float,1> ","float","1");
   PB("vec<int,1> ","int","1");
   PB("vec<char,1> ","char","1");
-  PB("vec<vec<float,1>,1> ","vec<float,1>","1")
-  PB("vec<vec<float,1>,2> ","vec<float,1>","2")
-    PB("vec<vec<float,1>,3> ","vec<float,1>","3")
-   PB("vec<vec<float,1>,4> ","vec<float,1>","4")
+  PB("vec<float,2> ","float","2");
+  PB("vec<int,2> ","int","2");
+  PB("vec<char,2> ","char","2");
 
-    PB("vec<vec<int,1>,1> ","vec<int,1>","1")
-    PB("vec<vec<int,1>,2> ","vec<int,1>","2")
-    PB("vec<vec<int,1>,3> ","vec<int,1>","3")
-    PB("vec<vec<int,1>,4> ","vec<int,1>","4")
+  PB("vec<float,3> ","float","3");
+  PB("vec<int,3> ","int","3");
+  PB("vec<char,3> ","char","3");
 
-    PB("vec<vec<char,1>,1> ","vec<char,1>","1")
-    PB("vec<vec<char,1>,2> ","vec<char,1>","2")
-    PB("vec<vec<char,1>,3> ","vec<char,1>","3")
-    PB("vec<vec<char,1>,4> ","vec<char,1>","4")
-    
+    PB("vec<float,4> ","float","4");
+  PB("vec<int,4> ","int","4");
+  PB("vec<char,4> ","char","4");
+
   return ret;
 }
 vector<string3> BasicTypes() {
