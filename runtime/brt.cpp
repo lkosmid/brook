@@ -27,6 +27,16 @@ __StreamScatterMul STREAM_SCATTER_MUL;
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
+  Stream * Iter::allocateStream(int dims, 
+                                int extents[],
+                                float ranges[])const {
+     assert(0);
+       //XXX daniel this needs to be done
+       //will use standard brook BRTCreateStream syntax and then copy data in
+       //dx9 can then call this to easily fallback if cpu is necessary
+     return 0;
+  }
+    
 
   RunTime* RunTime::GetInstance() {
     static RunTime* sResult = CreateInstance();

@@ -75,11 +75,9 @@ namespace brook {
   public:
     Iter (__BRTStreamType type) {this->type=type;madeStream=0;}
     virtual void Release() {delete this;}
-    virtual Stream * allocateStream(int dims, int extents[],float ranges[])const{
-       assert(0);return 0;//XXX daniel this needs to be done
-       //will use standard brook BRTCreateStream syntax and then copy data in
-       //dx9 can then call this to easily fallback if cpu is necessary
-    };
+    Stream * allocateStream(int dims, 
+                            int extents[],
+                            float ranges[])const;
     virtual Stream * makeStream(){return madeStream;}
     virtual __BRTStreamType getStreamType ()const{return type;}
   protected:
