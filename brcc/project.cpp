@@ -35,6 +35,9 @@
 #include <cassert>
 #include <fstream>
 #include <sstream>
+#ifdef _WIN32
+#include <ios>
+#endif
 #include "project.h"
 #include "brtgather.h"
 #include "express.h"
@@ -91,9 +94,9 @@ std::string ReadFile (std::istream & is) {
   unsigned int length;
   char * buffer;
   // get length of file:
-  is.seekg (0, ios::end);
+  is.seekg (0, std::ios::end);
   length = is.tellg();
-  is.seekg (0, ios::beg);
+  is.seekg (0, std::ios::beg);
   // allocate memory:
   buffer = new char [length];
   // read data as a block:
