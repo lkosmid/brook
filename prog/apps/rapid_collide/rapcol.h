@@ -49,6 +49,7 @@ typedef struct Tri_t{
   float3 B;
   float3 C;
 }Tri;
+#define tri_vertex_t float3
 struct csTraverser {
   csCdBBox *b1;
   csCdBBox *b2;

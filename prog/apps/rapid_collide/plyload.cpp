@@ -6,7 +6,7 @@ using std::vector;
 void LoadPly (const char * file,vector<Tri> &ret) {
   float ver;char mchar;
   int numvertex,numface,propertycount=0;
-  vector<float3> vertices;
+  vector<tri_vertex_t> vertices;
   
   FILE * fp = fopen (file,"r");
   if (!fp) return;
@@ -23,7 +23,7 @@ void LoadPly (const char * file,vector<Tri> &ret) {
   while (1==fscanf(fp,"propert%c %*[^\n]\n",&mchar));
   fscanf(fp,"end_header\n");
   for (int i=0;i<numvertex;++i) {
-    float3 in;
+    tri_vertex_t in;
     fscanf(fp,"%f %f %f",&in.x,&in.y,&in.z);
     for (int i=3;i<propertycount;++i) {
       fscanf(fp,"%*f");
