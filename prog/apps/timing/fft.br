@@ -337,6 +337,27 @@ float2 * getData(int N, int M) {
    return ret;
 }
 float2 * data = getData(4096,4096);
+float2 * getCompactData(int N, int M) {
+   int seed = 214098127;
+   int i,j;
+   float2 * ret;
+   ret = (float2*)malloc(N*M*sizeof(float2));
+   for (i=0;i<N;++i) {
+      for (j=0;j<M;++j) {
+         seed+=24101491;
+         ret[i*M+j].x=(float)(seed%4096);
+         seed%=9420409;
+         seed+=24101491;
+         ret[i*M+j].y=(float)(seed%4096);
+         seed%=9420409;
+      }
+   }
+   return ret;
+}
+float2 * compactdata = getData(4096,4096);
+
+
+
 float2 * getTwiddleFactor(int N) {
    int i;
    float2 *ret;
