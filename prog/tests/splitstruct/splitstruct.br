@@ -1,0 +1,47 @@
+
+typedef struct NHType_t
+{
+    float3 row1;
+    float3 row2;
+    float3 row3;// 3X3 matrix
+} NHType;
+
+
+kernel void Cinv_kernel(float2 constants, NHType F<>, out float q<>,  out NHType Cinv<>, out float coef<>)
+{
+
+   Cinv.row1 = float3(1,2,3);
+   Cinv.row2 = float3(2,3,4);
+   Cinv.row3 = float3(5,6,7);
+
+   q = 8;
+
+   coef = 9;
+}
+
+#define NUM 100
+
+NHType	  S[NUM];
+NHType    Cinvstream<NUM>;
+NHType    F<NUM>;
+float     q[NUM];
+float     qstream<NUM>;
+float	  cf[NUM];
+float     coef<NUM>;
+
+int main (void) {
+
+  Cinv_kernel (float2(3.0f,2.0f), F, qstream, Cinvstream, coef);
+
+  streamWrite(Cinvstream, S);
+  streamWrite(qstream, q);
+  streamWrite(coef, cf);
+
+  printf ("%3.2f %3.2f %3.2f\n", S[0].row1.x, S[0].row1.y, S[0].row1.z);
+  printf ("%3.2f %3.2f %3.2f\n", S[0].row2.x, S[0].row2.y, S[0].row2.z);
+  printf ("%3.2f %3.2f %3.2f\n", S[0].row3.x, S[0].row3.y, S[0].row3.z);
+  printf ("%3.2f\n", q[0]);
+  printf ("%3.2f\n", cf[0]);
+
+  return 0;	
+}
