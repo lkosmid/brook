@@ -53,7 +53,7 @@ bool looksLikeMask (std::string s) {
 	}
 	return false;
 }
-int translateMask (char mask) {
+int translateSwizzle (char mask) {
 	switch (mask) {
 	case 'y':
 	case 'g':
@@ -66,6 +66,18 @@ int translateMask (char mask) {
 		return 3;
 	default:
 		return 0;
+	}
+}
+std::string translateMask (int swizzle) {
+	switch (swizzle) {
+	case 3:
+		return "maskW";
+	case 2:
+		return "maskZ";
+	case 1:
+		return "maskY";
+	default:
+		return "maskX";
 	}
 }
 class MaskExpr : public BinaryExpr {
@@ -93,19 +105,53 @@ class MaskExpr : public BinaryExpr {
 			out << "(" << *lValue() << ")";
 		else
 			out << *lValue();
-		out << ".mask(";
+		out << ".mask"<< mask.length()<<"(";
 		if (rValue()->precedence()<2/*comma*/)
 			out << "(" <<*rValue() <<")";
 		else
 			out << *rValue();
 		for (unsigned int i=0;i<4&&i<mask.length();++i) {
 			out << ",";
-			out << translateMask(mask[i]);
+			out << translateMask(translateSwizzle(mask[i]));
 		}
 		out << ")";
 	}
 
 };
+class NewQuestionColon :public TrinaryExpr {public:
+	NewQuestionColon (Expression * c, Expression * t, Expression * f, const Location &l):TrinaryExpr(c,t,f,l) {}
+	Expression * dup0() const {return new NewQuestionColon(*this);}
+	int precedence() const {return 3;}
+	void print(std::ostream &out) const {
+		if (condExpr()->precedence()<16) 
+			out << "(";
+		out<<*condExpr();
+		if (condExpr()->precedence()<16) 
+			out << ")";		
+		out<<".questioncolon(";
+		out<<*trueExpr();
+		out << ",";
+		out << *falseExpr();
+		out << ")";
+	}
+		
+};
+class QuestionColonConverter{public:
+	Expression * operator()(Expression * e) {
+		TrinaryExpr * te;
+		NewQuestionColon * ret=NULL;
+		if (e->etype==ET_TrinaryExpr&& (te = dynamic_cast<TrinaryExpr*>(e))) {
+			ret = new NewQuestionColon(te->condExpr()->dup(),
+									   te->trueExpr()->dup(),
+									   te->falseExpr()->dup(),
+									   te->location);
+		}
+		return ret;
+	}
+};
+
+
+
 class SwizzleConverter{public:
 	Expression * operator()(Expression * e) {
 		BinaryExpr * be;
@@ -119,7 +165,7 @@ class SwizzleConverter{public:
 						char swizlength [2]={len+'0',0};
 						std::string rez=std::string("swizzle")+swizlength+"<";
 						for (unsigned int i=0;i<len;++i) {
-							char swizchar [3] =  {'0'+translateMask(vswiz->name->name[i]),i==len-1?'\0':',','\0'};
+							char swizchar [3] =  {'0'+translateSwizzle(vswiz->name->name[i]),i==len-1?'\0':',','\0'};
 							rez+=swizchar;
 						}
 						rez+=">()";
@@ -191,6 +237,10 @@ void FindMask (Statement * s) {
 void FindSwizzle (Statement * s) {
 	s->findExpr(ConvertToT<SwizzleConverter>);
 }
+void FindQuestionColon (Statement * s) {
+	s->findExpr(ConvertToT<QuestionColonConverter>);
+}
+
 bool compileCpp() {
 	Project proj;
 	TransUnit * tu = proj.parse(globals.sourcename,false,NULL,false,NULL,NULL,NULL);
@@ -199,6 +249,7 @@ bool compileCpp() {
 //		tu->findFunctionDef (ConvertToMask);
 		tu->findStemnt(FindMask);
 		tu->findStemnt (FindSwizzle);
+		tu->findStemnt (FindQuestionColon);
 		std::string s (globals.coutputname);
 		s+="pp";
 		out.open(s.c_str());
