@@ -12,7 +12,7 @@
 
 namespace brook
 {
-  static const float kNVInterpolantBias = 0.05f;
+  static const float kInterpolantBias = 0.05f;
 
   static const char* kPassthroughVertexShaderSource =
     "vs.1.1\n"
@@ -199,6 +199,7 @@ namespace brook
     bool _supportsPS30;
     bool _isNV;
     bool _isATI;
+	bool _shouldBiasInterpolants;
   };
 
   GPURuntimeDX9* GPURuntimeDX9::create()
@@ -295,6 +296,8 @@ namespace brook
     // get something like the GL vendor string from DX
     _isNV = _supportsPS30;
     _isATI = !_isNV;
+
+	_shouldBiasInterpolants = true; // all runtimes seem to prefer this
 
     // create vertex buffer
     static const int kMaxVertexCount = 64;
@@ -451,15 +454,15 @@ namespace brook
     interpolant.vertices[1] = float4(xmax,ymin,0.5,1);
     interpolant.vertices[2] = float4(xmin,ymax,0.5,1);
 
-    if( _isNV )
+    if( _shouldBiasInterpolants )
     {
         float biasX = 0.0f;
         float biasY = 0.0f;
 
         if( textureWidth > 1 )
-            biasX = kNVInterpolantBias / (float)(textureWidth);
+            biasX = kInterpolantBias / (float)(textureWidth);
         if( textureHeight > 1 )
-            biasY = kNVInterpolantBias / (float)(textureHeight);
+            biasY = kInterpolantBias / (float)(textureHeight);
 
         for( int i = 0; i < 3; i++ )
         {
@@ -529,13 +532,13 @@ namespace brook
     interpolant.vertices[1] = float4(xmax,ymin,0.5,1);
     interpolant.vertices[2] = float4(xmin,ymax,0.5,1);
 
-    if( _isNV )
+    if( _shouldBiasInterpolants )
     {
         int width = maxX - minX;
         int height = maxY - minY;
 
-        float biasX = textureWidth <= 1 ? 0.0f : 0.05f / (float)(textureWidth);
-        float biasY = textureHeight <= 1 ? 0.0f : 0.05f / (float)(textureHeight);
+        float biasX = textureWidth <= 1 ? 0.0f : kInterpolantBias / (float)(textureWidth);
+        float biasY = textureHeight <= 1 ? 0.0f : kInterpolantBias / (float)(textureHeight);
 
         for( int i = 0; i < 3; i++ )
         {
