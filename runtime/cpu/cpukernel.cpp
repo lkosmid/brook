@@ -39,7 +39,7 @@ namespace brook{
             if (strcmp(src[i],"combine")==0) {
                combine=(combinable*)source[i+1];
             }
-            if (strcmp(src[i],"nDcpu")==0) {
+            if (strcmp(src[i],"ndcpu")==0) {
                nDfunc=(nDcallable*)source[i+1];
             }
 	}

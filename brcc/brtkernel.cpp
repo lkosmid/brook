@@ -277,7 +277,7 @@ void BRTCPUKernelCode::PrintCPUArg::ResetNewLine(std::ostream&out,
 		out << std::endl;           
         }else {
            indent(out,3);
-		out << "arg"<<index<<" = getIndexOf(i, mapbegin, mapextent,";
+		out << "iter"<<index<<" = getIndexOf(i, mapbegin, mapextents,";
                 out << "extents["<<index<<"], ";
                 out << "dim, extents["<<ref<<"]);";
 		out << std::endl;           
@@ -291,7 +291,7 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
 	if (!a->isStream())
 		return;
 	bool isOut = (a->form->getQualifiers()&TQ_Out)!=0;
-	if (!nDcube&&(reduceFunc||isOut)) {
+	if (!nDcube&&ref==index) {
            indent(out,2);
            out << "++arg"<<index<<";"<<std::endl;
 	}else if (!nDcube) {
@@ -320,14 +320,14 @@ void BRTCPUKernelCode::PrintCPUArg::Increment(std::ostream & out,
                 */
 	}else {
            indent(out,2);
-           if(!isOut){
+           if(ref!=index){
               out << "if (++ratioiter"<<index<<">=ratio"<<index<<"){"<<std::endl;
               indent(out,3);
-              out << "ratioiter=0;"<<std::endl;
+              out << "ratioiter"<<index<<"=0;"<<std::endl;
               indent(out,3);
            }
            out << "++iter"<<index<<";"<<std::endl;
-           if (!isOut) {
+           if (ref!=index) {
               indent(out,2);
               out << "}"<<std::endl;			
            }
@@ -353,22 +353,24 @@ void BRTCPUKernelCode::PrintCPUArg::InitialSet(std::ostream & out,
 		return;
 	if (!a->isStream())
 		return;
-	if (!nDcube&&(reduceFunc||(a->form->getQualifiers()&TQ_Out)!=0)) {
+	if (!nDcube&&ref==index) {
            indent(out,1);
            out << "arg"<<index<<"+=mapbegin;"<<std::endl;
 	}else {
-           indent(out,1);
-           out << "unsigned int ratio"<<index<<" = extents["<<ref<<"]";
-           out << "[dim-1]";
-           out << "/extents["<<index<<"][dim-1];"<<std::endl;
-           indent(out,1);
-           out << "unsigned int ratioiter"<<index<<" = 0;"<<std::endl;
+           if (ref!=index) {
+              indent(out,1);
+              out << "unsigned int ratio"<<index<<" = extents["<<ref<<"]";
+              out << "[dim-1]";
+              out << "/extents["<<index<<"][dim-1];"<<std::endl;
+              indent(out,1);
+              out << "unsigned int ratioiter"<<index<<" = 0;"<<std::endl;
+           }
            indent (out,1);
            out << "unsigned int iter"<<index<<" = getIndexOf(";
            if (!nDcube) 
               out << "mapbegin,";
            else
-              out << "0, mapbegin, mapextent, ";
+              out << "0, mapbegin, mapextents, ";
            out << "extents["<<index<<"], ";
            out << "dim, extents["<<ref<<"]);"<<std::endl;
 	}
@@ -699,21 +701,22 @@ void BRTCPUKernelCode::incrementIndexOf(std::ostream&out)const {
    }
 }
 void BRTCPUKernelCode::incrementAllLocals(std::ostream&out,
+                                          bool nDcube,
                                           std::vector<PrintCPUArg> myArgs
                                           ) const{
        indent(out,2); out << "i++;"<<std::endl;
        incrementIndexOf(out);
        unsigned int reference_stream = getReferenceStream(this->fDef);
        {for (unsigned int i=0;i<myArgs.size();++i) {
-          myArgs[i].Increment(out,false,reference_stream);
+          myArgs[i].Increment(out,nDcube,reference_stream);
        }}
        indent(out,2);
        out << "if (i%newline==0) {"<<std::endl;
        {for (unsigned int i=0;i<myArgs.size();++i) {
-          myArgs[i].ResetNewLine(out,false,reference_stream);
+          myArgs[i].ResetNewLine(out,nDcube,reference_stream);
        }}          
        indent(out,2);
-       out << "}";
+       out << "}"<<std::endl;
 }
 void BRTCPUKernelCode::printTightLoop(std::ostream&out, 
                                       FunctionDef * fDef, 
@@ -731,7 +734,7 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     out <<std::endl;
     out << long_name << "const std::vector<unsigned int>&dims,"<<std::endl;
     out << long_name<<"unsigned int mapbegin, "<<std::endl;
-    out << long_name<< "unsigned int mapend) {"<<std::endl;
+    out << long_name<< "unsigned int mapextent) {"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         indent(out,1);
         myArgs[i].printCPU(out,PrintCPUArg::DEF);
@@ -749,9 +752,8 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
 
     initializeIndexOf(out);
     indent(out,1); out << "unsigned int i=0; "<<std::endl;
-    indent(out,1); out << "unsigned int iend=mapend-mapbegin;"<<std::endl;
     if (reduceneeded) {
-       indent(out,1); out << "if (iend) {"<<std::endl;
+       indent(out,1); out << "if (mapextent) {"<<std::endl;
        
        indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
        out << std::endl;
@@ -763,11 +765,11 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
        }}
        printIndexOfCallingArgs(out);
        out << ");"<<std::endl;
-       incrementAllLocals(out,myArgs);
+       incrementAllLocals(out,false,myArgs);
        indent(out,1); out <<"}"<<std::endl;
     }
     indent(out,1);
-    out << "while (i<iend) {";
+    out << "while (i<mapextent) {";
     out << std::endl;
     indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner (";
     out<<std::endl;
@@ -779,13 +781,97 @@ void BRTCPUKernelCode::printTightLoop(std::ostream&out,
     }}
     printIndexOfCallingArgs(out);
     out<< ");"<<std::endl;
-    incrementAllLocals(out,myArgs);
+    incrementAllLocals(out,false,myArgs);
     indent(out,1);out <<"}"<<std::endl;
     {for (unsigned int i=0;i<myArgs.size();++i) {
         myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
     }}    
     out << "}"<<std::endl;     
 }
+
+
+
+
+void BRTCPUKernelCode::printNdTightLoop(std::ostream&out, 
+                                        FunctionDef * fDef, 
+                                        std::vector<PrintCPUArg> myArgs,
+                                        bool reduceneeded)const{ 
+    Symbol enhanced_name;
+    enhanced_name.name = "__"+fDef->decl->name->name + "_ndcpu";
+    std::string myvoid("void  ");
+    out << myvoid;
+    fDef->decl->form->printBefore(out,&enhanced_name,0);
+    out << " (";
+    std::string long_name (whiteout(myvoid + enhanced_name.name+" ("));
+    out << "const std::vector<void *>&args,"<<std::endl;
+    out << long_name << "const std::vector<const unsigned int *>&extents,";
+    out <<std::endl;
+    out << long_name << "const std::vector<unsigned int>&dims,"<<std::endl;
+    out << long_name<< "const unsigned int *mapbegin, "<<std::endl;
+    out << long_name<< "const unsigned int *mapextents) {"<<std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+        indent(out,1);
+        myArgs[i].printCPU(out,PrintCPUArg::DEF);
+        out << std::endl;
+    }}
+    unsigned int reference_stream = getReferenceStream(this->fDef);
+    indent(out,1);
+    out << "unsigned int dim=dims["<<reference_stream<<"];"<<std::endl;
+    indent(out,1);
+    out << "unsigned int newline=mapextents[dim-1];"<<std::endl;
+    indent(out,1);
+    out << "unsigned int mapextent = mapextents[0], i=1;"<<std::endl;
+    indent(out,1);
+    out << "for (;i<dim;++i) mapextent*=mapextents[i];"<<std::endl;
+    out << std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+          myArgs[i].InitialSet(out,true,reference_stream);
+    }}
+
+    initializeIndexOf(out);
+    indent(out,1); out << "i=0; "<<std::endl;
+    if (reduceneeded) {
+       indent(out,1); out << "if (mapextent) {"<<std::endl;
+       
+       indent(out,2);out<< "__" <<fDef->decl->name->name<<"__base_cpu_inner (";
+       out << std::endl;
+       {for (unsigned int i=0;i<myArgs.size();++i) {
+          if (i!=0)
+             out <<","<<std::endl;
+          indent(out,3);
+          myArgs[i].printCPU(out,PrintCPUArg::USE);
+       }}
+       printIndexOfCallingArgs(out);
+       out << ");"<<std::endl;
+       incrementAllLocals(out,true,myArgs);
+       indent(out,1); out <<"}"<<std::endl;
+    }
+    indent(out,1);
+    out << "while (i<mapextent) {";
+    out << std::endl;
+    indent(out,2);out << "__" <<fDef->decl->name->name<<"_cpu_inner (";
+    out<<std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+        if (i!=0)
+            out <<","<<std::endl;
+        indent(out,3);
+        myArgs[i].printCPU(out,PrintCPUArg::USE);
+    }}
+    printIndexOfCallingArgs(out);
+    out<< ");"<<std::endl;
+    incrementAllLocals(out,true,myArgs);
+    indent(out,1);out <<"}"<<std::endl;
+    {for (unsigned int i=0;i<myArgs.size();++i) {
+        myArgs[i].printCPU(out,PrintCPUArg::CLEANUP);
+    }}    
+    out << "}"<<std::endl;     
+}
+
+
+
+
+
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const
 {
@@ -818,6 +904,8 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
 
     printTightLoop(out,fDef,myArgs,reduceneeded);
     delete fDef;
-    if (reduceneeded)
+    if (reduceneeded) {
+       printNdTightLoop(out,fDef,myArgs,reduceneeded);
        printCombineCode(out,true);
+    }
 }

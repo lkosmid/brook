@@ -103,6 +103,7 @@ class BRTCPUKernelCode : public BRTKernelCode
                                                     bool shadowOutput);
     void incrementIndexOf(std::ostream &out)const;
     void incrementAllLocals(std::ostream &out,
+                            bool nDcube,
                             std::vector<PrintCPUArg>)const;
     void initializeIndexOf(std::ostream &out)const;
     void printIndexOfCallingArgs(std::ostream & out)const;
@@ -111,6 +112,10 @@ class BRTCPUKernelCode : public BRTKernelCode
                         FunctionDef * fDef, 
                         std::vector<PrintCPUArg> args,
                         bool reduceneeded)const;
+    void printNdTightLoop(std::ostream&out, 
+                          FunctionDef * fDef, 
+                          std::vector<PrintCPUArg> args,
+                          bool reduceneeded)const;
     void printCode(std::ostream& out) const;
 	
     static void printInnerFunction(std::ostream&out,

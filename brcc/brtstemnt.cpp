@@ -143,6 +143,7 @@ BRTKernelDef::printStub(std::ostream& out) const
    out << "     \"ps20\", __" << *FunctionName() << "_ps20," << std::endl;
    out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;
    if (this->decl->isReduce()||reduceNeeded(this)) {
+      out << "     \"ndcpu\", (void *) __" << *FunctionName() << "_ndcpu,"<<std::endl;
       out << "     \"combine\", (void *) __";
       out << *FunctionName() << "__combine_cpu,";
       out << std::endl;
