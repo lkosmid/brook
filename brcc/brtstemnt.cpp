@@ -50,7 +50,6 @@ BRTKernelDef::print(std::ostream& out, int) const
 {
    BRTFP30KernelCode fp30(*this);
    BRTPS20KernelCode ps20(*this);
-   BRTCPUKernelCode cpu(*this);
 
    if (Project::gDebug) {
       out << "/* BRTKernelDef:" ;
@@ -58,8 +57,13 @@ BRTKernelDef::print(std::ostream& out, int) const
       out << " */" << std::endl;
    }
 
-   out << fp30 << std::endl << ps20 << std::endl << cpu << std::endl;
+   out << fp30 << std::endl << ps20 << std::endl << out << "void __" << *FunctionName() << "_cpu(const vector<void *>&,unsigned int, unsigned int);" << std::endl;
    printStub(out);
+   //somehow the dup above does not prevent the arguments from being messed up by my 
+   //type converter --Daniel
+   //FIXME.. for now we call this function when we don't need the others... not good!
+   BRTCPUKernelCode cpu(*this);
+   out << cpu<<std::endl;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
