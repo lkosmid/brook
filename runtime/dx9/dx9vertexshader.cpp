@@ -5,10 +5,24 @@
 
 using namespace brook;
 
-DX9VertexShader::DX9VertexShader( DX9RunTime* inContext, const char* inSource )
+DX9VertexShader::DX9VertexShader( DX9RunTime* inContext )
+  : device(NULL), shaderHandle(NULL)
 {
-	LPDIRECT3DDEVICE9 device = inContext->getDevice();
-	HRESULT result;
+	device = inContext->getDevice();
+  device->AddRef();
+}
+
+DX9VertexShader::~DX9VertexShader()
+{
+  if( shaderHandle != NULL )
+    shaderHandle->Release();
+  if( device != NULL )
+    device->Release();
+}
+
+bool DX9VertexShader::initialize( const char* inSource )
+{
+  HRESULT result;
 	LPD3DXBUFFER codeBuffer;
 	LPD3DXBUFFER errorBuffer;
 	
@@ -16,25 +30,31 @@ DX9VertexShader::DX9VertexShader( DX9RunTime* inContext, const char* inSource )
 	if( errorBuffer != NULL )
   {
     const char* errorMessage = (const char*)errorBuffer->GetBufferPointer();
-    DX9Fail( "DX9PixelShader failure - compile error\n%s", errorMessage );
+    DX9Warn( "Vertex shader failed to compile:\n%s", errorMessage );
+    return false;
   }
-  DX9CheckResult( result );
+  else if( FAILED(result) )
+  {
+    DX9Warn( "Vertex shader failed to compile." );
+    return false;
+  }
 
 	result = device->CreateVertexShader( (DWORD*)codeBuffer->GetBufferPointer(), &shaderHandle );
 	codeBuffer->Release();
-	DX9CheckResult( result );
-}
 
-DX9VertexShader::~DX9VertexShader()
-{
+  if( FAILED(result) )
+  {
+    DX9Warn( "Failed to allocate vertex shader." );
+    return false;
+  }
+  return true;
 }
 
 DX9VertexShader* DX9VertexShader::create( DX9RunTime* inContext, const char* inSource )
 {
-	return new DX9VertexShader( inContext, inSource );
-}
-
-LPDIRECT3DVERTEXSHADER9 DX9VertexShader::getHandle()
-{
-	return shaderHandle;
+  DX9VertexShader* result = new DX9VertexShader( inContext );
+  if( result->initialize( inSource ) )
+    return result;
+  delete result;
+  return NULL;
 }

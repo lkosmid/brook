@@ -11,12 +11,16 @@ namespace brook {
 	  static DX9PixelShader* create( DX9RunTime* inContext, const char* inSource );
 	  ~DX9PixelShader();
 
-	  LPDIRECT3DPIXELSHADER9 getHandle();
+    IDirect3DPixelShader9* getHandle() {
+      return shaderHandle;
+    }
 
   private:
-	  DX9PixelShader( DX9RunTime* inContext, const char* inSource );
+	  DX9PixelShader( DX9RunTime* inContext );
+    bool initialize( const char* inSource );
 
-	  LPDIRECT3DPIXELSHADER9 shaderHandle;
+    IDirect3DDevice9* device;
+	  IDirect3DPixelShader9* shaderHandle;
   };
 
 }

@@ -4,43 +4,52 @@
 
 using namespace brook;
 
-static const char* kKnownTypeNames[] =
+DX9Stream* DX9Stream::create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
+  int inDimensionCount, int* inExtents )
 {
-  "float ",
-  "float2 ",
-  "float3 ",
-  "float4 ",
-  NULL
-};
+  DX9Stream* result = new DX9Stream( inRuntime, inElementType );
+  if( result->initialize( inDimensionCount, inExtents ) )
+    return result;
+  delete result;
+  return NULL;
+}
 
-static int kKnownTypeComponentCounts[] =
+DX9Stream::DX9Stream( DX9RunTime* inRuntime, __BRTStreamType inElementType)
+  : Stream(inElementType),
+  runtime(inRuntime),
+  texture(NULL)
 {
-  1,
-  2,
-  3,
-  4,
-  0
-};
+}
 
-DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int extents[])
-  : Stream(type), runtime(runtime), elementType(type), dimensionCount(dims)
+bool DX9Stream::initialize( int inDimensionCount, int* inExtents )
 {
-  DX9Trace("DX9Stream::DX9Stream");
-  // XXX: TO DO
-  // for now allocate a 1D float4 texture with
-  // the number of elements requested...
+  dimensionCount = inDimensionCount;
+  if( (dimensionCount <= 0) || (dimensionCount > 2) )
+  {
+    DX9Warn("Unable to create stream with %d dimensions.\n"
+      "Dimensions must be greater than 0 and less than 3.", dimensionCount );
+    return false;
+  }
 
   totalSize = 1;
   for( int d = 0; d < dimensionCount; d++ )
   {
-    this->extents[d] = extents[d];
+    int extent = inExtents[d];
+    if( (extent <= 0) || (extent > kDX9MaximumTextureSize) )
+    {
+      DX9Warn("Unable to create stream with extent %d in dimension %d.\n"
+        "Extent must be greater than 0 and less than or equal to %d.",
+        extent, d, kDX9MaximumTextureSize );
+      return false;
+    }
+    extents[d] = extent;
     totalSize *= extents[d];
   }
 
   int width;
   int height;
 
-  switch( dims )
+  switch( dimensionCount )
   {
   case 1:
     width = extents[0];
@@ -51,11 +60,8 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int e
     height = extents[0];
     break;
   default:
-    width = 1;
-    height = 1;
-    for( int d = 0; d < dims; d++ )
-      width *= extents[d];
-    break;
+    DX9Assert( false, "Should be unreachable" );
+    return false;
   }
 
   int i = 0;
@@ -73,15 +79,17 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int e
      componentCount=4;
      break;
   default:
-     componentCount=0;
-  }
-  if( componentCount == 0 )
-  {
-    DX9Trace( "DX9Stream failure, unknown element type %d\n", (int)type );
-    assert(false);
+    DX9Warn( "Invalid element type for stream.\n",
+      "Only float, float2, float3 and float4 elements are supported." );
+    return false;
   }
 
   texture = DX9Texture::create( runtime, width, height, componentCount );
+  if( texture == NULL )
+  {
+    DX9Warn( "Texture allocation failed during sream initialization." );
+    return false;
+  }
 
   inputRect = DX9Rect( 0, 1, 1, 0 );
   outputRect = DX9Rect( -1, -1, 1, 1 );
@@ -99,20 +107,21 @@ DX9Stream::DX9Stream (DX9RunTime* runtime, __BRTStreamType type, int dims, int e
   indexofConstant.y = (float)height;
   indexofConstant.z = 0;
   indexofConstant.w = 0;
+
+  return true;
+}
+
+DX9Stream::~DX9Stream () {
+  if( texture != NULL )
+    delete texture;
 }
 
 void DX9Stream::Read(const void *p) {
-  DX9Trace("Read");
   texture->setData( (const float*)p );
 }
 
 void DX9Stream::Write(void *p) {
-  DX9Trace("Write");
   texture->getData( (float*)p );
-}
-
-DX9Stream::~DX9Stream () {
-  // Does nothing
 }
 
 IDirect3DTexture9* DX9Stream::getTextureHandle() {

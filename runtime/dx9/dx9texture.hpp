@@ -32,11 +32,17 @@ namespace brook {
       int axisInterlace, int otherInterlace, int axis );
     DX9Rect getReductionSurfaceSubRect( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int axis );
 
-	  LPDIRECT3DTEXTURE9 getTextureHandle();
-	  LPDIRECT3DSURFACE9 getSurfaceHandle();
+    LPDIRECT3DTEXTURE9 getTextureHandle() {
+      return textureHandle;
+    }
+
+    LPDIRECT3DSURFACE9 getSurfaceHandle() {
+      return surfaceHandle;
+    }
 
   private:
 	  DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents );
+    bool initialize();
 
     void flushCachedToShadow();
     void flushShadowToSystem();

@@ -8,19 +8,32 @@ static float lerp (unsigned int i, unsigned int end,float lower,float upper) {
    return (1-frac)*lower+frac*upper;
 }
 
-DX9Iter::DX9Iter( DX9RunTime * runtime,
-             __BRTStreamType type,
-             int dims,
-             int extents[], 
-             float ranges[])
-  :Iter(type),dimensionCount(dims), elementType(type), cpuBuffer(NULL)
+DX9Iter* DX9Iter::create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
+  int inDimensionCount, int* inExtents, float* inRanges )
 {
-  if( dimensionCount < 0 )
-    DX9Fail("Bad dimension count at iterator creation");
-  if( dimensionCount > 2 )
-    DX9Fail("Can't create greater than 2d iterators with DX9");
+  DX9Iter* result = new DX9Iter( inRuntime, inElementType );
+  if( result->initialize( inDimensionCount, inExtents, inRanges ) )
+    return result;
+  delete result;
+  return NULL;
+}
 
-  switch( elementType )
+DX9Iter::DX9Iter( DX9RunTime* inRuntime, __BRTStreamType inElementType )
+  : Iter(inElementType), cpuBuffer(NULL)
+{
+}
+
+bool DX9Iter::initialize( int inDimensionCount, int* inExtents, float* inRanges )
+{
+  dimensionCount = inDimensionCount;
+  if( (dimensionCount <= 0) || (dimensionCount > 2) )
+  {
+    DX9Warn( "Invalid dimension for iterator stream %d.\n"
+      "Dimension must be greater than 0 and less than 3.", inDimensionCount );
+    return false;
+  }
+
+  switch( type )
   {
   case __BRTFLOAT:
     componentCount = 1;
@@ -35,20 +48,30 @@ DX9Iter::DX9Iter( DX9RunTime * runtime,
     componentCount = 4;
     break;
   default:
-    DX9Fail( "Unkown stream element type." );
+    DX9Warn( "Unknown iterator element type.\n"
+      "Element type must be one of float, float2, float3, float4." );
+    return false;
     break;
   }
 
   totalSize = 1;
   for( int i = 0; i < dimensionCount; i++ )
   {
-    this->extents[i] = extents[i];
+    int extent = inExtents[i];
+    if( extent <= 0 )
+    {
+      DX9Warn( "Invalid iterator extent %d in dimension %d.\n"
+        "The extent must be greater than 0.", extent, i );
+      return false;
+    }
+
+    this->extents[i] = extent;
     totalSize *= extents[i];
   }
 
   int rangeCount = componentCount*2;
   for( int r = 0; r < rangeCount; r++ )
-    this->ranges[r] = ranges[r];
+    ranges[r] = inRanges[r];
 
   if( dimensionCount == 1 )
   {
@@ -75,18 +98,28 @@ DX9Iter::DX9Iter( DX9RunTime * runtime,
   }
   else
   {
-    DX9Assert( componentCount == 2, "only float2 2D iterator in DX9 right now" );
+    DX9Assert( dimensionCount == 2, "Internal error." );
+
+    if( componentCount != 2 )
+    {
+      DX9Warn( "Invalid element type for 2D iterator.\n"
+        "2D iterators can only be of type float2." );
+      return false;
+    }
     float minX = ranges[0];
     float minY = ranges[1];
     float maxX = ranges[2];
     float maxY = ranges[3];
     rect = DX9Rect( minX, maxY, maxX, minY );
   }
+  return true;
 }
 
 void* DX9Iter::getData (unsigned int flags)
 {
-  DX9Assert( !(flags & Stream::WRITE), "Cannot write to an iterator!!" );
+  DX9Assert( !(flags & Stream::WRITE),
+    "Attempted to write to an iterator.\n"
+    "Iterators are strictly read-only." );
 
   if( cpuBuffer != NULL ) return cpuBuffer;
 
@@ -118,12 +151,12 @@ void* DX9Iter::getData (unsigned int flags)
   }
   else
   {
-    DX9Fail("can't handle > 2d iterators in DX9");
+    DX9Assert( false, "Should be unreachable" );
   }
   
   return cpuBuffer;
 }
 
-void DX9Iter::releaseData(unsigned int flags)
-{
+void DX9Iter::releaseData(unsigned int flags) {
+  // empty
 }

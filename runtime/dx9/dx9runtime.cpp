@@ -42,23 +42,43 @@ static const char* kPassthroughPixelShaderSource =
 "mov oC0, r0\n"
 ;
 
-DX9RunTime::DX9RunTime()
-  : reductionBuffer(NULL)
+DX9RunTime* DX9RunTime::create()
 {
-  // XXX: TO DO
-  // TIM: initialize D3D
-  DX9Trace("DX9RunTime::DX9RunTime");
+  DX9RunTime* result = new DX9RunTime();
+  if( result->initialize() )
+    return result;
+  delete result;
+  return NULL;
+}
 
-  vertexBuffer = NULL;
-  indexBuffer = NULL;
-  vertexDecl = NULL;
+DX9RunTime::DX9RunTime()
+  : window(NULL),
+  passthroughVertexShader(NULL),
+  passthroughPixelShader(NULL),
+  reductionBuffer(NULL),
+  direct3D(NULL),
+  device(NULL),
+  vertexBuffer(NULL),
+  vertexDecl(NULL)
+{
+}
 
+bool DX9RunTime::initialize()
+{
   window = DX9Window::create();
+  if( window == NULL )
+  {
+    DX9Warn("Could not create offscreen window.");
+    return false;
+  }
   HWND windowHandle = window->getWindowHandle();
 
 	direct3D = Direct3DCreate9( D3D_SDK_VERSION );
-	if( direct3D == NULL )
-		throw 1; // TIM: TODO: better errors
+  if( direct3D == NULL )
+  {
+    DX9Warn("Could not create Direct3D interface.");
+    return false;
+  }
 
 	D3DPRESENT_PARAMETERS deviceDesc;
 	ZeroMemory( &deviceDesc, sizeof(deviceDesc) );
@@ -71,33 +91,72 @@ DX9RunTime::DX9RunTime()
 
 	HRESULT result = direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
 		D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &device );
-	DX9CheckResult( result );
+  if( FAILED(result) )
+  {
+    DX9Warn("Could not create Direct3D device.");
+    return false;
+  }
 
 	// TIM: set up initial state
-	device->SetRenderState( D3DRS_ZENABLE, D3DZB_FALSE );
-//	device->SetRenderState( D3DRS_AMBIENT, 0xFFFFFFFF );
+	result = device->SetRenderState( D3DRS_ZENABLE, D3DZB_FALSE );
+  DX9AssertResult( result, "SetRenderState failed" );
 
   passthroughVertexShader = DX9VertexShader::create( this, kPassthroughVertexShaderSource );
+  if( passthroughVertexShader == NULL )
+  {
+    DX9Warn("Could not create passthrough vertex shader.");
+    return false;
+  }
+
   passthroughPixelShader = DX9PixelShader::create( this, kPassthroughPixelShaderSource );
+  if( passthroughPixelShader == NULL )
+  {
+    DX9Warn("Could not create passthrough pixel shader.");
+    return false;
+  }
+
+  return true;
 }
 
-Kernel * DX9RunTime::CreateKernel(const void* source[]) {
-  return new DX9Kernel( this, source );
+DX9RunTime::~DX9RunTime()
+{
+  if( vertexDecl != NULL )
+    vertexDecl->Release();
+  if( vertexBuffer != NULL )
+    vertexBuffer->Release();
+  if( reductionBuffer != NULL )
+    delete reductionBuffer;
+  if( passthroughPixelShader != NULL )
+    delete passthroughPixelShader;
+  if( passthroughVertexShader != NULL )
+    delete passthroughVertexShader;
+  if( device != NULL )
+    device->Release();
+  if( direct3D != NULL )
+    direct3D->Release();
+  if( window != NULL )
+    delete window;
 }
 
-Stream * DX9RunTime::CreateStream(__BRTStreamType type, int dims, int extents[]) {
-  return new DX9Stream( this, type, dims, extents );
-}
-Iter* DX9RunTime::CreateIter(__BRTStreamType type, 
-                             int dims, 
-                             int extents[], 
-                             float r[]) {
-  return new DX9Iter( this, type, dims, extents , r );
+Kernel* DX9RunTime::CreateKernel(const void* source[]) {
+  Kernel* result = DX9Kernel::create( this, source );
+  DX9Assert( result != NULL, "Unable to allocate a kernel, exiting." );
+  return result;
 }
 
-DX9RunTime::~DX9RunTime() {
-  // Does nothing
-  // TIM: finalize D3D
+Stream* DX9RunTime::CreateStream(__BRTStreamType type, int dims, int extents[])
+{
+  Stream* result = DX9Stream::create( this, type, dims, extents );
+  DX9Assert( result != NULL, "Unable to allocate a stream, exiting." );
+  return result;
+}
+
+Iter* DX9RunTime::CreateIter(
+  __BRTStreamType type, int dims, int extents[], float r[] )
+{
+  Iter* result = DX9Iter::create( this, type, dims, extents , r );
+  DX9Assert( result != NULL, "Unable to allocate an iterator, exiting." );
+  return result;
 }
 
 void DX9RunTime::execute( const DX9FatRect& outputRect, const DX9FatRect* inputRects )
@@ -107,7 +166,7 @@ void DX9RunTime::execute( const DX9FatRect& outputRect, const DX9FatRect* inputR
 
   DX9Vertex* vertices;
   result = vertexBuffer->Lock( 0, 0, (void**)&vertices, D3DLOCK_DISCARD );
-  DX9CheckResult( result );
+  DX9AssertResult( result, "VB::Lock failed" );
 
   DX9Vertex vertex;
   for( int i = 0; i < 4; i++ )
@@ -126,22 +185,23 @@ void DX9RunTime::execute( const DX9FatRect& outputRect, const DX9FatRect* inputR
     *vertices++ = vertex;
   }
   result = vertexBuffer->Unlock();
-  DX9CheckResult( result );
+  DX9AssertResult( result, "VB::Unlock failed" );
 
   result = device->SetVertexDeclaration( vertexDecl );
-  DX9CheckResult( result );
+  DX9AssertResult( result, "SetVertexDeclaration failed" );
 
   result = device->SetStreamSource( 0, vertexBuffer, 0, sizeof(DX9Vertex) );
-  DX9CheckResult( result );
+  DX9AssertResult( result, "SetStreamSource failed" );
 
   result = device->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, 2 );
-  DX9CheckResult( result );
+  DX9AssertResult( result, "DrawPrimitive failed" );
 }
 
 DX9Texture* DX9RunTime::getReductionBuffer() {
   if( reductionBuffer != NULL ) return reductionBuffer;
 
   reductionBuffer = DX9Texture::create( this, kDX9ReductionBufferWidth, kDX9ReductionBufferHeight, 4 );
+  DX9Assert( reductionBuffer != NULL, "Failed to allocate reduction buffer." );
   return reductionBuffer;
 }
 
@@ -164,16 +224,11 @@ void DX9RunTime::initializeVertexBuffer()
   if( vertexBuffer != NULL ) return;
 
   static const int kMaxVertexCount = 64;
-  static const int kMaxIndexCount = 128;
 
   HRESULT result = device->CreateVertexBuffer(
     kMaxVertexCount*sizeof(DX9Vertex), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &vertexBuffer, NULL );
-  DX9CheckResult( result );
-
-  result = device->CreateIndexBuffer(
-    kMaxIndexCount*sizeof(UInt16), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &indexBuffer, NULL );
-  DX9CheckResult( result );
+  DX9AssertResult( result, "CreateVertexBuffer failed" );
 
   result = device->CreateVertexDeclaration( kDX9VertexElements, &vertexDecl );
-  DX9CheckResult( result );
+  DX9AssertResult( result, "CreateVertexDeclaration failed" );
 }

@@ -6,13 +6,27 @@
 using namespace brook;
 
 DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents )
-	: width(inWidth), height(inHeight), components(inComponents), internalComponents(inComponents), systemDataBuffer(NULL), dirtyFlags(kSystemDataDirty)
+	: width(inWidth),
+  height(inHeight),
+  components(inComponents),
+  internalComponents(inComponents),
+  systemDataBuffer(NULL),
+  dirtyFlags(kSystemDataDirty),
+  device(NULL),
+  textureHandle(NULL),
+  surfaceHandle(NULL),
+  shadowSurface(NULL)
 {
 	device = inContext->getDevice();
-	HRESULT result;
+  device->AddRef();
+}
+
+bool DX9Texture::initialize()
+{
+  HRESULT result;
 
   D3DFORMAT dxFormat;
-  switch( inComponents )
+  switch( components )
   {
   case 1:
     dxFormat = D3DFMT_R32F;
@@ -21,7 +35,6 @@ DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int in
     dxFormat = D3DFMT_G32R32F;
     break;
   case 3:
-    // TIM: special case - no RGB float textures...
     dxFormat = D3DFMT_A32B32G32R32F;
     internalComponents = 4;
     break;
@@ -29,33 +42,50 @@ DX9Texture::DX9Texture( DX9RunTime* inContext, int inWidth, int inHeight, int in
     dxFormat = D3DFMT_A32B32G32R32F;
     break;
   default:
-    DX9Fail("Invalid component count in DX9Texture - %d", inComponents);
+    DX9Warn( "Invalid component count %d for texture.\n",
+      "Only 1,2,3 and 4-component floating point textures are supported." );
+    return false;
   }
 
 	result = device->CreateTexture( width, height, 1, D3DUSAGE_RENDERTARGET, dxFormat, D3DPOOL_DEFAULT, &textureHandle, NULL );
-	DX9CheckResult( result );
+  if( FAILED( result ) )
+  {
+    DX9Warn( "Unable to create floating-point render target texture of size %d x %d.", width, height );
+    return false;
+  }
 	result = textureHandle->GetSurfaceLevel( 0, &surfaceHandle );
-	DX9CheckResult( result );
-
-  D3DSURFACE_DESC descriptor;
-  result = surfaceHandle->GetDesc( &descriptor );
-  DX9CheckResult( result );
-  D3DFORMAT internalFormat = descriptor.Format;
-  DX9Trace("components=%d internalComponents=%d dxFormat=%x, internalFormat=%x, width=%d, height=%d",
-    components, internalComponents, dxFormat, internalFormat, descriptor.Width, descriptor.Height);
+	DX9AssertResult( result, "GetSurfaceLevel failed" );
 
 	result = device->CreateOffscreenPlainSurface( width, height, dxFormat, D3DPOOL_SYSTEMMEM, &shadowSurface, NULL );
-	DX9CheckResult( result );
+  if( FAILED( result ) )
+  {
+    DX9Warn( "Unable to create floating-point plain surface of size %d x %d.", width, height );
+    return false;
+  }
+	return true;
 }
 
 DX9Texture::~DX9Texture()
 {
-	// TIM: TODO: cleanup
+  if( systemDataBuffer != NULL )
+    delete systemDataBuffer;
+  if( shadowSurface != NULL )
+    shadowSurface->Release();
+  if( surfaceHandle != NULL )
+    surfaceHandle->Release();
+  if( textureHandle != NULL )
+    textureHandle->Release();
+  if( device != NULL )
+    device->Release();
 }
 
 DX9Texture* DX9Texture::create( DX9RunTime* inContext, int inWidth, int inHeight, int inComponents  )
 {
-	return new DX9Texture( inContext, inWidth, inHeight, inComponents );
+  DX9Texture* result = new DX9Texture( inContext, inWidth, inHeight, inComponents );
+  if( result->initialize() )
+    return result;
+  delete result;
+  return NULL;
 }
 
 void DX9Texture::setData( const float* inData )
@@ -111,7 +141,7 @@ void DX9Texture::validateSystemData()
 void DX9Texture::flushCachedToShadow()
 {
   HRESULT result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
-	DX9CheckResult( result );
+	DX9AssertResult( result, "Failed to copy floating-point render target to plain surface." );
   dirtyFlags &= ~kCachedDataDirty;
 }
 
@@ -130,7 +160,7 @@ void DX9Texture::flushSystemToShadow()
 void DX9Texture::flushShadowToCached()
 {
   HRESULT result = device->UpdateSurface( shadowSurface, NULL, surfaceHandle, NULL );
-	DX9CheckResult( result );
+	DX9AssertResult( result, "Failed to copy floating-point plain surface to render target." );
   dirtyFlags &= ~kCachedDataDirty;
 }
 
@@ -148,7 +178,7 @@ void DX9Texture::getShadowData( void* outData )
 
 	D3DLOCKED_RECT info;
 	result = shadowSurface->LockRect( &info, NULL, D3DLOCK_READONLY );
-	DX9CheckResult( result );
+	DX9AssertResult( result, "LockRect failed" );
 
 	int pitch = info.Pitch;
 	if( pitch % 4 != 0 )
@@ -174,7 +204,7 @@ void DX9Texture::getShadowData( void* outData )
 	}
 
 	result = shadowSurface->UnlockRect();
-	DX9CheckResult( result );
+	DX9AssertResult( result, "UnlockRect failed" );
 }
 
 void DX9Texture::setShadowData( const void* inData )
@@ -183,7 +213,7 @@ void DX9Texture::setShadowData( const void* inData )
 	D3DLOCKED_RECT info;
 
 	result = shadowSurface->LockRect( &info, NULL, 0 );
-	DX9CheckResult( result );
+	DX9AssertResult( result, "LockRect failed" );
 
 	int pitch = info.Pitch;
 	if( pitch % 4 != 0 )
@@ -209,17 +239,7 @@ void DX9Texture::setShadowData( const void* inData )
 	}
 
 	result = shadowSurface->UnlockRect();
-	DX9CheckResult( result );
-}
-
-LPDIRECT3DTEXTURE9 DX9Texture::getTextureHandle()
-{
-	return textureHandle;
-}
-
-LPDIRECT3DSURFACE9 DX9Texture::getSurfaceHandle()
-{
-	return surfaceHandle;
+	DX9AssertResult( result, "UnlockRect failed" );
 }
 
 DX9Rect DX9Texture::getTextureSubRect( int l, int t, int r, int b ) {
@@ -254,11 +274,11 @@ void DX9Texture::getPixelAt( int x, int y, float4& outResult ) {
   HRESULT result;
 
 	result = device->GetRenderTargetData( surfaceHandle, shadowSurface );
-	DX9CheckResult( result );
+	DX9AssertResult( result, "Failed to copy floating-point render target to plain surface" );
 
 	D3DLOCKED_RECT info;
 	result = shadowSurface->LockRect( &info, NULL, D3DLOCK_READONLY );
-	DX9CheckResult( result );
+	DX9AssertResult( result, "LockRect failed" );
 
 	int pitch = info.Pitch;
 	if( pitch % 4 != 0 )
@@ -277,7 +297,7 @@ void DX9Texture::getPixelAt( int x, int y, float4& outResult ) {
 	}
 
 	result = shadowSurface->UnlockRect();
-	DX9CheckResult( result );
+	DX9AssertResult( result, "UnlockRect failed" );
 }
 
 DX9Rect DX9Texture::getReductionTextureSubRect( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax,

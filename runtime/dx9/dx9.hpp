@@ -12,13 +12,14 @@ namespace brook {
   extern const char* DX9_RUNTIME_STRING;
 
   enum {
-    kDX9ReductionBufferWidth = 2048,
-    kDX9ReductionBufferHeight = 2048
+    kDX9MaximumTextureSize = 2048,
+    kDX9ReductionBufferWidth = kDX9MaximumTextureSize,
+    kDX9ReductionBufferHeight = kDX9MaximumTextureSize
   };
 
   class DX9Kernel : public Kernel {
   public:
-    DX9Kernel(DX9RunTime* runtime, const void* source[]);
+    static DX9Kernel* create( DX9RunTime* inRuntime, const void* inSource[] );
     virtual void PushStream(Stream *s);
     virtual void PushIter(class Iter * v);
     virtual void PushConstant(const float &val);  
@@ -37,9 +38,10 @@ namespace brook {
       kBaseConstantIndex = 1
     };
 
+    DX9Kernel( DX9RunTime* inRuntime );
+    bool initialize( const void* inSource[] );
+    bool initialize( const char* inSource );
     virtual ~DX9Kernel();
-    IDirect3DDevice9* getDevice();
-    void initialize( const char* source );
 
     void PushSampler( DX9Stream* s );
     void PushTexCoord( const DX9FatRect& r );
@@ -78,6 +80,7 @@ namespace brook {
     bool argumentUsesIndexof[32];
 
     DX9RunTime* runtime;
+    IDirect3DDevice9* device;
     DX9PixelShader* pixelShader;
     DX9FatRect inputRects[8]; // TIM: TODO: named constant?
     float4 inputConstants[8];
@@ -97,11 +100,8 @@ namespace brook {
   };
   class DX9Iter : public Iter {
   public:
-     DX9Iter(DX9RunTime * runtime,
-             __BRTStreamType type,
-             int dims,
-             int extents[], 
-             float ranges[]);
+     static DX9Iter* create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
+             int inDimensionCount, int* inExtents, float* inRanges );
 
      const DX9FatRect& getRect() { return rect; }
 
@@ -109,11 +109,12 @@ namespace brook {
      virtual void releaseData(unsigned int flags);
      virtual const unsigned int* getExtents() const { return extents; }
      virtual unsigned int getDimension() const { return dimensionCount; }
-     virtual __BRTStreamType getStreamType () const { return elementType; }
      virtual unsigned int getTotalSize() const { return totalSize; }
 
   private:
-     __BRTStreamType elementType;
+     DX9Iter( DX9RunTime* inRuntime, __BRTStreamType inElementType );
+     bool initialize( int inDimensionCount, int* inExtents, float* inRanges );
+
      int componentCount;
      int dimensionCount;
      unsigned int extents[2];
@@ -125,7 +126,8 @@ namespace brook {
   };
   class DX9Stream : public Stream {
   public:
-    DX9Stream (DX9RunTime* runtime,__BRTStreamType type, int dims, int extents[]);
+    static DX9Stream* create( DX9RunTime* inRuntime, __BRTStreamType inElementType,
+      int inDimensionCount, int* inExtents );
     virtual void Read(const void* inData);
     virtual void Write(void* outData);
     virtual void Release() {}
@@ -145,19 +147,19 @@ namespace brook {
      virtual void releaseData(unsigned int flags);
      virtual const unsigned int* getExtents() const { return extents; }
      virtual unsigned int getDimension() const { return dimensionCount; }
-     virtual __BRTStreamType getStreamType() const { return elementType; }
      virtual unsigned int getTotalSize() const { return totalSize; }
 
      void validateGPUData();
      void markGPUDataChanged();
 
   private:
+    DX9Stream( DX9RunTime* inRuntime, __BRTStreamType inElementType );
+    bool initialize( int inDimensionCount, int* inExtents );
     virtual ~DX9Stream ();
     IDirect3DDevice9* getDevice();
 
     int dimensionCount;
     unsigned int extents[8];
-    __BRTStreamType elementType;
     unsigned int totalSize;
     int componentCount;
 
@@ -171,7 +173,8 @@ namespace brook {
 
   class DX9RunTime : public RunTime {
   public:
-    DX9RunTime();
+    static DX9RunTime* create();
+
     virtual Kernel* CreateKernel(const void*[]);
     virtual Stream* CreateStream(__BRTStreamType type, int dims, int extents[]);
     virtual Iter* CreateIter(__BRTStreamType type, 
@@ -192,6 +195,8 @@ namespace brook {
     void execute( const DX9FatRect& outputRect, const DX9FatRect* inputRects );
 
   private:
+    DX9RunTime();
+    bool initialize();
 
     void initializeVertexBuffer();
 
@@ -202,7 +207,6 @@ namespace brook {
     IDirect3D9* direct3D;
     IDirect3DDevice9* device;
     IDirect3DVertexBuffer9* vertexBuffer;
-    IDirect3DIndexBuffer9* indexBuffer;
     IDirect3DVertexDeclaration9* vertexDecl;
   };
 

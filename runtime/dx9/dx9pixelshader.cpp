@@ -5,9 +5,23 @@
 
 using namespace brook;
 
-DX9PixelShader::DX9PixelShader( DX9RunTime* inContext, const char* inSource )
+DX9PixelShader::DX9PixelShader( DX9RunTime* inContext )
+  : device(NULL), shaderHandle(NULL)
 {
-	LPDIRECT3DDEVICE9 device = inContext->getDevice();
+  device = inContext->getDevice();
+  device->AddRef();
+}
+
+DX9PixelShader::~DX9PixelShader()
+{
+  if( shaderHandle != NULL )
+    shaderHandle->Release();
+  if( device != NULL )
+    device->Release();
+}
+
+bool DX9PixelShader::initialize( const char* inSource )
+{
 	HRESULT result;
 	LPD3DXBUFFER codeBuffer;
   LPD3DXBUFFER errorBuffer;
@@ -16,26 +30,33 @@ DX9PixelShader::DX9PixelShader( DX9RunTime* inContext, const char* inSource )
 	if( errorBuffer != NULL )
   {
     const char* errorMessage = (const char*)errorBuffer->GetBufferPointer();
-    DX9Fail( "DX9PixelShader failure - compile error\n%s", errorMessage );
+    DX9Warn( "Pixel shader failed to compile:\n%s", errorMessage );
+    return false;
   }
-  DX9CheckResult( result );
+  else if( FAILED(result) )
+  {
+    DX9Warn( "Pixel shader failed to compile." );
+    return false;
+  }
 
 
 	result = device->CreatePixelShader( (DWORD*)codeBuffer->GetBufferPointer(), &shaderHandle );
 	codeBuffer->Release();
-	DX9CheckResult( result );
-}
 
-DX9PixelShader::~DX9PixelShader()
-{
+	if( FAILED(result) )
+  {
+    DX9Warn( "Failed to allocate pixel shader." );
+    return false;
+  }
+  return true;
 }
 
 DX9PixelShader* DX9PixelShader::create( DX9RunTime* inContext, const char* inSource )
 {
-	return new DX9PixelShader( inContext, inSource );
+	DX9PixelShader* result = new DX9PixelShader( inContext );
+  if( result->initialize( inSource ) )
+    return result;
+  delete result;
+  return NULL;
 }
 
-LPDIRECT3DPIXELSHADER9 DX9PixelShader::getHandle()
-{
-	return shaderHandle;
-}

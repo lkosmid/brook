@@ -45,7 +45,12 @@ namespace brook {
     }
 #ifdef GPU_ROUTINES
     if (!strcmp(env, DX9_RUNTIME_STRING))
-      return new DX9RunTime();
+    {
+      RunTime* result = DX9RunTime::create();
+      if( result != NULL ) return result;
+      fprintf(stderr, "Unable to initialize DX9 runtime, falling back to CPU");
+      return new CPURunTime();
+    }
 
     if (!strcmp(env, NV30GL_RUNTIME_STRING))
       return new NV30GLRunTime();

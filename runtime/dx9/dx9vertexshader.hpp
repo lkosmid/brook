@@ -11,11 +11,15 @@ namespace brook {
 	  static DX9VertexShader* create( DX9RunTime* inContext, const char* inSource );
 	  ~DX9VertexShader();
 
-	  IDirect3DVertexShader9* getHandle();
+    IDirect3DVertexShader9* getHandle() {
+      return shaderHandle;
+    }
 
   private:
-	  DX9VertexShader( DX9RunTime* inContext, const char* inSource );
+	  DX9VertexShader( DX9RunTime* inContext );
+    bool initialize( const char* inSource );
 
+    IDirect3DDevice9* device;
 	  IDirect3DVertexShader9* shaderHandle;
   };
 

@@ -103,39 +103,25 @@ namespace brook {
   inline void DX9Trace(...) {}
 #endif
 
-  inline void DX9Fail( const char* inFormat, ... )
+  inline void DX9Warn( const char* inFormat, ... )
   {
     va_list args;
     va_start( args, inFormat );
+    fprintf( stderr, "Brook Runtime (DirectX 9) Error:\n" );
     vfprintf( stderr, inFormat, args );
+    fprintf( stderr, "\n" );
     fflush( stderr );
     va_end(args);
-    assert(false);
-    exit(-1);
-  }
-
-  inline void DX9CheckResultImpl( HRESULT result, const char* fileName, int lineNumber )
-  {
-    if( !FAILED(result) ) return;
-    DX9Fail( "HRESULT failure - %s(%d)\n", fileName, lineNumber );
-  }
-
-  inline void DX9CheckResultImpl( HRESULT result, const char* fileName, int lineNumber, const char* comment )
-  {
-    if( !FAILED(result) ) return;
-    DX9Fail( "HRESULT failure - %s(%d): %s\n", fileName, lineNumber, comment );
   }
 
   inline void DX9AssertImpl( const char* fileName, int lineNumber, const char* comment )
   {
-    DX9Fail( "DX9 assertion failed - %s(%d): %s\n", fileName, lineNumber, comment );
+    DX9Warn( "%s(%d): %s", fileName, lineNumber, comment );
+    exit(1);
   }
 
-  #define DX9CheckResult( _result ) \
-    DX9CheckResultImpl( _result, __FILE__, __LINE__ )
-
-  #define DX9AssertResult( _result, _comment ) \
-    DX9CheckResultImpl( _result, __FILE__, __LINE__, _comment )
+  #define DX9AssertResult( _result, _message ) \
+    if(SUCCEEDED(_result)) {} else DX9AssertImpl( __FILE__, __LINE__, _message )
 
   #define DX9Assert( _condition, _message ) \
     if(_condition) {} else DX9AssertImpl( __FILE__, __LINE__, _message )

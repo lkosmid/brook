@@ -9,32 +9,95 @@ using namespace brook;
 
 static const char* PIXEL_SHADER_NAME_STRING = "ps20";
 
-DX9Kernel::DX9Kernel(DX9RunTime* runtime, const void* source[])
-  : runtime(runtime)
+DX9Kernel* DX9Kernel::create( DX9RunTime* inRuntime, const void* inSource[] )
 {
-  DX9Trace("DX9Kernel::DX9Kernel");
+  DX9Kernel* result = new DX9Kernel( inRuntime );
+  if( result->initialize( inSource ) )
+    return result;
+  delete result;
+  return NULL;
+}
 
+DX9Kernel::DX9Kernel( DX9RunTime* inRuntime )
+  : runtime(inRuntime),
+  device(NULL),
+  pixelShader(NULL)
+{
+  device = inRuntime->getDevice();
+  device->AddRef();
+}
+
+bool DX9Kernel::initialize( const void* inSource[] )
+{
   ClearInputs();
   
   int i = 0;
-  while( source[i] != NULL )
+  while( inSource[i] != NULL )
   {
-    const char* nameString = (const char*)source[i];
-    const char* programString = (const char*)source[i+1];
+    const char* nameString = (const char*)inSource[i];
+    const char* programString = (const char*)inSource[i+1];
 
     if( strncmp( nameString, PIXEL_SHADER_NAME_STRING, strlen(PIXEL_SHADER_NAME_STRING) ) == 0 )
     {
-      if( programString == NULL )
-        DX9Fail("Pixel shader 2.0 failed to compile.");
-
-      initialize( programString );
-      return;
+      if( programString == NULL ) continue;
+      return initialize( programString );
     }
 
     i += 2;
   }
 
-  DX9Fail("DXKernel failure - no DX9 program string found");
+  DX9Warn("Unable to find pixel shader 2.0 code.");
+  return false;
+}
+
+bool DX9Kernel::initialize( const char* source )
+{
+  pixelShader = DX9PixelShader::create( runtime, source );
+  if( pixelShader == NULL )
+  {
+    DX9Warn( "Failed to create kernel's pixel shader" );
+    return false;
+  }
+
+  // look for our annotations...
+  std::string s = source;
+
+  s = s.substr( s.find("!!BRCC") );
+
+  // next is the narg line
+  s = s.substr( s.find("\n")+1 );
+  s = s.substr( s.find(":")+1 );
+
+  std::string argumentCountString = s.substr( 0, s.find("\n") );
+  int argumentCount = atoi( argumentCountString.c_str() );
+
+  int i;
+  for( i = 0; i < argumentCount; i++ )
+  {
+    s = s.substr( s.find("\n")+1 );
+    s = s.substr( s.find("//")+2 );
+    char typeCode = s[0];
+    char indexofHint = s[1];
+    argumentUsesIndexof[i] = (indexofHint == 'i');
+  }
+
+  // initialize all the rects, just in case
+  outputRect = DX9Rect(0,0,0,0);
+  for( i = 0; i < 8; i++ )
+  {
+    inputRects[i] = DX9Rect(0,0,0,0);
+    inputTextures[i] = NULL;
+  }
+
+  return true;
+}
+
+DX9Kernel::~DX9Kernel()
+{
+  if( pixelShader != NULL )
+    delete pixelShader;
+  if( device != NULL )
+    device->Release();
 }
 
 void DX9Kernel::PushStream(Stream *s) {
@@ -134,43 +197,38 @@ void DX9Kernel::Map() {
 
   DX9VertexShader* vertexShader = runtime->getPassthroughVertexShader();
 
-  result = getDevice()->SetRenderTarget( 0, outputSurface );
-  DX9CheckResult( result );
+  result = device->SetRenderTarget( 0, outputSurface );
+  DX9AssertResult( result, "SetRenderTarget failed" );
 
-//  result = getDevice()->Clear( 0, NULL, D3DCLEAR_TARGET, 0xFF0000FF, 1.0f, 0 );
-//  DX9CheckResult( result );
+  result = device->BeginScene();
+  DX9AssertResult( result, "BeginScene failed"  );
 
-  result = getDevice()->BeginScene();
-  DX9CheckResult( result );
-
-  result = getDevice()->SetPixelShader( pixelShader->getHandle() );
-  DX9CheckResult( result );
-  result = getDevice()->SetVertexShader( vertexShader->getHandle() );
-  DX9CheckResult( result );
+  result = device->SetPixelShader( pixelShader->getHandle() );
+  DX9AssertResult( result, "SetPixelShader failed" );
+  result = device->SetVertexShader( vertexShader->getHandle() );
+  DX9AssertResult( result, "SetVertexShader failed" );
   int i;
   for( i = 0; i < samplerCount; i++ )
   {
     inputStreams[i]->validateGPUData();
-    result = getDevice()->SetTexture( i, inputTextures[i] );
-    DX9CheckResult( result );
+    result = device->SetTexture( i, inputTextures[i] );
+    DX9AssertResult( result, "SetTexture failed" );
   }
 
   // TIM: TODO: set up workspace constant
 
   for( i = 0; i < constantCount; i++ )
   {
-    result = getDevice()->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
-    DX9CheckResult( result );
+    result = device->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
+    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
   }
 
   runtime->execute( outputRect, inputRects );
 
   outputStream->markGPUDataChanged();
 
-  result = getDevice()->EndScene();
-  DX9CheckResult( result );
-//  result = getDevice()->Present( NULL, NULL, NULL, NULL );
-//  DX9CheckResult( result );
+  result = device->EndScene();
+  DX9AssertResult( result, "EndScene failed" );
 }
 
 void DX9Kernel::Reduce() {
@@ -180,48 +238,6 @@ void DX9Kernel::Reduce() {
     ReduceToStream();
   else
     ReduceToValue();
-}
-
-DX9Kernel::~DX9Kernel() {
-  // Does nothing
-}
-
-IDirect3DDevice9* DX9Kernel::getDevice() {
-  return runtime->getDevice();
-}
-
-void DX9Kernel::initialize( const char* source ) {
-  int i;
-  pixelShader = DX9PixelShader::create( runtime, source );
-
-  // TIM: look for our annotations...
-  std::string s = source;
-
-  s = s.substr( s.find("!!BRCC") );
-
-  // next is the narg line
-  s = s.substr( s.find("\n")+1 );
-  s = s.substr( s.find(":")+1 );
-
-  std::string argumentCountString = s.substr( 0, s.find("\n") );
-  int argumentCount = atoi( argumentCountString.c_str() );
-
-  for( i = 0; i < argumentCount; i++ )
-  {
-    s = s.substr( s.find("\n")+1 );
-    s = s.substr( s.find("//")+2 );
-    char typeCode = s[0];
-    char indexofHint = s[1];
-    argumentUsesIndexof[i] = (indexofHint == 'i');
-  }
-
-  // TIM: initialize all the rects, just in case
-  outputRect = DX9Rect(0,0,0,0);
-  for( i = 0; i < 8; i++ )
-  {
-    inputRects[i] = DX9Rect(0,0,0,0);
-    inputTextures[i] = NULL;
-  }
 }
 
 void DX9Kernel::PushSampler( DX9Stream* s )
@@ -282,8 +298,8 @@ void DX9Kernel::ReduceToStream()
 
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
 
-  result = getDevice()->BeginScene();
-  DX9CheckResult( result );
+  result = device->BeginScene();
+  DX9AssertResult( result, "BeginScene failed" );
 
   BindReductionBaseState();
   CopyStreamIntoReductionBuffer( inputStream );
@@ -298,8 +314,8 @@ void DX9Kernel::ReduceToStream()
 
   // finally copy the data out to the output buffer
   BindReductionPassthroughState();
-  result = getDevice()->SetRenderTarget( 0, outputStream->getSurfaceHandle() );
-  DX9CheckResult( result );
+  result = device->SetRenderTarget( 0, outputStream->getSurfaceHandle() );
+  DX9AssertResult( result, "SetRenderTarget failed" );
 
   inputRects[0] = reductionBuffer->getTextureSubRect(
     kSideOffsets[currentSide], 0,
@@ -307,8 +323,8 @@ void DX9Kernel::ReduceToStream()
   outputRect = outputStream->getSurfaceSubRect( 0, 0, outputWidth, outputHeight );
   runtime->execute( outputRect, inputRects );
 
-  result = getDevice()->EndScene();
-  DX9CheckResult( result );
+  result = device->EndScene();
+  DX9AssertResult( result, "EndScene failed" );
 
   outputStream->markGPUDataChanged();
 
@@ -325,11 +341,8 @@ void DX9Kernel::ReduceToValue()
   int samplerCount = argumentSamplerIndex;
 
   // inspect the input stuff:
-  if( reductionCount != 1 )
-    DX9Fail("Must have one and only one reduction argument");
-
-  if( outputCount != 0 )
-    DX9Fail("Can't have any other outputs during a reduction");
+  DX9Assert( reductionCount == 1, "Number of 'reduce' arguments was not 1." );
+  DX9Assert( outputCount == 0, "'out' streams found in reduce function." );
 
   DX9VertexShader* passthroughVertexShader = runtime->getPassthroughVertexShader();
   DX9PixelShader* passthroughPixelShader = runtime->getPassthroughPixelShader();
@@ -351,14 +364,14 @@ void DX9Kernel::ReduceToValue()
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
   int reductionBufferWidth = reductionBuffer->getWidth();
   int reductionBufferHeight = reductionBuffer->getHeight();
-  result = getDevice()->SetRenderTarget( 0, reductionBuffer->getSurfaceHandle() );
-  DX9CheckResult( result );
+  result = device->SetRenderTarget( 0, reductionBuffer->getSurfaceHandle() );
+  DX9AssertResult( result, "SetRenderTarget failed" );
 
-  result = getDevice()->BeginScene();
-  DX9CheckResult( result );
+  result = device->BeginScene();
+  DX9AssertResult( result, "BeginScene failed" );
 
-  result = getDevice()->SetVertexShader( passthroughVertexShader->getHandle() );
-  DX9CheckResult( result );
+  result = device->SetVertexShader( passthroughVertexShader->getHandle() );
+  DX9AssertResult( result, "SetVertexShader failed" );
 
   // TIM: TODO: set up workspace constant
 
@@ -367,38 +380,38 @@ void DX9Kernel::ReduceToValue()
   int i;
   for( i = 0; i < constantCount; i++ )
   {
-    result = getDevice()->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
-    DX9CheckResult( result );
+    result = device->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
+    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
   }
 
   // first pass - just copy the data into the reduction buffer...
   // this step *could* be elliminated in the future
-  result = getDevice()->SetPixelShader( passthroughPixelShader->getHandle() );
-  DX9CheckResult( result );
+  result = device->SetPixelShader( passthroughPixelShader->getHandle() );
+  DX9AssertResult( result, "SetPixelShader failed" );
 
   inputRects[0] = inputStream->getTextureSubRect( 0, 0, inputWidth, inputHeight );
   outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, inputWidth, inputHeight );
   inputStream->validateGPUData();
-  result = getDevice()->SetTexture( 0, inputStream->getTextureHandle() );
-  DX9CheckResult( result );
+  result = device->SetTexture( 0, inputStream->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
   runtime->execute( outputRect, inputRects );
 
   // remaining passes - fold the data in half as needed
-  result = getDevice()->SetPixelShader( pixelShader->getHandle() );
-  DX9CheckResult( result );
+  result = device->SetPixelShader( pixelShader->getHandle() );
+  DX9AssertResult( result, "SetPixelShader failed" );
   
   for( i = 0; i < samplerCount; i++ )
   {
     if( i == sampler0 || i == sampler1 ) continue;
     inputStreams[i]->validateGPUData();
-    result = getDevice()->SetTexture( i, inputTextures[i] );
-    DX9CheckResult( result );
+    result = device->SetTexture( i, inputTextures[i] );
+    DX9AssertResult( result, "SetTexture failed" );
   }
 
-  result = getDevice()->SetTexture( sampler0, reductionBuffer->getTextureHandle() );
-  DX9CheckResult( result );
-  result = getDevice()->SetTexture( sampler1, reductionBuffer->getTextureHandle() );
-  DX9CheckResult( result );
+  result = device->SetTexture( sampler0, reductionBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
+  result = device->SetTexture( sampler1, reductionBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
 
   int remainingWidth = inputWidth;
   int remainingHeight = inputHeight;
@@ -412,8 +425,8 @@ void DX9Kernel::ReduceToValue()
   ReduceDimension( currentSide, tex0, tex1, 2, 0, 1, extents );
   ReduceDimension( currentSide, tex0, tex1, 2, 1, 1, extents );
 
-  result = getDevice()->EndScene();
-  DX9CheckResult( result );
+  result = device->EndScene();
+  DX9AssertResult( result, "EndScene failed" );
 
   float4 reductionResult;
   reductionBuffer->getPixelAt( kSideOffsets[currentSide], 0, reductionResult );
@@ -426,7 +439,10 @@ void DX9Kernel::ReduceToValue()
   else if( outputReductionType == __BRTFLOAT4 )
     *((float4*)outputReductionData) = *((float4*)&reductionResult);
   else
-    DX9Fail("Invalid reduction target type for DX9");
+  {
+    DX9Assert(false,"Invalid reduction target type.\n"
+      "Only float, float2, float3, and float4 outputs allowed.");
+  }
 
   ClearInputs();
 }
@@ -458,10 +474,8 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
 
   if( inputExtent == outputExtent ) return;
 
-  DX9Assert( outputExtent < inputExtent, "Output extent must be less than input extent on reduce" );
-  DX9Assert( (inputExtent % outputExtent) == 0, "Output extent must evenly divide input extent on reduce" );
-
-  DX9Trace( " tex0 = %d, tex1 = %d\n", tex0, tex1 );
+  DX9Assert( outputExtent < inputExtent, "Output extent must be less than or equal to input extent for reduction." );
+  DX9Assert( (inputExtent % outputExtent) == 0, "Output extent must evenly divide input extent for reduction" );
 
   int remainingFactor = reductionFactor;
   int remainingExtent = inputExtent;
@@ -544,6 +558,10 @@ void DX9Kernel::ReduceDimension( int& ioReductionBufferSide,
   ioRemainingExtents[dim] = outputExtent;
 }
 
+/*
+  TIM: this code is broken (only works for commutative ops)
+  but if could potentially be fixed and made faster than
+  the more general routine above
 void DX9Kernel::ReduceDimensionToOne( int& ioReductionBufferSide,
       int inReductionTex0, int inReductionTex1,
       int inDimensionCount, int inDimensionToReduce, int* ioRemainingExtents )
@@ -615,6 +633,7 @@ void DX9Kernel::ReduceDimensionToOne( int& ioReductionBufferSide,
   ioReductionBufferSide = currentSide;
   ioRemainingExtents[dim] = 1;
 }
+*/
 
 void DX9Kernel::BindReductionBaseState()
 {
@@ -624,25 +643,22 @@ void DX9Kernel::BindReductionBaseState()
   int reductionCount = argumentReductionIndex;
 
   // inspect the input stuff:
-  if( reductionCount != 1 )
-    DX9Fail("Must have one and only one reduction argument");
-
-  if( outputCount != 0 )
-    DX9Fail("Can't have any other outputs during a reduction");
+  DX9Assert( reductionCount == 1, "Number of 'reduce' arguments was not 1." );
+  DX9Assert( outputCount == 0, "'out' streams found in reduce function." );
 
   DX9VertexShader* passthroughVertexShader = runtime->getPassthroughVertexShader();
-  result = getDevice()->SetVertexShader( passthroughVertexShader->getHandle() );
-  DX9CheckResult( result );
+  result = device->SetVertexShader( passthroughVertexShader->getHandle() );
+  DX9AssertResult( result, "SetVertexShader failed" );
 
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
-  result = getDevice()->SetRenderTarget( 0, reductionBuffer->getSurfaceHandle() );
-  DX9CheckResult( result );
+  result = device->SetRenderTarget( 0, reductionBuffer->getSurfaceHandle() );
+  DX9AssertResult( result, "SetRenderTarget failed" );
 
   // TODO: workspace constant
   for( int i = 0; i < constantCount; i++ )
   {
-    result = getDevice()->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
-    DX9CheckResult( result );
+    result = device->SetPixelShaderConstantF( i+kBaseConstantIndex, (float*)&(inputConstants[i]), 1 );
+    DX9AssertResult( result, "SetPixelShaderConstantF failed" );
   }
 }
 
@@ -651,15 +667,15 @@ void DX9Kernel::CopyStreamIntoReductionBuffer( DX9Stream* inStream )
   HRESULT result;
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
   DX9PixelShader* passthroughPixelShader = runtime->getPassthroughPixelShader();
-  result = getDevice()->SetPixelShader( passthroughPixelShader->getHandle() );
-  DX9CheckResult( result );
+  result = device->SetPixelShader( passthroughPixelShader->getHandle() );
+  DX9AssertResult( result, "SetPixelShader failed" );
 
   int inputWidth = inStream->getWidth();
   int inputHeight = inStream->getHeight();
 
   inStream->validateGPUData();
-  result = getDevice()->SetTexture( 0, inStream->getTextureHandle() );
-  DX9CheckResult( result );
+  result = device->SetTexture( 0, inStream->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
   inputRects[0] = inStream->getTextureSubRect( 0, 0, inputWidth, inputHeight );
   outputRect = reductionBuffer->getSurfaceSubRect( 0, 0, inputWidth, inputHeight );
   runtime->execute( outputRect, inputRects );
@@ -673,11 +689,11 @@ void DX9Kernel::BindReductionPassthroughState()
 
   // first pass - just copy the data into the reduction buffer...
   // this step *could* be elliminated in the future
-  result = getDevice()->SetPixelShader( passthroughPixelShader->getHandle() );
-  DX9CheckResult( result );
+  result = device->SetPixelShader( passthroughPixelShader->getHandle() );
+  DX9AssertResult( result, "SetPixelShader failed" );
 
-  result = getDevice()->SetTexture( 0, reductionBuffer->getTextureHandle() );
-  DX9CheckResult( result );
+  result = device->SetTexture( 0, reductionBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
 }
 
 void DX9Kernel::BindReductionOperationState()
@@ -686,8 +702,8 @@ void DX9Kernel::BindReductionOperationState()
   int samplerCount = argumentSamplerIndex;
   DX9Texture* reductionBuffer = runtime->getReductionBuffer();
 
-  result = getDevice()->SetPixelShader( pixelShader->getHandle() );
-  DX9CheckResult( result );
+  result = device->SetPixelShader( pixelShader->getHandle() );
+  DX9AssertResult( result, "SetPixelShader failed" );
 
   int sampler0 = inputReductionStreamSamplerIndex;
   int sampler1 = outputReductionVarSamplerIndex;
@@ -696,14 +712,14 @@ void DX9Kernel::BindReductionOperationState()
   {
     if( i == sampler0 || i == sampler1 ) continue;
     inputStreams[i]->validateGPUData();
-    result = getDevice()->SetTexture( i, inputTextures[i] );
-    DX9CheckResult( result );
+    result = device->SetTexture( i, inputTextures[i] );
+  DX9AssertResult( result, "SetTexture failed" );
   }
 
-  result = getDevice()->SetTexture( sampler0, reductionBuffer->getTextureHandle() );
-  DX9CheckResult( result );
-  result = getDevice()->SetTexture( sampler1, reductionBuffer->getTextureHandle() );
-  DX9CheckResult( result );
+  result = device->SetTexture( sampler0, reductionBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
+  result = device->SetTexture( sampler1, reductionBuffer->getTextureHandle() );
+  DX9AssertResult( result, "SetTexture failed" );
 }
 
 void DX9Kernel::DumpReductionBuffer( int xOffset, int yOffset, int axisMin, int otherMin, int axisMax, int otherMax, int dim )
