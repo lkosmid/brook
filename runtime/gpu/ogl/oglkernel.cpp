@@ -389,8 +389,6 @@ OGLContext::getStreamGatherConstant(
   {
     unsigned int baseX = inDomainMin[1];
     unsigned int baseY = inDomainMin[0];
-    unsigned int width = inExtents[1];
-    unsigned int height = inExtents[0];
 
     offsetX = baseX + 0.5f;
     offsetY = baseY + 0.5f;

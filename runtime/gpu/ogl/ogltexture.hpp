@@ -35,7 +35,8 @@ namespace brook {
     */
     virtual bool
     isFastSetPath( unsigned int inStrideBytes, 
-                   int inWidth, int inHeight,
+                   unsigned int inWidth,
+                   unsigned int inHeight,
                    unsigned int inElemCount ) const;
 
     /* Same as isFastGetPath, but for
@@ -43,7 +44,8 @@ namespace brook {
     */
     virtual bool
     isFastGetPath( unsigned int inStrideBytes, 
-                   int inWidth, int inHeight,
+                   unsigned int inWidth,
+                   unsigned int inHeight,
                    unsigned int inElemCount ) const;
 
     /* Perform a copy into the packed 

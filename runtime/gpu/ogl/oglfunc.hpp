@@ -1,11 +1,12 @@
 #ifndef OGLFUNC_HPP
 #define OGLFUNC_HPP
 
+// MCH: We are going to override Linux GLEXT prototypes to get around linux ABI issues
 #ifdef WIN32
 #include <windows.h>
+#define GL_GLEXT_PROTOTYPES 1
 #endif
 
-#define GL_GLEXT_PROTOTYPES 1
 #include <GL/gl.h>
 
 #ifndef APIENTRY
@@ -48,7 +49,11 @@ typedef void (APIENTRYP PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
 #ifndef GL_NV_fragment_program
 typedef void (APIENTRY * PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC) (GLuint id, GLsizei len, const GLubyte *name, const GLfloat* x);
 #define RUNTIME_BONUS_GL_FNS_NV \
-   XXX(PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC,        glProgramNamedParameter4fvNV)               
+   XXX(PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC,        glProgramNamedParameter4fvNV)   
+#elif !GL_GLEXT_PROTOTYPES   
+typedef void (APIENTRY * PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC) (GLuint id, GLsizei len, const GLubyte *name, const GLfloat* x);
+#define RUNTIME_BONUS_GL_FNS_NV \
+   XXX(PFNGLPROGRAMNAMEDPARAMETER4FVNVPROC,        glProgramNamedParameter4fvNV)            
 #else
 #define RUNTIME_BONUS_GL_FNS_NV
 #endif
@@ -62,6 +67,16 @@ typedef void (APIENTRYP PFNGLPROGRAMLOCALPARAMETER4FVARBPROC) (GLenum target, GL
 #define GL_PROGRAM_ERROR_POSITION_ARB     0x864B
 #define GL_PROGRAM_ERROR_STRING_ARB       0x8874
 #define GL_PROGRAM_FORMAT_ASCII_ARB       0x8875
+#define RUNTIME_BONUS_GL_FNS_3 \
+   XXX(PFNGLGENPROGRAMSARBPROC,        glGenProgramsARB)               \
+   XXX(PFNGLBINDPROGRAMARBPROC,        glBindProgramARB)               \
+   XXX(PFNGLPROGRAMSTRINGARBPROC,      glProgramStringARB)             \
+   XXX(PFNGLPROGRAMLOCALPARAMETER4FVARBPROC, glProgramLocalParameter4fvARB)
+#elif !GL_GLEXT_PROTOTYPES
+typedef void (APIENTRYP PFNGLGENPROGRAMSARBPROC) (GLsizei n, GLuint *programs);
+typedef void (APIENTRYP PFNGLBINDPROGRAMARBPROC) (GLenum target, GLuint program);
+typedef void (APIENTRYP PFNGLPROGRAMSTRINGARBPROC) (GLenum target, GLenum format, GLsizei len, const GLvoid *string);
+typedef void (APIENTRYP PFNGLPROGRAMLOCALPARAMETER4FVARBPROC) (GLenum target, GLuint index, const GLfloat *params);
 #define RUNTIME_BONUS_GL_FNS_3 \
    XXX(PFNGLGENPROGRAMSARBPROC,        glGenProgramsARB)               \
    XXX(PFNGLBINDPROGRAMARBPROC,        glBindProgramARB)               \

@@ -65,7 +65,8 @@ OGLTexture::~OGLTexture () {
 
 bool
 OGLTexture::isFastSetPath( unsigned int inStrideBytes, 
-                           int inWidth, int inHeight,
+                           unsigned int inWidth,
+                           unsigned int inHeight,
                            unsigned int inElemCount ) const {
    return (inStrideBytes == _elemsize*sizeof(float) &&
            inElemCount   == inWidth*inHeight);
@@ -73,7 +74,8 @@ OGLTexture::isFastSetPath( unsigned int inStrideBytes,
 
 bool
 OGLTexture::isFastGetPath( unsigned int inStrideBytes, 
-                          int inWidth, int inHeight,
+                           unsigned int inWidth,
+                           unsigned int inHeight,
                            unsigned int inElemCount ) const {
    return (inStrideBytes == _elemsize*sizeof(float) &&
            inElemCount   == inWidth*inHeight);
