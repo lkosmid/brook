@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <windows.h>
 
 #include "main.h"
 #include "reduction.h"
@@ -9,8 +10,9 @@ reduce void reductionKernel(float4 x<>, reduce float4 result<>) {
 }
 
 
-kernel void reductionRegKernel(float4 x<>, out float4 result<>) {
-  result = x;
+kernel void reductionRegKernel(float4 x<>, float4 constant, out float4 result<>) {
+  result = x + constant;
+  //discard;
 }
 
 
@@ -25,6 +27,7 @@ void do_reduction(int dim, int simReduceReg, int* time) {
   int i;
   float* x;
   float4 result;
+  float4 constant;
   float sum;
   float4 xStrm<dim,dim>;
   float4 yStrm<dim,dim>;
@@ -41,23 +44,33 @@ void do_reduction(int dim, int simReduceReg, int* time) {
   forceGPUFlush(xStrm, flushStrm);
   streamRead(flushStrm, flush);
 
+  // wait for a little  bit
+  Sleep(250);
+
   if (!simReduceReg) {
-    start = GetTime();
+  
+    start = GetTimeTSC();
     reductionKernel(xStrm, result);
     sum = result.x + result.y + result.z + result.w;
-    stop = GetTime();
+    stop = GetTimeTSC();
 
-    //printf("sum = %f\n", sum);
+	if (fabs(sum - (4.0f*dim*dim)) > .05 )
+		printf("Error!\n");	
+	
+    // printf("sum = %f\n", sum);
 
   } else {
-    start = GetTime();
-    reductionRegKernel(xStrm, yStrm);
+
+  
+    start = GetTimeTSC();
+    reductionRegKernel(xStrm, constant, yStrm);
     forceGPUFlush(yStrm, flushStrm);
     streamRead(flushStrm, flush);
-    stop = GetTime();
+    stop = GetTimeTSC();
+   
   }
 
-  *time = (int)(stop - start);
+  *time = (int)(CyclesToUsecs(stop) - CyclesToUsecs(start));
 
   free(x);
 
@@ -75,6 +88,8 @@ void Reduction_Time(int length) {
 
 
   simReduceReg = 0;
+
+  do_reduction(512, simReduceReg, &usec);
 
   printf("(* size *)  (* usec *)\n");
   for (size = 1; size<=length; size*=2) {
