@@ -8,6 +8,7 @@
 
 #include "stemnt.h"
 #include "b2ctransform.h"
+extern Expression * ConvertToBrtScatterCalls(Expression * e);
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 class BRTScatterDef : public FunctionDef

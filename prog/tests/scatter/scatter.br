@@ -41,8 +41,8 @@ int main () {
   streamRead(d, data_d);
   streamRead(f, data_f);
   streamRead(index, data_i); 
-  streamScatterOp(a,b,e,__mygets_scatter(1));
-  streamScatterOp(a,b,e,__mymult_scatter);
+  streamScatterOp(a,b,e,mygets(1));
+  streamScatterOp(a,b,e,mymult);
   //foo(a,b,c,d_broken,e);
   streamScatterOp(f,index,g,STREAM_SCATTER_ASSIGN);
   //  streamScatterOp(f,i,g,STREAM_SCATTER_FLOAT_MUL);

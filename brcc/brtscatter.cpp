@@ -15,6 +15,47 @@
 #include "project.h"
 #include "brtkernel.h"
 using std::endl;
+void convertNameToScatter (Variable * v) {
+                  if (v->name->name!="STREAM_SCATTER_ASSIGN"&&
+                      v->name->name!="STREAM_SCATTER_FLOAT_MUL"&&
+                      v->name->name!="STREAM_SCATTER_FLOAT_ADD"&&
+                      v->name->name!="STREAM_SCATTER_INTEGER_ADD"&&
+                      v->name->name!="STREAM_SCATTER_INTEGER_MUL") {
+
+                     if (v->name->name.find("__")!=0||
+                         v->name->name.find("_scatter")==std::string::npos) {
+                        v->name=new Symbol(*v->name);
+                        v->name->name="__"+v->name->name+"_scatter";
+                     }                     
+                  }   
+}
+Expression * ConvertToBrtScatterCalls(Expression * e) {
+   if (e->etype==ET_FunctionCall) {
+      FunctionCall * fc = static_cast<FunctionCall*>(e);
+      if (fc->function->etype==ET_Variable) {
+         Variable * name = static_cast<Variable*>(fc->function);
+         if (name->name->name=="streamScatterOp") {
+            if (fc->nArgs()>3) {
+               if (fc->args[3]->etype==ET_Variable) {
+                  Variable *v=static_cast<Variable*>(fc->args[3]);
+                  convertNameToScatter(v);
+               }else if (fc->args[3]->etype==ET_FunctionCall) {
+                  FunctionCall * cawl = 
+                     static_cast<FunctionCall*>(fc->args[3]);
+                  if (cawl->function->etype==ET_Variable) {
+                     convertNameToScatter(static_cast<Variable*>
+                                          (cawl->function));
+                  }
+               }
+            }
+         }
+      }
+   }
+   return e;
+}
+
+
+
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BRTScatterDef::BRTScatterDef(const FunctionDef& fDef)
             : FunctionDef(fDef.location)

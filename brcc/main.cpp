@@ -170,11 +170,11 @@ ConvertToBrtKernels(FunctionDef *fDef)
    return new BRTKernelDef(*fDef);
 }
 
-FunctionDef *
-ConvertToBrtScatters(FunctionDef *fDef)
+
+void
+ConvertToBrtScatters(Statement *s)
 {
-   if (!fDef->decl->isReduce()) { return NULL; }
-   return new BRTScatterDef(*fDef);
+   s->findExpr(ConvertToBrtScatterCalls);
 }
 
 
@@ -207,6 +207,7 @@ main(int argc, char *argv[])
          Brook2Cpp_IdentifyIndexOf(tu);
          tu->findStemnt(ConvertToBrtStreams);
          tu->findFunctionDef(ConvertToBrtKernels);
+         tu->findStemnt(ConvertToBrtScatters);
          //         tu->findFunctionDef(ConvertToBrtScatters);
       }
 
