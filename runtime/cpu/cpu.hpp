@@ -4,7 +4,9 @@
 #include "../runtime.hpp"
 
 namespace brook {
-	extern const char* CPU_RUNTIME_STRING;	
+    extern const char* CPU_RUNTIME_STRING;	
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     class CPUKernel : public Kernel {
     public:
        CPUKernel(const void * source []);
@@ -46,11 +48,19 @@ namespace brook {
        std::vector<unsigned int> dims;
        std::vector<brook::StreamInterface*> inputs;
        std::vector<brook::StreamInterface*>outputs;
+
+       // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
        class ReductionArg {public:
+          // which argument is the reduction in question
           unsigned int which;
+          // what type is this argument (so we can determine size)
           __BRTStreamType type;
+          // is this a reduction stream?
           brook::Stream *stream;
-          ReductionArg(unsigned int w, __BRTStreamType s,brook::Stream *stream) {
+          // create reduction arg
+          ReductionArg(unsigned int w, 
+                       __BRTStreamType s,
+                       brook::Stream *stream) {
              which=w;type=s;
              this->stream=stream;
           }
@@ -71,6 +81,9 @@ namespace brook {
                            unsigned int rdim,
                            unsigned int *mapbegin,
                            const unsigned int * mag)const;
+
+       // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+       // Maps arguments to ReduceToStream
        struct reduceToStreamInput:public std::vector<void*>{
           const CPUKernel * thus;
           unsigned int cur,curfinal;
@@ -92,8 +105,12 @@ namespace brook {
               extent(extent),rdim(rdim),mapbegin(begin),mag(mag)
           {}
        };
+       
        //frees reduceToStreamInput, input
        static void * staticReduceToStream(void * inp);
+
+       // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+       // Maps arguments to staticSubMap
        class subMapInput:public std::vector<void*> {
        public:
           subMapInput(const CPUKernel *thus,
@@ -108,6 +125,8 @@ namespace brook {
        };
        static void * staticSubMap(void * inp);
     };
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     class CPUStream: public Stream {
     public:
 	CPUStream (__BRTStreamType type ,int dims, int extents[]);
@@ -128,36 +147,42 @@ namespace brook {
 	unsigned int totalsize;
 
     };
-  class CPUIter:public Iter {
-  protected:
+   
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   class CPUIter:public Iter {
+   protected:
     CPUStream stream;
     virtual ~CPUIter() {}
     void allocateStream(int dims, 
                         int extents[],
                         float ranges[]);
-  public:
+   public:
     CPUIter(__BRTStreamType type, int dims, int extents[], float ranges[])
     :Iter(type),stream(type,dims,extents){
       allocateStream(dims,extents,ranges);//now we always have this
     }
     virtual void * getData (unsigned int flags){return stream.getData(flags);}
     virtual void releaseData(unsigned int flags){stream.releaseData(flags);}
-    virtual const unsigned int * getExtents() const{return stream.getExtents();}
-    virtual unsigned int getDimension() const {return stream.getDimension();}
-    virtual __BRTStreamType getStreamType ()const{return stream.getStreamType();}
+    virtual const unsigned int* getExtents()const {return stream.getExtents();}
+    virtual unsigned int getDimension()const {return stream.getDimension();}
+    virtual __BRTStreamType getStreamType()const{return stream.getStreamType();}
     virtual unsigned int getTotalSize() const {return stream.getTotalSize();}
-  };
-    class CPURunTime: public brook::RunTime {
-    public:
+   };
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   class CPURunTime: public brook::RunTime {
+   public:
 	CPURunTime();
 	virtual Kernel * CreateKernel(const void*[]);
-	virtual Stream * CreateStream(__BRTStreamType type, int dims, int extents[]);
+	virtual Stream * CreateStream(__BRTStreamType type, 
+                                      int dims, 
+                                      int extents[]);
 	virtual Iter * CreateIter(__BRTStreamType type, 
                                   int dims, 
                                   int extents[],
                                   float ranges[]);
 	virtual ~CPURunTime(){}
-    };
+   };
 }
 #endif
 

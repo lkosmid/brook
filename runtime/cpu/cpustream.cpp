@@ -8,20 +8,9 @@
 #include <iostream>
 using std::map;
 using std::string;
-typedef std::map<std::string,int> mapstrint;
 
-std::string noWhiteSpace (std::string in) {
-	unsigned int j=0;
-	for (unsigned int i=0;i<in.length();++i) {
-		in[j]=in[i];
-		if (in[i]==' '||in[i]=='\t'||in[i]=='\n'||in[i]=='\r')
-			;
-		else
-			j++;
-	}
-	return in.substr(0,j);												
-}
-unsigned int knownTypeSize (__BRTStreamType type) {
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+static unsigned int knownTypeSize (__BRTStreamType type) {
    switch (type) {
    case __BRTFLOAT2:
       return sizeof(float2);
@@ -33,8 +22,12 @@ unsigned int knownTypeSize (__BRTStreamType type) {
       return sizeof(float);
    }
 }
+
+
 namespace brook{
-    CPUStream::CPUStream(__BRTStreamType type, int dims, int extents[]):Stream(type){
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+    CPUStream::CPUStream(__BRTStreamType type, int dims, int extents[])
+       : Stream(type){
        
 	this->extents = (unsigned int *)malloc(dims*sizeof(unsigned int));
         this->dims = dims;
@@ -50,15 +43,23 @@ namespace brook{
 	    std::cerr<<"Failure to produce stream of type "<<type<<std::endl;
 	}
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUStream::Read(const void*inData) {
 	memcpy(data,inData,stride*totalsize);
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUStream::Write(void * outData) {
 	memcpy(outData,data,stride*totalsize);
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUStream::Release() {
 	delete this;
     }
+   
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     CPUStream::~CPUStream() {
 	free(data);
 	free(extents);

@@ -8,6 +8,8 @@
 #include <windows.h>
 #endif
 #endif
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 struct BrtThread {
 #ifdef USE_THREADS
 #ifdef _WIN32
@@ -20,7 +22,21 @@ struct BrtThread {
 #endif
   bool active;
 };
-static void BrtCreateThread(void * (*func)(void *),void* arg, BrtThread & ret) {
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+static unsigned int getNumThreads() {
+   char * env = getenv ("BRT_NUM_THREADS");
+   if (!env)
+      return 4;
+   unsigned int ret = atoi(env);
+   if (ret<2)
+      ret=1;
+   return ret;
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// Cross platform version of pthreads
+static void BrtCreateThread(void* (*func)(void *), void* arg, BrtThread & ret){
   bool oncpu=true;
   ret.active=false;
 #ifdef USE_THREADS
@@ -35,6 +51,9 @@ static void BrtCreateThread(void * (*func)(void *),void* arg, BrtThread & ret) {
   else
     ret.active=true;
 }
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// Cross platform version of pthreads
 static void  BrtJoinThread (const BrtThread &id) {
   if (!id.active)
     return;
@@ -49,12 +68,16 @@ static void  BrtJoinThread (const BrtThread &id) {
 #endif
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// Default function if no function was specified
 static void nothing (const std::vector<void*>&args,
                      const std::vector<const unsigned int *>&extents,
                      const std::vector<unsigned int> &dims,
                      unsigned int start,
                      unsigned int end){}
-extern unsigned int knownTypeSize(__BRTStreamType);
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+// Any reductions passed to a kernel must have the same extents.
 void AssertSameSize (brook::Stream *reduction,brook::Stream *newreduction) {
              unsigned int dims = reduction->getDimension();
              unsigned int newdims = newreduction->getDimension();
@@ -68,6 +91,8 @@ void AssertSameSize (brook::Stream *reduction,brook::Stream *newreduction) {
 
 
 namespace brook{
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     CPUKernel::CPUKernel(const void * source []){
         const char ** src= (const char**)(source);
         combine=0;func=0;
@@ -97,13 +122,17 @@ namespace brook{
 	}
         Cleanup();
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushIter(Iter * i) {
        PushStreamInterface(i);
        //assert same size as output
        assert (iteroutsize==0||iteroutsize==i->getTotalSize());
        iteroutsize=i->getTotalSize();
     }
-   void CPUKernel::PushStreamInterface(StreamInterface * s) {
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+    void CPUKernel::PushStreamInterface(StreamInterface * s) {
 	unsigned int total_size=s->getTotalSize();
 	if (totalsize==0){//this is necessary for reductions
           totalsize=total_size;//don't override output tho
@@ -111,40 +140,56 @@ namespace brook{
           extent= s->getExtents();
         }
         PushGatherStreamInterface(s);
-   }
+    }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushStream(Stream *s){
        PushStreamInterface(s);
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushConstant(const float &val){
         args.push_back(const_cast<float*>(&val));
         dims.push_back(0);
         extents.push_back(0);
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushConstant(const float2 &val){
         args.push_back(const_cast<float2*>(&val));
         dims.push_back(0);
         extents.push_back(0);
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushConstant(const float3 &val){
         args.push_back(const_cast<float3*>(&val));
         dims.push_back(0);
         extents.push_back(0);
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushConstant(const float4 &val){
         args.push_back(const_cast<float4*>(&val));
         dims.push_back(0);
         extents.push_back(0);
     }
-   void CPUKernel::PushGatherStreamInterface(StreamInterface * s) {
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+    void CPUKernel::PushGatherStreamInterface(StreamInterface * s) {
         args.push_back(s->getData(brook::Stream::READ));
         extents.push_back(s->getExtents());
         dims.push_back(s->getDimension());
         inputs.push_back(s);
 
-   }
+    }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushGatherStream(Stream *s){
        PushGatherStreamInterface(s);
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushReduce(void * data, __BRTStreamType type) {
        if (type==__BRTSTREAM) {
           brook::Stream * stream = *(const __BRTStream *)data;
@@ -165,6 +210,8 @@ namespace brook{
        }
 
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::PushOutput(Stream *s){
         args.push_back(s->getData(brook::Stream::WRITE));
         assert (iteroutsize==0||iteroutsize==s->getTotalSize());
@@ -175,6 +222,10 @@ namespace brook{
         extents.push_back(extent);
         outputs.push_back(s);
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   // This function calls release on any streams that may be owned by
+   // DirectX or so forth.
     void CPUKernel::Cleanup() {
         reductions.clear();
         args.clear();
@@ -194,6 +245,8 @@ namespace brook{
            outputs.pop_back();
         }
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
    //subMap is guaranteed that all reductions are actual values stored in args.
    //subMap is in charge of parallelizing threads where necessary.
     void CPUKernel::subMap(unsigned int begin, unsigned int end){
@@ -203,16 +256,26 @@ namespace brook{
                begin,
                end);
     }
-  void* CPUKernel::staticSubMap (void * inp) {
-    subMapInput * submap = (subMapInput*)inp;
-    (*submap->thus->func)(*submap,
-                          submap->thus->extents,
-                          submap->thus->dims,
-                          submap->mapbegin,
-                          submap->mapend);
-    delete submap;
-    return 0;
-  }
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   // This version of submap does the same thing as submap except that it 
+   // is passed a new'd subMapInput struct that it will destroy.
+   // The function has this signature because the thread create will invoke it
+    void* CPUKernel::staticSubMap (void * inp) {
+       subMapInput * submap = (subMapInput*)inp;
+       (*submap->thus->func)(*submap,
+                             submap->thus->extents,
+                             submap->thus->dims,
+                             submap->mapbegin,
+                             submap->mapend);
+       delete submap;
+       return 0;
+    }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   // this funciton calls maps to numThreads portions of the stream
+   // in parallel.  The last thread runs on the host cpu.
+   // Reduction arguments are changed for each of the threads and combined
+   // within this function.
     void CPUKernel::ThreadMap(unsigned int numThreads) {
        unsigned int i;
        std::vector<ReductionArg>::iterator j;
@@ -222,8 +285,9 @@ namespace brook{
        std::vector<BrtThread>threads;
        for (i=0;i<numThreads-1;++i)
          threads.push_back(BrtThread());
-       BrtCreateThread(staticSubMap,new subMapInput(this,args,cur,step),threads[0]);
-       //       staticSubMap(new subMapInput(this,args,cur,step));
+       BrtCreateThread(staticSubMap,
+                       new subMapInput(this,args,cur,step),
+                       threads[0]);
        cur+=step;
        std::vector<void *>reductionbackup;
        for (j=reductions.begin();
@@ -237,9 +301,9 @@ namespace brook{
           unsigned int thisstep=step;
           if (i<remainder)
              thisstep++;//leap year
-          //fork!          
-          BrtCreateThread(staticSubMap,new subMapInput(this,args,cur,thisstep),threads[i]);
-          //staticSubMap(new subMapInput(this,args,cur,thisstep));
+          BrtCreateThread(staticSubMap,
+                          new subMapInput(this,args,cur,thisstep),
+                          threads[i]);
           cur+=thisstep;
           for (j=reductions.begin();j!=reductions.end();++j) {
              args[j->which]=((char *)args[j->which])+(j->type*sizeof(float));
@@ -278,60 +342,82 @@ namespace brook{
           }
        }
     }
-  void CPUKernel::ReduceToStream (std::vector<void *>&myargs,
-                                  unsigned int cur, 
-                                  unsigned int curfinal,
-                                  const unsigned int *extent,
-                                  unsigned int rdim,
-                                  unsigned int *mapbegin,
-                                  const unsigned int *mag)const{
-    std::vector<ReductionArg>::const_iterator j;
-    for (j=reductions.begin();j!=reductions.end();++j) {
-      myargs[(*j).which]=(char*)myargs[(*j).which]+
-        cur*(*j).stream->getStride();
-    }
-    for (;cur<curfinal;++cur) {
-      (*nDfunc)(myargs,extents,dims,mapbegin,mag);
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   // This function is invoked within a created thread to call the
+   // nDfunc for a particular set of end values of the reduction stream
+   // The values in the reduction stream start at cur and end before curfinal
+   // for each reduction stream the tight nDfunc loop is called. The myargs
+   // is expected to contain all values aside from the target reduction
+   void CPUKernel::ReduceToStream (std::vector<void *>&myargs,
+                                   unsigned int cur, 
+                                   unsigned int curfinal,
+                                   const unsigned int *extent,
+                                   unsigned int rdim,
+                                   unsigned int *mapbegin,
+                                   const unsigned int *mag)const{
+      std::vector<ReductionArg>::const_iterator j;
       for (j=reductions.begin();j!=reductions.end();++j) {
-        myargs[(*j).which]=(char*)myargs[(*j).which]+
-          (*j).stream->getStride();
+         myargs[(*j).which]=(char*)myargs[(*j).which]+
+            cur*(*j).stream->getStride();
       }
+      for (;cur<curfinal;++cur) {
+         (*nDfunc)(myargs,extents,dims,mapbegin,mag);
+         for (j=reductions.begin();j!=reductions.end();++j) {
+            myargs[(*j).which]=(char*)myargs[(*j).which]+
+               (*j).stream->getStride();
+         }
+         
+         mapbegin[rdim-1]+=mag[rdim-1];
+         unsigned int k;
+         for (k=rdim-1;k>=1;--k) {
+            if (mapbegin[k]>=extent[k]){
+               mapbegin[k]=0;
+               mapbegin[k-1]+=mag[k-1];                   
+            }else break;
+         }
+      }
+   }
 
-      mapbegin[rdim-1]+=mag[rdim-1];
-      unsigned int k;
-      for (k=rdim-1;k>=1;--k) {
-        if (mapbegin[k]>=extent[k]){
-          mapbegin[k]=0;
-          mapbegin[k-1]+=mag[k-1];                   
-        }else break;
-      }
-    }
-  }
-  void * CPUKernel::staticReduceToStream(void * inp) {
-    reduceToStreamInput * red = (reduceToStreamInput*)inp;
-    red->thus->ReduceToStream(*red,
-                              red->cur,
-                              red->curfinal,
-                              red->extent,
-                              red->rdim,
-                              red->mapbegin,
-                              red->mag);
-    delete red;
-    return 0;
-  }
-  static void calcLocation(unsigned int * rez, 
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   ///This function duplicates the input args and then calls ReduceToStream
+   void * CPUKernel::staticReduceToStream(void * inp) {
+      reduceToStreamInput * red = (reduceToStreamInput*)inp;
+      red->thus->ReduceToStream(*red,
+                                red->cur,
+                                red->curfinal,
+                                red->extent,
+                                red->rdim,
+                                red->mapbegin,
+                                red->mag);
+      delete red;
+      return 0;
+   }
+   
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   // This function calculates the beginning of the nDcube given a 
+   // location on the resulting reduction stream.
+   static void calcLocation(unsigned int * rez, 
                            unsigned int cur, 
                            unsigned int dim,
                            const unsigned int *mag, 
                            const unsigned int * extent) {
-    for (int i=dim-1;i>=0;--i) {
-      unsigned int sizei=extent[i]/mag[i];
-      rez[i]=(cur%sizei)*mag[i];
-      cur/=sizei;
-    }
-  }
+      for (int i=dim-1;i>=0;--i) {
+         unsigned int sizei=extent[i]/mag[i];
+         rez[i]=(cur%sizei)*mag[i];
+         cur/=sizei;
+      }
+   }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+   // This function performs the map or reduction on the input arguments.
+   // The reduction can be either multi or single threaded depending on the 
+   // value of the combiner. if the combiner is explicitly set to null then 
+   // the multiThread class var is false and this function goes through the
+   // whole stream at once. Otherwise it splits up the work.
+   // In a stream to stream reduction it calls ReduceToStream to work on
+   // all or part of the stream. Otherwise it uses subMap or staticSubMap.
     void CPUKernel::Map() {
-      unsigned int numThreads=16;
+      unsigned int numThreads=getNumThreads();
        if (!streamReduction){
           if (multiThread&&totalsize/2) {             
              while (totalsize/numThreads==0)
@@ -401,23 +487,11 @@ namespace brook{
                                                      mapbegin,
                                                      mag),
                              pthreads.back());
-              /*
-              CPUKernel::staticReduceToStream(new reduceToStreamInput(this,
-                                                                      args,
-                                                                      cur,
-                                                                      curfinal,
-                                                                      extent,
-                                                                      rdim,
-                                                                      mapbegin,
-                                                                      mag));
-              */
             }else{
               ReduceToStream(args,cur,curfinal,extent,rdim,mapbegin,mag);
             }
             
             cur=curfinal;
-            //forkborkborkbork
-            
           }
           for (i=0;i<pthreads.size();++i) {
             BrtJoinThread (pthreads[i]);
@@ -430,9 +504,12 @@ namespace brook{
        Cleanup();
     }
 
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     void CPUKernel::Release() {
 	delete this;
     }
+
+   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
     CPUKernel::~CPUKernel() {
 
     }

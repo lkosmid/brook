@@ -27,12 +27,13 @@ namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
     
-
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   RunTime* RunTime::GetInstance() {
     static RunTime* sResult = CreateInstance();
     return sResult;
   }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   RunTime* RunTime::CreateInstance() {
     char *env = getenv(RUNTIME_ENV_VAR);
 
@@ -53,6 +54,7 @@ namespace brook {
   }
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 __BRTStream::__BRTStream(__BRTStreamType type, ...)
   : stream(NULL)
 {
@@ -71,7 +73,7 @@ __BRTStream::__BRTStream(__BRTStreamType type, ...)
   stream = brook::RunTime::GetInstance()->CreateStream( type, extents.size(), &extents[0] );
 }
 
-
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 __BRTIter::__BRTIter(__BRTStreamType type, ...)
   : iter(NULL)
 {
@@ -101,7 +103,7 @@ __BRTIter::__BRTIter(__BRTStreamType type, ...)
                                                     &ranges[0]);
 }
 
-
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 __BRTKernel::__BRTKernel(const void* code[])
   : kernel(NULL)
 {
