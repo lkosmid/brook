@@ -221,6 +221,8 @@ int volume_division (int argc, char ** argv) {
    float spheredist=2.0f;
    float * slice=0;
    char generatedData=0;
+   char useCharTex=0;
+   char synthNoFilter=0;
    for (i=0;i<argc;++i) {
      char match=0;
      int j;
@@ -233,6 +235,9 @@ int volume_division (int argc, char ** argv) {
      }else if (strcmp(argv[i],"-filter")==0) {
        match=1;
        use_vout_filter=1;//deprecated
+     }else if (strcmp(argv[i],"-synthnoamplify")==0) {
+       match=1;
+       synthNoFilter=1;     
      }else if (strcmp(argv[i],"-amplify")==0) {
        match=1;
        use_vout_amplify=1;//deprecated
@@ -246,6 +251,12 @@ int volume_division (int argc, char ** argv) {
      }else if (strcmp(argv[i],"-debug")==0) {
        match=1;
        debug_model=true;
+     }else if (strcmp(argv[i],"-precache")==0) {
+       forcevanilla=false;
+       match=1;
+     }else if (strcmp(argv[i],"-char")==0) {
+       useCharTex=1;
+       match=1;
      }
      if (match) {
        for (j=i+1;j<argc;++j) argv[j-1]=argv[j];
@@ -289,8 +300,13 @@ int volume_division (int argc, char ** argv) {
    for (i=0;i<(int)dat.depth;++i) {
      int numactivetextures=dat.depth;
       readPPM3dSlice(dat,i,slice);
-      volumeData.push_back(::brook::stream (brook::getStreamType(( float  *)0), dat.height , dat.width,-1));
-      streamRead(volumeData.back(),slice);
+      if (useCharTex) {
+        volumeData.push_back(::brook::stream (brook::getStreamType(( char  *)0), dat.height , dat.width,-1));
+        streamRead(volumeData.back(),slice);        
+      }else {
+        volumeData.push_back(::brook::stream (brook::getStreamType(( float  *)0), dat.height , dat.width,-1));
+        streamRead(volumeData.back(),slice);
+      }
      if (i==numactivetextures-1) {                      
         ::brook::stream v(::brook::getStreamType(( float4  *)0), dat.height , dat.width,-1);    
                   
@@ -417,7 +433,7 @@ int volume_division (int argc, char ** argv) {
                trianglesB=brook::stream(::brook::getStreamType(( float3  *)0), (rr>=2?sizesy[i]:toi(streamSize(v).y))*15 , (rr>=2?sizesx[i]:toi(streamSize(v).x)) ,-1);
             if (sizesy[i]){
 
-              if (use_vout_amplify||rr==0) {
+              if (use_vout_amplify||(rr==0&&!synthNoFilter)) {
                  ::brook::stream triangles=qtquickAllocStream(::brook::getStreamType(( float3  *)0),000?sizesy[i]:1 , 000?(sizesx[i]*4):(toi(streamSize(v).x) * 4),-1);
                  ::brook::stream trianglesFirst=qtquickAllocStream(::brook::getStreamType(( float3  *)0), toi(streamSize(v).y) , toi(streamSize(v).x) * 3,-1);
 
@@ -468,7 +484,7 @@ int volume_division (int argc, char ** argv) {
                   // each triangle stream will be 3x bigger than the volume
                   
                  // output exactly 5 vertices for each input
-                if (rr==1) {
+                if (rr==0) {
                   TallyKernel("processTrianglesNoCompactOneOut",trianglesB);
                 }
  
@@ -542,6 +558,8 @@ int volume_division (int argc, char ** argv) {
          printf("Total time with reads %f\n",(float)(GetTimeMillis()-start));
          if (debug_model&&rr<2)printVolume(dat);
          //         dat.vertices.clear();
+         if (synthNoFilter)
+           break;
    }
    free(slice);
    volumeData.clear();

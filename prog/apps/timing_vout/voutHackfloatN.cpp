@@ -10,6 +10,7 @@
 #include <stdlib.h>
 extern bool firstRound;
 unsigned int  debug_vout = 0;
+unsigned int usescatter=1;
 #define debugStreamPrint(stream,title) if (debug_vout) { printf ("%s\n",title); streamPrint(stream,1);  printf ("\n\n"); }
 
 extern ::brook::stream &quickAllocStream(const __BRTStreamType *t, int wid, int len, int garbage);
@@ -5849,8 +5850,8 @@ float  shiftValuesfloat(::brook::stream list_stream, ::brook::stream (*output_st
     if (firstRound) {
       TallyKernel("EstablishGuess",guess_stream);
     }
-
-  EstablishGuessfloat(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
+    if (usescatter||firstRound) 
+      EstablishGuessfloat(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
   for (i = 1; i < logN; ++i)
   {
     LogNMinusK = logN - 1 - i;
@@ -5858,8 +5859,8 @@ float  shiftValuesfloat(::brook::stream list_stream, ::brook::stream (*output_st
     if (firstRound) {
       TallyKernel("UpdateGuess",guess_stream);
     }
-
-    UpdateGuessfloat(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
+    if (usescatter||firstRound)
+      UpdateGuessfloat(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
   }
 
   debugStreamPrint(guess_stream,"Gather Value");
@@ -15076,7 +15077,8 @@ float  shiftValuesfloat2(::brook::stream list_stream, ::brook::stream (*output_s
   if (firstRound) {
     TallyKernel("EstablishGuess",guess_stream);
   }
-  EstablishGuessfloat2(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
+  if (usescatter||firstRound)
+    EstablishGuessfloat2(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
   for (i = 1; i < logN; ++i)
   {
     LogNMinusK = logN - 1 - i;
@@ -15084,7 +15086,8 @@ float  shiftValuesfloat2(::brook::stream list_stream, ::brook::stream (*output_s
     if (firstRound) {
       TallyKernel("UpdateGuess",guess_stream);
     }    
-    UpdateGuessfloat2(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
+    if (usescatter||firstRound)
+      UpdateGuessfloat2(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
   }
 
   debugStreamPrint(guess_stream,"Gather Value");
@@ -24296,8 +24299,8 @@ float  shiftValuesfloat3(::brook::stream list_stream, ::brook::stream (*output_s
   if (firstRound) {
     TallyKernel("EstablishGuess",guess_stream);
   }
-
-  EstablishGuessfloat3(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
+  if (usescatter||firstRound)
+    EstablishGuessfloat3(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
   for (i = 1; i < logN; ++i)
   {
     LogNMinusK = logN - 1 - i;
@@ -24305,8 +24308,8 @@ float  shiftValuesfloat3(::brook::stream list_stream, ::brook::stream (*output_s
     if (firstRound) {
       TallyKernel("UpdateGuess",guess_stream);
     }    
-
-    UpdateGuessfloat3(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
+    if (usescatter||firstRound)
+      UpdateGuessfloat3(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
   }
 
   debugStreamPrint(guess_stream,"Gather Value");
@@ -33425,7 +33428,8 @@ float  shiftValuesfloat4(::brook::stream list_stream, ::brook::stream (*output_s
   if (firstRound) {
     TallyKernel("EstablishGuess",guess_stream);
   }
-  EstablishGuessfloat4(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
+  if (usescatter||firstRound)
+    EstablishGuessfloat4(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,(float ) (1 << i),(float ) (sign));
   for (i = 1; i < logN; ++i)
   {
     LogNMinusK = logN - 1 - i;
@@ -33433,7 +33437,8 @@ float  shiftValuesfloat4(::brook::stream list_stream, ::brook::stream (*output_s
     if (firstRound) {
       TallyKernel("UpdateGuess",guess_stream);
     }    
-    UpdateGuessfloat4(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
+    if (usescatter||firstRound)
+      UpdateGuessfloat4(ret_stream,guess_stream,list_stream,(float ) (1 << LogNMinusK),maxvalue,tmp_stream,(float ) (sign));
   }
 
   debugStreamPrint(guess_stream,"Gather Value");

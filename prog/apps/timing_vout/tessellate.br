@@ -2,6 +2,7 @@
 #include "timing.h"
 #include "graphics.h"
 extern int isdebug;
+extern unsigned int usescatter;
 kernel void curve (float2 inp<>, out float height<>) {
   float2 input={512.0,512.0};
   input+=inp;
@@ -178,6 +179,7 @@ int haupto (int argc,char ** argv) {
 extern int rapidCollideMain (int argc, char ** argv);
 extern int volume_division(int,char**);
 extern int raw_vout(int,char**);
+extern int subdivision(int,char**);
 #define STRIDE 2048
 #define SIZE 2048
 int main (int argc, char ** argv) {
@@ -186,12 +188,21 @@ int main (int argc, char ** argv) {
   char vol_div=0;
   char rapid=0;
   char raw_v=0;
+  char subdiv=0;
   int i;
   SetupMillisTimer(argc,argv);
   
    for (i=0;i<argc;++i) {
      char match=0;
      int j;
+     if (strcmp(argv[i],"-noscatter")==0) {
+        match=1;
+        usescatter=0;
+     }
+     if (strcmp(argv[i],"-subdiv")==0) {
+        match=1;
+        subdiv=1;
+     }
      if (strcmp(argv[i],"-rapid")==0) {
        rapid=1;
        match=1;
@@ -222,6 +233,10 @@ int main (int argc, char ** argv) {
    }
    if (rapid) {
      rapidCollideMain (argc,argv);
+     CleanupMillisTimer();
+   }
+   if (subdiv) {
+     subdivision (argc,argv);
      CleanupMillisTimer();
    }
    for (i=0;i<argc;++i) {

@@ -9,6 +9,8 @@ kernel float test(float vol<>,float index<>){
 /** This kernel is for the experimental dataset and evaluates
  *  the neighbor values, and gets the lookup index for the triangle dataset
  *  Only pushes a result if the index is not 0 or 255 (empty cases)
+ *  8 texture fetches 1 texture write (8 bytes in, 16 bytes out)
+ *  18 ops (10 cmp, 7 add 1 mul)
  **/
 kernel void processSlice (float curgather[][],
                           float nextslice[][],
@@ -18,15 +20,13 @@ kernel void processSlice (float curgather[][],
                           iter float2 forward<>,
                           iter float2 upforward<>,
                           float2 slice) {
-  float a=
-    test(curgather[center],1.0f)+
-    test(curgather[up],2.0f)+
-    test(curgather[upforward],4.0f)+
-    test(curgather[forward],8.0f)+
-    test(nextslice[center],16.0f)+
-    test(nextslice[up],32.0f)+
-    test(nextslice[upforward],64.0f)+
-    test(nextslice[forward],128.0);
+  float4 zero4=0;
+  float4 point5=.5;
+  float4 o248={1.0f,2.0f,4.0f,8.0f};
+  float4 t456={16.0f,32.0f,64.0f,128.0f};
+  float4 cur={curgather[center],curgather[up],curgather[upforward],curgather[forward]};
+  float4 next={nextslice[center],nextslice[up],nextslice[upforward],nextslice[forward]};  
+  float a= dot(cur>point5?o248:zero4,1) + dot(next>point5?o248:zero4,1);
   if (a>0.5f&&a<(2.0f+4.0f+8.0f+16.0f+32.0f+64.0f+128.0f+0.5f)) {
     vertex=float4(center.x,center.y,slice.x,a);
     push(vertex);

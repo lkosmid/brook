@@ -20,104 +20,178 @@ namespace {
 	static const gpu_kernel_desc __processSlice_ps20_desc = gpu_kernel_desc()
 		.technique( gpu_technique_desc()
 			.pass( gpu_pass_desc(
-				"    ps_2_0\n"
-				"    def c5, 0.5, 1, 2, 0\n"
-				"    def c6, 4, 16, 32, 8\n"
-				"    def c7, 64, -254.5, -1, 128\n"
+"    ps_2_0\n"
+
+				"    def c5, 1, 2, 4, 8\n"
+
+				"    def c6, 0.5, 0, 1, -254.5\n"
+
+				"    def c7, 16, 32, 64, 128\n"
+
+				"    def c8, -1, 0, 0, 0\n"
+
 				"    dcl t0.xy\n"
+
 				"    dcl t1.xy\n"
+
 				"    dcl t2.xy\n"
+
 				"    dcl t3.xy\n"
+
 				"    dcl_2d s0\n"
+
 				"    dcl_2d s1\n"
+
 				"    dcl_2d s2\n"
-				"    mad r7.x, t0.x, c0.x, c0.z\n"
-				"    mad r7.y, t0.y, c0.y, c0.w\n"
-				"    mad r9.x, t1.x, c0.x, c0.z\n"
-				"    mad r9.y, t1.y, c0.y, c0.w\n"
-				"    mad r11.x, t3.x, c0.x, c0.z\n"
-				"    mad r11.y, t3.y, c0.y, c0.w\n"
-				"    mad r1.x, t2.x, c0.x, c0.z\n"
-				"    mad r1.y, t2.y, c0.y, c0.w\n"
-				"    mad r3.x, t0.x, c1.x, c1.z\n"
-				"    mad r3.y, t0.y, c1.y, c1.w\n"
-				"    mad r5.x, t1.x, c1.x, c1.z\n"
-				"    mad r5.y, t1.y, c1.y, c1.w\n"
-				"    mad r2.x, t3.x, c1.x, c1.z\n"
-				"    mad r2.y, t3.y, c1.y, c1.w\n"
-				"    mad r6.x, t2.x, c1.x, c1.z\n"
-				"    mad r6.y, t2.y, c1.y, c1.w\n"
-				"    mov r8.xy, c4.z\n"
+
+				"    mad r5.x, t0.x, c0.x, c0.z\n"
+
+				"    mad r5.y, t0.y, c0.y, c0.w\n"
+
+				"    mad r8.x, t1.x, c0.x, c0.z\n"
+
+				"    mad r8.y, t1.y, c0.y, c0.w\n"
+
+				"    mad r7.x, t3.x, c0.x, c0.z\n"
+
+				"    mad r7.y, t3.y, c0.y, c0.w\n"
+
+				"    mad r6.x, t2.x, c0.x, c0.z\n"
+
+				"    mad r6.y, t2.y, c0.y, c0.w\n"
+
+				"    mad r1.x, t0.x, c1.x, c1.z\n"
+
+				"    mad r1.y, t0.y, c1.y, c1.w\n"
+
+				"    mad r4.x, t1.x, c1.x, c1.z\n"
+
+				"    mad r4.y, t1.y, c1.y, c1.w\n"
+
+				"    mad r3.x, t3.x, c1.x, c1.z\n"
+
+				"    mad r3.y, t3.y, c1.y, c1.w\n"
+
+				"    mad r2.x, t2.x, c1.x, c1.z\n"
+
+				"    mad r2.y, t2.y, c1.y, c1.w\n"
+
+				"    mov r0.xy, c4.z\n"
+
+				"    texld r5, r5, s0\n"
+
+				"    texld r8, r8, s0\n"
+
 				"    texld r7, r7, s0\n"
-				"    texld r9, r9, s0\n"
-				"    texld r11, r11, s0\n"
-				"    texld r1, r1, s0\n"
+
+				"    texld r6, r6, s0\n"
+
+				"    texld r1, r1, s1\n"
+
+				"    texld r4, r4, s1\n"
+
 				"    texld r3, r3, s1\n"
-				"    texld r10, r5, s1\n"
-				"    texld r5, r2, s1\n"
-				"    texld r0, r6, s1\n"
-				"    texld r2, r8, s2\n"
-				"    add r9.w, -r7.x, c5.x\n"
-				"    cmp_pp r11.w, r9.w, c5.w, c5.y\n"
-				"    add r1.w, -r9.x, c5.x\n"
-				"    cmp r1.w, r1.w, c5.w, c5.z\n"
-				"    add r1.w, r11.w, r1.w\n"
-				"    add r3.w, -r11.x, c5.x\n"
-				"    mov r11.w, c6.x\n"
-				"    cmp r3.w, r3.w, c5.w, r11.w\n"
-				"    add r3.w, r1.w, r3.w\n"
-				"    add r10.w, -r1.x, c5.x\n"
-				"    mov r11.w, c6.w\n"
-				"    cmp r10.w, r10.w, c5.w, r11.w\n"
-				"    add r10.w, r3.w, r10.w\n"
-				"    add r5.w, -r3.x, c5.x\n"
-				"    mov r11.w, c6.y\n"
-				"    cmp r5.w, r5.w, c5.w, r11.w\n"
-				"    add r5.w, r10.w, r5.w\n"
-				"    add r0.w, -r10.x, c5.x\n"
-				"    mov r11.w, c6.z\n"
-				"    cmp r0.w, r0.w, c5.w, r11.w\n"
-				"    add r0.w, r5.w, r0.w\n"
-				"    add r2.w, -r5.x, c5.x\n"
-				"    mov r11.w, c7.x\n"
-				"    cmp r2.w, r2.w, c5.w, r11.w\n"
-				"    add r0.w, r0.w, r2.w\n"
-				"    add r2.w, -r0.x, c5.x\n"
-				"    mov r11.w, c7.w\n"
-				"    cmp r2.w, r2.w, c5.w, r11.w\n"
-				"    add r4.w, r0.w, r2.w\n"
-				"    add r2.w, -r4.w, c5.x\n"
-				"    cmp_pp r2.w, r2.w, c5.w, c5.y\n"
-				"    add r6.w, r4.w, c7.y\n"
-				"    cmp_pp r8.w, r6.w, c5.w, c5.y\n"
-				"    mul_pp r2.w, r2.w, r8.w\n"
-				"    mov r11.w, c3.x\n"
-				"    add r7.w, c7.z, r11.w\n"
-				"    add r11.w, -r7.w, c7.z\n"
-				"    abs r3.w, r11.w\n"
-				"    mov r4.xy, t0\n"
-				"    mov r4.z, c2.x\n"
-				"    cmp r5, -r3.w, r4, r2.x\n"
-				"    cmp r0, -r2.w, r2.x, r5\n"
+
+				"    texld r2, r2, s1\n"
+
+				"    texld r0, r0, s2\n"
+
+				"    mov r5.x, -r5.x\n"
+
+				"    mov r5.y, -r8.x\n"
+
+				"    mov r5.z, -r7.x\n"
+
+				"    mov r5.w, -r6.x\n"
+
+				"    add r5, r5, c6.x\n"
+
+				"    mov r0.z, c6.y\n"
+
+				"    cmp r5, r5, r0.z, c5\n"
+
+				"    dp4 r0.w, r5, c6.z\n"
+
+				"    mov r1.x, -r1.x\n"
+
+				"    mov r1.y, -r4.x\n"
+
+				"    mov r1.z, -r3.x\n"
+
+				"    mov r1.w, -r2.x\n"
+
+				"    add r1, r1, c6.x\n"
+
+				"    cmp r1, r1, r0.z, c7\n"
+
+				"    dp4 r1.w, r1, c6.z\n"
+
+				"    add r1.w, r0.w, r1.w\n"
+
+				"    add r0.w, -r1.w, c6.x\n"
+
+				"    cmp_pp r0.w, r0.w, c6.y, c6.z\n"
+
+				"    add r2.w, r1.w, c6.w\n"
+
+				"    cmp_pp r2.w, r2.w, c6.y, c6.z\n"
+
+				"    mul_pp r0.w, r0.w, r2.w\n"
+
+				"    mov r2.w, c8.x\n"
+
+				"    add r2.w, r2.w, c3.x\n"
+
+				"    add r2.w, -r2.w, c8.x\n"
+
+				"    mov r1.xy, t0\n"
+
+				"    mul r2.w, r2.w, r2.w\n"
+
+				"    mov r1.z, c2.x\n"
+
+				"    cmp r1, -r2.w, r1, r0.x\n"
+
+				"    cmp r0, -r0.w, r0.x, r1\n"
+
 				"    mov oC0, r0\n"
+
 				"\n"
+
 				" \n"
+
 				"//!!BRCC\n"
+
 				"//narg:10\n"
+
 				"//c:1:curgather\n"
+
 				"//c:1:nextslice\n"
+
 				"//o:4:__vertex_stream\n"
+
 				"//s:2:center\n"
+
 				"//s:2:up\n"
+
 				"//s:2:forward\n"
+
 				"//s:2:upforward\n"
+
 				"//c:2:slice\n"
+
 				"//c:1:__vout_counter\n"
+
 				"//c:1:__inf\n"
+
 				"//workspace:1024\n"
+
 				"//!!multipleOutputInfo:0:1:\n"
+
 				"//!!fullAddressTrans:0:\n"
+
 				"//!!reductionFactor:0:\n"
+
 				"")
 				.constant(1, kGatherConstant_Shape)
 				.constant(2, kGatherConstant_Shape)
