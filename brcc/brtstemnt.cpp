@@ -83,16 +83,30 @@ BRTKernelDef::print(std::ostream& out, int) const
    PRINT_CODE(PS20, ps20);
    PRINT_CODE(FP30, fp30);
    PRINT_CODE(CPU,  cpu);
-
 #undef PRINT_CODE
 
-   printStub(out);
-
+   /*
+    * XXX I have no idea why this is here instead of in
+    * BRTCPUKernel::print().  It's CPU only and needs to be suppressed when
+    * the CPU target is suppressed.  --Jeremy.
+    */
    if (decl->isReduce()) {
-     BRTCPUReduceCode crc(*this);
-      BRTScatterDef sd(*crc.fDef);
-      sd.print(out,0);
+      if (globals.target & TARGET_CPU) {
+         BRTCPUReduceCode crc(*this);
+         BRTScatterDef sd(*crc.fDef);
+         sd.print(out,0);
+      } else {
+         /*
+          * XXX The multi-threaded CPU is globbed onto CPU.  It really should be
+          * its own target type and its own class.  Oh well.
+          */
+
+         out << "static const char *__"
+             << *FunctionName() << "_ndcpu = NULL;\n\n";
+      }
    }
+
+   printStub(out);
 }
 
 
