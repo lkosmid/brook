@@ -44,7 +44,8 @@
 #    define ARGS(args) ()
 #endif
 
-#ifndef	__PRETTY_FUNCTION__
+
+#if !defined(__PRETTY_FUNCTION__) && !defined(__GNUC__)
 #	define	__PRETTY_FUNCTION__		"<Pretty Function Name (gcc only)>"
 #endif
 
