@@ -15,7 +15,7 @@ public:
 		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
 			int k=indices[dims];
 			
-			indices[k]=a.getAt(i);
+			indices[k]=(unsigned int)a.getAt(i);
 			indices[dims]++;
 		}
 		return *this;
@@ -34,7 +34,7 @@ public:
 	template <class T> __XSpecified<VALUE,dims,copy_data> operator [] (const T &a) {
 		for (unsigned int i=0;i<T::size&&indices[dims]<dims;++i){
 			
-			indices[indices[dims]++]=a.getAt(i);
+			indices[indices[dims]++]=(unsigned int)a.getAt(i);
 		}
 		return *this;
 	}
