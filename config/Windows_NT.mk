@@ -23,11 +23,11 @@ LD_SHARED_FLAG    := /DLL
 LD_OUTPUT_FLAG    := /out:
 LD_LIBLINK_PREFIX :=  
 LD_LIBLINK_SUFFIX := .lib 
-LD_DEBUG_FLAG     := /debug /debugtype:both
+LD_DEBUG_FLAG     := /debug
 LD_DEF_FLAG       := /def:
 LIBRARIES         += kernel32 gdi32 user32 opengl32
 
-ARFLAGS		 := /nologo /debugtype:both
+ARFLAGS		 := /nologo
 AR_OUTPUT_FLAG	 := /out:
 
 

@@ -1,3 +1,3 @@
 ROOTDIR := ..
-SUBDIRS := gputest sparsematrix
+SUBDIRS := toy
 include ../common.mk

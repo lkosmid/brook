@@ -1,0 +1,44 @@
+
+
+kernel void foo (float a<>, float b<>, float4 c, 
+		 float d[10][10], out float e<>) {
+  e = a+b+d[c.xz];
+}
+
+int main () {
+
+  float a<10, 10>;
+  float b<10, 10>;
+  float d<10, 10>;
+  float e<10, 10>;
+  
+  float data_a[10][10];
+  float data_b[10][10];
+  float4 c = {1.0f, 0.0f, 3.2f, 5.0f};  
+  float data_d[10][10];
+  float data_e[10][10];
+
+  int i,j;
+
+  for (i=0; i<10; i++)
+    for (j=0; j<10; j++) {
+      data_a[i][j] = ((float) i) + ((float) j) / 10.0f;
+      data_b[i][j] = ((float) j) + ((float) i) / 10.0f;
+      data_d[i][j] = ((float) i) / 100.0f;
+    }
+
+  streamRead(a, data_a);
+  streamRead(b, data_b);
+  streamRead(d, data_d);
+
+  foo(a,b,c,d,e);
+
+  streamWrite(e, data_e);
+  
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f ", data_e[i][j]);
+    }
+    printf ("\n");
+  }
+}
