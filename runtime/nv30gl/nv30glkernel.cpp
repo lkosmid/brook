@@ -156,6 +156,7 @@ NV30GLKernel::NV30GLKernel(NV30GLRunTime * runtime,
        /* TIM: remove this pass from consideration... */
        npasses--;
        j--;
+	   continue;
      }
 
      /* Load the program code */
