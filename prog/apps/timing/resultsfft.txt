@@ -27,13 +27,12 @@ newgraph
 
 
 
-ours Real (DOTIMES=128) (4 in parallel) (nv-box)
-128     .708454
-256    2.943670
-512   13.129980
-1024  59.077019
-2048 257.349499
-
+ours working new:
+128    .590511
+256   2.868334
+512   12.946863
+1024  59.548534
+2048 259.63313
 
 Angel Results:
 rez     #   seconds         
