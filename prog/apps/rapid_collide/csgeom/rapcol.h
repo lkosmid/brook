@@ -20,8 +20,10 @@
 #define __CS_RAPCOL_H__
 
 #include "cs_compat.h"
+#include "matrix3.h"
 #include "collider.h"
 #include <vector>
+
 class csReversibleTransform;
 
 class csCdModel;
@@ -47,6 +49,18 @@ typedef struct Tri_t{
   float3 B;
   float3 C;
 }Tri;
+struct csTraverser {
+  csCdBBox *b1;
+  csCdBBox *b2;
+  csMatrix3 R;
+  csVector3 T;
+  csTraverser(csCdBBox *b1, csCdBBox *b2,
+                const csMatrix3& R, const csVector3& T){
+    this->b1 = b1;this->b2=b2;
+    this->R=R;this->T=T;
+  }
+};
+extern std::vector<std::vector<csTraverser> > guide;
 
 #define bsp_polygon Tri
 class PathPolygonMesh;
@@ -106,6 +120,7 @@ private:
   friend int main(int argc, char ** argv);
 public:
   static int numHits;
+  static int numTriChecks;
   void createBrookGeometryRecurse(const csCdBBox *curr, BBox & curw, std::vector <BBox> &bbox, std::vector<Tri> & tri);
   void createBrookGeometry(std::vector <BBox> &bbox, std::vector<Tri> & tri);
   /// Create a collider based on geometry.

@@ -1,3 +1,4 @@
+#include <stdio.h>
 //all matrices stored in row major order
 //[Rotationx.x Rotationx.y Rotationx.z] [Vec.x]
 //[Rotationy.x Rotationy.y Rotationy.z] [Vec.y]
@@ -124,7 +125,7 @@ kernel float coplanar_tri_tri(float3 N<>,
                               float3 V0<>,float3 V1<>,float3 V2<>,
                               float3 U0<>,float3 U1<>,float3 U2<>) {
   
-  return 0;
+  return 1;
 }
 kernel float3 make_float3 (float a, float b, float c) {
   float3 temp={a,b,c};
@@ -151,7 +152,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   float dv0dv2;
   float3 vp;
   float3 up;
-  float EPSILON=.00001;
+  //float EPSILON=.00001;
   float3 z3ro = {0,0,0};
   float b,c,max;
   float ret,coplanar;
@@ -163,7 +164,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   du = float3(dot(N1,U0)+d1,
               dot(N1,U1)+d1,
               dot(N1,U2)+d1);
-  du=abs(du)>=EPSILON?du:z3ro;
+  //du=abs(du)>=EPSILON?du:z3ro;
   du0du1 = du.x *du.y;
   du0du2 = du.x *du.z;
   
@@ -175,7 +176,7 @@ kernel float tri_contact(float3 V0<>, float3 V1<>, float3 V2<>,
   dv = float3(dot(N2,V0)+d2,
               dot(N2,V1)+d2,
               dot(N2,V2)+d2);
-  dv = abs(dv)>=EPSILON?dv:z3ro;
+  //dv = abs(dv)>=EPSILON?dv:z3ro;
   dv0dv1 = dv.x*dv.y;
   dv0dv2 = dv.x*dv.z;
   ret= (ret&&(dv0dv1<= 0.0f || dv0dv2 <=0.0f))?1:0;
@@ -361,10 +362,13 @@ kernel void CheckTriangleCollide(float3 mRx,
                                  Tri t1List[][],
                                  Tri t2List[][],
                                  vout [1] float4 hits<>) {
-  Tri t1 = t1List[collisions.xy];
-  Tri t2 = t2List[collisions.zw];
-  if (TrianglesHaveContact(mRx,mRy,mRz,mT,
-                           t1,t2)) {
+  float isASentinel = (collisions.x>=0&&collisions.x<16384)?0:1;
+  float4 sentinelHolder = {1,0,1,0};
+  float4 triIndex = isASentinel?sentinelHolder:collisions;
+  Tri t1 = t1List[triIndex.xy];
+  Tri t2 = t2List[triIndex.zw];
+  if ((isASentinel==0)&&TrianglesHaveContact(mRx,mRy,mRz,mT,
+                                             t1,t2)) {
     hits= collisions;
     push(hits);
   }
@@ -396,7 +400,7 @@ kernel void Collide (Traverser currentNode<>,
       push(collisions);
     }else {
       nextNode.xy = (indexof currentNode).xy;
-      if (b1.Radius.w!=0 
+      if (b2.Radius.w!=0 
           || (b1.Radius.w==0 && (GetBBSize(b1.Radius.xyz)
                                  >
                                  GetBBSize(b2.Radius.xyz)))) {
@@ -512,20 +516,23 @@ kernel void updateCurrentNode(float stretchX,
                               BBox bTree[][],
                               Traverser nodes[][],
                               out Traverser nextNode<>) {
+  float isASentinel = (curNodeIndices.x>=0&&curNodeIndices.x<16384)?0:1;
+  float4 sentinelHolder = {1,0,1,0};
+  float4 prevIndex = isASentinel?sentinelHolder:curNodeIndices;
   float2 leftOrRightChild = {modTwo(stretchX
                                     ?
                                     (indexof nextNode).x:(indexof nextNode).y),
                              0};
-  Traverser lastNode = nodes[curNodeIndices.xy];
-  float2 aTreeIndex = (curNodeIndices.z>=0)
-                        ?curNodeIndices.zw+leftOrRightChild
+  Traverser lastNode = nodes[prevIndex.xy];
+  float2 aTreeIndex = (prevIndex.z>=0)
+                        ?prevIndex.zw+leftOrRightChild
                         :lastNode.index.xy;
-  float2 bTreeIndex = (curNodeIndices.z>=0)
+  float2 bTreeIndex = (prevIndex.z>=0)
                          ?lastNode.index.zw
-                         :-curNodeIndices.zw-1+leftOrRightChild;
+                         :-prevIndex.zw-1+leftOrRightChild;
   //  float3 lastNodeRotationz = cross(lastNode.Rotationx.xyz,
   //                            lastNode.Rotationy)*lastNode.Rotationx.w;
-  if (curNodeIndices.z>=0) {
+  if (prevIndex.z>=0) {
     TransposedBBox a =aTree[aTreeIndex];
     /*
     float3 rot_transpX;
@@ -603,6 +610,11 @@ void TransposeBBoxes (unsigned int howmany, BBox * bb) {
     
   }
 }
+void Broken() {
+      printf ("Breaking\n");
+}
+
+extern int checkPassCorrectness(Traverser *, int, int);
 //doCollide returns the number of intersections, stored in the intersections struct between
 // the a and b models that have a trans difference between them
 unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
@@ -611,10 +623,14 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
                         unsigned int bboxwidt2, unsigned int bboxheit2, BBox * bboxest2,
                         float3 rX,float3 rY, float3 rZ,
                         float3 trans,
+                        float3 csRapidColliderrX,
+                        float3 csRapidColliderrY,
+                        float3 csRapidColliderrZ,
+                        float3 csRapidColliderT,
                         float4 ** intersections) {
   unsigned int num_intersections=0;
   unsigned int temp;
-  int xsize,ysize;
+  int xsize,ysize,pass=0;
   float stretchX;
   unsigned int alloc_intersections=16;
   TransposedBBox m1<bboxwidt1,bboxheit1>;
@@ -663,8 +679,19 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
                           trav);
      }
      temp = (int)streamSize(hits).x*(int)streamSize(hits).y;
+     if (xsize*ysize){
+       Traverser * temptrav;
+       temptrav = (Traverser *)malloc(sizeof(Traverser)*xsize*ysize);
+       streamWrite(trav,temptrav);
+       pass++;
+       checkPassCorrectness(temptrav,xsize*ysize,pass);
+       free(temptrav);
+     }
+     printf("Pass %d Num Tri Checks %d num nodes %d %d\n",pass,temp,xsize,ysize);
+
      if (temp) {
-       CheckTriangleCollide(rX,rY,rZ,trans,
+       
+       CheckTriangleCollide(csRapidColliderrX,csRapidColliderrY,csRapidColliderrZ,csRapidColliderT,
                             hits,
                             t1List,
                             t2List,
@@ -672,12 +699,21 @@ unsigned int doCollide (unsigned int widt1, unsigned int heit1, Tri * t1,
        streamSwap(hits,nextNode);
        temp = (int)streamSize(hits).x*(int)streamSize(hits).y;
        if (temp) {
+         unsigned int i;
          while (num_intersections+temp>alloc_intersections) {
            alloc_intersections*=2;
            *intersections= (float4*)realloc(*intersections,alloc_intersections*sizeof(float4));
          }
          streamWrite(hits,*intersections+num_intersections);
-         num_intersections+=temp;
+         for (i=0;i<temp;++i) {
+           float4 f4 = *(*intersections+num_intersections+i);
+           if (!(f4.x>=0&&f4.x<streamSize(t1List).x))
+             break;
+           if (!(f4.y>=0&&f4.y<streamSize(t1List).y))
+             break;
+         }
+         num_intersections+=i;
+         printf ("Detected %d hits\n",i);
        }
      }
   }while(xsize&&ysize);

@@ -88,6 +88,7 @@ int   csRapidCollider::boxesTested     = 0;
 int   csRapidCollider::testLevel       = 0;
 bool  csRapidCollider::firstHit        = true;
 int   csRapidCollider::numHits         = 0;
+int   csRapidCollider::numTriChecks    = 0;
 float csRapidCollider::minBBoxDiam     = 0.0;
 ///
 
@@ -116,8 +117,11 @@ void csRapidCollider::createBrookGeometryRecurse(const csCdBBox *curr,
                                                  BBox &curw,
                                                  std::vector<BBox>&bbox,
                                                  std::vector<Tri>&tri){
+  float childx,childy;
   curw.Children.x = (float)(bbox.size()%2048);
   curw.Children.y = (float)(bbox.size()/2048);
+  childx=curw.Children.x;
+  childy=curw.Children.y;
   float3 tmp = tofloat3(curr->m_Rotation.Row1());
   curw.Rotationx.x = tmp.x;
   curw.Rotationx.y = tmp.y;
@@ -148,10 +152,14 @@ void csRapidCollider::createBrookGeometryRecurse(const csCdBBox *curr,
     bbox.push_back(BBox());
     unsigned int secondchild = bbox.size();
     bbox.push_back(BBox());
+    curr->m_pChild0->ind[0]=childx;
+    curr->m_pChild0->ind[1]=childy;
     createBrookGeometryRecurse(curr->m_pChild0,
                                *(bbox.end()-2),
                                bbox,
                                tri);
+    curr->m_pChild1->ind[0]=childx+1.0f;
+    curr->m_pChild1->ind[1]=childy;
     createBrookGeometryRecurse(curr->m_pChild1,
                                bbox[secondchild],
                                bbox,
@@ -162,6 +170,15 @@ void csRapidCollider::createBrookGeometry(std::vector<BBox>&bbox,
                                           std::vector<Tri>&tri){
   bbox.push_back(BBox());
   bbox.push_back(BBox());//keep things two-box aligned
+  bbox.back().Rotationx=float4(1,0,0,1);
+  bbox.back().Rotationy=float3(0,1,0);
+  bbox.back().Translation=float3(1024.*1024.*16384,-1024.*1024.*16384,1024.*1024.*16384);
+  bbox.back().Radius=float4(1.0f/65536.0f,1.0f/65536.0f,1.0f/65536.0f,1);
+  bbox.back().Children=float2(0,0);
+  tri.push_back(Tri());
+  tri.back().A=float3(1024.*1024.*16384,-1024.*1024.*16384,1024.*1024.*16384);;
+  tri.back().B=float3(1025.*1024.*16384,-1024.*1024.*16384,1024.*1024.*16384);
+  tri.back().C=float3(1025.*1024.*16384,-1025.*1024.*16384,1024.*1024.*16384);
   createBrookGeometryRecurse(m_pCollisionModel->GetTopLevelBox(),
                              bbox.front(),
                              bbox,
@@ -470,7 +487,7 @@ int project6 (csVector3 ax, csVector3 p1, csVector3 p2, csVector3 p3,
          then dv = 0.0;
          else no check is done (which is less robust)
 */
-#define USE_EPSILON_TEST	1
+//#define USE_EPSILON_TEST	1
 
 /* some macros */
 #define CROSS(dest, v1, v2)			\
@@ -966,6 +983,7 @@ int obb_disjoint (const csMatrix3& B, const csVector3& T,
 
   return 0;  // should equal 0
 }
+std::vector<std::vector<csTraverser> > guide;
 
 #if 0
 
@@ -1049,33 +1067,38 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
   return false;
 }
 #else
-struct csTraverser {
-  csCdBBox *b1;
-  csCdBBox *b2;
-  csMatrix3 R;
-  csVector3 T;
-  csTraverser(csCdBBox *b1, csCdBBox *b2,
-                const csMatrix3& R, const csVector3& T){
-    this->b1 = b1;this->b2=b2;
-    this->R=R;this->T=T;
-  }
-};
+static void Barken() {
+
+}
+static void Bark() {
+
+}
 int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
-	const csMatrix3& R, const csVector3& T)
+                                       const csMatrix3& R, const csVector3& T)
 {
   int rc;      // return codes
   std::queue <csTraverser> breadth;
+  
   unsigned int pass_count=0;
   unsigned int pass_size=1;
   unsigned int num_passes=0;
+  vector<csTraverser> temp_guide;
   breadth.push(csTraverser(b1,b2,R,T));
   while (breadth.size()) {
   if (pass_count==pass_size) {
     pass_size=breadth.size();
     pass_count=0;
+    static int lastCount=0;
+    static int lastCheckCount=0;
+    printf ("Pass %d Num Triangles %d num nodes %d\n",num_passes,csRapidCollider::trianglesTested-lastCheckCount,pass_size);
+    if (csRapidCollider::numHits-lastCheckCount) {
+         printf ("Detected %d hits\n",csRapidCollider::numHits-lastCount);      
+    }
+    guide.push_back(temp_guide);
+    temp_guide.clear();
+    lastCount = csRapidCollider::numHits;
+    lastCheckCount = csRapidCollider::trianglesTested;
     num_passes++;
-    printf ("Pass %d num nodes %d\n",num_passes,pass_size);
-      
   }
   pass_count++;
   csCdBBox *b1; csCdBBox *b2;
@@ -1084,10 +1107,18 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
   b2 = breadth.front().b2;
   R = breadth.front().R;
   T = breadth.front().T;
+  //if (pass_count!=1)
+  temp_guide.push_back(breadth.front());
   breadth.pop();
   // test top level
   csRapidCollider::boxesTested++;
-
+  if (num_passes==12) {
+    if (pass_count==216) {
+      Barken();
+    }
+    if (pass_count==186)
+      Bark();
+  }
   int f1 = obb_disjoint (R, T, b1->GetRadius(), b2->GetRadius());
 
   if (f1 != 0)
@@ -1158,6 +1189,48 @@ int csRapidCollider::CollideRecursive (csCdBBox *b1, csCdBBox *b2,
 }
 
 #endif
+typedef struct traverser_t {
+  float4 index;//.xy is index into the aTree  .zw is index into bTree
+  float3 Translation; 
+  float3 Rotationx;
+  float3 Rotationy;
+  float3 Rotationz;
+}Traverser;
+void assertf(bool b) {
+  assert(b);
+}
+void assertv(csVector3 a, float3 b) {
+  assert(fabs(a.x-b.x)<.0001);
+  assert(fabs(a.y-b.y)<.0001);
+  assert(fabs(a.y-b.y)<.0001);
+}
+int checkPassCorrectness(Traverser * traverser,int numTraverser, int numpass) {
+  if (numpass>=(int)guide.size())
+    return 1;
+  vector<csTraverser>* b = &guide[numpass];
+  for (int i=0;i<numTraverser;++i) {
+    csTraverser csTrav = (*b)[i];
+    Traverser trav=traverser[i];
+
+    assertf ( trav.index.x == csTrav.b1->ind[0]);
+    assertf ( trav.index.y == csTrav.b1->ind[1]);
+    assertf ( trav.index.z == csTrav.b2->ind[0]);
+    assertf ( trav.index.w == csTrav.b2->ind[1]);
+    csVector3 rX = csTrav.R.Row1();
+    csVector3 rY = csTrav.R.Row2();
+    csVector3 rZ = csTrav.R.Row3();
+    csVector3 T = csTrav.T;
+    assertv(rX,trav.Rotationx);
+    assertv(rY,trav.Rotationy);
+    assertv(rZ,trav.Rotationz);
+    assertv(T,trav.Translation);
+  }
+
+
+  assert (numTraverser==(int)guide[numpass].size());
+  return 1;
+}
+
 void csRapidCollider::CollideReset (void)
 {
   hits = 0;

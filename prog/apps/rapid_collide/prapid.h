@@ -83,7 +83,7 @@ class csCdBBox
   friend class csCdModel;
   friend class csRapidCollider;
 
-protected:
+public:
   /// Pointer to the contained triangle. May be NULL, if the BBox is a node.
   csCdTriangle* m_pTriangle;
 
@@ -146,7 +146,7 @@ protected:
   float GetSize() const { return m_Radius.x; } 
 
 public:
-
+  float ind[2];
   /// Construct a default bounding box
   csCdBBox() :
   	m_pTriangle (NULL),
