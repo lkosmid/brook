@@ -1105,7 +1105,7 @@ compile_cg_code (char *cgcode) {
 
   fpcode = Subprocess_Run(argv, cgcode);
   if (fpcode == NULL) {
-     fprintf(stderr, "Unable to run %s, skipping fp30 / nv30gl target.\n",
+     fprintf(stderr, "%s returned an error code, skipping fp30 / nv30gl target.\n",
              argv[0]);
      return NULL;
   }
@@ -1178,7 +1178,7 @@ compile_hlsl_code (char *hlslcode) {
   errcode = Subprocess_Run(argv, NULL);
   if (!globals.keepFiles) remove(globals.shaderoutputname);
   if (errcode == NULL) {
-     fprintf(stderr, "Unable to run %s, skipping ps20 / dx9 target.\n",
+     fprintf(stderr, "%s returned an error code, skipping ps20 / dx9 target.\n",
              argv[0]);
      remove(argv[3]+3);
      return NULL;
@@ -1400,6 +1400,11 @@ static char* generateShaderPass( Decl** args, int nArgs, const char* name, int f
                 ps20_not_fp30 ? "ps20" : "fp30", name, firstOutput, firstOutput+outputCount);
       }
       fpcode = (ps20_not_fp30 ? compile_hlsl_code : compile_cg_code)(shadercode);
+      if (fpcode==NULL) {
+	fprintf (stderr,"Kernel %s failed to compile for %s target.\n",
+		 name,
+		 ps20_not_fp30?"ps20":"fp30");
+      }
       free(shadercode);
     } else {
       fpcode = NULL;
