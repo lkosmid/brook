@@ -17,11 +17,10 @@ iterator_test (float2 d<>, iter float2 iterator<>, out float2 e<>)
 
 int
 main (int argc, char *argv[]) {
-// TIM: it should look like this:
-//   iter float2 ian<20, 10> = BRTIter( (float2(0.0f, 0.0f)), (float2(200.0f, 100.0f)) );
-// TIM: not this:
-   iter float2 ian<20, 10> = BRTIter(0.0f, 0.0f, 200.0f, 100.0f);
-   iter float2 indexstream<20, 10> = BRTIter(9.0f, 19.0f, -1.0f, -1.0f);
+   iter float2 ian<20, 10> =
+      BRTIter(float2(0.0f, 0.0f), float2(200.0f, 100.0f));
+   iter float2 indexstream<20, 10> =
+      BRTIter(float2(9.0f, 19.0f), float2(-1.0f, -1.0f));
    iter float tim<10> = BRTIter(0.0f, 200.0f);
    float2 d<20, 10>;
    float2 e<20, 10>;

@@ -1,11 +1,8 @@
 Off the cuff
 ------------
 
-   * Error / Warning printing routine(s).
-
-   * Split 'reduce' and 'kernel' (map) semantics checking.
-
    * Emit #line directives in the emitted cpp file.
+   	- Hard unless done in every single statement.
 
    * Kernel to kernel calls?
 
@@ -29,6 +26,10 @@ Medium
    
 Long
 ----
+
+   * Refactor the grammar for expressions to create toplevel_expr (as all
+     expressions except constructors) and then expr (to include
+     constructors) rather than continually special casing them.
 
    * Allow kernels to call other kernels (as whole stream operations, not
      combinatorial explosion).

@@ -6,15 +6,26 @@ extern "C" {
 };
 
 //vector is needed by the output of the compilation
-typedef struct {
+typedef struct float2 {
+  float2(float _x, float _y) { x = _x; y = _y; }
+  float2(void) {}
+
   float x,y;
 } float2;
 
-typedef struct {
+typedef struct float3 {
+  float3(float _x, float _y, float _z) { x = _x; y = _y; z = _z; }
+  float3(void) {}
+
   float x,y,z;
 } float3;
 
-typedef struct {
+typedef struct float4 {
+  float4(float _x, float _y, float _z, float _w) {
+     x = _x; y = _y; z = _z; w = _w;
+  }
+  float4(void) {}
+
   float x,y,z,w;
 } float4;
 enum __BRTStreamType {

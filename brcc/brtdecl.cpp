@@ -177,7 +177,12 @@ BrtIterType::BrtIterType(const ArrayType *stream, const FunctionCall *f)
    *   - We support float, float2, float3, or float4 1-D streams
    *   - We float2 2-D streams
    */
-  assert((int)f->args.size() == 2 * FloatDimension(base->typemask));
+  assert(f->args.size() == 2);
+  assert(f->args[0]->type);
+  assert(f->args[0]->type->getBase()->typemask == base->typemask);
+  assert(f->args[1]->type);
+  assert(f->args[1]->type->getBase()->typemask == base->typemask);
+
   assert(dims.size() == 1 ||
          (dims.size() == 2 && base->typemask == BT_Float2));
   for (i = f->args.begin(); i != f->args.end(); i++) {
@@ -257,8 +262,18 @@ BrtIterType::printType( std::ostream& out, Symbol *name,
 
   /* Now print the min / max */
   for (i = args.begin(); i != args.end(); i++) {
-    (*i)->print(out);
-    out << ", ";
+     if (((*i)->type->type == TT_Base) &&
+         ((BaseType *) (*i)->type)->typemask == BT_Float) {
+        (*i)->print(out);
+        out << ", ";
+     } else {
+        static const char xyzw[] = { 'x', 'y', 'z', 'w' };
+        for (int j = 0; j < FloatDimension(base->typemask); j++) {
+           out << '(';
+           (*i)->print(out);
+           out << ")." << xyzw[j] << ", ";
+        }
+     }
   }
   out << "-1)";
 }

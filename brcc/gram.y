@@ -1148,7 +1148,15 @@ opt_expr_list:  /* Nothing */
         ;
 
 expr_list:  assign_expr
+	 |  constructor_expr
          |  expr_list COMMA assign_expr    %prec COMMA_SEP
+        {
+            $$ = $3;
+            $$->next = $1;
+
+            delete $2;
+        }
+         |  expr_list COMMA constructor_expr    %prec COMMA_SEP
         {
             $$ = $3;
             $$->next = $1;

@@ -1495,6 +1495,7 @@ ConstructorExpr::ConstructorExpr( BaseType *bType, Expression *exprs[],
 
     nExprs = FloatDimension(bType->typemask);
     assert(nExprs > 0);
+    type = bType;
 
     _bType = bType;
     _nExprs = nExprs;

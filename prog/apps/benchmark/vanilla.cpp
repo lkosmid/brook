@@ -53,7 +53,7 @@ static void math(float a, float b, float4 c,
    float4 g;
    float f;
    {
-     float4 assgn={a+b,a*b,(a+b)*(b*a),a*c.x};
+     float4 assgn=float4(a+b,a*b,(a+b)*(b*a),a*c.x);
      tmp=assgn;
    }
    g=tmp;
@@ -63,7 +63,7 @@ static void math(float a, float b, float4 c,
    tmp.w*=c.w+tmp.w;
    f=tmp.x+tmp.y+tmp.z+tmp.w;
    {
-     float4 assgn={f,f,f,f};
+     float4 assgn=float4(f,f,f,f);
      tmp=assgn;
    }
    e=f+(tmp.x+g.x)+(tmp.y+g.y)+(tmp.z+g.z);

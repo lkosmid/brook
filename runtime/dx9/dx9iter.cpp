@@ -52,8 +52,8 @@ DX9Iter::DX9Iter( DX9RunTime * runtime,
 
   if( dimensionCount == 1 )
   {
-    float4 min = {0,0,0,0};
-    float4 max = {0,0,0,0};
+    float4 min = float4(0,0,0,0);
+    float4 max = float4(0,0,0,0);
 
     int i;
     for( i = 0; i < componentCount; i++ )
