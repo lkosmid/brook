@@ -37,6 +37,6 @@ public:
 	/// Checks if the pointer itself is null so that one may dereference safely
 	bool IsNull() const {return t==0;}
 	/// Inverse if isNull()
-	bool NotNull() const {return !isNull();}
+	bool NotNull() const {return !this->isNull();}
 };
 
