@@ -3,15 +3,26 @@
 //the above warning disables visual studio's annoying habit of warning when using the standard set lib
 #endif
 #include "ctool.h"
-#include <set>
+#include <map>
 #include <string>
 #include <vector>
-static std::set <std::string>reducenames;
+static std::map <std::string,Expression*>reducenames;
+typedef std::map<std::string,Expression*>::value_type reducenameval;
 static std::string functionmodifier;
 static void (*ModifyAssignExpr)(AssignExpr*ae)=0;
 static Expression * (*ModifyFunctionCall)(FunctionCall *, 
                                           unsigned int, 
                                           unsigned int)=0;
+static Expression* (*ModifyFutureReduceOperator)(Expression*)=0;
+
+static Expression* DoNothing(Expression * fc) {
+   return fc;
+}
+static Expression* ConvertToNop(Expression*fc) {
+   Location l (fc->location);
+   delete fc;
+   return new UIntConstant (0,l);
+}
 const std::string dual_reduction_arg="__partial_";
 
 static void DemoteAssignExpr (AssignExpr * ae) {
@@ -61,8 +72,10 @@ static Expression * ConvertPlusTimesGets(Expression * e) {
             if (s->uVarDecl->form){ 
                if (s->uVarDecl->isReduce()) {
                   if (reducenames.find(v->name->name)==reducenames.end()) {
-                     reducenames.insert(v->name->name);
                      (*ModifyAssignExpr)(ae);
+                     reducenames.insert(reducenameval(v->name->name,e));
+                  }else if (reducenames[v->name->name]!=e){
+                     return (*ModifyFutureReduceOperator)(ae);
                   }
                }
             }
@@ -76,15 +89,17 @@ static Expression * ConvertReduceToGets(FunctionCall* func, FunctionType * type)
    Expression * mreduce=NULL;
    Expression * mstream=NULL;
    unsigned int reduceloc=0,streamloc=0;
+   std::string reducename;
    for (int i=0;i<type->nArgs;++i) {
       if (type->args[i]->isReduce()) {
          if (func->args[i]->etype==ET_Variable) {
             Variable * v = static_cast<Variable*>(func->args[i]);
             if (reducenames.find(v->name->name)==reducenames.end()) {
-               reducenames.insert(v->name->name);
+               reducename=v->name->name;
                mreduce = func->args[i];
                reduceloc=i;
-
+            }else if (reducenames[v->name->name]!=func) {
+               return (*ModifyFutureReduceOperator) (func);
             }
          }
       }
@@ -95,6 +110,8 @@ static Expression * ConvertReduceToGets(FunctionCall* func, FunctionType * type)
    }
    if (mreduce&&mstream) {
       (*ModifyFunctionCall)(func,reduceloc,streamloc);
+      reducenames.insert(reducenameval(reducename,func));
+               
    }
    return func;
 }
@@ -140,6 +157,7 @@ void BrookReduce_ConvertKernel(FunctionDef *fDef) {
    functionmodifier="__base";
    ModifyAssignExpr= &DemoteAssignExpr;
    ModifyFunctionCall=&FunctionCallToAssign;
+   ModifyFutureReduceOperator=&DoNothing;
    fDef->findStemnt(&FindFirstReduceFunctionCall);
    //   fDef->decl->name = fDef->decl->name->dup();
    fDef->decl->name->name+=functionmodifier;
@@ -150,6 +168,7 @@ void BrookCombine_ConvertKernel(FunctionDef *fDef) {
    functionmodifier="__combine";
    ModifyAssignExpr= &DuplicateLVal;
    ModifyFunctionCall=&CombineReduceStream;
+   ModifyFutureReduceOperator=&ConvertToNop;
    fDef->findStemnt(&FindFirstReduceFunctionCall);
    //   fDef->decl->name = fDef->decl->name->dup();
    fDef->decl->name->name+=functionmodifier;
