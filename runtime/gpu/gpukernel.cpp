@@ -1206,6 +1206,42 @@ namespace brook
     GPUError("not implemented");
   }
 
+      float4 GPUKernel::getATIndexofNumerConstant( unsigned int rank, const unsigned int* domainMin, const unsigned int* domainMax )
+    {
+        float4 result(0,0,0,0);
+        for( unsigned int r = 0; r < rank; r++ )
+        {
+            unsigned int d = rank - (r+1);
+            unsigned int streamExtent = domainMax[d] - domainMin[d];
+            unsigned int outputExtent = _outReversedExtents[r];
+
+            unsigned int numer = 1;
+            if( streamExtent > outputExtent )
+                numer = streamExtent / outputExtent;
+
+            ((float*)&result)[r] = (float)numer;
+        }
+        return result;
+    }
+
+    float4 GPUKernel::getATIndexofDenomConstant( unsigned int rank, const unsigned int* domainMin, const unsigned int* domainMax )
+    {
+        float4 result(0,0,0,0);
+        for( unsigned int r = 0; r < rank; r++ )
+        {
+            unsigned int d = rank - (r+1);
+            unsigned int streamExtent = domainMax[d] - domainMin[d];
+            unsigned int outputExtent = _outReversedExtents[r];
+
+            unsigned int denom = 1;
+            if( streamExtent < outputExtent )
+                denom = outputExtent / streamExtent;
+
+            ((float*)&result)[r] = 1.0f / (float)denom;
+        }
+        return result;
+    }
+
   float4 GPUKernel::StreamArgumentType::getConstant( GPUKernel* inKernel, 
                                                      size_t inIndex, 
                                                      size_t inComponent )
@@ -1219,44 +1255,18 @@ namespace brook
       break;
     case kStreamConstant_ATIndexofNumer:
         {
-            float4 result(0,0,0,0);
             unsigned int rank = stream->getRank();
             const unsigned int* domainMin = stream->getDomainMin();
             const unsigned int* domainMax = stream->getDomainMax();
-            for( unsigned int r = 0; r < rank; r++ )
-            {
-                unsigned int d = rank - (r+1);
-                unsigned int streamExtent = domainMax[d] - domainMin[d];
-                unsigned int outputExtent = inKernel->_outReversedExtents[r];
-
-                unsigned int numer = 1;
-                if( streamExtent > outputExtent )
-                    numer = streamExtent / outputExtent;
-
-                ((float*)&result)[r] = (float)numer;
-            }
-            return result;
+            return inKernel->getATIndexofNumerConstant( rank, domainMin, domainMax );
         }
         break;
     case kStreamConstant_ATIndexofDenom:
         {
-            float4 result(0,0,0,0);
             unsigned int rank = stream->getRank();
             const unsigned int* domainMin = stream->getDomainMin();
             const unsigned int* domainMax = stream->getDomainMax();
-            for( unsigned int r = 0; r < rank; r++ )
-            {
-                unsigned int d = rank - (r+1);
-                unsigned int streamExtent = domainMax[d] - domainMin[d];
-                unsigned int outputExtent = inKernel->_outReversedExtents[r];
-
-                unsigned int denom = 1;
-                if( streamExtent < outputExtent )
-                    denom = outputExtent / streamExtent;
-
-                ((float*)&result)[r] = 1.0f / (float)denom;
-            }
-            return result;
+            return inKernel->getATIndexofDenomConstant( rank, domainMin, domainMax );
         }
         break;
     case kStreamConstant_ATLinearize:
@@ -1288,6 +1298,36 @@ namespace brook
                                                        size_t inIndex, 
                                                        size_t inComponent )
   {
+    using namespace ::brook::desc;
+    GPUIterator* iter = inKernel->_iteratorArguments[ inIndex ];
+    switch( inComponent )
+    {
+    case kIteratorConstant_ATIndexofNumer:
+        {
+            unsigned int rank = iter->getRank();
+            const unsigned int* domainMin = iter->getDomainMin();
+            const unsigned int* domainMax = iter->getDomainMax();
+            return inKernel->getATIndexofNumerConstant( rank, domainMin, domainMax );
+        }
+        break;
+    case kIteratorConstant_ATIndexofDenom:
+        {
+            unsigned int rank = iter->getRank();
+            const unsigned int* domainMin = iter->getDomainMin();
+            const unsigned int* domainMax = iter->getDomainMax();
+            return inKernel->getATIndexofDenomConstant( rank, domainMin, domainMax );
+        }
+        break;
+    case kIteratorConstant_ATValueBase:
+        return iter->getValueBaseConstant();
+        break;
+    case kIteratorConstant_ATValueOffset1:
+        return iter->getValueOffset1Constant();
+        break;
+    case kIteratorConstant_ATValueOffset4:
+        return iter->getValueOffset4Constant();
+        break;
+    }
     GPUError("not implemented");
     return float4(0,0,0,0);
   }

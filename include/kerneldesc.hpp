@@ -59,6 +59,14 @@ namespace brook
     {
       kIteratorInterpolant_Value = 0
     };
+    enum
+    {
+      kIteratorConstant_ATIndexofNumer = 0,
+      kIteratorConstant_ATIndexofDenom,
+      kIteratorConstant_ATValueBase,
+      kIteratorConstant_ATValueOffset1,
+      kIteratorConstant_ATValueOffset4
+    };
 
     // Output Arguments
     enum

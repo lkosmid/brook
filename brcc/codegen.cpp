@@ -894,6 +894,10 @@ generate_shader_support(std::ostream& shader)
     shader << "\tif( any( index >= domainExtent ) ) __FRAGMENTKILL;\n";
     shader << "}\n\n";
 
+    shader << "float4 __calculateiteratorvalue( float4 index,\n"
+        << "float4 valueBase, float4 valueOffset1, float4 valueOffset4 ) {\n"
+        << "return valueBase + index.x*valueOffset1 + index*valueOffset4;\n}\n\n";
+
 #if 0
     shader << "void __calculateoutputpos( float2 interpolant, float4 outputConst, out float4 index ) {\n";
     shader << "\tfloat2 cleanInterpolant = floor(interpolant);\n";
@@ -922,18 +926,28 @@ generate_shader_support(std::ostream& shader)
 }
 
 static void
-generate_shader_iter_arg(std::ostream& shader, Decl *arg, int i, int& texcoord, pass_info& outPass)
+generate_shader_iter_arg(std::ostream& shader, Decl *arg, int i, int& texcoord, int& constant, pass_info& outPass)
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
 
    if (globals.enableGPUAddressTranslation) {
-      shader << "float2 __itershape_" << argName;
+       shader << "uniform float4 __iterindexofnumer_" << argName << " : register(c" << constant++ << ")";
       shader << ",\n\t\t";
-      shader << "float4 __itermin_" << argName;
+      shader << "uniform float4 __iterindexofdenom_" << argName << " : register(c" << constant++ << ")";
       shader << ",\n\t\t";
-      shader << "float4 __iterstep_" << argName;
+      shader << "uniform float4 __itervaluebase_" << argName << " : register(c" << constant++ << ")";
       shader << ",\n\t\t";
+      shader << "uniform float4 __itervalueoffset1_" << argName << " : register(c" << constant++ << ")";
+      shader << ",\n\t\t";
+      shader << "uniform float4 __itervalueoffset4_" << argName << " : register(c" << constant++ << ")";
+      shader << ",\n\t\t";
+
+      outPass.addConstant( (i+1), "kIteratorConstant_ATIndexofNumer" );
+      outPass.addConstant( (i+1), "kIteratorConstant_ATIndexofDenom" );
+      outPass.addConstant( (i+1), "kIteratorConstant_ATValueBase" );
+      outPass.addConstant( (i+1), "kIteratorConstant_ATValueOffset1" );
+      outPass.addConstant( (i+1), "kIteratorConstant_ATValueOffset4" );
 
       // no real support under address translation yet
    } else {
@@ -1158,7 +1172,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
 
      if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
         if ((qual & TQ_Iter) != 0) {
-           generate_shader_iter_arg(shader, args[i], i, texcoord, outPass);
+           generate_shader_iter_arg(shader, args[i], i, texcoord, constreg, outPass);
         } else if ((qual & TQ_Out) != 0) {
            generate_shader_out_arg(shader, args[i], hasDoneIndexofOutput,
                                    needIndexOfArg, i, texcoord, constreg, outPass);
@@ -1274,9 +1288,26 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
      TypeQual qual = args[i]->form->getQualifiers();
      std::string argName = args[i]->name->name;
 
-     if ((qual & TQ_Iter) != 0) continue; /* No texture fetch for iterators */
+     if ((qual & TQ_Iter) != 0)
+     {
+         if (!globals.enableGPUAddressTranslation)
+             continue; /* No texture fetch for iterators */
 
-     if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
+        if (!fullAddressTrans) {
+            shader << "\tfloat4 __indexof_" << argName << " = __indexofoutput;\n";
+        } else {
+            shader << "\tfloat4 __indexof_" << argName << " = ";
+            shader << "__calculateindexof( __indexofoutput, __iterindexofnumer_" << argName
+                << ", __iterindexofdenom_" << argName << " );\n";
+        }
+
+        shader << "\tfloat4 " << argName << " = __calculateiteratorvalue("
+            << "__indexof_" << argName
+            << ", __itervaluebase_" << argName
+            << ", __itervalueoffset1_" << argName
+            << ", __itervalueoffset4_" << argName << ");\n";
+     }
+     else if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
         if ((qual & TQ_Out) != 0 ) {
           if (globals.enableGPUAddressTranslation) {
             // should be calculated elsewhere

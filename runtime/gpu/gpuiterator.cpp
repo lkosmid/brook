@@ -24,7 +24,7 @@ GPUIterator* GPUIterator::create( GPURuntime* inRuntime,
 }
 
 GPUIterator::GPUIterator( GPURuntime* inRuntime, StreamType inElementType )
-  : Iter(inElementType), _context(inRuntime->getContext()), _cpuBuffer(NULL)
+  : Iter(inElementType), _context(inRuntime->getContext()), _cpuBuffer(NULL), _requiresAddressTranslation(false)
 {
 }
 
@@ -33,12 +33,16 @@ bool GPUIterator::initialize( unsigned int inDimensionCount,
                               const float inRanges[] )
 {
   _dimensionCount = inDimensionCount;
-  if( (_dimensionCount <= 0) || (_dimensionCount > 2) )
+  if( (_dimensionCount <= 0) || (_dimensionCount > 4) )
   {
     GPUWARN << "Invalid dimension for iterator stream "
       << inDimensionCount << ".\n"
-      << "Dimension must be greater than 0 and less than 3.";
+      << "Dimension must be greater than 0 and less than 5.";
     return false;
+  }
+  if( _dimensionCount > 2 )
+  {
+      _requiresAddressTranslation = true;
   }
 
   switch( type )
@@ -62,6 +66,13 @@ bool GPUIterator::initialize( unsigned int inDimensionCount,
     break;
   }
 
+  if( _dimensionCount != 1 && _dimensionCount != _componentCount )
+  {
+      GPUWARN << "Cannot create a " << _dimensionCount << "D iterator"
+          << " with float" << _componentCount << " elements." << std::endl;
+      return false;
+  }
+
   _totalSize = 1;
   for( unsigned int i = 0; i < _dimensionCount; i++ )
   {
@@ -80,7 +91,8 @@ bool GPUIterator::initialize( unsigned int inDimensionCount,
   }
 
   unsigned int rangeCount = _componentCount*2;
-  for( unsigned int r = 0; r < rangeCount; r++ )
+  unsigned int r;
+  for( r = 0; r < rangeCount; r++ )
     _ranges[r] = inRanges[r];
 
   if( _dimensionCount == 1 )
@@ -110,16 +122,8 @@ bool GPUIterator::initialize( unsigned int inDimensionCount,
 //    _rect.vertices[2] = max;
 //    _rect.vertices[3] = min;
   }
-  else
+  else if( _dimensionCount == 2 )
   {
-    GPUAssert( _dimensionCount == 2, "Internal error." );
-
-    if( _componentCount != 2 )
-    {
-      GPUWARN << "Invalid element type for 2D iterator.\n"
-        << "2D iterators can only be of type float2.";
-      return false;
-    }
     float minX = _ranges[0];
     float minY = _ranges[1];
     float maxX = _ranges[2];
@@ -130,6 +134,35 @@ bool GPUIterator::initialize( unsigned int inDimensionCount,
 
     _context->get2DInterpolant( _min2D, _max2D, _extents[1], _extents[0], _defaultInterpolant );
   }
+
+  // TIM: TODO: figure out what to do with the rest of the cases... :(
+  _valueBase = float4(0,0,0,0);
+  _valueOffset1 = float4(0,0,0,0);
+  _valueOffset4 = float4(0,0,0,0);
+
+  unsigned int c;
+  for( c = 0; c < _componentCount; c++ )
+      ((float*)&_valueBase)[c] = _ranges[c];
+
+  if( _dimensionCount == 1 )
+  {
+    for( c = 0; c < _componentCount; c++ )
+      ((float*)&_valueOffset1)[c] = (_ranges[c + _componentCount] - _ranges[c]) / (float)_extents[0];
+  }
+  else
+  {
+    for( c = 0; c < _componentCount; c++ )
+    {
+      unsigned int d = _componentCount - (c+1);
+//      GPUWARN << "extent " << _extents[d] << std::endl;
+      ((float*)&_valueOffset4)[c] = (_ranges[c + _componentCount] - _ranges[c]) / (float)_extents[d];
+    }
+  }
+
+//  GPUWARN << "base " << _valueBase.x << " " << _valueBase.y << " " << _valueBase.z << " " << _valueBase.w << " " << std::endl;
+//  GPUWARN << "offset1 " << _valueOffset1.x << " " << _valueOffset1.y << " " << _valueOffset1.z << " " << _valueOffset1.w << " " << std::endl;
+//  GPUWARN << "offset4 " << _valueOffset4.x << " " << _valueOffset4.y << " " << _valueOffset4.z << " " << _valueOffset4.w << " " << std::endl;
+
   return true;
 }
 

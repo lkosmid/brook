@@ -34,6 +34,15 @@ namespace brook {
       unsigned int inOutputHeight,
       GPUInterpolant& outInterpolant );
 
+    bool requiresAddressTranslation() {
+        return _requiresAddressTranslation;
+    }
+
+    unsigned int getRank() { return _dimensionCount; }
+    float4 getValueBaseConstant() { return _valueBase; }
+    float4 getValueOffset1Constant() { return _valueOffset1; }
+    float4 getValueOffset4Constant() { return _valueOffset4; }
+
   private:
     GPUIterator( GPURuntime* inRuntime, StreamType inElementType );
     bool initialize( unsigned int inDimensionCount, 
@@ -43,10 +52,10 @@ namespace brook {
     unsigned int _dimensionCount;
     unsigned int _componentCount;
     unsigned int _totalSize;
-    unsigned int _extents[2];
+    unsigned int _extents[4];
     float _ranges[8];
-    unsigned int _domainMin[2];
-    unsigned int _domainMax[2];
+    unsigned int _domainMin[4];
+    unsigned int _domainMax[4];
 
     GPUContext* _context;
     float4 _min1D, _max1D;
@@ -54,6 +63,9 @@ namespace brook {
 
     GPUInterpolant _defaultInterpolant;
     void* _cpuBuffer;
+
+    bool _requiresAddressTranslation;
+    float4 _valueBase, _valueOffset1, _valueOffset4;
   };
 }
 

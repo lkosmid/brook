@@ -1,0 +1,125 @@
+// at_iterator.br
+
+// test address-translation code for
+// getting values of iterators
+
+#include <stdio.h>
+
+// arbitrary large stream sizes
+#define X_1D 10000
+#define ITER_1D_START float4(0,0,0,0)
+#define ITER_1D_END float4(10000,5000,1000,20000)
+
+#define X_4D 3
+#define Y_4D 6
+#define Z_4D 8
+#define W_4D 5
+
+#define ITER_4D_START float4(0,1,0,10)
+#define ITER_4D_END float4(3,7,24,0)
+
+kernel void clear4( out float4 result<> ) { result = -1; }
+
+kernel void copyIterator4( iter float4 iterator<>, out float4 result<> ) {
+	result = iterator;
+}
+
+float lerp( float start, float end, int amount, int total )
+{
+	return start + ((end - start) * (float)amount) / (float)total;
+}
+
+int match( float a, float b )
+{
+	return fabsf( a - b ) < 0.01f;
+}
+
+void checkItem1( float expected, float actual, int x, const char* dimName )
+{
+	if( match(actual,expected) ) return;
+	
+	printf("FAIL: 1D[%d].%s : expected %f got %f\n", x, dimName, expected, actual );
+	exit(0);
+}
+
+void check1( float* inData )
+{
+	float* data = inData;
+	int x;
+	float xi, yi, zi, wi;
+	
+	for( x = 0; x < X_1D; x++ )
+	{
+		xi =  lerp( ITER_1D_START.x, ITER_1D_END.x, x, X_1D );
+		yi =  lerp( ITER_1D_START.y, ITER_1D_END.y, x, X_1D );
+		zi =  lerp( ITER_1D_START.z, ITER_1D_END.z, x, X_1D );
+		wi =  lerp( ITER_1D_START.w, ITER_1D_END.w, x, X_1D );	
+	
+		checkItem1( xi, *data++, x, "x" );
+		checkItem1( yi, *data++, x, "y" );
+		checkItem1( zi, *data++, x, "z" );
+		checkItem1( wi, *data++, x, "w" );
+	}
+}
+
+void checkItem4( float expected, float actual, int x, int y, int z, int w, const char* dimName )
+{
+	if( match(actual,expected) ) return;
+	
+	printf("FAIL: 1D[%d][%d][%d][%d].%s : expected %f got %f\n", w, z, y, x, dimName, expected, actual );
+	exit(0);
+}
+
+void check4( float* inData )
+{
+	float* data = inData;
+	int x, y, z, w;
+	float xi, yi, zi, wi;
+	
+	for( w = 0; w < W_4D; w++ )
+	for( z = 0; z < Z_4D; z++ )
+	for( y = 0; y < Y_4D; y++ )
+	for( x = 0; x < X_4D; x++ )
+	{
+		xi =  lerp( ITER_4D_START.x, ITER_4D_END.x, x, X_4D );
+		yi =  lerp( ITER_4D_START.y, ITER_4D_END.y, y, Y_4D );
+		zi =  lerp( ITER_4D_START.z, ITER_4D_END.z, z, Z_4D );
+		wi =  lerp( ITER_4D_START.w, ITER_4D_END.w, w, W_4D );	
+	
+		checkItem4( xi, *data++, x, y, z, w, "x" );
+		checkItem4( yi, *data++, x, y, z, w, "y" );
+		checkItem4( zi, *data++, x, y, z, w, "z" );
+		checkItem4( wi, *data++, x, y, z, w, "w" );
+	}
+}
+
+int main( int argc, char** argv )
+{
+	float4 stream_1d< X_1D >;
+	float4 stream_4d< W_4D, Z_4D, Y_4D, X_4D >;
+	
+	float4 iter1start = ITER_1D_START;
+	float4 iter1end = ITER_1D_END;
+	float4 iter4start = ITER_4D_START;
+	float4 iter4end = ITER_4D_END;
+	
+	iter float4 iter_1d< X_1D > = iter( iter1start, iter1end );
+	iter float4 iter_4d< W_4D, Z_4D, Y_4D, X_4D > = iter( iter4start, iter4end );
+	
+	float* data_1d = (float*)malloc( X_1D*sizeof(float4) );
+	float* data_4d = (float*)malloc( W_4D*Z_4D*Y_4D*X_4D*sizeof(float4) );
+
+	clear4( stream_1d );
+	copyIterator4( iter_1d, stream_1d );
+	streamWrite( stream_1d, data_1d );
+	check1( data_1d );
+	
+	clear4( stream_4d );
+	copyIterator4( iter_4d, stream_4d );
+	streamWrite( stream_4d, data_4d );
+	check4( data_4d );
+
+	printf( "pass\n" );
+
+	return 0;
+}

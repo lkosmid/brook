@@ -277,6 +277,8 @@ namespace brook {
     void getGlobalInterpolant( size_t inComponentIndex, GPUInterpolant& outInterpolant );
     TextureHandle getGlobalOutput( size_t inComponentIndex );
 
+    float4 getATIndexofNumerConstant( unsigned int rank, const unsigned int* domainMin, const unsigned int* domainMax );
+    float4 getATIndexofDenomConstant( unsigned int rank, const unsigned int* domainMin, const unsigned int* domainMax );
 
     // multipass reduction helpers
     void executeReductionTechnique( size_t inFactor );
