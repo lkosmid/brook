@@ -112,11 +112,11 @@ unsigned int loadModelData(const char * filename,
    *neigh =(Neighbor*)malloc(sizeof(Neighbor)*tList.size());
    for (unsigned int i=0;i<tList.size();++i) {
      float eps=.015625;
-     if (tList[i].A.z==0) 
+     if (1||tList[i].A.z==0) 
        tList[i].A.z+=eps;
-     if (tList[i].B.z==0)       
+     if (1||tList[i].B.z==0)       
        tList[i].B.z+=eps;
-     if(tList[i].C.z==0) {
+     if(1||tList[i].C.z==0) {
        tList[i].C.z+=eps;
      }
      (*tri)[i]=tList[i];
