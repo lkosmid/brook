@@ -193,7 +193,7 @@ class BaseType1:public BaseType {public:
 			out << "volatile ";
 		
 		if (typemask & BT_Char)
-			out << "bool1 ";
+			out << "char1 ";
 		else if (typemask & BT_Float)
 			out << "float1 ";
 		else if (typemask & BT_Float2)
@@ -219,7 +219,6 @@ class BaseType1:public BaseType {public:
 
 Expression *ArrayBlackmailer(Expression * e) {
    ArrayBlacklist.insert(e);   
-//	cout << "blackmailing "<< e<<endl; 
    return e;
 }
 void BlackmailType(Type **t);
@@ -252,8 +251,6 @@ void BlackmailType (Type **t) {
     BrtStreamType * st;
 
     if ((*t)->type==TT_BrtStream && (st = static_cast<BrtStreamType *>(*t))) {
-//        st->dims->findExpr(ArrayBlackmailer); //these must not be constant any more
-//        ArrayBlackmailer(st->dims);        //these must not be constant any more
         BlackmailBaseType(&st->base);
         
     }
@@ -345,7 +342,7 @@ class NewUIntConstant:public UIntConstant {public:
 class NewCharConstant:public CharConstant {public:
     NewCharConstant(char val, const Location &l):CharConstant(val,l){}
     virtual void print (std::ostream&out) const{
-        out << "bool1(";
+        out << "char1(";
         (this)->CharConstant::print(out);
         out << ")";
     }
@@ -495,12 +492,15 @@ template <class ConverterFunctor> Expression *ConvertToT (Expression * expressio
         Expression * e = ConverterFunctor()(expression);
         if (e) {
 //        (*expression)=ChainExpression(e);
+			return e;
+#if 0
+			//this is for the old system where expr didn't return anything
             Expression * k = new ChainExpression(e);//memory leak--but how else are we to guarantee the integrity of our expression..it's a lost cause unless we have some way of assinging to the passed in expression without rewriting the whole loop.
             char location[sizeof(Location)];
             memcpy (&location[0],&expression->location,sizeof(Location));
             memcpy (expression,k,sizeof(Expression));//DANGEROUS but we don't have access to the code
             memcpy (&expression->location,&location[0],sizeof(Location));
-            
+#endif	
             
         }
     }
@@ -508,36 +508,31 @@ template <class ConverterFunctor> Expression *ConvertToT (Expression * expressio
 }
 
 Expression *ConvertToTMaskConverter (Expression * e) {
-	ConvertToT<MaskConverter>(e);
-        return e;
+	return ConvertToT<MaskConverter>(e);
 }
 void FindMask (Statement * s) {
     s->findExpr(&ConvertToTMaskConverter);
 }
 Expression *ConvertToTSwizzleConverter (Expression * e) {
-	ConvertToT<SwizzleConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
-        return e;
+	return ConvertToT<SwizzleConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
 void FindSwizzle (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTSwizzleConverter);
 }
 Expression *ConvertToTQuestionColonConverter (Expression * e) {
-	ConvertToT<QuestionColonConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
-        return e;
+	return ConvertToT<QuestionColonConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
 void FindQuestionColon (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTQuestionColonConverter);
 }
 Expression *ConvertToTIndexExprConverter (Expression * e) {
-	ConvertToT<IndexExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
-        return e;
+	return ConvertToT<IndexExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
 void FindIndexExpr (Statement * s) {
     s->findExpr((fnExprCallback)&ConvertToTIndexExprConverter);
 }
 Expression *ConvertToTConstantExprConverter (Expression * e) {
-	ConvertToT<ConstantExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
-        return e;
+	return ConvertToT<ConstantExprConverter>(e);//this function is created because VC++ can't take the address of a templ function and "know" its type...blame ole billyG
 }
 void FindConstantExpr (Statement * s) {
    Expression * (*tmp)(class Expression *) = &ConvertToTConstantExprConverter;
