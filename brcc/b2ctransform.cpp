@@ -210,9 +210,9 @@ void BlackmailType (Type **t) {
 		return;
     if (!(*t))
         return;
-    BaseType * basei = dynamic_cast<BaseType *>(*t);
+    BaseType * basei ;
     
-    if (basei) {
+    if ((*t)->type==TT_Base&&(basei= dynamic_cast<BaseType *>(*t))) {
 		*t = new BaseType1(*basei);
 		//delete base;
     }
@@ -221,19 +221,22 @@ void BlackmailType (Type **t) {
         at->size->findExpr(ArrayBlackmailer);
         ArrayBlackmailer(at->size);
     }
-    BlackmailT<ArrayType>(t);//this takes care of Streams as well as constant arrays    
-    BlackmailT<PtrType>(t);
-    BlackmailT<BitFieldType>(t);
+	if ((*t)->type==TT_Array||(*t)->type==TT_Stream)
+	    BlackmailT<ArrayType>(t);//this takes care of Streams as well as constant arrays    
+	if ((*t)->type==TT_Pointer)
+	    BlackmailT<PtrType>(t);
+	if ((*t)->type==TT_BitField)
+	    BlackmailT<BitFieldType>(t);
     BrtStreamType * st;
 
-    if (st = dynamic_cast<BrtStreamType *>(*t)) {
+    if ((*t)->type==TT_BrtStream && (st = dynamic_cast<BrtStreamType *>(*t))) {
 //        st->dims->findExpr(ArrayBlackmailer); //these must not be constant any more
 //        ArrayBlackmailer(st->dims);        //these must not be constant any more
         BlackmailBaseType(&st->base);
         
     }
     FunctionType * ft;
-    if (ft = dynamic_cast<FunctionType *>(*t)) {
+    if ((*t)->type==TT_Function&&(ft = dynamic_cast<FunctionType *>(*t))) {
 		for (int i=0;i<ft->nArgs;++i) {
 			BlackmailType(&ft->args[i]->form);
 		}
@@ -245,7 +248,8 @@ void BlackmailType (Type **t) {
 
 void FindTypesDecl (Statement * s) {
     DeclStemnt * ds;
-    if (ds=dynamic_cast<DeclStemnt*>(s)) {
+
+    if (s->isDeclaration()&&(ds=dynamic_cast<DeclStemnt*>(s))) {
         for (unsigned int i=0;i<ds->decls.size();++i) {
             BlackmailType(&ds->decls[i]->form);
         }
