@@ -1,8 +1,8 @@
 #include "brtvout.h"
 
 #include "ctool.h"
-//#define INF_SENTINEL
-#define SENTINEL_VALUE 18446321861244485632.0
+
+#define SENTINEL_VALUE -18446321861244485632.0
 VoutFunctionType voutFunctions;
 
 FunctionDef *IdentifyVoutFunc(FunctionDef * fd){
