@@ -2,7 +2,7 @@
 #include "logger.hpp"
 #include <stdlib.h>
 #include <fstream>
-
+#include <string.h>
 namespace brook {
 namespace internal {
 
