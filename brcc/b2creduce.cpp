@@ -236,7 +236,7 @@ Expression *ChangeFirstReduceFunction (Expression * e) {
          Variable * callname =static_cast<Variable*>(k);
          Symbol * sym = callname->name;
          SymEntry * s= sym->entry;
-         if (s->uVarDecl) {
+         if (s&&s->uVarDecl) {
             if (s->uVarDecl->form){ 
                if (s->uVarDecl->isReduce()) {
                   if (s->uVarDecl->form->type==TT_Function) {
