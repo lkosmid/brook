@@ -33,6 +33,19 @@ kernel float4 mult_complex2(float4 a <>, float2 b <>)
   //  c.yw = a.xz*b.yy + a.yw*b.xx;
 
 }
+kernel float2 conjugate (float2 input) {
+  float2 ret;
+  ret.x=input.x;
+  ret.y=-input.y;
+  return ret;
+}
+kernel float4 conjugate2 (float4 input) {
+  float4 ret;
+  ret.xz=input.xz;
+  ret.yw=-input.yw;
+  return ret;
+}
+
 #define DOTIMES 1
 kernel float4 DoDFTHorizontalInner (float2 r<>, 
                                   float2 t<>, 
@@ -56,6 +69,31 @@ DFTX (float4 sr<>,
   s_prime=DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W);
 } 
 
+kernel void
+DFTXi (float4 sr<>, 
+      float4 si<>,
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 s_index<>) {
+  float2 temp= round(fmod(s_index.x,2))==1;
+  float4 r,t;
+  r = sr; t = si;
+  s_prime=conjugate2(DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W));
+} 
+kernel void
+iDFTX (float4 csr<>, 
+      float4 csi<>,
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 s_index<>) {
+  float4 sr = conjugate2(csr);
+  float4 si = conjugate2(csi);
+  float2 temp= round(fmod(s_index.x,2))==1;
+  float4 r,t;
+  r = sr; t = si;
+  s_prime=DoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W);
+} 
+
 kernel float4 rDoDFTHorizontalInner (float2 r<>, 
                                   float2 t<>, 
                                   float2 W <>) {
@@ -71,6 +109,33 @@ rDFTX (float4 sr<>,
       float2 W<>,
       out float4 s_prime<>, 
       iter float2 s_index<>) {
+  float2 temp= round(fmod(s_index.x,2))==1;
+  float4 r,t;
+  r = sr; t = si;
+  s_prime=rDoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W);
+} 
+
+
+kernel void
+rDFTXi (float4 sr<>, 
+      float4 si<>,
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 s_index<>) {
+  float2 temp= round(fmod(s_index.x,2))==1;
+  float4 r,t;
+  r = sr; t = si;
+  s_prime=conjugate2(rDoDFTHorizontalInner (temp.xx?r.zw:r.xy,temp.xx?t.zw:t.xy,W));
+} 
+
+kernel void
+irDFTX (float4 csr<>, 
+      float4 csi<>,
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 s_index<>) {
+  float4 sr = conjugate2(csr);
+  float4 si = conjugate2(csi);
   float2 temp= round(fmod(s_index.x,2))==1;
   float4 r,t;
   r = sr; t = si;
@@ -103,6 +168,60 @@ rDFTY (float4 sr<>,
        //overwrite s_prime
        s_prime=r+t;
    }
+} 
+kernel void
+iDFTY (float4 csr<>, 
+      float4 csi<>,
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 s_index<>) {
+   float4 r = conjugate2(csr); 
+   float4 t = conjugate2(csi);
+   float4 tw= mult_complex2(t,W);
+   s_prime=r+((round(fmod(s_index.y,2))!=1)?tw:-tw);
+} 
+kernel void
+irDFTY (float4 csr<>, 
+      float4 csi<>,
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 s_index<>) {
+   float4 r =  conjugate2(csr); 
+   float4 t = conjugate2(csi);
+   s_prime=mult_complex2(r-t,W);
+  
+   if (round(fmod(s_index.y,2))!=1) {
+       //overwrite s_prime
+       s_prime=r+t;
+   }
+} 
+
+kernel void
+DFTYi (float4 sr<>, 
+      float4 si<>,
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 s_index<>) {
+   float4 r = sr; 
+   float4 t = si;
+   float4 tw= mult_complex2(t,W);
+   s_prime=conjugate2(r+((round(fmod(s_index.y,2))!=1)?tw:-tw));
+} 
+kernel void
+rDFTYi (float4 sr<>, 
+      float4 si<>,
+      float2 W<>,
+      out float4 s_prime<>, 
+      iter float2 s_index<>) {
+   float4 r = sr; 
+   float4 t = si;
+   s_prime=mult_complex2(r-t,W);
+  
+   if (round(fmod(s_index.y,2))!=1) {
+       //overwrite s_prime
+       s_prime=r+t;
+   }
+   s_prime = conjugate2(s_prime);
 } 
 
 kernel void optBitReverseY (out float4 s_out<>,
