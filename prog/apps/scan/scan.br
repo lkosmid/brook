@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+kernel void sum(out float o<>, float here[]) {
+  o=here[indexof(o).x*2]+here[indexof(o).x*2+1];
+}
+kernel void csum(out float o<>, float here[], float lower[]){
+  o=here[indexof o.x];
+  if (indexof(o).x>1.5) {
+    o+=lower[floor(indexof(o).x/2)-1];
+  }
+  if (round(fmod(round(indexof(o).x),2))==1) {
+    o+=here[indexof(o).x-1];
+  }
+
+}
+void print (char * label,float str<>, int len, int alloc){
+  float * tmp =(float*)malloc(alloc*sizeof(float));
+  int i;
+  streamWrite(str,tmp);
+  printf ("%s\n",label);
+  for (i=0;i<len;++i) {
+    printf ("%.0f ",tmp[i]);
+  }
+  free(tmp);
+  printf ("\n");
+}
+void scan(float input<>,int power,int len) {
+  int hpower=power-1;
+  int hlen=len/2;
+  float output<hlen>;
+  sum(output,input);
+  print("Input: ",output,hlen,hlen+1);
+  if (hlen>2) {
+    scan(output,hpower,hlen);    
+  }
+  csum(input,input,output);
+  print("Output: ",output,hlen,hlen+1);
+}
+
+int main (int argc, char ** argv) {
+  int power=4,len=16;
+  if (argc>1)power=atoi(argv[1]);
+  len=1<<power;
+  {
+    float s<len>;
+    float *dat=(float*)malloc((1+len)*sizeof(float));
+    int i;
+    for (i=0;i<len;++i) {
+      dat[i]=rand()%3;
+    }
+    streamRead(s,dat);
+    print("Input:",s,len,len+1);
+
+
+    scan(s,power,len);
+
+
+
+
+
+
+    print("Final:",s,len,len+1);
+  }
+  return 0;
+}
