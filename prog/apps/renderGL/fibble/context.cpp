@@ -106,8 +106,10 @@ PixelShader* Context::createPixelShader( const std::string& inSource )
 
 void Context::setVertexShader( VertexShader* inShader )
 {
+   inShader->bind();
 }
 
 void Context::setPixelShader( PixelShader* inShader )
 {
+   inShader->bind();
 }

@@ -3,44 +3,14 @@
 
 #include "built/simulationKernel.hpp"
 
-static const int kWindowSize = 512;
-static const int kFluidSize = 256;
-
-static const char* kPassthroughVertexShader =
-"vs.1.1\n"
-"dcl_position v0\n"
-"dcl_texcoord0 v1\n"
-"mov oPos, v0\n"
-"mov oT0, v1\n"
-;
+static const int kWindowSize = 1024; //512;
+static const int kFluidSize = 512; //256;
 
 static const char* kPassthroughPixelShader =
-"ps_2_0\n"
-"dcl t0.xy\n"
-"dcl_2d s0\n"
-"texld r0, t0, s0\n"
+   "!!ARBfp1.0\n"
+   "TEX result.color, fragment.texcoord[0], texture[0], RECT;\n"
+   "END\n";
 
-"mov r1, c4\n"
-
-//"dp3 r0.w, r0, c0\n" // diffuse
-//"mad r1, r0.w, c1, r1\n"
-
-"dp3 r0.w, r0, c2\n" // specular
-"mul r0.w, r0.w, r0.w\n" // specexp = 2
-"mul r0.w, r0.w, r0.w\n" // specexp = 4
-"mul r0.w, r0.w, r0.w\n" // specexp = 8
-"mad r1, r0.w, c3, r1\n"
-
-"mov oC0, r1\n"
-;
-/*
-static const D3DVERTEXELEMENT9 kVertexFormat[] =
-{
-	{ 0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-	{ 0, 4*sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-	D3DDECL_END()
-};
-*/
 struct Vertex
 {
   float x, y, z, w;
@@ -58,20 +28,25 @@ RenderWindow::RenderWindow()
   
   context = Context::create( this );
 
-  HGLRC glContext = context->getGLContext();
-
-  vertexShader = context->createVertexShader( kPassthroughVertexShader );
-  pixelShader = context->createPixelShader( kPassthroughPixelShader );
-
   // Initialize the Brook Runtime
   // We pass in the identifier of the runtime we wish to use,
   // as well as a context value that holds our existing
   // rendering device...
-  brook::initialize( "ogl", (void*) glContext );
+  brook::initialize( "ogl", (void*) context->getGLContext() );
+  brook::unbind();
 
-  brook::bind();
+  /*
+   * These must be created after brook::initialize() or else there can be
+   * weird collisions in the program IDs they're given with the ones BRT
+   * uses internally.
+   */
+
+  context->bind();
+  pixelShader = context->createPixelShader( kPassthroughPixelShader );
+
 
   // Create streams
+  brook::bind();
   fluidStream0 = stream::create<float4>( kFluidSize, kFluidSize );
   fluidStream1 = stream::create<float4>( kFluidSize, kFluidSize );
   normalStream = stream::create<float3>( kFluidSize, kFluidSize );
@@ -149,7 +124,6 @@ void RenderWindow::handleIdle()
   if( !context->beginScene() ) return;
   context->clear();
 
-  context->setVertexShader( vertexShader );
   context->setPixelShader( pixelShader );
 
   float4 pixelShaderConst;
@@ -167,13 +141,13 @@ void RenderWindow::handleIdle()
   Vertex vertex;
 
   float left = -1.0f, right = 1.0f, top = 1.0f, bottom = -1.0f;
-  float texleft = 0.0f, texright = 256, textop = 0.0f, texbottom = 256;
+  float texleft = 0.0f, texright = kFluidSize, textop = 0.0f, texbottom = kFluidSize;
 
 #define GL_TEXTURE_RECTANGLE_ARB          0x84F5
 
   glBindTexture( GL_TEXTURE_RECTANGLE_ARB, normalTexture );
   glEnable( GL_TEXTURE_RECTANGLE_ARB );
-  glColor3f(1,1,1);
+  glColor3f(1,0,1);
 
   glBegin(GL_TRIANGLE_STRIP);
   for( int i = 0; i < 4; i++ )
@@ -188,7 +162,8 @@ void RenderWindow::handleIdle()
     vertex.tz = 0.5f;
     vertex.tw = 1.0f;
 
-    glTexCoord4f( vertex.tx, vertex.ty, vertex.tz, vertex.tw );
+    //glTexCoord4f( vertex.tx, vertex.ty, vertex.tz, vertex.tw );
+    glTexCoord2f( vertex.tx, vertex.ty );
     glVertex4f( vertex.x, vertex.y, vertex.z, vertex.w );
   }
   glEnd();

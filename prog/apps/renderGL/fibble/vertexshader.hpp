@@ -8,11 +8,14 @@ namespace fibble {
   class VertexShader
   {
   public:
-	  ~VertexShader();
+     ~VertexShader();
+     void bind();
 
   private:
-    friend class Context;
-	  VertexShader( Context* inContext, const std::string& inSource );
+     friend class Context;
+     VertexShader( Context* inContext, const std::string& inSource );
+
+     unsigned int _id;
   };
 
 }

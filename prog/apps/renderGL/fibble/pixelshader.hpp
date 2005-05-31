@@ -8,11 +8,13 @@ namespace fibble {
   class PixelShader
   {
   public:
-	  ~PixelShader();
+     ~PixelShader();
+     void bind();
 
   private:
     friend class Context;
-	  PixelShader( Context* inContext, const std::string& inSource );
+    PixelShader( Context* inContext, const std::string& inSource );
+    unsigned int _id;
   };
 
 }
