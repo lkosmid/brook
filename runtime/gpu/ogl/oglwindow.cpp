@@ -564,7 +564,7 @@ OGLWindow::OGLWindow() {
   if (static_window_created)
     return;
   
-  pDisplay = XOpenDisplay(NULL);
+  pDisplay = XOpenDisplay(":0.0");
   if (pDisplay == NULL) {
     fprintf (stderr, "Could not connect to X Server.\n");
     exit(1);
