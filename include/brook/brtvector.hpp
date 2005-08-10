@@ -331,10 +331,10 @@ public:
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE>
       vec<VALUE,4> mask4 (const BRT_TYPE&in,int X, int Y,int Z,int W) {
-        f[X]=in.getAt(0);
-        f[Y]=in.getAt(1);
-        f[Z]=in.getAt(2);
-        f[W]=in.getAt(3);
+        f[X]=GetAt<BRT_TYPE>(in,0);
+        f[Y]=GetAt<BRT_TYPE>(in,1);
+        f[Z]=GetAt<BRT_TYPE>(in,2);
+        f[W]=GetAt<BRT_TYPE>(in,3);
         return vec<VALUE,4>(unsafeGetAt(X),
                             unsafeGetAt(Y),
                             unsafeGetAt(Z),
@@ -342,20 +342,20 @@ public:
     }
     template <class BRT_TYPE>
       vec<VALUE,3> mask3 (const BRT_TYPE&in,int X,int Y,int Z) {
-        f[X]=in.getAt(0);
-        f[Y]=in.getAt(1);
-        f[Z]=in.getAt(2);
+        f[X]=GetAt<BRT_TYPE>(in,0);
+        f[Y]=GetAt<BRT_TYPE>(in,1);
+        f[Z]=GetAt<BRT_TYPE>(in,2);
         return vec<VALUE,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
     }
     template <class BRT_TYPE> 
       vec<VALUE,2> mask2 (const BRT_TYPE&in,int X,int Y) {
-        f[X]=in.getAt(0);
-        f[Y]=in.getAt(1);
+        f[X]=GetAt<BRT_TYPE>(in,0);
+        f[Y]=GetAt<BRT_TYPE>(in,1);
         return vec<VALUE,2>(unsafeGetAt(X),unsafeGetAt(Y));
     }
     template <class BRT_TYPE> 
       vec<VALUE,1> mask1 (const BRT_TYPE&in,int X) {
-        f[X]=in.getAt(0);
+        f[X]=GetAt<BRT_TYPE>(in,0);
         return vec<VALUE,1>(unsafeGetAt(X));
     }    
     template <class BRT_TYPE> 

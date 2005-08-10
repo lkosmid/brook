@@ -19,7 +19,9 @@ typedef struct fixed {
   fixed& operator = (const __BrtFloat1&input){
     return (*this=fixed(input.unsafeGetAt(0)));
   }
-      unsigned char x;//unsigned char pad1,pad2,pad3;
+  float getAt(int i) const {return castToArg(1.0f);}
+  typedef float TYPE;
+  unsigned char x;//unsigned char pad1,pad2,pad3;
 } fixed;
 
 typedef struct fixed2 {
@@ -63,7 +65,9 @@ typedef struct shortfixed {
   shortfixed& operator = (const __BrtFloat1&input){
     return (*this=shortfixed(input.unsafeGetAt(0)));
   }
-      unsigned short x;//unsigned short pad1,pad2,pad3;
+  float getAt(int i) const {return castToArg(1.0f);}
+  typedef float TYPE;
+  unsigned short x;//unsigned short pad1,pad2,pad3;
 } shortfixed;
 
 typedef struct shortfixed2 {
