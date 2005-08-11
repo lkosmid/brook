@@ -32,6 +32,8 @@ typedef struct fixed2 {
   unsigned char x,y;//,pad2,pad3;
   operator __BrtFloat2() const{return __BrtFloat2(((float)x)/255.0f,((float)y)/255.0f);}
   template <class T> T castToArg(const T &dummy) const{return T(((float)x)/255.0f,((float)y)/255.0f);}
+  float getAt(int i) const {return __BrtFloat2(*this).getAt(i);}
+  typedef float TYPE;
 } fixed2;
 
 typedef struct fixed3 {
