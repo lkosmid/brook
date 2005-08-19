@@ -17,7 +17,6 @@
 #include "getopt.h"
 #include "Bitvector.h"
 #include "FileIO.h"
-#include "streamTypes.h"
 #include "ppmImage.h"
 #include "timer.h"
 
