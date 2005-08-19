@@ -32,7 +32,7 @@ typedef struct fixed2 {
   unsigned char x,y;//,pad2,pad3;
   operator __BrtFloat2() const{return __BrtFloat2(((float)x)/255.0f,((float)y)/255.0f);}
   template <class T> T castToArg(const T &dummy) const{return T(((float)x)/255.0f,((float)y)/255.0f);}
-  float getAt(int i) const {return __BrtFloat2(*this).getAt(i);}
+  float getAt(int i) const {__BrtFloat2 tmp; return castToArg(tmp).getAt(i);}
   typedef float TYPE;
 } fixed2;
 
@@ -44,6 +44,8 @@ typedef struct fixed3 {
   operator __BrtFloat3() const{return __BrtFloat3(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f);}
   template <class T> T castToArg(const T&dummy) const {return T(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f);}
   unsigned char x,y,z;//,pad3;
+  float getAt(int i) const {__BrtFloat4 tmp; return castToArg(tmp).getAt(i);}
+  typedef float TYPE;
 } fixed3;
 
 typedef struct fixed4 {
@@ -53,6 +55,8 @@ typedef struct fixed4 {
   unsigned char x,y,z,w;
    operator __BrtFloat4() const{return __BrtFloat4(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f,((float)w)/255.0f);}
   template <class T> T castToArg(const T&dummy)const{return T(((float)x)/255.0f,((float)y)/255.0f,((float)z)/255.0f,((float)w)/255.0f);}
+  float getAt(int i) const {__BrtFloat4 tmp; return castToArg(tmp).getAt(i);}
+  typedef float TYPE;
 
 } fixed4;
 
