@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "timing.h"
+
+int fourchannel=0;
+
+
+
+/// below this line is useless garbage for dealing with fixed point data on the CPU. This should be built into brook
+#if 0
+typedef float __BrtFloat1;
+typedef float2 __BrtFloat2;
+typedef float4 __BrtFloat4;
+#endif
+__BrtFloat1 __pack_4ubyte_cpu_inner( __BrtFloat4 input) {
+  unsigned char array[sizeof(float)];
+  void * tmp=array;
+  __BrtFloat1 ret;
+  array[0]=(unsigned char)(input.unsafeGetAt(0)*255.0f);
+  array[1]=(unsigned char)(input.unsafeGetAt(1)*255.0f);
+  array[2]=(unsigned char)(input.unsafeGetAt(2)*255.0f);
+  array[3]=(unsigned char)(input.unsafeGetAt(3)*255.0f);
+  ret=(float)*(float*)tmp;
+  return ret;
+}
+__BrtFloat4 __unpack_4ubyte_cpu_inner( __BrtFloat1 input) {
+  unsigned char array[sizeof(float)/sizeof(unsigned char)];
+  void * tmp=array;
+  __BrtFloat4 ret;
+  float ttmpa;
+  float ttmpb;
+  float ttmpc;
+  float ttmpd;
+  memcpy (tmp,&input,sizeof(float));
+  ttmpa=array[0]/256.;
+  ttmpb=array[1]/256.;
+  ttmpc=array[2]/256.;
+  ttmpd=array[3]/256.;
+  ret.mask1(ttmpa,maskX);
+  ret.mask1(ttmpb,maskY);  
+  ret.mask1(ttmpc,maskZ);  
+  ret.mask1(ttmpd,maskW);  
+  return ret;
+}
+// above this line is useless garbage for dealing with fixed point data on the CPU. This should be built into brook
+
+
+
+/// A kernel that does a 4 channel blur. Dirt simple
+kernel void blur3x3x4(float input[][], out float output<>, float oneNinth) {
+  float2 ul={-1,1};
+  float2 ur={1,1};
+  float2 ll={-1,-1};
+  float2 lr={1,-1};
+  float2 r={1,0};
+  float2 u={0,1};
+  float2 l={-1,0};
+  float2 d={0,-1};
+  float4 sum=(unpack_4ubyte(input[indexof output.xy])
+    +unpack_4ubyte(input[ul+indexof output.xy])
+    +unpack_4ubyte(input[ur+indexof output.xy])
+    +unpack_4ubyte(input[ll+indexof output.xy])
+    +unpack_4ubyte(input[lr+indexof output.xy])
+    +unpack_4ubyte(input[r+indexof output.xy])
+    +unpack_4ubyte(input[u+indexof output.xy])
+    +unpack_4ubyte(input[l+indexof output.xy])
+    +unpack_4ubyte(input[d+indexof output.xy]))*oneNinth;
+  output=pack_4ubyte(sum);
+
+}
+//A kernel that does a 1 channel blur where the bytes are presumed to be next to each other
+//It cant use the fancy simd math to pull out all the values... though this really isn't the bottleneck--no point to optimize it.
+kernel void blur3x3(float input[][], out float output<>, float oneNinth) {
+    float2 ul={-1,1};
+  float2 ur={1,1};
+  float2 ll={-1,-1};
+  float2 lr={1,-1};
+  float2 r={1,0};
+  float2 u={0,1};
+  float2 l={-1,0};
+  float2 d={0,-1};
+  float4 center=unpack_4ubyte(input[indexof output.xy]);
+  float4 upleft=unpack_4ubyte(input[ul+indexof output.xy]);
+  float4 upright=unpack_4ubyte(input[ur+indexof output.xy]);
+  float4 botleft=unpack_4ubyte(input[ll+indexof output.xy]);
+  float4 botright=unpack_4ubyte(input[lr+indexof output.xy]);
+  float4 right=unpack_4ubyte(input[r+indexof output.xy]);
+  float4 up=unpack_4ubyte(input[u+indexof output.xy]);
+  float4 left=unpack_4ubyte(input[l+indexof output.xy]);
+  float4 down=unpack_4ubyte(input[d+indexof output.xy]);
+  float4 result=center;
+  result.x+=center.y+upleft.w+left.w+up.x+up.y+down.x+down.y+botleft.w;
+  result.y+=center.x+center.z+up.x+up.y+up.z+down.x+down.y+down.z;
+  result.z+=center.y+center.w+up.y+up.z+up.w+down.y+down.z+down.w;
+  result.w+=center.z+up.z+up.w+down.z+down.w+upright.x+right.x+botright.x;
+  result*=oneNinth;
+  output=pack_4ubyte(result);
+}
+int main (int argc, char ** argv) {
+  unsigned int i;
+  unsigned int lim=1024;
+  unsigned int size=1024;
+  if (argc>1)
+    size=atoi(argv[1]);
+  if (argc>2)
+    lim=atoi(argv[2]);    
+  if (argc>3)
+    fourchannel=atoi(argv[3]);    
+  {
+    unsigned int measure=fourchannel?size:size/4;
+    float input<measure,size>;
+    float output<measure,size>;
+    unsigned char * data=(unsigned char *)malloc(sizeof(float)*size*measure);
+    memset(data,0x42,sizeof(float)*measure*size);
+    start=GetTime();
+    for (i=0;i<lim;++i) {
+
+      streamRead(input,data);/*streamRead runs at 400 MB/sec*/
+      fourchannel?blur3x3x4(input,output,1./9):blur3x3(input,output,1./9);
+      streamWrite(output,data);/*streamWrite runs at about 400 MB/sec*/
+    }
+    stop=GetTime();
+    {      
+      //we should get around 2 MB a second
+      printf ("%d iterations in %lf seconds for %lf MB per second\n",lim,(stop-(double)start)/1000000.,lim*size*sizeof(float)*measure/(stop-(double)start));
+      //printf ("Memcmp %d\n",memcmp(img.img[1][0],img.img[0][0],height/4*width/4));
+    }
+  }
+  return 0;
+}
