@@ -201,9 +201,11 @@ int main (int argc, char ** argv) {
     memset(data,0x42,sizeof(float)*measure*size);
     start=GetTime();
     for (i=0;i<lim;++i) {
-
+      int j;
       streamRead(input,data);/*streamRead runs at 400 MB/sec*/
-      fourchannel?blur3x3x4(input,output,1./9):blur3x3(input,output,1./9);
+      for (j=0;j<6;++j)
+        fourchannel?blur3x3x4(input,output,1./9):blur3x3(input,output,1./9);
+    
       streamWrite(output,data);/*streamWrite runs at about 400 MB/sec*/
     }
     stop=GetTime();
