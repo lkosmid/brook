@@ -28,10 +28,10 @@ __BrtFloat4 __unpack_4ubyte_cpu_inner( __BrtFloat1 input) {
   unsigned char array[sizeof(float)/sizeof(unsigned char)];
   void * tmp=array;
   __BrtFloat4 ret;
-  float ttmpa;
-  float ttmpb;
-  float ttmpc;
-  float ttmpd;
+  __BrtFloat1 ttmpa;
+  __BrtFloat1 ttmpb;
+  __BrtFloat1 ttmpc;
+  __BrtFloat1 ttmpd;
   memcpy (tmp,&input,sizeof(float));
   ttmpa=array[0]/256.;
   ttmpb=array[1]/256.;
@@ -97,6 +97,79 @@ kernel void blur3x3(float input[][], out float output<>, float oneNinth) {
   result*=oneNinth;
   output=pack_4ubyte(result);
 }
+
+
+
+kernel void blur3x3f4(float4 input[][], out float4 output<>, float oneNinth) {
+    float2 ul={-1,1};
+  float2 ur={1,1};
+  float2 ll={-1,-1};
+  float2 lr={1,-1};
+  float2 r={1,0};
+  float2 u={0,1};
+  float2 l={-1,0};
+  float2 d={0,-1};
+  float4 center=input[indexof output.xy];
+  float4 upleft=unpack_4ubyte(input[ul+indexof output.xy].w);
+  float4 upright=unpack_4ubyte(input[ur+indexof output.xy].x);
+  float4 botleft=unpack_4ubyte(input[ll+indexof output.xy].w);
+  float4 botright=unpack_4ubyte(input[lr+indexof output.xy].x);
+  float4 right=unpack_4ubyte(input[r+indexof output.xy].x);
+  float4 up=input[u+indexof output.xy];
+  float4 upx=unpack_4ubyte(up.x);
+  float4 upy=unpack_4ubyte(up.y);
+  float4 upz=unpack_4ubyte(up.z);
+  float4 upw=unpack_4ubyte(up.w);
+  float4 left=unpack_4ubyte(input[l+indexof output.xy].w);
+  float4 down=input[d+indexof output.xy];
+  float4 downx=unpack_4ubyte(down.x);
+  float4 downy=unpack_4ubyte(down.y);
+  float4 downz=unpack_4ubyte(down.z);
+  float4 downw=unpack_4ubyte(down.w);
+  float4 centerx=unpack_4ubyte(center.x);
+  float4 centery=unpack_4ubyte(center.y);
+  float4 centerz=unpack_4ubyte(center.z);
+  float4 centerw=unpack_4ubyte(center.w);
+  float4 resultx=centerx;
+  float4 resulty=centery;
+  float4 resultz=centerz;
+  float4 resultw=centerw;
+  resultx.xyz+=centerx.yzw+upx.yzw+downx.yzw;
+  resultx.yzw+=centerx.xyz+upx.xyz+downx.xyz;
+  resultx+=upx+downx;
+  resultx.x+=upleft.w+botleft.w+left.w;
+  resultx.w+=centery.x+upy.x+downy.x;
+
+  resulty.xyz+=centery.yzw+upy.yzw+downy.yzw;
+  resulty.yzw+=centery.xyz+upy.xyz+downy.xyz;
+  resulty+=upy+downy;
+  resulty.x+=centerx.w+upx.w+downx.w;
+  resulty.w+=centerz.x+upz.x+downz.x;
+
+
+  resultz.xyz+=centerz.yzw+upz.yzw+downz.yzw;
+  resultz.yzw+=centerz.xyz+upz.xyz+downz.xyz;
+  resultz+=upz+downz;
+  resultz.x+=centery.w+upy.w+downy.w;
+  resultz.w+=centerw.x+upw.x+downw.x;
+
+  resultw.xyz+=centerw.yzw+upw.yzw+downw.yzw;
+  resultw.yzw+=centerw.xyz+upw.xyz+downw.xyz;
+  resultw+=upw+downw;
+  resultw.x+=centerz.w+upz.w+downz.w;
+  resultw.w+=upright.x+botright.x+right.x;
+  
+
+  resultx*=oneNinth;
+  resulty*=oneNinth;
+  resultz*=oneNinth;
+  resultw*=oneNinth;
+  output.x=pack_4ubyte(resultx);
+  output.y=pack_4ubyte(resulty);
+  output.z=pack_4ubyte(resultz);
+  output.w=pack_4ubyte(resultw);
+}
+
 int main (int argc, char ** argv) {
   unsigned int i;
   unsigned int lim=1024;
@@ -107,7 +180,20 @@ int main (int argc, char ** argv) {
     lim=atoi(argv[2]);    
   if (argc>3)
     fourchannel=atoi(argv[3]);    
-  {
+  if (fourchannel==2) {
+    unsigned int measure=size/16;
+    float4 input<measure,size>;
+    float4 output<measure,size>;
+    unsigned char * data=(unsigned char *)malloc(sizeof(float4)*size*measure);
+    memset(data,0x42,sizeof(float)*measure*size);
+    start=GetTime();
+    for (i=0;i<lim;++i) {
+      streamRead(input,data);/*streamRead runs at 400 MB/sec*/
+      blur3x3f4(input,output,1./9);
+      streamWrite(output,data);/*streamWrite runs at about 400 MB/sec*/
+    }
+    stop=GetTime();
+  }else {
     unsigned int measure=fourchannel?size:size/4;
     float input<measure,size>;
     float output<measure,size>;
@@ -121,11 +207,11 @@ int main (int argc, char ** argv) {
       streamWrite(output,data);/*streamWrite runs at about 400 MB/sec*/
     }
     stop=GetTime();
-    {      
-      //we should get around 2 MB a second
-      printf ("%d iterations in %lf seconds for %lf MB per second\n",lim,(stop-(double)start)/1000000.,lim*size*sizeof(float)*measure/(stop-(double)start));
-      //printf ("Memcmp %d\n",memcmp(img.img[1][0],img.img[0][0],height/4*width/4));
-    }
+  }
+  {      
+    //we should get around 2 MB a second
+    printf ("%d iterations in %lf seconds for %lf MB per second\n",lim,(stop-(double)start)/1000000.,lim*(double)size*1000000.*(fourchannel==1?4.:1.)*(double)size/(stop-(double)start)/1024./1024.);
+    //printf ("Memcmp %d\n",memcmp(img.img[1][0],img.img[0][0],height/4*width/4));
   }
   return 0;
 }
