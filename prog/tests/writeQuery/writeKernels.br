@@ -39,20 +39,3 @@ krn_CopyBelowThresholdKill(float inStream<>, float t, out float o<>)
    }
    o = inStream;
 }
-
-
-/*
- * krn_CopyBelowThresholdMask --
- *
- *      Unconditionally copies the input to the output.  Meant to be used in
- *      conjunction with a write_mask that applies the thresholding.
- *
- * Results:
- *      See description.
- */
-
-kernel void
-krn_CopyBelowThresholdMask(float inStream<>, out float o<>)
-{
-   o = inStream;
-}

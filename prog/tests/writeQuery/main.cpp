@@ -8,8 +8,8 @@
 #include <brook/brook.hpp>
 #include "built/writeKernels.hpp"
 
-static const int size = 100;
-static const float threshold = 100.0f;
+static const int size = 400;
+static const float threshold = (float) (size * size / 2);
 
 int
 main(int argc, char *argv[])
@@ -20,18 +20,37 @@ main(int argc, char *argv[])
    write_mask m = write_mask::create(size, size);
    stream inStream = stream::create<float>(size, size);
    stream outStream = stream::create<float>(size, size);
-   float *data, *maskData;
+   float *data;
    int numCopied, i, j;
 
    data = (float *) malloc(size * size * sizeof(float));
-   maskData = (float *) malloc(size * size * sizeof(float));
    for (i = 0; i < size; i++) {
       for (j = 0; j < size; j++) {
          data[i * size + j] = (float) (i * size + j);
-         maskData[i * size + j] = (float) (i * size + j < threshold);
       }
    }
    inStream.read(data);
+
+   /*
+    * It takes a lot of calls to get all this done.  Such is life.  Here are
+    * the rules, as I understand them:
+    *
+    *   1. The mask must be bound (duh).
+    *   2. The mask must be writable even in order to clear it.
+    *   3. The mask must be enabled in order for ATI cards to run
+    *      write_queries correctly (specifically, if the depth test is
+    *      disabled, any occlusion query reports that all fragments drew
+    *      even if the shader kills some of them).
+    *
+    * So, we bind, clear, and enable the write_masking (just with an empty
+    * mask) for the entire run so that we can use the write_queries.
+    */
+
+   m.bind();
+   m.enableSet();
+   m.clear();
+   m.disableSet();
+   m.enableTest();
 
    q.begin();
    krn_CopyStream(inStream, outStream);
@@ -39,27 +58,21 @@ main(int argc, char *argv[])
    numCopied = q.count();
    std::cout << numCopied << " elements copied" << std::endl;
 
-   m.bind();
    m.enableSet();
-   m.clear();
-
    q.begin();
    krn_CopyBelowThresholdKill(inStream, threshold, outStream);
    q.end();
    numCopied = q.count();
+   m.disableSet();
    std::cout << numCopied << " elements copied" << std::endl;
 
-   m.disableSet();
-   m.unbind();
-
-   m.bind();
-   m.enableTest();
    q.begin();
-   krn_CopyBelowThresholdMask(inStream, outStream);
+   krn_CopyStream(inStream, outStream);
    q.end();
-   m.disableTest();
-   m.unbind();
    numCopied = q.count();
    std::cout << numCopied << " elements copied" << std::endl;
+
+   m.unbind();
+   free(data);
    return 0;
 }
