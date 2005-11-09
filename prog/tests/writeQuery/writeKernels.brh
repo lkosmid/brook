@@ -8,6 +8,7 @@
 #define __WRITEKERNELS_BRH__
 
 kernel void krn_CopyStream(float inStream<>, out float o<>);
-kernel void krn_CopyBelowThreshold(float inStream<>, float t, out float o<>);
+kernel void krn_CopyBelowThresholdKill(float i<>, float t, out float o<>);
+kernel void krn_CopyBelowThresholdMask(float i<>, out float o<>);
 
 #endif
