@@ -10,8 +10,7 @@
 #include <brook/brook.hpp>
 #include "built/writeKernels.hpp"
 
-static const int size = 400;
-static const float threshold = (float) (size * size / 2);
+static int size = 400;
 
 int
 main(int argc, char *argv[])
@@ -22,6 +21,11 @@ main(int argc, char *argv[])
       std::cout << "*Runtime unspecified, using dx9*" << std::endl;
       brook::initialize("dx9", NULL);
    }
+   if (argc > 1) {
+      size = strtol(argv[1], NULL, 0);
+      std::cout << "*Using size of " << size << "x" << size << "*" << std::endl;
+   }
+   float threshold = (float) (size * size / 2);
    write_query q = write_query::create();
    write_mask m = write_mask::create(size, size);
    stream inStream = stream::create<float>(size, size);
