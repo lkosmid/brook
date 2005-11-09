@@ -5,6 +5,8 @@
  *      query functionality.
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <brook/brook.hpp>
 #include "built/writeKernels.hpp"
 
@@ -16,6 +18,10 @@ main(int argc, char *argv[])
 {
    using namespace brook;
 
+   if (getenv("BRT_RUNTIME") == NULL) {
+      std::cout << "*Runtime unspecified, using dx9*" << std::endl;
+      brook::initialize("dx9", NULL);
+   }
    write_query q = write_query::create();
    write_mask m = write_mask::create(size, size);
    stream inStream = stream::create<float>(size, size);
@@ -56,7 +62,8 @@ main(int argc, char *argv[])
    krn_CopyStream(inStream, outStream);
    q.end();
    numCopied = q.count();
-   std::cout << numCopied << " elements copied" << std::endl;
+   std::cout << numCopied << " elements copied (expecting "
+             << size * size << ")" << std::endl;
 
    m.enableSet();
    q.begin();
@@ -64,13 +71,15 @@ main(int argc, char *argv[])
    q.end();
    numCopied = q.count();
    m.disableSet();
-   std::cout << numCopied << " elements copied" << std::endl;
+   std::cout << numCopied << " elements copied (expecting "
+             << threshold << ")" << std::endl;
 
    q.begin();
    krn_CopyStream(inStream, outStream);
    q.end();
    numCopied = q.count();
-   std::cout << numCopied << " elements copied" << std::endl;
+   std::cout << numCopied << " elements copied (expecting "
+             << size * size - threshold << ")" << std::endl;
 
    m.unbind();
    free(data);
