@@ -34,5 +34,6 @@ namespace brook {
       size_t _extentX, _extentY;
 
       IDirect3DSurface9* _depthStencilSurface;
-   };
+      IDirect3DSurface9* _colorSurface;
+  };
 }

@@ -22,6 +22,17 @@ namespace brook
          NULL );
       DX9AssertResult( result, "failed to create depth buffer in DX9WriteMask::DX9WriteMask" );
 
+      result = _device->CreateRenderTarget(
+         _extentX, _extentY,
+         D3DFMT_A8R8G8B8,
+         D3DMULTISAMPLE_NONE,
+         0,
+         FALSE,
+         &_colorSurface,
+         NULL );
+      DX9AssertResult( result, "failed to create color buffer in DX9WriteMask::DX9WriteMask" );
+
+
       bind();
       clear();
       unbind();
@@ -100,6 +111,9 @@ namespace brook
       HRESULT result;
 
       _context->beginScene();
+
+      result = _device->SetRenderTarget( 0, _colorSurface );
+      DX9AssertResult( result, "failed to set render target in DX9Writemask::clear" );
 
       result = _device->Clear( 0, 0, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0 );
       DX9AssertResult( result, "failed to clear depth buffer in DX9WriteMask::clear" );
