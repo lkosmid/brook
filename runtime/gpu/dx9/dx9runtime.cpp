@@ -1243,6 +1243,9 @@ namespace brook
 
     for( size_t j = 0; j < _maximumOutputCount; j++ )
     {
+      if( j != 0 )
+         _device->SetRenderTarget( j, NULL );
+
       if( _boundOutputs[j] )
         _boundOutputs[j]->markCachedDataChanged();
     }
