@@ -1,0 +1,31 @@
+/*
+ * writeKernels.brh --
+ *
+ *      Prototypes for the kernels in writeKernels.br.
+ */
+
+#ifndef __WRITEKERNELS_BRH__
+#define __WRITEKERNELS_BRH__
+
+typedef struct ray_t {
+  float3 o;
+  float3 d;
+} Ray;
+
+typedef struct shadinghit_t {
+  float4 position3_time1;
+  float3 normal;
+  float3 color;
+  float4 specular3_exp;
+} ShadingHit;
+
+kernel void krnKD_Initialize( out float4 outCoreState<>, out float4 outIntersectState<> );
+
+kernel void krnKD_Leaf(
+  float4 inCoreState<>, float4 inIntersectState<>,
+  out float4 outCoreState<>, out float4 outIntersectState<> );
+
+kernel void
+krnGenEyeRays( float2 wpos_norm<>, out Ray ray<>);
+
+#endif

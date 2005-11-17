@@ -1,0 +1,31 @@
+#include "kernels.brh"
+
+kernel void krnKD_Initialize(out float4 outCoreState<>, out float4 outIntersectState<> )
+{
+  outCoreState = 11; 
+  outIntersectState = 22;
+}
+
+kernel void krnKD_Leaf(
+  float4 inCoreState<>, float4 inIntersectState<>,
+  out float4 outCoreState<>, out float4 outIntersectState<> )
+{
+  float4 coreState = inCoreState;
+  float4 intersectState = inIntersectState;
+
+  if( coreState.x > 0 )
+  {
+    coreState = float4( 0, 1, 2, 3 );
+    intersectState = float4( 4, 3, 2, 1 );
+  }
+
+  outCoreState = coreState;
+  outIntersectState = intersectState;
+}
+
+kernel void
+krnGenEyeRays( float2 filmPos<>, out Ray ray<>)
+{ 
+  ray.o = 0;
+  ray.d = 0;
+}
