@@ -53,3 +53,9 @@ TEMP2     := $(addprefix $(AR_LIBLINK_PREFIX), $(LIBRARIES))
 ARFLAGS   += $(addsuffix $(AR_LIBLINK_SUFFIX), $(TEMP2))
 RUNTIME_LIBS  := brook
 RANLIB    := true 
+
+ifdef DXSDK_DIR
+CFLAGS += $(C_INCLUDE_FLAG)"$(DXSDK_DIR)/Include"
+LDFLAGS += $(LD_LIBDIR_FLAG)"$(DXSDK_DIR)/Lib/$(PROCESSOR_ARCHITECTURE)"
+endif
+
