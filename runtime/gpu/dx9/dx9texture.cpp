@@ -344,6 +344,7 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
     result = shadowSurface->UnlockRect();
     DX9AssertResult( result, "UnlockRect failed" );
   }
+  this->validateCachedData();
 }
 
 void DX9Texture::getPixelAt( int x, int y, float4& outResult ) {
@@ -400,6 +401,9 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride,  size_t toElement
   {
     char* outputPixel = outputLine;
     const char* inputPixel = inputLine;
+    if (numElements==1&&elementSize==1&&toElementStride==fromElementStride) {
+      memcpy(outputPixel,inputPixel,columnCount);
+    }else 
     for( size_t x = 0; x < columnCount; x++ )
     {
       // TIM: for now we assume floating-point components
