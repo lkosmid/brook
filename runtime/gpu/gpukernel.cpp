@@ -445,10 +445,11 @@ namespace brook
       reduceToStream( outputTexture, 1, 1 );
 
       float4 reductionResult;
-      unsigned int domainMin = 0;
-      unsigned int domainMax = 1;
-      unsigned int extents = 1;
-      _context->getTextureData( outputTexture, (float*)&reductionResult, sizeof(reductionResult), 1, 1, &domainMin, &domainMax, &extents, false );
+      unsigned int domainMin[2] = { 0, 0 };
+      unsigned int domainMax[2] = { 1, 1 };
+      unsigned int extents[2] = { 1, 1 };
+      _context->getTextureData( outputTexture, (float*)&reductionResult, sizeof(reductionResult), 1, 2, domainMin, domainMax, extents, false );
+
       if( outputReductionType == __BRTFLOAT )
         *((float*)outputReductionData) = *((float*)&reductionResult);
       else if( outputReductionType == __BRTFLOAT2 )
@@ -862,6 +863,7 @@ namespace brook
         // "reduction" factor for the new slop data
         // is one, so we can just copy it...
 
+        _context->bindVertexShader( _context->getPassthroughVertexShader() );
         _context->bindPixelShader( _context->getPassthroughPixelShader() );
         _context->bindTexture( 0, inputBuffer );
 
@@ -997,6 +999,7 @@ namespace brook
 
     TextureHandle outputBuffer = ioState.outputTexture;
 
+    _context->bindVertexShader( _context->getPassthroughVertexShader() );
     _context->bindPixelShader( _context->getPassthroughPixelShader() );
     _context->bindTexture( 0, inputBuffer );
     _context->bindOutput( 0, outputBuffer );
