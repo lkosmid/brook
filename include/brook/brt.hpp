@@ -106,7 +106,8 @@ typedef struct shortfixed4 {
   unsigned short x,y,z,w;
    operator __BrtFloat4() const{return __BrtFloat4(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f,((float)w)/65535.0f);}
   template <class T> T castToArg(const T&dummy)const{return T(((float)x)/65535.0f,((float)y)/65535.0f,((float)z)/65535.0f,((float)w)/65535.0f);}
-
+  float getAt(int i) const {__BrtFloat4 tmp; return castToArg(tmp).getAt(i);}
+  typedef float TYPE;    
 } shortfixed4;
 
 
