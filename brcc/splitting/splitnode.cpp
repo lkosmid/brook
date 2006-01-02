@@ -103,7 +103,7 @@ void SplitNode::compress()
 
 void SplitNode::printTemporaryName( std::ostream& inStream )
 {
-  inStream << "__temp" << (unsigned int)(this);
+  inStream << "__temp" << (size_t)(this);
 }
 
 void InputSplitNode::printTemporaryExpression( std::ostream& inStream ) {
