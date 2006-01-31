@@ -32,6 +32,8 @@ public:
   virtual void traverse( SplitNode* inNode ) = 0;
 
   void traverseGraphChildren( SplitNode* inNode );
+
+    virtual ~SplitNodeTraversal() {}
 };
 
 class SplitArgumentCounter
@@ -53,6 +55,7 @@ public:
   SplitArgumentTraversal( std::ostream& inStream, SplitNode* inOutputPosition )
     : stream(inStream), outputPosition(inOutputPosition), hasOutput(false) {}
 
+    virtual ~SplitArgumentTraversal() {}
   void traverse( SplitNode* inNode );
 
 private:
@@ -66,8 +69,8 @@ class SplitStatementTraversal :
   public SplitNodeTraversal
 {
 public:
-  SplitStatementTraversal( std::ostream& inStream, SplitNode* inOutputPosition )
-    : stream(inStream), outputPosition(inOutputPosition) {}
+    SplitStatementTraversal( std::ostream& inStream, SplitNode* inOutputPosition )  : stream(inStream), outputPosition(inOutputPosition) {}
+    virtual ~SplitStatementTraversal() {}
   void traverse( SplitNode* inNode );
 
 private:
@@ -79,8 +82,8 @@ class SplitAnnotationTraversal :
   public SplitNodeTraversal
 {
 public:
-  SplitAnnotationTraversal( std::ostream& inStream, SplitNode* inOutputPosition )
-    : stream(inStream), outputPosition(inOutputPosition) {}
+  SplitAnnotationTraversal( std::ostream& inStream, SplitNode* inOutputPosition )  : stream(inStream), outputPosition(inOutputPosition) {}
+      virtual ~SplitAnnotationTraversal() {}
   void traverse( SplitNode* inNode );
 
 private:

@@ -46,6 +46,7 @@ namespace brook {
     class ArgumentType
     {
     public:
+        virtual ~ArgumentType() {}
       virtual TextureHandle getTexture( GPUKernel* inKernel, 
                                         size_t inIndex, 
                                         size_t inComponent );
@@ -61,6 +62,7 @@ namespace brook {
     class StreamArgumentType : public ArgumentType
     {
     public:
+        virtual ~StreamArgumentType() {}
       TextureHandle getTexture( GPUKernel* inKernel, 
                                 size_t inIndex, 
                                 size_t inComponent );

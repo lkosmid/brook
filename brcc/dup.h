@@ -36,6 +36,8 @@
 
 template <class R> class Dup {
   public:
+    virtual ~Dup() {}
+    
     // Virtual deep-copy method; 
     // so it can't be applied to a NULL pointer. 
     virtual R * dup0 (void) const = 0 ;

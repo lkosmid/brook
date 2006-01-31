@@ -7,6 +7,7 @@ namespace brook
    class IWriteQuery
    {
    public:
+       virtual ~IWriteQuery() {}
       virtual void acquireReference() = 0;
       virtual void releaseReference() = 0;
 

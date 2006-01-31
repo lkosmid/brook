@@ -7,6 +7,7 @@ namespace brook
    class IWriteMask
    {
    public:
+       virtual ~IWriteMask() {}
       virtual void acquireReference() = 0;
       virtual void releaseReference() = 0;
 

@@ -43,7 +43,8 @@ public:
 
   // TIM: complete hack, even for me
   virtual bool mustScaleAndBiasGatherIndices() const { return false; }
-
+    virtual ~SplitCompiler() {}
+    
 protected:
   virtual void printHeaderCode( std::ostream& inStream ) const {};
   virtual void printFooterCode( std::ostream& inStream ) const {};

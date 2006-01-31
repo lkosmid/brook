@@ -13,6 +13,9 @@ namespace brook {
   class GPUContext
   {
   public:
+
+      virtual ~GPUContext() {}
+      
     typedef void* TextureHandle;
     typedef void* PixelShaderHandle;
     typedef void* VertexShaderHandle;

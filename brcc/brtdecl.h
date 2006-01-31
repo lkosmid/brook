@@ -135,6 +135,7 @@ public:
   bool copy_on_write;
   unsigned int dimension;
   CPUGatherType(ArrayType &t,bool copy_on_write);
+    virtual ~CPUGatherType() {}
   Type * dup0()const;
   virtual Type ** getSubType() {return &subtype;}
    void printType(std::ostream & out, Symbol *name, bool showBase, int level, bool raw=false) const;

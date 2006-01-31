@@ -97,6 +97,7 @@ public:
 		saturate=  sat?1:0;
 		acc=a;
 	}
+    virtual ~InstructionFlags() {}
 	PRINT_PROTOTYPES;
 };
 class OpCode{

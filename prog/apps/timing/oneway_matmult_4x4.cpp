@@ -1691,7 +1691,7 @@ void  Matmult4x4_1way_Time(int  inStreamSize)
   printf("stream size = %d * %d * 4*float4\n",inStreamSize,inStreamSize);
 //  printf("\n\n");
 //  printf("default\n");
-  printf("%4d  %9d",MAX_ITERS,time);
+  printf("%4d  %9d  %f",MAX_ITERS,time, flops);
 //  printf("\n\n");
 //  printf("pretransposed\n");
 //  printf("%4d  %9d  %5.6f",MAX_ITERS,pretransposedTime,pretransposedFlops);
