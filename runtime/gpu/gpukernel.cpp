@@ -535,10 +535,19 @@ namespace brook
     // Execute
     _context->bindVertexShader( vertexShader );
     _context->bindPixelShader( pixelShader );
-    
-    _context->drawRectangle( _outputRegion, 
-                             &(_inputInterpolants[0]), 
-                             _inputInterpolants.size() );
+
+    if(_inputInterpolants.size() )
+    {
+        _context->drawRectangle( _outputRegion, 
+                                 &(_inputInterpolants[0]), 
+                                 _inputInterpolants.size() );
+    }
+    else
+    {
+        _context->drawRectangle( _outputRegion, 
+                                 NULL, 
+                                 0 );
+    }
     clearInputs();
   }
 
