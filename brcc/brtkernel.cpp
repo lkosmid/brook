@@ -397,13 +397,17 @@ void BRTCPUKernelCode::printInnerCode (std::ostream & out) const {
   FunctionType *ft = static_cast<FunctionType *> (fDef->decl->form);
 
   enhanced_name.name = "__"+fDef->decl->name->name+"_cpu_inner";
+  std::string white = whiteout ("void "+enhanced_name.name+"(");
 
+  if (!(ft->getBase()->typemask & BT_Void)) {
+      out << "static ";
+      white = "       "+white;
+  }
   ft->printBase(out,0);
   out << " ";
   ft->printBefore(out,&enhanced_name,0);
   out << "(";
 
-  std::string white = whiteout ("void "+enhanced_name.name+"(");
 
   // Print the function arguments
   for (i=0;i<ft->nArgs;++i) {
