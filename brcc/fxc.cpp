@@ -77,6 +77,11 @@ compile_fxc (const char *name,
      targetstring = ps30_targetstring;
      targetIsShaderModel3 = true;
      break;
+  case CODEGEN_CTM:
+     targetstring = ps30_targetstring;
+     targetIsShaderModel3 = true;
+     targetUsesRect = true;
+     break;
   default:
      fprintf(stderr, "Unsupported fxc target.\n");
      return NULL;
@@ -128,6 +133,9 @@ compile_fxc (const char *name,
        break;
     case CODEGEN_PS30:
        fprintf(stderr, "PS30 target.");
+       break;
+    case CODEGEN_CTM:
+       fprintf(stderr, "CTM target.");
        break;
     default:
        break;

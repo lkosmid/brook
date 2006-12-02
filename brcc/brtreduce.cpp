@@ -65,6 +65,13 @@ BRTPS30ReduceCode::BRTPS30ReduceCode(const FunctionDef& _fDef)
 {
 }
 
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BRTCTMReduceCode::BRTCTMReduceCode(const FunctionDef& _fDef)
+  : BRTCTMKernelCode(_fDef)//converts gathers
+{
+}
+
+
 void
 BRTPS20ReduceCode::printCode(std::ostream& out) const
 {
@@ -87,5 +94,11 @@ void
 BRTPS30ReduceCode::printCode(std::ostream& out) const
 {
   this->BRTPS30KernelCode::printCode(out);
+}
+
+void
+BRTCTMReduceCode::printCode(std::ostream& out) const
+{
+  this->BRTCTMKernelCode::printCode(out);
 }
 

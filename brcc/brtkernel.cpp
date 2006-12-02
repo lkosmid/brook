@@ -300,6 +300,13 @@ BRTPS30KernelCode::printCode(std::ostream& out) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
+BRTCTMKernelCode::printCode(std::ostream& out) const
+{
+   printCodeForType(out, CODEGEN_CTM);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
 BRTGPUKernelCode::printCodeForType(std::ostream& out,
                                    CodeGenTarget target) const
 {

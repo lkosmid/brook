@@ -120,6 +120,7 @@ CodeGen_Init(void) {
       shadercompile[CODEGEN_PS2B] = compile_fxc;
       shadercompile[CODEGEN_PS2A] = compile_fxc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
+      shadercompile[CODEGEN_CTM]  = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
@@ -131,11 +132,13 @@ CodeGen_Init(void) {
       shadercompile[CODEGEN_PS2B] = compile_cgc;
       shadercompile[CODEGEN_PS2A] = compile_cgc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
+      shadercompile[CODEGEN_CTM]  = compile_fxc;
 #else
       shadercompile[CODEGEN_PS20] = NULL;
       shadercompile[CODEGEN_PS2B] = NULL;
       shadercompile[CODEGEN_PS2A] = NULL;
       shadercompile[CODEGEN_PS30] = NULL;
+      shadercompile[CODEGEN_CTM]  = NULL;
 #endif
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
@@ -146,6 +149,7 @@ CodeGen_Init(void) {
       shadercompile[CODEGEN_PS2B] = compile_fxc;
       shadercompile[CODEGEN_PS2A] = compile_fxc;
       shadercompile[CODEGEN_PS30] = compile_fxc;
+      shadercompile[CODEGEN_CTM]  = compile_fxc;
       shadercompile[CODEGEN_FP30] = compile_cgc;
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
@@ -1894,6 +1898,7 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
      case CODEGEN_PS2B:
      case CODEGEN_PS2A:
      case CODEGEN_PS30:
+     case CODEGEN_CTM:
        commentString = "//";
        break;
      default:
@@ -1929,6 +1934,7 @@ generateShaderTechnique(Decl** args, int nArgs, const char* name,
 
   if( (target == CODEGEN_PS2B ||
        target == CODEGEN_PS30 ||
+       target == CODEGEN_CTM  ||
        //target == CODEGEN_ARB  ||
        target == CODEGEN_FP40 ||
        globals.arch == GPU_ARCH_X800 ||
@@ -2076,7 +2082,8 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
   case CODEGEN_PS20:
   case CODEGEN_PS2B:
   case CODEGEN_PS2A:
-  case CODEGEN_PS30: {
+  case CODEGEN_PS30:
+  case CODEGEN_CTM: {
     std::auto_ptr<SplitCompiler> tmp( new SplitCompilerHLSL() );
     compiler = tmp;
     break;

@@ -141,6 +141,8 @@ parse_args (int argc, char *argv[]) {
 	  globals.target |= TARGET_PS2A;
 	else if (strcasecmp (optarg, "ps30") == 0)
 	  globals.target |= TARGET_PS30;
+	else if (strcasecmp (optarg, "ctm") == 0)
+	  globals.target |= TARGET_CTM;
 	else if (strcasecmp (optarg, "fp30") == 0)
 	  globals.target |= TARGET_FP30;
 	else if (strcasecmp (optarg, "fp40") == 0)
@@ -176,7 +178,7 @@ parse_args (int argc, char *argv[]) {
   if (globals.target == 0)
      globals.target = TARGET_PS20 | TARGET_CPU | TARGET_MULTITHREADED_CPU |
                       TARGET_FP30 | TARGET_ARB | TARGET_FP40 | TARGET_PS30 |
-                      TARGET_PS2B | TARGET_PS2A;
+                      TARGET_PS2B | TARGET_PS2A | TARGET_CTM;
 
   argv += optind;
   argc -= optind;
