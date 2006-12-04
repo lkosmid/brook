@@ -379,12 +379,26 @@ namespace brook
       deviceDesc.EnableAutoDepthStencil = FALSE;
       deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
 
-      result = _direct3D->CreateDevice( D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, windowHandle,
-        D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &_device );
+//--------- Support for Multiple adapters---------------------------
+      int nadapters, which_adapter;
+      char *dispvar;
+      nadapters = _direct3D->GetAdapterCount();
+      GPULOG(0) << nadapters << " adapters found\n";
+      GPULOG(0) << "You can set which adapter to use with BRT_ADAPTER\n";
+      if ( dispvar = getenv("BRT_ADAPTER") ) 
+          which_adapter = atoi( dispvar );
+      else 
+          which_adapter = D3DADAPTER_DEFAULT;
+      GPULOG(0) << "Using display " << which_adapter << "\n" ;
+      
+      result = _direct3D->CreateDevice( which_adapter, D3DDEVTYPE_HAL, windowHandle,
+                                        D3DCREATE_HARDWARE_VERTEXPROCESSING, &deviceDesc, &_device );
+//-----------------------------------------------------------------------
+      
       if( FAILED(result) )
       {
-        DX9WARN << "Could not create Direct3D device.";
-        return false;
+          DX9WARN << "Could not create Direct3D device.";
+          return false;
       }
     }
     else
