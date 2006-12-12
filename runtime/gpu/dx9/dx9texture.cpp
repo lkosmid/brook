@@ -415,7 +415,7 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride,  size_t toElement
           if (numElements==1&&elementSize==1&&toElementStride==fromElementStride) {
               memcpy(outputPixel,inputPixel,columnCount);
           }
-          else if( toElementStride == fromElementStride)
+          else if( toElementStride == fromElementStride&&elementSize!=1)
           {
               //fprintf(stderr, "Fast sub copy1\n");
               memcpy(outputPixel, inputPixel, numElements*elementSize*columnCount);
