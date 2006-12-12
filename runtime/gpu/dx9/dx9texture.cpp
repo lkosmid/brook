@@ -396,39 +396,63 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride,  size_t toElement
   const char* inputLine = (const char*)fromBuffer;
 
 //  size_t componentCount = elementSize / sizeof(float);
-
-  for( size_t y = 0; y < rowCount; y++ )
+//   fprintf(stderr, "trs: %d, tes: %d, frs: %d, fes: %d, cc: %d, rc: %d, ne: %d, es: %d\n",
+//           toRowStride,  toElementStride,
+//           fromRowStride, fromElementStride,
+//           columnCount, rowCount, numElements,elementSize);
+  // Fast copy
+  if( toRowStride == fromRowStride &&
+      toElementStride == fromElementStride &&
+      toElementStride == elementSize )
   {
-    char* outputPixel = outputLine;
-    const char* inputPixel = inputLine;
-    if (numElements==1&&elementSize==1&&toElementStride==fromElementStride) {
-      memcpy(outputPixel,inputPixel,columnCount);
-    }else 
-    for( size_t x = 0; x < columnCount; x++ )
-    {
-      // TIM: for now we assume floating-point components
-      char* output = outputPixel;
-      const char* input = inputPixel;
-      if (elementSize!=1)
-        for( size_t i = 0; i < numElements*elementSize; i++ )
-          *output++ = *input++;
-      else {
-          if (fromElementStride!=toElementStride&&toElementStride==1)
-            input+=(fromElementStride==4?fromElementStride-2:fromElementStride-1);//offset the input if writing to it
-          for( size_t i =((output+=(toElementStride==1?1:toElementStride-1)),0); i <(numElements>3?3:numElements); i++ )//offset the output, but remember the alpha channel is separate
-              *--output = *input++;// I've always wanted to do that
-        if(numElements>3)
-            output[3]=*input++;//now to copy alpha
+      //fprintf(stderr, "Fast copy\n");
+      memcpy(outputLine,inputLine,columnCount*rowCount*numElements*elementSize);
+  }
+  else{
+      for( size_t y = 0; y < rowCount; y++ )
+      {
+          char* outputPixel = outputLine;
+          const char* inputPixel = inputLine;
+          if (numElements==1&&elementSize==1&&toElementStride==fromElementStride) {
+              memcpy(outputPixel,inputPixel,columnCount);
+          }
+          else if( toElementStride == fromElementStride &&
+                   toElementStride == elementSize)
+          {
+              //fprintf(stderr, "Fast sub copy1\n");
+              memcpy(outputPixel, inputPixel, numElements*elementSize*columnCount);
+              outputPixel+=numElements*elementSize*columnCount;
+              inputPixel+=numElements*elementSize*columnCount;
+          }
+          else
+              for( size_t x = 0; x < columnCount; x++ )
+              {
+                  // TIM: for now we assume floating-point components
+                  char* output = outputPixel;
+                  const char* input = inputPixel;
+                  if (elementSize!=1)
+                  {
+                      memcpy(output, input, numElements*elementSize);
+                      output+=numElements*elementSize;
+                      input+=numElements*elementSize;
+                  }
+                  else {
+                      if (fromElementStride!=toElementStride&&toElementStride==1)
+                          input+=(fromElementStride==4?fromElementStride-2:fromElementStride-1);//offset the input if writing to it
+                      for( size_t i =((output+=(toElementStride==1?1:toElementStride-1)),0); i <(numElements>3?3:numElements); i++ )//offset the output, but remember the alpha channel is separate
+                          *--output = *input++;// I've always wanted to do that
+                      if(numElements>3)
+                          output[3]=*input++;//now to copy alpha
+                  }
+                  
+                  inputPixel += fromElementStride;
+                  outputPixel += toElementStride;
+              }
+          inputLine += fromRowStride;
+          outputLine += toRowStride;
       }
-
-      inputPixel += fromElementStride;
-      outputPixel += toElementStride;
-    }
-    inputLine += fromRowStride;
-    outputLine += toRowStride;
   }
 }
-
 void DX9Texture::findRectForCopyAT( unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax,
   const unsigned int* inExtents, bool inUsesAddressTranslation, RECT& outRect, bool& outFullBuffer,
   size_t inWidth, size_t inHeight, size_t& outBaseX, size_t& outBaseY )
