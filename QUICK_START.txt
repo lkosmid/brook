@@ -1,7 +1,7 @@
 
 ----------------------------------------------------------------
 Brook Quick Start Clean Installation For a Windows System
-(Last updated Oct 13, 2004)
+(Last updated Dec 18, 2006)
 
 
 
@@ -10,37 +10,32 @@ Step 1. Install Cygwin
 
    1.1  Perform a "default" Cygwin install
 
-   1.2  Add the following cygwin packages (the version I just
-    installed is included in parenthises)
-
-
-    Devel / Make        (3.80-1)
-    Devel / Bison       (20030307-1)
-    Devel / Flex        (2.5.4a-3)
-    Interpreters / Perl (5.8.5-3)
+   1.2 Add the 'Devel' tree by clicking on "Default" until it becomes
+       "Install"
 
                 
 -----------------------------------------------------------------
 Step 2. Install Microsoft Visual C++ compiler.
 
-    If you have Visual Studio.Net 2003 installed you can skip this step.
+    If you have Visual Studio 2005 installed you can skip this step.
 
-    If you don't own Visual Studio, you can download the Visual C++ compiler for
-    *free* from Microsoft.
+    If you don't own Visual Studio, you can download the Visual C++
+    compiler for *free* from Microsoft.
    
-    2.1 Install the Visual C++ Toolkit 2003 v1.01
-    http://msdn.microsoft.com/visualc/vctoolkit2003/
+    2.1 Install the Visual C++ 2005 Express Edition
+    http://msdn.microsoft.com/vstudio/express/visualc/
 
-    2.2 Install the Microsoft Windows SP2 Platform SDK
-    http://www.microsoft.com/msdownload/platformsdk/sdkupdate/
-
+    You will also need the latest platform SDK
 
 -----------------------------------------------------------------
-Step 3. Install the DirectX 9 (Summer 2004) SDK
+Step 3. Install the DirectX 9 SDK
 
     Microsoft provides it here:
-    http://msdn.microsoft.com/library/default.asp?url=/downloads/list/directx.asp
+    http://msdn.microsoft.com/directx/sdk/
 
+    NOTE: The default path will include ()'s.  Cygwin shells do not
+    like this, so please change the directory to something like
+    "DirectX SDK" instead of "DirectX SDK (December 2006)"
 
 -----------------------------------------------------------------
 Step 4. Install the CGC compiler from NVIDIA
@@ -53,53 +48,52 @@ Step 4. Install the CGC compiler from NVIDIA
 -----------------------------------------------------------------
 Step 5. Set up your system environment variables
 
-  
     If you are running from a Studio Studio.net installation, you'll
     want to set up your PATH, LIB, and INCLUDE environment variables as
     follows (assuming you've installed the software into the default
     locations):
 
 INCLUDE
-    C:\Program Files\Microsoft Visual Studio .NET 2003\SDK\v1.1\include
-    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\include
-    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\PlatformSDK\Include
+    C:\Program Files\Microsoft Visual Studio 8\SDK\v2.0\include
+    C:\Program Files\Microsoft Visual Studio 8\VC\include
+    C:\Program Files\Microsoft Visual Studio 8\VC\PlatformSDK\Include
 
 LIB
-    C:\Program Files\Microsoft Visual Studio .NET 2003\SDK\v1.1\Lib\
-    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\lib
-    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\PlatformSDK\Lib
+    C:\Program Files\Microsoft Visual Studio 8\SDK\v2.0\Lib
+    C:\Program Files\Microsoft Visual Studio 8\VC\lib
+    C:\Program Files\Microsoft Visual Studio 8\VC\PlatformSDK\Lib
 
 PATH
-    C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\bin
+    C:\Program Files\Microsoft Visual Studio .NET 2003\VC\bin
     C:\Program Files\Microsoft Visual Studio .NET 2003\Common7\IDE
 
     
-    If you are using the free Visual Studio Toolkit instead, your setup
+    If you are using the free Visual Studio Express instead, your setup
     should look more like:
 
 INCLUDE
     C:\Program Files\Microsoft Platform SDK for Windows XP SP2\Include
-    C:\Program Files\Microsoft Visual C++ Toolkit 2003\include
+    C:\Program Files\Microsoft Visual C++ Express 2005\include
 
 LIB
     C:\Program Files\Microsoft Platform SDK for Windows XP SP2\Lib
-    C:\Program Files\Microsoft Visual C++ Toolkit 2003\lib
+    C:\Program Files\Microsoft Visual C++ Express 2005\lib
     
 PATH
-    C:\Program Files\Microsoft Visual C++ Toolkit 2003\bin
+    C:\Program Files\Microsoft Visual C++ Express 2005\bin
 
 
     For either setup, you'll also need to add the following lines to
     the PATH, INCLUDE, and LIB environment variables so the build environment.
 
 INCLUDE
-    C:\Program Files\Microsoft DirectX 9.0 SDK (October 2004)\Include
+    C:\Program Files\Microsoft DirectX SDK\Include
 
 LIB
-    C:\Program Files\Microsoft DirectX 9.0 SDK (October 2004)\Lib
+    C:\Program Files\Microsoft DirectX SDK\Lib\x86
 
 PATH
-    C:\Program Files\Microsoft DirectX 9.0 SDK (October 2004)\Utilities
+    C:\Program Files\Microsoft DirectX SDK\Utilities\Bin\x86
     C:\Program Files\NVIDIA Corporation\Cg\bin
 
 

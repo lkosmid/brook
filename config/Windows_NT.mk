@@ -25,9 +25,9 @@ endif
 
 C_CPP_FLAG	 := /nologo /EP
 C_INCLUDE_FLAG   := /I
-C_DEBUG_FLAG     := /MLd /Zi /Yd /GZ /Fd$(OBJDIR)\\
+C_DEBUG_FLAG     := /Zi /RTC1 /EHsc /Fd$(OBJDIR)\\
 #C_RELEASE_FLAG   := /ML /Ogisyb2 /Gs /arch:SSE2 /G7 /DNDEBUG  /Fd$(OBJDIR)\\
-C_RELEASE_FLAG   := /ML /O2 /arch:SSE2 /G7 /DNDEBUG  /Fd$(OBJDIR)\\
+C_RELEASE_FLAG   := /O2 /arch:SSE2 /RTC1 /EHsc /DNDEBUG /Fd$(OBJDIR)\\
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := /Fo
 C_COMPILE_FLAG   := /c
