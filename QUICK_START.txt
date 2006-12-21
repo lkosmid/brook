@@ -51,7 +51,11 @@ Step 5. Set up your system environment variables
     If you are running from a Studio Studio.net installation, you'll
     want to set up your PATH, LIB, and INCLUDE environment variables as
     follows (assuming you've installed the software into the default
-    locations):
+    locations).  The suggested method is to set these through
+    Control Panel->System Properties->Advanced->
+    Environment Variables->System Variables.
+    PATH should already be there, and you'll need to modify it, and
+    you'll likely need to add INCLUDE and LIB.
 
 INCLUDE
     C:\Program Files\Microsoft Visual Studio 8\SDK\v2.0\include
