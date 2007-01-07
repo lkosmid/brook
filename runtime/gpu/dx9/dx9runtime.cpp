@@ -983,9 +983,19 @@ namespace brook
 
    void GPUContextDX9Impl::finish()
    {
-      // TODO: find an appropriate mechanism to cause a finish in DX
+       // TODO: find an appropriate mechanism to cause a finish in DX
+       // agmiklas:
+       // From the DX9 SDK documentation:
+       // "Accurately Profiling Direct3D API Calls"
+       
+       IDirect3DQuery9 *query;
+       _device->CreateQuery(D3DQUERYTYPE_EVENT, &query);
+       
+       query->Issue(D3DISSUE_END);
+       
+       while(S_FALSE == query->GetData(NULL, 0, D3DGETDATA_FLUSH));
    }
-
+    
    void GPUContextDX9Impl::unbind() {
    }
 
