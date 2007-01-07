@@ -6,6 +6,7 @@
 #include <brook/kerneldesc.hpp>
 #include <string>
 
+
 namespace brook
 {
   GPUKernel::ArgumentType* GPUKernel::sStreamArgumentType = new GPUKernel::StreamArgumentType();
@@ -833,8 +834,18 @@ namespace brook
     _globalInterpolants.resize( reductionFactor );
     for( size_t i = 0; i < reductionFactor; i++ )
     {
-      _context->getStreamReduceInterpolant( inputBuffer, resultExtents[0], resultExtents[1],
+/*      _context->getStreamReduceInterpolant( inputBuffer, resultExtents[0], resultExtents[1],
         i, remainingExtent+i, 0, otherExtent, dim, _globalInterpolants[i] );
+HME - remainingExtent+i is very wrong.
+remainingExtent might be - say - 47
+But we might be divinging by say 2
+and out outputExtent might be say 2
+Oh my! from 0 to 47????  More like 0 to 46 I would say.
+We need the actual number of factors we are going to be reducing (no slop)
+and then we need to multiply by the outputExtent.
+*/
+      _context->getStreamReduceInterpolant( inputBuffer, resultExtents[0], resultExtents[1],
+        i, (remainingFactor-slopFactor)*outputExtent+i, 0, otherExtent, dim, _globalInterpolants[i] );
     }
     size_t newExtent = resultExtents[dim];
     ioState.currentExtents[dim] = newExtent;
@@ -878,8 +889,12 @@ namespace brook
 
         size_t offset = remainingFactor-1;
         GPUInterpolant interpolant;
-        _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
+/*        _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
           offset, remainingFactor+offset, 0, otherExtent, dim, interpolant );
+HME - remainingFactor+offset is too big
+*/
+          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
+            offset, outputExtent+offset, 0, otherExtent, dim, interpolant );
         _inputInterpolants.push_back( interpolant );
 
         _context->bindOutput( 0, slopBuffer );
@@ -906,8 +921,12 @@ namespace brook
           size_t offset = slopFactor - i;
           offset = remainingFactor - offset;
 
-          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
+/*          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
             offset, remainingExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
+HME - remainingExtent+outputBuffer is too high
+	    */
+          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
+            offset, outputExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
         }
         _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
 
@@ -930,10 +949,18 @@ namespace brook
         {
           size_t offset = slopFactor - i;
           offset = remainingFactor - offset;
-          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
+/*          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
             offset, remainingExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
+HME - remainingExtent+offset is way too big.
+*/
+          _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
+            offset, outputExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
         }
-        _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
+/*        _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
+          0, outputExtent, 0, otherExtent, dim, _globalInterpolants[slopFactor] );
+HME - we are going to the slop buffer,  not the input buffer
+*/
+        _context->getStreamReduceInterpolant( slopBuffer, slopExtents[0], slopExtents[1],
           0, outputExtent, 0, otherExtent, dim, _globalInterpolants[slopFactor] );
         _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
 
