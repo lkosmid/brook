@@ -222,6 +222,19 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
 
     D3DLOCKED_RECT info;
     // Attempt to yeild
+    IDirect3DQuery9* eventQuery = NULL;
+    if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
+    {
+        assert( "Can't create queury!" );
+    }
+    eventQuery->Issue(D3DISSUE_END);
+
+    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
+    {
+        Sleep(0);
+    }
+    eventQuery->Release();
+    
     while( result = shadowSurface->LockRect( &info, &rectToLock,
                                              D3DLOCK_READONLY |
                                              D3DLOCK_DONOTWAIT )
@@ -255,6 +268,19 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
 
     D3DLOCKED_RECT info;
     // Attempt to yeild
+    IDirect3DQuery9* eventQuery = NULL;
+    if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
+    {
+        assert( "Can't create queury!" );
+    }
+    eventQuery->Issue(D3DISSUE_END);
+
+    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
+    {
+        Sleep(0);
+    }
+    eventQuery->Release();
+    
     while( result = shadowSurface->LockRect( &info, &rectToLock,
                                              D3DLOCK_READONLY |
                                              D3DLOCK_DONOTWAIT )
@@ -310,6 +336,19 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
     D3DLOCKED_RECT info;
     
     // Attempt to yeild
+    IDirect3DQuery9* eventQuery = NULL;
+    if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
+    {
+        assert( "Can't create queury!" );
+    }
+    eventQuery->Issue(D3DISSUE_END);
+
+    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
+    {
+        Sleep(0);
+    }
+    eventQuery->Release();
+    
     while( result = shadowSurface->LockRect( &info, &rectToLock,
                                              D3DLOCK_READONLY |
                                              D3DLOCK_DONOTWAIT )
@@ -351,6 +390,19 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
     D3DLOCKED_RECT info;
 
     //Attempt to yeild
+    IDirect3DQuery9* eventQuery = NULL;
+    if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
+    {
+        assert( "Can't create queury!" );
+    }
+    eventQuery->Issue(D3DISSUE_END);
+
+    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
+    {
+        Sleep(0);
+    }
+    eventQuery->Release();
+    
     while( result = shadowSurface->LockRect( &info, &rectToLock,
                                              D3DLOCK_READONLY |
                                              D3DLOCK_DONOTWAIT )
