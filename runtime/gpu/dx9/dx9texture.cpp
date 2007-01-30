@@ -221,9 +221,17 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
     int domainHeight = rectToLock.bottom - rectToLock.top;
 
     D3DLOCKED_RECT info;
-    result = shadowSurface->LockRect( &info, &rectToLock, D3DLOCK_READONLY );
+    // Attempt to yeild
+    while( result = shadowSurface->LockRect( &info, &rectToLock,
+                                             D3DLOCK_READONLY |
+                                             D3DLOCK_DONOTWAIT )
+           && result == D3DERR_WASSTILLDRAWING)
+    {
+        Sleep(0);
+    }
+    
     DX9AssertResult( result, "LockRect failed" );
-
+    
     copyData( outData, domainWidth*inStride, inStride,
               info.pBits, info.Pitch, internalComponents*componentSize,
               domainWidth, domainHeight, components,componentSize );
@@ -246,7 +254,15 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
     int rectHeight = rectToLock.bottom - rectToLock.top;
 
     D3DLOCKED_RECT info;
-    result = shadowSurface->LockRect( &info, &rectToLock, D3DLOCK_READONLY );
+    // Attempt to yeild
+    while( result = shadowSurface->LockRect( &info, &rectToLock,
+                                             D3DLOCK_READONLY |
+                                             D3DLOCK_DONOTWAIT )
+           && result == D3DERR_WASSTILLDRAWING)
+    {
+        Sleep(0);
+    }
+    
     DX9AssertResult( result, "LockRect failed" );
 
     if( isWholeBuffer )
@@ -291,17 +307,25 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
     }
 
     HRESULT result;
-	  D3DLOCKED_RECT info;
-
-	  result = shadowSurface->LockRect( &info, &rectToLock, 0 );
-	  DX9AssertResult( result, "LockRect failed" );
-
-          copyData( info.pBits, info.Pitch, internalComponents*componentSize,
-                    inData, domainWidth*inStride, inStride,
-                    domainWidth, domainHeight, components,componentSize );
-
-	  result = shadowSurface->UnlockRect();
-	  DX9AssertResult( result, "UnlockRect failed" );
+    D3DLOCKED_RECT info;
+    
+    // Attempt to yeild
+    while( result = shadowSurface->LockRect( &info, &rectToLock,
+                                             D3DLOCK_READONLY |
+                                             D3DLOCK_DONOTWAIT )
+           && result == D3DERR_WASSTILLDRAWING)
+    {
+        Sleep(0);
+    }
+    
+    DX9AssertResult( result, "LockRect failed" );
+    
+    copyData( info.pBits, info.Pitch, internalComponents*componentSize,
+              inData, domainWidth*inStride, inStride,
+              domainWidth, domainHeight, components,componentSize );
+    
+    result = shadowSurface->UnlockRect();
+    DX9AssertResult( result, "UnlockRect failed" );
   }
   else // using address translation
   {
@@ -326,7 +350,15 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
     HRESULT result;
     D3DLOCKED_RECT info;
 
-    result = shadowSurface->LockRect( &info, &rectToLock, 0 );
+    //Attempt to yeild
+    while( result = shadowSurface->LockRect( &info, &rectToLock,
+                                             D3DLOCK_READONLY |
+                                             D3DLOCK_DONOTWAIT )
+           && result == D3DERR_WASSTILLDRAWING)
+    {
+        Sleep(0);
+    }
+    
     DX9AssertResult( result, "LockRect failed" );
 
     if( isWholeBuffer )
