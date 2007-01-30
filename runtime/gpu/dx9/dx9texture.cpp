@@ -395,16 +395,10 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride,  size_t toElement
   char* outputLine = (char*)toBuffer;
   const char* inputLine = (const char*)fromBuffer;
 
-//  size_t componentCount = elementSize / sizeof(float);
-//   fprintf(stderr, "trs: %d, tes: %d, frs: %d, fes: %d, cc: %d, rc: %d, ne: %d, es: %d\n",
-//           toRowStride,  toElementStride,
-//           fromRowStride, fromElementStride,
-//           columnCount, rowCount, numElements,elementSize);
   // Fast copy
   if( toRowStride == fromRowStride &&
       toElementStride == fromElementStride )
   {
-      //fprintf(stderr, "Fast copy\n");
       memcpy(outputLine,inputLine,columnCount*rowCount*numElements*elementSize);
   }
   else{
@@ -417,10 +411,7 @@ void DX9Texture::copyData( void* toBuffer, size_t toRowStride,  size_t toElement
           }
           else if( toElementStride == fromElementStride&&elementSize!=1)
           {
-              //fprintf(stderr, "Fast sub copy1\n");
               memcpy(outputPixel, inputPixel, numElements*elementSize*columnCount);
-              outputPixel+=numElements*elementSize*columnCount;
-              inputPixel+=numElements*elementSize*columnCount;
           }
           else
               for( size_t x = 0; x < columnCount; x++ )
@@ -508,8 +499,6 @@ void DX9Texture::copyAllDataAT( void* toBuffer, size_t toRowStride, size_t toEle
 
   char* outputLine = (char*)toBuffer;
   const char* inputLine = (const char*)fromBuffer;
-
-//  size_t componentCount = elementSize / sizeof(float);
 
   size_t copiedElementCount = 0;
   for( size_t y = 0; y < rowCount; y++ )
