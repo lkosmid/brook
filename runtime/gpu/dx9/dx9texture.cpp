@@ -10,6 +10,7 @@ static const int kComponentSizes[] =
   sizeof(unsigned short)
 };
 
+
 DX9Texture::DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inComponentType, bool readonly)
 	: width(inWidth),
   height(inHeight),
@@ -25,10 +26,16 @@ DX9Texture::DX9Texture( GPUContextDX9* inContext, int inWidth, int inHeight, int
   read_only(readonly)
 {
   componentSize = kComponentSizes[ componentType ];
-
-    _context = inContext;
-	device = _context->getDevice();
-    device->AddRef();
+  
+  _context = inContext;
+  device = _context->getDevice();
+  device->AddRef();
+  
+  eventQuery = NULL;
+  if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
+  {
+      assert( "Can't create queury!" );
+  }
 }
 
 static D3DFORMAT getFormatForComponentCount( int inComponentCount, DX9Texture::ComponentType inType )
@@ -122,13 +129,25 @@ DX9Texture::~DX9Texture()
 {
   DX9LOG(2) << "~DX9Texture";
   if( shadowSurface != NULL )
-    shadowSurface->Release();
+      shadowSurface->Release();
   if( surfaceHandle != NULL )
-    surfaceHandle->Release();
+      surfaceHandle->Release();
   if( textureHandle != NULL )
-    textureHandle->Release();
+      textureHandle->Release();
   if( device != NULL )
-    device->Release();
+      device->Release();
+  if( eventQuery != NULL )
+      eventQuery->Release();
+}
+
+void DX9Texture::yieldCPU()
+{
+    eventQuery->Issue(D3DISSUE_END);
+    
+    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
+    {
+        Sleep(0);
+    }
 }
 
 DX9Texture* DX9Texture::create( GPUContextDX9* inContext, int inWidth, int inHeight, int inComponents, ComponentType inType, bool read_only )
@@ -222,18 +241,7 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
 
     D3DLOCKED_RECT info;
     // Attempt to yeild
-    IDirect3DQuery9* eventQuery = NULL;
-    if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
-    {
-        assert( "Can't create queury!" );
-    }
-    eventQuery->Issue(D3DISSUE_END);
-
-    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
-    {
-        Sleep(0);
-    }
-    eventQuery->Release();
+    yieldCPU();
     
     while( result = shadowSurface->LockRect( &info, &rectToLock,
                                              D3DLOCK_READONLY |
@@ -268,18 +276,7 @@ void DX9Texture::getShadowData( void* outData, unsigned int inStride, unsigned i
 
     D3DLOCKED_RECT info;
     // Attempt to yeild
-    IDirect3DQuery9* eventQuery = NULL;
-    if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
-    {
-        assert( "Can't create queury!" );
-    }
-    eventQuery->Issue(D3DISSUE_END);
-
-    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
-    {
-        Sleep(0);
-    }
-    eventQuery->Release();
+    yieldCPU();
     
     while( result = shadowSurface->LockRect( &info, &rectToLock,
                                              D3DLOCK_READONLY |
@@ -336,18 +333,7 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
     D3DLOCKED_RECT info;
     
     // Attempt to yeild
-    IDirect3DQuery9* eventQuery = NULL;
-    if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
-    {
-        assert( "Can't create queury!" );
-    }
-    eventQuery->Issue(D3DISSUE_END);
-
-    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
-    {
-        Sleep(0);
-    }
-    eventQuery->Release();
+    yieldCPU();
     
     while( result = shadowSurface->LockRect( &info, &rectToLock,
                                              D3DLOCK_READONLY |
@@ -390,18 +376,7 @@ void DX9Texture::setShadowData( const void* inData, unsigned int inStride, unsig
     D3DLOCKED_RECT info;
 
     //Attempt to yeild
-    IDirect3DQuery9* eventQuery = NULL;
-    if(device->CreateQuery(D3DQUERYTYPE_EVENT, &eventQuery) != D3D_OK)
-    {
-        assert( "Can't create queury!" );
-    }
-    eventQuery->Issue(D3DISSUE_END);
-
-    while(S_FALSE == eventQuery->GetData( NULL, 0, D3DGETDATA_FLUSH ))
-    {
-        Sleep(0);
-    }
-    eventQuery->Release();
+    yieldCPU();
     
     while( result = shadowSurface->LockRect( &info, &rectToLock,
                                              D3DLOCK_READONLY |

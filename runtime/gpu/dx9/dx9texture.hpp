@@ -92,9 +92,12 @@ namespace brook
                         const unsigned int* streamExtents, size_t streamElementStride,
                         void* textureData, size_t textureLineStride, size_t textureWidth, size_t textureHeight,
                         size_t textureElementStride, size_t textureBaseX, size_t textureBaseY );
+
+        void yieldCPU();
         
         GPUContextDX9* _context;
         LPDIRECT3DDEVICE9 device;
+        IDirect3DQuery9* eventQuery;
         
         int width;
         int height;
