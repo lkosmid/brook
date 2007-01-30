@@ -737,20 +737,20 @@ namespace brook
   }
 
   void GPUContextDX9Impl::getStreamReduceOutputRegion( const TextureHandle inTexture,
-    const unsigned int minX,
-    const unsigned int maxX, 
-    const unsigned int minY,
-    const unsigned int maxY,
-    GPURegion &region) const
+                                                       const unsigned int minX,
+                                                       const unsigned int maxX, 
+                                                       const unsigned int minY,
+                                                       const unsigned int maxY,
+                                                       GPURegion &region) const
   {
-    region.vertices[0] = float4(-1,1,0.5,1);
-    region.vertices[1] = float4(3,1,0.5,1);
-    region.vertices[2] = float4(-1,-3,0.5,1);
-
-    region.viewport.minX = minX;
-    region.viewport.minY = minY;
-    region.viewport.maxX = maxX;
-    region.viewport.maxY = maxY;
+      region.vertices[0] = float4(-1,1,0.5,1);
+      region.vertices[1] = float4(3,1,0.5,1);
+      region.vertices[2] = float4(-1,-3,0.5,1);
+      
+      region.viewport.minX = minX;
+      region.viewport.minY = minY;
+      region.viewport.maxX = maxX;
+      region.viewport.maxY = maxY;
   }
 
   GPUContextDX9Impl::TextureHandle GPUContextDX9Impl::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat ,bool read_only)

@@ -7,6 +7,9 @@ include ../../config/DetectOS.mk
 
 ifeq ($(OS), Windows_NT)
 SUBDIRS := ogl dx9
+ifdef BUILD_CTM
+SUBDIRS += ctm
+endif
 else 
 ifeq ($(OS), Linux)
 SUBDIRS :=  ogl

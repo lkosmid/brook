@@ -1,4 +1,8 @@
 // brt.cpp
+#ifdef BUILD_CTM
+#include "gpu/ctm/ctmruntime.hpp"
+#endif
+
 #include "runtime.hpp"
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,14 +154,21 @@ namespace brook {
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* OpenGL Backend:                *\n");
 #ifdef BUILD_OGL
-      fprintf (stderr,"* BRT_RUNTIME = %s              *\n", OGL_RUNTIME_STRING);
+      fprintf (stderr,"* BRT_RUNTIME = %s               *\n", OGL_RUNTIME_STRING);
 #else
       fprintf (stderr,"* Not supported on this platform *\n");
 #endif
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* DirectX9 Backend:              *\n");
 #ifdef BUILD_DX9                                       
-      fprintf (stderr,"* BRT_RUNTIME = %s              *\n", DX9_RUNTIME_STRING);
+      fprintf (stderr,"* BRT_RUNTIME = %s               *\n", DX9_RUNTIME_STRING);
+#else
+      fprintf (stderr,"* Not supported on this platform *\n");
+#endif
+      fprintf (stderr,"*                                *\n");
+      fprintf (stderr,"* CTM Backend:                   *\n");
+#ifdef BUILD_CTM                                       
+      fprintf (stderr,"* BRT_RUNTIME = %s               *\n", CTM_RUNTIME_STRING);
 #else
       fprintf (stderr,"* Not supported on this platform *\n");
 #endif
@@ -179,6 +190,19 @@ namespace brook {
 
       fprintf(stderr, 
 	      "Unable to initialize DX9 runtime, falling back to CPU\n");
+      return new CPURuntime();
+    }
+#endif
+    
+#ifdef BUILD_CTM
+    if (!strcmp(env, CTM_RUNTIME_STRING))
+    {
+      Runtime* result = GPURuntimeCTM::create( inContextValue );
+      if( result )
+        return result;
+
+      fprintf(stderr, 
+	      "Unable to initialize CTM runtime, falling back to CPU\n");
       return new CPURuntime();
     }
 #endif
@@ -213,7 +237,14 @@ namespace brook {
       fprintf (stderr, "  BRT_RUNTIME = %s              \n", DX9_RUNTIME_STRING);
 #else                  
       fprintf (stderr, "  Not supported on this platform \n");
-#endif                 
+#endif                   
+      fprintf (stderr, "                                 \n");
+      fprintf (stderr, "  CTM Backend:              \n");
+#ifdef BUILD_CTM                                        
+      fprintf (stderr, "  BRT_RUNTIME = %s              \n", CTM_RUNTIME_STRING);
+#else                  
+      fprintf (stderr, "  Not supported on this platform \n");
+#endif                           
       fprintf (stderr, "                                \n");
       fprintf (stderr, "Falling back to CPU...\n");
       fflush(stderr);
