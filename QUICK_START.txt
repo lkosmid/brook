@@ -68,8 +68,8 @@ LIB
     C:\Program Files\Microsoft Visual Studio 8\VC\PlatformSDK\Lib
 
 PATH
-    C:\Program Files\Microsoft Visual Studio .NET 2003\VC\bin
-    C:\Program Files\Microsoft Visual Studio .NET 2003\Common7\IDE
+    C:\Program Files\Microsoft Visual Studio 8\VC\bin
+    C:\Program Files\Microsoft Visual Studio 8\Common7\IDE
 
     
     If you are using the free Visual Studio Express instead, your setup
