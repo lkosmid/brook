@@ -912,7 +912,12 @@ namespace brook
   void GPUContextDX9Impl::endScene()
   {
     HRESULT result = _device->EndScene();
-    GPUAssert( !FAILED(result), "BeginScene failed" );
+    GPUAssert( !FAILED(result), "EndScene failed" );
+
+#ifdef VENDOR_PROFILING
+    result = _device->Present(NULL, NULL, NULL, NULL);
+    GPUAssert( !FAILED(result), "Present failed" );
+#endif
 
     for( size_t i = 0; i < kMaximumSamplerCount; i++ )
       _boundTextures[i] = NULL;
