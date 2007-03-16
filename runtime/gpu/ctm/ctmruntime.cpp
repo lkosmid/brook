@@ -89,32 +89,34 @@ namespace brook
             printf("\n");
 
             fflush(stdout);
-            
-            arenaSizeSYS        = info.arenaSizeSYS;
-            baseAddressSYS      = info.baseAddressSYS;
-            baseAddressCPU      = info.baseAddressCPU;
-            baseAddressGPU      = info.baseAddressGPU;
+ 
+            // Use the larger of the cached and uncached arenas
+            // Currently, on Linux, only cached arenas are valid with CTM
+            bool cached = info.arenaSizeSYSc > info.arenaSizeSYS;
+            arenaSizeSYS        = cached ? info.arenaSizeSYSc : info.arenaSizeSYS;
+            baseAddressSYS      = cached ? info.baseAddressSYSc : info.baseAddressSYS;
+            baseAddressCPU      = cached ? info.baseAddressCPUc : info.baseAddressCPU;            
             currentAddressGPU   = info.baseAddressGPU;
             
             cbufAddressSYS = baseAddressSYS + 0 * 1024 * 1024;
-            cbufAddressCPU = getAddressCPU( cbufAddressSYS, info );
+            cbufAddressCPU = getAddressCPU( cbufAddressSYS, cached, info );
             
             programAddressSYS = baseAddressSYS + 1 * 1024 * 1024;
-            programAddressCPU = getAddressCPU( programAddressSYS, info);
+            programAddressCPU = getAddressCPU( programAddressSYS, cached, info);
 
             
             fconstAddressSYS = baseAddressSYS + 2 * 1024 * 1024;
             iconstAddressSYS = baseAddressSYS + 3 * 1024 * 1024;
             interpAddressSYS = baseAddressSYS + 4 * 1024 * 1024;
             
-            fconstAddressCPU = getAddressCPU( fconstAddressSYS, info);
-            iconstAddressCPU = getAddressCPU( iconstAddressSYS, info);
-            interpAddressCPU = getAddressCPU( interpAddressSYS, info);
+            fconstAddressCPU = getAddressCPU( fconstAddressSYS, cached, info);
+            iconstAddressCPU = getAddressCPU( iconstAddressSYS, cached, info);
+            interpAddressCPU = getAddressCPU( interpAddressSYS, cached, info);
 
             // Allocate largest possible buffers
             bufferSYS  = alignCTMAddress( baseAddressSYS + 5 * 1024 * 1024, ALIGN );
             
-            bufferCPU  = getAddressCPU( bufferSYS,  info );
+            bufferCPU  = getAddressCPU( bufferSYS, cached, info );
 
             // Get compiler handle
             comp = amuCompOpenCompiler();
@@ -123,8 +125,8 @@ namespace brook
             
             AMUcompMacro defines[] =
                 {
-                    "AMU_LANG_PS3", "1",
-                    0, 0
+                    {"AMU_LANG_PS3", "1"},
+                    {0, 0}
                 };
             
             // Compile program
@@ -134,7 +136,7 @@ namespace brook
             {
                 fprintf(stderr, "Found error compiling, bailing out!\n");
                 fflush(stderr);
-                return NULL;
+                return false;
             }
             
             copyProgram->constants = amuABIExtractConstants( copyProgram->binary );
@@ -193,7 +195,7 @@ namespace brook
         if( inRank == 1 )
         {
             unsigned int base = inDomainMin[0];
-            unsigned int width = inExtents[0];
+            //unsigned int width = inExtents[0];
             
             scaleX = 1.0f;
             offsetX = (float)base + 0.5f;
@@ -202,8 +204,8 @@ namespace brook
         {
             unsigned int baseX = inDomainMin[1];
             unsigned int baseY = inDomainMin[0];
-            unsigned int width = inExtents[1];
-            unsigned int height = inExtents[0];
+            //unsigned int width = inExtents[1];
+            //unsigned int height = inExtents[0];
             
             scaleX = 1.0f;
             scaleY = 1.0f;
@@ -277,7 +279,7 @@ namespace brook
                                               const unsigned int outputHeight, 
                                               GPUInterpolant &interpolant) const
     {
-        CTMStream* texture = (CTMStream*)inTexture;
+        //CTMStream* texture = (CTMStream*)inTexture;
         unsigned int minX, minY, maxX, maxY;
         float scaleBiasX = 0.0f;
         float scaleBiasY = 0.0f;
@@ -322,7 +324,7 @@ namespace brook
                                                const unsigned int* domainMax,
                                                GPURegion &region) const
     {
-        CTMStream* texture = (CTMStream*)inTexture;
+        //CTMStream* texture = (CTMStream*)inTexture;
         unsigned int minX, minY, maxX, maxY;
         if( rank == 1 )
         {
@@ -899,8 +901,8 @@ namespace brook
         // Tell compiler what we are about to hand it
         AMUcompMacro defines[] =
         {
-            "AMU_LANG_PS3", "1",
-            0, 0
+            {"AMU_LANG_PS3", "1"},
+            {0, 0}
         };
         
         CTMProgram* program = new CTMProgram();

@@ -261,21 +261,17 @@ namespace brook
 
         // Helper functions for converting SYS addresses in CTM to
         // their often more useful CPU addresses
-        void * getAddressCPU(AMuint32 addrSYS, AMmanagedDeviceInfo info)
+        void * getAddressCPU(AMuint32 addrSYS, bool cached, AMmanagedDeviceInfo info)
         {
-            int offset = addrSYS - info.baseAddressSYS;
-            if(offset >= 0)
+            if(!cached)
             {   
-                return (unsigned char*)info.baseAddressCPU + offset;
+                return (unsigned char*)info.baseAddressCPU  + addrSYS - info.baseAddressSYS;
             }
             else
             {
-                offset = addrSYS - info.baseAddressSYSc;
-                if(offset >= 0)
-                    return (unsigned char*)info.baseAddressCPUc + offset;
+                return (unsigned char*)info.baseAddressCPUc + addrSYS - info.baseAddressSYS;
             }
-            assert(!"Invalid System Address");
-            return 0;
+            return NULL;
         }
         
         // Help get alignment correct

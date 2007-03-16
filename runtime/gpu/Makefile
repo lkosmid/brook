@@ -13,6 +13,9 @@ endif
 else 
 ifeq ($(OS), Linux)
 SUBDIRS :=  ogl
+ifdef BUILD_CTM
+SUBDIRS += ctm
+endif
 endif
 endif
 
