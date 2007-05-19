@@ -118,7 +118,7 @@ namespace brook {
         typedef GPUContext::TextureFormat TextureFormat;
         typedef GPUContext::TextureHandle TextureHandle;
 
-        static GPUStream* GPUStream::create( GPURuntime* inRuntime,
+        static GPUStream* create( GPURuntime* inRuntime,
                         unsigned int inFieldCount, 
                         const StreamType* inFieldTypes,
                         unsigned int inDimensionCount, 
