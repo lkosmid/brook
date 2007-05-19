@@ -182,13 +182,12 @@ public:
 protected:
   void addChild( SplitNode* inNode );
   void removeChild( SplitNode* inNode );
+  typedef std::vector<SplitNode*> NodeList;
 
 private:
   // data for calculating immediate dominators...
   friend class SplitDominatorDFSTraversal;
   friend class SplitTree;
-
-  typedef std::vector<SplitNode*> NodeList;
 
   SplitNode* eval();
   void link( SplitNode* w );

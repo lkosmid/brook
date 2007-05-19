@@ -250,7 +250,7 @@ class BaseType1:public BaseType {public:
   
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+oo+
   // Upon destruction, delete it from the blacklist
-  BaseType1::~BaseType1() {
+  ~BaseType1() {
     std::set<Expression *>::iterator i = ArrayBlacklist.find((Expression *)this);
     if (i!=ArrayBlacklist.end())
       ArrayBlacklist.erase(i);
@@ -258,7 +258,7 @@ class BaseType1:public BaseType {public:
   
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   // to duplicate, follow the duplication procedure of the normal base type.
-  Type * BaseType1::dup0()const {
+  Type * dup0()const {
     BaseType * ret =new BaseType1 (*this);
     ret->storage = storage; 
     ret->qualifier = qualifier; 
