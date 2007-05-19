@@ -116,9 +116,7 @@ Subprocess_Run(char *argv[], char *input)
     if (debug) fprintf( stderr, "Unable to start %s\n", argv[0]);
     return NULL;
   }
-
 #else
-
   if ((pid = fork()) == 0) {
        close (hStdInPipe[WRITE_HANDLE]);
 
@@ -176,7 +174,7 @@ Subprocess_Run(char *argv[], char *input)
         void (*oldPipe)(int);
 
         oldPipe = signal(SIGPIPE, SIG_IGN);
-        /* fprintf(stderr, "Writing\n[35;1m%s[0m\n", input); */
+        //fprintf(stderr, "Writing\n[35;1m%s[0m\n", input);
 
         retval = write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
         if (retval == -1 && errno == EPIPE) {

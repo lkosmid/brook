@@ -43,7 +43,7 @@ compile_cgc (const char * /*name*/,
   char *argv[16] = { "cgc", "-quiet", "-DCGC=1", "-profile", NULL,
                      NULL, NULL, NULL, NULL};
   char *fpcode, *endline, *startline;
-  char* tempCode = strdup( shader );
+  char* tempCode = strdup(shader);
   char arbfp[]="arbfp1";
   char fp30[]="fp30";
   char fp40[]="fp40";
@@ -131,6 +131,12 @@ compile_cgc (const char * /*name*/,
        break;
     case CODEGEN_PS30:
        fprintf(stderr, "PS30 target.");
+       break;
+    case CODEGEN_FP30:
+       fprintf(stderr, "FP30 target.");
+       break;
+    case CODEGEN_FP40:
+       fprintf(stderr, "FP40 target.");
        break;
     default:
        break;
