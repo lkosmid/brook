@@ -393,8 +393,7 @@ namespace brook {
       assert (0); return (void *) 0;
     }
 
-    __BrtFloat4 
-    StreamInterface::computeIndexOf(unsigned int linear_index);
+    __BrtFloat4 computeIndexOf(unsigned int linear_index);
 
     virtual bool   isCPU() const  { return false; }
 
