@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="allocate"
-	ProjectGUID="{990E9403-A4CC-4F54-BCB0-EF8F4E14512F}"
-	Keyword="Win32Proj"
+	Name="reduce"
+	ProjectGUID="{ECA23A6A-AB1D-47FB-8C1E-D543609F82D5}"
+	RootNamespace="sum"
 	>
 	<Platforms>
 		<Platform
@@ -16,11 +16,9 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../../../bin/"
-			IntermediateDirectory="built/Debug"
+			OutputDirectory="$(SolutionDir)\bin\$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -40,13 +38,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
+				AdditionalIncludeDirectories="$(SolutionDir)\include;"
+				RuntimeLibrary="3"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -60,13 +54,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="brook.lib opengl32.lib d3d9.lib d3dx9.lib"
-				OutputFile="$(OutDir)/allocate.exe"
-				LinkIncremental="2"
+				AdditionalDependencies="brook.lib opengl32.lib d3dx9.lib  d3d9.lib"
+				AdditionalLibraryDirectories="$(SolutionDir)\bin\$(ConfigurationName);$(DXSDK_DIR)\lib\x86"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/allocate.pdb"
-				SubSystem="1"
-				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -95,11 +85,9 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="../../../bin/"
-			IntermediateDirectory="built/Release"
+			OutputDirectory="$(SolutionDir)\bin\$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -118,12 +106,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				AdditionalIncludeDirectories="$(SolutionDir)\include;"
+				RuntimeLibrary="2"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -136,14 +120,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="brook.lib opengl32.lib d3d9.lib d3dx9.lib"
-				OutputFile="$(OutDir)/allocate.exe"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="1"
+				AdditionalDependencies="brook.lib opengl32.lib d3dx9.lib  d3d9.lib"
+				AdditionalLibraryDirectories="$(SolutionDir)\bin\$(ConfigurationName);$(DXSDK_DIR)\lib\x86"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -175,35 +153,37 @@
 	</References>
 	<Files>
 		<Filter
-			Name="built"
+			Name="Source Files"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\built\allocate.cpp"
+				RelativePath=".\reduce.br"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="$(SolutionDir)\bin\$(ConfigurationName)\brcc.exe -o $(SolutionDir)\prog\tests\reduce\built\reduce $(SolutionDir)\prog\tests\reduce\reduce.br"
+						Outputs="$(SolutionDir)\prog\tests\reduce\built\reduce.cpp"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="$(SolutionDir)\bin\$(ConfigurationName)\brcc.exe -o $(SolutionDir)\prog\tests\reduce\built\reduce $(SolutionDir)\prog\tests\reduce\reduce.br"
+						Outputs="$(SolutionDir)\prog\tests\reduce\built\reduce.cpp"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\built\reduce.cpp"
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\allocate.br"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCustomBuildTool"
-					CommandLine="brcc -o built/allocate allocate.br&#x0D;&#x0A;"
-					Outputs="built/allocate.cpp"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCustomBuildTool"
-					CommandLine="brcc -o built/allocate allocate.br&#x0D;&#x0A;"
-					Outputs="built/allocate.cpp"
-				/>
-			</FileConfiguration>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

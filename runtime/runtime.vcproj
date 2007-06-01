@@ -1,94 +1,151 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="runtime"
 	ProjectGUID="{8C4E82B8-5F07-4AE6-A68C-16E46B436F15}"
 	RootNamespace="runtime"
-	Keyword="Win32Proj">
+	Keyword="Win32Proj"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="../bin"
+			OutputDirectory="../bin/debug"
 			IntermediateDirectory="built/Debug"
 			ConfigurationType="4"
-			CharacterSet="2">
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WINDOWS;WIN32;_DEBUG;_LIB;BUILD_DX9;BUILD_OGL"
-				MinimalRebuild="TRUE"
+				AdditionalIncludeDirectories="&quot;$(DXSDK_DIR)\Include&quot;;..\include;&quot;$(CTMROOT)\include&quot;;&quot;$(AMUROOT)\include&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuisa&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucgen&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucbuf&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuabi&quot;"
+				PreprocessorDefinitions="WINDOWS;WIN32;_DEBUG;_LIB;BUILD_DX9;BUILD_OGL;BUILD_CTM;_CRT_SECURE_NO_DEPRECATE"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="5"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="4"/>
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="4"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/brook.lib"/>
+				AdditionalDependencies="ctmutil.lib"
+				OutputFile="$(OutDir)/brook.lib"
+				AdditionalLibraryDirectories="&quot;$(CTMROOT)\lib\2k&quot;;&quot;$(AMUROOT)\lib\2k&quot;"
+				IgnoreDefaultLibraryNames=""
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="../bin"
+			OutputDirectory="../bin/release"
 			IntermediateDirectory="built/Release"
 			ConfigurationType="4"
-			CharacterSet="2">
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WINDOWS;WIN32;NDEBUG;_LIB;BUILD_DX9;BUILD_OGL"
-				RuntimeLibrary="4"
+				AdditionalIncludeDirectories="&quot;$(DXSDK_DIR)\Include&quot;;..\brook\include;..\include;..\..\include;..\..\..\include;..\..\..\..\include;&quot;$(CTMROOT)\include&quot;;&quot;$(AMUROOT)\include&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuisa&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucgen&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucbuf&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuabi&quot;"
+				PreprocessorDefinitions="WINDOWS;WIN32;NDEBUG;_LIB;BUILD_DX9;BUILD_OGL;BUILD_CTM;_CRT_SECURE_NO_DEPRECATE"
+				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="3"/>
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/brook.lib"/>
+				AdditionalDependencies="ctmutil.lib"
+				OutputFile="$(OutDir)/brook.lib"
+				AdditionalLibraryDirectories="&quot;$(CTMROOT)\lib\2k&quot;;&quot;$(AMUROOT)\lib\2k&quot;"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -96,160 +153,231 @@
 	<Files>
 		<Filter
 			Name="cpu"
-			Filter="">
+			>
 			<File
-				RelativePath=".\cpu\cpu.hpp">
+				RelativePath=".\cpu\cpu.hpp"
+				>
 			</File>
 			<File
-				RelativePath=".\cpu\cpuiter.cpp">
+				RelativePath=".\cpu\cpuiter.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\cpu\cpukernel.cpp">
+				RelativePath=".\cpu\cpukernel.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\cpu\cpuruntime.cpp">
+				RelativePath=".\cpu\cpuruntime.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\cpu\cpustream.cpp">
+				RelativePath=".\cpu\cpustream.cpp"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="gpu"
-			Filter="">
+			>
 			<File
-				RelativePath=".\gpu\gpu.hpp">
+				RelativePath=".\gpu\gpu.hpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpubase.hpp">
+				RelativePath=".\gpu\gpubase.hpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpucontext.hpp">
+				RelativePath=".\gpu\gpucontext.hpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpuiterator.cpp">
+				RelativePath=".\gpu\gpuiterator.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpuiterator.hpp">
+				RelativePath=".\gpu\gpuiterator.hpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpukernel.cpp">
+				RelativePath=".\gpu\gpukernel.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpukernel.hpp">
+				RelativePath=".\gpu\gpukernel.hpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpuruntime.cpp">
+				RelativePath=".\gpu\gpuruntime.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpuruntime.hpp">
+				RelativePath=".\gpu\gpuruntime.hpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpustream.cpp">
+				RelativePath=".\gpu\gpustream.cpp"
+				>
 			</File>
 			<File
-				RelativePath=".\gpu\gpustream.hpp">
+				RelativePath=".\gpu\gpustream.hpp"
+				>
 			</File>
 			<Filter
 				Name="ogl"
-				Filter="">
+				>
 				<File
-					RelativePath=".\gpu\ogl\aticontext.cpp">
+					RelativePath=".\gpu\ogl\aticontext.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\aticontext.hpp">
+					RelativePath=".\gpu\ogl\aticontext.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\nvcontext.cpp">
+					RelativePath=".\gpu\ogl\nvcontext.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\nvcontext.hpp">
+					RelativePath=".\gpu\ogl\nvcontext.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglcheckgl.cpp">
+					RelativePath=".\gpu\ogl\oglcheckgl.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglcheckgl.hpp">
+					RelativePath=".\gpu\ogl\oglcheckgl.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglcontext.cpp">
+					RelativePath=".\gpu\ogl\oglcontext.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglcontext.hpp">
+					RelativePath=".\gpu\ogl\oglcontext.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglfunc.cpp">
+					RelativePath=".\gpu\ogl\oglfunc.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglfunc.hpp">
+					RelativePath=".\gpu\ogl\oglfunc.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglkernel.cpp">
+					RelativePath=".\gpu\ogl\oglkernel.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglruntime.cpp">
+					RelativePath=".\gpu\ogl\oglruntime.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglruntime.hpp">
+					RelativePath=".\gpu\ogl\oglruntime.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglstream.cpp">
+					RelativePath=".\gpu\ogl\oglstream.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\ogltexture.cpp">
+					RelativePath=".\gpu\ogl\ogltexture.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\ogltexture.hpp">
+					RelativePath=".\gpu\ogl\ogltexture.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglwindow.cpp">
+					RelativePath=".\gpu\ogl\oglwindow.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\ogl\oglwindow.hpp">
+					RelativePath=".\gpu\ogl\oglwindow.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\gpu\ogl\oglwritequery.cpp"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="dx9"
-				Filter="">
+				>
 				<File
-					RelativePath=".\gpu\dx9\dx9base.hpp">
+					RelativePath=".\gpu\dx9\dx9base.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\dx9\dx9runtime.cpp">
+					RelativePath=".\gpu\dx9\dx9runtime.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\dx9\dx9runtime.hpp">
+					RelativePath=".\gpu\dx9\dx9runtime.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\dx9\dx9texture.cpp">
+					RelativePath=".\gpu\dx9\dx9texture.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\dx9\dx9texture.hpp">
+					RelativePath=".\gpu\dx9\dx9texture.hpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\dx9\dx9window.cpp">
+					RelativePath=".\gpu\dx9\dx9window.cpp"
+					>
 				</File>
 				<File
-					RelativePath=".\gpu\dx9\dx9window.hpp">
+					RelativePath=".\gpu\dx9\dx9window.hpp"
+					>
+				</File>
+				<File
+					RelativePath=".\gpu\dx9\dx9writemask.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\gpu\dx9\dx9writequery.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="ctm"
+				>
+				<File
+					RelativePath=".\gpu\ctm\ctmruntime.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\gpu\ctm\ctmstream.cpp"
+					>
 				</File>
 			</Filter>
 		</Filter>
 		<File
-			RelativePath=".\brt.cpp">
+			RelativePath=".\brt.cpp"
+			>
 		</File>
 		<File
-			RelativePath=".\logger.cpp">
+			RelativePath=".\logger.cpp"
+			>
 		</File>
 		<File
-			RelativePath=".\logger.hpp">
+			RelativePath=".\logger.hpp"
+			>
 		</File>
 		<File
-			RelativePath=".\profiler.cpp">
+			RelativePath=".\profiler.cpp"
+			>
 		</File>
 		<File
-			RelativePath=".\profiler.hpp">
+			RelativePath=".\profiler.hpp"
+			>
 		</File>
 		<File
-			RelativePath=".\runtime.hpp">
+			RelativePath=".\runtime.hpp"
+			>
 		</File>
 	</Files>
 	<Globals>
