@@ -2,6 +2,8 @@
 
 using namespace brook;
 
+extern bool verbose;
+
 static const int kComponentSizes[] =
 {
   sizeof(float),
@@ -9,6 +11,21 @@ static const int kComponentSizes[] =
   sizeof(unsigned short)
 };
 
+//! Utility routine to print the contents of the given buffer
+void
+printBuffer(void *data, const int width, const int height)
+{
+    float *dest = (float *)data;
+    fprintf(stderr, "After execute\nDestination\n");
+    for(int i = 0; i < height; i++ )
+    {
+        for(int j = 0; j < width; j++ )
+            printf( "%3.0f ", dest[i * width + j] );
+        printf("\n");
+    }
+}
+
+//! Constructor for CTMStream class 
 CTMStream::CTMStream( GPUContextCTM* inContext,
                       int inWidth,
                       int inHeight,
@@ -16,103 +33,108 @@ CTMStream::CTMStream( GPUContextCTM* inContext,
                       int origHeight,
                       int inComponents,
                       ComponentType inComponentType,
-                      bool readonly,
-                      AMuint32 GPUAddress)
-	: width(inWidth),
-      height(inHeight),
-      userWidth(origWidth),
-      userHeight(origHeight),      
-      components(inComponents),
-      componentType(inComponentType),
-      componentSize(0),
-      read_only(readonly),
-      GPUAddress(GPUAddress)
+                      bool readOnly)
+    : _userWidth(origWidth),
+      _userHeight(origHeight),
+      _components(inComponents),
+      _componentType(inComponentType),
+      _componentSize(0),
+      _readOnly(readOnly)
 {
-    componentSize = kComponentSizes[ componentType ];
+    _componentSize = kComponentSizes[ _componentType ];
     
+    // CTM does not support 3-component buffers so used 4 components instead
     if(inComponents == 3)
-        internalComponents = 4;
+        _internalComponents = 4;
     else
-        internalComponents = inComponents;
-    
-    switch(componentType)
+        _internalComponents = inComponents;
+
+    // Select the internal format and tiling mode for the CTM buffer
+    switch(_componentType)
     {
     case kComponentType_Float:
-        switch(components)
+        switch(_components)
         {
         case 1:
-            internalFormat = AMU_CBUF_FLD_FORMAT_FLOAT32_1;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = CTM::FLOAT32_1;
             break;
         case 2:
-            internalFormat = AMU_CBUF_FLD_FORMAT_FLOAT32_2;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = CTM::FLOAT32_2;
             break;
         case 3:
         case 4:
-            internalFormat = AMU_CBUF_FLD_FORMAT_FLOAT32_4;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = CTM::FLOAT32_4;
             break;
         }
         break;
+        
     case kComponentType_Fixed:
-        switch(components)
+        switch(_components)
         {
         case 1:
-            internalFormat = AMU_CBUF_FLD_FORMAT_UINT8_1;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = AMU_CBUF_FLD_FORMAT_UINT8_1;
             break;
         case 2:
-            internalFormat = AMU_CBUF_FLD_FORMAT_UINT8_2;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = AMU_CBUF_FLD_FORMAT_UINT8_2;
             break;
         case 3:
         case 4:
-            internalFormat = AMU_CBUF_FLD_FORMAT_UINT8_4;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = AMU_CBUF_FLD_FORMAT_UINT8_4;
             break;
         }
         break;
+        
     case kComponentType_ShortFixed:
-        switch(components)
+        switch(_components)
         {
         case 1:
-            internalFormat = AMU_CBUF_FLD_FORMAT_UINT16_1;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = AMU_CBUF_FLD_FORMAT_UINT16_1;
             break;
         case 2:
-            internalFormat = AMU_CBUF_FLD_FORMAT_UINT16_2;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = AMU_CBUF_FLD_FORMAT_UINT16_2;
             break;
         case 3:
         case 4:
-            internalFormat = AMU_CBUF_FLD_FORMAT_UINT16_4;
-            internalTiling = AMU_CBUF_FLD_TILING_TILED0;
+            _internalFormat = AMU_CBUF_FLD_FORMAT_UINT16_4;
             break;
         }
         break;
     }
-    
+
+    // xxx Using TILED0 by default
+    _internalTiling = CTM::LINEAR; 
     _context = inContext;
+
+    // Create the CTM::Buffer in GPU memory
+    _buffer = _context->getDevice()->alloc(CTM::MEM_GPU, 
+                                           inWidth, inHeight, 
+                                           _internalFormat, _internalTiling);
+    if(verbose)
+        fprintf(stderr, "Allocated GPU buffer %p of size %d, %d\n", _buffer, inWidth, inHeight);
+    
 }
 
+//! Size of buffer in bytes 
 unsigned int CTMStream::getAllocatedSize()
 {
-    return componentSize*internalComponents*width*height;
+    return _componentSize * _internalComponents * _buffer->getWidth() * _buffer->getHeight();
 }
 
+//! Destructor 
 CTMStream::~CTMStream()
 {
     CTMLOG(2) << "~CTMStream";
     // We should attempt to release space from context/runtime here
+    // xxx Does not free the internal CTM::Buffer... will soon run out of GPU memory
 }
 
+//! CTMStream factory
 CTMStream* CTMStream::create( GPUContextCTM* inContext,
                               int inWidth,
                               int inHeight,
                               int inComponents,
                               ComponentType inType,
-                              bool read_only, AMuint32 GPUAddress )
+                              bool read_only)
 {
     CTMPROFILE("CTMStream::create");
     
@@ -130,14 +152,12 @@ CTMStream* CTMStream::create( GPUContextCTM* inContext,
         test = 16;
     int padWidth  = ((inWidth + test-1)/test) * test;
     int padHeight = ((inHeight + 15)/16) * 16;
-        
+       
     CTMStream* result = new CTMStream( inContext,
                                        padWidth, padHeight,
                                        inWidth, inHeight,
                                        inComponents,
                                        inType,
-                                       read_only,
-                                       GPUAddress );
+                                       read_only);
     return result;
 }
-

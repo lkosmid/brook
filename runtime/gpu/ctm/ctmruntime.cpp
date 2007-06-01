@@ -1,8 +1,13 @@
-// ctmruntime.cpp
+//! ctmruntime.cpp
 #include "ctmruntime.hpp"
 #include "ctmstream.hpp"
 
 #define ALIGN 2048
+// #define DEBUG
+
+bool verbose = (getenv("VERBOSE_BROOK") != NULL);
+
+const int ParamOffset = 36;
 
 namespace brook
 {
@@ -19,12 +24,9 @@ namespace brook
     "    end                 \n"
     ;
     
-    struct CTMVertex
-    {
-        float4 position;
-        float4 texcoords[7];
-    };
-    
+    //! Create the GPURuntime for CTM - internally creates a CTM GPUContext
+    //! object which then stores the device specific data structures for the GPU
+    //! xxx multi-GPU?    
     GPURuntimeCTM* GPURuntimeCTM::create( void* inContextValue )
     {
         GPUContextCTM* context = GPUContextCTM::create( inContextValue );
@@ -41,113 +43,88 @@ namespace brook
         return result;
     }
     
+    //! Create the CTM GPUContext
     GPUContextCTM* GPUContextCTM::create( void* inContextValue )
     {
         GPUContextCTM* result = new GPUContextCTM();
+        
+        // Initialize the devide internally
         if( result->initialize( inContextValue ) )
             return result;
+        
+        // Failure in initialize routine
         delete result;
         return NULL;
     }
     
+    //! Constructor for CTM GPUContext
     GPUContextCTM::GPUContextCTM()
     {
+        // Initialize various data members to NULL
+        
+        _device = NULL;
+        
+        _pass = NULL;
+        _program = NULL;   
+        
+        _fconst = NULL;
+        _iconst = NULL;
+        _bconst = NULL;
+        _interp = NULL;
+
+        _canPopMemory = false;
+        _pushedInBegin = false;
+
+        // Set number of textures to zero
+        _numTextures = 0;
     }
     
+    //! Destructor for CTM GPUContext
     GPUContextCTM::~GPUContextCTM()
     {
+        // Delete all internally allocated data
+        delete _pass;
+        delete _program;
+        delete _fconst;
+        delete _iconst;
+        delete _bconst;
+        delete _interp;
+        
+        // Destroy the connection to the device
+        delete _device;
     }
     
 
     bool GPUContextCTM::initialize( void* inContextValue )
     {
-        memset(&params, 0, sizeof(params));
+        memset(&_params, 0, sizeof(_params));
         
         if( inContextValue == NULL )
         {
-            // open board and create resources
-            char pcie[ 32 ];
-            
-            sprintf( pcie, "/dev/pcie%d", 0 );
-            AMmanagedDeviceInfo _info = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            info = _info;
-            vm = amOpenManagedConnection( pcie, &info );
-            if(vm == NULL)
+            // Open device and create resources
+            _device = CTM::Device::open(0);
+            if(!_device)
             {
-                fprintf(stderr, "Fatal: can't open board\n");
+                fprintf(stderr, "Failed to open CTM device id %d!\n", 0);
                 return false;
             }
             
-            printf("GPU Memory     available: %dMB\n",
-                   info.arenaSizeGPU/(1024*1024));
-            printf("GPU Memory (B) available: %dMB\n",
-                   info.arenaSizeGPUb/(1024*1024));
-            printf("SYS            available: %dMB\n",
-                   info.arenaSizeSYS/(1024*1024));
-            printf("SYSc           available: %dMB\n",
-                   info.arenaSizeSYSc/(1024*1024));
-            printf("\n");
-
-            fflush(stdout);
- 
-            // Use the larger of the cached and uncached arenas
-            // Currently, on Linux, only cached arenas are valid with CTM
-            bool cached = info.arenaSizeSYSc > info.arenaSizeSYS;
-            arenaSizeSYS        = cached ? info.arenaSizeSYSc : info.arenaSizeSYS;
-            baseAddressSYS      = cached ? info.baseAddressSYSc : info.baseAddressSYS;
-            baseAddressCPU      = cached ? info.baseAddressCPUc : info.baseAddressCPU;            
-            currentAddressGPU   = info.baseAddressGPU;
+            const int bufSize = 256 * 1024; // 256 KB should be enough for now
             
-            cbufAddressSYS = baseAddressSYS + 0 * 1024 * 1024;
-            cbufAddressCPU = getAddressCPU( cbufAddressSYS, cached, info );
+            // Allocate memory for various buffers
+            _fconst = _device->alloc(CTM::MEM_SYS, bufSize);
+            _iconst = _device->alloc(CTM::MEM_SYS, bufSize);
+            _interp = _device->alloc(CTM::MEM_SYS, bufSize);
             
-            programAddressSYS = baseAddressSYS + 1 * 1024 * 1024;
-            programAddressCPU = getAddressCPU( programAddressSYS, cached, info);
-
-            
-            fconstAddressSYS = baseAddressSYS + 2 * 1024 * 1024;
-            iconstAddressSYS = baseAddressSYS + 3 * 1024 * 1024;
-            interpAddressSYS = baseAddressSYS + 4 * 1024 * 1024;
-            
-            fconstAddressCPU = getAddressCPU( fconstAddressSYS, cached, info);
-            iconstAddressCPU = getAddressCPU( iconstAddressSYS, cached, info);
-            interpAddressCPU = getAddressCPU( interpAddressSYS, cached, info);
-
-            // Allocate largest possible buffers
-            bufferSYS  = alignCTMAddress( baseAddressSYS + 5 * 1024 * 1024, ALIGN );
-            
-            bufferCPU  = getAddressCPU( bufferSYS, cached, info );
-
-            // Get compiler handle
-            comp = amuCompOpenCompiler();
-            
-            copyProgram = new CTMProgram();
-            
-            AMUcompMacro defines[] =
-                {
-                    {"AMU_LANG_PS3", "1"},
-                    {0, 0}
-                };
-            
-            // Compile program
-            if ( amuCompCompile( comp, copy, (unsigned int)strlen(copy),
-                                 defines, NULL, "main", &copyProgram->size, &copyProgram->binary,
-                                 LogPrintFunction ) == 0 )
-            {
-                fprintf(stderr, "Found error compiling, bailing out!\n");
-                fflush(stderr);
-                return false;
-            }
-            
-            copyProgram->constants = amuABIExtractConstants( copyProgram->binary );
-            
-            // Disassemble what we just built and print it out, just for
-            // fun
-            amuAsmDisassemble(copyProgram->binary, LogPrintFunction);
-
             _passthroughPixelShader = createPixelShader(kPassthroughPixelShaderSource);
-
-            cbp = NULL;
+            
+            if(verbose)
+            {
+                printf("Device: %p\n", _device);
+                printf("Float Const: %p\n", _fconst);
+                printf("Int Const: %p\n", _iconst);
+                printf("Interp: %p\n", _interp);
+            }
         }
         else
         {
@@ -169,9 +146,8 @@ namespace brook
     }
 
     bool GPUContextCTM::isTextureExtentValid( unsigned int inExtent ) const {
-        return inExtent <= 4096; // MCH: arbitrary and
-                                 // hardcoded... bad.  Need way to
-                                 // view caps bits
+        return inExtent <= _device->getDeviceCaps()->getMaxBufferWidth(); 
+                                // praveen - Using max width 
     }
     
     float4 GPUContextCTM::getStreamIndexofConstant( TextureHandle inTexture ) const
@@ -290,7 +266,7 @@ namespace brook
             minY = 0;
             maxX = domainMax[0];
             maxY = 1;
-            scaleBiasX = -0.5f*((float)domainMax[0]-(float)domainMin[0])/(float)outputWidth+kInterpolantBias;
+            scaleBiasX = -0.5f * ((float)maxX -(float)minX)/(float)outputWidth + kInterpolantBias;
             scaleBiasY = 0.0f;
         }
         else
@@ -299,11 +275,11 @@ namespace brook
             minY = domainMin[0];
             maxX = domainMax[1];
             maxY = domainMax[0];
-            scaleBiasX = -0.5f*((float)domainMax[1]-(float)domainMin[1])/(float)outputWidth+kInterpolantBias;
-            scaleBiasY = -0.5f*((float)domainMax[0]-(float)domainMin[0])/(float)outputHeight+kInterpolantBias;
+            scaleBiasX = -0.5f * ((float)maxX - (float)minX)/(float)outputWidth + kInterpolantBias;
+            scaleBiasY = -0.5f * ((float)maxY - (float)minY)/(float)outputHeight + kInterpolantBias;
         }
 
-        
+        GPULOGPRINT(4) << "Interpolant Rank = " << rank << ", Min = (" << minX << ", " << maxX <<") to (" << minY << ", " << maxY << ")" << std::endl;
         float width = (float)(maxX - minX);
         float height = (float)(maxY - minY);
         
@@ -428,6 +404,7 @@ namespace brook
     {
         int components;
         CTMStream::ComponentType componentType;
+        int format = 0;
         
         switch( inFormat )
         {
@@ -435,21 +412,26 @@ namespace brook
         case kTextureFormat_ShortFixed1:
         case kTextureFormat_Fixed1:
             components = 1;
+            format = CTM::FLOAT32_1;
             break;
         case kTextureFormat_Float2:
         case kTextureFormat_ShortFixed2:
         case kTextureFormat_Fixed2:
             components = 2;
+            format = CTM::FLOAT32_2;
             break;
         case kTextureFormat_Float3:
         case kTextureFormat_ShortFixed3:
         case kTextureFormat_Fixed3:
             components = 3;
+            // xxx 3 component formats not supported by CTM
+            format = CTM::FLOAT32_4;
             break;
         case kTextureFormat_Float4:
         case kTextureFormat_ShortFixed4:
         case kTextureFormat_Fixed4:
             components = 4;
+            format = CTM::FLOAT32_4;
             break;
         default:
             GPUError("Unknown format for CTM Stream");
@@ -483,19 +465,39 @@ namespace brook
             break;
         }
 
+        // Save this state when the total number of textures is zero
+        if(_numTextures == 0)
+        {
+//            _device->pushMemory();
+            GPULOGPRINT(2) << "First texture being allocated. Pushing Device memory state" << std::endl;
+        }
+
         // Assign a pointer for this and update GPU pointer
-        // FIXME: Need to check for space and switch to GPUB as needed
         CTMStream* result = CTMStream::create( this, inWidth, inHeight, components,
-                                               componentType, read_only, currentAddressGPU);
-        currentAddressGPU = alignCTMAddress( currentAddressGPU+result->getAllocatedSize()+8192, ALIGN);
-        
+                                               componentType, read_only);
+
+        // Increment the number of textures
+        _numTextures++;
+      
         return result;
     }
     
-    
+    //! Free the given inpu texture
     void GPUContextCTM::releaseTexture( TextureHandle inTexture )
     {
         CTMStream* texture = (CTMStream*)inTexture;
+
+        // Decrease the texture count
+        _numTextures--;
+
+        // If the texture count reaches zero, free all memory
+        if(_numTextures == 0)
+        {
+//            _device->popMemory();
+            GPULOGPRINT(2) << "Texture count has reached zero. Popping Device memory state" << std::endl;
+        }
+
+        // xxx Does nothing really right now... 
         delete texture;
     }
     
@@ -504,6 +506,13 @@ namespace brook
                                   size_t columnCount, size_t rowCount, 
                                   size_t numElements,size_t elementSize )
     {
+#if 0
+        if(verbose)
+        {
+            printBuffer(fromBuffer, columnCount, rowCount);
+        }
+#endif
+
         char* outputLine = (char*)toBuffer;
         const char* inputLine = (const char*)fromBuffer;
         
@@ -554,6 +563,12 @@ namespace brook
                 outputLine += toRowStride;
             }
         }
+#if 0
+        if(verbose)
+        {
+            printBuffer(toBuffer, columnCount, rowCount);
+        }
+#endif
     }
     
     void GPUContextCTM::setTextureData( TextureHandle inTexture,
@@ -566,14 +581,11 @@ namespace brook
                                         const unsigned int* inExtents,
                                         bool inUsesAddressTranslation )
     {
-        
+
         CTMAssert(!inUsesAddressTranslation, "Address translation unsupported!\n");
         
         CTMStream* texture = (CTMStream*)inTexture;
-        
-        unsigned char *input = NULL;
-        input  = (unsigned char*)bufferCPU;
-        
+
         int domainWidth;
         int domainHeight;
         int offsetX;
@@ -594,8 +606,24 @@ namespace brook
             offsetY = inDomainMin[0]*texture->getInternalComponents()*texture->getComponentSize();        
         }
         
-        memset(input, 0, texture->getWidth()*texture->getHeight()*texture->getInternalComponents()*texture->getComponentSize());
+        // Save the memory allocated on device... will pop at the end of this routine to free this
+        // temporary buffer
+        _device->pushMemory();
+
+        CTM::Buffer *inputBuf = _device->alloc(CTM::MEM_SYS, 
+                                               texture->getWidth(), 
+                                               texture->getHeight(), 
+                                               texture->getInternalFormat(), 
+                                               texture->getInternalTiling());
+#ifdef DEBUG
+        fprintf(stderr, "setTextureData: Allocated SYS buffer %p of size %d, %d\n", inputBuf, texture->getWidth(), texture->getHeight());
+#endif
         
+        unsigned char *input = (unsigned char*)inputBuf->getCPUAddress();
+        
+        memset(input, 0, texture->getWidth()*texture->getHeight()*texture->getInternalComponents()*texture->getComponentSize());
+
+        // copy the data from application memory to PCIe SYS memory arena first        
         copyData(input+(offsetY*texture->getWidth())+offsetX,
                  texture->getWidth()*texture->getInternalComponents()*texture->getComponentSize(),
                  texture->getInternalComponents()*texture->getComponentSize(),
@@ -606,122 +634,49 @@ namespace brook
                  domainHeight,
                  texture->getComponents(),
                  texture->getComponentSize());
-        
-        assert(cbp == NULL);
-        cbp = new AMUcbufPack( ( unsigned int* ) cbufAddressCPU, 1024 * 256 );
-        
-        // Setup program literal constants
-        amuABISetLiteralConstants( copyProgram->constants,
-                                   fconstAddressCPU,
-                                   iconstAddressCPU,
-                                   bconstAddressCPU );
-        
-        // Flush Output cache
-        cbp->appendFlushOutCache();
-        
-        // Flush conditional output cache
-        cbp->appendFlushCondOutCache();
-        
-        
-        // Notice we are switching from a tiled format on the GPU to a linear in system memory
-        cbp->appendSetInpFmt( 0, bufferSYS,
-                              texture->getInternalFormat(), AMU_CBUF_FLD_TILING_LINEAR,
-                              texture->getWidth(), texture->getHeight() );
-        
-        // Setup output pointer and format (float4 with linear format)
-        cbp->appendSetOutFmt( 0, texture->GPUAddress,
-                              texture->getInternalFormat(), texture->getInternalTiling(),
-                              texture->getWidth(), texture->getHeight() );
-        
-        // Invalidate input cache
-        cbp->appendInvInpCache();
-        
-        // Invalidate conditional output cache
-        cbp->appendInvCondOutCache();
-        
-        // Set instruction format
-        // copy program in place
-        memcpy( programAddressCPU, copyProgram->binary, copyProgram->size );
-        cbp->appendSetInstFmt( programAddressSYS, 0, 0, 0 );
-        cbp->appendInvInstCache();
-        
-        // Setup constants and invalidate constant caches
-        
-        // Floats
-        cbp->appendSetConstfFmt( fconstAddressSYS, 0, 0, 0 );
-        cbp->appendInvConstfCache();
-        // Integers
-        cbp->appendSetConstiFmt( iconstAddressSYS, 0, 0, 0 );
-        cbp->appendInvConstiCache();
 
-        // Set domain of output
-        int startx, endx, starty, endy;
-        if(inRank == 1)
-        {
-            startx = inDomainMin[0];
-            endx   = inDomainMax[0]-1;
-            starty = 0;
-            endy   = 0;
-            
-        }
-        else
-        {
-            startx = inDomainMin[1];
-            endx   = inDomainMax[1]-1;
-            starty = inDomainMin[0];
-            endy   = inDomainMax[0]-1;
-            
-        }
-        cbp->appendSetDomain( startx, starty, endx, endy );
+        // Set parameters - this is being ignored for the copy passes right now
+        // but will be used in the drawRectangle code
+        _params[0] = 0.0f;
+        _params[1] = 0.0f;
+        _params[2] = 0.0f;
+        _params[3] = 1.0f;
         
-        params[0] = 0.0f;
-        params[1] = 0.0f;
-        params[2] = 0.0f;
-        params[3] = 1.0f;
+        _params[ParamOffset + 0] = 3.0f * texture->getWidth();
+        _params[ParamOffset + 1] = 0.0f;
+        _params[ParamOffset + 2] = 0.0f;
+        _params[ParamOffset + 3] = 1.0f;
         
-        params[32] = 3.0f+texture->getWidth();
-        params[33] = 0.0f;
-        params[34] = 0.0f;
-        params[35] = 1.0f;
-        
-        params[64] = 0.0f;
-        params[65] = 3.0f*texture->getHeight();
-        params[66] = 0.0f;
-        params[67] = 1.0f;
+        _params[2 * ParamOffset + 0] = 0.0f;
+        _params[2 * ParamOffset + 1] = 3.0f * texture->getHeight();
+        _params[2 * ParamOffset + 2] = 0.0f;
+        _params[2 * ParamOffset + 3] = 1.0f;
         
         // setup interpolants
-        for( int i=0; i<32*3; i++)
-            ((float*) interpAddressCPU)[i] = params[i];
+        float *interpAddressCPU = (float *)_interp->getCPUAddress();
         
-        cbp->appendSetParams( interpAddressSYS );
+        for( int i=0; i<ParamOffset*3; i++)
+            ((float*) interpAddressCPU)[i] = _params[i];
         
-        // After setting everything up, start program
-        cbp->appendStartProgram();
+        if(verbose)
+            fprintf(stderr,"GPUContextCTM::setTextureData: Executing copy to GPU buffer %p\n", texture->getBuffer());
         
-        // Flush Output cache
-        cbp->appendFlushOutCache();
-        
-        // Flush conditional output cache
-        cbp->appendFlushCondOutCache();
-        
-        // Get a copy of command buffer size
-        AMuint32 cbufsize = cbp->getCommandBufferSize();
-        assert(cbufsize <=1024*256);
-        delete cbp;
-        cbp = NULL;
-        
-        // Submit buffer to hardware
-        unsigned int bufid = amSubmitCommandBuffer( vm, cbufAddressSYS, cbufsize );
-        if(!bufid){
-            fprintf(stderr, "Command buffer returned an error!\n");
-        }
-        
-        // Query if buffer has been sent
-        while ( amCommandBufferConsumed( vm, bufid ) == 0 )
+#if 0
+        if(verbose)
         {
-            //Do other stuff here in until GPU is done
-            //NOTE: currently this is a blocking command
+            printBuffer(texture->getBuffer()->getCPUAddress(), texture->getWidth(), texture->getHeight());
         }
+#endif
+
+         // Copy the data from the given input buffer to the output buffer on the GPU
+         CTM::Buffer *outputBuf = texture->getBuffer();
+        _device->copy(1, &inputBuf, 1, &outputBuf);
+ 
+        // Restore memory allocated till the previous push
+        _device->popMemory();
+        
+        //xxx Not freeing this right now due to a limitation of CTM::Pass' StateVector mechanism        
+//        delete inputBuf;
     }
     
     void GPUContextCTM::getTextureData( TextureHandle inTexture,
@@ -734,136 +689,60 @@ namespace brook
                                         const unsigned int* inExtents,
                                         bool inUsesAddressTranslation )
     {
-       
         CTMStream* texture = (CTMStream*)inTexture;
 
         CTMAssert(!inUsesAddressTranslation, "Address translation unsupported!\n");
 
-        unsigned char *output = NULL;
-        output  = (unsigned char*)bufferCPU;
+        _device->pushMemory();
+        
+        // allocate memory for output buffer in PCIe memory
+        CTM::Buffer *outputBuf = _device->alloc(CTM::MEM_SYS, 
+                                                texture->getWidth(), 
+                                                texture->getHeight(), 
+                                                texture->getInternalFormat(), 
+                                                texture->getInternalTiling());
+#ifdef DEBUG
+        fprintf(stderr, "getTextureData: Allocated SYS buffer %p of size %d, %d\n", outputBuf, texture->getWidth(), texture->getHeight());
+#endif
+                                                
+        unsigned char *output = (unsigned char*)outputBuf->getCPUAddress();
 
         memset(output, 0, texture->getWidth()*texture->getHeight()*texture->getInternalComponents()*texture->getComponentSize());
 
-        assert(cbp == NULL);
+        // Set parameters - this is being ignored for the copy passes right now
+        // but will be used in the drawRectangle code
+        _params[0] = 0.0f;
+        _params[1] = 0.0f;
+        _params[2] = 0.0f;
+        _params[3] = 1.0f;
         
-        cbp = new AMUcbufPack( ( unsigned int* ) cbufAddressCPU, 1024 * 256 );
-        
-        // Setup program literal constants
-        amuABISetLiteralConstants( copyProgram->constants,
-                                   fconstAddressCPU,
-                                   iconstAddressCPU,
-                                   bconstAddressCPU );
-        
-        // Flush Output cache
-        cbp->appendFlushOutCache();
-        
-        // Flush conditional output cache
-        cbp->appendFlushCondOutCache();
-        
-        // Notice we are switching from a tiled format on the GPU to a linear in system memory
-        cbp->appendSetInpFmt( 0, texture->GPUAddress,
-                              texture->getInternalFormat(), texture->getInternalTiling(),
-                              texture->getWidth(), texture->getHeight() );
-        
-        // Setup output pointer and format (float4 with linear format)
-        cbp->appendSetOutFmt( 0, bufferSYS,
-                              texture->getInternalFormat(), AMU_CBUF_FLD_TILING_LINEAR,
-                              texture->getWidth(), texture->getHeight() );
-        
-        // Invalidate input cache
-        cbp->appendInvInpCache();
-        
-        // Invalidate conditional output cache
-        cbp->appendInvCondOutCache();
-        
-        // Set instruction format
-        // copy program in place
-        memcpy( programAddressCPU, copyProgram->binary, copyProgram->size ); 
-        cbp->appendSetInstFmt( programAddressSYS, 0, 0, 0 );
-        cbp->appendInvInstCache();
-        
-        // Setup constants and invalidate constant caches
-        
-        // Floats
-        cbp->appendSetConstfFmt( fconstAddressSYS, 0, 0, 0 );
-        cbp->appendInvConstfCache();
-        // Integers
-        cbp->appendSetConstiFmt( iconstAddressSYS, 0, 0, 0 );
-        cbp->appendInvConstiCache();
-
-        // Set domain of output
-        int startx, endx, starty, endy;
-        if(inRank == 1)
-        {
-            startx = inDomainMin[0];
-            endx   = inDomainMax[0]-1;
-            starty = 0;
-            endy   = 0;
-            
-        }
-        else
-        {
-            startx = inDomainMin[1];
-            endx   = inDomainMax[1]-1;
-            starty = inDomainMin[0];
-            endy   = inDomainMax[0]-1;
-            
-        }
-        cbp->appendSetDomain( startx, starty, endx, endy );
-        
-        
-        params[0] = 0.0f;
-        params[1] = 0.0f;
-        params[2] = 0.0f;
-        params[3] = 1.0f;
-
-        
-        params[32] = 3.0f*texture->getWidth();
-        params[33] = 0.0f;
-        params[34] = 0.0f;
-        params[35] = 1.0f;
-
-        
-        params[64] = 0.0f;
-        params[65] = 3.0f*texture->getHeight();
-        params[66] = 0.0f;
-        params[67] = 1.0f;
+        _params[ParamOffset + 0] = 3.0f * texture->getWidth();
+        _params[ParamOffset + 1] = 0.0f;
+        _params[ParamOffset + 2] = 0.0f;
+        _params[ParamOffset + 3] = 1.0f;
+       
+        _params[2 * ParamOffset + 0] = 0.0f;
+        _params[2 * ParamOffset + 1] = 3.0f * texture->getHeight();
+        _params[2 * ParamOffset + 2] = 0.0f;
+        _params[2 * ParamOffset + 3] = 1.0f;
         
         // setup interpolants
-        for( int i=0; i<32*3; i++)
-            ((float*) interpAddressCPU)[i] = params[i];
+        float *interpAddressCPU = (float *)_interp->getCPUAddress();
+        for( int i=0; i<ParamOffset * 3; i++)
+            ((float*) interpAddressCPU)[i] = _params[i];
         
-        cbp->appendSetParams( interpAddressSYS );
+        if(verbose)
+            fprintf(stderr,"GPUContextCTM::getTextureData: Executing buffer %p copy back to SYS\n", texture->getBuffer());
         
-        // After setting everything up, start program
-        cbp->appendStartProgram();
-        
-        // Flush Output cache
-        cbp->appendFlushOutCache();
-        
-        // Flush conditional output cache
-        cbp->appendFlushCondOutCache();
-        
-        // Get a copy of command buffer size
-        AMuint32 cbufsize = cbp->getCommandBufferSize();
-        assert(cbufsize <=1024*256);
-        delete cbp;
-        cbp = NULL;
-        
-        // Submit buffer to hardware
-        unsigned int bufid = amSubmitCommandBuffer( vm, cbufAddressSYS, cbufsize );
-        if(!bufid){
-            fprintf(stderr, "Command buffer returned an error!\n");
-        }
-        
-        // Query if buffer has been sent
-        while ( amCommandBufferConsumed( vm, bufid ) == 0 )
-        {
-            //Do other stuff here in until GPU is done
-            //NOTE: currently this is a blocking command
-            printf(".");
-        }
-        
+         // Copy the data from the given texture on the GPU to the SYS memory buffer
+        CTM::Buffer *inputBuf = texture->getBuffer();       
+        _device->copy(1, &inputBuf, 1, &outputBuf);
+
+        // Pops the memory allocated in this routine
+        _device->popMemory();
+
+        //xxx Not freeing this right now due to a limitation of CTM::Pass' StateVector mechanism        
+//        delete outputBuf;
         int domainWidth;
         int domainHeight;
         int offsetX;
@@ -884,6 +763,7 @@ namespace brook
             offsetY = inDomainMin[0]*texture->getInternalComponents()*texture->getComponentSize();        
         }
         
+        // copy the data from PCIe SYS memory arena to application memory
         copyData(outData,
                  domainWidth*inStrideBytes,
                  inStrideBytes,
@@ -895,56 +775,66 @@ namespace brook
                  texture->getComponents(),
                  texture->getComponentSize());
     }
-    
+ 
+    //! Create pixel shader given the PS3 string   
     GPUContextCTM::PixelShaderHandle GPUContextCTM::createPixelShader( const char* inSource )
     {
         // Tell compiler what we are about to hand it
-        AMUcompMacro defines[] =
-        {
-            {"AMU_LANG_PS3", "1"},
-            {0, 0}
-        };
-        
-        CTMProgram* program = new CTMProgram();
-
         // Compile program
-        if ( amuCompCompile( comp, inSource, (unsigned int)strlen(inSource),
-                             defines, NULL, "main", &program->size, &program->binary,
-                             LogPrintFunction ) == 0 )
-        {
-            fprintf(stderr, "Found error compiling, bailing out!\n");
-            assert(0);
-            return NULL;
-        }
-        
-        program->constants = amuABIExtractConstants( program->binary );
-        
-        // Disassemble what we just built and print it out, just for
-        // fun
-        amuAsmDisassemble(program->binary, LogPrintFunction);
+        if(verbose)
+            fprintf(stderr, "GPUContextCTM::createPixelShader(): Creating new pixel shader\n");
 
-        return (PixelShaderHandle)program;
+        // We are going to allocate new memory here for the new program. If so, disallow 
+        // this pop otherwise the instructions will be lost. 
+        if(_pushedInBegin)
+            _canPopMemory = false;
+
+        return (PixelShaderHandle)_device->compileProgram(inSource, CTM::PROG_PS3);
     }
     
+    //! Get the vertex shader handle - this will not have any meaning in CTM
     GPUContextCTM::VertexShaderHandle GPUContextCTM::getPassthroughVertexShader( const char* inShaderFormat ) {
         return _passthroughVertexShader;
     }
     
+    //! Get the pixel shader handle
     GPUContextCTM::PixelShaderHandle GPUContextCTM::getPassthroughPixelShader( const char* inShaderFormat ) {
         return _passthroughPixelShader;
     }
     
     void GPUContextCTM::beginScene()
     {
-        assert(cbp == NULL);
-        cbp = new AMUcbufPack( ( unsigned int* ) cbufAddressCPU, 1024 * 256 );
+        if(verbose)
+            fprintf(stderr, "GPUContextCTM::beginScene(): Creating new pass for device %p\n", _device);
+
+        // Push device memory right now and mark that we are allowed to pop this memory
+        _device->pushMemory();
+        _pushedInBegin = true;
+        _canPopMemory = true;
+
+        if(!_pass)
+            _pass = new CTM::Pass(_device);
     }
     
     void GPUContextCTM::endScene()
     {
-        assert(cbp);
-        delete cbp;
-        cbp = NULL;
+        if(verbose)
+            fprintf(stderr, "GPUContextCTM::endScene(): Deleting pass %p for device %p\n", _pass, _device);
+
+        delete _pass;
+        _pass = NULL;
+
+        // See if we are allowed to pop the memory for Pass and do so if allowed
+        // xxx Note that this is not perfect and ultimately we will run out of device memory
+        if(_pushedInBegin && _canPopMemory)
+        {
+            if(verbose)
+                fprintf(stderr, "GPUContextCTM::endScene(): Calling popMemory for device %p\n", _device);
+
+            _device->popMemory();
+            _pushedInBegin = false;
+            _canPopMemory = false;
+        }
     }
     
     
@@ -952,43 +842,36 @@ namespace brook
                                       size_t inIndex,
                                       const float4& inValue )
     {
+        float *fconstAddressCPU = (float *)_fconst->getCPUAddress();
         memcpy(((float*)fconstAddressCPU)+4*inIndex, &inValue, sizeof(float)*4);
     }
 
     void GPUContextCTM::bindTexture( size_t inIndex,
                                      TextureHandle inTexture )
     {
-        CTMStream* texture = (CTMStream*)inTexture;
-        assert(cbp);
-        cbp->appendSetInpFmt( inIndex, texture->GPUAddress,
-                              texture->getInternalFormat(), texture->getInternalTiling(),
-                              texture->getWidth(), texture->getHeight() );
-        // Invalidate input cache
-        cbp->appendInvInpCache();
+        if(verbose)
+            fprintf(stderr, "GPUContextCTM::bindTexture: Input %d is Buffer %p\n", inIndex, ((CTMStream*)inTexture)->getBuffer());
+
+        if(!_pass)
+            _pass = new CTM::Pass(_device);
+        _pass->setInput( inIndex, ((CTMStream*)inTexture)->getBuffer());
     }
     
     void GPUContextCTM::bindOutput( size_t inIndex, TextureHandle inTexture )
     {
-        CTMStream* texture = (CTMStream*)inTexture;
-        assert(cbp);
-        cbp->appendSetOutFmt( inIndex, texture->GPUAddress,
-                              texture->getInternalFormat(), texture->getInternalTiling(),
-                              texture->getWidth(), texture->getHeight() );
+        if(verbose)
+            fprintf(stderr, "GPUContextCTM::bindOutput: Output %d is Buffer %p\n", inIndex, ((CTMStream*)inTexture)->getBuffer());
+
+        if(!_pass)
+            _pass = new CTM::Pass(_device);
+        _pass->setOutput( inIndex, ((CTMStream*)inTexture)->getBuffer());
     }
     
     void GPUContextCTM::bindPixelShader( PixelShaderHandle inPixelShader )
     {
-        // Setup program literal constants
-        CTMProgram* program = (CTMProgram*) inPixelShader;
-        amuABISetLiteralConstants( program->constants,
-                                   fconstAddressCPU,
-                                   iconstAddressCPU,
-                                   bconstAddressCPU );
-        // copy program in place
-        memcpy( programAddressCPU, program->binary, program->size );
-        assert(cbp);
-        cbp->appendSetInstFmt( programAddressSYS, 0, 0, 0 );
-        cbp->appendInvInstCache();
+        if(!_pass)
+            _pass = new CTM::Pass(_device);
+        _pass->setProgram((CTM::Buffer *)inPixelShader);
     }
     
     void GPUContextCTM::bindVertexShader( VertexShaderHandle inVertexShader )
@@ -1006,35 +889,32 @@ namespace brook
         const GPUInterpolant* inInterpolants, 
         unsigned int inInterpolantCount )
     {
+    
+        if(!_pass)
+            _pass = new CTM::Pass(_device);
 
         unsigned int minX = inOutputRegion.viewport.minX;
         unsigned int minY = inOutputRegion.viewport.minY;
         unsigned int maxX = inOutputRegion.viewport.maxX;
         unsigned int maxY = inOutputRegion.viewport.maxY;
-        
+
+#ifdef DEBUG_INTERP
+        fprintf(stderr, "In drawRectangle - inInterpolantCount = %d\n", inInterpolantCount);
+#endif
+
         // The guts of drawing should be here
-        CTMAssert( inInterpolantCount <= 7,
-                   "Can't have more than 7 texture coordinate interpolators" );
-        
-        // Invalidate conditional output cache
-        assert(cbp);
-        cbp->appendInvCondOutCache();
-        
-        // Setup constants and invalidate constant caches
-        // Floats
-        cbp->appendSetConstfFmt( fconstAddressSYS, 0, 0, 0 );
-        cbp->appendInvConstfCache();
-        
-        // Integers
-        cbp->appendSetConstiFmt( iconstAddressSYS, 0, 0, 0 );
-        cbp->appendInvConstiCache();
+        CTMAssert( inInterpolantCount <= 8,
+                   "Can't have more than 8 texture coordinate interpolators" );
 
-        // Need to setup interpolants still
-        
+        _pass->setFloatConst(_fconst);
+        _pass->setIntegerConst(_iconst);
+
         // Set domain of output
-        cbp->appendSetDomain( minX, minY, maxX, maxY );
+        _pass->setDomain( minX, minY, maxX, maxY );
 
-        float* paramsptr = params;
+        // Setup interpolants here
+        float *interpAddressCPU = (float *)_interp->getCPUAddress();
+        float* paramsptr = &_params[0];
         for( size_t i = 0; i < 3; i++ )
         {
             float4 position = inOutputRegion.vertices[i];
@@ -1056,54 +936,37 @@ namespace brook
             
             GPULOGPRINT(4) << std::endl;
 
-            paramsptr+= (32-4-4*inInterpolantCount);
+            paramsptr+= (ParamOffset - 4 - 4 * inInterpolantCount);
         }
 
         // setup interpolants
-        for( int i=0; i<32*3; i++){
-#ifdef DEBUG
+        for( int i=0; i<ParamOffset * 3; i++){
+#ifdef DEBUG_INTERP
             if(i%4==0)
                 fprintf(stderr, "\n");
-            if(i%32==0)
+            if(i%ParamOffset == 0)
                 fprintf(stderr, "\n");
-            fprintf(stderr, "%3.1f, ", params[i]);
+            fprintf(stderr, "%3.1f, ", _params[i]);
 #endif
-            ((float*) interpAddressCPU)[i] = params[i];
+            ((float*) interpAddressCPU)[i] = _params[i];
         }
-#ifdef DEBUG
+#ifdef DEBUG_INTERP
         fprintf(stderr, "\n");
         fflush(stderr);
-#endif`
+#endif
+ 
+        // Set interpolants using params in Pass
+        _pass->setParams(_interp);
+
+        if(verbose)
+            fprintf(stderr,"GPUContextCTM::drawRectangle: Executing actual Brook kernel\n");
         
-        cbp->appendSetParams( interpAddressSYS );
-        
-        // After setting everything up, start program
-        cbp->appendStartProgram();
-        
-        // Flush Output cache
-        cbp->appendFlushOutCache();
-        
-        // Get a copy of command buffer size
-        AMuint32 cbufsize = cbp->getCommandBufferSize();
-        assert(cbufsize <=1024*256);
-        
-        assert(cbp);
-        delete cbp;
-        cbp = NULL;
-        
-        // Submit buffer to hardware
-        unsigned int bufid = amSubmitCommandBuffer( vm, cbufAddressSYS, cbufsize );
-        if(!bufid){
-            fprintf(stderr, "Command buffer returned an error!\n");
-        }
-        
-        // Query if buffer has been sent
-        while ( amCommandBufferConsumed( vm, bufid ) == 0 )
+        if(!_pass->execute())
         {
-            //Do other stuff here in until GPU is done
-            //NOTE: currently this is a blocking command
+            fprintf(stderr, "Error occured while executing program \n");
         }
-        assert(cbp == NULL);
-        cbp = new AMUcbufPack( ( unsigned int* ) cbufAddressCPU, 1024 * 256 );
+
+        delete _pass;
+        _pass = NULL;
      }
 }
