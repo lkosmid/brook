@@ -19,7 +19,7 @@ SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32 Winmm
 # /w34505: Enabled warning 4505 (unreferenced static function) at level 3
 # I turned it off for now since gcc should pick this up.
 
-CFLAGS   += /nologo /W3 /DBUILD_OGL /DBUILD_DX9 /DWIN32 /DWINDOWS /EHsc /Zm500 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /MD
+CFLAGS   += /nologo /W3 /DBUILD_OGL /DBUILD_DX9 /DWIN32 /DWINDOWS /EHsc /Zm500 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
 #ifdef BUILD_CTM
 #CFLAGS   += /DBUILD_CTM
 #endif
