@@ -38,7 +38,7 @@ C_STATIC_FLAG    :=
 C_OUTPUT_FLAG    := /Fo
 C_COMPILE_FLAG   := /c
 
-LDFLAGS           += /nologo /map /fixed:no /INCREMENTAL:NO /NODEFAULTLIB:LIBCMT
+LDFLAGS           += /nologo /map /fixed:no /INCREMENTAL:NO #/NODEFAULTLIB:LIBCMT
 LD_LIBDIR_FLAG    := /libpath:
 LD_SHARED_FLAG    := /DLL
 LD_OUTPUT_FLAG    := /out:
