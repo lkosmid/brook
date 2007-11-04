@@ -300,6 +300,13 @@ BRTPS30KernelCode::printCode(std::ostream& out) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
+BRTGLSLKernelCode::printCode(std::ostream& out) const
+{
+   printCodeForType(out, CODEGEN_GLSL);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
 BRTCTMKernelCode::printCode(std::ostream& out) const
 {
    printCodeForType(out, CODEGEN_CTM);
@@ -406,7 +413,8 @@ void BRTCPUKernelCode::printInnerCode (std::ostream & out) const {
   enhanced_name.name = "__"+fDef->decl->name->name+"_cpu_inner";
   std::string white = whiteout ("void "+enhanced_name.name+"(");
 
-  if (!(ft->getBase()->typemask & BT_Void)) {
+  // ned: Now always makes cpu inner functions static
+  /*if (!(ft->getBase()->typemask & BT_Void))*/ {
       out << "static ";
       white = "       "+white;
   }
@@ -492,7 +500,7 @@ static void printFetchElement(std::ostream &out, Decl * decl) {
    t->printType(out, NULL, true, 0,true);
    out << "*) __k->FetchElem("
        << decl->name->name
-       << ")";
+       << ", __brt_idx)";
 }
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void BRTCPUKernelCode::printCode(std::ostream& out) const
@@ -552,10 +560,15 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
 
     out << "*) args[" << i << "];" << std::endl << indent;
   }
-  out << std::endl << indent;
+  out << std::endl;
 
   // Print the do while loop
-  out << "do {" << std::endl;
+  out << indent << "bool __brt_singlethreaded;" << std::endl;
+  out << indent << "unsigned int __brt_idx, __brt_totalitems = __k->TotalItems(__brt_singlethreaded);" << std::endl;
+  out << "#ifdef _OPENMP" << std::endl;
+  out << "#pragma omp parallel for schedule(dynamic, 16) if(!__brt_singlethreaded)" << std::endl;
+  out << "#endif" << std::endl;
+  out << indent << "for(__brt_idx=0; __brt_idx<__brt_totalitems; __brt_idx++) {" << std::endl;
   for (i=0;i<ft->nArgs;++i) {
      if (ft->args[i]->isStream()) {
        if ((ft->args[i]->form->getQualifiers()&(TQ_Reduce|TQ_Out))!=0){
@@ -607,7 +620,7 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
         }
      }
   }  
-  out << indent<< "} while (__k->Continue());"
+  out << indent<< "}"
       << std::endl 
       << "}" 
       << std::endl;

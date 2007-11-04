@@ -1244,6 +1244,9 @@ DeclStemnt::print(std::ostream& out, int level) const
     {
         DeclVector::const_iterator    j = decls.begin();
 
+        if (/*(*j)->form->type == TT_Base ||*/ (*j)->form->type == TT_Array) {
+            out << "BRTALIGNED ";
+        }
         (*j)->print(out,true,level);
         for (j++; j != decls.end(); j++)
         {

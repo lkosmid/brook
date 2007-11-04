@@ -2,8 +2,10 @@
 ROOTDIR = ../../..
 STATIC_LIBRARY = ogl
 FILES = oglcontext oglstream ogltexture oglkernel \
-	oglwindow aticontext nvcontext oglruntime \
+	oglwindow oglruntime \
 	oglfunc oglcheckgl oglwritequery
+
+SUBDIRS := GL
 
 include ../../../common.mk
 

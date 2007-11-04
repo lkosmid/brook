@@ -96,15 +96,15 @@ kernel void isFiniteKernelfloat(float inp<>, out float outp<>) {
 int finiteValueProducedfloat (float input<>) {
    float output<1,1>;
    float finiteout<1,1>;
-   float rettype;
-   float ret;
+   float rettype[1];
+   float ret[1];
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat(input,output);
-   streamWrite(output,&rettype);
+   streamWrite(output,rettype);
    isFiniteKernelfloat(output,finiteout);
-   streamWrite(finiteout,&ret);
-   return (int)ret;
+   streamWrite(finiteout,ret);
+   return (int)ret[0];
 }
 
 kernel void valueAtfloat (float value[][],
@@ -244,7 +244,7 @@ float shiftValuesfloat(float list_stream <>,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-   float maxshift;
+   float maxshift[1];
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
@@ -263,10 +263,10 @@ float shiftValuesfloat(float list_stream <>,
        index.y=index.x=0;
      }
      kernelReadItem(ret_stream,index,item);
-     streamWrite(item,&maxshift);
+     streamWrite(item,maxshift);
    }
    {
-      unsigned int size= LENGTH*WIDTH - toui(maxshift);
+      unsigned int size= LENGTH*WIDTH - toui(maxshift[0]);
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
       float guess_stream<width,LENGTH>;
       LogNMinusK=logN-2;
@@ -302,14 +302,14 @@ float shiftValuesfloat(float list_stream <>,
                                       *sentinelStream(2),
                                       (float)sign,
                                       maxvalue,
-                                      maxshift);
+                                      maxshift[0]);
             }
             streamSwap(*output_stream,proper_output_stream);
          }
          debugStreamPrint(*output_stream, "Final Value");
       }
    }
-   return maxshift;
+   return maxshift[0];
 }
 
 kernel void floatstreamCombine1(float input0[][],
@@ -1099,15 +1099,15 @@ kernel void isFiniteKernelfloat2(float2 inp<>, out float outp<>) {
 int finiteValueProducedfloat2 (float2 input<>) {
    float2 output<1,1>;
    float finiteout<1,1>;
-   float2 rettype;
-   float ret;
+   float2 rettype[1];
+   float ret[1];
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat2(input,output);
-   streamWrite(output,&rettype);
+   streamWrite(output,rettype);
    isFiniteKernelfloat2(output,finiteout);
-   streamWrite(finiteout,&ret);
-   return (int)ret;
+   streamWrite(finiteout,ret);
+   return (int)ret[0];
 }
 
 kernel void valueAtfloat2 (float2 value[][],
@@ -1247,7 +1247,7 @@ float shiftValuesfloat2(float2 list_stream <>,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-   float maxshift;
+   float maxshift[1];
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
@@ -1266,10 +1266,10 @@ float shiftValuesfloat2(float2 list_stream <>,
        index.y=index.x=0;
      }
      kernelReadItem(ret_stream,index,item);
-     streamWrite(item,&maxshift);
+     streamWrite(item,maxshift);
    }
    {
-      unsigned int size= LENGTH*WIDTH - toui(maxshift);
+      unsigned int size= LENGTH*WIDTH - toui(maxshift[0]);
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
       float guess_stream<width,LENGTH>;
       LogNMinusK=logN-2;
@@ -1305,14 +1305,14 @@ float shiftValuesfloat2(float2 list_stream <>,
                                       *sentinelStream(2),
                                       (float)sign,
                                       maxvalue,
-                                      maxshift);
+                                      maxshift[0]);
             }
             streamSwap(*output_stream,proper_output_stream);
          }
          debugStreamPrint(*output_stream, "Final Value");
       }
    }
-   return maxshift;
+   return maxshift[0];
 }
 
 kernel void float2streamCombine1(float2 input0[][],
@@ -2102,15 +2102,15 @@ kernel void isFiniteKernelfloat3(float3 inp<>, out float outp<>) {
 int finiteValueProducedfloat3 (float3 input<>) {
    float3 output<1,1>;
    float finiteout<1,1>;
-   float3 rettype;
-   float ret;
+   float3 rettype[1];
+   float ret[1];
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat3(input,output);
-   streamWrite(output,&rettype);
+   streamWrite(output,rettype);
    isFiniteKernelfloat3(output,finiteout);
-   streamWrite(finiteout,&ret);
-   return (int)ret;
+   streamWrite(finiteout,ret);
+   return (int)ret[0];
 }
 
 kernel void valueAtfloat3 (float3 value[][],
@@ -2250,7 +2250,7 @@ float shiftValuesfloat3(float3 list_stream <>,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-   float maxshift;
+   float maxshift[1];
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
@@ -2269,10 +2269,10 @@ float shiftValuesfloat3(float3 list_stream <>,
        index.y=index.x=0;
      }
      kernelReadItem(ret_stream,index,item);
-     streamWrite(item,&maxshift);
+     streamWrite(item,maxshift);
    }
    {
-      unsigned int size= LENGTH*WIDTH - toui(maxshift);
+      unsigned int size= LENGTH*WIDTH - toui(maxshift[0]);
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
       float guess_stream<width,LENGTH>;
       LogNMinusK=logN-2;
@@ -2308,14 +2308,14 @@ float shiftValuesfloat3(float3 list_stream <>,
                                       *sentinelStream(2),
                                       (float)sign,
                                       maxvalue,
-                                      maxshift);
+                                      maxshift[0]);
             }
             streamSwap(*output_stream,proper_output_stream);
          }
          debugStreamPrint(*output_stream, "Final Value");
       }
    }
-   return maxshift;
+   return maxshift[0];
 }
 
 kernel void float3streamCombine1(float3 input0[][],
@@ -3105,15 +3105,15 @@ kernel void isFiniteKernelfloat4(float4 inp<>, out float outp<>) {
 int finiteValueProducedfloat4 (float4 input<>) {
    float4 output<1,1>;
    float finiteout<1,1>;
-   float4 rettype;
-   float ret;
+   float4 rettype[1];
+   float ret[1];
   
    debugStreamPrint (input,"Finite Values in...");
    valueProducedfloat4(input,output);
-   streamWrite(output,&rettype);
+   streamWrite(output,rettype);
    isFiniteKernelfloat4(output,finiteout);
-   streamWrite(finiteout,&ret);
-   return (int)ret;
+   streamWrite(finiteout,ret);
+   return (int)ret[0];
 }
 
 kernel void valueAtfloat4 (float4 value[][],
@@ -3253,7 +3253,7 @@ float shiftValuesfloat4(float4 list_stream <>,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-   float maxshift;
+   float maxshift[1];
    maxvalue.x=(float)LENGTH;maxvalue.y=(float)WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
    debugStreamPrint(list_stream,"Combined...");
@@ -3272,10 +3272,10 @@ float shiftValuesfloat4(float4 list_stream <>,
        index.y=index.x=0;
      }
      kernelReadItem(ret_stream,index,item);
-     streamWrite(item,&maxshift);
+     streamWrite(item,maxshift);
    }
    {
-      unsigned int size= LENGTH*WIDTH - toui(maxshift);
+      unsigned int size= LENGTH*WIDTH - toui(maxshift[0]);
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
       float guess_stream<width,LENGTH>;
       LogNMinusK=logN-2;
@@ -3311,14 +3311,14 @@ float shiftValuesfloat4(float4 list_stream <>,
                                       *sentinelStream(2),
                                       (float)sign,
                                       maxvalue,
-                                      maxshift);
+                                      maxshift[0]);
             }
             streamSwap(*output_stream,proper_output_stream);
          }
          debugStreamPrint(*output_stream, "Final Value");
       }
    }
-   return maxshift;
+   return maxshift[0];
 }
 
 kernel void float4streamCombine1(float4 input0[][],

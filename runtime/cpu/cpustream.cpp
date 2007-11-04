@@ -29,10 +29,9 @@ namespace brook{
                        inFieldTypes,
                        inFieldTypes+inFieldCount);
 
-    this->extents    = (unsigned int *) malloc (dims*sizeof(unsigned int));
-    this->domain_min = (unsigned int *) malloc (dims*sizeof(unsigned int));
-    this->domain_max = (unsigned int *) malloc (dims*sizeof(unsigned int));
-    this->pos        = (unsigned int *) malloc (dims*sizeof(unsigned int));
+    this->extents    = (unsigned int *) brmalloc (dims*sizeof(unsigned int));
+    this->domain_min = (unsigned int *) brmalloc (dims*sizeof(unsigned int));
+    this->domain_max = (unsigned int *) brmalloc (dims*sizeof(unsigned int));
 
     this->dims = dims;
     totalsize=1;
@@ -48,7 +47,7 @@ namespace brook{
     stride=getElementSize();
 
     if (stride) {
-      data = malloc(stride*totalsize);
+      data = brmalloc(stride*totalsize);
     } else {
       std::cerr<<"Failure to produce stream: 0 types."<<std::endl;
     }
@@ -71,9 +70,8 @@ namespace brook{
     stride      = a.stride;
     totalsize   = a.totalsize;
     
-    pos         = (unsigned int *) malloc (sizeof(unsigned int) * dims);
-    domain_min  = (unsigned int *) malloc (sizeof(int) * dims);
-    domain_max  = (unsigned int *) malloc (sizeof(int) * dims);
+    domain_min  = (unsigned int *) brmalloc (sizeof(int) * dims);
+    domain_max  = (unsigned int *) brmalloc (sizeof(int) * dims);
 
     for (i=0; i<dims; i++) {
       unsigned int d = dims - (i+1);
@@ -101,10 +99,9 @@ namespace brook{
     stride    = s->getElementSize();
     totalsize = s->getTotalSize();
     
-    extents    = (unsigned int *) malloc (dims*sizeof(unsigned int));
-    domain_min = (unsigned int *) malloc (dims*sizeof(unsigned int));
-    domain_max = (unsigned int *) malloc (dims*sizeof(unsigned int));
-    pos        = (unsigned int *) malloc (dims*sizeof(unsigned int));
+    extents    = (unsigned int *) brmalloc (dims*sizeof(unsigned int));
+    domain_min = (unsigned int *) brmalloc (dims*sizeof(unsigned int));
+    domain_max = (unsigned int *) brmalloc (dims*sizeof(unsigned int));
 
     for (i=0; i<dims; i++) {
       extents[i]    = e[i];
@@ -121,19 +118,15 @@ namespace brook{
   CPUStreamShadow::~CPUStreamShadow() {	
 #if 0 
 	assert(extents);
-        free(extents);
+        brfree(extents);
 	extents = NULL;
 
-	assert(pos);
-	free(pos);
-	pos = NULL;
-	
         assert (domain_min);
-	free(domain_min);
+	brfree(domain_min);
 	domain_min = NULL;
         
         assert(domain_max);
-        free(domain_max);
+        brfree(domain_max);
         domain_max = NULL;
 #endif
         
@@ -148,7 +141,8 @@ namespace brook{
     unsigned int rowlen;
     unsigned char *src = (unsigned char *) inData;
 
-    index = (unsigned int *) malloc (sizeof(unsigned int) * dims);
+    if((size_t)inData & 0xf) { std::cerr<<"Stream input not 16 byte aligned!"<<std::endl; abort(); }
+    index = (unsigned int *) brmalloc (sizeof(unsigned int) * dims);
 
     rowlen = domain_max[dims-1] - domain_min[dims-1];
     rowlen *= stride;
@@ -162,7 +156,7 @@ namespace brook{
       src += rowlen;
 
       if (dims < 2) {
-        free(index);
+        brfree(index);
         return;
       }
       
@@ -170,7 +164,7 @@ namespace brook{
         index[i]++;
         if (index[i] >= domain_max[i] - domain_min[i]) {
           if (i == 0) {
-            free(index);
+            brfree(index);
             return;
           }
           index[i] = 0;
@@ -187,7 +181,8 @@ namespace brook{
     unsigned int rowlen;
     unsigned char *dst = (unsigned char *) outData;
 
-    index = (unsigned int *) malloc (sizeof(unsigned int) * dims);
+    if((size_t)outData & 0xf) { std::cerr<<"Stream output not 16 byte aligned!"<<std::endl; abort(); }
+    index = (unsigned int *) brmalloc (sizeof(unsigned int) * dims);
 
     rowlen = domain_max[dims-1] - domain_min[dims-1];
     rowlen *= stride;
@@ -201,7 +196,7 @@ namespace brook{
       dst += rowlen;
 
       if (dims < 2) {
-        free(index);
+        brfree(index);
         return;
       }
       
@@ -209,7 +204,7 @@ namespace brook{
         index[i]++;
         if (index[i] >= domain_max[i] - domain_min[i]) {
           if (i == 0) {
-            free(index);
+            brfree(index);
             return;
           }
           index[i] = 0;
@@ -243,7 +238,7 @@ namespace brook{
   void * CPUStream::fetchElem(const unsigned int curpos[], 
                               const unsigned int bounds[],
                               unsigned int kdim) {
-    unsigned int i;
+    unsigned int i, *pos = (unsigned int *) alloca (dims*sizeof(unsigned int));
     for (i=0; i<dims; i++)
       if (i < kdim)
         pos[i] = curpos[i] * (domain_max[i] - domain_min[i]) / bounds[i];
@@ -259,24 +254,20 @@ namespace brook{
   CPUStream::~CPUStream() {
 
     assert (domain_min);
-    free(domain_min);
+    brfree(domain_min);
     domain_min = NULL;
     
     assert(domain_max);
-    free(domain_max);
+    brfree(domain_max);
     domain_max = NULL;
-    
-    assert(pos);
-    free(pos);
-    pos = NULL;
     
     if (!isDerived) {
       assert(extents);
-      free(extents);
+      brfree(extents);
       extents = NULL;
       
       assert(data);
-      free(data);
+      brfree(data);
       data = NULL;
     }
   }   

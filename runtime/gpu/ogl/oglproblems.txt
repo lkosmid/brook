@@ -1,0 +1,54 @@
+Todo:
+-=-=-
+ * Rewrite vec<float,4> to directly use SSE. Rewrite dot() to optionally use SSE3.
+ * Add regression tests for new features
+ * Add OpenMP support for cpumt backend
+
+
+For ATI x1300 Pro Catalyst v7.8 GPU - ogl GLSL:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+* Problem: ATI Catalyst v7.8 drivers won't implicitly convert a float
+to a bool in GLSL, thus causing fft to fail
+
+
+Regression failures:
+
+pack_vout				output wrong
+vout					output wrong
+
+Compiler issues:
+-=-=-=-=-=-=-=-=
+struct_gather			needs fxc
+
+ATI Driver bugs:
+-=-=-=-=-=-=-=-=
+fft						GLSL ? operator compilation bug
+iterator				negative zero
+iterator_dimensions		negative zero
+scatter					output wrong if uses glReadPixels(), works if uses glGetTexImage()
+
+
+
+
+
+For ATI x1300 Pro Catalyst v7.7 GPU - ogl ARB:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Confirmed as WORKING for Windows and Linux. Regression failures:
+
+pack_vout				output wrong
+vout					output wrong
+
+Compiler issues:
+-=-=-=-=-=-=-=-=
+constant				needs cgc
+matrix_mult				compiler error slots exceeded
+reduce					needs cgc
+struct_gather			needs fxc
+
+Driver bugs:
+-=-=-=-=-=-=
+iterator				negative zero
+iterator_dimensions		negative zero
+scatter					output wrong if uses glReadPixels(), works if uses glGetTexImage()
+
+

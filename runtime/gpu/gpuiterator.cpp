@@ -203,7 +203,7 @@ void* GPUIterator::getData (unsigned int flags)
 
   size_t cpuBufferSize = _totalSize * _componentCount * sizeof(float);
 
-  _cpuBuffer = malloc( cpuBufferSize );
+  _cpuBuffer = brmalloc( cpuBufferSize );
 
   // fill in the data
   float* data = (float*)_cpuBuffer;

@@ -8,149 +8,16 @@
 
 #include "oglfunc.hpp"
 #include "oglwindow.hpp"
+#include "oglcheckgl.hpp"
 
 using namespace brook;
 
 static const char window_name[] = "Brook GL Render Window";
 
-
-static void 
-appendVendorAttribs( int   iAttribList[4][4][64],
-                     float fAttribList[4][16],
-                     int   piAttribList[4][16],
-                     const int   (*viAttribList)[4][64],
-                     const float (*vfAttribList)[4][16],
-                     const int   (*vpiAttribList)[4][16]) {
-
-  int i,j,k,m;
-
-  for (m=0; m<4; m++) {
-    for (i=0; i<4; i++) {
-      for (j=0; j<63; j+=2) {
-        GPUAssert(j<64, "Error: no room for base attribs");
-        if (iAttribList[m][i][j]   == 0 && 
-            iAttribList[m][i][j+1] == 0)
-          break;
-      }
-      
-      if (viAttribList) {
-        for (k=0; k<63; k+=2) { 
-          GPUAssert(j<64, "Error: no room for vendor attribs");
-          
-          iAttribList[m][i][j++]  = (*viAttribList)[i][k];
-          iAttribList[m][i][j++]  = (*viAttribList)[i][k+1];
-          
-          if ((*viAttribList)[i][k]   == 0 && 
-              (*viAttribList)[i][k+1] == 0)
-            break;
-        }
-      }
-    }
-  }
-
-  for (i=0; i<4; i++) {
-    for (j=0; j<16; j+=2) {
-      GPUAssert(j<16, "Error: no room for base attribs");
-      if (fAttribList[i][j]   == 0.0f && 
-          fAttribList[i][j+1] == 0.0f)
-        break;
-    }
-    
-
-    if (vfAttribList) {
-      for (k=0; k<16; k+=2) { 
-        GPUAssert(j<16, "Error: no room for vendor attribs");
-        
-        fAttribList[i][j++]  = (*vfAttribList)[i][k];
-        fAttribList[i][j++]  = (*vfAttribList)[i][k+1];
-        
-        if ((*vfAttribList)[i][k]   == 0.0f && 
-            (*vfAttribList)[i][k+1] == 0.0f)
-          break;
-      }
-    }
-
-
-    for (j=0; j<16; j+=2) {
-      GPUAssert(j<16, "Error: no room for base attribs");
-      if (piAttribList[i][j]   == 0 && 
-          piAttribList[i][j+1] == 0)
-        break;
-    }
-
-    if (vpiAttribList) {
-      for (k=0; k<16; k+=2) { 
-        GPUAssert(j<16, "Error: no room for vendor attribs");
-        
-        piAttribList[i][j++]  = (*vpiAttribList)[i][k];
-        piAttribList[i][j++]  = (*vpiAttribList)[i][k+1];
-        
-        if ((*vpiAttribList)[i][k]   == 0 && 
-            (*vpiAttribList)[i][k+1] == 0)
-          break;
-      }
-    }
-  }
-}
-
-
 #ifdef WIN32
 
-#ifndef WGL_ARB_pixel_format
-#define WGL_ACCELERATION_ARB           0x2003
-#define WGL_SUPPORT_OPENGL_ARB         0x2010
-#define WGL_DOUBLE_BUFFER_ARB          0x2011
-#define WGL_COLOR_BITS_ARB             0x2014
-#define WGL_RED_BITS_ARB               0x2015
-#define WGL_GREEN_BITS_ARB             0x2017
-#define WGL_BLUE_BITS_ARB              0x2019
-#define WGL_DEPTH_BITS_ARB             0x2022
-#define WGL_ALPHA_BITS_ARB             0x201B
-#define WGL_STENCIL_BITS_ARB           0x2023
-#define WGL_AUX_BUFFERS_ARB            0x2024
-#define WGL_FULL_ACCELERATION_ARB      0x2027
-#endif
-
-#ifndef WGL_ARB_pbuffer
-#define WGL_DRAW_TO_PBUFFER_ARB        0x202D
-#endif
-
-#define CRGBAX(c,r,g,b,a,x) \
-  WGL_DRAW_TO_PBUFFER_ARB, GL_TRUE, \
-  WGL_ACCELERATION_ARB,    WGL_FULL_ACCELERATION_ARB, \
-  WGL_DEPTH_BITS_ARB,      0,\
-  WGL_STENCIL_BITS_ARB,    0,\
-  WGL_DOUBLE_BUFFER_ARB,   GL_FALSE, \
-  WGL_SUPPORT_OPENGL_ARB,  GL_TRUE, \
-  WGL_AUX_BUFFERS_ARB,     x, \
-  WGL_COLOR_BITS_ARB,      c, \
-  WGL_RED_BITS_ARB,        r, \
-  WGL_GREEN_BITS_ARB,      g, \
-  WGL_BLUE_BITS_ARB,       b, \
-  WGL_ALPHA_BITS_ARB,      a
-
-#define BASEATTRIB(x) \
-{CRGBAX(32,32,0,0,0,x), 0, 0}, \
-{CRGBAX(64,32,32,0,0,x), 0, 0}, \
-{CRGBAX(96,32,32,32,0,x), 0, 0}, \
-{CRGBAX(128,32,32,32,32,x), 0, 0}
-
-
-static const int 
-baseiAttribList[4][4][64] = { {BASEATTRIB(0)},
-                              {BASEATTRIB(1)},
-                              {BASEATTRIB(2)},
-                              {BASEATTRIB(3)} };
-
-static const float
-basefAttribList[4][16] = { {0.0f,0.0f}, {0.0f,0.0f}, {0.0f,0.0f}, {0.0f,0.0f}};
-                           
-static int
-basepiAttribList[4][16] = { {0, 0}, {0, 0}, {0, 0}, {0, 0} };
-
-
 static HWND
-create_window (void) {
+create_window (int window_x, int window_y) {
   HINSTANCE hinstance;
   WNDCLASS wc;
   DWORD window_style;
@@ -160,10 +27,8 @@ create_window (void) {
    * These parameters are useless since the window is never shown nor
    * rendered into.
    */
-  const int window_width = 10;
-  const int window_height = 10;
-  const int window_x = 0;
-  const int window_y = 0;
+  const int window_width = 100;
+  const int window_height = 100;
 
   hinstance = GetModuleHandle( NULL );
 
@@ -185,7 +50,7 @@ create_window (void) {
     }
 
   window_style = ( WS_CLIPSIBLINGS | WS_CLIPCHILDREN );
-  window_style |= WS_POPUP;
+  window_style |= WS_POPUP | WS_VISIBLE;
 
   // Create the window
   hwnd = CreateWindow( window_name, window_name,
@@ -199,6 +64,10 @@ create_window (void) {
   if (!hwnd)
     GPUError ("Failed to create window");
 
+  ShowWindow(hwnd, SW_SHOW);
+  MSG msg;
+  while(PeekMessage(&msg, hwnd, 0, 0, PM_REMOVE))
+      DispatchMessage(&msg);
   return hwnd;
 }
 
@@ -214,49 +83,125 @@ static BOOL
 bSetupPixelFormat(HDC hdc)
 {
   int status;
-  PIXELFORMATDESCRIPTOR *ppfd;
-  PIXELFORMATDESCRIPTOR pfd = {
-    sizeof(PIXELFORMATDESCRIPTOR),  //  size of this pfd
-    1,                              // version number
-    PFD_DRAW_TO_WINDOW |            // support window
-    PFD_SUPPORT_OPENGL |            // support OpenGL
-    PFD_DOUBLEBUFFER,               // double buffered
-    PFD_TYPE_RGBA,                  // RGBA type
-    0,                              // 24-bit color depth
-    0, 0, 0, 0, 0, 0,               // color bits ignored
-    0,                              // no alpha buffer
-    0,                              // shift bit ignored
-    0,                              // no accumulation buffer
-    0, 0, 0, 0,                     // accum bits ignored
-    0,                              // set depth buffer
-    0,                              // set stencil buffer
-    0,                              // no auxiliary buffer
-    PFD_MAIN_PLANE,                 // main layer
-    0,                              // reserved
-    0, 0, 0                         // layer masks ignored
-  };
-  int pixelformat;
+  PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1 };
+  int nvi, i, pixelformat;
   
-  ppfd = &pfd;
+  /* Work around driver problems in pixel formats */
+  nvi=DescribePixelFormat(hdc,1,sizeof(PIXELFORMATDESCRIPTOR),&pfd);
+  GPUAssert(nvi, "No pixel formats available");
 
-  pixelformat = ChoosePixelFormat( hdc, ppfd );
-  
-  GPUAssert(pixelformat, "ChoosePixelFormat failed");
-  
-  status = SetPixelFormat(hdc, pixelformat, ppfd);
-  
+  bool accelAvailable=false;
+  for(i=1; i<=nvi; i++)
+  {
+     DescribePixelFormat(hdc,i,sizeof(PIXELFORMATDESCRIPTOR),&pfd);
+     pfd.iLayerType=PFD_MAIN_PLANE;
+     pixelformat = ChoosePixelFormat( hdc, &pfd );
+     //fprintf(stderr, "%d: %d, 0x%x, OpenGL=%d, generic=%d, accel=%d, RGB=%d\n", i, pixelformat, pfd.dwFlags,
+     //    !!(pfd.dwFlags&PFD_SUPPORT_OPENGL),
+     //    !!(pfd.dwFlags&PFD_GENERIC_FORMAT),
+     //    !!(pfd.dwFlags&PFD_GENERIC_ACCELERATED),
+     //    !!(pfd.iPixelType==PFD_TYPE_RGBA));
+     if(!(pfd.dwFlags&PFD_GENERIC_FORMAT)) accelAvailable=true;
+  }
+  // This happens when spanning displays over multiple cards
+  if(!accelAvailable)
+      fprintf(stderr, "Only generic non-accelerated pixel formats are available - are your graphic card drivers working?\n");
+  for(i=1; i<=nvi; i++)
+  {
+     DescribePixelFormat(hdc,i,sizeof(PIXELFORMATDESCRIPTOR),&pfd);
+     pfd.iLayerType=PFD_MAIN_PLANE;
+     pixelformat = ChoosePixelFormat( hdc, &pfd );
+	 if(pixelformat!=i)		// It be broke
+		 continue;
+     // Draw to window is required
+     if(!(pfd.dwFlags&PFD_DRAW_TO_WINDOW)) continue;
+
+     // OpenGL support is required
+     if(!(pfd.dwFlags&PFD_SUPPORT_OPENGL)) continue;
+
+     // Hardware acceleration only
+     //if((pfd.dwFlags&PFD_GENERIC_FORMAT)) continue;
+
+     // RGBA support is required
+     if(pfd.iPixelType!=PFD_TYPE_RGBA) continue;
+
+	 break;
+  }
+  GPUAssert(i<=nvi, "Couldn't find a suitable pixel format");
+
+  status = SetPixelFormat(hdc, pixelformat, &pfd);
   GPUAssert(status, "SetPixelFormat failed");
-  
+ 
   return TRUE;
 }
 
+static BOOL CALLBACK CollectHMonitors(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+{
+  HMONITOR *monitors=(HMONITOR *) dwData;
+  while(*monitors) monitors++;
+  *monitors=hMonitor;
+  return TRUE;
+}
 
-OGLWindow::OGLWindow() {
+OGLWindow::OGLWindow(const char* device) {
   BOOL status;
+  char driver[64];
+  int winx=CW_USEDEFAULT, winy=CW_USEDEFAULT;
+
+  /* Create a DC for the desired device */
+  const char *colon=strchr(device, ':');
+  if(colon)
+  {
+      const char *colon2=strchr(colon+1, ':');
+      strncpy(driver, colon+1, colon2-colon-1);
+      driver[colon2-colon-1]=0;
+#if 1
+      // ned: I just couldn't get CreateDC() to work with current drivers
+      // (I think they need a window DC and can't handle a display DC)
+      // so non-attached displays are not supported
+      HMONITOR monitors[64];
+      memset(monitors, 0, sizeof(monitors));
+      EnumDisplayMonitors(NULL, NULL, CollectHMonitors, (LPARAM) monitors);
+
+      for(HMONITOR *hmon=monitors; *hmon; hmon++)
+      {
+          MONITORINFOEX mi; mi.cbSize=sizeof(MONITORINFOEX);
+          if(GetMonitorInfo(*hmon, &mi))
+          {
+              if(!strcmp(driver, mi.szDevice))
+              {
+                  winx=mi.rcMonitor.left;
+                  winy=mi.rcMonitor.top;
+                  break;
+              }
+          }
+      }
+      GPUAssert(winx!=CW_USEDEFAULT,
+          "Failed to find monitor matching specified display");
+  } else winx=winy=0;
 
   /* Create a window */
-  hwnd = create_window();
+  hwnd = create_window(winx, winy);
   hwindowdc = GetDC(hwnd);
+#else
+      // Niall's alternative which can use independent displays.
+      // This code doesn't work properly either - any ideas?
+      /*DEVMODE dm={0};
+      dm.dmSize=sizeof(DEVMODE);
+      // This is convoluted. If it's active, fetch its current settings
+      if(!EnumDisplaySettingsEx(driver, ENUM_CURRENT_SETTINGS, &dm, 0))
+          if(EnumDisplaySettingsEx(driver, ENUM_REGISTRY_SETTINGS, &dm, 0))
+
+      if(EnumDisplaySettings(driver, 0, &dm))
+          hwindowdc = CreateDC(driver, NULL, NULL, &dm);*/
+      DISPLAY_DEVICE dd={sizeof(DISPLAY_DEVICE)};
+      EnumDisplayDevices(driver, 0, &dd, 0);
+      hwindowdc = CreateDC("DISPLAY", driver, NULL, NULL);
+      hwnd=NULL;
+  } else hwindowdc = CreateDC("DISPLAY", NULL, NULL, NULL);
+#endif
+  GPUAssert(hwindowdc,
+            "Unable to create display context for specified device");
 
   /* Initialize the initial window GL_context */
   status = bSetupPixelFormat(hwindowdc);
@@ -274,207 +219,64 @@ OGLWindow::OGLWindow() {
 
   initglfunc();
 
-  hglrc = NULL;
-  hpbuffer = NULL;
-  hpbufferdc = NULL;
+  fbo = NULL;
 }
 
 OGLWindow::~OGLWindow() {
   wglMakeCurrent(hwindowdc, NULL);
   wglDeleteContext(hglrc_window);
 
-  if (hglrc)
-    wglDeleteContext(hglrc);
-  if (hpbuffer)
-    wglDestroyPbufferARB(hpbuffer);
+  if (fbo)
+    glDeleteFramebuffersEXT(1, &fbo);
 
   DeleteDC(hwindowdc);
-  DestroyWindow(hwnd);
+  if(hwnd) DestroyWindow(hwnd);
 }
 
 
 void 
-OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
-                        const float (*vfAttribList)[4][16],
-                        const int   (*vpiAttribList)[4][16]) {
+OGLWindow::initFBO() {
 
-  int   (*iAttribList)[4][64]  = (int   (*)[4][64])
-    malloc (sizeof(baseiAttribList));
-  float (*fAttribList)[16]     = (float (*)[16]) 
-	malloc (sizeof(basefAttribList));
- 
-  unsigned int numFormats;
-  BOOL status;
-
-  memcpy(iAttribList,  baseiAttribList,  sizeof(baseiAttribList));
-  memcpy(fAttribList,  basefAttribList,  sizeof(basefAttribList));
-  memcpy(piAttribList, basepiAttribList, sizeof(basepiAttribList));
-
-  /* Initialize gl functions */
-  initglfunc();
-
-  /* Append vendor specific attribs */
-  appendVendorAttribs( iAttribList, fAttribList, piAttribList,
-                       viAttribList, vfAttribList, vpiAttribList);
-
-  for (int ncomp = 0; ncomp < 4; ncomp++) {
-    /* Fetch the pixel formats for pbuffers */
-    for (int i=0; i<4; i++) {
-      status = wglChoosePixelFormatARB(hwindowdc, iAttribList[ncomp][i],
-                                       fAttribList[i], 1,
-                                       &(pixelformat[ncomp][i]),
-                                       &numFormats);
-    
-    GPUAssert(numFormats > 0 && status,
-              "ChoosePixelFormat failed to find a pbuffer format");
-    }
-  }
-
-  currentPbufferComponents = 4;
-  currentPbufferWidth = 16;
-  currentPbufferHeight = 16;
-  currentPbufferOutputs = 1;
-
-  hpbuffer = wglCreatePbufferARB(hwindowdc,
-                                 pixelformat
-                                 [currentPbufferOutputs-1]
-                                 [currentPbufferComponents-1],
-                                 currentPbufferWidth,
-                                 currentPbufferHeight,
-                                 piAttribList[currentPbufferComponents-1]);
-
-  if (!hpbuffer)
-    GPUError("Failed to create float pbuffer");
-
-  hpbufferdc = wglGetPbufferDCARB (hpbuffer);
-
-  if (!hpbufferdc)
-    GPUError("Failed to get pbuffer DC");
-
-  hglrc = wglCreateContext( hpbufferdc );
-
-  if (!hglrc)
-    GPUError("Failed to create GL context");
-
-  if (!wglMakeCurrent( hpbufferdc, hglrc ))
-    GPUError("Failed to bind GL context");
-
+  glGenFramebuffersEXT(1, &fbo);
+  CHECK_GL();
+  firstrun=true;
 }
 
 
 bool
-OGLWindow::bindPbuffer(unsigned int width,
-                       unsigned int height,
-                       unsigned int numOutputs,
-                       unsigned int numComponents) {
+OGLWindow::bindFBO() {
 
-  unsigned int i;
-  bool switched_contexts = false;
+  bool switched_contexts=false;
+  BOOL status;
 
-  /* If the pbuffer of the right size is already active,
-  ** return immediately
-  */
-  if (currentPbufferComponents == numComponents &&
-      currentPbufferOutputs >= numOutputs &&
-      currentPbufferWidth >= width &&
-      currentPbufferHeight >= height)
-    return false;
+  if(firstrun || wglGetCurrentContext()!=hglrc_window) {
+    status = wglMakeCurrent(hwindowdc, hglrc_window);
+    GPUAssert(status,
+              "Unable to make current the window GL context");
 
-  GPUAssert(hpbufferdc, "hpbufferdc = NULL");
-  GPUAssert(numComponents > 0 &&
-            numComponents <= 4,
-            "Cannot hand pbuffers other than 1-4 components");
-  GPUAssert(width <= 2048 || height <= 2048, 
-            "Cannot handle pbuffers greater than 2048");
-  GPUAssert(numOutputs < 5,
-            "Cannot handle more than 4 outputs");
-  GPUAssert(numOutputs > 0,
-            "Creating Pbuffer with zero outputs?");
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+    CHECK_GL();
 
-  /* Tear down the old pbuffer */
-  if (!wglMakeCurrent (hpbufferdc, NULL))
-    GPUError("MakeCurrent Failed");
-
-  if (!wglReleasePbufferDCARB (hpbuffer, hpbufferdc))
-    GPUError("ReleasePbufferDC Failed");
-
-  if (!wglDestroyPbufferARB (hpbuffer))
-    GPUError("DestroyPbufferARB Failed");
-
-  GPUAssert(hwindowdc, "hwindowdc = NULL");
-  GPUAssert(pixelformat[numOutputs-1][numComponents-1], 
-            "Invalid pixelformat");
-  GPUAssert(piAttribList[numComponents-1], "Invalid piAttribList");
-  GPUAssert(2048, "Bogus 2048");
-
-  /* Find the largest power of two which contains the size */
-  if (width > currentPbufferWidth) {
-    for (i=16; i<width; i*=2) 
-      /* do nothing */;
-    GPUAssert(i<=2048,
-              "Cannot create pbuffers larger than 2048");
-    currentPbufferWidth = i;
+#if 0
+    GLint fb;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &fb);
+    assert(fb==fbo);
+#endif
+	switched_contexts=true;
+	firstrun=false;
   }
-  if (height > currentPbufferHeight) {
-    for (i=16; i<height; i*=2) 
-      /* do nothing */;
-    GPUAssert(i<=2048,
-              "Cannot create pbuffers larger than 2048");
-    currentPbufferHeight = i;
-  }
-
-  currentPbufferComponents = numComponents;
-  
-  /* Create a fresh pbuffer */
-  hpbuffer = wglCreatePbufferARB(hwindowdc,
-                                 pixelformat
-                                 [currentPbufferOutputs < numOutputs ? 
-                                  (numOutputs-1) : 
-                                  (currentPbufferOutputs-1)]
-                                 [numComponents-1],
-                                 currentPbufferWidth,
-                                 currentPbufferHeight,
-                                 piAttribList[numComponents-1]);
-
-  if (!hpbuffer)
-    GPUError("Failed to create pbuffer, possibly out of memory");
-  
-  hpbufferdc = wglGetPbufferDCARB (hpbuffer);
-  
-  if (!hpbufferdc)
-    GPUError("Failed to get pbuffer dc");
-  
-  if (currentPbufferOutputs < numOutputs) {
-    // Since there are a different number of buffers
-    // we have to create a new context
-    HGLRC new_hglrc;
-    new_hglrc = wglCreateContext( hpbufferdc );
-    GPUAssert(new_hglrc, "Invalid glrc");
-    if (!wglShareLists(hglrc, new_hglrc)) 
-      GPUError("wglShareLists failed");
-    hglrc = new_hglrc;
-    currentPbufferOutputs = numOutputs;
-    switched_contexts = true;
-  }
-
-  GPUAssert(hglrc, "Invalid glrc");
-
-  if (!wglMakeCurrent( hpbufferdc, hglrc ))
-    GPUError("Failed to make current GL context");
-
-  glEnable(GL_FRAGMENT_PROGRAM_ARB);
   
   return switched_contexts;
 }
 
 void OGLWindow::makeCurrent()
 {
-  wglMakeCurrent( hpbufferdc, hglrc );
+  wglMakeCurrent( hwindowdc, hglrc_window );
 }
 
 void OGLWindow::shareLists( HGLRC inContext )
 {
-  wglShareLists( hglrc, inContext );
+  wglShareLists( hglrc_window, inContext );
 }
 
 #else
@@ -482,39 +284,6 @@ void OGLWindow::shareLists( HGLRC inContext )
 /* Linux version */
 
 #include <X11/Xlib.h>
-#include <GL/gl.h>
-#include <GL/glx.h>
-
-
-/*
-** Static OGLWindow members:
-**
-** For some reason, NVIDIA drivers don't seem to 
-** like me creating a window, then destroying it, 
-** then creating a new window and pbuffer.
-** The driver hangs inside of gl calls.
-** However if I just create a window and pbuffer
-** it is fine.  So we switched to using a static 
-** window and pbuffer.  Lame but it works.
-*/
-
-Display     *OGLWindow::pDisplay;
-int          OGLWindow::iScreen;
-Window       OGLWindow::glxWindow;
-Colormap     OGLWindow::cmap;
-XVisualInfo *OGLWindow::visual;
-GLXFBConfig *OGLWindow::glxConfig[4];
-GLXPbuffer   OGLWindow::glxPbuffer;
-GLXContext   OGLWindow::glxContext;
-
-int          OGLWindow::piAttribList[4][16];
-
-bool         OGLWindow::static_window_created = false;
-bool         OGLWindow::static_pbuffers_initialized = false;
-
-//This is non square because ATI can't do 2048^2 for some odd reason
-#define PBUFFER_WIDTH 2048
-#define PBUFFER_HEIGHT 1024
 
 #define CRGBA(c, r,g,b,a) \
         GLX_RED_SIZE,               r, \
@@ -526,47 +295,20 @@ bool         OGLWindow::static_pbuffers_initialized = false;
         GLX_DRAWABLE_TYPE,          GLX_PBUFFER_BIT, \
         GLX_DOUBLEBUFFER,           0
 
-#define BASEIATTRIB { \
-{CRGBA(32,32,0,0,0), 0, 0}, \
-{CRGBA(64,32,32,0,0), 0, 0}, \
-{CRGBA(96,32,32,32,0), 0, 0}, \
-{CRGBA(128,32,32,32,32), 0, 0} }
-
-static const int 
-baseiAttribList[4][4][64] = { BASEIATTRIB,
-							  BASEIATTRIB,
-							  BASEIATTRIB,
-							  BASEIATTRIB};
-
-static const float
-basefAttribList[4][16] = { {0.0f,0.0f}, 
-                           {0.0f,0.0f}, 
-                           {0.0f,0.0f},
-                           {0.0f,0.0f}};
-
-#define PBATTRIB \
-    GLX_PRESERVED_CONTENTS, GL_TRUE, \
-    GLX_PBUFFER_WIDTH, PBUFFER_WIDTH, \
-    GLX_PBUFFER_HEIGHT, PBUFFER_HEIGHT, \
-    GLX_LARGEST_PBUFFER, 0
-
-static int
-basepiAttribList[4][16] = { {PBATTRIB, 0, 0}, \
-							{PBATTRIB, 0, 0}, \
-							{PBATTRIB, 0, 0}, \
-							{PBATTRIB, 0, 0}};
-
-OGLWindow::OGLWindow() {
+OGLWindow::OGLWindow(const char *device) {
   int attrib[] = { GLX_RGBA, None };
   XSetWindowAttributes swa;
+  char displaydevice[256];
 
-  /* Bail if the window is already created */
-  if (static_window_created)
-    return;
-  
-  pDisplay = XOpenDisplay(":0.0");
+  const char *colon=strchr(device, ':'), *endcolon=strrchr(device, ':');
+  if(colon){
+    if(!endcolon) endcolon=strchr(device, 0);
+    strncpy(displaydevice, colon+1, endcolon-colon-1);
+    displaydevice[endcolon-colon-1]=0;
+  }
+  pDisplay = XOpenDisplay(colon ? displaydevice : NULL);
   if (pDisplay == NULL) {
-    fprintf (stderr, "Could not connect to X Server.\n");
+    fprintf (stderr, "Could not connect to X Server at %s.\n", colon ? displaydevice : NULL);
     exit(1);
   }
     
@@ -605,167 +347,44 @@ OGLWindow::OGLWindow() {
   glFinish();
 
   initglfunc();
-  
-  static_window_created = true;
 }
 
 
 void 
-OGLWindow::initPbuffer( const int   (*viAttribList)[4][64],
-                        const float (*vfAttribList)[4][16],
-                        const int   (*vpiAttribList)[4][16]) {
+OGLWindow::initFBO() {
 
-  int iConfigCount;   
-  int i;
-
-  /* Bail if the pbuffers are already initialized */
-  if (static_pbuffers_initialized)
-    return;
-  
-  int   (*iAttribList)[4][64]  = (int   (*)[4][64])
-    malloc (sizeof(baseiAttribList));
-  float fAttribList[4][16]  = {{0.0f, 0.0f}, {0.0f, 0.0f}, 
-                               {0.0f, 0.0f}, {0.0f, 0.0f}};
-
-  memcpy(iAttribList,  baseiAttribList,  sizeof(baseiAttribList));
-  memcpy(piAttribList, basepiAttribList, sizeof(basepiAttribList));
-
-  /* Append vendor specific attribs */
-  appendVendorAttribs( iAttribList, fAttribList, piAttribList,
-                       viAttribList, vfAttribList, vpiAttribList);
-
-  if (pDisplay == NULL) {
-    fprintf (stderr, "Could not connect to X Server.\n");
-    exit(1);
-  }
-
-  // Destroy Window 
-  glXMakeCurrent(pDisplay, None, NULL);
-  glXDestroyContext(pDisplay, glxContext);
-  XDestroyWindow(pDisplay, glxWindow);
-  XFreeColormap(pDisplay, cmap);
-  XFree(visual);
-
-  for (i=0; i<4; i++) {
-
-    glxConfig[i] = glXChooseFBConfig(pDisplay, 
-                                     iScreen, 
-                                     iAttribList[0][i], 
-                                     &iConfigCount);
-    
-    if (iConfigCount == 0) {
-      fprintf (stderr, "OGL Window: No floating point pbuffer "
-               "format found for float%d.\n", i+1);
-      exit(1);
-    }
-
-    if (!glxConfig[i] || !glxConfig[i][0]) {
-      fprintf(stderr, "OGL Window:  glXChooseFBConfig() failed\n");
-      exit(1);
-    }   
-
-  }
-  
-  glxPbuffer = glXCreatePbuffer(pDisplay, 
-                                glxConfig[3][0], 
-                                piAttribList[3]);
-  
-  if (!glxPbuffer) {
-    fprintf(stderr, "OGL Window: glXCreatePbuffer() failed\n");
-    exit(1);
-  }
-  
-  // Default to the 4 component
-  glxContext = glXCreateNewContext(pDisplay, 
-                                   glxConfig[3][0], 
-                                   GLX_RGBA_TYPE, 
-                                   0, GL_TRUE);
-  if (!glxContext) {
-    fprintf(stderr, "OGL Window: glXCreateContextWithConfig() failed\n");
-    exit (1);
-  }
-     
-  if (!glXMakeCurrent(pDisplay, glxPbuffer, glxContext)) {
-    fprintf (stderr, "initPbuffer: glXMakeCurrent Failed\n");
-    exit(1);
-  }
-  
-  glFinish();
-
-  currentPbufferComponents = 4;
-
-  free (iAttribList);
-
-  static_pbuffers_initialized = true;
+  glGenFramebuffersEXT(1, &fbo);
+  CHECK_GL();
+  firstrun=true;
 }
 
 
-
 bool
-OGLWindow::bindPbuffer(unsigned int width,
-                       unsigned int height,
-                       unsigned int numOutputs,
-                       unsigned int numComponents) {
+OGLWindow::bindFBO() {
 
-  /* Sadly, Linux doesn't seem to like rebinding a
-  ** context to a different format pbuffer.  So 
-  ** we just run everything in a float4 pbuffer.
-  */
+  bool switched_contexts=false;
 
-  if (width > PBUFFER_WIDTH ||
-      height > PBUFFER_HEIGHT) {
-    fprintf (stderr, "Pbuffer not big enough\n");
-    fprintf (stderr, "User requested %d x %d\n",
-             width, height);
-    exit(1);
-  }
-
-  if (numOutputs > 1) {
-    fprintf (stderr, "Don't support multiple output on Linux yet\n");
-    exit(1);
-  }
-
-  return true;
+  if(firstrun || glXGetCurrentContext()!=glxContext) {
+    glXMakeCurrent(pDisplay, glxWindow, glxContext);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+    CHECK_GL();
 
 #if 0
-  static const int pbAttribList[] =
-    {
-      GLX_PRESERVED_CONTENTS, GL_TRUE,
-      GLX_PBUFFER_WIDTH, 2048,
-      GLX_PBUFFER_HEIGHT, 2048,
-      0
-    };
-
-  if (currentPbufferComponents == ncomponents) 
-    return;
-
-  assert (ncomponents > 0 &&
-          ncomponents <= 4);
-
-  glxPbuffer = glXCreatePbuffer(pDisplay, 
-				glxConfig[ncomponents-1][0], 
-				piAttribList[ncomponents-1]);
-  
-  if (glxPbuffer == 0) {
-    fprintf (stderr, "Error: Could not create float%d pbuffer.\n",
-             ncomponents);
-  }
-
-  if (!glXMakeCurrent(pDisplay, glxPbuffer, glxContext)) {
-    fprintf (stderr, "bindPbuffer: glXMakeCurrent Failed\n");
-    exit(1);
-  }
-
-  glFinish();
-
-  currentPbufferComponents = ncomponents;
+    GLint fb;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &fb);
+    assert(fb==fbo);
 #endif
+	switched_contexts=true;
+	firstrun=false;
+  }
+  
+  return switched_contexts;
 
 }
 
 void OGLWindow::makeCurrent()
 {
-  glXMakeCurrent(pDisplay, glxPbuffer, glxContext);
+  glXMakeCurrent(pDisplay, glxWindow, glxContext);
 }
 
 void shareLists( HGLRC inContext )
@@ -775,16 +394,13 @@ void shareLists( HGLRC inContext )
 
 OGLWindow::~OGLWindow() 
 {
-  // Switched everything to static
-#if 0
   glXDestroyContext(pDisplay, glxContext);
-  if (glxPbuffer)
-    glXDestroyPbuffer(pDisplay, glxPbuffer);
+  if (fbo)
+    glDeleteFramebuffersEXT(1, &fbo);
   XDestroyWindow(pDisplay, glxWindow);
   XFreeColormap(pDisplay, cmap);
   XFree(visual);
   XCloseDisplay(pDisplay);
-#endif
 }
 
 void OGLWindow::shareLists( HGLRC inContext )

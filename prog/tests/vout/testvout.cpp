@@ -314,10 +314,10 @@ int  main()
   __BRTStream b(__BRTFLOAT,10 , 10,-1);
   __BRTStream d(__BRTFLOAT,10 , 10,-1);
   __BRTStream e(__BRTFLOAT,10 , 10,-1);
-  float  data_a[10][10];
-  float  data_b[10][10];
+  BRTALIGNED float  data_a[10][10];
+  BRTALIGNED float  data_b[10][10];
   float4  c = float4 (1.000000f,0.000000f,3.200000f,5.000000f);
-  float  data_d[10][10];
+  BRTALIGNED float  data_d[10][10];
   float  d_broken = 0.000000f;
   int  i;
   int  j;

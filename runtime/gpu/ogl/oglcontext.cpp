@@ -4,66 +4,106 @@
 #include "oglwindow.hpp"
 #include "ogltexture.hpp"
 #include "oglwritequery.hpp"
+#include "oglcheckgl.hpp"
 
 using namespace brook;
 
-void
-OGLContext::init (const int   (*viAttribList)[4][64],
-                  const float (*vfAttribList)[4][16],
-                  const int   (*vpiAttribList)[4][16]) {
-  int i;
+OGLContext *
+OGLContext::create(const char* device) {
+  OGLContext *ctx = new OGLContext();
 
+  if (!ctx)
+    return NULL;
+
+  ctx->init(device);
+
+  return ctx;
+}
+
+void
+OGLContext::init (const char* device) {
   int image_units;
   int tex_coords;
   
-  _wnd = new OGLWindow();
+  _wnd = new OGLWindow(device);
 
-  _wnd->initPbuffer(viAttribList, vfAttribList, vpiAttribList);
+  _wnd->initFBO();
 
   _passthroughVertexShader = NULL;
   _passthroughPixelShader = NULL;
 
-  glEnable(GL_FRAGMENT_PROGRAM_ARB);
+  const char *vendor = (const char *) glGetString(GL_VENDOR);
+  _isATI=(strstr(vendor, "ATI") != NULL);
+  _isNVidia=(strstr(vendor, "NVIDIA") != NULL);
+  _havePBOs=!!GLEE_ARB_pixel_buffer_object;
+  memset(_PBOs, 0, sizeof(_PBOs));
+  _PBOcount=0;
+  if(_havePBOs) {
+    glGenBuffers(sizeof(_PBOs)/sizeof(GLuint), _PBOs);
+    CHECK_GL();
+  }
 
-  glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &image_units);
-  glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &tex_coords);
+  glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &image_units);
+  glGetIntegerv(GL_MAX_TEXTURE_COORDS, &tex_coords);
   
   GPUAssert (tex_coords <= image_units,
              "So sad, you have more texture coordinates that textures");
   _slopTextureUnit = (unsigned int) (image_units - 1);
 
-  // Check to see if we are running on hardware with
-  // multiple outputs
-  _maxOutputCount = 1;
-  const char *ext = (const char *) glGetString(GL_EXTENSIONS);
-  if(strstr(ext, "GL_ATI_draw_buffers")) {
-    glGetIntegerv(GL_MAX_DRAW_BUFFERS_ATI, &i);
-    assert (i>0);
-    if (i >= 4)
-      _maxOutputCount = 4;
-  }
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, (GLint *) &_maxTextureExtent);
+
+  glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS_EXT, (GLint *) &_maxOutputCount);
+  GPUAssert (_maxOutputCount <= 32,
+             "Maximum FBO attachments seems higher than OpenGL spec");
 }
 
 OGLContext::OGLContext():
   _passthroughVertexShader(0),
   _passthroughPixelShader(0), 
   _slopTextureUnit(0),
+  _maxTextureExtent(1024),
   _maxOutputCount(1), 
   _boundPixelShader(NULL), 
   _wnd(NULL)
 {
   int i;
-  for (i=0; i<4; i++) 
+  for (i=0; i<32; i++) {
     _outputTextures[i] = NULL;
-  for (i=0; i<32; i++) 
+    _outputTexturesCache[i] = NULL;
     _boundTextures[i] = NULL;
+  }
+}
+
+bool OGLContext::isTextureExtentValid( unsigned int inExtent ) const {
+  return inExtent <= _maxTextureExtent;
 }
 
 unsigned int OGLContext::getMaximumOutputCount() const {
   return _maxOutputCount;
 }
 
+int OGLContext::getShaderFormatRank (const char *name) const {
+  if( strcmp(name, "arb") == 0 )
+    return 1;
+  if( GLEE_VERSION_2_0 && strcmp(name, "glsl") == 0 )
+    return 2;
+  return -1;
+}
+
+GPUContext::TextureHandle 
+OGLContext::createTexture2D( unsigned int inWidth,
+                            unsigned int inHeight, 
+                            GPUContext::TextureFormat inFormat, bool read_only) {
+  return (GPUContext::TextureHandle) 
+    new OGLTexture(this, inWidth, inHeight, inFormat);
+}
+
 OGLContext::~OGLContext() {
+  if(_havePBOs) {
+    glDeleteBuffers(sizeof(_PBOs)/sizeof(GLuint), _PBOs);
+  }
+  for(unsigned int n=0; n<_maxOutputCount && _outputTexturesCache[n]; n++)
+    delete _outputTexturesCache[n];
   if (_wnd)
     delete _wnd;
 }

@@ -21,14 +21,14 @@ int main() {
 	float input_b[32][8];
 	float output_b[32][8];
         Traverser hacktrav[1];	
-        Traverser baseTraverser;
+        Traverser baseTraverser[1];
         Traverser trav<1,1>;
-        baseTraverser.index=float4(2,0,2,0);
-        baseTraverser.Translation=float3(-0.13644515,  0.112712905,  -0.0222729594);
-        baseTraverser.Rotationx=float3(-0.170251727,  0.966706932,  -0.191028923);
-        baseTraverser.Rotationy=float3(0.966706932, 0.201434806,  0.15780279);
-        baseTraverser.Rotationz=float3(-0.191028923,  0.15780279,  0.968816876);
-        streamRead(trav,&baseTraverser);
+        baseTraverser[0].index=float4(2,0,2,0);
+        baseTraverser[0].Translation=float3(-0.13644515,  0.112712905,  -0.0222729594);
+        baseTraverser[0].Rotationx=float3(-0.170251727,  0.966706932,  -0.191028923);
+        baseTraverser[0].Rotationy=float3(0.966706932, 0.201434806,  0.15780279);
+        baseTraverser[0].Rotationz=float3(-0.191028923,  0.15780279,  0.968816876);
+        streamRead(trav,baseTraverser);
         streamWrite(trav,hacktrav);
         printf ("index %.2f %.2f %.2f %.2f\nTranslation %.2f %.2f %.2f\nRotationx %.2f %.2f %.2f\nRotationy %.2f %.2f %.2f\nRotationz %.2f %.2f %.2f\n",hacktrav[0].index.x,hacktrav[0].index.y,hacktrav[0].index.z,hacktrav[0].index.w,hacktrav[0].Translation.x,hacktrav[0].Translation.y,hacktrav[0].Translation.z,hacktrav[0].Rotationx.x,hacktrav[0].Rotationx.y,hacktrav[0].Rotationx.z,hacktrav[0].Rotationy.x,hacktrav[0].Rotationy.y,hacktrav[0].Rotationy.z,hacktrav[0].Rotationz.x,hacktrav[0].Rotationz.y,hacktrav[0].Rotationz.z);
 	// 1 dimensional stream

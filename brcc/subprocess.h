@@ -8,6 +8,6 @@
 #define __SUBPROCESS_H__
 
 extern char *
-Subprocess_Run(char *argv[], char *input);
+Subprocess_Run(const char *argv[], const char *input, bool useFiles=false);
 
 #endif

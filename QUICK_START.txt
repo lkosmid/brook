@@ -1,7 +1,7 @@
 
 ----------------------------------------------------------------
 Brook Quick Start Clean Installation For a Windows System
-(Last updated Dec 18, 2006)
+(Last updated 29th October 2007)
 
 
 
@@ -17,12 +17,14 @@ Step 1. Install Cygwin
 -----------------------------------------------------------------
 Step 2. Install Microsoft Visual C++ compiler.
 
-    If you have Visual Studio 2005 installed you can skip this step.
+    Anything after Visual Studio 2003 (MSVC7.1) works (sometimes you
+    may need to hand edit the .vcproj files and downgrade the version
+    number). Either x86 or x64 works just fine.
 
     If you don't own Visual Studio, you can download the Visual C++
     compiler for *free* from Microsoft.
    
-    2.1 Install the Visual C++ 2005 Express Edition
+    2.1 Install the Visual C++ Express Edition
     http://msdn.microsoft.com/vstudio/express/visualc/
 
     You will also need the latest platform SDK
@@ -88,7 +90,8 @@ PATH
 
 
     For either setup, you'll also need to add the following lines to
-    the PATH, INCLUDE, and LIB environment variables so the build environment.
+    the PATH, INCLUDE, and LIB environment variables so the build
+    environment.
 
 INCLUDE
     C:\Program Files\Microsoft DirectX SDK\Include
@@ -116,9 +119,13 @@ Step 6. Get the latest Video Drivers for your card.
 -----------------------------------------------------------------
 Step 7.  Build Brook.
 
-    Type 'make' in the top-level directory of your Brook tree.  This will
-    build the BRCC compiler, the Brook runtime environment, and all the
-    Brook example applications and regression test apps.
+    If you'd like to use the MSVC project files you can. However these
+    may well be out of date or incorrect compared to using GNU make.
+
+    To use GNU make, type 'make' in the top-level directory of your
+    Brook tree.  This will build the BRCC compiler, the Brook runtime
+    environment, and all the Brook example applications and regression
+    test apps.
 
     To build only BRCC:     make brcc
     To build only the runtime:  make runtime

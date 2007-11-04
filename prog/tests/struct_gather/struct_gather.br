@@ -17,11 +17,11 @@ typedef struct traverser_t {
 */
 typedef struct bbox_t{
   float4 Rotationx;
+  float4 Radius;// if it's a leaf Radius.w is 1 else Radius.w = 0
   float3 Rotationy;
   // float3 mRotationz  // since Rotationx and Rotationy are orthogonal
   /// cross(Rotationx,Rotationy);
   float3 Translation;
-  float4 Radius;// if it's a leaf Radius.w is 1 else Radius.w = 0
 
   // if leaf, the Children.xy is an index to the Triangle
   // if node, the Children.xy is an index to left child

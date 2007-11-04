@@ -13,12 +13,12 @@ namespace brook
   {
 
   public:
-    static OGLRuntime* create( void* inContextValue );
+    static OGLRuntime* create( void* inContextValue, const char* device = 0 );
 
   protected:
     OGLRuntime() {}
 
-    virtual bool initialize( void* inContextValue );
+    virtual bool initialize( void* inContextValue, const char* device );
   };
 }
 

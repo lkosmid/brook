@@ -16,8 +16,8 @@ SYSTEM_LIBS      :=
 CFLAGS           += -DBUILD_OGL
 C_CPP_FLAG	 := -E
 C_INCLUDE_FLAG   := -I  
-C_DEBUG_FLAG     := -g3 -Wall 
-C_RELEASE_FLAG   := -O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -frerun-loop-opt 
+C_DEBUG_FLAG     := -g3 -msse -Wall 
+C_RELEASE_FLAG   := -O3 -msse -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -frerun-loop-opt 
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := -o 
 C_COMPILE_FLAG   := -c 
@@ -34,6 +34,6 @@ LIBRARIES        +=
 ARFLAGS		 := -rc 
 AR_OUTPUT_FLAG	 := 
 
-RUNTIME_LIBS     := brook ogl cpu gpu X11 Xmu Xt GL GLU
+RUNTIME_LIBS     := brook ogl cpu gpu X11 Xt GL GLU GLEE
 
 RANLIB           := ranlib

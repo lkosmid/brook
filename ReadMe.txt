@@ -1,28 +1,38 @@
 				 Brook GPU
 
-(Last Revised 14 October 2004)
+(Last Revised 29th October 2007)
 
 
 Installation
 
    * A quick start guide for getting Brook up and running on Windows
-     platforms is provided in QUICK_START.txt
+     platforms is provided in QUICK_START.txt. For Linux and Mac OS X
+     it's as simple as typing 'make'.
 
 
 Hardware Prerequisites
+
+   * Any card marketed as supporting Shader Model v3.0 or later by
+     either ATI or NVidia should provide all available facilities
+     not including integers, bitfields and double-precision floats.
+
+   * Support for Intel SM3.0 or later GPU's is untested. Patches are
+     most welcome!
+
+   * Past this, any OpenGL v1.3 or later and GLSL supporting GPU should
+     work (apart from driver & GLSL compiler bugs). You need quite a
+     few ARB extensions too, but if your driver will do GLSL you will
+     almost certainly have all needed extensions.
 
    * The DirectX 9 runtime will work on ATI r3xx and r4xx video cards
      such as the Radeon 9800 and Radeon X800, as well as NVIDIA nv4x
      cards such as the GeForce 6800. Some nv3x (GeForce FX and
      Quadro FX) cards may also work, but have not been extensively tested.
 
-   * The OpenGL runtime will work on r3xx, r4xx, nv3x and nv4x video
-     cards. This runtime is compatible with both Windows and Linux
-     targets, although compatibility may not be identical across
-     platforms.
-
    * The CPU runtime should work on any platform for which the build
-     environment works.
+     environment works. For x86 and x64, SSE support is turned ON by
+     default - it can be disabled by setting the macro BRT_USE_SSE to 0.
+     Alternatively, setting it to 4 enables SSE4 support.
 
 Software Prerequisites
 
@@ -82,7 +92,7 @@ Software Prerequisites
 
      The '-p shader' can appear multiple times to specify multiple
      shader targets (if no -p is used, all targets are generated). Valid
-     shader formats include cpu, ps20, ps2a, ps2b, arb, fp30 and fp40.
+     shader formats are listed by running the program with -h.
 
      By default BRCC generates arb code by translating ps20 code created
      by fxc (because fxc generates more compatible code for ATI cards).
@@ -123,8 +133,8 @@ Software Prerequisites
    * In order to build BRCC and the runtime with Microsoft Visual Studio 7.1
      you will need:
 
-        * A standard install of Visual Studio 7.1 (7.0 version may work),
-          including the C++ development tools and platform SDK.
+        * A standard install of Visual Studio 7.1, including the C++
+          development tools and platform SDK.
 
         * An installation of the Microsoft DirectX 9 SDK, as detailed above.
           The installer should automatically add the appropriate headers
@@ -172,3 +182,6 @@ Revision History
            Linux support for nv30gl
 
 10/14/04:  Revised text to reflect upcoming 0.4 release.
+
+10/29/07:  Revised for latest hardware & software
+

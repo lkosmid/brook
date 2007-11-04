@@ -94,13 +94,13 @@ int main()
 	float2 a2< SIZE_Y2, SIZE_X2 >;
 	Pair b2< SIZE_Y2, SIZE_X2 >;
 	
-	float2* input1 = (float2*) malloc( DOMAIN_X1 * sizeof(float2) );
-	float2* input2 = (float2*) malloc( DOMAIN_Y2 * DOMAIN_X2 * sizeof(float2) );
+	float2* input1 = (float2*) brmalloc( DOMAIN_X1 * sizeof(float2) );
+	float2* input2 = (float2*) brmalloc( DOMAIN_Y2 * DOMAIN_X2 * sizeof(float2) );
 
-	float2* a1_data = (float2*) malloc( SIZE_X1 * sizeof(float2) );
-	float2* b1_data = (float2*) malloc( SIZE_X1 * sizeof(float2) );
-	float2* a2_data = (float2*) malloc( SIZE_Y2 * SIZE_X2 * sizeof(float2) );
-	float2* b2_data = (float2*) malloc( SIZE_Y2 * SIZE_X2 * sizeof(float2) );
+	float2* a1_data = (float2*) brmalloc( SIZE_X1 * sizeof(float2) );
+	float2* b1_data = (float2*) brmalloc( SIZE_X1 * sizeof(float2) );
+	float2* a2_data = (float2*) brmalloc( SIZE_Y2 * SIZE_X2 * sizeof(float2) );
+	float2* b2_data = (float2*) brmalloc( SIZE_Y2 * SIZE_X2 * sizeof(float2) );
 	
 	for( i = 0; i < DOMAIN_X1; i++ )
 	{

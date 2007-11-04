@@ -51,7 +51,7 @@ void writePng (char * filename, char * data, int width,int height) {
       {
         png_write_info(png_ptr, info_ptr);
         png_byte **row_pointers;
-        row_pointers= (png_byte**)malloc(height*sizeof(png_byte*));
+        row_pointers= (png_byte**)brmalloc(height*sizeof(png_byte*));
         for (int i=0;i<height;i++) {
           row_pointers[i]= (png_byte *)&data[i*width];
         }

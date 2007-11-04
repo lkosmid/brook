@@ -53,7 +53,7 @@ usage (void) {
         "   -N            deny support for kernels calling other kernels\n"
         "   -o prefix     prefix prepended to all output files\n"
         "   -w workspace  workspace size (16 - 2048, default 1024)\n"
-        "   -p shader     cpu/ps20/ps2a/ps2b/arb/fp30/fp40 (can specify multiple)\n"
+        "   -p shader     cpu/ps30/fp40/ctm/glsl/[legacy(ps20/ps2a/ps2b/fp30/arb)] (can specify multiple)\n"
         "   -f compiler   favor a particular compiler (cgc / fxc / default)\n"
         "   -a arch       assume a particular GPU (default / x800 / 6800)\n"
         "\n");
@@ -149,8 +149,13 @@ parse_args (int argc, char *argv[]) {
 	  globals.target |= TARGET_FP40;
 	else if (strcasecmp (optarg, "arb") == 0)
 	  globals.target |= TARGET_ARB;
+	else if (strcasecmp (optarg, "glsl") == 0)
+	  globals.target |= TARGET_GLSL;
 	else if (strcasecmp (optarg, "cpumt") == 0)
 	  globals.target |= TARGET_MULTITHREADED_CPU;
+
+	else if (strcasecmp (optarg, "legacy") == 0)
+	  globals.target |= TARGET_PS20|TARGET_PS2B|TARGET_PS2A|TARGET_FP30|TARGET_ARB;
 	else
 	  usage();
 	break;
@@ -176,9 +181,9 @@ parse_args (int argc, char *argv[]) {
 
   // The default build targets
   if (globals.target == 0)
-     globals.target = TARGET_PS20 | TARGET_CPU | TARGET_MULTITHREADED_CPU |
-                      TARGET_FP30 | TARGET_ARB | TARGET_FP40 | TARGET_PS30 |
-                      TARGET_PS2B | TARGET_PS2A | TARGET_CTM;
+     globals.target = TARGET_CPU | TARGET_MULTITHREADED_CPU |
+                      TARGET_FP40 | TARGET_PS30 |
+                      TARGET_CTM | TARGET_GLSL;
 
   argv += optind;
   argc -= optind;

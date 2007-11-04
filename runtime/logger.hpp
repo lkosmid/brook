@@ -43,6 +43,7 @@ namespace internal {
 
   private:
     Logger();
+    static BRTTLS Logger* currentLogger;
     static Logger& getInstance();
 
     const char* prefix;

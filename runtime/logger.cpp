@@ -1,10 +1,14 @@
 // logger.cpp
+#include "brook/brt.hpp"
 #include "logger.hpp"
 #include <stdlib.h>
 #include <fstream>
 #include <string.h>
+
 namespace brook {
 namespace internal {
+
+BRTTLS Logger* Logger::currentLogger;
 
   Logger::Logger()
      :  prefix(NULL),stream(NULL),ownsStream(false),level(-1)
@@ -30,8 +34,8 @@ namespace internal {
 
   Logger& Logger::getInstance()
   {
-    static Logger sResult;
-    return sResult;
+    if(!currentLogger) currentLogger=new Logger();
+    return *currentLogger;
   }
 
   bool Logger::isEnabled( int inLevel ) {

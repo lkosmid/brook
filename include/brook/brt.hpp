@@ -7,6 +7,18 @@ extern "C" {
 #include <assert.h>
 };
 
+namespace brook {
+#ifdef _MSC_VER
+  typedef __int64 int64;
+#define BRTTLS __declspec(thread)
+#define BRTALIGNED __declspec(align(16))
+#else
+  typedef long long int64;
+#define BRTTLS __thread
+#define BRTALIGNED __attribute__ ((aligned (16)))
+#endif
+}
+
 #include <brook/kerneldesc.hpp>
 #include <brook/brtvector.hpp>
 typedef struct fixed {
@@ -134,7 +146,7 @@ typedef struct float3 {
   float x,y,z;
 } float3;
 
-typedef struct float4 {
+typedef struct BRTALIGNED float4 {
   float4(float _x, float _y, float _z, float _w) {
      x = _x; y = _y; z = _z; w = _w;
   }
@@ -142,6 +154,16 @@ typedef struct float4 {
   operator __BrtFloat4()const {return __BrtFloat4(x,y,z,w);}
   float x,y,z,w;
 } float4;
+typedef struct float4ua {
+  float4ua(float _x, float _y, float _z, float _w) {
+     x = _x; y = _y; z = _z; w = _w;
+  }
+  float4ua(const float4 &o) : x(o.x), y(o.y), z(o.z), w(o.w) { }
+  float4ua(void) {}
+  operator float4() const { return float4(x,y,z,w); }
+  operator __BrtFloat4()const {return __BrtFloat4(x,y,z,w);}
+  float x,y,z,w;
+} float4ua;
 
 typedef struct int2
 {
@@ -318,9 +340,18 @@ namespace brook {
 
   class Runtime;
 
+  /* Returns a list of GPU resources */
+  const char** runtimeTargets();
+
   /* start up the brook runtime with a given implemention */
-  void initialize( const char* inRuntimeName, 
+  Runtime* initialize( const char* inRuntimeName,
                    void* inContextValue = 0 );
+
+  /* returns the current brook runtime for the calling thread */
+  Runtime* runtime();
+
+  /* sets the current brook runtime for the calling thread */
+  void setRuntime(Runtime* runtime);
 
   /* shut down the brook runtime, (shouldn't often be needed) */
   void finalize();
@@ -333,6 +364,11 @@ namespace brook {
 
   /* inform brook that the client is done with the gpu, and wants to use brook again */
   void bind();
+
+  /* Returns a microsecond counter useful for timing things */
+  int64 microseconds();
+
+
 
   Runtime* createRuntime( bool useAddressTranslation );
 
@@ -457,8 +493,8 @@ namespace brook {
     virtual void Release() {delete this;}
 
     // CPU version only
-    virtual bool   Continue() {assert (0); return false;}
-    virtual void * FetchElem(StreamInterface *s) {
+    virtual unsigned int TotalItems(bool &isReduce) const { assert(0); return 0; }
+    virtual void * FetchElem(StreamInterface *s, unsigned int idx) {
       assert (0); return (void *) 0;
     }
 
@@ -576,7 +612,9 @@ namespace brook {
   class kernel {
   public:
     
-    kernel(const void* code[]);
+    kernel();
+
+    void initialize(const void* code[]);
     
     ~kernel() {
       if( _kernel != 0 )
@@ -593,6 +631,7 @@ namespace brook {
     
   private:
     kernel( const kernel& ); // no copy constructor
+    brook::Runtime* _runtime;
     brook::Kernel* _kernel;
   };
 
@@ -764,6 +803,23 @@ template <class T> const void * getStreamAddress(const T* a) {
 #define indexof(a) __indexof(getStreamAddress(&a))
 #endif
 __BrtFloat4 __indexof (const void *);
+
+/* ned: Always 32 byte aligned memory allocation */
+void *brmalloc(size_t size);
+void *brcalloc(size_t no, size_t size);
+void *brrealloc(void *ptr, size_t size);
+bool brismalloc(void *ptr);
+void brfree(void *ptr);
+template<class type> class brallocator : public std::allocator<type> {
+public:
+   typename std::allocator<type>::pointer allocate(typename std::allocator<type>::size_type count) {
+    return (typename std::allocator<type>::pointer) brmalloc(count*sizeof(type));
+  }
+  void deallocate(typename std::allocator<type>::pointer ptr, typename std::allocator<type>::size_type) {
+    brfree(ptr);
+  }
+};
+
 
 // TIM: adding conditional magick for raytracer
 void streamEnableWriteMask();

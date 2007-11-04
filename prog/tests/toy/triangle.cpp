@@ -15,7 +15,7 @@ void reshape (int width, int height) {
 GLuint my_texture_names=0;
 int dotex() {
   glGenTextures(1, &my_texture_names);  
-  char * my_texture_scratch=(char*)malloc(4*textureheight*texturewidth);
+  char * my_texture_scratch=(char*)brmalloc(4*textureheight*texturewidth);
   memset(my_texture_scratch,0x1c,4*textureheight*texturewidth);
   for (int i=0;i<textureheight*texturewidth;++i) {
     my_texture_scratch[i*4]=i;

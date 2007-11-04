@@ -16,7 +16,7 @@ namespace brook {
    void CPUIter::allocateStream(unsigned int dims, 
                                 const unsigned int extents[],
                                 const float ranges[]) {
-      float * data = (float*)malloc (stream.getTotalSize()*sizeof(float)*type);
+      float * data = (float*)brmalloc (stream.getTotalSize()*sizeof(float)*type);
       float epsilon = 1.0f/1000000.0f;
       
       if (dims<2) {
@@ -45,7 +45,7 @@ namespace brook {
          assert(0);
       }
       streamRead(&stream,data);
-      free(data);
+      brfree(data);
    }
 
 }

@@ -3,6 +3,7 @@
 #include "gpu/ctm/ctmruntime.hpp"
 #endif
 
+#include "brook/brook.hpp"
 #include "runtime.hpp"
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,14 @@
 
 #ifdef BUILD_OGL
 #include "gpu/ogl/oglruntime.hpp"
+#endif
+
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <X11/Xlib.h>
+#include <GL/gl.h>
+#include <GL/glx.h>
 #endif
 
 #include "cpu/cpu.hpp"
@@ -67,22 +76,132 @@ extern "C" void brookRuntimeCleanupCallback()
 namespace brook {
 
   static const char* RUNTIME_ENV_VAR = "BRT_RUNTIME";
+  static BRTTLS Runtime* currentRuntime;
+
+  /* Returns a list of GPU resources */
+  const char** runtimeTargets()
+  {
+    static char *devs[64];
+    if(devs[0]) return (const char **) devs;
+    int n;
+    char **dev;
+    dev=devs;
+    *dev++=(char *) "cpu";
+#ifdef BUILD_CTM
+    *dev++=(char *) "ctm";
+#endif
+#if defined(BUILD_OGL) || defined(BUILD_DX9)
+#ifdef WIN32
+    DISPLAY_DEVICE odd, dd={ sizeof(DISPLAY_DEVICE) };
+    for(n=0; dev<devs+(sizeof(devs)/sizeof(char *))-1; n++)
+    {
+        odd=dd;
+        if(!EnumDisplayDevices(NULL, n, &dd, NULL)) break;
+        if((dd.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER)) continue;
+        if(!(dd.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)) continue;
+        if(!strcmp(odd.DeviceID, dd.DeviceID)) continue;
+        //if(strstr(dd.DeviceString, "Secondary")) continue;
+#ifdef BUILD_OGL
+        *dev=(char *) brmalloc(strlen(dd.DeviceName)+strlen(dd.DeviceString)+2+4);
+        strcpy(*dev, OGL_RUNTIME_STRING ":");
+        strcat(*dev, dd.DeviceName);
+        strcat(*dev, ":");
+        strcat(*dev, dd.DeviceString);
+        dev++;
+#endif
+#ifdef BUILD_DX9
+        *dev=(char *) brmalloc(strlen(dd.DeviceName)+strlen(dd.DeviceString)+2+4);
+        strcpy(*dev, DX9_RUNTIME_STRING ":");
+        strcat(*dev, dd.DeviceName);
+        strcat(*dev, ":");
+        strcat(*dev, dd.DeviceString);
+        dev++;
+#endif
+    }
+#else
+    // Maybe consider upgrading this to use Xinerama and XRandR
+    Display *dh=XOpenDisplay(NULL);
+    if(dh)
+    {
+        for(n=0; n<ScreenCount(dh); n++)
+        {
+#ifdef BUILD_OGL
+            int attrib[] = { GLX_RGBA, None };
+            XVisualInfo *visual = glXChooseVisual(dh, n, attrib);
+            if(visual){
+              GLXContext glxContext = glXCreateContext(dh, 
+                                            visual, 
+                                            0, GL_TRUE);
+              if(glxContext){
+                   XSetWindowAttributes swa;
+                   Colormap cmap = XCreateColormap (dh, 
+                                           RootWindow(dh, n),
+                                           visual->visual, AllocNone);
+                   swa.border_pixel = 0;
+                   swa.colormap = cmap;
+
+                   Window glxWindow = XCreateWindow(dh,
+                                             RootWindow(dh, n),
+                                             0, 0, 1, 1, 0, visual->depth, InputOutput,
+                                             visual->visual, CWBorderPixel | CWColormap,
+                                                               &swa);
+                   if (glXMakeCurrent(dh, glxWindow, glxContext)) {
+                     const char *vendor   = (const char *) glGetString(GL_VENDOR);
+                     const char *renderer = (const char *) glGetString(GL_RENDERER);
+
+                     *dev=(char *) brmalloc(4+4+strlen(DisplayString(dh))+(vendor ? 2+strlen(vendor)+strlen(renderer) : 0));
+                     strcpy(*dev, OGL_RUNTIME_STRING ":");
+                     strcat(*dev, DisplayString(dh));
+                     char *d=strchr(*dev, 0);
+                     if(d[-2]=='.') d-=2;
+                     sprintf(d, ".%d", n);
+                     if(vendor){
+                       strcat(*dev, ":");
+                       strcat(*dev, vendor);
+                       strcat(*dev, " ");
+                       strcat(*dev, renderer);
+                     }
+                     dev++;
+                   }
+                   glXMakeCurrent(dh, None, NULL);
+                   XDestroyWindow(dh, glxWindow);
+                   XFreeColormap(dh, cmap);
+                   glXDestroyContext(dh, glxContext);
+              }
+              XFree(visual);
+            }
+#endif
+        }
+        XCloseDisplay(dh);
+    }
+#endif
+#endif
+    return (const char **) devs;
+  }
 
   /* start up the brook runtime with a given implemention */
-  void initialize( const char* inRuntimeName, void* inContextValue )
+  Runtime* initialize( const char* inRuntimeName, void* inContextValue )
   {
-    Runtime::GetInstance( inRuntimeName, inContextValue, false );
+    return Runtime::GetInstance( inRuntimeName, inContextValue, false );
+  }
+
+  /* returns the current brook runtime for the calling thread */
+  Runtime* runtime()
+  {
+    return Runtime::GetInstance();
+  }
+
+  /* sets the current brook runtime for the calling thread */
+  void setRuntime(Runtime* runtime)
+  {
+    currentRuntime=runtime;
   }
 
   /* shut down the brook runtime, (shouldn't often be needed) */
   void finalize()
   {
-     Runtime*& runtime = Runtime::GetInstanceRef();
-     if( runtime != NULL )
-     {
-        delete runtime;
-        runtime = NULL;
-     }
+    delete currentRuntime;
+    currentRuntime = NULL;
   }
 
   /* tell brook to complete any queued operations on the gpu */
@@ -111,10 +230,9 @@ namespace brook {
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   Runtime* Runtime::GetInstance( const char* inRuntimeName, void* inContextValue, bool addressTranslation )
   {
-    Runtime*& runtime = GetInstanceRef();
-    if( runtime == NULL )
+    if( currentRuntime == NULL )
     {
-      runtime = CreateInstance( inRuntimeName, inContextValue, addressTranslation );
+      currentRuntime = CreateInstance( inRuntimeName, inContextValue, addressTranslation );
 
       static bool sCleanupRegistered = false;
       if( !sCleanupRegistered )
@@ -123,14 +241,7 @@ namespace brook {
          sCleanupRegistered = true;
       }
     }
-    return runtime;
-  }
-
-  // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-  Runtime*& Runtime::GetInstanceRef()
-  {
-     static Runtime* sRuntime = NULL;
-     return sRuntime;
+    return currentRuntime;
   }
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
@@ -182,9 +293,9 @@ namespace brook {
     }
 
 #ifdef BUILD_DX9
-    if (!strcmp(env, DX9_RUNTIME_STRING))
+    if (!strncmp(env, DX9_RUNTIME_STRING, sizeof(DX9_RUNTIME_STRING)-1))
     {
-      Runtime* result = GPURuntimeDX9::create( inContextValue );
+      Runtime* result = GPURuntimeDX9::create( inContextValue, env );
       if( result )
         return result;
 
@@ -195,7 +306,7 @@ namespace brook {
 #endif
     
 #ifdef BUILD_CTM
-    if (!strcmp(env, CTM_RUNTIME_STRING))
+    if (!strncmp(env, CTM_RUNTIME_STRING, sizeof(CTM_RUNTIME_STRING)-1))
     {
       Runtime* result = GPURuntimeCTM::create( inContextValue );
       if( result )
@@ -208,8 +319,8 @@ namespace brook {
 #endif
 
 #ifdef BUILD_OGL
-    if (!strcmp(env, OGL_RUNTIME_STRING)) {
-      Runtime* result = OGLRuntime::create( inContextValue );
+    if (!strncmp(env, OGL_RUNTIME_STRING, sizeof(OGL_RUNTIME_STRING)-1)) {
+      Runtime* result = OGLRuntime::create( inContextValue, env );
       if( result )
         return result;
 
@@ -490,12 +601,19 @@ namespace brook {
   }
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-  kernel::kernel(const void* code[])
-    : _kernel(NULL)
+  kernel::kernel()
+    : _runtime(NULL), _kernel(NULL)
   {
-    _kernel = brook::Runtime::GetInstance()->CreateKernel( code );
   }
 
+  void kernel::initialize(const void* code[])
+  {
+    if(_runtime!=brook::Runtime::GetInstance()) {
+      if( _kernel != 0 )
+        _kernel->Release();
+      _kernel = (_runtime=brook::Runtime::GetInstance())->CreateKernel( code );
+    }
+  }
 
   float getSentinel() {
     return (float)-1844632.18612444856320;
@@ -516,7 +634,7 @@ namespace brook {
   stream *sentinelStream (int dim) {    
     static StreamSentinels s;
     float onehalf = 0.5f;
-    float inf = 1.0f/(float)floor(onehalf);
+    BRTALIGNED float inf = 1.0f/(float)floor(onehalf);
   
     if (dim<(int)s.sentinels.size())
       if (s.sentinels[dim]!=0)
@@ -525,13 +643,13 @@ namespace brook {
     while ((int)s.sentinels.size()<=dim)
       s.sentinels.push_back(0);
 
-    std::vector<unsigned int> extents;
+    std::vector<unsigned int, brallocator<unsigned int> > extents;
 
     for (int i=0;i<dim;++i){
       extents.push_back(1);
     }
 
-    s.sentinels[dim]=new brook::stream(&extents[0],
+    s.sentinels[dim]=new brook::stream(&extents.front(),
                                        dim,
                                        brook::getStreamType((float*)0));   
     streamRead(*s.sentinels[dim],&inf);
@@ -664,6 +782,11 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
   // output dimensionality.
   assert (index_dims == dst_dims);
 
+  // Things must be 16 byte aligned if there are four elements
+  //if(4==index_dims && (size_t)index_data & 0xf) { std::cerr<<"Index data is not 16 byte aligned!"<<std::endl; abort(); }
+  if(16==src_elemsize && (size_t)src_data & 0xf) { std::cerr<<"Source data is not 16 byte aligned!"<<std::endl; abort(); }
+  if(16==dst_elemsize && (size_t)dst_data & 0xf) { std::cerr<<"Destination data is not 16 byte aligned!"<<std::endl; abort(); }
+
   // The number of elements of the index must match the 
   // the number of elements of the destination
   for (i=0; i<index_dims; i++)
@@ -671,11 +794,11 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
             dst_dmax[i] - dst_dmin[i]);
 
   // Create the counter
-  curpos = (unsigned int *) malloc (index_dims * sizeof(unsigned int));
+  curpos = (unsigned int *) brmalloc (index_dims * sizeof(unsigned int));
   
   // Create the buffer for gather op
-  buf1 = malloc (src_elemsize);
-  buf2 = malloc (src_elemsize);
+  buf1 = brmalloc (src_elemsize);
+  buf2 = brmalloc (src_elemsize);
 
   // Initialize it to zero
   for (i=0; i<index_dims; i++)
@@ -756,9 +879,56 @@ void __streamGatherOrScatterOp (::brook::StreamInterface *dst,
     dst->releaseData(::brook::Stream::READWRITE);
   }
 
-  free(curpos);
-  free(buf1);
-  free(buf2);
+  brfree(curpos);
+  brfree(buf1);
+  brfree(buf2);
+}
+
+
+/* Always 32 byte aligned memory allocation */
+void *brmalloc(size_t size)
+{
+    unsigned int *ret, *ret2;
+    ret=ret2=(unsigned int *) malloc(size+28+8);
+    if(!ret) return ret;
+    ret+=2;
+    while(((size_t)ret) & 0x1f) ret++;
+    ret[-1]=*(unsigned int *)"BROK";
+    ret[-2]=ret-ret2;
+    return ret;
+}
+void *brcalloc(size_t no, size_t size)
+{
+    void *ret=brmalloc(no*size);
+    if(!ret) return ret;
+    memset(ret, 0, no*size);
+    return ret;
+}
+void *brrealloc(void *ptr, size_t size)
+{
+    assert(brismalloc(ptr));
+    unsigned int *p=(unsigned int *)ptr;
+    p-=p[-2];
+    unsigned int *ret, *ret2;
+    ret=ret2=(unsigned int *) realloc(p, size+28+8);
+    if(!ret) return ret;
+    ret+=2;
+    while(((size_t)ret) & 0x1f) ret++;
+    ret[-1]=*(unsigned int *)"BROK";
+    ret[-2]=ret-ret2;
+    return ret;
+}
+bool brismalloc(void *ptr)
+{
+    unsigned int *p=(unsigned int *)ptr;
+    return p[-1]==*(unsigned int *)"BROK";
+}
+void brfree(void *ptr)
+{
+    assert(brismalloc(ptr));
+    unsigned int *p=(unsigned int *)ptr;
+    p-=p[-2];
+    free(p);
 }
 
 // TIM: adding conditional magick for raytracer

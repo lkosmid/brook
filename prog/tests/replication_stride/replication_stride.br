@@ -21,8 +21,8 @@ void test1( int extentIn, int extentOut )
 	float* output_data = 0;
 	int i;
 	
-	input_data = (float*)malloc( extentIn*sizeof(float) );
-	output_data = (float*)malloc( extentOut*sizeof(float) );
+	input_data = (float*)brmalloc( extentIn*sizeof(float) );
+	output_data = (float*)brmalloc( extentOut*sizeof(float) );
 	
 	for( i = 0; i < extentIn; i++ )
 		input_data[i] = (float)i;
@@ -46,8 +46,8 @@ void test2( int extentInX, int extentInY, int extentOutX, int extentOutY )
 	float* output_data = 0;
 	int i, j;
 	
-	input_data = (float*)malloc( extentInX*extentInY*sizeof(float) );
-	output_data = (float*)malloc( extentOutX*extentOutY*sizeof(float) );
+	input_data = (float*)brmalloc( extentInX*extentInY*sizeof(float) );
+	output_data = (float*)brmalloc( extentOutX*extentOutY*sizeof(float) );
 	
 	for( i = 0; i < extentInY; i++ )
 		for( j = 0; j < extentInX; j++ )
