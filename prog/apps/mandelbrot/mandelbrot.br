@@ -1,0 +1,85 @@
+/* mandelbrot.br
+Generates a high definition Mandelbrot set
+(C) 2007 Niall Douglas
+Created: 18th July 2007
+*/
+
+/* Returns the colour for a given quarter pixel */
+kernel void colour(float n, float max_iterations, out float4 output<>)
+{
+	if(n<max_iterations)
+	{	/* Do some colouring */
+		float v = n / max_iterations;
+		float frac;
+		
+		if (v < 0.167)
+		{
+			frac = v / 0.167;
+			output = float4(frac, 0.0, 0.0, 1.0);
+		}
+		else if (v < 0.333)
+		{
+			frac = (v - 0.167) / 0.167;
+			output = float4(1.0, frac, 0.0, 1.0);
+		}
+		else if (v < 0.5)
+		{
+			frac = (v - 0.333) / 0.167;
+			output = float4(1.0, 1.0, frac, 1.0);
+		}
+		else
+		{
+			frac = (v - 0.5) / 0.5;
+			output = float4(1.0-frac, 1.0, 1.0, 1.0);
+		}			
+	}
+	else
+	{	/* Point lies inside set */
+		output = float4( 0.0, 0.0, 0.0, 1.0 );
+	}
+}
+
+/* Each element of the float4 is a quarter pixel around the one
+which goes into the output. compute() works out the average, thus
+providing an anti-aliased output */
+kernel void compute(float4 cx, float4 cy, float max_iterations, out float4 output<>)
+{
+	float i=0;
+	float4 n={ 0, 0, 0, 0 }, on={ 1, 0, 0, 0 }, two={ 2, 2, 2, 2 }, four={ 4, 4, 4, 4 };
+	float4 x=cx, y=cy, sq, c0, c1, c2, c3;
+	/* Stupid cg compiler won't accept on!=n, so do it manually :( */
+	for(; i<max_iterations && /*on!=n*/(on[0]!=n[0] || on[1]!=n[1] || on[2]!=n[2] || on[3]!=n[3]); i+=5)
+	{
+		int j;
+		on=n;
+		for(j=0; j<5; ++j)			// Six multiplies, five additions, one compare = 12 ops
+		{
+			float4 outX = x*x - y*y + cx;
+			float4 outY = two*x*y + cy;
+			x=outX;
+			y=outY;
+			sq=x*x + y*y;
+			n+=(sq<=four);
+		}
+	}
+	colour(n[0], max_iterations, c0);
+	colour(n[1], max_iterations, c1);
+	colour(n[2], max_iterations, c2);
+	colour(n[3], max_iterations, c3);
+	output=(c0+c1+c2+c2)/four;
+}
+
+kernel void mandelbrot( float2 position, float zoom, float max_iterations, float2 outputsize, out float4 output<> )
+{
+	float4 pixelsize=1/outputsize.x/zoom;			/* How much of the mandelbrot set one pixel covers */
+	float4 mypos=indexof(output); /* Where we are on the screen */
+	float4 cx=position.x+mypos.x*pixelsize.x;
+	float4 cy=position.y+mypos.y*pixelsize.y;
+	float4 diffx={ 0.25f,  0.25f, -0.25f, -0.25f };
+	float4 diffy={ 0.25f, -0.25f, -0.25f,  0.25f };
+	diffx*=pixelsize;
+	diffy*=pixelsize;
+	cx+=diffx;
+	cy+=diffy;
+	compute(cx, cy, max_iterations, output);
+}

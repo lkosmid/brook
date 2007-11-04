@@ -1,0 +1,31 @@
+/* mandelbrot.br
+Generates a high definition Mandelbrot set
+(C) 2007 Niall Douglas
+Created: 18th July 2007
+*/
+
+
+kernel void mandelbrot( float2 position, float zoom, float max_iterations, float2 outputsize, out float4 output<> )
+{
+	float2 pixelsize=1/outputsize/zoom;			/* How much of the mandelbrot set one pixel covers */
+	float2 mypos={ indexof(output).x*pixelsize.x, indexof(output).y*pixelsize.y }; /* Where we are on the screen */
+	float cx=position.x;
+	float cy=position.y;
+
+	cx+=mypos.x;
+	cy+=mypos.y;
+	{
+		float i;
+		float x=cx, y=cy;
+		for(i=0; i<10; ++i)
+		{
+			float outX = x*x - y*y + cx;
+			float outY = 2*x*y + cy;
+			x=outX;
+			y=outY;
+		}
+		i=x*x + y*y;
+		i=i>4;
+		output=float4(0, i, 1, 1);
+	}
+}
