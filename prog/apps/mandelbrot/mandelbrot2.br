@@ -1,0 +1,72 @@
+/* mandelbrot.br
+Generates a high definition Mandelbrot set
+(C) 2007 Niall Douglas
+Created: 18th July 2007
+*/
+
+/* Returns the colour for a given quarter pixel */
+kernel void colour(float n, float max_iterations, out float4 output<>)
+{
+	if(n<max_iterations)
+	{	/* Do some colouring */
+		float v = n / max_iterations;
+		float frac;
+		
+		if (v < 0.167)
+		{
+			frac = v / 0.167;
+			output = float4(frac, 0.0, 0.0, 1.0);
+		}
+		else if (v < 0.333)
+		{
+			frac = (v - 0.167) / 0.167;
+			output = float4(1.0, frac, 0.0, 1.0);
+		}
+		else if (v < 0.5)
+		{
+			frac = (v - 0.333) / 0.167;
+			output = float4(1.0, 1.0, frac, 1.0);
+		}
+		else
+		{
+			frac = (v - 0.5) / 0.5;
+			output = float4(1.0-frac, 1.0, 1.0, 1.0);
+		}			
+	}
+	else
+	{	/* Point lies inside set */
+		output = float4( 0.0, 0.0, 0.0, 1.0 );
+	}
+}
+
+/* Each element of the float4 is a quarter pixel around the one
+which goes into the output. compute() works out the average, thus
+providing an anti-aliased output */
+kernel void compute(float cx, float cy, out float4 output<>)
+{
+	const float max_iterations=100;
+	float i=0;
+	float x=cx, y=cy, sq;
+	for(; i<max_iterations; ++i)
+	{
+		float outX = x*x - y*y + cx;
+		float outY = 2*x*y + cy;
+		x=outX;
+		y=outY;
+		sq=x*x + y*y;
+		if(sq>4) break;
+	}
+	colour(i, max_iterations, output);
+}
+
+kernel void mandelbrot( float2 position, float zoom, float max_iterations, float2 outputsize, out float4 output<> )
+{
+	float2 pixelsize=1/outputsize/zoom;			/* How much of the mandelbrot set one pixel covers */
+	float2 mypos={ indexof(output).x*pixelsize.x, indexof(output).y*pixelsize.y }; /* Where we are on the screen */
+	float cx=position.x;
+	float cy=position.y;
+
+	cx+=mypos.x;
+	cy+=mypos.y;
+	compute(cx, cy, output);
+}

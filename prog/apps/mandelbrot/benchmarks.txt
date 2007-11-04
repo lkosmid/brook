@@ -1,0 +1,106 @@
+Test System: Intel Core 2 Duo 3.4Ghz ATI Radeon x1300 Pro
+Code was compiled using MSVC7.1 with SSE2 enabled
+
+Native 3584 x 3584:
+
+vector4<float>       : 17.21 secs
+vector4<alignedfloat>: 17.44 secs
+vector4<SSE>         : 4.7 secs
+
+
+
+2048 x 2048:
+
+cpu: 36.68 secs
+dx9: 3.86 secs
+ogl: 2.10 secs, 8.44 secs norm read
+
+
+3584 x 3584:
+
+cpu: 88.0 secs
+dx9: 4.55 secs
+ogl: 15.3 secs, 7.08 secs norm read
+
+
+
+For simple mandelbrot:
+
+2048 x 2048:
+
+cpu: 7.98 secs
+dx9: 3.43 secs
+ogl: 7.34 secs
+
+
+
+
+
+Ideal Brook file:
+-=-=-=-=-=-=-=-=-
+!!!! This is not cgc nor fxc compatible :( !!!!
+
+Rendering 7168 x 7168 Mandelbrot using 'cpu' runtime ...
+Took 17.809624 secs to render, 0.119995 secs to read the results (TOTAL=17.92961
+8 secs)
+    Transfer rate was 1633.401216 Mb/sec
+        and your GPU did around 2325.661127 MFLOP/sec
+
+Rendering 7168 x 7168 Mandelbrot using 'dx9' runtime ...
+Took 2.574466 secs to render, 1.107119 secs to read the results (TOTAL=3.681585
+secs)
+    Transfer rate was 177.036057 Mb/sec
+        and your GPU did around 16088.442383 MFLOP/sec
+dx9 is 4.870081 times faster than CPU
+
+Rendering 7168 x 7168 Mandelbrot using 'ogl' runtime ...
+Took 3.778780 secs to render, 2.174792 secs to read the results (TOTAL=5.953573
+secs)
+    Transfer rate was 90.123549 Mb/sec
+        and your GPU did around 10960.983440 MFLOP/sec
+ogl is 3.135010 times faster than CPU
+
+
+More compatible Brook file:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Rendering 7168 x 7168 Mandelbrot using 'cpu' runtime ...
+Took 16.781024 secs to render, 0.117374 secs to read the results (TOTAL=16.89839
+7 secs)
+    Transfer rate was 1669.875634 Mb/sec
+        and your GPU did around 1782.598547 MFLOP/sec
+
+Rendering 7168 x 7168 Mandelbrot using 'dx9' runtime ...
+Took 3.083128 secs to render, 1.092100 secs to read the results (TOTAL=4.175229
+secs)
+    Transfer rate was 179.470718 Mb/sec
+        and your GPU did around 9702.427734 MFLOP/sec
+dx9 is 4.047298 times faster than CPU
+
+Rendering 7168 x 7168 Mandelbrot using 'ogl' runtime ...
+Took 3.778712 secs to render, 2.063303 secs to read the results (TOTAL=5.842015
+secs)
+    Transfer rate was 94.993308 Mb/sec
+        and your GPU did around 7916.408223 MFLOP/sec
+ogl is 2.892563 times faster than CPU
+
+
+
+
+
+
+
+
+
+Rendering 4096 x 4096 Mandelbrot using 'dx9' runtime ...
+Took 1.023823 secs to render, 2.508299 secs to read the results (TOTAL=3.532122
+secs)
+    Transfer rate was 25.515299 Mb/sec
+        and your GPU did around 9557.061523 MFLOP/sec
+dx9 is 0.000000 times faster than CPU
+
+Rendering 4096 x 4096 Mandelbrot using 'ogl' runtime ...
+Took 1.316989 secs to render, 0.749720 secs to read the results (TOTAL=2.066709
+secs)
+    Transfer rate was 85.365206 Mb/sec
+        and your GPU did around 7429.628416 MFLOP/sec
+ogl is 0.000000 times faster than CPU
