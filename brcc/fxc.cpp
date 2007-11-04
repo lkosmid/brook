@@ -47,7 +47,7 @@ compile_fxc (const char *name,
   char ps30_targetstring[]="/Tps_3_0";
   char nothin[]=""; //gcc does not like ?: with ""
 
-  char* targetstring = "";
+  const char* targetstring = "";
   bool targetUsesRect = false;
   bool targetIsShaderModel3 = false;
   switch (target) {
@@ -86,9 +86,9 @@ compile_fxc (const char *name,
      fprintf(stderr, "Unsupported fxc target.\n");
      return NULL;
   }
-  char DUSERECT [] ="/DUSERECT=1";
-  char DSHADERMODEL3 [] ="/DSHADERMODEL3=1";
-  char *argv[] = { "fxc", targetstring,
+  const char DUSERECT [] ="/DUSERECT=1";
+  const char DSHADERMODEL3 [] ="/DSHADERMODEL3=1";
+  const char *argv[] = { "fxc", targetstring,
                    inValidate ? nothin : validate, "/nologo", 0, 0, 
                    "/DDXPIXELSHADER=1", targetUsesRect ? DUSERECT : nothin,
                    targetIsShaderModel3 ? DSHADERMODEL3 : nothin, NULL };
@@ -143,8 +143,8 @@ compile_fxc (const char *name,
     fprintf(stderr, "\n");
 
     remove(argv[kOutputFileArgument]+3);
-    free(argv[kOutputFileArgument]);
-    free(argv[kInputFileArgument]);
+    free((void *) argv[kOutputFileArgument]);
+    free((void *) argv[kInputFileArgument]);
     return NULL;
   }
 
@@ -158,8 +158,8 @@ compile_fxc (const char *name,
              argv[kOutputFileArgument]+3);
     fprintf(stderr, "FXC returned: [35;1m%s[0m\n",
             errcode);
-    free(argv[kOutputFileArgument]);
-    free(argv[kInputFileArgument]);
+    free((void *) argv[kOutputFileArgument]);
+    free((void *) argv[kInputFileArgument]);
     return NULL;
   }
 
@@ -274,8 +274,8 @@ compile_fxc (const char *name,
   if (!globals.keepFiles)
      remove(argv[kOutputFileArgument]+3);
 
-  free(argv[kOutputFileArgument]);
-  free(argv[kInputFileArgument]);
+  free((void *) argv[kOutputFileArgument]);
+  free((void *) argv[kInputFileArgument]);
 
   if (target == CODEGEN_ARB) {
      std::istringstream ifpcode(fpcode);

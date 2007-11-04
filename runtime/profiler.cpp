@@ -1,4 +1,5 @@
 // profiler.cpp
+#include "brook/brt.hpp"
 #include "profiler.hpp"
 
 #ifndef _WIN32
@@ -7,15 +8,15 @@
 #include <sys/time.h>
 #include <string.h>
 
-static int64 getFrequency() {
-  return (int64)1000000;
+static brook::int64 getFrequency() {
+  return (brook::int64)1000000;
 }
 
-static int64 getTime()
+static brook::int64 getTime()
 {
   struct timeval tv;
   gettimeofday(&tv,NULL);
-  int64 temp = tv.tv_usec;
+  brook::int64 temp = tv.tv_usec;
   temp+= tv.tv_sec*1000000;
   return temp;
 }
@@ -24,7 +25,7 @@ static int64 getTime()
 
 #include <windows.h>
 
-static int64 getFrequency()
+static brook::int64 getFrequency()
 {
   LARGE_INTEGER frequency;
   if( !QueryPerformanceFrequency(&frequency) )
@@ -33,10 +34,10 @@ static int64 getFrequency()
     return 0;
   }
 
-  return (int64)(frequency.QuadPart);
+  return (brook::int64)(frequency.QuadPart);
 }
 
-static int64 getTime()
+static brook::int64 getTime()
 {
   LARGE_INTEGER counter;
   if( !QueryPerformanceCounter(&counter) )
@@ -45,7 +46,7 @@ static int64 getTime()
     return 0;
   }
 
-  return (int64)(counter.QuadPart);
+  return (brook::int64)(counter.QuadPart);
 }
 
 #endif
@@ -54,9 +55,16 @@ static int64 getTime()
 
 
 namespace brook {
+
+int64 microseconds() {
+  static int64 freq=getFrequency()/1000000;
+  return getTime()/freq;
+}
+
 namespace internal {
 
-  ProfilerNode* ProfilerSample::sCurrentNode = NULL;
+  BRTTLS Profiler* Profiler::currentProfiler;
+  BRTTLS ProfilerNode* ProfilerSample::sCurrentNode = NULL;
   
   ProfilerNode::ProfilerNode( const char* inName )
     : name(inName),
@@ -129,8 +137,8 @@ namespace internal {
 
   Profiler& Profiler::getInstance()
   {
-    static Profiler sResult;
-    return sResult;
+    if(!currentProfiler) currentProfiler=new Profiler;
+    return *currentProfiler;
   }
 
   void Profiler::addNode( ProfilerNode* inNode )

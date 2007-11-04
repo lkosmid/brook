@@ -33,7 +33,7 @@ main(int argc, char *argv[])
    float *data;
    int numCopied, i, j;
 
-   data = (float *) malloc(size * size * sizeof(float));
+   data = (float *) brmalloc(size * size * sizeof(float));
    for (i = 0; i < size; i++) {
       for (j = 0; j < size; j++) {
          data[i * size + j] = (float) (i * size + j);
@@ -86,6 +86,6 @@ main(int argc, char *argv[])
              << size * size - threshold << ")" << std::endl;
 
    m.unbind();
-   free(data);
+   brfree(data);
    return 0;
 }

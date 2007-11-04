@@ -16,12 +16,6 @@
 #define	BROOK_PROFILE( __name )	
 #endif
 
-#ifdef WIN32
-typedef __int64 int64;
-#else
-typedef long long int64;
-#endif
-
 namespace brook {
 namespace internal {
 
@@ -62,6 +56,7 @@ namespace internal {
     void addNode( ProfilerNode* inNode );
 
   private:
+    static BRTTLS Profiler* currentProfiler;
     Profiler();
 
 
@@ -98,7 +93,7 @@ namespace internal {
   private:
     ProfilerNode& node;
     ProfilerNode* saved;
-    static ProfilerNode* sCurrentNode;
+    static BRTTLS ProfilerNode* sCurrentNode;
   };
 
 

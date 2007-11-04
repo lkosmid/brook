@@ -1,14 +1,35 @@
 #ifndef BRTVECTOR_HPP
 #define BRTVECTOR_HPP
-#if defined (_MSC_VER) && _MSC_VER <=1200 && !defined(VC6VECTOR_HPP)
-#include "vc6vector.hpp"
-//the above headerfile has the template functions automatically expanded.
-//not needed for recent compilers.
+#if defined (_MSC_VER) && _MSC_VER <=1200
+#error MSVC7 or later is required
 #else
 
 #include <iostream>
 #include <math.h>
 #include "type_promotion.hpp"
+#if (defined(_MSC_VER) && ((defined(_M_IX86) && _M_IX86>=400) || defined(_M_AMD64))) \
+	|| (defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))) \
+	|| defined(__INTEL_COMPILER)
+// We can use SSE intrinsics
+  #ifndef BRT_USE_SSE
+    #define BRT_USE_SSE 1
+  #endif
+  #if BRT_USE_SSE >= 1
+    #include <xmmintrin.h>
+  #endif
+  #if BRT_USE_SSE >= 2
+    #include <emmintrin.h>
+  #endif
+  #if BRT_USE_SSE >= 3
+    #include <pmmintrin.h>
+  #endif
+  #if BRT_USE_SSE >= 4
+    #include <smmintrin.h>
+  #endif
+#else
+  #define BRT_USE_SSE 0
+#endif
+
 template <class VALUE, unsigned int tsize> class vec;
 
 template <class T, class B> inline T singlequestioncolon (const B& a,
@@ -213,7 +234,9 @@ public:
     }
     const VALUE &unsafeGetAt (unsigned int i) const{return f[i];}
     VALUE &unsafeGetAt (unsigned int i) {return f[i];}
-    typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
+    // This might be dangerous, but we skip several copy constructions
+    //typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
+    const vec<VALUE,1> &operator [] (int i) const { return *(const vec<VALUE,1> *) &unsafeGetAt(i); }
     vec<VALUE,tsize>& gather() {
         return *this;
     }
@@ -266,7 +289,7 @@ public:
     }
     NONCONST_BROOK_UNARY_OP(--);
     NONCONST_BROOK_UNARY_OP(++);
-#undef BROOK_UNARY_OP
+#undef NONCONST_BROOK_UNARY_OP
     vec<VALUE,4> swizzle4(int x,int y,int z,int w)const {
         return vec<VALUE,4>(unsafeGetAt(x),
                             unsafeGetAt(y),
@@ -327,6 +350,14 @@ public:
     ASSIGN_OP(*=);
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
+// ned 7th Aug 2007: Specialise for same to same op
+    vec<VALUE,tsize>& operator = (const vec<VALUE,tsize>& in) {
+        f[0]=in.f[0];
+        if(tsize>1) f[1]=in.f[1];
+        if(tsize>2) f[2]=in.f[2];
+        if(tsize>3) f[3]=in.f[3];
+        return *this;
+    }
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE>
@@ -335,10 +366,7 @@ public:
         f[Y]=GetAt<BRT_TYPE>(in,1);
         f[Z]=GetAt<BRT_TYPE>(in,2);
         f[W]=GetAt<BRT_TYPE>(in,3);
-        return vec<VALUE,4>(unsafeGetAt(X),
-                            unsafeGetAt(Y),
-                            unsafeGetAt(Z),
-                            unsafeGetAt(W));
+        return vec<VALUE,4>(*this);
     }
     template <class BRT_TYPE>
       vec<VALUE,3> mask3 (const BRT_TYPE&in,int X,int Y,int Z) {
@@ -386,6 +414,21 @@ public:
     BROOK_BINARY_OP(+,+=,LCM);
     BROOK_BINARY_OP(-,-=,LCM);
     BROOK_BINARY_OP(%,%=,LCM);
+#undef BROOK_BINARY_OP
+// ned 7th Aug 2007: Specialise for same to same op
+#define BROOK_BINARY_OP(op) \
+    vec<VALUE, tsize> operator op (const vec<VALUE, tsize> &b)const{ \
+      return vec<VALUE, tsize> \
+                (unsafeGetAt(0) op b.unsafeGetAt(0), \
+                 unsafeGetAt(1) op b.unsafeGetAt(1), \
+                 unsafeGetAt(2) op b.unsafeGetAt(2), \
+                 unsafeGetAt(3) op b.unsafeGetAt(3)); \
+    }
+    BROOK_BINARY_OP(*);
+    BROOK_BINARY_OP(/);
+    BROOK_BINARY_OP(+);
+    BROOK_BINARY_OP(-);
+    BROOK_BINARY_OP(%);
 #undef BROOK_BINARY_OP
 #define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class BRT_TYPE>          \
     vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,VALUE>::type, \
@@ -460,6 +503,364 @@ template <class BRT_TYPE>
 };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ned 7th August 2007: Declare a SSE-based type specialisation for vec<float,4> */
+#if BRT_USE_SSE
+
+template<> class BRTALIGNED vec<float,4> {
+    void alignmentcheck() const { /*assert(!((size_t) this & 0xf));*/ }
+    float toFloat(__m128 v) const { float ret; _mm_store_ss(&ret, v); return ret; }
+public:
+    typedef float TYPE;
+    enum SIZ{size=4};
+    typedef float array_type[size];
+protected:
+    union {
+       float f[4];
+       __m128 v;
+    };
+public:
+    vec<float,4>(const vec<float,4>& o) { alignmentcheck(); v=o.v; }
+    vec<float,4>(__m128 o) { alignmentcheck(); v=o; }
+
+    const float &getAt (unsigned int i) const{
+       return i<size?f[i]:f[size-1];
+    }
+    float &getAt (unsigned int i) {
+       return i<size?f[i]:f[size-1];
+    }
+    const float &unsafeGetAt (unsigned int i) const{return f[i];}
+    float &unsafeGetAt (unsigned int i) {return f[i];}
+    // This might be dangerous, but we skip several copy constructions
+    //BracketType<float>::type operator [] (int i)const {return BracketOp<float>()(*this,i);}
+    const vec<float,1> &operator [] (int i) const { return *(const vec<float,1> *) &unsafeGetAt(i); }
+    vec<float,4>& gather() {
+        return *this;
+    }
+    const vec<float,4>& gather() const{
+        return *this;
+    }
+    template<class BRT_TYPE> BRT_TYPE castTo()const {
+        return InitializeClass<BRT_TYPE>()(getAt(0),
+					   getAt(1),
+					   getAt(2),
+					   getAt(3));
+    }
+
+    template<class BRT_TYPE> BRT_TYPE castToArg(const BRT_TYPE&)const{
+        return InitializeClass<BRT_TYPE>()(getAt(0),
+					   getAt(1),
+					   getAt(2),
+					   getAt(3));
+    }
+   vec<float,1> any() const{
+      return vec<float,1>(getAt(0)!=0.0f||getAt(1)!=0.0f||getAt(2)!=0.0f||getAt(3)!=0.0f);
+   }
+   vec<float,1> all() const {
+      return vec<float,1>(getAt(0)!=0.0f&&getAt(1)!=0.0f&&getAt(2)!=0.0f&&getAt(3)!=0.0f);
+   }
+   vec<float,1> length() const {
+#if BRT_USE_SSE>=3
+      return vec<float,1>(toFloat(_mm_sqrt_ss(_mm_dp_ps(v, v, 0xf))));
+#else
+      unsigned int i;
+      float tot = unsafeGetAt(0);
+      tot*=tot;
+      for (i=1;i<4;++i) {
+         tot+=unsafeGetAt(i)*unsafeGetAt(i);
+      }
+      return vec<float,1>((float)sqrt(tot));
+#endif
+   }
+#define BROOK_UNARY_OP(op) vec<float,4> operator op ()const { \
+      return vec<float, 4 > (op getAt(0),  \
+                                 op getAt(1),  \
+                                 op getAt(2),  \
+                                 op getAt(3)); \
+    }
+    BROOK_UNARY_OP(+)
+    BROOK_UNARY_OP(-)
+    BROOK_UNARY_OP(!)
+#undef BROOK_UNARY_OP
+#define NONCONST_BROOK_UNARY_OP(op, sseop) vec<float,4> operator op (){ \
+      return vec<float, 4 > (_mm_ ## sseop ## _ps(v, _mm_set_ps1(1.0f))); \
+    }
+    NONCONST_BROOK_UNARY_OP(--, sub);
+    NONCONST_BROOK_UNARY_OP(++, add);
+#undef NONCONST_BROOK_UNARY_OP
+    vec<float,4> swizzle4(int x,int y,int z,int w)const {
+        return vec<float,4>(unsafeGetAt(x),
+                            unsafeGetAt(y),
+                            unsafeGetAt(z),
+                            unsafeGetAt(w));
+    }
+    vec<float,3> swizzle3(int x,int y,int z)const {
+        return vec<float,3>(unsafeGetAt(x),unsafeGetAt(y),unsafeGetAt(z));
+    }
+    vec<float,2> swizzle2(int x,int y)const {
+        return vec<float,2>(unsafeGetAt(x),unsafeGetAt(y));
+    }
+    vec<float, 1> swizzle1(int x)const {
+        return vec<float,1>(unsafeGetAt(x));
+    }
+    vec() { alignmentcheck(); }
+#define GENERAL_TEMPLATIZED_FUNCTIONS
+    template <class BRT_TYPE> 
+      vec (const BRT_TYPE &inx, 
+	   const BRT_TYPE &iny, 
+	   const BRT_TYPE &inz, 
+	   const BRT_TYPE& inw) {
+        //f[0]=inx;
+        //if (size>1) f[1]=iny;
+        //if (size>2) f[2]=inz;
+        //if (size>3) f[3]=inw;
+       v=_mm_set_ps(inw, inz, iny, inx);
+    }
+    template <class BRT_TYPE> vec (const BRT_TYPE& inx, 
+				   const BRT_TYPE& iny, 
+				   const BRT_TYPE& inz) {
+        f[0]=inx;
+        if(size>1)f[1]=iny;
+        if(size>2)f[2]=inz;
+    }
+    template <class BRT_TYPE> vec (const BRT_TYPE& inx, const BRT_TYPE& iny) {
+        f[0]=inx;
+        if (size>1) f[1]=iny;
+    }
+    template <class BRT_TYPE> vec (const BRT_TYPE& scalar) {
+        (*this)=scalar;
+    }
+    template <class BRT_TYPE> operator BRT_TYPE () const{
+      return InitializeClass<BRT_TYPE>()(getAt(0),getAt(1),getAt(2),getAt(3));
+    }        
+
+#define ASSIGN_OP(op) template <class BRT_TYPE> \
+         vec<float,4>& operator op (const BRT_TYPE & in) {  \
+        f[0] op (float)(GetAt<BRT_TYPE>(in,0));  \
+        if (4>1) f[1] op (float)(GetAt<BRT_TYPE>(in,1));  \
+        if (4>2) f[2] op (float)(GetAt<BRT_TYPE>(in,2));  \
+        if (4>3) f[3] op (float)(GetAt<BRT_TYPE>(in,3));  \
+        return *this;  \
+    }
+    ASSIGN_OP(=);
+    ASSIGN_OP(/=);
+    ASSIGN_OP(+=);
+    ASSIGN_OP(-=);
+    ASSIGN_OP(*=);
+    ASSIGN_OP(%=);
+#undef ASSIGN_OP
+// ned 7th Aug 2007: Specialise for same to same op
+    vec<float,4>& operator = (const vec<float,4>& in) {
+        v = in.v;
+        return *this;
+    }
+    vec<float,4>& operator = (float o) {
+        v=_mm_set1_ps(o);
+        return *this;
+    }
+    vec<float,4>& operator = (const vec<float,1>& in) {
+        v=_mm_set1_ps(in.unsafeGetAt(0));
+        return *this;
+    }
+    vec<float,4>& operator = (int o) {
+        v=_mm_set1_ps((float) o);
+        return *this;
+    }
+    vec<float,4>& operator = (const vec<char,1>& in) {
+        v=_mm_set1_ps(in.unsafeGetAt(0));
+        return *this;
+    }
+#define ASSIGN_OP(op, sseop) vec<float,4>& operator op (const vec<float,4>& in) {  \
+        v = _mm_ ## sseop ## _ps(v, in.v);  \
+        return *this;  \
+    }
+    ASSIGN_OP(/=, div);
+    ASSIGN_OP(+=, add);
+    ASSIGN_OP(-=, sub);
+    ASSIGN_OP(*=, mul);
+#undef ASSIGN_OP
+#undef GENERAL_TEMPLATIZED_FUNCTIONS
+#define VECTOR_TEMPLATIZED_FUNCTIONS
+    template <class BRT_TYPE>
+      vec<float,4> mask4 (const BRT_TYPE&in,int X, int Y,int Z,int W) {
+        f[X]=GetAt<BRT_TYPE>(in,0);
+        f[Y]=GetAt<BRT_TYPE>(in,1);
+        f[Z]=GetAt<BRT_TYPE>(in,2);
+        f[W]=GetAt<BRT_TYPE>(in,3);
+        return vec<float,4>(*this);
+    }
+    template <class BRT_TYPE>
+      vec<float,3> mask3 (const BRT_TYPE&in,int X,int Y,int Z) {
+        f[X]=GetAt<BRT_TYPE>(in,0);
+        f[Y]=GetAt<BRT_TYPE>(in,1);
+        f[Z]=GetAt<BRT_TYPE>(in,2);
+        return vec<float,3>(unsafeGetAt(X),unsafeGetAt(Y),unsafeGetAt(Z));
+    }
+    template <class BRT_TYPE> 
+      vec<float,2> mask2 (const BRT_TYPE&in,int X,int Y) {
+        f[X]=GetAt<BRT_TYPE>(in,0);
+        f[Y]=GetAt<BRT_TYPE>(in,1);
+        return vec<float,2>(unsafeGetAt(X),unsafeGetAt(Y));
+    }
+    template <class BRT_TYPE> 
+      vec<float,1> mask1 (const BRT_TYPE&in,int X) {
+        f[X]=GetAt<BRT_TYPE>(in,0);
+        return vec<float,1>(unsafeGetAt(X));
+    }    
+    template <class BRT_TYPE> 
+      vec<typename BRT_TYPE::TYPE,
+          LUB<BRT_TYPE::size,4>::size> questioncolon(const BRT_TYPE &b, 
+						const BRT_TYPE &c)const {
+        return vec<GCCTYPENAME BRT_TYPE::TYPE,
+                   LUB<BRT_TYPE::size,4>::size>
+            (singlequestioncolon(getAt(0),b.getAt(0),c.getAt(0)),
+             singlequestioncolon(getAt(1),b.getAt(1),c.getAt(1)),
+             singlequestioncolon(getAt(2),b.getAt(2),c.getAt(2)),
+             singlequestioncolon(getAt(3),b.getAt(3),c.getAt(3)));
+    }
+// ned 7th Aug 2007: Specialise for same to same op
+    vec<float,4> questioncolon(const vec<float,4> &b, const vec<float,4> &c)const {
+        __m128 mask=_mm_cmpneq_ps(v, _mm_setzero_ps());
+        return _mm_or_ps(_mm_and_ps(mask, b.v), _mm_andnot_ps(mask, c.v));
+    }
+#if defined (_MSC_VER) && (_MSC_VER <= 1200)
+#define TEMPL_TYPESIZE sizeof(BRT_TYPE)/sizeof(BRT_TYPE::TYPE)
+#else
+#define TEMPL_TYPESIZE BRT_TYPE::size
+#endif
+#define BROOK_BINARY_OP(op,opgets,TYPESPECIFIER) template <class BRT_TYPE>          \
+    vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
+       LUB<TEMPL_TYPESIZE,4>::size> operator op (const BRT_TYPE &b)const{ \
+      return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
+                                                float>::type, \
+		 LUB<TEMPL_TYPESIZE,4>::size>(*this) opgets b; \
+    }
+    BROOK_BINARY_OP(*,*=,LCM);
+    BROOK_BINARY_OP(/,/=,LCM);
+    BROOK_BINARY_OP(+,+=,LCM);
+    BROOK_BINARY_OP(-,-=,LCM);
+    BROOK_BINARY_OP(%,%=,LCM);
+#undef BROOK_BINARY_OP
+// ned 7th Aug 2007: Specialise for same to same op
+#define BROOK_BINARY_OP(op, sseop) \
+    vec<float,4> operator op (const vec<float,4> &b)const{ \
+       return _mm_ ## sseop ## _ps(v, b.v); \
+    }
+    BROOK_BINARY_OP(*, mul);
+    BROOK_BINARY_OP(/, div);
+    BROOK_BINARY_OP(+, add);
+    BROOK_BINARY_OP(-, sub);
+#undef BROOK_BINARY_OP
+#define BROOK_BINARY_OP(op,TYPESPECIFIER) template <class BRT_TYPE>          \
+    vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
+       LUB<TEMPL_TYPESIZE,4>::size> operator op (const BRT_TYPE &b)const{ \
+      return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
+                                           float>::type, \
+		 LUB<TEMPL_TYPESIZE,4>::size> \
+                (getAt(0) op GetAt<BRT_TYPE>(b,0), \
+                 getAt(1) op GetAt<BRT_TYPE>(b,1), \
+                 getAt(2) op GetAt<BRT_TYPE>(b,2), \
+                 getAt(3) op GetAt<BRT_TYPE>(b,3)); \
+    }
+    BROOK_BINARY_OP(||,LCM);
+    BROOK_BINARY_OP(&&,LCM);
+    BROOK_BINARY_OP(<,COMMON_CHAR)
+    BROOK_BINARY_OP(>,COMMON_CHAR)        
+    BROOK_BINARY_OP(<=,COMMON_CHAR)
+    BROOK_BINARY_OP(>=,COMMON_CHAR)        
+    BROOK_BINARY_OP(!=,COMMON_CHAR)
+    BROOK_BINARY_OP(==,COMMON_CHAR)
+#undef BROOK_BINARY_OP
+// ned 7th Aug 2007: Specialise for same to same op
+#define BROOK_BINARY_OP(op, sseop) vec<float,4> operator op (const vec<float,4> &b)const{ \
+       return _mm_ ## sseop ## _ps(v, b.v); \
+    }
+    BROOK_BINARY_OP(||,or);
+    BROOK_BINARY_OP(&&,and);
+#undef BROOK_BINARY_OP
+#define BROOK_BINARY_OP(op, sseop) bool operator op (const vec<float,4> &b)const{ \
+       return _mm_movemask_ps(_mm_cmp ## sseop ## _ps(v, b.v))==0xf; \
+    }
+    BROOK_BINARY_OP(<,lt)
+    BROOK_BINARY_OP(>,gt)        
+    BROOK_BINARY_OP(<=,le)
+    BROOK_BINARY_OP(>=,ge)        
+    BROOK_BINARY_OP(!=,neq)
+    BROOK_BINARY_OP(==,eq)
+#undef BROOK_BINARY_OP
+template <class BRT_TYPE>
+    vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type,1> 
+    dot (const BRT_TYPE &b) const{
+      return vec<INTERNALTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,
+                                           float>::type, 1> 
+                ((LUB<TEMPL_TYPESIZE,
+                     4>::size)==4?(
+#if BRT_USE_SSE>=3
+                                     toFloat(_mm_dp_ps(v, b.v, 0xf))
+#else
+                                     getAt(0) * GetAt<BRT_TYPE>(b,0) + 
+                                     getAt(1) * GetAt<BRT_TYPE>(b,1) + 
+                                     getAt(2) * GetAt<BRT_TYPE>(b,2) + 
+                                     getAt(3) * GetAt<BRT_TYPE>(b,3)
+#endif
+                                  ):
+                 (LUB<TEMPL_TYPESIZE,
+                     4>::size)==3?(getAt(0) * GetAt<BRT_TYPE>(b,0) + 
+                                      getAt(1) * GetAt<BRT_TYPE>(b,1) +
+                                      getAt(2) * GetAt<BRT_TYPE>(b,2)):
+                 (LUB<TEMPL_TYPESIZE,
+                     4>::size)==2?(getAt(0) * GetAt<BRT_TYPE>(b,0) + 
+                                      getAt(1) * GetAt<BRT_TYPE>(b,1)):
+                 getAt(0) * GetAt<BRT_TYPE>(b,0));
+                 
+    }
+
+template <class BRT_TYPE>
+    vec<GCCTYPENAME LCM<GCCTYPENAME BRT_TYPE::TYPE,float>::type,1> 
+    distance (const BRT_TYPE &b) const{
+      return (b-*this).length();
+    }
+
+
+
+#define BROOK_BINARY_OP(op, subop,TYPESPECIFIER) template <class BRT_TYPE>          \
+    vec<GCCTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE,float>::type, \
+       LUB<TEMPL_TYPESIZE,4>::size> op (const BRT_TYPE &b)const{ \
+      return vec<INTERNALTYPENAME TYPESPECIFIER<GCCTYPENAME BRT_TYPE::TYPE, \
+                                           float>::type, \
+		 LUB<TEMPL_TYPESIZE,4>::size> \
+                (::subop(getAt(0) , GetAt<BRT_TYPE>(b,0)), \
+                 ::subop(getAt(1) , GetAt<BRT_TYPE>(b,1)), \
+                 ::subop(getAt(2) , GetAt<BRT_TYPE>(b,2)), \
+                 ::subop(getAt(3) , GetAt<BRT_TYPE>(b,3))); \
+    }
+    BROOK_BINARY_OP(atan2,atan2,LCM)
+    BROOK_BINARY_OP(fmod,fmod,LCM)
+    BROOK_BINARY_OP(pow,pow,LCM);
+    BROOK_BINARY_OP(step_float,step_float,LCM);
+    BROOK_BINARY_OP(ldexp_float,ldexp_float,LCM);
+    BROOK_BINARY_OP(min_float,min_float,LCM);
+    BROOK_BINARY_OP(max_float,max_float,LCM);
+#undef TEMPL_TYPESIZE
+#undef BROOK_BINARY_OP    
+#undef VECTOR_TEMPLATIZED_FUNCTIONS
+};
+#endif
+
+
 template <> inline vec<float,1> singlequestioncolon (const vec<float,1> &a,
                                                      const vec<float,1> &b,
                                                      const vec<float,1> &c) {
@@ -511,6 +912,7 @@ inline std::ostream& operator << (std::ostream&a,const vec<TYPE,X> & b) { \
 }   \
 typedef vec<TYPE,X> NAME
 
+VECX_CLASS(__BrtInt1,int,1);
 VECX_CLASS(__BrtFloat1,float,1);
 VECX_CLASS(__BrtFloat2,float,2);
 VECX_CLASS(__BrtFloat3,float,3);

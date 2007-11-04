@@ -29,7 +29,7 @@ namespace brook
       }
     if( _cpuData )
       {
-        delete[] (unsigned char*)_cpuData;
+        brfree(_cpuData);
       }
   }
 
@@ -292,7 +292,7 @@ namespace brook
     if( _cpuData == NULL )
       {
         _cpuDataSize = _totalSize * getElementSize();
-        _cpuData = new unsigned char[ _cpuDataSize ];
+        _cpuData = brmalloc(_cpuDataSize);
       }
 
     if( flags & Stream::READ )

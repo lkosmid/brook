@@ -1,0 +1,63 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<!DOCTYPE KDevPrjSession>
+<KDevPrjSession>
+ <DocsAndViews NumberOfDocuments="6" >
+  <Doc0 NumberOfViews="1" URL="file:///home/ned/brook/prog/apps/mandelbrot/Makefile" >
+   <View0 Encoding="UTF-8" line="8" Type="Source" />
+  </Doc0>
+  <Doc1 NumberOfViews="1" URL="file:///home/ned/brook/common.mk" >
+   <View0 Encoding="UTF-8" Type="Source" />
+  </Doc1>
+  <Doc2 NumberOfViews="1" URL="file:///home/ned/brook/config/Linux.mk" >
+   <View0 Encoding="UTF-8" Type="Source" />
+  </Doc2>
+  <Doc3 NumberOfViews="1" URL="file:///home/ned/brook/prog/apps/mandelbrot/main.cpp" >
+   <View0 Encoding="UTF-8" line="343" Type="Source" />
+  </Doc3>
+  <Doc4 NumberOfViews="1" URL="file:///home/ned/brook/runtime/cpu/cpukernel.cpp" >
+   <View0 Encoding="UTF-8" line="498" Type="Source" />
+  </Doc4>
+  <Doc5 NumberOfViews="1" URL="file:///home/ned/brook/prog/apps/mandelbrot/built/mandelbrot.cpp" >
+   <View0 Encoding="UTF-8" line="0" Type="Source" />
+  </Doc5>
+ </DocsAndViews>
+ <pluginList>
+  <kdevdebugger>
+   <breakpointList>
+    <breakpoint0 location="/home/ned/brook/prog/tests/struct_gather/built/struct_gather.cpp:553" type="1" tracingFormatString="" traceFormatStringEnabled="0" condition="" tracingEnabled="0" enabled="1" >
+     <tracedExpressions/>
+    </breakpoint0>
+    <breakpoint1 location="/home/ned/brook/prog/tests/struct_gather/built/struct_gather.cpp:260" type="1" tracingFormatString="" traceFormatStringEnabled="0" condition="" tracingEnabled="0" enabled="1" >
+     <tracedExpressions/>
+    </breakpoint1>
+    <breakpoint2 location="/home/ned/brook/prog/tests/struct_gather/built/struct_gather.cpp:555" type="1" tracingFormatString="" traceFormatStringEnabled="0" condition="" tracingEnabled="0" enabled="1" >
+     <tracedExpressions/>
+    </breakpoint2>
+    <breakpoint3 location="/home/ned/brook/prog/tests/struct_gather/built/struct_gather.cpp:268" type="1" tracingFormatString="" traceFormatStringEnabled="0" condition="" tracingEnabled="0" enabled="1" >
+     <tracedExpressions/>
+    </breakpoint3>
+   </breakpointList>
+   <showInternalCommands value="0" />
+  </kdevdebugger>
+  <kdevastyle>
+   <Extensions ext="*.cpp *.h,*.c *.h,*.cxx *.hxx,*.c++ *.h++,*.cc *.hh,*.C *.H,*.diff,*.inl,*.java,*.moc,*.patch,*.tlh,*.xpm" />
+   <AStyle IndentPreprocessors="0" FillCount="4" PadParenthesesOut="1" IndentNamespaces="1" IndentLabels="1" Fill="Tabs" MaxStatement="40" Brackets="Break" MinConditional="-1" IndentBrackets="0" PadParenthesesUn="1" BlockBreak="0" KeepStatements="1" KeepBlocks="1" BlockIfElse="0" IndentSwitches="1" PadOperators="0" FStyle="UserDefined" IndentCases="0" FillEmptyLines="0" BracketsCloseHeaders="0" BlockBreakAll="0" PadParenthesesIn="1" IndentClasses="1" IndentBlocks="0" FillForce="0" />
+  </kdevastyle>
+  <kdevbookmarks>
+   <bookmarks>
+    <bookmark url="/home/ned/brook/runtime/gpu/ogl/oglfunc.cpp" >
+     <mark line="8" />
+    </bookmark>
+    <bookmark url="/home/ned/brook/brcc/context.cpp" >
+     <mark line="49" />
+    </bookmark>
+   </bookmarks>
+  </kdevbookmarks>
+  <kdevvalgrind>
+   <executable path="" params="" />
+   <valgrind path="" params="" />
+   <calltree path="" params="" />
+   <kcachegrind path="" />
+  </kdevvalgrind>
+ </pluginList>
+</KDevPrjSession>

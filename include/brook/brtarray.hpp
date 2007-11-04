@@ -25,9 +25,9 @@ template <class VALUE> class __BrtArray {
 
     this->dims = dims;
     this->elemsize = elemsize;
-    this->extents = (unsigned int *) malloc (dims * sizeof(unsigned int));
-    this->domain_min = (unsigned int *) malloc (dims * sizeof(unsigned int));
-    this->domain_max = (unsigned int *) malloc (dims * sizeof(unsigned int));
+    this->extents = (unsigned int *) brmalloc (dims * sizeof(unsigned int));
+    this->domain_min = (unsigned int *) brmalloc (dims * sizeof(unsigned int));
+    this->domain_max = (unsigned int *) brmalloc (dims * sizeof(unsigned int));
 
     for (unsigned int i=0;i<dims;++i) {
       this->extents[i] = extents[i];
@@ -98,9 +98,9 @@ public:
   ~__BrtArray() {
      if (s && acquired_data) //XXX hack::do not wish to free data twice, multiple such streams may reference a single bout of data
       s->releaseData(brook::Stream::READ);
-     free(extents);
-     free(domain_min);
-     free(domain_max);
+     brfree(extents);
+     brfree(domain_min);
+     brfree(domain_max);
   }
 
   template <class T> unsigned int indexOf (const T &index) const {
@@ -123,7 +123,7 @@ public:
   }
 
   template <class T> VALUE& getInBounds (const T &index) {
-    static VALUE emergency;
+    static BRTTLS VALUE emergency;
 
     unsigned int i=T::size-1;
 
@@ -230,7 +230,7 @@ public:
       this->data =data;
     else {
       unsigned int size = getSize();
-      this->data = (VALUE *)malloc(sizeof(VALUE)*size);
+      this->data = (VALUE *)brmalloc(sizeof(VALUE)*size);
       memcpy (this->data,data,sizeof(VALUE)*size);
     }
     
@@ -242,7 +242,7 @@ public:
     this->data = c.data;
     if (copy_data) {
       unsigned int size = getSize();
-      this->data = (VALUE *)malloc(sizeof(VALUE)*size);
+      this->data = (VALUE *)brmalloc(sizeof(VALUE)*size);
       memcpy(this->data,c.data,sizeof(VALUE)*size);
     }
     return *this;
@@ -254,7 +254,7 @@ public:
 
   ~__BrtArray() {
     if (copy_data)
-      free(this->data);
+      brfree(this->data);
   }
 
   unsigned int linearaddresscalc (const unsigned int * indices)const {

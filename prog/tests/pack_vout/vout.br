@@ -638,11 +638,11 @@ kernel void isFiniteKernel(float inp<>, out float outp<>) {
 int finiteValueProduced (float  input<>) {
    float output<1,1>;
    float finiteout<1,1>;
-   float ret;
+   float ret[1];
    valueProduced(input,output);
    isFiniteKernel(output,finiteout);
-   streamWrite(finiteout,&ret);
-   return (int)ret;
+   streamWrite(finiteout,ret);
+   return (int)ret[0];
 }
 
 kernel void getIndexAt(float4 inputindex,
@@ -775,7 +775,7 @@ float shiftValues(float list_stream<>,
    float2 maxvalue;
    unsigned int logN;
    unsigned int LogNMinusK;
-   float maxshift=999;
+   float maxshift[1]={999};
 
    maxvalue.x=LENGTH;maxvalue.y=WIDTH;
    logN=(unsigned int)ceil(log((float)LENGTH*WIDTH)/log(2.0f));
@@ -796,7 +796,7 @@ float shiftValues(float list_stream<>,
        index.y=index.x=0;
      }
      kernelReadItem(logN%2==0?tmp_stream:ret_stream,index,item);
-     streamWrite(item,&maxshift);
+     streamWrite(item,maxshift);
    }
    LogNMinusK=logN-2;
    i= logN-1;//could make this k! rather than N
@@ -829,7 +829,7 @@ float shiftValues(float list_stream<>,
    }
    debugStreamPrint(logN%2==0?ret_stream:guess_stream,"Gather Value");
    if (1) {
-      unsigned int size = LENGTH*WIDTH-toui(maxshift);
+      unsigned int size = LENGTH*WIDTH-toui(maxshift[0]);
       unsigned int width = size/LENGTH+((size%LENGTH)?1:0);
       float proper_output_stream<width,LENGTH>;
       RelativeGather(proper_output_stream,
@@ -840,7 +840,7 @@ float shiftValues(float list_stream<>,
       streamSwap(*output_stream,proper_output_stream);
       debugStreamPrint(*output_stream, "Final Value");
    }
-   return maxshift;
+   return maxshift[0];
 }
 
 kernel void combine (float input1[][], 

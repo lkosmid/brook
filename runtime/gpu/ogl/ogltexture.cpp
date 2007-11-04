@@ -3,17 +3,67 @@
 
 #include "oglfunc.hpp"
 #include "ogltexture.hpp"
+#include "oglcontext.hpp"
 #include "oglcheckgl.hpp"
 
 using namespace brook;
+
+// These are the official OpenGL formats. No vendor fully supports these yet for FBO's
+static const unsigned int glFormatSTD[4][3] = {
+                    {GL_LUMINANCE,GL_LUMINANCE,GL_LUMINANCE},
+                    {GL_LUMINANCE_ALPHA,GL_LUMINANCE_ALPHA,GL_LUMINANCE_ALPHA},
+                    {GL_RGB,GL_RGB,GL_RGB},
+                    {GL_RGBA,GL_RGBA,GL_RGBA}};
+static const unsigned int glTypeSTD[4][3] = {
+                {GL_LUMINANCE32F_ARB,      GL_LUMINANCE16,        GL_LUMINANCE},
+                {GL_LUMINANCE_ALPHA32F_ARB,GL_LUMINANCE16_ALPHA16,GL_LUMINANCE_ALPHA},
+                {GL_RGB32F_ARB,            GL_RGB16,              GL_RGB},
+                {GL_RGBA32F_ARB,           GL_RGBA16,             GL_RGBA}};
+static const unsigned int sizeFactorSTD[4][3] = { {1,1,1}, {2,2,2}, {3,3,3}, {4,4,4} };
+static const unsigned int atomSizeSTD  [4][3] = { {4,2,1}, {4,2,1}, {4,2,1}, {4,2,1} };
+
+
+
+// These are specifically for ATI
+// ATI currently cannot do single channel floats for FBO's, so we must use GL_RGB
+// Also, there is a bug in render to FBO which fails to convert RGB to BGR so
+// we invert the format to work around it (for now)
+static const unsigned int glFormatATI[4][3] = {
+                    {GL_BGR,GL_LUMINANCE,GL_LUMINANCE},
+                    {GL_BGR,GL_LUMINANCE_ALPHA,GL_LUMINANCE_ALPHA},
+                    {GL_BGR,GL_BGR,GL_BGR},
+                    {GL_BGRA,GL_BGRA,GL_BGRA}};
+static const unsigned int glTypeATI[4][3] = {
+                {GL_RGB32F_ARB,            GL_LUMINANCE16,        GL_LUMINANCE},
+                {GL_RGB32F_ARB,            GL_LUMINANCE16_ALPHA16,GL_LUMINANCE_ALPHA},
+                {GL_RGB32F_ARB,            GL_RGB16,              GL_RGB},
+                {GL_RGBA32F_ARB,           GL_RGBA16,             GL_RGBA}};
+static const unsigned int sizeFactorATI[4][3] = { {3,1,1}, {3,2,2}, {3,3,3}, {4,4,4} };
+static const unsigned int atomSizeATI  [4][3] = { {4,2,1}, {4,2,1}, {4,2,1}, {4,2,1} };
+
+// These are specifically for NVidia
+// NVidia only can do single and dual channel floats using a custom type
+// Curiously, GL_FLOAT_RG32_NV won't combine with GL_LUMINANCE_ALPHA so while
+// we store only two components in GPU memory, we must access via GL_RGB
+static const unsigned int glFormatNV[4][3] = {
+                    {GL_RED,GL_LUMINANCE,GL_LUMINANCE},
+                    {GL_RGB,GL_LUMINANCE_ALPHA,GL_LUMINANCE_ALPHA},
+                    {GL_RGB,GL_RGB,GL_RGB},
+                    {GL_RGBA,GL_RGBA,GL_RGBA}};
+static const unsigned int glTypeNV[4][3] = {
+                {GL_FLOAT_R32_NV,          GL_LUMINANCE16,        GL_LUMINANCE},
+                {GL_FLOAT_RG32_NV,         GL_LUMINANCE16_ALPHA16,GL_LUMINANCE_ALPHA},
+                {GL_RGB32F_ARB,            GL_RGB16,              GL_RGB},
+                {GL_RGBA32F_ARB,           GL_RGBA16,             GL_RGBA}};
+static const unsigned int sizeFactorNV[4][3] = { {1,1,1}, {3,2,2}, {3,3,3}, {4,4,4} };
+static const unsigned int atomSizeNV  [4][3] = { {4,2,1}, {4,2,1}, {4,2,1}, {4,2,1} };
+
+
 /* Allocates a floating point texture */ 
-OGLTexture::OGLTexture (unsigned int width,
+OGLTexture::OGLTexture (OGLContext *ctx,
+                        unsigned int width,
                         unsigned int height,
-                        GPUContext::TextureFormat format,
-                        const unsigned int glFormat[4][OGL_NUMFORMATS],
-                        const unsigned int glType[4][OGL_NUMFORMATS],
-                        const unsigned int sizeFactor[4][OGL_NUMFORMATS],
-                        const unsigned int atomSize[4][OGL_NUMFORMATS]):
+                        GPUContext::TextureFormat format):
    _width(width), _height(height), _format(format) {
    _elementType=OGL_FLOAT;
    
@@ -61,33 +111,45 @@ OGLTexture::OGLTexture (unsigned int width,
    default: 
       GPUError("Unkown Texture Format");
    }
+   /* { OGL_FLOAT, OGL_FIXED, OGL_SHORTFIXED }
+   One component
+   Two components
+   Three components
+   Four components
+   */
+   unsigned int glFormat  [4][3]; memcpy(glFormat,   (ctx->onNVidia() ? glFormatNV   : ctx->onATI() ? glFormatATI   : glFormatSTD),   sizeof(glFormatSTD));
+   unsigned int glType    [4][3]; memcpy(glType,     (ctx->onNVidia() ? glTypeNV     : ctx->onATI() ? glTypeATI     : glTypeSTD),     sizeof(glTypeSTD));
+   unsigned int sizeFactor[4][3]; memcpy(sizeFactor, (ctx->onNVidia() ? sizeFactorNV : ctx->onATI() ? sizeFactorATI : sizeFactorSTD), sizeof(sizeFactorSTD));
+   unsigned int atomSize  [4][3]; memcpy(atomSize,   (ctx->onNVidia() ? atomSizeNV   : ctx->onATI() ? atomSizeATI   : atomSizeSTD),   sizeof(atomSizeSTD));
    _atomsize = atomSize[_components-1][_elementType];
    _bytesize = _width*_height*sizeFactor[_components-1][_elementType]*_atomsize;
    _elemsize = sizeFactor[_components-1][_elementType];
    _nativeFormat = glFormat[_components-1][_elementType];
 
    glGenTextures(1, &_id);
-   glActiveTextureARB(GL_TEXTURE0_ARB);
-   glBindTexture (GL_TEXTURE_RECTANGLE_NV, _id);
+   //printf("Creating texture %u\n", _id);
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, _id);
    CHECK_GL();
    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
    glPixelStorei(GL_PACK_ALIGNMENT,1);
+   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+   glTexParameterf(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
+   glTexParameterf(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
+   glTexParameterf(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameterf(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   CHECK_GL();
    // Create a texture with NULL data
-   glTexImage2D (GL_TEXTURE_RECTANGLE_NV, 0, 
+   glTexImage2D (GL_TEXTURE_RECTANGLE_ARB, 0, 
                  glType[_components-1][_elementType],
                  width, height, 0,
                  glFormat[_components-1][_elementType],
                  _elementType==OGL_FIXED?GL_UNSIGNED_BYTE:(_elementType==OGL_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), NULL);
    CHECK_GL();
-   
-   glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_S, GL_CLAMP);
-   glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_WRAP_T, GL_CLAMP);
-   glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameterf(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   CHECK_GL();
 }
 
 OGLTexture::~OGLTexture () {
+  //printf("Deleting texture %u\n", _id);
   glDeleteTextures (1, &_id);
   CHECK_GL();
 }

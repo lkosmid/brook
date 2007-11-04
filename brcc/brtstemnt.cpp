@@ -104,6 +104,7 @@ BRTKernelDef::print(std::ostream& out, int) const
    PRINT_CODE(FP30, fp30);
    PRINT_CODE(FP40, fp40);
    PRINT_CODE(ARB,  arb);
+   PRINT_CODE(GLSL, glsl);
    PRINT_CODE(CPU,  cpu);
 #undef PRINT_CODE
 
@@ -428,6 +429,7 @@ BRTKernelDef::printStub(std::ostream& out) const
    }
    do {
       unsigned int reducecount=0;
+      out << "extern ";
       fType->subType->printType(out, NULL, true, 0);
       out << " " << *FunctionName() << " (";
       
@@ -462,7 +464,7 @@ BRTKernelDef::printStub(std::ostream& out) const
             out << *fType->args[i]->name;
          } else {
             out << "const ";
-            Symbol name;name.name = fType->args[i]->name->name;
+            Symbol name;name.name = "& __input_" +fType->args[i]->name->name;
             //XXX -- C++ backend needs values to be passed by value...
             // It's a one time per kernel call hit--worth it to keep
             // Values from being aliased --Daniel
@@ -471,11 +473,25 @@ BRTKernelDef::printStub(std::ostream& out) const
          }
       }
       out << ") {\n";
+      // ned: We need to duplicate those inputs locally to prevent values being aliased
+      for (i = 0; i < NumArgs; i++) {
+         if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
+         } else if ((fType->args[i]->form->getQualifiers() & TQ_Iter)!=0) {
+         } else if (recursiveIsStream(fType->args[i]->form) ||
+                    recursiveIsGather(fType->args[i]->form)) {
+         } else {
+            out << "  ";
+            Symbol name;name.name = fType->args[i]->name->name;
+            fType->args[i]->form->printType(out,&name,true,0);
+            out << "(" << "__input_" + fType->args[i]->name->name + ");\n";
+         }
+      }
       out << "  static const void *__" << *FunctionName() << "_fp[] = {";
       out << std::endl;
       out << "     \"fp30\", __" << *FunctionName() << "_fp30," << std::endl;
       out << "     \"fp40\", __" << *FunctionName() << "_fp40," << std::endl;
       out << "     \"arb\", __"  << *FunctionName() << "_arb,"  << std::endl;
+      out << "     \"glsl\", __" << *FunctionName() << "_glsl," << std::endl;
       out << "     \"ps20\", __" << *FunctionName() << "_ps20," << std::endl;
       out << "     \"ps2b\", __" << *FunctionName() << "_ps2b," << std::endl;
       out << "     \"ps2a\", __" << *FunctionName() << "_ps2a," << std::endl;
@@ -484,8 +500,10 @@ BRTKernelDef::printStub(std::ostream& out) const
       out << "     \"cpu\", (void *) __" << *FunctionName() << "_cpu,"<<std::endl;
       out << "     NULL, NULL };"<<std::endl;
       
-      out << "  static ::brook::kernel  __k("
-          << "__" << *FunctionName() << "_fp);\n\n";
+      out << "  static BRTTLS ::brook::kernel* __pk;" << std::endl;
+      out << "  if(!__pk) __pk = new ::brook::kernel;" << std::endl;
+      out << "  __pk->initialize(__" << *FunctionName() << "_fp);" << std::endl;
+      out << "  ::brook::kernel& __k = *__pk;" << std::endl << std::endl;
       if (vout) {
          PrintVoutPrefix(out);
       }

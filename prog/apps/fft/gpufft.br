@@ -291,7 +291,7 @@ float4 * bitReversedIndices (int logN, int logM) {
   int i,N = (1<< logN),M = (1<<logM);
   int maxNM = N>(M/2)?N:(M/2);
   float4 * s_array;
-  s_array = (float4*)calloc(maxNM,sizeof(float4));
+  s_array = (float4*)brcalloc(maxNM,sizeof(float4));
   for (i=0;i<maxNM;++i) {
     s_array[i].x=(float)(i==0?0:BitReverse(M-(i*2),logM)/2);
     s_array[i].y=(float)(i==0?0:BitReverse(N-i,logN));//BitReverse(i==0?0:N-i,logN));
@@ -351,7 +351,7 @@ void generatePlan(float4 bitreversal<>,
                   int logM) {
    float4 * rawindices=bitReversedIndices(logN,logM);
    streamRead(bitreversal,rawindices);
-   free(rawindices);
+   brfree(rawindices);
 }
 void computeFFT2d(float4 (*input)<>,
                   float4 (*output)<>,

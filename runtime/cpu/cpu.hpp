@@ -2,7 +2,7 @@
 #define _BROOK_CPU_HPP
 #include <vector>
 #include "../runtime.hpp"
-#include <brook/brtarray.hpp>
+#include <brook/brook.hpp>
 
 #ifdef _WIN32
 #define THREADRETURNTYPE unsigned long 
@@ -15,6 +15,7 @@ namespace brook {
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   class CPUKernel : public Kernel {
+    CPUKernel(const CPUKernel &);
   public:
     CPUKernel(const void * source []);
     virtual void PushStream(Stream *s);
@@ -30,8 +31,8 @@ namespace brook {
     virtual void Reduce();
 
     virtual void   PushStreamInterface(StreamInterface * s);
-    virtual void * FetchElem(StreamInterface *s);
-    virtual bool   Continue();
+    virtual unsigned int TotalItems(bool &isReduce) const;
+    virtual void * FetchElem(StreamInterface *s, unsigned int idx);
 
     virtual void Release();
 
@@ -53,7 +54,6 @@ namespace brook {
     std::vector<__BrtArray<unsigned char> *> freeme_array;
 
     unsigned int dims;
-    unsigned int *curpos;
     unsigned int *extents;
     unsigned int *minpos;
     unsigned int *maxpos;
@@ -133,7 +133,6 @@ namespace brook {
     unsigned int *extents;
     unsigned int *domain_min;
     unsigned int *domain_max;
-    unsigned int *pos;
 
     bool isDerived;
   };

@@ -6,6 +6,8 @@
 #include "../gpucontext.hpp"
 
 namespace brook {
+
+  class OGLContext;
    
   /* Virtual class for textures */
   class OGLTexture 
@@ -19,20 +21,9 @@ namespace brook {
     };
 
     
-    OGLTexture ( unsigned int inWidth, 
-                 unsigned int inHeight, 
-                 GPUContext::TextureFormat inFormat) :
-      _width(inWidth), _height(inHeight), _format(inFormat)
-    { }
-
-    /* This guy is the real constructor */
-    OGLTexture ( unsigned int width,
+    OGLTexture ( OGLContext *ctx, unsigned int width,
                  unsigned int height,
-                 GPUContext::TextureFormat format,
-                 const unsigned int glFormat[4][OGL_NUMFORMATS],
-                 const unsigned int glType[4][OGL_NUMFORMATS],
-                 const unsigned int sizeFactor[4][OGL_NUMFORMATS],
-                 const unsigned int atomSize[4][OGL_NUMFORMATS]);
+                 GPUContext::TextureFormat format);
 
     virtual ~OGLTexture ();
 
@@ -93,6 +84,9 @@ namespace brook {
     ** for float textures.
     */
     int nativeFormat()       const { return _nativeFormat; }
+
+    // Swaps the texture ids. Make SURE they are the same dimensions & format!
+    void swap(OGLTexture &o) { unsigned int temp=_id; _id=o._id; o._id=temp; }
 
     // TIM: these are really janky functions...
 

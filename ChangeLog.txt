@@ -1,6 +1,76 @@
 			    Brook GPU Release Notes
 
-Release v0.4 (X/XX/04)
+Release v0.5 (??/??/??)
+
+   * { ned } The OpenGL backend has been significantly modernised and
+             has removed almost all vendor-specific code. v1.3 of OpenGL
+             is now required for operation.
+
+   * { ned } Integrated a copy of GLee v5.21 as the OpenGL extension
+             wrapper, removing the old manual approach.
+
+   * { ned } Removed many hardcoded limits in favour of queries to OpenGL.
+             Textures sizes and output limits are now driver determined.
+
+   * { ned } Moved GL runtime over to use Framebuffer objects instead
+             of PBuffers.
+
+   * { ned } OpenGL Pixel buffers are now used if available to speed
+             CPU=>GPU data transfers, in particular by queuing up all
+             data streams to be sent to the GPU asynchronously. This
+             allows the data to be transferring while more streams are
+             set up for transfer and/or other pre-computation work is
+             performed.
+
+   * { ned } Added support for outputting GLSL as a target via cgc's
+             glslf profile.
+
+   * { ned } Added brook::microseconds() which returns a microsecond count.
+
+   * { ned } Added brook::runtimeTargets() which returns all available GPU's.
+             This permits backends to be targeted at specific cards.
+
+   * { ned } Made Brook runtime per-thread. This allows different threads
+             to work with multiple runtimes simultaneously eg; to run
+             separate backends on separate cards.
+
+   * { ned } brcc now only compiles for cpu, PS30, FP40, CTM and GLSL
+             techniques by default (use -p legacy to reenable the old ones).
+             This greatly speeds compilation for complex shaders which
+             wouldn't compile under legacy techniques anyway.
+
+   * { ned } Added a direct op overload for vec<> operators =, *, /, +, -
+             and % when the type is identical. This doubles the speed of
+             these operations for the CPU backend.
+
+   * { ned } Added support for int to GL, DX9 and CPU backends but ONLY
+             internally to the kernel (NOT as a parameter). This allows for
+             proper loop semantics and prepares the way for DX10 integer support.
+
+   * { ned } Replaced all usage of malloc, free etc. with brmalloc, brfree etc.
+             brmalloc() et al return 32 byte aligned allocations which is
+             necessary for SSE support both now and into the future. Use
+             BRTALIGNED for stack and static variables - brcc now outputs this
+             as required.
+
+   * { ned } Added a specialisation for vec<float,4> using Intel's SSE __m128
+             implementation. This doubles the speed once again for the CPU
+             backend when using vec<float,4>.
+
+   * { ned } Fixed the problem on Linux where cgc v1.5 would fail to parse
+             from redirected standard input.
+
+   * { ned } Made all _cpu_inner functions static as so to give the optimiser
+             more scope. Also made externally callable functions explicitly
+             "extern" and made their parameters passed by reference & copied
+             as MSVC won't respect alignment attributes on parameter values.
+
+   * { ned } Fixed as many of the GCC v4.2 warnings about deprecated conversion
+             from string constant to char * as possible (bison & flex need fixing)
+
+
+
+Release v0.4 (10/15/04)
 
    * Added domain() operator with support under all runtimes
 

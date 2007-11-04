@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="7.10"
 	Name="sum"
 	ProjectGUID="{2F24BDCA-1745-4E6B-A4D3-6FDCC8596375}"
 	RootNamespace="sum"

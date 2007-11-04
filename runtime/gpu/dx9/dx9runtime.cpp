@@ -133,7 +133,7 @@ namespace brook
   class GPUContextDX9Impl : public GPUContextDX9
   {
   public:
-    static GPUContextDX9Impl* create( void* inContextValue );
+    static GPUContextDX9Impl* create( void* inContextValue, const char *device );
 
     virtual bool isRenderTextureFormatValid( D3DFORMAT inFormat );
     virtual IDirect3DDevice9* getDevice() {
@@ -270,7 +270,7 @@ namespace brook
 
   private:
     GPUContextDX9Impl();
-    bool initialize( void* inContextValue );
+    bool initialize( void* inContextValue, const char* device );
 
     DX9Window* _window;
     IDirect3D9* _direct3D;
@@ -320,9 +320,9 @@ namespace brook
     float _depthToWrite;
   };
 
-  GPURuntimeDX9* GPURuntimeDX9::create( void* inContextValue )
+  GPURuntimeDX9* GPURuntimeDX9::create( void* inContextValue, const char* device )
   {
-    GPUContextDX9Impl* context = GPUContextDX9Impl::create( inContextValue );
+    GPUContextDX9Impl* context = GPUContextDX9Impl::create( inContextValue, device );
     if( !context )
       return NULL;
 
@@ -336,10 +336,10 @@ namespace brook
     return result;
   }
 
-  GPUContextDX9Impl* GPUContextDX9Impl::create( void* inContextValue )
+  GPUContextDX9Impl* GPUContextDX9Impl::create( void* inContextValue, const char* device )
   {
     GPUContextDX9Impl* result = new GPUContextDX9Impl();
-    if( result->initialize( inContextValue ) )
+    if( result->initialize( inContextValue, device ) )
       return result;
     delete result;
     return NULL;
@@ -349,7 +349,14 @@ namespace brook
   {
   }
 
-  bool GPUContextDX9Impl::initialize( void* inContextValue )
+  static BOOL CALLBACK CollectHMonitors(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+  {
+    HMONITOR *monitors=(HMONITOR *) dwData;
+    while(*monitors) monitors++;
+    *monitors=hMonitor;
+    return TRUE;
+  }
+  bool GPUContextDX9Impl::initialize( void* inContextValue, const char* device )
   {
     HRESULT result;
     if( inContextValue == NULL )
@@ -380,15 +387,46 @@ namespace brook
       deviceDesc.AutoDepthStencilFormat = D3DFMT_D24S8;
 
 //--------- Support for Multiple adapters---------------------------
-      int nadapters, which_adapter;
+      int nadapters, which_adapter = D3DADAPTER_DEFAULT;
       char *dispvar;
       nadapters = _direct3D->GetAdapterCount();
       GPULOG(0) << nadapters << " adapters found\n";
       GPULOG(0) << "You can set which adapter to use with BRT_ADAPTER\n";
       if ( dispvar = getenv("BRT_ADAPTER") ) 
           which_adapter = atoi( dispvar );
-      else 
-          which_adapter = D3DADAPTER_DEFAULT;
+      else if(device) {
+          /* Determine order of display devices */
+          char driver[64];
+          const char *colon=strchr(device, ':');
+          if(colon)
+          {
+              const char *colon2=strchr(colon+1, ':');
+              strncpy(driver, colon+1, colon2-colon-1);
+              driver[colon2-colon-1]=0;
+              HMONITOR monitors[64];
+              memset(monitors, 0, sizeof(monitors));
+              EnumDisplayMonitors(NULL, NULL, CollectHMonitors, (LPARAM) monitors);
+              which_adapter = 0;
+              bool found=false;
+              for(HMONITOR *hmon=monitors; *hmon; hmon++, which_adapter++)
+              {
+                  MONITORINFOEX mi; mi.cbSize=sizeof(MONITORINFOEX);
+                  if(GetMonitorInfo(*hmon, &mi))
+                  {
+                      if(!strcmp(driver, mi.szDevice))
+                      {
+                          found=true;
+                          break;
+                      }
+                  }
+              }
+              if(!found)
+              {
+                  DX9WARN << "Device " << driver << " not found! Using default\n";
+                  which_adapter = D3DADAPTER_DEFAULT;
+              }
+          }
+      }
       GPULOG(0) << "Using display " << which_adapter << "\n" ;
       
       result = _direct3D->CreateDevice( which_adapter, D3DDEVTYPE_HAL, windowHandle,

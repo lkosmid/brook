@@ -2,6 +2,9 @@
 #define BROOK_HPP
 
 #include <stdlib.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #if defined(__GNUC__) &&  __GNUC__==2 && __GNUC_MINOR__<=97
 #define __SGI_STL_INTERNAL_RELOPS
 // some predefined operator< bugs in stl_relops.h (included by vector) -- they should be inside a namespace, but namespaces don't work well in gcc 2.95.
@@ -42,7 +45,7 @@ template <> inline ::brook::StreamType __BRTReductionType(const float*e) {
 #if defined(BROOK_ENABLE_ADDRESS_TRANSLATION)
 namespace {
   class AtStartup {
-    static AtStartup atStartup;
+    static BRTTLS AtStartup atStartup;
     AtStartup() {
       ::brook::Runtime* runtime = ::brook::createRuntime( true );
       if (0)

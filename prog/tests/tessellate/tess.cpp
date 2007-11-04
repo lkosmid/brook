@@ -82,7 +82,7 @@ stop=GetTimeMillis();
 return 0;
 */
 {
-  char * data=(char*)malloc((SIZE+1)*(SIZE+1)*sizeof(char));
+  char * data=(char*)brmalloc((SIZE+1)*(SIZE+1)*sizeof(char));
   float toler = argc>1?tofd(atof(argv[1])):tofd(.1);
   int limit = argc>2?atoi(argv[2]):32;
   cheatdenom=argc>3?atoi(argv[3]):0;

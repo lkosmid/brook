@@ -122,7 +122,7 @@ int maino (int argc, char **argv) {
   int N=atoi(argv[1]);
   int M=atoi(argv[2]);
   int numdat=N*M;
-  float4 *data = (float4*)malloc(sizeof(float4)*numdat);
+  float4 *data = (float4*)brmalloc(sizeof(float4)*numdat);
   int i,logm,logn;
   float4 s<N,(M/2)>;
   float4 s_out<N,(M/2)>;
@@ -153,7 +153,7 @@ int maino (int argc, char **argv) {
   for (i=0;i<numdat;++i) {
     printf ("%.2f %.2f] ",data[i].x,data[i].y);
     }
-  free(data);
+  brfree(data);
   */
   return 0;
 }
@@ -234,7 +234,7 @@ int main (int argc, char ** argv) {
 	}
 
 	len=width*height;
-	data = (float2 *) malloc (sizeof(float2)*len);
+	data = (float2 *) brmalloc (sizeof(float2)*len);
         for (channelcount=0;channelcount<channels;++channelcount) {
            for (i=0;i<len;i++) {
               data[i].x = ((float)imgdata[i*channels+channelcount])/255;
@@ -249,7 +249,7 @@ int main (int argc, char ** argv) {
                  = float2char(((data[i].x)));//  /width)/height));
            }
         }
-	free(data);
+	brfree(data);
         if (USAGE)
           fprintf (stderr,"writing... %s\n",argv[2]);
 	if (!writePPM(argv[2],imgdata,width,height)) {

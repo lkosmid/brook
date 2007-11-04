@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="runtime"
 	ProjectGUID="{8C4E82B8-5F07-4AE6-A68C-16E46B436F15}"
 	RootNamespace="runtime"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -41,15 +42,16 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(DXSDK_DIR)\Include&quot;;..\include;&quot;$(CTMROOT)\include&quot;;&quot;$(AMUROOT)\include&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuisa&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucgen&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucbuf&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuabi&quot;"
-				PreprocessorDefinitions="WINDOWS;WIN32;_DEBUG;_LIB;BUILD_DX9;BUILD_OGL;BUILD_CTM;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="&quot;$(DXSDK_DIR)\Include&quot;;..\include;&quot;$(CTMROOT)\include&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuisa&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucgen&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucbuf&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuabi&quot;"
+				PreprocessorDefinitions="WINDOWS;WIN32;_DEBUG;_LIB;BUILD_DX9;BUILD_OGL;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="false"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
+				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -62,9 +64,8 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="ctmutil.lib"
 				OutputFile="$(OutDir)/brook.lib"
-				AdditionalLibraryDirectories="&quot;$(CTMROOT)\lib\2k&quot;;&quot;$(AMUROOT)\lib\2k&quot;"
+				AdditionalLibraryDirectories="&quot;$(CTMROOT)\lib\2k&quot;"
 				IgnoreDefaultLibraryNames=""
 			/>
 			<Tool
@@ -109,7 +110,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(DXSDK_DIR)\Include&quot;;..\brook\include;..\include;..\..\include;..\..\..\include;..\..\..\..\include;&quot;$(CTMROOT)\include&quot;;&quot;$(AMUROOT)\include&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuisa&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucgen&quot;;&quot;$(CTMROOT)\src\samples\libraries\amucbuf&quot;;&quot;$(CTMROOT)\src\samples\libraries\amuabi&quot;"
-				PreprocessorDefinitions="WINDOWS;WIN32;NDEBUG;_LIB;BUILD_DX9;BUILD_OGL;BUILD_CTM;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WINDOWS;WIN32;NDEBUG;_LIB;BUILD_DX9;BUILD_OGL;_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -127,7 +128,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="ctmutil.lib"
 				OutputFile="$(OutDir)/brook.lib"
 				AdditionalLibraryDirectories="&quot;$(CTMROOT)\lib\2k&quot;;&quot;$(AMUROOT)\lib\2k&quot;"
 			/>
@@ -226,19 +226,7 @@
 				Name="ogl"
 				>
 				<File
-					RelativePath=".\gpu\ogl\aticontext.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\gpu\ogl\aticontext.hpp"
-					>
-				</File>
-				<File
-					RelativePath=".\gpu\ogl\nvcontext.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\gpu\ogl\nvcontext.hpp"
+					RelativePath=".\gpu\ogl\GL\GLee.c"
 					>
 				</File>
 				<File
@@ -348,10 +336,42 @@
 				<File
 					RelativePath=".\gpu\ctm\ctmruntime.cpp"
 					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath=".\gpu\ctm\ctmstream.cpp"
 					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+						/>
+					</FileConfiguration>
 				</File>
 			</Filter>
 		</Filter>

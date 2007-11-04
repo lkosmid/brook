@@ -32,7 +32,7 @@ RenderWindow::RenderWindow()
   // We pass in the identifier of the runtime we wish to use,
   // as well as a context value that holds our existing
   // rendering device...
-  brook::initialize( "ogl", (void*) context->getGLContext() );
+  brook::initialize( "ogl", *devices(), (void*) context->getGLContext() );
   brook::unbind();
 
   /*

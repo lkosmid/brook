@@ -32,11 +32,11 @@ int main (int argc, char * argv[]) {
   float *data_nil;
   float *data_out;
   int i,j;
-  data_a=(float*)malloc(WID*LEN*sizeof(float));
-  data_b=(float*)malloc(WID*LEN*sizeof(float));
-  data_d=(float*)malloc(WID*LEN*sizeof(float));
-  data_out=(float*)malloc(10*40*sizeof(float));
-  data_nil=(float*)malloc(10*40*sizeof(float));
+  data_a=(float*)brmalloc(WID*LEN*sizeof(float));
+  data_b=(float*)brmalloc(WID*LEN*sizeof(float));
+  data_d=(float*)brmalloc(WID*LEN*sizeof(float));
+  data_out=(float*)brmalloc(10*40*sizeof(float));
+  data_nil=(float*)brmalloc(10*40*sizeof(float));
   memset(data_nil,0,10*40*sizeof(float));
   for (i=0; i<WID; i++)
     for (j=0; j<LEN; j++) {

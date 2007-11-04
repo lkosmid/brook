@@ -134,7 +134,7 @@ namespace brook
   };
 
   struct GPUInterpolant {
-    float4 vertices[3];
+    float4ua vertices[3];
   };
 
   struct GPURegion {

@@ -24,6 +24,20 @@ extern "C" {
 #include "subprocess.h"
 #include "cgc.h"
 
+static void replaceAll(char *string, const char *find, const char *replace)
+{
+	size_t len=strlen(string), flen=strlen(find), rlen=strlen(replace);
+	char *s;
+	while((s=strstr(string, find)))
+	{
+		memmove(s+rlen, s+flen, len-(s-string));
+		memcpy(s, replace, rlen);
+		len+=rlen-flen;
+		len-=s-string;
+		string=s+rlen;
+	}
+}
+
 /*
  * compile_cgc --
  *
@@ -40,25 +54,28 @@ compile_cgc (const char * /*name*/,
              bool /*inValidate*/) {
 
 
-  char *argv[16] = { "cgc", "-quiet", "-DCGC=1", "-profile", NULL,
+  const char *argv[16] = { "cgc", "-quiet", "-DCGC=1", "-profile", NULL,
                      NULL, NULL, NULL, NULL};
   char *fpcode, *endline, *startline;
   char* tempCode = strdup(shader);
-  char arbfp[]="arbfp1";
-  char fp30[]="fp30";
-  char fp40[]="fp40";
-  char ps20[]="ps_2_0";
-  char ps2b[]="ps_2_x";
-  char ps2a[]="ps_2_x";
-  char profileopts[] = "-profileopts";
-  char ps2b_opt[] = "NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NoDependentReadLimit=0,NumInstructionSlots=512";
-  char ps2a_opt[] = "NumTemps=22,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
+  const char arbfp[]="arbfp1";
+  const char fp30[]="fp30";
+  const char fp40[]="fp40";
+  const char ps20[]="ps_2_0";
+  const char ps2b[]="ps_2_x";
+  const char ps2a[]="ps_2_x";
+  const char glsl[]="glslf";
+  const char profileopts[] = "-profileopts";
+  const char ps2b_opt[] = "NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NoDependentReadLimit=0,NumInstructionSlots=512";
+  const char ps2a_opt[] = "NumTemps=22,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
 
-  char arbfp_opt[]  = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=96";
-  char arbfp_x800[] = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=512";
-  char arbfp_6800[] = "NumInstructionSlots=2048";
-  char userect[] ="-DUSERECT=1";
-  char dxpixelshader[] = "-DDXPIXELSHADER";
+  const char arbfp_opt[]  = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=96";
+  const char arbfp_x800[] = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=512";
+  const char arbfp_6800[] = "NumInstructionSlots=2048";
+
+  //char glsl_opt[] = "";
+  const char userect[] ="-DUSERECT=1";
+  const char dxpixelshader[] = "-DDXPIXELSHADER";
 
   switch (target) {
   case CODEGEN_PS20:
@@ -102,13 +119,18 @@ compile_cgc (const char * /*name*/,
       break;
     }
     break;
+  case CODEGEN_GLSL:
+    argv[4] = glsl;
+    argv[5] = userect;
+    //argv[6] = glsl_opt;
+    break;
   default: 
      fprintf(stderr, "Unsupported Cgc target.\n");
      return NULL;
   }
 
   /* Run CGC */
-  fpcode = Subprocess_Run(argv, tempCode);
+  fpcode = Subprocess_Run(argv, tempCode, true);
 
   free( tempCode );
 
@@ -129,6 +151,9 @@ compile_cgc (const char * /*name*/,
     case CODEGEN_ARB:
        fprintf(stderr, "ARB target.");
        break;
+    case CODEGEN_GLSL:
+       fprintf(stderr, "GLSL target.");
+       break;
     case CODEGEN_PS30:
        fprintf(stderr, "PS30 target.");
        break;
@@ -144,7 +169,7 @@ compile_cgc (const char * /*name*/,
     fprintf(stderr, "\n");
 
 
-     return NULL;
+    return NULL;
   }
 
   if (target == CODEGEN_PS20 ||
@@ -157,6 +182,7 @@ compile_cgc (const char * /*name*/,
   // figure out where the fragment code really starts...
 
   startline = strstr (fpcode, "!!");
+  if (!startline) startline = strstr(fpcode, "// transl output by Cg compiler");
   if (startline) {
      char *p, *q;
      // Find where the fragment code really ends
@@ -168,6 +194,7 @@ compile_cgc (const char * /*name*/,
      *q = *p;
      
      endline = strstr (fpcode, "\nEND\n");
+     if (!endline) endline = strstr(fpcode, " // main end\n");
   }
   
   if (!startline || !endline ) {
@@ -195,6 +222,25 @@ compile_cgc (const char * /*name*/,
   
   // Trim off the warning messages
   memcpy (fpcode, startline, endline - startline);
+
+  // ned: Hack to fix up broken GLSL output from cgc
+  char *fpcodenew = (char *) malloc(strlen(fpcode)+16384);
+  if(CODEGEN_GLSL==target) {
+    // Prepend required headers
+    const char header[]="# version 110\n# extension GL_ARB_texture_rectangle : enable\n";
+    memcpy(fpcodenew, header, sizeof(header));
+    strcpy(fpcodenew+sizeof(header)-1, fpcode);
+    // cgc isn't aware of the GL_ARB_texture_rectangle so munge
+    replaceAll(fpcodenew, "samplerRect", "sampler2DRect");
+    // GLSL may not legally contain __, so why does cgc output that?
+    replaceAll(fpcodenew, "___", "_CGCdashdash_");
+    replaceAll(fpcodenew, "__", "_CGCdash_");
+  }
+  else strcpy(fpcodenew, fpcode);
+  // Wasn't escaping backslashes on Windows either
+  replaceAll(fpcodenew, "\\", "\\\\");
+  free(fpcode);
+  fpcode=fpcodenew;
   return fpcode;
 }
 

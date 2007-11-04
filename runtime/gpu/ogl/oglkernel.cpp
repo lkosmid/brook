@@ -4,7 +4,6 @@
 #include "oglcheckgl.hpp"
 #include "ogltexture.hpp"
 #include "oglwindow.hpp"
-#include "nvcontext.hpp"
 using namespace brook;
 
 static const char passthrough_vertex[] = 
@@ -17,15 +16,22 @@ static const char passthrough_pixel[] =
 "TEX oColor, tex0, texture[0], RECT;\n"
 "END\n";
 
-OGLPixelShader::OGLPixelShader(unsigned int _id, const char * program_string):
-  id(_id), largest_constant(0) {
+OGLPixelShader::OGLPixelShader(unsigned int _id, const char * _program_string):
+  id(_id), program_string(_program_string), largest_constant(0) {
   unsigned int i;
   
   for (i=0; i<(unsigned int) MAXCONSTANTS; i++) {
     constants[i] = float4(0.0f, 0.0f, 0.0f, 0.0f);
   }
-  
-  if (NVContext::isVendorContext()) {//only they rely on named constants
+}
+
+OGLARBPixelShader::OGLARBPixelShader(unsigned int _id, const char * _program_string):
+  OGLPixelShader(_id, _program_string) {
+
+  const char *vendor = (const char *) glGetString(GL_VENDOR);
+  assert (vendor);
+  if (strstr(vendor, "NVIDIA") != NULL) {//only they rely on named constants
+    const char *program_string=_program_string;
     if (strstr(program_string,"#profile fp30")) {
       while (*program_string&&(program_string=strstr(program_string,"#semantic main."))!=NULL) {
         const char *name;
@@ -54,7 +60,179 @@ OGLPixelShader::OGLPixelShader(unsigned int _id, const char * program_string):
   }
   
 }
-  
+
+OGLARBPixelShader::~OGLARBPixelShader() {
+  glDeleteProgramsARB(1, &id);
+}
+
+void 
+OGLARBPixelShader::bindConstant( unsigned int inIndex, const float4& inValue ) {
+  bindPixelShader();
+  glProgramLocalParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, inIndex,
+                                (const float *) &inValue);
+  CHECK_GL();
+  std::string::size_type len=constant_names[inIndex].length();
+  if (len){
+    glProgramNamedParameter4fvNV(id,
+                                 len,
+                                 (const GLubyte *)constant_names[inIndex].c_str(),
+                                 &inValue.x);
+    GLenum err=glGetError();
+    //errors come if a constant is passed into a kernel but optimized out of that kernel.
+    // they are "safe" to ignore
+    assert (err==GL_NO_ERROR||err==GL_INVALID_VALUE);
+  }
+  GPUAssert(inIndex < (unsigned int) OGLPixelShader::MAXCONSTANTS, 
+            "Too many constants used in kernel");
+
+  if (inIndex >= largest_constant)
+    largest_constant = inIndex+1;
+
+  constants[inIndex] = inValue;
+}
+
+void 
+OGLARBPixelShader::bindPixelShader() {
+  glUseProgram(0);
+  glEnable(GL_FRAGMENT_PROGRAM_ARB);
+  glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, id);
+  CHECK_GL();
+}
+
+OGLSLPixelShader::OGLSLPixelShader(unsigned int _id, const char *program_string):
+  OGLPixelShader(_id, program_string), programid(0) {
+  GLint status = 0;
+  programid = glCreateProgram();
+  glAttachShader(programid, id);
+  glLinkProgram(programid);
+
+  glGetProgramiv(programid, GL_LINK_STATUS, &status);
+  if(GL_TRUE!=status) {
+    char *errlog;
+    glGetProgramiv(programid, GL_INFO_LOG_LENGTH, &status);
+    errlog=(char *) brmalloc(status);
+    glGetProgramInfoLog(programid, status, NULL, errlog);
+    fprintf ( stderr, "GL: Program Error. Linker output:\n%s\n", errlog);
+    fflush(stderr);
+    brfree(errlog);
+    assert(0);
+    exit(1);
+  }
+
+  // Fetch the constant names
+  unsigned int highest=0;
+  while (*program_string&&(program_string=strstr(program_string,"//var "))!=NULL) {
+    const char *name;
+    unsigned int len=0;
+    program_string += strlen("//var ");         
+    /* Looks like this:
+				"//var float n : C0 :  : 0 : 0\n"
+				"//var float a : C1 : pend_s3_a : 1 : 1\n"
+				"//var float4 _CGCdash_output_0 : $vout.COLOR0 : COLOR0 : 4 : 1\n"
+       Format seems to be:
+                "//var <type> <cgc name> : [C<constant index>|$vout.COLOR<x>] : <GLSL name> : ? : ?\n"
+    */
+    do program_string++; while (*program_string !=':');
+    do program_string++; while (*program_string ==' ');
+    if (*program_string!='C' && strncmp(program_string, "$vout.COLOR", 11)) continue;
+    bool isOutput=*program_string!='C';
+    program_string+=isOutput ? 11 : 1;
+    char * ptr=NULL;
+    unsigned int constreg = strtol (program_string,&ptr,10);
+    do program_string++; while (*program_string !=':');
+    do program_string++; while (*program_string ==' ');
+	if (*program_string==':') continue;     // No GLSL name
+    name = program_string;
+    do{program_string++; len++;}while (*program_string!='\0'&&*program_string != ' ');
+    std::string const_name(name,len);
+    if(isOutput)
+        constreg+=highest+1+constreg;
+    else if(constreg>highest)
+        highest=constreg;
+    if (constreg > (unsigned int)MAXCONSTANTS) {
+      fprintf (stderr, "GL: Too many constant registers\n");
+      exit(1);
+    }       
+    program_string=ptr;
+    constant_names[constreg] = const_name;
+  }
+  // Work out the types for the ones we actually use
+  int samplerreg=0;
+  program_string=this->program_string;
+  while (*program_string&&(program_string=strstr(program_string, "uniform "))!=NULL) {
+    const char *name;
+    unsigned int len=0;
+    program_string += strlen("uniform ");         
+    name = program_string; len=0;
+    do{program_string++; len++;}while (*program_string!='\0'&&*program_string != ' ');
+    std::string const_type(name,len);
+
+    do program_string++; while (*program_string ==' ');
+    /* set name to the ident */
+    name = program_string; len=0;
+    do{program_string++; len++;}while (*program_string!='\0'&&*program_string != ';');
+    std::string const_name(name,len);
+    if(!strncmp(const_type.c_str(), "sampler", 7))
+      sampler_names[samplerreg++] = const_name;
+    else {
+      for(unsigned int constreg=0; constreg<MAXCONSTANTS; constreg++) {
+        if(!constant_names[constreg].compare(const_name)) {
+          constant_types[constreg] = const_type;
+          break;
+        }
+      }
+    }
+  }
+  CHECK_GL();
+}
+
+OGLSLPixelShader::~OGLSLPixelShader() {
+  glDeleteProgram(programid);
+  glDeleteShader(id);
+}  
+
+void 
+OGLSLPixelShader::bindConstant( unsigned int inIndex, const float4& inValue ) {
+  bindPixelShader();
+  GLint cid = glGetUniformLocation(programid, constant_names[inIndex].c_str());
+  if(-1!=cid) {
+    if(!strcmp(constant_types[inIndex].c_str(), "float"))
+      glUniform1fv(cid, 1, (const GLfloat *) &inValue);
+    else if(!strcmp(constant_types[inIndex].c_str(), "vec2"))
+      glUniform2fv(cid, 1, (const GLfloat *) &inValue);
+    else if(!strcmp(constant_types[inIndex].c_str(), "vec3"))
+      glUniform3fv(cid, 1, (const GLfloat *) &inValue);
+    else if(!strcmp(constant_types[inIndex].c_str(), "vec4"))
+      glUniform4fv(cid, 1, (const GLfloat *) &inValue);
+	//else { assert(0); }
+  }
+  CHECK_GL();
+
+  if (inIndex >= largest_constant)
+    largest_constant = inIndex+1;
+
+  constants[inIndex] = inValue;
+}
+
+void 
+OGLSLPixelShader::bindPixelShader() {
+  glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, 0);
+  glDisable(GL_FRAGMENT_PROGRAM_ARB);
+  glUseProgram(programid);
+  // For compatibility with ARB, we simply set these incrementally
+  int v=0;
+  for(int i=0; !sampler_names[i].empty(); ++i) {
+    std::string samplername(sampler_names[i]);
+    char *br=strchr((char *) samplername.c_str(), '[');
+    int items=!br ? 1 : (*br=0, strtoul(br+1, NULL, 10));
+    std::vector<int> values(items);
+    for(std::vector<int>::iterator it=values.begin(); it!=values.end(); ++it)
+      *it=v++;
+    glUniform1iv(glGetUniformLocation(programid, samplername.c_str()), items, &values.front());
+  }
+  CHECK_GL();
+}
+
 
 
 GPUContext::VertexShaderHandle 
@@ -93,7 +271,7 @@ OGLContext::getPassthroughPixelShader( const char* inShaderFormat ) {
                           strlen(passthrough_pixel), 
                           (GLubyte *) passthrough_pixel);
     //fprintf (stderr, "Mallocing PixelShader\n");
-    _passthroughPixelShader = new OGLPixelShader(id,passthrough_pixel);
+    _passthroughPixelShader = new OGLARBPixelShader(id,passthrough_pixel);
     //fprintf (stderr, "Checking GL\n");
     CHECK_GL();
   }
@@ -106,52 +284,75 @@ GPUContext::PixelShaderHandle
 OGLContext::createPixelShader( const char* shader ) 
 {
   unsigned int id;
+  if(strncmp(shader, "!!ARBfp", 7)) {
+    // This is a GLSL shader
+    GLint status = 0, shaderlen = strlen(shader);
 
-  // Allocate ids
-  glGenProgramsARB(1, &id);
-  glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, id);
-
-  // Try loading the program
-  glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, 
-                     GL_PROGRAM_FORMAT_ASCII_ARB,
-                     strlen(shader), (GLubyte *) shader);
-  
-  /* Check for program errors */
-  if (glGetError() == GL_INVALID_OPERATION) {
-    GLint pos;
-    int i;
-    int line, linestart;
-    char *progcopy;
-
-    progcopy = strdup (shader);
-    glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &pos);
-    
-    line = 1;
-    linestart = 0;
-    for (i=0; i<pos; i++) {
-      if (progcopy[i] == '\n') {
-        line++;
-        linestart = i+1;
-      }
+    id = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(id, 1, &shader, &shaderlen);
+    glCompileShader(id);
+    glGetShaderiv(id, GL_COMPILE_STATUS, &status);
+    if(GL_TRUE!=status) {
+      char *errlog;
+      glGetShaderiv(id, GL_INFO_LOG_LENGTH, &status);
+      errlog=(char *) brmalloc(status);
+      glGetShaderInfoLog(id, status, NULL, errlog);
+      fprintf ( stderr, "GL: Program Error. Compiler output:\n%s\n", errlog);
+      fflush(stderr);
+      brfree(errlog);
+      assert(0);
+      exit(1);
     }
-    fprintf ( stderr, "GL: Program Error on line %d\n", line);
-    for (i=linestart; progcopy[i] != '\0' && progcopy[i] != '\n'; i++);
-    progcopy[i] = '\0';
-    fprintf ( stderr, "%s\n", progcopy+linestart);
-    for (i=linestart; i<pos; i++)
-      fprintf ( stderr, " ");
-    for (;progcopy[i] != '\0' && progcopy[i] != '\n'; i++)
-      fprintf ( stderr, "^");
-    fprintf ( stderr, "\n");
-    free(progcopy);
-    fprintf ( stderr, "%s\n",
-              glGetString(GL_PROGRAM_ERROR_STRING_ARB));
-    fflush(stderr);
-    assert(0);
-    exit(1);
+    return (GPUContext::PixelShaderHandle) new OGLSLPixelShader(id,shader);
   }
+  else {
+    // This is an ARBfp shader
 
-  return (GPUContext::PixelShaderHandle) new OGLPixelShader(id,shader);
+    // Allocate ids
+    glGenProgramsARB(1, &id);
+    glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, id);
+
+    // Try loading the program
+    glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, 
+                       GL_PROGRAM_FORMAT_ASCII_ARB,
+                       strlen(shader), (GLubyte *) shader);
+
+    /* Check for program errors */
+    if (glGetError() == GL_INVALID_OPERATION) {
+      GLint pos;
+      int i;
+      int line, linestart;
+      char *progcopy;
+
+      progcopy = strdup (shader);
+      glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB, &pos);
+    
+      line = 1;
+      linestart = 0;
+      for (i=0; i<pos; i++) {
+        if (progcopy[i] == '\n') {
+          line++;
+          linestart = i+1;
+        }
+      }
+      fprintf ( stderr, "GL: Program Error on line %d\n", line);
+      for (i=linestart; progcopy[i] != '\0' && progcopy[i] != '\n'; i++);
+      progcopy[i] = '\0';
+      fprintf ( stderr, "%s\n", progcopy+linestart);
+      for (i=linestart; i<pos; i++)
+        fprintf ( stderr, " ");
+      for (;progcopy[i] != '\0' && progcopy[i] != '\n'; i++)
+        fprintf ( stderr, "^");
+      fprintf ( stderr, "\n");
+      brfree(progcopy);
+      fprintf ( stderr, "%s\n",
+                glGetString(GL_PROGRAM_ERROR_STRING_ARB));
+      fflush(stderr);
+      assert(0);
+      exit(1);
+	}
+    return (GPUContext::PixelShaderHandle) new OGLARBPixelShader(id,shader);
+  }
 }
 
 void 
@@ -162,29 +363,7 @@ OGLContext::bindConstant( PixelShaderHandle ps,
   OGLPixelShader *oglps = (OGLPixelShader *) ps;
 
   GPUAssert(oglps, "Missing shader");
-
-  bindPixelShader(ps);
-  glProgramLocalParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, inIndex,
-                                (const float *) &inValue);
-  CHECK_GL();
-  std::string::size_type len=oglps->constant_names[inIndex].length();
-  if (len){
-    glProgramNamedParameter4fvNV(oglps->id,
-                                 len,
-                                 (const GLubyte *)oglps->constant_names[inIndex].c_str(),
-                                 &inValue.x);
-    GLenum err=glGetError();
-    //errors come if a constant is passed into a kernel but optimized out of that kernel.
-    // they are "safe" to ignore
-    assert (err==GL_NO_ERROR||err==GL_INVALID_VALUE);
-  }
-  GPUAssert(inIndex < (unsigned int) OGLPixelShader::MAXCONSTANTS, 
-            "Too many constants used in kernel");
-
-  if (inIndex >= oglps->largest_constant)
-    oglps->largest_constant = inIndex+1;
-
-  oglps->constants[inIndex] = inValue;
+  oglps->bindConstant(inIndex, inValue);
 }
 
 
@@ -197,8 +376,8 @@ OGLContext::bindTexture( unsigned int inIndex,
   GPUAssert(inIndex < _slopTextureUnit, 
             "Too many bound textures");
 
-  glActiveTextureARB(GL_TEXTURE0_ARB+inIndex);
-  glBindTexture(GL_TEXTURE_RECTANGLE_NV, oglTexture->id());
+  glActiveTexture(GL_TEXTURE0+inIndex);
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, oglTexture->id());
 
   _boundTextures[inIndex] = oglTexture;
 
@@ -213,8 +392,7 @@ void OGLContext::bindOutput( unsigned int inIndex,
   GPUAssert(oglTexture, "Null Texture");
 
   GPUAssert(inIndex <= _maxOutputCount , 
-            "Backend does not support more than"
-            " four shader output.");
+            "Backend does not support so many shader outputs.");
 
   _outputTextures[inIndex] = oglTexture;
 }
@@ -225,9 +403,7 @@ OGLContext::bindPixelShader( GPUContext::PixelShaderHandle inPixelShader ) {
   OGLPixelShader *ps = (OGLPixelShader *) inPixelShader;
   GPUAssert(ps, "Null pixel shader");
 
-  glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, ps->id);
-  CHECK_GL();
-  
+  ps->bindPixelShader();
   _boundPixelShader = ps;
 }
 
@@ -241,10 +417,6 @@ OGLContext::bindVertexShader( GPUContext::VertexShaderHandle inVertexShader ) {
 }
 
 void OGLContext::disableOutput( unsigned int inIndex ) {
- GPUAssert(inIndex <= 4,
-           "Backend does not support more than"
-           " four shader outputs.");
-
  _outputTextures[inIndex] = NULL;
 }
 
@@ -512,8 +684,11 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
                            unsigned int numInterpolants ) {
   unsigned int w, h, i, v;
   unsigned int numOutputs, maxComponent;
-  static const GLenum outputEnums[] = {GL_FRONT_LEFT, GL_AUX0,
-                                       GL_AUX1, GL_AUX2};
+  OGLTexture *outputTextures[32];
+  static GLenum outputEnums[32]={0};
+  if(outputEnums[0]!=GL_COLOR_ATTACHMENT0_EXT)
+    for(i=0; i<32; i++)
+      outputEnums[i]=GL_COLOR_ATTACHMENT0_EXT+i;
 
   /* Here we assume that all of the outputs are of the same size */
   w = _outputTextures[0]->width();
@@ -521,44 +696,87 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
 
   numOutputs = 0;
   maxComponent = 0;
-  for (i=0; i<4; i++) {
+  for (i=0; i<_maxOutputCount; i++) {
     if (_outputTextures[i]) {
+      outputTextures[i]=_outputTextures[i];
       numOutputs = i+1;
-      if (_outputTextures[i]->components() > maxComponent)
-        maxComponent = _outputTextures[i]->components();
+      if (outputTextures[i]->components() > maxComponent)
+        maxComponent = outputTextures[i]->components();
     }
   }
-
+  for (i=0; i<32; i++) 
+    if (_boundTextures[i]) {
+      for(v=0; v<numOutputs; v++) {
+        if(_boundTextures[i]==outputTextures[v]) {
+          // We need a temporary copy for the output
+          if(_outputTexturesCache[0]) {
+            if(_outputTexturesCache[0]->width()!=outputTextures[v]->width()
+                || _outputTexturesCache[0]->height()!=outputTextures[v]->height()
+                || _outputTexturesCache[0]->format()!=outputTextures[v]->format()) {
+              for(unsigned int n=0; n<_maxOutputCount && _outputTexturesCache[n]; n++) {
+                delete _outputTexturesCache[n];
+                _outputTexturesCache[n] = NULL;
+              }
+            }
+          }
+          if(_outputTexturesCache[0]) {
+            outputTextures[v]=_outputTexturesCache[0];
+            memmove(_outputTexturesCache, _outputTexturesCache+1, (_maxOutputCount-1)*sizeof(OGLTexture *));
+            _outputTexturesCache[_maxOutputCount-1]=0;
+          }
+          else
+            outputTextures[v]=new OGLTexture(this, outputTextures[v]->width(), outputTextures[v]->height(), outputTextures[v]->format());
+        }
+      }
+    }
   CHECK_GL();
 
-  if (_wnd->bindPbuffer(w, h, numOutputs, maxComponent)) {
+  _wnd->bindFBO();
+  {
 
-    // Rebind the shader
+    // Bind the shader
     GPUAssert(_boundPixelShader, "Missing pixel shader");
     bindPixelShader((PixelShaderHandle) _boundPixelShader);
     
-    // Rebind the textures
+    // Bind the textures
     for (i=0; i<32; i++) 
       if (_boundTextures[i]) {
-        glActiveTextureARB(GL_TEXTURE0_ARB+i);
-        glBindTexture(GL_TEXTURE_RECTANGLE_NV, _boundTextures[i]->id());
-      }
+#ifdef OGL_PRINTOPS
+        printf("Setting texture %u as input %d\n", _boundTextures[i]->id(), i);
+#endif
+        glActiveTexture(GL_TEXTURE0+i);
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _boundTextures[i]->id());
+    }
+    CHECK_GL();
 
-    // Rebind the constants
+    // Bind the outputs
+    for(i=0; i<numOutputs; i++) {
+#ifdef OGL_PRINTOPS
+        printf("Setting texture %u as output %d\n", outputTextures[i]->id(), i);
+#endif
+        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, 
+                 outputEnums[i], 
+                 GL_TEXTURE_RECTANGLE_ARB, outputTextures[i]->id(), 0);
+    }
+    CHECK_GL();
+
+    // Bind the constants
     for (i=0; i<_boundPixelShader->largest_constant; i++) {
       bindConstant((PixelShaderHandle) _boundPixelShader,
                    i, _boundPixelShader->constants[i]);
     }
-        
+
   }
   
   CHECK_GL();
-
+#if 0
   // TIM: hacky magic magic
   if( _isUsingAddressTranslation && _isUsingOutputDomain )
   {
+	  GPUAssert(0, "Combination of address translation and using output domain not supported");
+#if 0
     // if we are writing to a domain of an address-translated
-    // stream, then copy the output textures to the pbuffer
+    // stream, then copy the output textures to the FBO
     // so that we can overwrite the proper domain
 
     // NOTE: this will fail if we try to optimize domain
@@ -567,9 +785,13 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
     // the whole texture is correct
     for( i = 0; i < numOutputs; i++ )
     {
-      OGLTexture* output = _outputTextures[i];
+      OGLTexture* output = outputTextures[i];
       glDrawBuffer(outputEnums[i]);
-      copy_to_pbuffer(output);
+      //copy_to_FBO(output);
+	  assert(0);
+#if !defined(_DEBUG) && !defined(DEBUG)
+#warning Fixme!
+#endif
     }
 
     // We need to rebind stuff since we messed up the state
@@ -582,8 +804,8 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
     // Rebind the textures
     for (i=0; i<32; i++) 
     if (_boundTextures[i]) {
-    glActiveTextureARB(GL_TEXTURE0_ARB+i);
-    glBindTexture(GL_TEXTURE_RECTANGLE_NV, _boundTextures[i]->id());
+    glActiveTexture(GL_TEXTURE0+i);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _boundTextures[i]->id());
     }
 
     // Rebind the constants
@@ -591,14 +813,11 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
     bindConstant((PixelShaderHandle) _boundPixelShader,
     i, _boundPixelShader->constants[i]);
     }
+#endif
   }
+#endif
 
-  if (_maxOutputCount > 1)
-    glDrawBuffersATI (numOutputs, outputEnums); 
-   
-
-  if (_maxOutputCount > 1)
-    glDrawBuffersATI (numOutputs, outputEnums); 
+  glDrawBuffers (numOutputs, outputEnums); 
 
   CHECK_GL();
   
@@ -629,7 +848,7 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
 
         for (i=0; i<numInterpolants; i++) 
         {
-            glMultiTexCoord4fvARB(GL_TEXTURE0_ARB+i,
+            glMultiTexCoord4fv(GL_TEXTURE0+i,
                                 (GLfloat *) &(interpolants[i].vertices[v]));
 
             GPULOG(1) << "tex" << i << " : " << interpolants[i].vertices[v].x
@@ -642,20 +861,31 @@ OGLContext::drawRectangle( const GPURegion& outputRegion,
   glEnd();
   CHECK_GL();
 
-  /* Copy the output to the texture */
+#if defined(_DEBUG) && 0
+  for (i=0; i<32; i++) 
+    if (_boundTextures[i]) {
+      printf("Unsetting texture %u from input %d\n", _boundTextures[i]->id(), i);
+      glActiveTexture(GL_TEXTURE0+i);
+      glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+    }
+#endif
   for (i=0; i<numOutputs; i++) {
-    glActiveTextureARB(GL_TEXTURE0+_slopTextureUnit);
-    glBindTexture(GL_TEXTURE_RECTANGLE_NV, _outputTextures[i]->id());
-    glReadBuffer(outputEnums[i]);
-    glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 
-                        minX, minY, 
-                        minX, minY, 
-                        width, height);
-    CHECK_GL();
-  }
-  glReadBuffer(outputEnums[0]);
-  glDrawBuffer(outputEnums[0]);
-
-  for (i=0; i<4; i++)
+#if defined(_DEBUG) && 0
+    if(outputTextures[i]) {
+      printf("Unsetting texture %u from output %d\n", outputTextures[i]->id(), i);
+      glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, outputEnums[i], 
+                 GL_TEXTURE_RECTANGLE_ARB, 0, 0);
+    }
+#endif
+    if(_outputTextures[i] && outputTextures[i]!=_outputTextures[i]) {
+#ifdef OGL_PRINTOPS
+      printf("Swapping textures %u and %u\n", _outputTextures[i]->id(), outputTextures[i]->id());
+#endif
+      _outputTextures[i]->swap(*outputTextures[i]);
+      for(unsigned int n=0; n<_maxOutputCount; n++)
+          if(!_outputTexturesCache[n]) { _outputTexturesCache[n]=outputTextures[i]; outputTextures[i]=NULL; break; }
+      delete outputTextures[i];
+    }
     _outputTextures[i] = NULL;
+  }
 }

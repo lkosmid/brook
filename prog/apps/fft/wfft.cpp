@@ -53,7 +53,7 @@ brook::stream &getWreverse(int k, int logN, bool vertical) {
    std::map<int,float2 *>::iterator rawW = rawWstream.find(N);
    float2 * rW=0;
    if (rawW==rawWstream.end()) {
-      rW = new float2 [N/2];
+      rW = (float2 *) brmalloc(N/2*sizeof(float2));
       for (int i=0;i<N/2;++i) {
          float theta = (float)(2*3.1415926536*i/N);
          rW[i].x=cos(theta);
@@ -71,12 +71,12 @@ brook::stream &getWreverse(int k, int logN, bool vertical) {
       }
       if (k!=0) {
          //else we stay the same
-         float2 *stridedW = new float2 [N/2];
+         float2 *stridedW = (float2 *) brmalloc(N/2*sizeof(float2));
          for (int i=0;i<N/2;++i) {
             stridedW[i]=rW[i-(i%(1<<k))];
          }
          streamRead(*ret,stridedW);
-         delete []stridedW;
+         brfree(stridedW);
       }else {
          streamRead(*ret,rW);
       }
@@ -89,12 +89,12 @@ brook::stream &getWreverse(int k, int logN, bool vertical) {
       }
       if (k!=0) {
          //else we stay the same
-         float2 *stridedW = new float2 [thissize];
+         float2 *stridedW = (float2 *) brmalloc(thissize*sizeof(float2));
          for (int i=0;i<thissize;++i) {
             stridedW[i]=rW[i*(1<<k)];
          }
          streamRead(*ret,stridedW);
-         delete []stridedW;
+         brfree(stridedW);
       }else {
          streamRead(*ret,rW);
       }
@@ -116,7 +116,7 @@ brook::stream &getWforward(int k, int logN, bool vertical) {
   }else {
     ret = new brook::stream (flawt2,N/2,1,-1);
   }
-  float2 *W = new float2 [N/2];
+  float2 *W = (float2 *) brmalloc(N/2*sizeof(float2));
   for (int i=0;i<N/2;++i) {
       int aindex=i*2;
       int bindex=BitReverse(aindex,logN);
@@ -126,7 +126,7 @@ brook::stream &getWforward(int k, int logN, bool vertical) {
       W[i].y=sin(ang);
   }
   streamRead(*ret,W);
-  delete []W;
+  brfree(W);
   Ws[DualInt(k,vertical?myabs(N):-myabs(N))]=ret;   
   return *ret;
 }
@@ -137,11 +137,11 @@ void freeWs () {
    for (std::map<DualInt,brook::stream *>::iterator i=Ws.begin();
         i!=Ws.end();
         ++i) {
-      delete (*i).second;      
+      brfree((*i).second);      
    }
    for (std::map<DualInt,brook::stream *>::iterator i=WWs.begin();
         i!=WWs.end();
         ++i) {
-      delete (*i).second;      
+      brfree((*i).second);      
    }
 }

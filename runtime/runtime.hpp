@@ -43,9 +43,6 @@ namespace brook {
                                  bool addressTranslation = false );
 
   private:
-    friend void brook::finalize();
-
-    static Runtime*& GetInstanceRef();
     static Runtime* CreateInstance( const char* inRuntimeName, 
                                     void* inContextValue, 
                                     bool addressTranslation );

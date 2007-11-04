@@ -77,7 +77,7 @@ RenderWindow::RenderWindow()
   // We pass in the identifier of the runtime we wish to use,
   // as well as a context value that holds our existing
   // rendering device...
-  brook::initialize( "dx9", (void*)device );
+  brook::initialize( "dx9", *devices(), (void*)device );
 
   // Create streams
   fluidStream0 = stream::create<float4>( kFluidSize, kFluidSize );

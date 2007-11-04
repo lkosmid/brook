@@ -14,6 +14,7 @@ extern "C" {
 #ifdef _WIN32
 #include <process.h>
 #include <io.h>
+#include <sys/stat.h>
 #else
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -40,15 +41,37 @@ extern "C" {
  */
 
 char *
-Subprocess_Run(char *argv[], char *input)
+Subprocess_Run(const char *argv2[], const char *input, bool useFiles)
 {
-   bool debug =globals.verbose;
+  bool debug =globals.verbose;
   int hStdOutPipe[2], hStdInPipe[2];
   int hStdOut, hStdIn;
   int pid, ret;
 
-  char *output;
+  char *output, *tempinput=0;
+  const char **argv=argv2;
   int output_alloc, output_pos;
+  
+  if(useFiles) {
+     int h;
+     while(!tempinput) {
+        tempinput=tempnam(NULL, "brook_");
+        h=open(tempinput, O_CREAT|O_EXCL|O_RDWR, S_IREAD|S_IWRITE);
+        if(h<=0) {
+           free(tempinput);
+           tempinput=0;
+        }
+     }
+     write(h, input, strlen(input));
+     close(h);
+     int argc=0;
+     for(const char **argvp=argv2; *argvp; argvp++, argc++);
+     argv=(const char **) calloc(argc+2, sizeof(char *));
+     memcpy(argv, argv2, argc*sizeof(char *));
+     argv[argc]=tempinput;
+     //fprintf(stderr, "argc=%d, tmp:'%s'\n", argc, tempinput);
+     //for(char **argvp=argv; *argvp; argvp++) fprintf(stderr, "'%s'\n", *argvp);
+  }
 
   // Create the pipe
 #ifdef _WIN32
@@ -120,7 +143,7 @@ Subprocess_Run(char *argv[], char *input)
   if ((pid = fork()) == 0) {
        close (hStdInPipe[WRITE_HANDLE]);
 
-       if (execvp(argv[0], argv) == -1) {
+       if (execvp(argv[0], (char **) argv) == -1) {
             if (debug) fprintf( stderr, "Unable to start %s\n",argv[0] );
 	    exit(-1);
        }
@@ -161,42 +184,44 @@ Subprocess_Run(char *argv[], char *input)
        fprintf(stderr, "Write close error\n");
   }
 
-  /* Feed the cg code to the compiler */
-  if (debug) fprintf(stderr, "Sending the input to %s\n", argv[0]);
+  if(!useFiles) {
+    /* Feed the cg code to the compiler */
+    if (debug) fprintf(stderr, "Sending the input to %s\n", argv[0]);
 
-  if (input) {
+    if (input) {
 #if _WIN32
-     _write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
+       _write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
 #else
-     {
-        char eof_holder = EOF;
-        int retval;
-        void (*oldPipe)(int);
+       {
+          char eof_holder = EOF;
+          int retval;
+          void (*oldPipe)(int);
 
-        oldPipe = signal(SIGPIPE, SIG_IGN);
-        //fprintf(stderr, "Writing\n[35;1m%s[0m\n", input);
+          oldPipe = signal(SIGPIPE, SIG_IGN);
+          //fprintf(stderr, "Writing\n[35;1m%s[0m\n", input);
 
-        retval = write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
-        if (retval == -1 && errno == EPIPE) {
-           if (debug) {
-              fprintf(stderr, "Pipe vanished writing input to %s!\n", argv[0]);
-           }
-           oldPipe = signal(SIGPIPE, oldPipe);
-           return NULL;
-        } else if (retval != (int) strlen(input)) {
-           perror("Write problem");
-        }
+          retval = write (hStdInPipe[WRITE_HANDLE], input, strlen(input));
+          if (retval == -1 && errno == EPIPE) {
+             if (debug) {
+                fprintf(stderr, "Pipe vanished writing input to %s!\n", argv[0]);
+             }
+             oldPipe = signal(SIGPIPE, oldPipe);
+             return NULL;
+          } else if (retval != (int) strlen(input)) {
+             perror("Write problem");
+          }
 
-        /*
-         * We're sloppy with EPIPE on the EOF because we don't really care.
-         * We already got the input off and if the child died, we'll notice
-         * either when we call waitpid() or read the result so we just want
-         * to not die with SIGPIPE here.  --Jeremy.
-         */
-        write(hStdInPipe[WRITE_HANDLE], &eof_holder, 1);
-        oldPipe = signal(SIGPIPE, oldPipe);
-     }
-#endif
+          /*
+           * We're sloppy with EPIPE on the EOF because we don't really care.
+           * We already got the input off and if the child died, we'll notice
+           * either when we call waitpid() or read the result so we just want
+           * to not die with SIGPIPE here.  --Jeremy.
+           */
+          write(hStdInPipe[WRITE_HANDLE], &eof_holder, 1);
+          oldPipe = signal(SIGPIPE, oldPipe);
+       }
+  #endif
+    }
   }
   
   if (debug) fprintf(stderr, "Closing pipe to %s\n", argv[0]);
@@ -246,6 +271,17 @@ Subprocess_Run(char *argv[], char *input)
 #endif
 
   close (hStdOutPipe[READ_HANDLE]);
+
+  if(useFiles) {
+     free(argv);
+     unlink(tempinput);
+     // cgc can leave a temp file with a .asm extension lying around
+     char buffer[16384];
+     strcpy(buffer, tempinput);
+     strcat(buffer, ".asm");
+     unlink(buffer);
+     free(tempinput);
+  }
 
   if (ret != 0) {
     if (debug) fprintf (stderr, "%s exited with an error (%#x):\n", argv[0], ret);

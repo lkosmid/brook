@@ -3,11 +3,10 @@
 #include "cpu.hpp"
 #include <stdio.h>
 
-#include <brook/brtarray.hpp>
 
 
 
-static brook::CPUKernel *current_cpu_kernel = NULL; 
+static BRTTLS brook::CPUKernel *current_cpu_kernel = NULL; 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 //          The indexof function
@@ -70,7 +69,6 @@ namespace brook {
       }
     }
 
-    curpos = NULL;
     extents = NULL;
     minpos = NULL;
     maxpos = NULL;
@@ -175,12 +173,10 @@ namespace brook {
     output_args.clear();
     input_args.clear();
 
-    if (curpos)  free(curpos);
-    if (extents) free(extents);
-    if (minpos)  free(minpos);
-    if (maxpos)  free(maxpos);
+    if (extents) brfree(extents);
+    if (minpos)  brfree(minpos);
+    if (maxpos)  brfree(maxpos);
 
-    curpos = NULL;
     extents = NULL;
     minpos = NULL;
     maxpos = NULL;
@@ -222,13 +218,11 @@ namespace brook {
     }
 
     /* Initialize the position vector */
-    curpos  = (unsigned int *) malloc (dims * sizeof (unsigned int));
-    extents = (unsigned int *) malloc (dims * sizeof (unsigned int));
-    minpos  = (unsigned int *) malloc (dims * sizeof (unsigned int));
-    maxpos  = (unsigned int *) malloc (dims * sizeof (unsigned int));
+    extents = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
+    minpos  = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
+    maxpos  = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
 
     for (i=0; i<dims; i++) {
-      curpos[i] = 0;
       minpos[i] = 0;
     }
 
@@ -278,10 +272,9 @@ namespace brook {
 
     // Create the counter arrays
     dims    = instream->getDimension();
-    curpos  = (unsigned int *) malloc (dims * sizeof (unsigned int));
-    extents = (unsigned int *) malloc (dims * sizeof (unsigned int));
-    minpos = (unsigned int *) malloc (dims * sizeof (unsigned int));
-    maxpos = (unsigned int *) malloc (dims * sizeof (unsigned int));
+    extents = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
+    minpos = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
+    maxpos = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
 
     /* Create the extents vector */
     const unsigned int *dmin = instream->getDomainMin();
@@ -301,20 +294,20 @@ namespace brook {
       
       /* Initialize counter */      
       for (i=0; i<dims; i++) {
-        curpos[i] = 0;
         minpos[i] = 0;
         maxpos[i] = extents[i];
       }
 
       // Fetch the initial value
       void *initial = 
-        instream->fetchElem(curpos, extents, dims);
+        instream->fetchElem(minpos/* all zeros */, extents, dims);
       
       // Set the initial value
       memcpy (reduce_value, initial, instream->getElementSize());
       
       // Perform the reduce
-      if (Continue())
+      bool foo;
+      if (TotalItems(foo))
         func(this, args);
       
       Cleanup();
@@ -338,9 +331,9 @@ namespace brook {
     
     unsigned int reduce_dims   = rstream->getDimension();
     unsigned int *reduce_curpos = (unsigned int *) 
-      malloc (reduce_dims * sizeof (unsigned int));
+      brmalloc (reduce_dims * sizeof (unsigned int));
     unsigned int *reduce_extents =  (unsigned int *) 
-      malloc (reduce_dims * sizeof (unsigned int));
+      brmalloc (reduce_dims * sizeof (unsigned int));
 
     // Need to implement!!!
     if (dims != reduce_dims) {
@@ -380,20 +373,20 @@ namespace brook {
           
         int factor = extents[i] / reduce_extents[i];
         
-        curpos[i] = factor * reduce_curpos[i];
-        minpos[i] = curpos[i];
+        minpos[i] = factor * reduce_curpos[i];
         maxpos[i] = factor * (reduce_curpos[i] + 1);
       }
       
       // Fetch the initial value
       void *initial = 
-        instream->fetchElem(curpos, extents, dims);
+        instream->fetchElem(minpos/* starting pos */, extents, dims);
       
       // Set the initial value
       memcpy (reduce_value, initial, rstream->getElementSize());
       
       // Perform the reduce on the sub-block
-      if (Continue())
+      bool foo;
+      if (TotalItems(foo))
         func(this, args);
       
       // Increment the reduction_curpos
@@ -418,11 +411,11 @@ namespace brook {
     // Free the resources
     Cleanup();
 
-    free(reduce_curpos);
-    free(reduce_extents);
+    brfree(reduce_curpos);
+    brfree(reduce_extents);
   }
 
-
+#if 0
   bool CPUKernel::Continue() {
     unsigned int i;
 
@@ -440,13 +433,66 @@ namespace brook {
     return true;
   }
 
-  void * CPUKernel::FetchElem(StreamInterface *s) {
+  bool CPUKernel::AdjustForThread(int threads, int thisthread) {
+    // Save the CPU kernel
+    current_cpu_kernel = this;
+    if(1==threads) return true;
+    int i;
+    unsigned int totalwork=0, part;
+
+    for (i=dims-1; i>=0; i--) {
+      totalwork+=maxpos[i]-minpos[i];
+    }
+    part=totalwork/threads;
+    fprintf(stderr, "Adjusting kernel %p for thread %d of %d: totalwork=%u, part=%u, thisinc=%u\n", this, thisthread, threads, totalwork, part, part*thisthread);
+    // If there's less than one unit per thread, let master do all of them
+    if(part<1) return !thisthread;
+    part*=thisthread;
+    for (i=dims-1; i>=1; i--) {
+      while(part>=maxpos[i-1]-minpos[i-1]) {
+        curpos[i]++;
+        part-=maxpos[i-1]-minpos[i-1];
+      }
+    }
+    curpos[0]+=part;
+    return true;
+  }
+#endif
+
+  unsigned int CPUKernel::TotalItems(bool &isReduce) const {
+    unsigned int totalwork=1;
+
+    isReduce=is_reduce;
+    for (int i=dims-1; i>=0; i--) {
+      totalwork*=maxpos[i]-minpos[i];
+    }
+    //fprintf(stderr, "Thread %u totalwork=%u\n", (unsigned int) pthread_self(), totalwork);
+    return totalwork;
+  }
+
+  void * CPUKernel::FetchElem(StreamInterface *s, unsigned int idx) {
+    // Save the CPU kernel
+    current_cpu_kernel = this;
+
     if (is_reduce &&
         s == (StreamInterface *) reduce_arg) 
       return reduce_value;
-   
+
+    //if(!(idx % 100000))
+    //  fprintf(stderr, "Thread %u fetching element %u\n", (unsigned int) pthread_self(), idx);
+    unsigned int *curpos = (unsigned int *) alloca(dims * sizeof (unsigned int));
+    for(int u=0; u<(int) dims; u++) {
+      unsigned int part=1;
+      for(int i=dims-1; i>u; i--) {
+        part*=maxpos[i]-minpos[i];
+      }
+      curpos[u]=idx/part;
+      idx%=part;
+    }
     // Let the stream do the fetch
-    return s->fetchElem(curpos, extents, dims);
+    void *ret=s->fetchElem(curpos, extents, dims);
+    //fprintf(stderr, "Item is at %p\n", ret);
+    return ret;
   }
 
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

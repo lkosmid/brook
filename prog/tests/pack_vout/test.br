@@ -46,7 +46,7 @@ float myrand (unsigned int *seed) {
    else
       return 4;
 }
-#define STREAMALLOC(num) (brook::stream*)malloc(num*sizeof(brook::stream))
+#define STREAMALLOC(num) (brook::stream*)brmalloc(num*sizeof(brook::stream))
 #define STREAMHOLDERSIZE brook::stream
 void combineStreamsTest(float (*streams)<>) {
    
@@ -72,8 +72,8 @@ void combineStreamsTest(float (*streams)<>) {
       float h1<mywidth,mylength>;
       float * list;
       float * lust;
-      list = (float *)malloc(sizeof(float)*mywidth*mylength*8);
-      lust = (float *)malloc(sizeof(float)*mywidth*mylength*8);
+      list = (float *)brmalloc(sizeof(float)*mywidth*mylength*8);
+      lust = (float *)brmalloc(sizeof(float)*mywidth*mylength*8);
       for (i=0;i<mylength*mywidth;++i) {
          list[i]=i;
          lust[i]=-list[i];
@@ -138,7 +138,7 @@ void combineStreamsTest(float (*streams)<>) {
                         mywidth,
                         mylength,                        
                         &output);
-         free(streams);
+         brfree(streams);
       }
       streamPrint(output,1);
       printf("\n");

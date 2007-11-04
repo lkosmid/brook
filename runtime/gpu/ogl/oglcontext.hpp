@@ -9,6 +9,9 @@
 typedef void *HGLRC; 
 #endif
 
+//#define OGL_PRINTOPS
+
+
 namespace brook {
    
   class OGLTexture;
@@ -16,27 +19,49 @@ namespace brook {
 
   class OGLPixelShader
   {
+  protected:
+    OGLPixelShader(unsigned int _id, const char *_program_string);
+    virtual ~OGLPixelShader() { }
   public:
-    OGLPixelShader(unsigned int id,const char * program_string);
+    virtual void bindConstant( unsigned int inIndex, const float4& inValue ) = 0;
+    virtual void bindPixelShader() = 0;
+
     static const unsigned int MAXCONSTANTS = 256;
     unsigned int id;
+	const char *program_string;
     float4 constants[256];
     std::string constant_names[256];
     unsigned int largest_constant;
+  };
+  class OGLARBPixelShader : public OGLPixelShader
+  {
+  public:
+    OGLARBPixelShader(unsigned int id, const char *program_string);
+    ~OGLARBPixelShader();
+    virtual void bindConstant( unsigned int inIndex, const float4& inValue );
+    virtual void bindPixelShader();
+  };
+
+  class OGLSLPixelShader : public OGLPixelShader
+  {
+    unsigned int programid;
+    std::string constant_types[256], sampler_names[32];
+  public:
+    OGLSLPixelShader(unsigned int id, const char *program_string);
+    ~OGLSLPixelShader();
+    virtual void bindConstant( unsigned int inIndex, const float4& inValue );
+    virtual void bindPixelShader();
   };
 
 
   class OGLContext : public GPUContext
   {
   public:
+    static OGLContext * create(const char* device);
 
-    /* Everybody supports at least 2048.  Specific backends can change
-    ** this if they want...
-    */
-    virtual bool 
-    isTextureExtentValid( unsigned int inExtent ) const
-    { return (inExtent <= 2048); }
-
+    bool onATI() const { return _isATI; }
+    bool onNVidia() const { return _isNVidia; }
+    virtual bool isTextureExtentValid( unsigned int inExtent ) const;
     virtual unsigned int getMaximumOutputCount() const;
 
     virtual float4 getStreamIndexofConstant( TextureHandle inTexture ) const;
@@ -92,15 +117,14 @@ namespace brook {
                                 const unsigned int maxY,
                                 GPURegion &region) const; 
 
-    /* The vendor specific backend must create the float textures
-    ** since there are no standard float textures. Hence, pure virtual
-    */
     virtual TextureHandle 
     createTexture2D( unsigned int inWidth,
                      unsigned int inHeight,
                      TextureFormat inFormat,
-                     bool read_only=false) = 0;
+                     bool read_only=false);
     
+    virtual int getShaderFormatRank (const char *name) const;
+
     /* I assume that the virtual deconstructor should do the right
     ** thing.
     */
@@ -193,27 +217,27 @@ namespace brook {
   protected:        
     OGLContext();
 
-    /* Creates a context and pbuffer */
-    void init(const int   (*viAttribList)[4][64],
-              const float (*vfAttribList)[4][16],
-              const int   (*vpiAttribList)[4][16]);
+    /* Creates a context and FBO */
+    void init(const char* device);
 
   private:
+    bool _isATI, _isNVidia, _havePBOs;
     VertexShaderHandle _passthroughVertexShader;
     OGLPixelShader *_passthroughPixelShader;
-    OGLTexture *_outputTextures[4];
+    OGLTexture *_outputTextures[32], *_outputTexturesCache[32];
     unsigned int _slopTextureUnit;
-    unsigned int _maxOutputCount;
+    unsigned int _maxTextureExtent, _maxOutputCount;
     
     static const int MAXBOUNDTEXTURES = 32;
     OGLTexture *_boundTextures[32];
     OGLPixelShader *_boundPixelShader;
 
-    void copy_to_pbuffer(OGLTexture *texture);
+    GLuint _PBOs[32], _PBOcount;
 
     OGLWindow *_wnd;
     bool _isUsingAddressTranslation, _isUsingOutputDomain;
 
+    void writeToTexture(OGLTexture *oglTexture, GLint x, GLint y, GLint w, GLint h, const void *inData);
   };
 
 }

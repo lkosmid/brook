@@ -306,7 +306,7 @@ namespace brook {
 
     typedef std::vector<GPUStream*> StreamList;
     typedef std::vector<GPUIterator*> IteratorList;
-    typedef std::vector<float4> ConstantList;
+    typedef std::vector<float4ua> ConstantList;
     typedef std::vector<ArgumentInfo> ArgumentList;
     typedef std::vector<ReduceArgumentInfo> ReduceArgumentList;
     typedef std::vector<GPUInterpolant> InterpolantList;
