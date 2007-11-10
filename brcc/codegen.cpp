@@ -105,7 +105,7 @@ struct technique_info
 };
 
 
-static char * (*shadercompile[4]) (const char *name,
+static char * (*shadercompile[CODEGEN_NUM_TARGETS]) (const char *name,
                                    const char *shader, 
                                    CodeGenTarget target, 
                                    ShaderResourceUsage* outUsage, 

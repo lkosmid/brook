@@ -123,7 +123,7 @@ bool incrementBoolVec(std::vector<bool> &vec) {
 
 static std::string getDeclStream(Decl * vout,std::string append="_stream") {
    std::string temp = vout->name->name;
-   unsigned int i = temp.find("_stream");
+   size_t i = temp.find("_stream");
    if (i==std::string::npos) {
       return temp+"_stream";
    }
