@@ -761,7 +761,7 @@ void SplitTree::rdsSearch()
     (*j)->_wasSavedRecompute = false;
   }}
 
-  int bestCost;
+  int bestCost = 0;
 
   size_t index = 0;
   size_t count = _multiplyReferencedNodes.size();
