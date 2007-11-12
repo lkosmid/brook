@@ -87,7 +87,6 @@ brcc/stemnt.cpp
 brcc/stemnt.h
 brcc/subprocess.cpp
 brcc/subprocess.h
-brcc/subprocess2.cpp
 brcc/symbol.cpp
 brcc/symbol.h
 brcc/token.cpp
@@ -103,11 +102,9 @@ include/brook/brtintrinsic.hpp
 include/brook/brtscatter.hpp
 include/brook/brtscatterintrinsic.hpp
 include/brook/brtvector.hpp
-include/brook/brtvector_old.hpp
 include/brook/kerneldesc.hpp
 include/brook/optvector.hpp
 include/brook/type_promotion.hpp
-include/brook/vc6vector.hpp
 include/brook/workspace.h
 prog
 prog/Makefile
@@ -137,8 +134,6 @@ prog/apps/fft/wfft.cpp
 prog/apps/fft/wfft.h
 prog/apps/formats
 prog/apps/formats/Makefile
-prog/apps/formats/built
-prog/apps/formats/built/formats.cpp
 prog/apps/formats/timing.cpp
 prog/apps/formats/timing.h
 prog/apps/gpusanity
@@ -229,9 +224,6 @@ prog/apps/renderDX/renderWindow.cpp
 prog/apps/renderDX/renderWindow.hpp
 prog/apps/renderGL
 prog/apps/renderGL/Makefile
-prog/apps/renderGL/built
-prog/apps/renderGL/built/simulationKernel.cpp
-prog/apps/renderGL/built/simulationKernel.hpp
 prog/apps/renderGL/core.hpp
 prog/apps/renderGL/fibble
 prog/apps/renderGL/fibble/Makefile
