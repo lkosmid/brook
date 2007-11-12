@@ -29,7 +29,7 @@ int readPPM(const char *filename,
   return 1;
 }
 
-int diff(char * f1,char * f2) {
+int diff(const char * f1,const char * f2) {
   FILE * f=fopen(f1,"rb");
   FILE * fp=fopen(f2,"rb");
   if ((!f)||!fp) {
