@@ -20,6 +20,7 @@ SYSTEM_LIBS      :=  kernel32 gdi32 user32 opengl32 d3dx9 d3d9 advapi32 Winmm
 # I turned it off for now since gcc should pick this up.
 
 CFLAGS   += /nologo /W3 /DBUILD_OGL /DBUILD_DX9 /DWIN32 /DWINDOWS /EHsc /Zm500 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
+#CFLAGS   += /openmp 
 #ifdef BUILD_CTM
 #CFLAGS   += /DBUILD_CTM
 #endif
@@ -33,7 +34,7 @@ C_CPP_FLAG	 := /nologo /EP
 C_INCLUDE_FLAG   := /I
 C_DEBUG_FLAG     := /Zi /RTC1 /EHsc /Fd$(OBJDIR)\\
 #C_RELEASE_FLAG   := /ML /Ogisyb2 /Gs /arch:SSE2 /G7 /DNDEBUG  /Fd$(OBJDIR)\\
-C_RELEASE_FLAG   := /O2 /arch:SSE2 /EHsc /DNDEBUG /Fd$(OBJDIR)\\
+C_RELEASE_FLAG   := /O2 /fp:fast /arch:SSE2 /EHsc /DNDEBUG /Fd$(OBJDIR)\\
 C_STATIC_FLAG    := 
 C_OUTPUT_FLAG    := /Fo
 C_COMPILE_FLAG   := /c

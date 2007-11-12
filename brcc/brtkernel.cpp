@@ -518,7 +518,7 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
   // Print the function decl
   out << myvoid;
   fDef->decl->form->printBefore(out,&enhanced_name,0);
-  out << "(::brook::Kernel *__k, const std::vector<void *>&args)" 
+  out << "(::brook::Kernel *__k, const std::vector<void *>&args, int __brt_idxstart, int __brt_idxend, bool __brt_isreduce)" 
       << std::endl
       << "{" 
       << std::endl << indent;
@@ -563,12 +563,10 @@ void BRTCPUKernelCode::printCode(std::ostream& out) const
   out << std::endl;
 
   // Print the do while loop
-  out << indent << "bool __brt_singlethreaded;" << std::endl;
-  out << indent << "unsigned int __brt_idx, __brt_totalitems = __k->TotalItems(__brt_singlethreaded);" << std::endl;
   out << "#ifdef _OPENMP" << std::endl;
-  out << "#pragma omp parallel for schedule(dynamic, 16) if(!__brt_singlethreaded)" << std::endl;
+  out << "#pragma omp parallel for schedule(dynamic, 16) if(!__brt_isreduce)" << std::endl;
   out << "#endif" << std::endl;
-  out << indent << "for(__brt_idx=0; __brt_idx<__brt_totalitems; __brt_idx++) {" << std::endl;
+  out << indent << "for(int __brt_idx=__brt_idxstart; __brt_idx<__brt_idxend; __brt_idx++) {" << std::endl;
   for (i=0;i<ft->nArgs;++i) {
      if (ft->args[i]->isStream()) {
        if ((ft->args[i]->form->getQualifiers()&(TQ_Reduce|TQ_Out))!=0){

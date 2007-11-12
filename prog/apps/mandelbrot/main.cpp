@@ -231,10 +231,6 @@ template<typename vectortype> void nativeMandelbrot(float *outputData, float &t1
 	diffx*=pixelsize;
 	diffy*=pixelsize;
 #ifdef _OPENMP
-#pragma omp parallel
-#pragma omp single nowait
-	if(omp_in_parallel())
-		printf("Using %d threads on %d processors via OpenMP ...\n", omp_get_num_threads(), omp_get_num_procs());
 #pragma omp parallel for private(outputptr) schedule(dynamic, 16)
 #endif
 	for(int y=0; y<height; y++)
@@ -327,6 +323,16 @@ int main(void)
 		printf("%s\n", *dev);
         if(!strncmp(*dev, "dx9", 3)) hasDX9=true;
     }
+#ifdef _OPENMP
+    printf("\nCompiled with OpenMP support! ");
+#pragma omp parallel
+#pragma omp single nowait
+    {
+      printf("Using %d threads on %d processors ...\n", omp_get_num_threads(), omp_get_num_procs());
+    }
+#else
+    printf("\nCompiled without OpenMP - single processor usage only\n");
+#endif
 	//Go();
 	//float nativetime=Go(nativeMandelbrot< vector4<float> >, "native(float)");
 #ifdef USE_SSE

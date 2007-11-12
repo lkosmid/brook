@@ -16,6 +16,7 @@ namespace brook {
   // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
   class CPUKernel : public Kernel {
     CPUKernel(const CPUKernel &);
+    int TotalItems() const;
   public:
     CPUKernel(const void * source []);
     virtual void PushStream(Stream *s);
@@ -31,8 +32,7 @@ namespace brook {
     virtual void Reduce();
 
     virtual void   PushStreamInterface(StreamInterface * s);
-    virtual unsigned int TotalItems(bool &isReduce) const;
-    virtual void * FetchElem(StreamInterface *s, unsigned int idx);
+    virtual void * FetchElem(StreamInterface *s, int idx);
 
     virtual void Release();
 
@@ -45,7 +45,10 @@ namespace brook {
     virtual ~CPUKernel();
 
     typedef void callable(::brook::Kernel *__k, 
-                          const std::vector<void *>&args);
+                          const std::vector<void *>&args,
+						  int __brt_idxstart,
+						  int __brt_idxend,
+						  bool __brt_isreduce);
 
     callable * func;
 

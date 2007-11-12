@@ -67,6 +67,11 @@ Release v0.5 (??/??/??)
 
    * { ned } Fixed as many of the GCC v4.2 warnings about deprecated conversion
              from string constant to char * as possible (bison & flex need fixing)
+             
+   * { ned: 1871 } Added OpenMP support to the CPU backend. If compiled using
+                   /openmp on MSVC or using -fopenmp on GCC, you will now use all
+                   available CPU cores automatically for NON-reduce kernels.
+                   Reduce kernels currently still only run in a single thread.
 
 
 

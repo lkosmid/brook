@@ -248,7 +248,7 @@ namespace brook {
     current_cpu_kernel = this;
     
     // Call the kernel
-    func(this, args);
+    func(this, args, 0, TotalItems(), false);
     
     // Free the resources
     Cleanup();
@@ -272,6 +272,7 @@ namespace brook {
 
     // Create the counter arrays
     dims    = instream->getDimension();
+    unsigned int *curpos  = (unsigned int *) alloca (dims * sizeof (unsigned int));
     extents = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
     minpos = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
     maxpos = (unsigned int *) brmalloc (dims * sizeof (unsigned int));
@@ -294,21 +295,20 @@ namespace brook {
       
       /* Initialize counter */      
       for (i=0; i<dims; i++) {
+        curpos[i] = 0;
         minpos[i] = 0;
         maxpos[i] = extents[i];
       }
 
       // Fetch the initial value
       void *initial = 
-        instream->fetchElem(minpos/* all zeros */, extents, dims);
+        instream->fetchElem(curpos, extents, dims);
       
       // Set the initial value
       memcpy (reduce_value, initial, instream->getElementSize());
       
-      // Perform the reduce
-      bool foo;
-      if (TotalItems(foo))
-        func(this, args);
+      // Perform the reduce from the second item onwards
+      func(this, args, 1, TotalItems(), true);
       
       Cleanup();
       return;
@@ -373,21 +373,20 @@ namespace brook {
           
         int factor = extents[i] / reduce_extents[i];
         
-        minpos[i] = factor * reduce_curpos[i];
+        curpos[i] = factor * reduce_curpos[i];
+        minpos[i] = curpos[i];
         maxpos[i] = factor * (reduce_curpos[i] + 1);
       }
       
       // Fetch the initial value
       void *initial = 
-        instream->fetchElem(minpos/* starting pos */, extents, dims);
+        instream->fetchElem(curpos, extents, dims);
       
       // Set the initial value
       memcpy (reduce_value, initial, rstream->getElementSize());
       
       // Perform the reduce on the sub-block
-      bool foo;
-      if (TotalItems(foo))
-        func(this, args);
+      func(this, args, 1, TotalItems(), true);
       
       // Increment the reduction_curpos
       for (i=0; i<reduce_dims; i++) {
@@ -415,54 +414,9 @@ namespace brook {
     brfree(reduce_extents);
   }
 
-#if 0
-  bool CPUKernel::Continue() {
-    unsigned int i;
+  int CPUKernel::TotalItems() const {
+    int totalwork=1;
 
-    // Increment the curpos
-    for (i=dims-1; i>=0; i--) {
-      curpos[i]++;
-      if (curpos[i] == maxpos[i]) {
-        if (i == 0)
-          return false;
-        curpos[i] = minpos[i];
-      } else
-        break;
-      if (i==0) break;
-    }
-    return true;
-  }
-
-  bool CPUKernel::AdjustForThread(int threads, int thisthread) {
-    // Save the CPU kernel
-    current_cpu_kernel = this;
-    if(1==threads) return true;
-    int i;
-    unsigned int totalwork=0, part;
-
-    for (i=dims-1; i>=0; i--) {
-      totalwork+=maxpos[i]-minpos[i];
-    }
-    part=totalwork/threads;
-    fprintf(stderr, "Adjusting kernel %p for thread %d of %d: totalwork=%u, part=%u, thisinc=%u\n", this, thisthread, threads, totalwork, part, part*thisthread);
-    // If there's less than one unit per thread, let master do all of them
-    if(part<1) return !thisthread;
-    part*=thisthread;
-    for (i=dims-1; i>=1; i--) {
-      while(part>=maxpos[i-1]-minpos[i-1]) {
-        curpos[i]++;
-        part-=maxpos[i-1]-minpos[i-1];
-      }
-    }
-    curpos[0]+=part;
-    return true;
-  }
-#endif
-
-  unsigned int CPUKernel::TotalItems(bool &isReduce) const {
-    unsigned int totalwork=1;
-
-    isReduce=is_reduce;
     for (int i=dims-1; i>=0; i--) {
       totalwork*=maxpos[i]-minpos[i];
     }
@@ -470,7 +424,7 @@ namespace brook {
     return totalwork;
   }
 
-  void * CPUKernel::FetchElem(StreamInterface *s, unsigned int idx) {
+  void * CPUKernel::FetchElem(StreamInterface *s, int idx) {
     // Save the CPU kernel
     current_cpu_kernel = this;
 
@@ -486,7 +440,7 @@ namespace brook {
       for(int i=dims-1; i>u; i--) {
         part*=maxpos[i]-minpos[i];
       }
-      curpos[u]=idx/part;
+      curpos[u]=minpos[u]+idx/part;
       idx%=part;
     }
     // Let the stream do the fetch
