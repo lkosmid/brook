@@ -179,7 +179,7 @@ int main (int argc, char ** argv) {
         int oldargc=argc;
         char doEdge=0;
         char doNothing=0;
-        char *argv_bak[]={argv[0],"franklin.ppm","out.ppm"};
+        const char *argv_bak[]={argv[0],"franklin.ppm","out.ppm"};
         if (argc==3) {
           if (isNumber(argv[1])&&isNumber(argv[2])) {
             return maino(argc,argv);
@@ -225,7 +225,7 @@ int main (int argc, char ** argv) {
             fprintf(stderr,"Usage: %s <input_file> <output_file> [do edge det]\nDefaulting to fft franklin.ppm out.ppm\n",
                  argc>=1?argv[0]:"qfft");
           }
-          argv=argv_bak;
+          argv=(char **) argv_bak;
           argc=3;
 		//turn 1; // 1 is argument error
 	}

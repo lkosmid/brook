@@ -8,7 +8,7 @@ void __printf_cpu_inner(float inx, float iny, float outx, float outy) {
    printf("%g %g -> %g %g\n",inx,iny,outx,outy);
 }
 unsigned int debug_vout = 0;
-void debugStreamPrint (float stream<>,char * title) {
+void debugStreamPrint (float stream<>,const char * title) {
    if (debug_vout) {
       printf ("%s\n",title);
       
