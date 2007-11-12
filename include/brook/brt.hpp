@@ -493,8 +493,7 @@ namespace brook {
     virtual void Release() {delete this;}
 
     // CPU version only
-    virtual unsigned int TotalItems(bool &isReduce) const { assert(0); return 0; }
-    virtual void * FetchElem(StreamInterface *s, unsigned int idx) {
+    virtual void * FetchElem(StreamInterface *s, int idx) {
       assert (0); return (void *) 0;
     }
 

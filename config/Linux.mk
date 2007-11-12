@@ -14,6 +14,7 @@ BINSUFFIX        :=
 SYSTEM_LIBS      := 
 
 CFLAGS           += -DBUILD_OGL
+#CFLAGS           += -fopenmp 
 C_CPP_FLAG	 := -E
 C_INCLUDE_FLAG   := -I  
 C_DEBUG_FLAG     := -g3 -msse -Wall 
@@ -23,6 +24,7 @@ C_OUTPUT_FLAG    := -o
 C_COMPILE_FLAG   := -c 
 
 LDFLAGS           += -lpthread -L/usr/X11R6/lib 
+#LDFLAGS           += -lgomp 
 LD_LIBDIR_FLAG    := -L
 LD_SHARED_FLAG    := -shared   
 LD_OUTPUT_FLAG    := -o 
