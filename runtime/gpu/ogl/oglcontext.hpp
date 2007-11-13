@@ -221,7 +221,7 @@ namespace brook {
     void init(const char* device);
 
   private:
-    bool _isATI, _isNVidia, _havePBOs;
+    bool _isATI, _isNVidia, _havePBOs, _supportsFP40;
     VertexShaderHandle _passthroughVertexShader;
     OGLPixelShader *_passthroughPixelShader;
     OGLTexture *_outputTextures[32], *_outputTexturesCache[32];
