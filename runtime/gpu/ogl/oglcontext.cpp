@@ -36,6 +36,7 @@ OGLContext::init (const char* device) {
   _isATI=(strstr(vendor, "ATI") != NULL);
   _isNVidia=(strstr(vendor, "NVIDIA") != NULL);
   _havePBOs=!!GLEE_ARB_pixel_buffer_object;
+  _supportsFP40=!!GLEE_NV_fragment_program2;
   memset(_PBOs, 0, sizeof(_PBOs));
   _PBOcount=0;
   if(_havePBOs) {
@@ -85,8 +86,11 @@ unsigned int OGLContext::getMaximumOutputCount() const {
 int OGLContext::getShaderFormatRank (const char *name) const {
   if( strcmp(name, "arb") == 0 )
     return 1;
-  if( GLEE_VERSION_2_0 && strcmp(name, "glsl") == 0 )
+  if( _supportsFP40 &&
+      strcmp(name, "fp40") == 0 )
     return 2;
+  if( GLEE_VERSION_2_0 && strcmp(name, "glsl") == 0 )
+    return 3;
   return -1;
 }
 
