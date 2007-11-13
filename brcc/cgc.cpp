@@ -223,7 +223,7 @@ compile_cgc (const char * /*name*/,
   // Trim off the warning messages
   memcpy (fpcode, startline, endline - startline);
 
-  // ned: Hack to fix up broken GLSL output from cgc
+  // ned: Many hacks to fix up broken GLSL output from cgc
   char *fpcodenew = (char *) malloc(strlen(fpcode)+16384);
   if(CODEGEN_GLSL==target) {
     // Prepend required headers
@@ -232,6 +232,25 @@ compile_cgc (const char * /*name*/,
     strcpy(fpcodenew+sizeof(header)-1, fpcode);
     // cgc isn't aware of the GL_ARB_texture_rectangle so munge
     replaceAll(fpcodenew, "samplerRect", "sampler2DRect");
+    // cgc is particularly braindead for not knowing what gl_FragData is
+    // DESPITE understanding multiple output buffers for glslv
+    if(strstr(fpcodenew, "gl_FragColor") && strstr(fpcodenew, "#extension GL_ARB_draw_buffers : enable")) {
+      // Replace pend_s4___output_N with gl_FragData[N]
+      char *outptr=strchr(strstr(fpcodenew, "gl_FragColor"), 10)+1;
+      if(strstr(fpcodenew, "pend_s4___output_3")) {
+        memmove(outptr+43, outptr, strlen(outptr)+1);
+        memcpy(outptr, "    gl_FragData[3].x = pend_s4___output_3;\n", 43);
+      }
+      if(strstr(fpcodenew, "pend_s4___output_2")) {
+        memmove(outptr+43, outptr, strlen(outptr)+1);
+        memcpy(outptr, "    gl_FragData[2].x = pend_s4___output_2;\n", 43);
+      }
+      if(strstr(fpcodenew, "pend_s4___output_1")) {
+        memmove(outptr+43, outptr, strlen(outptr)+1);
+        memcpy(outptr, "    gl_FragData[1].x = pend_s4___output_1;\n", 43);
+      }
+      replaceAll(fpcodenew, "gl_FragColor", "gl_FragData[0]");
+    }
     // GLSL may not legally contain __, so why does cgc output that?
     replaceAll(fpcodenew, "___", "_CGCdashdash_");
     replaceAll(fpcodenew, "__", "_CGCdash_");
