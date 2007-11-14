@@ -7,17 +7,16 @@ extern "C" {
 #include <assert.h>
 };
 
-namespace brook {
 #ifdef _MSC_VER
-  typedef __int64 int64;
+typedef __int64 brint64;
 #define BRTTLS __declspec(thread)
 #define BRTALIGNED __declspec(align(16))
 #else
-  typedef long long int64;
+typedef long long brint64;
 #define BRTTLS __thread
 #define BRTALIGNED __attribute__ ((aligned (16)))
 #endif
-}
+namespace brook { typedef brint64 int64; }
 
 #include <brook/kerneldesc.hpp>
 #include <brook/brtvector.hpp>
@@ -804,11 +803,11 @@ template <class T> const void * getStreamAddress(const T* a) {
 __BrtFloat4 __indexof (const void *);
 
 /* ned: Always 32 byte aligned memory allocation */
-void *brmalloc(size_t size);
-void *brcalloc(size_t no, size_t size);
-void *brrealloc(void *ptr, size_t size);
+extern "C" void *brmalloc(size_t size);
+extern "C" void *brcalloc(size_t no, size_t size);
+extern "C" void *brrealloc(void *ptr, size_t size);
 bool brismalloc(void *ptr);
-void brfree(void *ptr);
+extern "C" void brfree(void *ptr);
 template<class type> class brallocator : public std::allocator<type> {
 public:
    typename std::allocator<type>::pointer allocate(typename std::allocator<type>::size_type count) {
@@ -818,6 +817,11 @@ public:
     brfree(ptr);
   }
 };
+
+/* C API for runtime targets etc */
+extern "C" const char **brruntimes();
+extern "C" void brsetruntime(const char *runtime);
+extern "C" brint64 brmicroseconds();
 
 
 // TIM: adding conditional magick for raytracer

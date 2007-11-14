@@ -931,6 +931,11 @@ void brfree(void *ptr)
     free(p);
 }
 
+/* C API for runtime targets etc */
+const char **brruntimes() { return brook::runtimeTargets(); }
+void brsetruntime(const char *runtime) { brook::initialize(runtime); }
+brint64 brmicroseconds() { return brook::microseconds(); }
+
 // TIM: adding conditional magick for raytracer
 void streamEnableWriteMask()
 {
