@@ -102,6 +102,12 @@ main() {
 
   float msec;
   int i, j;
+  const char **runtimes;
+  
+  fprintf(stderr, "Available values for BRT_RUNTIME:\n");
+  for(runtimes = brruntimes(); *runtimes; runtimes++)
+    fprintf(stderr, "%s\n", *runtimes);
+  fprintf(stderr, "\n");
 
   {
     float  a< 1000, 1000 >;
@@ -131,7 +137,7 @@ main() {
 
     msec = getTimer();
 
-    fprintf (stderr, "  %f\n", msec);
+    fprintf (stderr, "  %f\n", 32000.0f/msec);
   }
 
   {
@@ -157,7 +163,7 @@ main() {
 
     msec = getTimer();
 
-    fprintf (stderr, "  %f\n", msec);
+    fprintf (stderr, "  %f\n", 32000.0f/msec);
   }
 
   {
@@ -183,7 +189,7 @@ main() {
 
     msec = getTimer();
 
-    fprintf (stderr, "  %f\n", msec);
+    fprintf (stderr, "  %f\n", 32000.0f/msec);
   }
   
   {
@@ -209,7 +215,7 @@ main() {
 
     msec = getTimer();
 
-    fprintf (stderr, "  %f\n", msec);
+    fprintf (stderr, "  %f\n", 32000.0f/msec);
   }
 
 
@@ -241,7 +247,7 @@ main() {
 
     msec = getTimer();
 
-    fprintf (stderr, "  %f\n", msec);
+    fprintf (stderr, "  %f\n", 32000.0f/msec);
   }
   
 
