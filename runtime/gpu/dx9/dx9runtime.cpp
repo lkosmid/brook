@@ -392,9 +392,7 @@ namespace brook
       nadapters = _direct3D->GetAdapterCount();
       GPULOG(0) << nadapters << " adapters found\n";
       GPULOG(0) << "You can set which adapter to use with BRT_ADAPTER\n";
-      if ( dispvar = getenv("BRT_ADAPTER") ) 
-          which_adapter = atoi( dispvar );
-      else if(device) {
+      if(device) {
           /* Determine order of display devices */
           char driver[64];
           const char *colon=strchr(device, ':');
@@ -403,21 +401,14 @@ namespace brook
               const char *colon2=strchr(colon+1, ':');
               strncpy(driver, colon+1, colon2-colon-1);
               driver[colon2-colon-1]=0;
-              HMONITOR monitors[64];
-              memset(monitors, 0, sizeof(monitors));
-              EnumDisplayMonitors(NULL, NULL, CollectHMonitors, (LPARAM) monitors);
-              which_adapter = 0;
               bool found=false;
-              for(HMONITOR *hmon=monitors; *hmon; hmon++, which_adapter++)
+              D3DADAPTER_IDENTIFIER9 ident;
+              for(which_adapter=0; D3D_OK==_direct3D->GetAdapterIdentifier(which_adapter, 0, &ident); which_adapter++)
               {
-                  MONITORINFOEX mi; mi.cbSize=sizeof(MONITORINFOEX);
-                  if(GetMonitorInfo(*hmon, &mi))
+                  if(!strcmp(driver, ident.DeviceName))
                   {
-                      if(!strcmp(driver, mi.szDevice))
-                      {
-                          found=true;
-                          break;
-                      }
+                      found=true;
+                      break;
                   }
               }
               if(!found)
@@ -426,6 +417,16 @@ namespace brook
                   which_adapter = D3DADAPTER_DEFAULT;
               }
           }
+      }
+      if (D3DADAPTER_DEFAULT==which_adapter && (dispvar = getenv("BRT_ADAPTER"))) {
+          which_adapter = atoi( dispvar );
+          D3DADAPTER_IDENTIFIER9 ident;
+          if(D3D_OK!=_direct3D->GetAdapterIdentifier(which_adapter, 0, &ident)) {
+              DX9WARN << "Adapter " << dispvar << " not found! Using default\n";
+              which_adapter=0;
+              _direct3D->GetAdapterIdentifier(which_adapter, 0, &ident);
+          }
+          DX9WARN << "BRT_ADAPTER chooses adapter dx9:" << ident.DeviceName << ":" << ident.Description << "\n";
       }
       GPULOG(0) << "Using display " << which_adapter << "\n" ;
       

@@ -50,7 +50,7 @@ create_window (int window_x, int window_y) {
     }
 
   window_style = ( WS_CLIPSIBLINGS | WS_CLIPCHILDREN );
-  window_style |= WS_POPUP | WS_VISIBLE;
+  window_style |= WS_POPUP;
 
   // Create the window
   hwnd = CreateWindow( window_name, window_name,
@@ -64,10 +64,10 @@ create_window (int window_x, int window_y) {
   if (!hwnd)
     GPUError ("Failed to create window");
 
-  ShowWindow(hwnd, SW_SHOW);
-  MSG msg;
-  while(PeekMessage(&msg, hwnd, 0, 0, PM_REMOVE))
-      DispatchMessage(&msg);
+  //ShowWindow(hwnd, SW_SHOW);
+  //MSG msg;
+  //while(PeekMessage(&msg, hwnd, 0, 0, PM_REMOVE))
+  //    DispatchMessage(&msg);
   return hwnd;
 }
 
@@ -145,16 +145,20 @@ static BOOL CALLBACK CollectHMonitors(HMONITOR hMonitor, HDC hdcMonitor, LPRECT 
 
 OGLWindow::OGLWindow(const char* device) {
   BOOL status;
-  char driver[64];
+  char driver[64]="";
   int winx=CW_USEDEFAULT, winy=CW_USEDEFAULT;
 
   /* Create a DC for the desired device */
-  const char *colon=strchr(device, ':');
-  if(colon)
+  const char *colon=strchr(device, ':'), *dispvar = getenv("BRT_ADAPTER");
+  if(colon || dispvar)
   {
-      const char *colon2=strchr(colon+1, ':');
-      strncpy(driver, colon+1, colon2-colon-1);
-      driver[colon2-colon-1]=0;
+      int adapter=-1;
+      if(colon) {
+          const char *colon2=strchr(colon+1, ':');
+          strncpy(driver, colon+1, colon2-colon-1);
+          driver[colon2-colon-1]=0;
+      }
+      else adapter=atoi(dispvar);
 #if 1
       // ned: I just couldn't get CreateDC() to work with current drivers
       // (I think they need a window DC and can't handle a display DC)
@@ -168,10 +172,16 @@ OGLWindow::OGLWindow(const char* device) {
           MONITORINFOEX mi; mi.cbSize=sizeof(MONITORINFOEX);
           if(GetMonitorInfo(*hmon, &mi))
           {
-              if(!strcmp(driver, mi.szDevice))
+              if(!adapter-- || !strcmp(driver, mi.szDevice))
               {
                   winx=mi.rcMonitor.left;
                   winy=mi.rcMonitor.top;
+                  if(dispvar)
+                  {
+                      DISPLAY_DEVICE dd={sizeof(DISPLAY_DEVICE)};
+                      for(int n=0; EnumDisplayDevices(NULL, n, &dd, NULL) && strcmp(dd.DeviceName, mi.szDevice); n++);
+                      fprintf(stderr, "BRT_ADAPTER chooses adapter ogl:%s:%s\n", mi.szDevice, dd.DeviceString);
+                  }
                   break;
               }
           }
