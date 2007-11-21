@@ -72,6 +72,10 @@ Release v0.5 (??/??/??)
                    /openmp on MSVC or using -fopenmp on GCC, you will now use all
                    available CPU cores automatically for NON-reduce kernels.
                    Reduce kernels currently still only run in a single thread.
+                   
+   * { ned: 1878 } Made BRT_ADAPTER usage consistent for DX9 and OpenGL backends
+
+   * { ned: XXXX } Added regression test for multi-backend usage
 
 
 
