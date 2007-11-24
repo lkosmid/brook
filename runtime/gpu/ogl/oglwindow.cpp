@@ -330,6 +330,7 @@ OGLWindow::OGLWindow(const char *device) {
     strncpy(displaydevice, colon+1, endcolon-colon-1);
     displaydevice[endcolon-colon-1]=0;
   }
+  XInitThreads();
   pDisplay = XOpenDisplay(colon ? displaydevice : NULL);
   if (pDisplay == NULL) {
     fprintf (stderr, "Could not connect to X Server at %s.\n", colon ? displaydevice : NULL);

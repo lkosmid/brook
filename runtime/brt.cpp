@@ -120,6 +120,7 @@ namespace brook {
     }
 #else
     // Maybe consider upgrading this to use Xinerama and XRandR
+    XInitThreads();
     Display *dh=XOpenDisplay(NULL);
     if(dh)
     {
