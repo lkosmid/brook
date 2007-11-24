@@ -10,15 +10,15 @@
     <projectname>brook</projectname>
     <projectdirectory>.</projectdirectory>
     <absoluteprojectpath>false</absoluteprojectpath>
-    <description/>
-    <defaultencoding/>
+    <description></description>
+    <defaultencoding></defaultencoding>
   </general>
   <kdevcustomproject>
     <run>
-      <mainprogram>/home/ned/brook/bin/mandelbrot</mainprogram>
+      <mainprogram>/home/ned/brook/bin/multibackend</mainprogram>
       <directoryradio>custom</directoryradio>
-      <programargs/>
-      <globaldebugarguments/>
+      <programargs></programargs>
+      <globaldebugarguments></globaldebugarguments>
       <globalcwd>/home/ned/brook/bin</globalcwd>
       <useglobalprogram>false</useglobalprogram>
       <terminal>false</terminal>
@@ -32,16 +32,16 @@
     </run>
     <build>
       <buildtool>make</buildtool>
-      <builddir/>
+      <builddir></builddir>
     </build>
     <make>
       <abortonerror>false</abortonerror>
       <numberofjobs>2</numberofjobs>
       <prio>0</prio>
       <dontact>false</dontact>
-      <makebin/>
-      <defaulttarget/>
-      <makeoptions/>
+      <makebin></makebin>
+      <defaulttarget></defaulttarget>
+      <makeoptions></makeoptions>
       <selectedenvironment>default</selectedenvironment>
       <environments>
         <default/>
@@ -68,9 +68,9 @@
     </blacklist>
     <other>
       <prio>0</prio>
-      <otherbin/>
-      <defaulttarget/>
-      <otheroptions/>
+      <otherbin></otherbin>
+      <defaulttarget></defaulttarget>
+      <otheroptions></otheroptions>
       <selectedenvironment>default</selectedenvironment>
       <environments>
         <default/>
@@ -79,11 +79,11 @@
   </kdevcustomproject>
   <kdevdebugger>
     <general>
-      <dbgshell/>
-      <gdbpath/>
-      <configGdbScript/>
-      <runShellScript/>
-      <runGdbScript/>
+      <dbgshell></dbgshell>
+      <gdbpath></gdbpath>
+      <configGdbScript></configGdbScript>
+      <runShellScript></runShellScript>
+      <runGdbScript></runGdbScript>
       <breakonloadinglibs>true</breakonloadinglibs>
       <separatetty>false</separatetty>
       <floatingtoolbar>false</floatingtoolbar>
@@ -192,7 +192,7 @@
       <resolveIncludePathsUsingMakeExperimental>false</resolveIncludePathsUsingMakeExperimental>
     </codecompletion>
     <creategettersetter>
-      <prefixGet/>
+      <prefixGet></prefixGet>
       <prefixSet>set</prefixSet>
       <prefixVariable>m_,_</prefixVariable>
       <parameterName>theValue</parameterName>

@@ -142,11 +142,6 @@ prog/apps/gpusanity/gpusanity.h
 prog/apps/gpusanity/main.cpp
 prog/apps/imageproc
 prog/apps/imageproc/Makefile
-prog/apps/mandelbrot
-prog/apps/mandelbrot/Makefile
-prog/apps/mandelbrot/main.cpp
-prog/apps/mandelbrot/ppmImage.cpp
-prog/apps/mandelbrot/ppmImage.h
 prog/apps/particle_cloth
 prog/apps/particle_cloth/Makefile
 prog/apps/particle_cloth/main.cpp
