@@ -3,6 +3,7 @@ As an idea of maximum Brook speed:
 Computer: 3.0Ghz Intel Core 2 Duo with 1600Mhz dual channel DDR2 RAM
 GPU:      ATI HD 2900 XT 740Mhz Core 1000Mhz Mem
 
+32 bit Windows XP Catalyst 7.11 drivers:
 
 Brook GPU benchmarker (C) 2007 Niall Douglas
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -32,4 +33,30 @@ Your GPU did around 360.512634 GFLOP/sec
 CPU to GPU was 770.188904 Mb/sec
 GPU to CPU was 1503.547363 Mb/sec
 Total time=0.022263 secs. This is 18.023964 times faster than CPU backend
+Press Return to exit!
+
+
+64 bit Ubuntu 7.10 edgy Catalyst 8.42.3 drivers:
+
+Brook GPU benchmarker (C) 2007 Niall Douglas
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Available devices:
+
+cpu
+ogl::0.0:ATI Technologies Inc. ATI Radeon HD 2900 XT
+
+Compiled with OpenMP support! Using 2 threads on 2 processors ...
+Time to write 4Mb of data, perform 2 billion operations and read 4Mb of data ...
+
+Benchmarking 'cpu' runtime ...
+Your GPU did around 2.326348 GFLOP/sec
+CPU to GPU was 2483.652588 Mb/sec
+GPU to CPU was 1775.792358 Mb/sec
+Total time=0.237221 secs.
+
+Benchmarking 'ogl::0.0:ATI Technologies Inc. ATI Radeon HD 2900 XT' runtime ...
+Your GPU did around 40.970978 GFLOP/sec
+CPU to GPU was 2381.107422 Mb/sec
+GPU to CPU was 292.576111 Mb/sec
+Total time=0.019823 secs. This is 11.966783 times faster than CPU backend
 Press Return to exit!

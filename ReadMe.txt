@@ -26,13 +26,20 @@ BETA release warnings!
 
    * We'd ESPECIALLY like help on the following:
      1. Multi backend usage, in PARTICULAR driving multiple GPU's.
+
         This is known to be broken for OpenGL on Windows currently for all
         ATI cards due to a driver bug disabling all OpenGL acceleration
         if there is more than one display attached to the current desktop.
         The DX9 backend works well for parallel multi-backend usage.
+
         This is also known to be broken on Linux currently for all
         ATI cards due to a driver bug preventing the use of more than
         one ATI card at once in X11.
+
+        Furthermore, on Linux ATI drivers currently appear incapable of
+        permitting multiple OpenGL contexts to be used simultaneously
+        from multiple threads.
+
      2. Patches fixing up the regression failures on OpenGL (both Linux
         and Windows)
 
