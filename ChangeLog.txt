@@ -78,7 +78,7 @@ Release v0.5 (??/??/??)
    * { ned: 1882 } Moved new feature tests into their own directory and added
                    a Benchmarker program to the Mandelbrot program
 
-   * { ned: XXXX } Added regression test for multi-backend usage
+   * { ned: 1883 } Added regression test for multi-backend usage
 
 
 

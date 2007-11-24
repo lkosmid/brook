@@ -1,6 +1,7 @@
-				 Brook GPU
+Brook GPU v0.5 beta 1, Supercomputing for Home PC's!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-(Last Revised 29th October 2007)
+(Last Revised 24th November 2007)
 
 
 Installation
@@ -8,6 +9,32 @@ Installation
    * A quick start guide for getting Brook up and running on Windows
      platforms is provided in QUICK_START.txt. For Linux and Mac OS X
      it's as simple as typing 'make'.
+
+
+BETA release warnings!
+
+   * This is a beta one release - that means it's early, it's buggy
+     and has lots of known issues:
+     1. Yes, we know the entire tree doesn't build without error yet
+        using make. make brcc, make runtime and make regression all
+        SHOULD work unless there's something wrong with your system.
+        Other stuff is still being upgraded to use the new features.
+     2. Some of the tests are known to fail on the GLSL OpenGL backend
+        due to bugs in NVidia's Cg compiler output.
+     3. The MSVC project files are in no consistent way between MSVC
+        versions. Only the _80 variants are likely to work at all.
+
+   * We'd ESPECIALLY like help on the following:
+     1. Multi backend usage, in PARTICULAR driving multiple GPU's.
+        This is known to be broken for OpenGL on Windows currently for all
+        ATI cards due to a driver bug disabling all OpenGL acceleration
+        if there is more than one display attached to the current desktop.
+        The DX9 backend works well for parallel multi-backend usage.
+        This is also known to be broken on Linux currently for all
+        ATI cards due to a driver bug preventing the use of more than
+        one ATI card at once in X11.
+     2. Patches fixing up the regression failures on OpenGL (both Linux
+        and Windows)
 
 
 Hardware Prerequisites
@@ -34,6 +61,7 @@ Hardware Prerequisites
      default - it can be disabled by setting the macro BRT_USE_SSE to 0.
      Alternatively, setting it to 4 enables SSE4 support.
 
+
 Software Prerequisites
 
    * Running Brook applications requires up-to-date drivers for your
@@ -55,12 +83,16 @@ Software Prerequisites
         * "dx9" to use the DirectX 9 runtime
 
         * "ogl" to use the OpenGL runtime
+        
+        * "ctm" to use the AMD CTM runtime
+     
+     Setting BRT_ADAPTER chooses by index which adapter to use.
 
    * Developing Brook applications requires a built BRCC compiler and
      Brook runtime static library, as well as the command-line shader
      compilers cgc and (on Windows) fxc.
 
-        * The required version of cgc is 1.3b2. The Cg Toolkit (including
+        * The minimum version of cgc is 1.3b2. The Cg Toolkit (including
           cgc) can be obtained from:
           (http://developer.nvidia.com/object/cg_toolkit.html)
 
@@ -114,7 +146,7 @@ Software Prerequisites
           link.exe available with Visual Studio 7.1, or as a free
           download. These tools must be in your PATH (available from
           the command line). The versions from Visual Studio 6.0 or
-          7.0 may work, but are not officially supported.
+          7.0 WILL NOT WORK.
 
         * Windows platform headers and libs. These are included with
           Microsoft Visual Studio, and are also available for free
@@ -134,7 +166,7 @@ Software Prerequisites
      you will need:
 
         * A standard install of Visual Studio 7.1, including the C++
-          development tools and platform SDK.
+          development tools and platform SDK. MSVC 7.0 or earlier is no good.
 
         * An installation of the Microsoft DirectX 9 SDK, as detailed above.
           The installer should automatically add the appropriate headers
@@ -172,16 +204,4 @@ Building and Running Example Brook Programs
 For more information, read the Brook GPU project pages at:
 	
 	http://graphics.stanford.edu/projects/brookgpu/
-
-
-Revision History
-
-12/16/03:  Initial Beta release
-
-12/19/03:  Added text about OS for different backends
-           Linux support for nv30gl
-
-10/14/04:  Revised text to reflect upcoming 0.4 release.
-
-10/29/07:  Revised for latest hardware & software
 
