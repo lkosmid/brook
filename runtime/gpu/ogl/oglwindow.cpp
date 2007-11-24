@@ -17,7 +17,7 @@ static const char window_name[] = "Brook GL Render Window";
 #ifdef WIN32
 
 static HWND
-create_window (int window_x, int window_y) {
+create_window (int window_x, int window_y, bool fullscreen) {
   HINSTANCE hinstance;
   WNDCLASS wc;
   DWORD window_style;
@@ -27,8 +27,8 @@ create_window (int window_x, int window_y) {
    * These parameters are useless since the window is never shown nor
    * rendered into.
    */
-  const int window_width = 100;
-  const int window_height = 100;
+  const int window_width = 640;
+  const int window_height = 480;
 
   hinstance = GetModuleHandle( NULL );
 
@@ -51,6 +51,7 @@ create_window (int window_x, int window_y) {
 
   window_style = ( WS_CLIPSIBLINGS | WS_CLIPCHILDREN );
   window_style |= WS_POPUP;
+  if(fullscreen) window_style |= WS_VISIBLE;
 
   // Create the window
   hwnd = CreateWindow( window_name, window_name,
@@ -181,6 +182,7 @@ OGLWindow::OGLWindow(const char* device) {
                       DISPLAY_DEVICE dd={sizeof(DISPLAY_DEVICE)};
                       for(int n=0; EnumDisplayDevices(NULL, n, &dd, NULL) && strcmp(dd.DeviceName, mi.szDevice); n++);
                       fprintf(stderr, "BRT_ADAPTER chooses adapter ogl:%s:%s\n", mi.szDevice, dd.DeviceString);
+                      strcpy(driver, mi.szDevice);
                   }
                   break;
               }
@@ -190,8 +192,20 @@ OGLWindow::OGLWindow(const char* device) {
           "Failed to find monitor matching specified display");
   } else winx=winy=0;
 
+  const char *fullscreenstr=getenv("BRT_FULLSCREEN");
+  fullscreen=false;
+  if(fullscreenstr && '1'==*fullscreenstr)
+  {
+      settings.dmSize=sizeof(DEVMODE);
+      EnumDisplaySettings(*driver ? NULL : driver, ENUM_CURRENT_SETTINGS, &settings);
+      settings.dmPelsWidth=640;
+      settings.dmPelsHeight=480;
+      if(DISP_CHANGE_SUCCESSFUL==ChangeDisplaySettingsEx(*driver ? NULL : driver, &settings,
+          NULL, CDS_FULLSCREEN, NULL)) fullscreen=true;
+  }
+
   /* Create a window */
-  hwnd = create_window(winx, winy);
+  hwnd = create_window(winx, winy, fullscreen);
   hwindowdc = GetDC(hwnd);
 #else
       // Niall's alternative which can use independent displays.

@@ -31,11 +31,12 @@ namespace brook {
     
   private:
     unsigned int fbo;
-	bool firstrun;
+	bool firstrun, fullscreen;
 #ifdef WIN32
     HGLRC hglrc_window;
     HWND hwnd;
     HDC hwindowdc;
+    DEVMODE settings;
 
 #else
      Display   *pDisplay;

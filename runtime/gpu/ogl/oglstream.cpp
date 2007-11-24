@@ -206,7 +206,7 @@ OGLContext::setTextureData(TextureHandle inTexture,
   }
   brfree(t); t=0;
 out:
-#if defined(_DEBUG)
+#if defined(_DEBUG) && 0
   CHECK_GL();
   if(inStrideBytes==oglTexture->atomsize()*oglTexture->components())
   {
