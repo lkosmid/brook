@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="mandelbrot"
-	ProjectGUID="{2F24BDCA-1745-4E6B-A4D3-6FDCC8596375}"
+	Name="benchmark"
+	ProjectGUID="{C576A9F2-03D3-4DA7-85D8-B9538BD3FF2F}"
 	RootNamespace="sum"
 	>
 	<Platforms>
@@ -162,37 +162,25 @@
 			Name="built"
 			>
 			<File
-				RelativePath=".\built\mandelbrot.cpp"
+				RelativePath=".\built\benchmark.cpp"
 				>
 			</File>
 		</Filter>
 		<File
-			RelativePath=".\benchmarks.txt"
-			>
-		</File>
-		<File
-			RelativePath=".\main.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\mandelbrot.br"
+			RelativePath=".\benchmark.br"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
 				>
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="$(SolutionDir)\bin\$(ConfigurationName)\brcc.exe -k -o $(SolutionDir)\prog\new\mandelbrot\built\mandelbrot $(SolutionDir)\prog\new\mandelbrot\mandelbrot.br&#x0D;&#x0A;"
-					Outputs=".\built\mandelbrot.cpp"
+					CommandLine="$(SolutionDir)\bin\$(ConfigurationName)\brcc.exe -k -o $(SolutionDir)\prog\new\benchmark\built\benchmark $(SolutionDir)\prog\new\benchmark\benchmark.br"
+					Outputs=".\built\benchmark.cpp"
 				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath=".\ppmImage.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\ppmImage.h"
+			RelativePath=".\main.cpp"
 			>
 		</File>
 	</Files>
