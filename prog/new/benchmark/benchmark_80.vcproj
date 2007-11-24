@@ -114,6 +114,8 @@
 				AdditionalIncludeDirectories="$(SolutionDir)\include;"
 				RuntimeLibrary="2"
 				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
+				OpenMP="true"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -174,7 +176,7 @@
 				>
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="$(SolutionDir)\bin\$(ConfigurationName)\brcc.exe -k -o $(SolutionDir)\prog\new\benchmark\built\benchmark $(SolutionDir)\prog\new\benchmark\benchmark.br"
+					CommandLine="$(SolutionDir)\bin\$(ConfigurationName)\brcc.exe -k -o $(SolutionDir)\prog\new\benchmark\built\benchmark $(SolutionDir)\prog\new\benchmark\benchmark.br&#x0D;&#x0A;"
 					Outputs=".\built\benchmark.cpp"
 				/>
 			</FileConfiguration>

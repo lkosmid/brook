@@ -17,22 +17,22 @@ Compiled with OpenMP support! Using 2 threads on 2 processors ...
 Time to write 4Mb of data, perform 2 billion operations and read 4Mb of data ...
 
 Benchmarking 'cpu' runtime ...
-Your GPU did around 1.369428 GFLOP/sec
-CPU to GPU was 1732.926270 Mb/sec
-GPU to CPU was 1708.192627 Mb/sec
-Total time=0.401273 secs.
+Your GPU did around 0.867515 GFLOP/sec
+CPU to GPU was 1527.273071 Mb/sec
+GPU to CPU was 1741.200439 Mb/sec
+Total time=0.629337 secs.
 
 Benchmarking 'ogl:\\.\DISPLAY1:ATI Radeon HD 2900 XT' runtime ...
-Your GPU did around 65.312263 GFLOP/sec
-CPU to GPU was 739.803101 Mb/sec
-GPU to CPU was 309.249329 Mb/sec
-Total time=0.029847 secs. This is 13.444139 times faster than CPU backend
+Your GPU did around 215.518845 GFLOP/sec
+CPU to GPU was 734.431335 Mb/sec
+GPU to CPU was 311.139893 Mb/sec
+Total time=0.024277 secs. This is 25.923582 times faster than CPU backend
 
 Benchmarking 'dx9:\\.\DISPLAY1:ATI Radeon HD 2900 XT' runtime ...
-Your GPU did around 360.512634 GFLOP/sec
-CPU to GPU was 770.188904 Mb/sec
-GPU to CPU was 1503.547363 Mb/sec
-Total time=0.022263 secs. This is 18.023964 times faster than CPU backend
+Your GPU did around 413.853058 GFLOP/sec
+CPU to GPU was 739.899353 Mb/sec
+GPU to CPU was 1508.855713 Mb/sec
+Total time=0.022922 secs. This is 27.455814 times faster than CPU backend
 Press Return to exit!
 
 

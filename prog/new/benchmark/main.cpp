@@ -9,9 +9,8 @@ Created: 23rd Nov 2007
 
 #define ITERATIONS 16
 
-extern void  benchmark (::brook::stream out1,
-		::brook::stream in1,
-		::brook::stream in2);
+extern void  benchmark (::brook::stream out,
+		::brook::stream in);
 
 static void runBenchmark(float &t1, float &t2, float &t3, const char *runtime)
 {
@@ -19,26 +18,25 @@ static void runBenchmark(float &t1, float &t2, float &t3, const char *runtime)
 	if(runtime)
 		brook::initialize(runtime, NULL);
     {
-	    stream out1 = stream::create<float4>(1024, 1024);
-	    stream in1 = stream::create<float4>(1024, 1024);
-	    stream in2 = stream::create<float4>(1024, 1024);
+	    stream out = stream::create<float4>(1024, 1024);
+	    stream in = stream::create<float4>(1024, 1024);
         void *outputData=brmalloc(sizeof(float4)*1024*1024);
         brook::int64 start=brook::microseconds();
         for(int n=0; n<ITERATIONS; n++)
         {
-            in1.read(outputData);
+            in.read(outputData);
             brook::finish();
         }
         brook::int64 afterwrite=brook::microseconds();
         for(int n=0; n<ITERATIONS; n++)
         {
-    	    benchmark(out1, in1, in2);
+    	    benchmark(out, in);
        	    brook::finish();
         }
         brook::int64 aftercalc=brook::microseconds();
         for(int n=0; n<ITERATIONS; n++)
         {
-    	    out1.write(outputData);
+    	    out.write(outputData);
             brook::finish();
         }
         brook::int64 afterread=brook::microseconds();

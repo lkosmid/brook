@@ -113,6 +113,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="$(SolutionDir)\include;"
+				PreprocessorDefinitions="WIN32"
 				RuntimeLibrary="2"
 			/>
 			<Tool
