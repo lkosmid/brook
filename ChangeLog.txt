@@ -74,6 +74,9 @@ Release v0.5 (??/??/??)
                    Reduce kernels currently still only run in a single thread.
                    
    * { ned: 1878 } Made BRT_ADAPTER usage consistent for DX9 and OpenGL backends
+   
+   * { ned: 1882 } Moved new feature tests into their own directory and added
+                   a Benchmarker program to the Mandelbrot program
 
    * { ned: XXXX } Added regression test for multi-backend usage
 

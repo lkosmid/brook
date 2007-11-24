@@ -1,5 +1,5 @@
 ROOTDIR := ..
 REGRESSIONDIRS := tests apps
-SUBDIRS := $(REGRESSIONDIRS)
+SUBDIRS := $(REGRESSIONDIRS) new
 
 include $(ROOTDIR)/common.mk
