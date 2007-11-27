@@ -1,3 +1,12 @@
+Todo before release:
+-=-=-=-=-=-=-=-=-=-=
+   * Move Addressable<> usage into inner loop static function (MSVC
+     optimisation bug)
+   * Fix tree build errors
+   * Check it definitely works on Vista
+   * Glowcode & valgrind everything
+   * Harmonise the MSVC project files
+
 Brook GPU v0.5 beta 1, Supercomputing for Home PC's!
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
@@ -23,6 +32,9 @@ BETA release warnings!
         due to bugs in NVidia's Cg compiler output.
      3. The MSVC project files are in no consistent way between MSVC
         versions. Only the _80 variants are likely to work at all.
+     4. Brook's runtime probably leaks memory and resources all over
+        the place currently. A full cleanup via Glowcode (on Windows)
+        and valgrind (on Linux) will be performed soon.
 
    * We'd ESPECIALLY like help on the following:
      1. Multi backend usage, in PARTICULAR driving multiple GPU's.
