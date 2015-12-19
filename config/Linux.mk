@@ -36,6 +36,6 @@ LIBRARIES        +=
 ARFLAGS		 := -rc 
 AR_OUTPUT_FLAG	 := 
 
-RUNTIME_LIBS     := brook ogl cpu gpu X11 Xt GL GLU GLEE
+RUNTIME_LIBS     := brook ogl cpu gpu X11 Xt GL GLU GLEE pthread
 
 RANLIB           := ranlib

@@ -16,6 +16,14 @@
 #include <brook/brtarray.hpp>
 #include <brook/kerneldesc.hpp>
 
+#if defined(__GNUC__) &&  __GNUC__==4 && __GNUC_MINOR__==8 && __GNUC_PATCHLEVEL__==4
+// gcc 4.8.4 ignores -lpthread if not used, resulting in binaries
+// failing at runtime loading due to the absence of pthread linking information
+#include <pthread.h>
+static void* __dummythread(void*) { return NULL; } 
+void static __forcePThreadLink() { pthread_t t1; pthread_create(&t1, NULL, &__dummythread, NULL); }
+#endif
+
 //  We are going to skip these for the simpler cpu 
 //  versions
 //#include "brtscatter.hpp"
