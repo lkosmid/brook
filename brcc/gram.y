@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <setjmp.h>
+#include <string.h>
 
 #include "lexer.h"
 #include "symbol.h"
