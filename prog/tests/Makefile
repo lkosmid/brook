@@ -17,7 +17,7 @@ REGRESSIONDIRS := accumulate allocate constant convert_iter_to_stream \
 #endif
 #endif
 
-SUBDIRS := $(REGRESSIONDIRS) streamcopy writeQuery
+SUBDIRS := $(REGRESSIONDIRS) streamcopy #writeQuery
 # big  fft infinite tessellate
 
 include $(ROOTDIR)/common.mk
