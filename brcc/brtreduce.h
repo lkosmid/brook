@@ -92,6 +92,15 @@ class BRTGLSLReduceCode : public BRTGLSLKernelCode
     void printCode(std::ostream& out) const;
 };
 
+class BRTGLESReduceCode : public BRTGLESKernelCode
+{
+  public:
+    BRTGLESReduceCode(const FunctionDef& fDef);
+   ~BRTGLESReduceCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
+
+    BRTKernelCode *dup0() const { return new BRTGLESReduceCode(*this->fDef); }
+    void printCode(std::ostream& out) const;
+};
 
 class BRTCTMReduceCode : public BRTCTMKernelCode
 {

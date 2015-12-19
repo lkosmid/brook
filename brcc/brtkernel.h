@@ -140,6 +140,15 @@ class BRTGLSLKernelCode : public BRTGPUKernelCode
    void printCode(std::ostream& out) const;
 };
 
+class BRTGLESKernelCode : public BRTGPUKernelCode
+{
+  public:
+   BRTGLESKernelCode(const FunctionDef& fDef) : BRTGPUKernelCode(fDef) {}
+   ~BRTGLESKernelCode() { /* Nothing, ~BRTKernelCode() does all the work */ }
+   
+   BRTKernelCode *dup0() const { return new BRTGLESKernelCode(*this->fDef); }
+   void printCode(std::ostream& out) const;
+};
 
 class BRTCTMKernelCode : public BRTGPUKernelCode
 {

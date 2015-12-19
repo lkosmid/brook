@@ -67,11 +67,12 @@ compile_cgc (const char * /*name*/,
   const char ps2b[]="ps_2_x";
   const char ps2a[]="ps_2_x";
   const char glsl[]="glslf";
+  const char gles[]="glesf";
   const char profileopts[] = "-profileopts";
   const char ps2b_opt[] = "NumTemps=32,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NoDependentReadLimit=0,NumInstructionSlots=512";
   const char ps2a_opt[] = "NumTemps=22,ArbitrarySwizzle=1,NoTexInstructionLimit=1,NumInstructionSlots=512";
 
-  const char arbfp_opt[]  = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=96";
+  const char arbfp_opt[]  = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=512";
   const char arbfp_x800[] = "MaxTexIndirections=4,NoDepenentReadLimit=0,NumInstructionSlots=512";
   const char arbfp_6800[] = "NumInstructionSlots=2048";
 
@@ -127,6 +128,9 @@ compile_cgc (const char * /*name*/,
     argv[5] = userect;
     //argv[6] = glsl_opt;
     break;
+  case CODEGEN_GLES:
+    argv[4] = gles;
+    break;
   default: 
      fprintf(stderr, "Unsupported Cgc target.\n");
      return NULL;
@@ -156,6 +160,9 @@ compile_cgc (const char * /*name*/,
        break;
     case CODEGEN_GLSL:
        fprintf(stderr, "GLSL target.");
+       break;
+    case CODEGEN_GLES:
+       fprintf(stderr, "GLES target.");
        break;
     case CODEGEN_PS30:
        fprintf(stderr, "PS30 target.");

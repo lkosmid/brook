@@ -307,6 +307,13 @@ BRTGLSLKernelCode::printCode(std::ostream& out) const
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
+BRTGLESKernelCode::printCode(std::ostream& out) const
+{
+   printCodeForType(out, CODEGEN_GLES);
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+void
 BRTCTMKernelCode::printCode(std::ostream& out) const
 {
    printCodeForType(out, CODEGEN_CTM);

@@ -12,6 +12,7 @@
 #define TARGET_PS2A     (1<<8)
 #define TARGET_CTM      (1<<9)
 #define TARGET_GLSL     (1<<10)
+#define TARGET_GLES     (1<<11)
 
 #define COMPILER_DEFAULT 0
 #define COMPILER_CGC     1

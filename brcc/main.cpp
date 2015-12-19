@@ -53,7 +53,7 @@ usage (void) {
         "   -N            deny support for kernels calling other kernels\n"
         "   -o prefix     prefix prepended to all output files\n"
         "   -w workspace  workspace size (16 - 2048, default 1024)\n"
-        "   -p shader     cpu/ps30/fp40/ctm/glsl/[legacy(ps20/ps2a/ps2b/fp30/arb)] (can specify multiple)\n"
+        "   -p shader     cpu/ps30/fp40/ctm/glsl/gles/[legacy(ps20/ps2a/ps2b/fp30/arb)] (can specify multiple)\n"
         "   -f compiler   favor a particular compiler (cgc / fxc / default)\n"
         "   -a arch       assume a particular GPU (default / x800 / 6800)\n"
         "\n");
@@ -151,6 +151,8 @@ parse_args (int argc, char *argv[]) {
 	  globals.target |= TARGET_ARB;
 	else if (strcasecmp (optarg, "glsl") == 0)
 	  globals.target |= TARGET_GLSL;
+	else if (strcasecmp (optarg, "gles") == 0)
+	  globals.target |= TARGET_GLES;
 	else if (strcasecmp (optarg, "cpumt") == 0)
 	  globals.target |= TARGET_MULTITHREADED_CPU;
 
@@ -184,6 +186,8 @@ parse_args (int argc, char *argv[]) {
      globals.target = TARGET_CPU | TARGET_MULTITHREADED_CPU |
                       TARGET_FP40 | TARGET_PS30 |
                       TARGET_CTM | TARGET_GLSL;
+
+  //GLES is not enabled by default since it is not supported by all Cg versions
 
   argv += optind;
   argc -= optind;

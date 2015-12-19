@@ -105,6 +105,7 @@ BRTKernelDef::print(std::ostream& out, int) const
    PRINT_CODE(FP40, fp40);
    PRINT_CODE(ARB,  arb);
    PRINT_CODE(GLSL, glsl);
+   PRINT_CODE(GLES, gles);
    PRINT_CODE(CPU,  cpu);
 #undef PRINT_CODE
 
@@ -492,6 +493,7 @@ BRTKernelDef::printStub(std::ostream& out) const
       out << "     \"fp40\", __" << *FunctionName() << "_fp40," << std::endl;
       out << "     \"arb\", __"  << *FunctionName() << "_arb,"  << std::endl;
       out << "     \"glsl\", __" << *FunctionName() << "_glsl," << std::endl;
+      out << "     \"gles\", __" << *FunctionName() << "_gles," << std::endl;
       out << "     \"ps20\", __" << *FunctionName() << "_ps20," << std::endl;
       out << "     \"ps2b\", __" << *FunctionName() << "_ps2b," << std::endl;
       out << "     \"ps2a\", __" << *FunctionName() << "_ps2a," << std::endl;

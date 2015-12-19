@@ -19,6 +19,7 @@ typedef enum {
    CODEGEN_PS2A,
    CODEGEN_CTM,
    CODEGEN_GLSL,
+   CODEGEN_GLES,
    CODEGEN_NUM_TARGETS
 } CodeGenTarget;
 
@@ -32,7 +33,8 @@ static const char* CODEGEN_TARGET_NAMES[CODEGEN_NUM_TARGETS] =
     "ps2b",
     "ps2a",
     "ctm",
-    "glsl"
+    "glsl",
+    "gles"
 };
 
 struct ShaderResourceUsage

@@ -125,6 +125,7 @@ CodeGen_Init(void) {
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
       shadercompile[CODEGEN_GLSL] = compile_cgc;
+      shadercompile[CODEGEN_GLES] = compile_cgc;
       break;
 #endif
    case COMPILER_CGC:
@@ -145,6 +146,7 @@ CodeGen_Init(void) {
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_cgc;
       shadercompile[CODEGEN_GLSL] = compile_cgc;
+      shadercompile[CODEGEN_GLES] = compile_cgc;
       break;
    case COMPILER_FXC:
       shadercompile[CODEGEN_PS20] = compile_fxc;
@@ -156,6 +158,7 @@ CodeGen_Init(void) {
       shadercompile[CODEGEN_FP40] = compile_cgc;
       shadercompile[CODEGEN_ARB]  = compile_fxc;
       shadercompile[CODEGEN_GLSL] = compile_cgc;
+      shadercompile[CODEGEN_GLES] = compile_cgc;
       break;
    default:
       fprintf (stderr, 
@@ -1902,6 +1905,7 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
      case CODEGEN_PS2A:
      case CODEGEN_PS30:
 	 case CODEGEN_GLSL:
+	 case CODEGEN_GLES:
      case CODEGEN_CTM:
        commentString = "//";
        break;
@@ -1941,6 +1945,7 @@ generateShaderTechnique(Decl** args, int nArgs, const char* name,
        target == CODEGEN_CTM  ||
        //target == CODEGEN_ARB  ||
        target == CODEGEN_GLSL ||
+       target == CODEGEN_GLES ||
        target == CODEGEN_FP40 ||
        globals.arch == GPU_ARCH_X800 ||
        globals.arch == GPU_ARCH_6800 ||
@@ -2096,6 +2101,7 @@ CodeGen_SplitAndEmitCode(FunctionDef* inFunctionDef,
   case CODEGEN_FP30:
   case CODEGEN_FP40:
   case CODEGEN_GLSL:
+  case CODEGEN_GLES:
   case CODEGEN_ARB:{
     std::auto_ptr<SplitCompiler> tmp( new SplitCompilerCg( target ) );
     compiler = tmp;

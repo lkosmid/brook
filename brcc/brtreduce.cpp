@@ -72,6 +72,12 @@ BRTGLSLReduceCode::BRTGLSLReduceCode(const FunctionDef& _fDef)
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+BRTGLESReduceCode::BRTGLESReduceCode(const FunctionDef& _fDef)
+  : BRTGLESKernelCode(_fDef)//converts gathers
+{
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 BRTCTMReduceCode::BRTCTMReduceCode(const FunctionDef& _fDef)
   : BRTCTMKernelCode(_fDef)//converts gathers
 {
@@ -106,6 +112,12 @@ void
 BRTGLSLReduceCode::printCode(std::ostream& out) const
 {
   this->BRTGLSLKernelCode::printCode(out);
+}
+
+void
+BRTGLESReduceCode::printCode(std::ostream& out) const
+{
+  this->BRTGLESKernelCode::printCode(out);
 }
 
 void
