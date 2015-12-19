@@ -24,6 +24,8 @@ extern "C" {
 #include "subprocess.h"
 #include "cgc.h"
 
+#define CG_VERSION_HEADER "cgc version "
+
 static void replaceAll(char *string, const char *find, const char *replace)
 {
 	size_t len=strlen(string), flen=strlen(find), rlen=strlen(replace);
@@ -76,6 +78,7 @@ compile_cgc (const char * /*name*/,
   //char glsl_opt[] = "";
   const char userect[] ="-DUSERECT=1";
   const char dxpixelshader[] = "-DDXPIXELSHADER";
+  const char * cgversion=NULL;
 
   switch (target) {
   case CODEGEN_PS20:
@@ -182,7 +185,7 @@ compile_cgc (const char * /*name*/,
   // figure out where the fragment code really starts...
 
   startline = strstr (fpcode, "!!");
-  if (!startline) startline = strstr(fpcode, "// transl output by Cg compiler");
+  if (!startline) startline = strstr(fpcode, "//");
   if (startline) {
      char *p, *q;
      // Find where the fragment code really ends
@@ -195,6 +198,16 @@ compile_cgc (const char * /*name*/,
      
      endline = strstr (fpcode, "\nEND\n");
      if (!endline) endline = strstr(fpcode, " // main end\n");
+  }
+
+  //Detect version
+  if (!cgversion)
+  {
+	  const char * versionstart = strstr(fpcode, CG_VERSION_HEADER);
+	  versionstart+=strlen(CG_VERSION_HEADER);
+	  const char * endversion = strstr(fpcode, ",");
+	  cgversion=strndup(versionstart, endversion-versionstart);
+	  fprintf(stderr, "Cg version: %s\n", cgversion);
   }
   
   if (!startline || !endline ) {
@@ -226,10 +239,16 @@ compile_cgc (const char * /*name*/,
   // ned: Many hacks to fix up broken GLSL output from cgc
   char *fpcodenew = (char *) malloc(strlen(fpcode)+16384);
   if(CODEGEN_GLSL==target) {
+	  //Versions prior to 3.1.0013 required fixes
+	  if(strncmp(cgversion, "3.1.0013", strlen("3.1.0013") > 0))
+	  {
+		  printf("lower than 3.1\n");
+    // ned: Many hacks to fix up broken GLSL output from cgc
     // Prepend required headers
     const char header[]="# version 110\n# extension GL_ARB_texture_rectangle : enable\n";
     memcpy(fpcodenew, header, sizeof(header));
     strcpy(fpcodenew+sizeof(header)-1, fpcode);
+	  
     // cgc isn't aware of the GL_ARB_texture_rectangle so munge
     replaceAll(fpcodenew, "samplerRect", "sampler2DRect");
     // cgc is particularly braindead for not knowing what gl_FragData is
@@ -254,6 +273,11 @@ compile_cgc (const char * /*name*/,
     // GLSL may not legally contain __, so why does cgc output that?
     replaceAll(fpcodenew, "___", "_CGCdashdash_");
     replaceAll(fpcodenew, "__", "_CGCdash_");
+      }
+	  else
+	  {
+		  strcpy(fpcodenew, fpcode);
+	  }
   }
   else strcpy(fpcodenew, fpcode);
   // Wasn't escaping backslashes on Windows either
