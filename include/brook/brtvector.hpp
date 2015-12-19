@@ -120,7 +120,7 @@ template <class T> typename GetValueOf<T>::type GetAt (const T& in,int i) {
 template <class T> static typename GetValueOf<T>::type GetAt (const T& in,int i) {
     return in.getAt(i);
 }
-#define SPECIALGETAT(TYP) template <> static TYP GetAt (const TYP& in,int i) {return in;}
+#define SPECIALGETAT(TYP) template <> TYP GetAt (const TYP& in,int i) {return in;}
 
 SPECIALGETAT(int)
 SPECIALGETAT(unsigned int)
