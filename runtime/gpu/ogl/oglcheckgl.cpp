@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 #include <assert.h>
+#include <stdio.h>
 
 #include "oglcheckgl.hpp"
 #include "oglfunc.hpp"

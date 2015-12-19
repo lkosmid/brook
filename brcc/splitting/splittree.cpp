@@ -10,6 +10,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <climits>
 
 #include <algorithm>
 #include <climits>

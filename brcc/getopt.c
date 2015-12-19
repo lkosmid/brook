@@ -194,7 +194,7 @@ getopt_internal(
 		char * const *nargv,
 		const char *options)
 {
-	char *oli;				/* option letter list index */
+	const char *oli;				/* option letter list index */
 	int optchar;
 
 	_DIAGASSERT(nargv != NULL);

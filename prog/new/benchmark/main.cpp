@@ -5,6 +5,7 @@ Created: 23rd Nov 2007
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "brook/brook.hpp"
 
 #define ITERATIONS 16

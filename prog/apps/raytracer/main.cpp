@@ -14,6 +14,7 @@
 
 
 #include "main.h"
+#include "streamTypes.h"
 #include "getopt.h"
 #include "Bitvector.h"
 #include "FileIO.h"

@@ -1,4 +1,4 @@
-
+#include <string.h>
 #include "../gpucontext.hpp"
 
 #include "oglfunc.hpp"

@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_NZ_PER_ROW  5
 #define NUM_ROWS        10

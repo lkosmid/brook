@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "ppm3d.h"
 #include "volume_division.h"
 char use_vout_filter=1;

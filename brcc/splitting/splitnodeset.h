@@ -8,6 +8,7 @@
 #endif
 
 #include <vector>
+#include <cstddef>
 
 class SplitNode;
 

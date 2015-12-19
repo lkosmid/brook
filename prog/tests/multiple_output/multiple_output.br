@@ -1,6 +1,7 @@
 // multiple_output.br
 
 #include <stdio.h>
+#include <string.h>
 
 kernel void doubleAndSquare( float input<>, out float doubled<>, out float squared<> ) {
   doubled = 2*input;

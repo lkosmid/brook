@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 /* vc7 floating point paranoia.  This program is in serious violation. */
 #ifdef _WIN32
 #pragma warning(disable:4244)

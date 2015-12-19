@@ -8,6 +8,7 @@
 #include "cpu.hpp"
 #include <map>
 #include <string>
+#include <string.h>
 #include <iostream>
 #include <math.h>
 #include <assert.h>

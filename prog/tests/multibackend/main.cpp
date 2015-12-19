@@ -5,6 +5,7 @@ Created: 14th November 2007
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "brook/brook.hpp"
 
 using namespace brook;

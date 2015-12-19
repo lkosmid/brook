@@ -5,6 +5,7 @@ Created: 18th July 2007
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "brook/brook.hpp"
 #include "ppmImage.h"
 

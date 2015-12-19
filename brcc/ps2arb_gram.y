@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <string>
 #include <string.h>
 
@@ -436,7 +437,7 @@ srcreg: optionalnegate readablereg optionalwritemask
         ret.reg.negate = $1;
         ret.reg.reg = $2;
         ret.reg.swizzlemask = $3;
-        $$=ret.reg
+        $$=ret.reg;
 };
 
 readablereg: PS_COLORREG | PS_TEXCOORDREG | PS_SAMPLEREG | PS_CONSTREG | PS_TEMPREG

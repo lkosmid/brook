@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <gpufft.hpp>
 #include "main.h"
 #include "ppm.h"

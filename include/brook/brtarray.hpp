@@ -3,6 +3,8 @@
 #ifndef MULTIPLE_ARRAY_BOUNDS_LOOKUPS
 #define ARRAY_EPSILON .25
 
+#include <cstdio>
+
 template <class W> unsigned int clampArrayBound(W val, unsigned int extent) {
     val=(W)floor(val+ARRAY_EPSILON);
     assert(val>-80000&&val<extent+80000);
