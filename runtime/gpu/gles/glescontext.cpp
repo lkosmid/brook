@@ -42,6 +42,7 @@ GLESContext::init (const char* device) {
   }
 
   glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &image_units);
+  CHECK_GL();
   tex_coords=image_units;
   
   GPUAssert (tex_coords <= image_units,
@@ -49,6 +50,7 @@ GLESContext::init (const char* device) {
   _slopTextureUnit = (unsigned int) (image_units - 1);
 
   glGetIntegerv(GL_MAX_TEXTURE_SIZE, (GLint *) &_maxTextureExtent);
+  CHECK_GL();
 
 #ifdef GLES3
   glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, (GLint *) &_maxOutputCount);
@@ -65,7 +67,8 @@ GLESContext::GLESContext():
   _maxTextureExtent(1024),
   _maxOutputCount(1), 
   _boundPixelShader(NULL), 
-  _wnd(NULL)
+  _wnd(NULL),
+  vShader(trivial_GLSLES_vshader)
 {
   int i;
   for (i=0; i<32; i++) {

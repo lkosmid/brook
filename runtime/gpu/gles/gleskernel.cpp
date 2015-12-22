@@ -25,10 +25,12 @@ GLESPixelShader::GLESPixelShader(unsigned int _id, const char * _program_string)
   }
 }
 
-GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_string):
-  GLESPixelShader(_id, program_string), programid(0) {
+GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_string, unsigned int _vid):
+  GLESPixelShader(_id, program_string), programid(0), vid(_vid) {
   GLint status = 0;
   programid = glCreateProgram();
+  //attach the trivial vertex shader
+  glAttachShader(programid, vid);
   glAttachShader(programid, id);
   glLinkProgram(programid);
 
@@ -115,6 +117,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
 GLESSLPixelShader::~GLESSLPixelShader() {
   glDeleteProgram(programid);
   glDeleteShader(id);
+  glDeleteShader(vid);
 }  
 
 void 
@@ -146,6 +149,7 @@ GLESSLPixelShader::bindPixelShader() {
   //glBindProgram(GL_FRAGMENT_SHADER, 0);
   //glDisable(GL_FRAGMENT_SHADER);
   glUseProgram(programid);
+  CHECK_GL();
   // For compatibility with ARB, we simply set these incrementally
   int v=0;
   for(int i=0; !sampler_names[i].empty(); ++i) {
@@ -156,8 +160,8 @@ GLESSLPixelShader::bindPixelShader() {
     for(std::vector<int>::iterator it=values.begin(); it!=values.end(); ++it)
       *it=v++;
     glUniform1iv(glGetUniformLocation(programid, samplername.c_str()), items, &values.front());
+	CHECK_GL();
   }
-  CHECK_GL();
 }
 
 
@@ -185,7 +189,8 @@ GLESContext::getPassthroughVertexShader( const char* inShaderFormat ) {
 //Probably this needs to be removed, since it seems ARB related
 GPUContext::PixelShaderHandle 
 GLESContext::getPassthroughPixelShader( const char* inShaderFormat ) {
-  
+assert(0);
+ /* 
   //fprintf (stderr, "getPassthroughPixelShader: this=0x%p\n", this);
 
   if (!_passthroughPixelShader) {
@@ -208,20 +213,22 @@ GLESContext::getPassthroughPixelShader( const char* inShaderFormat ) {
 
   //fprintf (stderr, "  returning 0x%p\n ", _passthroughPixelShader);
   return (GPUContext::PixelShaderHandle) _passthroughPixelShader;
-}
+*/}
 
-GPUContext::PixelShaderHandle
-GLESContext::createPixelShader( const char* shader ) 
+unsigned int 
+GLESContext::createShader( const char* shader, GLenum shaderType ) 
 {
   unsigned int id;
   if(strncmp(shader, "!!ARBfp", 7)) {
     // This is a GLSL shader
     GLint status = 0, shaderlen = strlen(shader);
 
-    id = glCreateShader(GL_FRAGMENT_SHADER);
+    id = glCreateShader(shaderType);
 	glShaderSource(id, 1, &shader, &shaderlen);
     glCompileShader(id);
     glGetShaderiv(id, GL_COMPILE_STATUS, &status);
+	printf("Compiling %s shader with source:\n%s\n", 
+			(shaderType==/*GL_FRAGMENT_PROGRAM_ARB*/GL_FRAGMENT_SHADER)?"Fragment":"Vertex", shader);
     if(GL_TRUE!=status) {
       char *errlog;
       glGetShaderiv(id, GL_INFO_LOG_LENGTH, &status);
@@ -233,8 +240,18 @@ GLESContext::createPixelShader( const char* shader )
       assert(0);
       exit(1);
     }
-    return (GPUContext::PixelShaderHandle) new GLESSLPixelShader(id,shader);
+    return id;
   }
+  else assert(0);
+}
+
+GPUContext::PixelShaderHandle
+GLESContext::createPixelShader( const char* shader ) 
+{
+	unsigned int id, vid;
+	vid = createShader(vShader, GL_VERTEX_SHADER );
+	id = createShader(shader, GL_FRAGMENT_SHADER );
+    return (GPUContext::PixelShaderHandle) new GLESSLPixelShader(id,shader,vid);
 }
 
 void 
@@ -259,11 +276,11 @@ GLESContext::bindTexture( unsigned int inIndex,
             "Too many bound textures");
 
   glActiveTexture(GL_TEXTURE0+inIndex);
+  CHECK_GL();
   glBindTexture(GL_TEXTURE_2D, glesTexture->id());
+  CHECK_GL();
 
   _boundTextures[inIndex] = glesTexture;
-
-  CHECK_GL();
 }
 
 
@@ -887,7 +904,7 @@ printf("Unbind framebuffer to stop drawing\n");
 #if defined(_DEBUG) && 0
     if(outputTextures[i]) {
       printf("Unsetting texture %u from output %d\n", outputTextures[i]->id(), i);
-      glFramebufferTexture2DEXT (GL_FRAMEBUFFER, outputEnums[i], 
+      glFramebufferTexture2D(GL_FRAMEBUFFER, outputEnums[i], 
                  GL_TEXTURE_2D, 0, 0);
     }
 #endif

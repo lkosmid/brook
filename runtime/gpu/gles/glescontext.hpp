@@ -39,10 +39,27 @@ namespace brook {
     std::string constant_types[256], sampler_names[32];
   public:
     unsigned int programid;
-    GLESSLPixelShader(unsigned int id, const char *program_string);
+    unsigned int vid;
+    GLESSLPixelShader(unsigned int id, const char *program_string, unsigned int vid);
     ~GLESSLPixelShader();
     virtual void bindConstant( unsigned int inIndex, const float4& inValue );
     virtual void bindPixelShader();
+
+    //Let's define a trivial vertex shader:
+
+#define trivial_GLSLES_vshader \
+	    "attribute vec4 av4position;\n"\
+	    "attribute vec4 aTEX0;      \n"\
+	    "attribute vec4 aTEX1;      \n"\
+	    "varying vec4 TEX0;         \n"\
+	    "varying vec4 TEX1;         \n"\
+	    "uniform mat4 mvp;          \n"\
+		"void main()                \n"\
+		"{                          \n"\
+		"   gl_Position = mvp * av4position; \n"\
+		"   TEX0 = aTEX0; \n"\
+		"   TEX1 = aTEX1; \n"\
+		"}                           \n"
   };
 
 
@@ -147,6 +164,9 @@ namespace brook {
     virtual PixelShaderHandle 
     createPixelShader( const char* inSource );
 
+    virtual unsigned int
+    createShader( const char* inSource, GLenum shaderType );
+
     /* Returns true if all of the GL extensions are 
     ** available for this context
     */
@@ -228,6 +248,9 @@ namespace brook {
     bool _isUsingAddressTranslation, _isUsingOutputDomain;
 
     void writeToTexture(GLESTexture *glesTexture, GLint x, GLint y, GLint w, GLint h, const void *inData);
+
+    //In GLSLES we have to define both fragment and pixel shaders
+    const char *vShader;
   };
 
 }

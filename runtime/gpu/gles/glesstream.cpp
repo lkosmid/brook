@@ -82,18 +82,29 @@ static void mapTexture(GLESTexture *glesTexture)
   int id;
   glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
              GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &id);
+  CHECK_GL();
+  printf("GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE in map texture:%x\n", id);
   if(id)
+  {
     glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
              GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &id);
+  CHECK_GL();
+  printf("id:%d, glesTexture->id():%d\n", id, glesTexture->id());
+  }
   if(id!=(int) glesTexture->id())
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
+  {
+    glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
            GL_TEXTURE_2D, glesTexture->id(), 0);
   CHECK_GL();
-#ifdef _DEBUG
+  }
+  CHECK_GL();
+//#ifdef _DEBUG
   glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
              GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &id);
+  CHECK_GL();
+  printf("id:%d, glesTexture->id():%d\n", id, glesTexture->id());
   assert(id==glesTexture->id());
-#endif
+//#endif
 }
 
 // Writes data into a texture
@@ -101,17 +112,26 @@ void GLESContext::writeToTexture(GLESTexture *glesTexture, GLint x, GLint y, GLi
 {
   unsigned int elemsize=glesTexture->numInternalComponents();//we're always reading from a float pbuffer, therefore we have to give it a reasonable constant for FLOAT, not for BYTE... luminance is wrong here.
   glActiveTexture(GL_TEXTURE0);
+  CHECK_GL();
   glBindTexture (GL_TEXTURE_2D, glesTexture->id());
+  CHECK_GL();
   if(!_havePBOs) {
-    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h,
+    //subimage2d in gles fails if teximage2d hasn't been used previously. We need to make the runtime to remember or use always tex2d for now
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, inData);
+#if 0
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, 128, 128,
 #ifdef GLES3
                  /* glesTexture->nativeFormat(), // */ elemsize==1?GL_RED:(elemsize==3?GL_RGB:GL_RGBA),
                  glesTexture->elementType()==GLESTexture::GLES_FIXED?GL_UNSIGNED_BYTE:(glesTexture->elementType()==GLESTexture::GLES_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), 
 #else
-                 elemsize==1?GL_ALPHA:(elemsize==3?GL_RGB:GL_RGBA),
+                 //in OpenGL ES 2 all formats except chars consist of multiple values
+                 //so pass all components always 
+                 GL_RGBA,
                  GL_UNSIGNED_BYTE, 
 #endif
                  inData);
+#endif
+    CHECK_GL();
   }
 #ifdef GLES3
   else {
@@ -128,7 +148,7 @@ void GLESContext::writeToTexture(GLESTexture *glesTexture, GLint x, GLint y, GLi
     memcpy(mem, inData, glesTexture->bytesize());
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
     CHECK_GL();
-    glTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, x, y, w, h, 
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, 
                  /* glesTexture->nativeFormat(), // */ elemsize==1?GL_RED:(elemsize==3?GL_RGB:GL_RGBA),
                  glesTexture->elementType()==GLESTexture::GLES_FIXED?GL_UNSIGNED_BYTE:(glesTexture->elementType()==GLESTexture::GLES_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), 0);
     CHECK_GL();
@@ -163,6 +183,7 @@ GLESContext::setTextureData(TextureHandle inTexture,
   bool fastPath = glesTexture->isFastSetPath( inStrideBytes, 
                                              rectW, rectH,
                                              inComponentCount );
+  CHECK_GL();
   fastPath = fastPath && !inUsesAddressTranslation;
 
 #ifdef GLES_PRINTOPS
@@ -173,6 +194,7 @@ GLESContext::setTextureData(TextureHandle inTexture,
         rectW, //glesTexture->width(), 
         rectH, //glesTexture->height(), 
         inData);
+  CHECK_GL();
     goto out;
   }
   
@@ -180,8 +202,10 @@ GLESContext::setTextureData(TextureHandle inTexture,
   // by only allocating as much memory as the
   // domain needs
   t = brmalloc (glesTexture->bytesize());
+  CHECK_GL();
   if( !fullStream && inUsesAddressTranslation )
   {
+	  assert(0);
     // TIM: hack to get the texture data into our buffer
     int texW = glesTexture->width();
     int texH = glesTexture->height();
@@ -190,9 +214,11 @@ GLESContext::setTextureData(TextureHandle inTexture,
     unsigned int texExtents[] = { texH, texW };
     getTextureData( glesTexture,(float*) t, inStrideBytes, texW*texH, 2,
       texDomainMin, texDomainMax, texExtents, false );
+  CHECK_GL();
 
     glesTexture->setATData(
       inData, inStrideBytes, inRank, inDomainMin, inDomainMax, inExtents, t );
+  CHECK_GL();
 
     writeToTexture(glesTexture, 0, 0, 
         texW, //glesTexture->width(), 
@@ -202,33 +228,43 @@ GLESContext::setTextureData(TextureHandle inTexture,
   }
   else
   {
+	  printf("inStrideBytes:%d\n", inStrideBytes);
     glesTexture->copyToTextureFormat(inData, 
                                     inStrideBytes, 
                                     inComponentCount,
                                     t);
+  CHECK_GL();
 
     writeToTexture(glesTexture, minX, minY, 
         maxX - minX, //glesTexture->width(), 
         maxY - minY, //glesTexture->height(),  
         t);
+  CHECK_GL();
   }
   brfree(t); t=0;
-out:
-#if defined(_DEBUG) && 0
   CHECK_GL();
+out:
+//#if defined(_DEBUG) && 0
   if(inStrideBytes==glesTexture->atomsize()*glesTexture->components())
   {
+  CHECK_GL();
     void *t2 = brmalloc (glesTexture->bytesize());
     getTextureData(inTexture, (float *) t2, inStrideBytes, inComponentCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation);
     for(unsigned int n=0; n<inComponentCount; n++)
+	{
+			printf("inData[%d]:%f\n",n, /*(int)*/((float *)inData)[n]);
+			printf("t2[%d]:%f\n",n, /*(int)*/((float *)t2)[n]);
         if(fabs(((float *)inData)[n]-((float *)t2)[n])>0.0001)
         {
+			printf("inData[%d]:%d\n",n, (int)((float *)inData)[n]);
+			printf("t2[%d]:%f\n",n, (int)((float *)t2)[n]);
             printf("Texture contents do not match what was just written to it!\n");
             abort();
         }
+	}
 	brfree(t2);
   }
-#endif
+//#endif
   CHECK_GL();
 }
 
