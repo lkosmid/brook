@@ -140,10 +140,19 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    CHECK_GL();
    // Create a texture with NULL data
    glTexImage2D (GL_TEXTURE_2D, 0, 
+#ifdef GLES3
                  glType[_components-1][_elementType],
                  width, height, 0,
                  glFormat[_components-1][_elementType],
-                 _elementType==GLES_FIXED?GL_UNSIGNED_BYTE:(_elementType==GLES_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), NULL);
+                 _elementType==GLES_FIXED?GL_UNSIGNED_BYTE:(_elementType==GLES_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), 
+#else
+                 //For OpenGL ES 2.0 we don't have many options
+                 GL_RGBA,
+                 width, height, 0,
+                 GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+#endif
+                 NULL);
    CHECK_GL();
 }
 

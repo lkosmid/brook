@@ -449,8 +449,8 @@ GLESWindow::bindFBO() {
 
   if(firstrun || eglGetCurrentContext()!=sEGLContext) {
     //glXMakeCurrent(pDisplay, glxWindow, glxContext);
-	EGL_CHECK(eglMakeCurrent(sEGLDisplay, sEGLSurface, sEGLSurface, sEGLContext));
-    EGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, fbo));
+    EGL_CHECK(eglMakeCurrent(sEGLDisplay, sEGLSurface, sEGLSurface, sEGLContext));
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     CHECK_GL();
 	
 /*	GLenum iResult = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -466,11 +466,14 @@ GLESWindow::bindFBO() {
     glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &fb);
     assert(fb==fbo);
 #endif
-	switched_contexts=true;
-	firstrun=false;
+    switched_contexts=true;
+    firstrun=false;
   }
   else
-    EGL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, fbo));
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    CHECK_GL();
+  }
 
 printf("Bound Framebuffer:%d\n", fbo);
   

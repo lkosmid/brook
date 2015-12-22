@@ -293,7 +293,10 @@ GLESContext::getTextureData( TextureHandle inTexture,
                                               rectW, rectH,
                                               inComponentCount); 
    if (!fastPath)
-     t = brmalloc (glesTexture->bytesize());
+   {
+     //In OpenGL ES we read all 4 components when input is not char
+     t = brmalloc (glesTexture->bytesize()*4);
+   }
 
    glPixelStorei(GL_PACK_ALIGNMENT,1);
    // read back the whole thing, 
@@ -315,7 +318,8 @@ GLESContext::getTextureData( TextureHandle inTexture,
                  /* glesTexture->nativeFormat(), // */ elemsize==1?GL_RED:(elemsize==3?GL_RGB:GL_RGBA),
                  glesTexture->elementType()==GLESTexture::GLES_FIXED?GL_UNSIGNED_BYTE:(glesTexture->elementType()==GLESTexture::GLES_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), 
 #else
-                 elemsize==1?GL_ALPHA:(elemsize==3?GL_RGB:GL_RGBA),
+                 //In OpenGL ES 2.0 all outputs except chars have multiple channels, so read all of them
+                 GL_RGBA,
                  GL_UNSIGNED_BYTE, 
 #endif
                  t);

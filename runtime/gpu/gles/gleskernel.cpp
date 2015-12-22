@@ -644,9 +644,9 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
         printf("Setting texture %u as input %d\n", _boundTextures[i]->id(), i);
 #endif
         glActiveTexture(GL_TEXTURE0+i);
-		CHECK_GL();
+        CHECK_GL();
         glBindTexture(GL_TEXTURE_2D, _boundTextures[i]->id());
-		CHECK_GL();
+        CHECK_GL();
     }
     CHECK_GL();
 
@@ -654,6 +654,9 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
     for(i=0; i<numOutputs; i++) {
 #ifdef GLES_PRINTOPS
         printf("Setting texture %u as output %d\n", outputTextures[i]->id(), i);
+#ifndef GLES3
+	//OpenGL ES 2.0 doesn't support multiple outputs
+        assert(numOutputs == 1);
 #endif
         glFramebufferTexture2D(GL_FRAMEBUFFER, 
                  outputEnums[i], 
@@ -853,8 +856,6 @@ printf("MAX Viewport.height=%d\n", dim[1]);
 	  glDisableVertexAttribArray( texture_locations[i]);
 	  CHECK_GL();
   }
-  //probably check every action above?
-  CHECK_GL();
 
   free(texture_locations);
 
