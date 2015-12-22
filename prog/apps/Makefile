@@ -5,7 +5,7 @@ SUBDIRS := $(REGRESSIONDIRS) PMLSeg bitonic_sort bsearch \
 
 include ../../config/DetectOS.mk
 
-ifeq ($(OS), Windows_NT)
+ifeq ($(OS), Windows_NT$(MOBILEPROFILE))
 SUBDIRS += renderDX
 endif
 

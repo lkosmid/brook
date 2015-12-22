@@ -1,4 +1,5 @@
-ifndef OS
+#set the following to use Open GL ES
+MOBILEPROFILE = GLES
 
 ARCH=$(shell uname | sed -e 's/-.*//g')
 
@@ -15,5 +16,8 @@ OS=Default
 endif
 endif
 endif
+ifdef MOBILEPROFILE
+OS:=$(join $(OS),$(MOBILEPROFILE))
 endif
 
+$(info $(OS))
