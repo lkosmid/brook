@@ -219,7 +219,8 @@ GLESTexture::copyFromTextureFormat(const void *src,
    case 3:
    case 4:
       for (i=0; i<dstElemCount; i++) {
-         memcpy(dst,src,_atomsize*_components);
+          //In GLES 2.0 we read 4 components except in the case of char streams
+         memcpy(dst,src,4*_atomsize*_components);
          dst = (((unsigned char *) (dst)) + dstStrideBytes);
          src = ((unsigned char *)src) + _elemsize*_atomsize;
       }
@@ -382,7 +383,8 @@ void GLESTexture::getATData(
         {
           size_t streamIndex = offsetY + x*strides[0];
           const void* textureElement = ((unsigned char*)inTextureData) + streamIndex*copySize;
-          memcpy(streamElement,textureElement,copySize);
+          //In GLES 2.0 we read 4 components except in the case of char streams
+          memcpy(streamElement,textureElement,4*copySize);
           streamElement=((unsigned char*)streamElement)+streamElementSize;
         }
       }
