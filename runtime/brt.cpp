@@ -21,12 +21,21 @@
 #include "gpu/ogl/oglruntime.hpp"
 #endif
 
+#ifdef BUILD_GLES
+#include "gpu/gles/glesruntime.hpp"
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #else
 #include <X11/Xlib.h>
+#ifdef BUILD_OGL
 #include <GL/gl.h>
 #include <GL/glx.h>
+#else 
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#endif
 #endif
 
 #include "cpu/cpu.hpp"
@@ -270,6 +279,11 @@ namespace brook {
 #else
       fprintf (stderr,"* Not supported on this platform *\n");
 #endif
+#ifdef BUILD_GLES
+      fprintf (stderr,"* BRT_RUNTIME = %s               *\n", GLES_RUNTIME_STRING);
+#else
+      fprintf (stderr,"* Not supported on this platform *\n");
+#endif
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* DirectX9 Backend:              *\n");
 #ifdef BUILD_DX9                                       
@@ -331,6 +345,18 @@ namespace brook {
     }
 #endif
 
+#ifdef BUILD_GLES
+    if (!strncmp(env, GLES_RUNTIME_STRING, sizeof(GLES_RUNTIME_STRING)-1)) {
+      Runtime* result = GLESRuntime::create( inContextValue, env );
+      if( result )
+        return result;
+
+      fprintf(stderr, 
+	      "Unable to initialize OpenGL ES 2.0 runtime, falling back to CPU\n");
+      return new CPURuntime();
+    }
+#endif
+
     if (strcmp(env,CPU_RUNTIME_STRING)) {
       fprintf (stderr, "Unknown runtime requested: %s\n", env);
       fprintf (stderr, "Runtimes:\n\n");
@@ -340,6 +366,11 @@ namespace brook {
       fprintf (stderr, "  OpenGL Backend:                \n");
 #ifdef BUILD_OGL       
       fprintf (stderr, "  BRT_RUNTIME = %s              \n", OGL_RUNTIME_STRING);
+#else                  
+      fprintf (stderr, "  Not supported on this platform \n");
+#endif                 
+#ifdef BUILD_GLES       
+      fprintf (stderr, "  BRT_RUNTIME = %s              \n", GLES_RUNTIME_STRING);
 #else                  
       fprintf (stderr, "  Not supported on this platform \n");
 #endif                 
