@@ -219,15 +219,49 @@ GLESTexture::copyFromTextureFormat(const void *src,
    case 3:
    case 4:
       for (i=0; i<dstElemCount; i++) {
-          //In GLES 2.0 we read 4 components except in the case of char streams
-         memcpy(dst,src,4*_atomsize*_components);
-         dst = (((unsigned char *) (dst)) + dstStrideBytes);
-         src = ((unsigned char *)src) + _elemsize*_atomsize;
+         if(1)//type==floating point
+         {
+            convert_fp_from_gpu(dst, src);
+            dst = (((unsigned char *) (dst)) + dstStrideBytes);
+            src = ((unsigned char *)src) + 4*_elemsize*_atomsize;
+         }
+         else
+         {
+            //In GLES 2.0 we read 4 components except in the case of char streams
+            memcpy(dst,src,4*_atomsize*_components);
+            dst = (((unsigned char *) (dst)) + dstStrideBytes);
+            src = ((unsigned char *)src) + 4*_elemsize*_atomsize;
+         }
       }
       break;
    default: 
       GPUError("Unknown Texture Format");
    }
+}
+
+void 
+GLESTexture::convert_fp_from_gpu(void *dst, const void *src) const
+{
+   const unsigned char* _src= (unsigned char*) src;
+   union {	
+      float f;
+      struct{
+         unsigned int mant:23;
+         unsigned int exp:8;
+         unsigned int sign:1;
+      };
+   }__attribute__ ((packed)) f;
+   assert(sizeof(float) == sizeof(f));
+   memset(&f, 0, sizeof(f));
+
+   f.exp=_src[0];
+   f.mant = ((_src[1] & 0x7F) << 16) ;
+   f.sign= (_src[1] & 0x80)  >> 7;
+   f.mant = (f.mant & 0x7F0000) | (_src[2] << 8) ;
+   f.mant = (f.mant & 0x7FFF00) | _src[3] ;
+
+   memcpy(dst,&f,sizeof(f));
+//   *((float*)dst)=f.f;
 }
 
 void GLESTexture::getRectToCopy(
@@ -383,6 +417,7 @@ void GLESTexture::getATData(
         {
           size_t streamIndex = offsetY + x*strides[0];
           const void* textureElement = ((unsigned char*)inTextureData) + streamIndex*copySize;
+assert(0);
           //In GLES 2.0 we read 4 components except in the case of char streams
           memcpy(streamElement,textureElement,4*copySize);
           streamElement=((unsigned char*)streamElement)+streamElementSize;

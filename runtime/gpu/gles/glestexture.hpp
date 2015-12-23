@@ -104,6 +104,8 @@ namespace brook {
       const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
       const void* inTextureData );
 
+    //Converts a floating point element from GPU to CPU representation
+    void convert_fp_from_gpu(void *dst, const void *src) const;
 
   private:
     unsigned int _width, _height, _bytesize;
