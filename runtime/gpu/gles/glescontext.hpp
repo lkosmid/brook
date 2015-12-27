@@ -48,15 +48,14 @@ namespace brook {
     //Let's define a trivial vertex shader:
 
 #define trivial_GLSLES_vshader \
-	    "attribute vec4 av4position;\n"\
+	    "attribute vec4 vPosition;\n"\
 	    "attribute vec4 aTEX0;      \n"\
 	    "attribute vec4 aTEX1;      \n"\
 	    "varying vec4 TEX0;         \n"\
 	    "varying vec4 TEX1;         \n"\
-	    "uniform mat4 mvp;          \n"\
 		"void main()                \n"\
 		"{                          \n"\
-		"   gl_Position = mvp * av4position; \n"\
+		"   gl_Position = vPosition; \n"\
 		"   TEX0 = aTEX0; \n"\
 		"   TEX1 = aTEX1; \n"\
 		"}                           \n"

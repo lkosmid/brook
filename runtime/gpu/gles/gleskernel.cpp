@@ -753,30 +753,14 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
   CHECK_GL();
 
   glViewport( minX, minY, width, height );
-
   CHECK_GL();
+printf("minX=%d, minY=%d, width=%d, height=%d\n",  minX, minY, width, height );
 
   //Immediate mode is not supported in GLES. We need to port this...
   //assert(0);
-  GLint uniform_index = glGetUniformLocation(((GLESSLPixelShader*)_boundPixelShader)->programid, "mvp");
-  CHECK_GL();
 printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
-  if(uniform_index == -1)
-  {
-        printf("Uniform not found at %s:%i\n", __FILE__, __LINE__);
-        assert(0);
-  }
- 
-  float aMVP[16]= {
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f, 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f
-				  };
-  glUniformMatrix4fv(uniform_index, 1, GL_FALSE, aMVP/*ortho*/);
-  CHECK_GL();
 
-  GLint vertex_index=glGetAttribLocation(((GLESSLPixelShader*)_boundPixelShader)->programid, "av4position"); 
+  GLint vertex_index=glGetAttribLocation(((GLESSLPixelShader*)_boundPixelShader)->programid, "vPosition"); 
   CHECK_GL();
   if(vertex_index == -1)
   {
