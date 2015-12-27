@@ -195,13 +195,23 @@ GLESTexture::copyToTextureFormat(const void *src,
    case 3:
    case 4:
       for (i=0; i<srcElemCount; i++) {
-         memcpy(dst,src,_atomsize*_components);
-         src = (((unsigned char *) (src)) + srcStrideBytes);
-         dst = ((unsigned char *)dst) + _elemsize*_atomsize;
+         if(1)//type==floating point
+         {
+            convert_fp_to_gpu(dst, src);
+            dst = (((unsigned char *) (dst)) + srcStrideBytes);
+            src = ((unsigned char *)src) + 4*_elemsize*_atomsize;
+         }
+         else
+         {
+            //In GLES 2.0 we read 4 components except in the case of char streams
+            memcpy(dst,src,4*_atomsize*_components);
+            src = (((unsigned char *) (src)) + srcStrideBytes);
+            dst = ((unsigned char *)dst) + 4*_elemsize*_atomsize;
+         }
       }
       break;
    default: 
-      GPUError("Unkown Texture Format");
+      GPUError("Unknown Texture Format");
    }
 }
 
@@ -375,6 +385,7 @@ void GLESTexture::setATData(
           size_t streamIndex = offsetY + x*strides[0];
 
           void* textureElement = ((unsigned char*)ioTextureData) + streamIndex*_components*_atomsize;
+assert(0);
           memcpy(textureElement,streamElement,componentSize);
           streamElement=((unsigned char *)streamElement)+componentSize;
           

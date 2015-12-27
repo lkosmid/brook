@@ -186,10 +186,11 @@ GLESContext::setTextureData(TextureHandle inTexture,
   CHECK_GL();
   fastPath = fastPath && !inUsesAddressTranslation;
 
-#ifdef GLES_PRINTOPS
+//#ifdef GLES_PRINTOPS
   printf("Writing to texture %u\n", glesTexture->id());
-#endif
+//#endif
   if (fastPath) {
+	  assert(0);
     writeToTexture(glesTexture, minX, minY,
         rectW, //glesTexture->width(), 
         rectH, //glesTexture->height(), 
@@ -201,7 +202,8 @@ GLESContext::setTextureData(TextureHandle inTexture,
   // TIM: could improve this in the domain case
   // by only allocating as much memory as the
   // domain needs
-  t = brmalloc (glesTexture->bytesize());
+  //In OpenGL ES we read all 4 components when input is not char
+  t = brmalloc (4*glesTexture->bytesize());
   CHECK_GL();
   if( !fullStream && inUsesAddressTranslation )
   {
@@ -248,7 +250,8 @@ out:
   if(inStrideBytes==glesTexture->atomsize()*glesTexture->components())
   {
   CHECK_GL();
-    void *t2 = brmalloc (glesTexture->bytesize());
+    //In OpenGL ES we read all 4 components when input is not char
+    void *t2 = brmalloc (4*glesTexture->bytesize());
     getTextureData(inTexture, (float *) t2, inStrideBytes, inComponentCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation);
     for(unsigned int n=0; n<inComponentCount; n++)
 	{
