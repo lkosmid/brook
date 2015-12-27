@@ -243,14 +243,8 @@ void
 GLESTexture::convert_fp_from_gpu(void *dst, const void *src) const
 {
    const unsigned char* _src= (unsigned char*) src;
-   union {	
-      float f;
-      struct{
-         unsigned int mant:23;
-         unsigned int exp:8;
-         unsigned int sign:1;
-      };
-   }__attribute__ ((packed)) f;
+   __float_t_ f;
+
    assert(sizeof(float) == sizeof(f));
    memset(&f, 0, sizeof(f));
 

@@ -104,6 +104,15 @@ namespace brook {
       const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
       const void* inTextureData );
 
+    union __float_t_{	
+       float f;
+       struct{
+          unsigned int mant:23;
+          unsigned int exp:8;
+          unsigned int sign:1;
+       };
+    }__attribute__ ((packed));
+
     //Converts a floating point element from GPU to CPU representation
     void convert_fp_from_gpu(void *dst, const void *src) const;
 
