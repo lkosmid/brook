@@ -258,6 +258,20 @@ GLESTexture::convert_fp_from_gpu(void *dst, const void *src) const
 //   *((float*)dst)=f.f;
 }
 
+void 
+GLESTexture::convert_fp_to_gpu(void *dst, const void *src) const
+{
+   unsigned char* _dst= (unsigned char*) dst;
+   __float_t_ f;
+
+   f.f= *((float*) src);
+
+   _dst[0] = f.exp;
+   _dst[1] = (f.sign<<7) | (f.mant >> 16);
+   _dst[2] = (f.mant >> 8) & 0x00FF;
+   _dst[3] = f.mant & 0x00FF;
+}
+
 void GLESTexture::getRectToCopy(
   unsigned int inRank, const unsigned int* inDomainMin, const unsigned int* inDomainMax, const unsigned int* inExtents,
   int& outMinX, int& outMinY, int& outMaxX, int& outMaxY, size_t& outBaseOffset, bool& outFullStream, bool inUsesAddressTranslation )

@@ -116,6 +116,9 @@ namespace brook {
     //Converts a floating point element from GPU to CPU representation
     void convert_fp_from_gpu(void *dst, const void *src) const;
 
+    //Converts a floating point element from CPU to GPU representation
+    void convert_fp_to_gpu(void *dst, const void *src) const;
+
   private:
     unsigned int _width, _height, _bytesize;
     unsigned int _components;
