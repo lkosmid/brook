@@ -1,7 +1,7 @@
 
 ----------------------------------------------------------------
 Brook Quick Start Clean Installation For a Windows System
-(Last updated 29th October 2007)
+(Last updated December 2015)
 
 
 
@@ -46,6 +46,45 @@ Step 4. Install the CGC compiler from NVIDIA
     NVIDIA's developer site here:
     http://developer.nvidia.com/object/cg_toolkit.html
 
+    NVIDIA provides CGC binaries only for x86. To use brook on other platforms, eg. ARM-based Raspberry Pi
+    there are 3 options:
+    a) Cross compile everything on an x86 host
+    b) Generate .cpp files from .br files on an x86 host with CGC installed and compile and link on the target platform
+    c) use qemu-i386 to emulate CGC
+
+    For c) :
+
+    Download and install CGC from NVIDIA using the tar.gz for Linux x86.
+
+    Install qemu:
+    apt-get install qemu-user
+
+    Download i386 libc for qemu:
+    mkdir tmp
+    wget http://ipkg.nslu2-linux.org/feeds/optware/cs08q1armel/cross/unstable/qemu-libc-i386_2.3.6-1_arm.ipk
+    tar xzf qemu-libc-i386_2.3.6-1_arm.ipk
+    ar rc qemu-libc-i386_2.3.6-1_arm.deb debian-binary control.tar.gz data.tar.gz
+    tar xvfz data.tar.gz
+
+    sudo mkdir /lib/i386
+    sudo cp -r lib /usr/i386 
+    cd .. && rm -rf tmp
+
+    sudo mv /usr/bin/cgc /usr/bin/cgc.i386
+
+    sudo vi /usr/bin/cgc
+
+    with the following contents:
+
+    #!/bin/sh
+    qemu-i386 -L /lib/i386 /usr/bin/cgc.i386 $@ 2>&1 |grep -v qemu |grep -v preload
+
+    sudo chmod +x /usr/bin/cgc
+
+    You can find useful reference for the above process in the following links:
+
+    [1] https://wiki.debian.org/QemuUserEmulation
+    [2] http://unix.stackexchange.com/questions/33268/running-debian-i386-binary-on-debian-armel-via-qemu
 
 -----------------------------------------------------------------
 Step 5. Set up your system environment variables
