@@ -63,8 +63,7 @@ void swapBuffers();
      EGLSurface sEGLSurface;
      EGLContext sEGLContext;
      EGLDisplay sEGLDisplay;
-     EGLConfig aEGLConfigs[1];
-     EGLint cEGLConfigs;
+     EGLNativeWindowType window;
 #endif
     
   };
