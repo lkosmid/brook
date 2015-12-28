@@ -324,7 +324,7 @@ GLESContext::get1DInterpolant( const float4 &start,
                               const float4 &end,
                               const unsigned int w,
                               GPUInterpolant &interpolant) const {
-
+assert(0);
   if (w == 1) {
     interpolant.vertices[0] = start;
     interpolant.vertices[1] = start;
@@ -380,58 +380,16 @@ GLESContext::get2DInterpolant( const float2 &start,
                               const unsigned int w,
                               const unsigned int h,
                               GPUInterpolant &interpolant) const {
-  float2 f1, f2;
-  
-  float x1 = start.x;
-  float y1 = start.y;
-  float x2 = end.x;
-  float y2 = end.y;
-  float bias = 0.00001f;
-  
-  if (w==1 && h==1) {
-    float4 v (start.x, start.y, 0.0f, 1.0f);
-    interpolant.vertices[0] = v;
-    interpolant.vertices[1] = v;
-    interpolant.vertices[2] = v;
-    return;
-  }
-
-  float sx = x2-x1;
-  float sy = y2-y1;
-  float ratiox = sx / w;
-  float ratioy = sy / h;
-  float shiftx = ratiox * 0.5f;
-  float shifty = ratioy * 0.5f;
-
-  f1.x = x1 - shiftx + bias;
-  f1.y = y1 - shifty + bias;
-
-  f2.x = (x1+2*sx) - shiftx + bias;
-  f2.y = (y1+2*sy) - shifty + bias;
-
-  if (h==1) {
-//    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
-//    interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
-//    interpolant.vertices[2] = interpolant.vertices[0];
-    interpolant.vertices[0] = float4(f1.x, y1, 0.0f, 1.0f);
-    interpolant.vertices[1] = float4(f2.x, y1, 0.0f, 1.0f);
-    interpolant.vertices[2] = interpolant.vertices[0];
-    return;
-  }
-
-  if (w==1) {
-//    interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
-//    interpolant.vertices[1] = interpolant.vertices[0];
-//    interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
-    interpolant.vertices[0] = float4(x1, f1.y, 0.0f, 1.0f);
-    interpolant.vertices[1] = interpolant.vertices[0];
-    interpolant.vertices[2] = float4(x1, f2.y, 0.0f, 1.0f);
-    return;
-  }
-
-  interpolant.vertices[0] = float4(f1.x, f1.y, 0.0f, 1.0f);
-  interpolant.vertices[1] = float4(f2.x, f1.y, 0.0f, 1.0f);
-  interpolant.vertices[2] = float4(f1.x, f2.y, 0.0f, 1.0f);
+  unsigned int _w= w ? w:1;
+  unsigned int _h= h ? h:1;
+  //bottom-left triangle
+  interpolant.vertices[0] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[1] = float4(start.x/_w, start.y/_h, 0.0f, 1.0f);
+  interpolant.vertices[2] = float4(end.x/_w,   start.y/_h, 0.0f, 1.0f);
+   //upper-right triangle
+  interpolant.vertices[3] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[4] = float4(end.x/_w,   end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[5] = float4(end.x/_w,   start.y/_h, 0.0f, 1.0f);
 }
 
 
@@ -523,14 +481,25 @@ GLESContext::getStreamOutputRegion( const TextureHandle texture,
       maxY = domainMax[0];
   }
 
+  //bottom-left triangle
   region.vertices[0].x = -1;
-  region.vertices[0].y = -1;
+  region.vertices[0].y =  1;
 
-  region.vertices[1].x = 3;
+  region.vertices[1].x = -1;
   region.vertices[1].y = -1;
 
-  region.vertices[2].x = -1;
-  region.vertices[2].y = 3;
+  region.vertices[2].x =  1;
+  region.vertices[2].y = -1;
+
+  //upper-right triangle
+  region.vertices[3].x = -1;
+  region.vertices[3].y =  1;
+
+  region.vertices[4].x =  1;
+  region.vertices[4].y =  1;
+
+  region.vertices[5].x =  1;
+  region.vertices[5].y = -1;
 
   region.viewport.minX = minX;
   region.viewport.minY = minY;
@@ -548,6 +517,7 @@ GLESContext::getStreamReduceInterpolant( const TextureHandle inTexture,
                                         const unsigned int maxY,
                                         GPUInterpolant &interpolant) const
 {
+assert(0);
     float2 start(0.005f + minX, 0.005f + minY);
     float2 end(0.005f + maxX, 0.005f + maxY);
 
@@ -738,9 +708,8 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
   CHECK_GL();
   
   /*
-   * We execute our kernel by using it to texture a triangle that
-   * has vertices (-1, 3), (-1, -1), and (3, -1) which works out
-   * nicely to contain the square (-1, -1), (-1, 1), (1, 1), (1, -1).
+   * We execute our kernel by using it to a rectangular texture with normalised coordinates 
+   * (-1, -1), (-1, 1), (1, 1), (1, -1), composed by two triangles since GLES only supports triangle primitives
    */
 
   int minX = outputRegion.viewport.minX;
@@ -791,7 +760,7 @@ printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
   	  CHECK_GL();
 	  //glTexCoordPointer(4, GL_FLOAT, 0, (GLfloat*) (interpolants[i].vertices));
   	  glVertexAttribPointer( texture_locations[i], 4, GL_FLOAT, 0, 0, (GLfloat*) (interpolants[i].vertices));
-for(int cn=0; cn<3; cn++ )
+for(int cn=0; cn<6; cn++ )
 {
 	printf("Text Coord[%d].x=%f\n",cn, interpolants[i].vertices[cn].x);
 	printf("Text Coord[%d].y=%f\n",cn, interpolants[i].vertices[cn].y);
@@ -809,7 +778,7 @@ for(int cn=0; cn<3; cn++ )
   //glVertexPointer(2, GL_FLOAT, sizeof(float4), outputRegion.vertices);
   glVertexAttribPointer( vertex_index, 2, GL_FLOAT, 0, sizeof(float4), outputRegion.vertices);
   CHECK_GL();
-for(int cn=0; cn<3; cn++ )
+for(int cn=0; cn<6; cn++ )
 {
 	printf("Vert[%d].x=%f\n",cn,  outputRegion.vertices[cn].x);
 	printf("Vert[%d].y=%f\n",cn,  outputRegion.vertices[cn].y);
@@ -826,7 +795,7 @@ CHECK_GL();
 printf("MAX Viewport.width=%d\n", dim[0]);
 printf("MAX Viewport.height=%d\n", dim[1]);
 
-  glDrawArrays(GL_TRIANGLES,0,3);
+  glDrawArrays(GL_TRIANGLES,0,6);
   CHECK_GL();
   //glDisableClientState(GL_VERTEX_ARRAY);
   glDisableVertexAttribArray( vertex_index);

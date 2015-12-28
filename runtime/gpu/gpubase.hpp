@@ -134,11 +134,13 @@ namespace brook
   };
 
   struct GPUInterpolant {
-    float4ua vertices[3];
+    //GLES backend requires drawing 2 triangles
+    float4ua vertices[6];
   };
 
   struct GPURegion {
-    float4 vertices[3];
+    //GLES backend requires drawing 2 triangles
+    float4 vertices[6];
     struct {
         unsigned int minX, minY, maxX, maxY;
     } viewport;
