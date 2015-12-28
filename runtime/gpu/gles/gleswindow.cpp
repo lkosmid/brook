@@ -307,8 +307,6 @@ void GLESWindow::shareLists( HGLRC inContext )
 
 /* Linux version */
 
-#include <X11/Xlib.h>
-
 EGLint aEGLAttributes[] = {
         EGL_RED_SIZE, 8,
         EGL_GREEN_SIZE, 8,
@@ -391,12 +389,12 @@ GLESWindow::GLESWindow(const char *device) {
   wa.border_pixel = 0;
   wa.colormap = cmap;
 
-  glxWindow = XCreateWindow(pDisplay,
+  window = XCreateWindow(pDisplay,
                             RootWindow(pDisplay, iScreen),
                             0, 0, 1, 1, 0, visual->depth, InputOutput,
                             visual->visual, CWBorderPixel | CWColormap,
                             &wa);
-/*  if (!glXMakeCurrent(pDisplay, glxWindow, glxContext)) {
+/*  if (!glXMakeCurrent(pDisplay, window, glxContext)) {
     fprintf (stderr, "GLESWindow: Could not make current.\n");
     exit(1);
   }*/
@@ -411,7 +409,7 @@ GLESWindow::GLESWindow(const char *device) {
     XFlush(display);
 */
 
-  sEGLSurface = EGL_CHECK(eglCreateWindowSurface(sEGLDisplay, aEGLConfigs[0], (EGLNativeWindowType)glxWindow, NULL));
+  sEGLSurface = EGL_CHECK(eglCreateWindowSurface(sEGLDisplay, aEGLConfigs[0], (EGLNativeWindowType)window, NULL));
   if (sEGLSurface == EGL_NO_SURFACE) {
 	  printf("Failed to create EGL surface.\n");
 	  exit(-1);
@@ -448,7 +446,7 @@ GLESWindow::bindFBO() {
   bool switched_contexts=false;
 
   if(firstrun || eglGetCurrentContext()!=sEGLContext) {
-    //glXMakeCurrent(pDisplay, glxWindow, glxContext);
+    //glXMakeCurrent(pDisplay, window, glxContext);
     EGL_CHECK(eglMakeCurrent(sEGLDisplay, sEGLSurface, sEGLSurface, sEGLContext));
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     CHECK_GL();
@@ -502,7 +500,7 @@ GLESWindow::~GLESWindow()
   EGL_CHECK(eglDestroyContext(sEGLDisplay, sEGLContext));
   if (fbo)
     glDeleteFramebuffers(1, &fbo);
-  XDestroyWindow(pDisplay, glxWindow);
+  XDestroyWindow(pDisplay, window);
   XFreeColormap(pDisplay, cmap);
   XFree(visual);
   XCloseDisplay(pDisplay);
