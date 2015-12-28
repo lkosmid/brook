@@ -624,6 +624,7 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
     for(i=0; i<numOutputs; i++) {
 #ifdef GLES_PRINTOPS
         printf("Setting texture %u as output %d\n", outputTextures[i]->id(), i);
+#endif
 #ifndef GLES3
 	//OpenGL ES 2.0 doesn't support multiple outputs
         assert(numOutputs == 1);
