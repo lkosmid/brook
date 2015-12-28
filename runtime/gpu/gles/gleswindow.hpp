@@ -44,7 +44,7 @@ void swapBuffers();
 #else
      Display   *pDisplay;
      int iScreen;
-     Window     glxWindow;
+     Window     window;
      Colormap cmap;
      XVisualInfo *visual;
      //GLXFBConfig *glxConfig[4];
