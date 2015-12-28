@@ -5,7 +5,11 @@
 #ifdef WIN32
 #include <windows.h>
 #else
+#ifdef RPI_NO_X
+#include  "bcm_host.h"
+#else
 #include <X11/Xlib.h>
+#endif
 #endif
 
 #include <EGL/egl.h>
@@ -31,6 +35,10 @@ void swapBuffers();
     void makeCurrent();
     void shareLists(HGLRC inContext );
     unsigned int framebuffer()                    const { return fbo;       }
+
+#ifdef RPI_NO_X
+    EGLNativeWindowType RaspberryWinCreate(const char *title);
+#endif
     
   private:
     unsigned int fbo;
@@ -42,16 +50,20 @@ void swapBuffers();
     DEVMODE settings;
 
 #else
+
+#ifndef RPI_NO_X
      Display   *pDisplay;
      int iScreen;
      Window     window;
      Colormap cmap;
      XVisualInfo *visual;
+#endif
      //GLXFBConfig *glxConfig[4];
      //GLXContext  glxContext;
      EGLSurface sEGLSurface;
      EGLContext sEGLContext;
      EGLDisplay sEGLDisplay;
+     EGLNativeWindowType window;
 #endif
     
   };

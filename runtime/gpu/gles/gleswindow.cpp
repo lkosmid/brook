@@ -311,7 +311,6 @@ EGLint aEGLAttributes[] = {
         EGL_RED_SIZE, 8,
         EGL_GREEN_SIZE, 8,
         EGL_BLUE_SIZE, 8,
-        EGL_DEPTH_SIZE, 16,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
         EGL_NONE
     };
@@ -328,9 +327,11 @@ EGLint		cEGLConfigs;
 
 GLESWindow::GLESWindow(const char *device) {
 //  int attrib[] = { GLX_RGBA, None };
+#ifndef RPI_NO_X
   XSetWindowAttributes wa;
-  char displaydevice[256];
   XVisualInfo temp;
+#endif
+  char displaydevice[256];
 
   const char *colon=strchr(device, ':'), *endcolon=strrchr(device, ':');
   if(colon){
@@ -338,6 +339,7 @@ GLESWindow::GLESWindow(const char *device) {
     strncpy(displaydevice, colon+1, endcolon-colon-1);
     displaydevice[endcolon-colon-1]=0;
   }
+#ifndef RPI_NO_X
   XInitThreads();
   pDisplay = XOpenDisplay(colon ? displaydevice : NULL);
   if (pDisplay == NULL) {
@@ -346,8 +348,12 @@ GLESWindow::GLESWindow(const char *device) {
   }
   
   sEGLDisplay = EGL_CHECK(eglGetDisplay(pDisplay));
+#else
+  sEGLDisplay = EGL_CHECK(eglGetDisplay(EGL_DEFAULT_DISPLAY));
+#endif
   
   EGL_CHECK(eglInitialize(sEGLDisplay, NULL, NULL));
+  EGL_CHECK(eglGetConfigs(sEGLDisplay, NULL, 0, &cEGLConfigs));
   EGL_CHECK(eglChooseConfig(sEGLDisplay, aEGLAttributes, aEGLConfigs, 1, &cEGLConfigs));
   
   if (cEGLConfigs == 0) {
@@ -356,12 +362,14 @@ GLESWindow::GLESWindow(const char *device) {
   }
 
     
+#ifndef RPI_NO_X
   iScreen  = DefaultScreen(pDisplay);
 
   EGLConfig FBConfig = aEGLConfigs[0];
   int vID,n;
 
   EGL_CHECK(eglGetConfigAttrib(sEGLDisplay, FBConfig, EGL_NATIVE_VISUAL_ID, &vID));
+
   temp.visualid = vID;
   visual = XGetVisualInfo(pDisplay, VisualIDMask, &temp, &n);
   if (!visual) {
@@ -394,6 +402,9 @@ GLESWindow::GLESWindow(const char *device) {
                             0, 0, 1, 1, 0, visual->depth, InputOutput,
                             visual->visual, CWBorderPixel | CWColormap,
                             &wa);
+#else
+  window = RaspberryWinCreate(window_name);
+#endif
 /*  if (!glXMakeCurrent(pDisplay, window, glxContext)) {
     fprintf (stderr, "GLESWindow: Could not make current.\n");
     exit(1);
@@ -429,6 +440,61 @@ GLESWindow::GLESWindow(const char *device) {
   initglesfunc();
 }
 
+#ifdef RPI_NO_X
+//Taken from https://github.com/benosteen/opengles-book-samples/blob/master/Raspi/Common/esUtil.c
+//Figure out licencing issues
+//
+//  WinCreate() - RaspberryPi, direct surface (No X, Xlib)
+//
+//      This function initialized the display and window for EGL
+//
+EGLNativeWindowType
+GLESWindow::RaspberryWinCreate(const char *title) 
+{
+   static EGL_DISPMANX_WINDOW_T nativewindow;
+
+   DISPMANX_ELEMENT_HANDLE_T dispman_element;
+   DISPMANX_DISPLAY_HANDLE_T dispman_display;
+   DISPMANX_UPDATE_HANDLE_T dispman_update;
+   VC_RECT_T dst_rect;
+   VC_RECT_T src_rect;
+   
+
+   unsigned int display_width;
+   unsigned int display_height;
+
+   // create an EGL window surface, passing context width/height
+   EGL_CHECK(graphics_get_display_size(0 /* LCD */, &display_width, &display_height));
+   
+   // You can hardcode the resolution here:
+   display_width = 640;
+   display_height = 480;
+
+   dst_rect.x = 0;
+   dst_rect.y = 0;
+   dst_rect.width = display_width;
+   dst_rect.height = display_height;
+      
+   src_rect.x = 0;
+   src_rect.y = 0;
+   src_rect.width = display_width << 16;
+   src_rect.height = display_height << 16;   
+
+   dispman_display = vc_dispmanx_display_open( 0 /* LCD */);
+   dispman_update = vc_dispmanx_update_start( 0 );
+         
+   dispman_element = vc_dispmanx_element_add ( dispman_update, dispman_display,
+      0/*layer*/, &dst_rect, 0/*src*/,
+      &src_rect, DISPMANX_PROTECTION_NONE, 0 /*alpha*/, 0/*clamp*/, (DISPMANX_TRANSFORM_T)0/*transform*/);
+      
+   nativewindow.element = dispman_element;
+   nativewindow.width = display_width;
+   nativewindow.height = display_height;
+   vc_dispmanx_update_submit_sync( dispman_update );
+   
+   return &nativewindow;
+}
+#endif
 
 void 
 GLESWindow::initFBO() {
@@ -486,7 +552,11 @@ GLESWindow::swapBuffers() {
 
 void GLESWindow::makeCurrent()
 {
+#ifndef RPI_NO_X
   EGL_CHECK(eglMakeCurrent(pDisplay, sEGLSurface, sEGLSurface, sEGLContext));
+#else
+  EGL_CHECK(eglMakeCurrent(sEGLDisplay, sEGLSurface, sEGLSurface, sEGLContext));
+#endif
 }
 
 void shareLists( HGLRC inContext )
@@ -500,10 +570,12 @@ GLESWindow::~GLESWindow()
   EGL_CHECK(eglDestroyContext(sEGLDisplay, sEGLContext));
   if (fbo)
     glDeleteFramebuffers(1, &fbo);
+#ifndef RPI_NO_X 
   XDestroyWindow(pDisplay, window);
   XFreeColormap(pDisplay, cmap);
   XFree(visual);
   XCloseDisplay(pDisplay);
+#endif
 }
 
 void GLESWindow::shareLists( HGLRC inContext )
