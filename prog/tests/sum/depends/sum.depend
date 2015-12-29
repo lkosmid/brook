@@ -1,0 +1,4 @@
+built/sum.o: sum.br
+built/sum.o: built/sum.cpp
+built/sum.cpp: $(BROOKDIR)/bin/brcc$(BINSUFFIX)
+built/sum.cpp: sum.br
