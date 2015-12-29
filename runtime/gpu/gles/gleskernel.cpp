@@ -133,7 +133,7 @@ GLESSLPixelShader::bindConstant( unsigned int inIndex, const float4& inValue ) {
       glUniform3fv(cid, 1, (const GLfloat *) &inValue);
     else if(!strcmp(constant_types[inIndex].c_str(), "vec4"))
       glUniform4fv(cid, 1, (const GLfloat *) &inValue);
-	//else { assert(0); }
+    else { assert(0); }
   }
   CHECK_GL();
 
@@ -159,6 +159,7 @@ GLESSLPixelShader::bindPixelShader() {
     std::vector<int> values(items);
     for(std::vector<int>::iterator it=values.begin(); it!=values.end(); ++it)
       *it=v++;
+printf("I have to check for uniform types\n");
     glUniform1iv(glGetUniformLocation(programid, samplername.c_str()), items, &values.front());
 	CHECK_GL();
   }
