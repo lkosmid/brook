@@ -1104,6 +1104,11 @@ generate_shader_support(std::ostream& shader)
   shader << "float4 __gather_fixed4( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
   shader << "float4 __gather_fixed4( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyzw; }\n";
 
+  shader << "#ifdef GL_ES\n";
+  shader << "#define unsigned \n";
+  shader << "#define int float\n";
+  shader << "#endif\n";
+
   if (globals.enableGPUAddressTranslation) {
     shader << "\n\n";
 
