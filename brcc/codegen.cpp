@@ -761,7 +761,14 @@ expandStreamStructureSamplerDecls(std::ostream& shader,
          shader << "uniform _stype" << rank << " __structsampler" << ioIndex++
                 << "_" << argumentName;
          shader << " : register (s" << ioSamplerReg++ << ")";
-         shader <<  ",\n\t\t";
+
+assert(0);
+         std::stringstream s;
+         s << ",//";
+         base->printBase(s,0);
+         shader << s.str();
+
+         shader <<  "\n\t\t";
 
          outPass.addSampler( inArgumentIndex, inComponentIndex+i );
       }
@@ -801,7 +808,14 @@ expandStreamSamplerDecls(std::ostream& shader,
      // a stream
      shader << "uniform _stype" << rank << " _tex_" << inArgumentName;
      shader << " : register (s" << samplerreg++ << ")";
-     shader <<  ",\n\t\t";
+
+     //print the stream type in a comment to be used later from the GLES or other backend
+     std::stringstream s;
+     s << ",//";
+     inForm->printBase(s,0);
+     shader << s.str();
+
+     shader <<  "\n\t\t";
 
      outPass.addSampler( inArgumentIndex, inComponentIndex );
   }
