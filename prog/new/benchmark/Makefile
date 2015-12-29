@@ -6,7 +6,7 @@ LIBRARIES = $(RUNTIME_LIBS)
 
 include $(ROOTDIR)/common.mk
 
-CFLAGS +=  -O3 -mfpmath=sse -ffast-math 
+CFLAGS +=  -O3 -ffast-math #-mfpmath=sse 
 CFLAGS += -fopenmp 
 LDFLAGS +=  -lgomp 
 
