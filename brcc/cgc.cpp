@@ -79,6 +79,7 @@ compile_cgc (const char * /*name*/,
   //char glsl_opt[] = "";
   const char userect[] ="-DUSERECT=1";
   const char dxpixelshader[] = "-DDXPIXELSHADER";
+  const char define_gles[] = "-DGL_ES";
   const char * cgversion=NULL;
 
   switch (target) {
@@ -130,6 +131,7 @@ compile_cgc (const char * /*name*/,
     break;
   case CODEGEN_GLES:
     argv[4] = gles;
+    argv[5] = define_gles;
     break;
   default: 
      fprintf(stderr, "Unsupported Cgc target.\n");

@@ -534,8 +534,12 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
 
       shader << "#else\n";
 
-      // it had better be just a floatN
-      shader << "\t\tout float";
+      shader << "\t\t\t#ifdef GL_ES\n";
+
+      shader << "\t\t\tout float4 __output_" << outr;
+      shader << " : COLOR" << (outr - inFirstOutput);
+      shader << ",\n\t\t\t";
+      shader << "#else\n\t";
 
       if( mask & BT_UserType )
       {
@@ -545,23 +549,31 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       case BT_Float:
       case BT_Fixed:
       case BT_ShortFixed:
+        shader << "\t\tout float";
         break;
       case BT_Float2:
       case BT_Fixed2:
       case BT_ShortFixed2:
       case BT_Double:
+        shader << "\t\tout float";
         shader << "2";
         break;
       case BT_Fixed3:
       case BT_ShortFixed3:
       case BT_Float3:
+        shader << "\t\tout float";
         shader << "3";
         break;
       case BT_Fixed4:
       case BT_ShortFixed4:
       case BT_Float4:
       case BT_Double2:
+        shader << "\t\tout float";
         shader << "4";
+        break;
+      case BT_UnSigned:
+      case BT_UnSigned|BT_Int:
+        shader << "\t\tout unsigned int";
         break;
       default:
         fprintf(stderr, "Strange stream base type: ");
@@ -572,7 +584,8 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       shader << " : COLOR" << (outr - inFirstOutput);
       shader << ",\n\t\t";
       
-      shader << "#endif\n\t\t";
+      shader << "\t#endif\n\t\t";
+      shader << "#endif\n";
 
       outPass.addOutput( inArgumentIndex, inComponentIndex );
       
@@ -627,6 +640,10 @@ static void expandSimpleOutputArgumentWrite(
     break;
   case BT_Double2:
     shader << "float4( "<<argumentName<<".xy)\n";
+    break;
+  case BT_UnSigned:
+  case BT_UnSigned|BT_Int:
+    shader << "uint4( " << argumentName << ", 0, 0, 0);\n";
     break;
   default:
     fprintf(stderr, "Strange stream base type: ");
@@ -922,6 +939,10 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      case BT_Fixed4:
         shader << "__fetch_float4";
         break;
+      case BT_UnSigned:
+      case BT_UnSigned|BT_Int:
+        shader << "__fetch_unsigned_int";
+        break;
      default:
         fprintf(stderr, "Can't fetch from unknown stream type ");
         base->printBase(std::cerr, 0);
@@ -1023,6 +1044,9 @@ generate_shader_support(std::ostream& shader)
   shader << "float4 __fetch_float4( _stype1 s, float i ) { return __sample1(s,i).xyzw; }\n";
   shader << "float4 __fetch_float4( _stype2 s, float2 i ) { return __sample2(s,i).xyzw; }\n";
   shader << "float4 __fetch_float4( _stype3 s, float3 i ) { return __sample3(s,i).xyzw; }\n";
+  shader << "float __fetch_unsigned_int( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
+  shader << "float __fetch_unsigned_int( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
+  shader << "float __fetch_unsigned_int( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";
 
   shader << "\n\n";
 
