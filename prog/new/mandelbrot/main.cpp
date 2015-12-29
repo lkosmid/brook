@@ -13,7 +13,7 @@ Created: 18th July 2007
 #define MANDELBROT_SIZE 3584	// Generates 575265920 iterations
 //#define MANDELBROT_SIZE 4096   // Generates 751087345 iterations
 //#define MANDELBROT_SIZE 1024
-#define USE_SSE
+//#define USE_SSE
 
 #ifdef USE_SSE
 #include <xmmintrin.h>
