@@ -57,7 +57,7 @@ static const char passthrough_pixel[] =
       "}\n" 
 
 #define reconstruct_float_header\
-      "#define reconstruct_int(reconstructed, textureUnit0, vTexCoord0)"\
+      "#define reconstruct_float(reconstructed, textureUnit0, vTexCoord0)"\
       "{"\
       "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
       "  highp float tmp;"\
@@ -136,6 +136,11 @@ static const char passthrough_pixel[] =
       "  gl_FragColor = u_split;"\
       "}\n" 
 
+static const std::string reconstruct_unsigned_int_str(reconstruct_unsigned_int);
+static const std::string reconstruct_float_header_str(reconstruct_float_header);
+static const std::string reconstruct_float_highp_str(reconstruct_float_highp);
+static const std::string reconstruct_float_epilogue_str(reconstruct_float_epilogue);
+
 GLESPixelShader::GLESPixelShader(unsigned int _id, const char * _program_string):
   id(_id), program_string(_program_string), largest_constant(0) {
   unsigned int i;
@@ -148,27 +153,13 @@ GLESPixelShader::GLESPixelShader(unsigned int _id, const char * _program_string)
 GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_string, unsigned int _vid):
   GLESPixelShader(_id, program_string), programid(0), vid(_vid), vShader(trivial_GLSLES_vshader) {
 
-  this->vid = createShader(vShader, GL_VERTEX_SHADER );
-  this->id = createShader(program_string, GL_FRAGMENT_SHADER );
-  GLint status = 0;
-  programid = glCreateProgram();
-  //attach the trivial vertex shader
-  glAttachShader(programid, vid);
-  glAttachShader(programid, id);
-  glLinkProgram(programid);
+  std::string unmodified_program(program_string);
+  std::string custom_program;
 
-  glGetProgramiv(programid, GL_LINK_STATUS, &status);
-  if(GL_TRUE!=status) {
-    char *errlog;
-    glGetProgramiv(programid, GL_INFO_LOG_LENGTH, &status);
-    errlog=(char *) brmalloc(status);
-    glGetProgramInfoLog(programid, status, NULL, errlog);
-    fprintf ( stderr, "GL: Program Error. Linker output:\n%s\n", errlog);
-    fflush(stderr);
-    brfree(errlog);
-    assert(0);
-    exit(1);
-  }
+  custom_program+=reconstruct_float_header_str;
+  custom_program+=reconstruct_float_highp_str;
+  custom_program+=reconstruct_float_epilogue_str;
+  custom_program+=unmodified_program;
 
   // Fetch the constant names
   unsigned int highest=0;
@@ -234,6 +225,29 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
       }
     }
   }
+
+  this->vid = createShader(vShader, GL_VERTEX_SHADER );
+  this->id = createShader(custom_program.c_str(), GL_FRAGMENT_SHADER );
+  GLint status = 0;
+  programid = glCreateProgram();
+  //attach the trivial vertex shader
+  glAttachShader(programid, vid);
+  glAttachShader(programid, id);
+  glLinkProgram(programid);
+
+  glGetProgramiv(programid, GL_LINK_STATUS, &status);
+  if(GL_TRUE!=status) {
+    char *errlog;
+    glGetProgramiv(programid, GL_INFO_LOG_LENGTH, &status);
+    errlog=(char *) brmalloc(status);
+    glGetProgramInfoLog(programid, status, NULL, errlog);
+    fprintf ( stderr, "GL: Program Error. Linker output:\n%s\n", errlog);
+    fflush(stderr);
+    brfree(errlog);
+    assert(0);
+    exit(1);
+  }
+
   CHECK_GL();
 }
 
