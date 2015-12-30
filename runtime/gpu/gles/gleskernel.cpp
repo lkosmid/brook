@@ -16,6 +16,126 @@ static const char passthrough_pixel[] =
 "TEX oColor, tex0, texture[0], RECT;\n"
 "END\n";
 
+#define reconstruct_unsigned_int \
+      "#define reconstruct_unsigned_int(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp float tmp;"\
+      "  tmp = floor(256.0*u_split.x - (u_split.x/255.0));"\
+      "  reconstructed = tmp;"\
+      "  tmp = floor(256.0*u_split.y - (u_split.y/255.0))*256.0;"\
+      "  reconstructed += tmp;"\
+      "  tmp = floor(256.0*u_split.z - (u_split.z/255.0))*256.0*256.0;"\
+      "  reconstructed += tmp;"\
+      "  tmp = floor(256.0*u_split.w - (u_split.w/255.0))*256.0*256.0*256.0;"\
+      "  reconstructed += tmp;"\
+      "}\n" 
+
+#define reconstruct_unsigned_char \
+      "#define reconstruct_unsigned_char(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp float tmp;"\
+      "  tmp = floor(256.0*u_split.x - (u_split.x/255.0));"\
+      "  reconstructed = tmp;"\
+      "}\n" 
+
+#define reconstruct_int\
+      "#define reconstruct_int(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp float tmp;"\
+      "  tmp = floor(256.0*u_split.x - (u_split.x/255.0));"\
+      "  reconstructed = tmp;"\
+      "  tmp = floor(256.0*u_split.y - (u_split.y/255.0))*256.0;"\
+      "  reconstructed += tmp;"\
+      "  tmp = floor(256.0*u_split.z - (u_split.z/255.0))*256.0*256.0;"\
+      "  reconstructed += tmp;"\
+      "  tmp = floor(256.0*u_split.w - (u_split.w/255.0))*256.0*256.0*256.0;"\
+      "  reconstructed += tmp;"\
+      "  if(u_split.w > 0.5) reconstructed -= 4294967296.0;"\
+      "}\n" 
+
+#define reconstruct_float_header\
+      "#define reconstruct_int(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp float tmp;"\
+      "  tmp = floor(256.0*u_split.x - (u_split.x/255.0));"\
+      "  float exponent = tmp - 127.0;"\
+      "  tmp = floor(256.0*u_split.y - (u_split.y/255.0));"\
+      "  reconstructed = (tmp*0.0078125) ;" \
+      "  if(exponent >= -126.0) if(reconstructed < 1.0) reconstructed += 1.0 ;" \
+      "  highp float sign_value = -sign(127.1 - tmp) ;" \
+      "  tmp = floor(256.0*u_split.z - (u_split.z/255.0));"\
+      "  reconstructed += (tmp*0.000030517578125);" 
+
+#define reconstruct_float_highp\
+      "  tmp = floor(256.0*u_split.w - (u_split.w/255.0));"\
+      "  reconstructed += (tmp*0.00000011920928955078);" 
+
+#define reconstruct_float_epilogue\
+      "  reconstructed = sign_value*reconstructed*exp2(exponent);" \
+      "}\n" 
+
+#define encode_output_unsigned_int\
+      "#define encode_output_unsigned_int(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  u_split.x = ((reconstructed - 256.0*floor(reconstructed*0.00390625))*0.00392156862745098) ;"\
+      "  u_split.y = (floor((reconstructed - 256.0*256.0*floor(reconstructed*1.52587890625e-05))*0.00390625)*0.00392156862745098) ;"\
+      "  u_split.z = (floor((reconstructed - 256.0*256.0*256.0*floor(reconstructed*0.00000005960464477539))*1.52587890625e-05)*0.00392156862745098) ;"\
+      "  u_split.w = (floor((reconstructed - 256.0*256.0*256.0*256.0*floor(reconstructed*2.328306436538696289e-10))*0.00000005960464477539)*0.00392156862745098) ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
+
+#define encode_output_unsigned_char\
+      "#define encode_output_unsigned_char(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  u_split.x = fract((reconstructed - 256.0*floor(reconstructed*0.00390625))/255.0) ;"\
+      "  u_split.yzw = vec3(0.0) ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
+#define encode_output_int\
+      "#define encode_output_int(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  highp float _reconstructed=reconstructed;"\
+      "  if(_reconstructed < 0.0) _reconstructed += 4294967296.0;"\
+      "  u_split.x = ((_reconstructed - 256.0*floor(_reconstructed*0.00390625))*0.00392156862745098) ;"\
+      "  u_split.y = ( floor( ( _reconstructed - 256.0*256.0*floor(_reconstructed*1.52587890625e-05)) *0.00390625)*0.00392156862745098) ;"\
+      "  u_split.z = ( floor( ( _reconstructed - 256.0*256.0*256.0*floor(_reconstructed*0.00000005960464477539)) *1.52587890625e-05)*0.00392156862745098) ;"\
+      "  u_split.w = ((reconstructed/exp2(24.0))*0.00392156862745098) ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
+#define encode_output_float_header\
+      "#define encode_output_float(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  highp float exponent;"\
+      "  highp float tmp;"\
+      "  exponent = (floor(log2(abs(reconstructed))) + 127.0) ;"\
+      "  u_split.x = ((exponent - 256.0*floor(exponent*0.00390625))*0.00392156862745098) ;"\
+      "  tmp = clamp(abs(reconstructed*exp2(-floor(log2(abs(reconstructed))))) -1.0, 0.0, 1.0);"\
+      "  tmp = tmp*exp2(23.0);"\
+      "  highp float sign_value = step(0.0, reconstructed)*128.0;"\
+      "  u_split.y = (floor((tmp - 256.0*256.0*256.0*floor(tmp*0.00000005960464477539))*1.52587890625e-05)+sign_value)*0.00392156862745098 ;"\
+      "  u_split.z = (floor((tmp - 256.0*256.0*floor(tmp*1.52587890625e-05))*0.00390625)*0.00392156862745098) ;"
+
+#define encode_output_float_high_p\
+      "  u_split.w = ((tmp- 256.0*floor(tmp*0.00390625))*0.00392156862745098) ;"
+
+#define encode_output_float_low_p\
+      "  u_split.w = 0.0 ;"
+
+#define encode_output_float_epilogue\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
 GLESPixelShader::GLESPixelShader(unsigned int _id, const char * _program_string):
   id(_id), program_string(_program_string), largest_constant(0) {
   unsigned int i;
