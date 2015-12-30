@@ -88,6 +88,7 @@ compile_cgc (const char * /*name*/,
 
   vector<string> uniform_list_names;
   vector<string> uniform_list_types;
+  vector<string> output_list_types;
 
   switch (target) {
   case CODEGEN_PS20:
@@ -164,6 +165,19 @@ compile_cgc (const char * /*name*/,
         snprintf(tmp, lineend-(type_p+2), "%s", type_p+2);
         replaceAll(tmp, " ", "_");
         uniform_list_types.push_back(tmp);
+     }
+
+     char * output_p=tempCode;
+     //detect all output types
+     while((output_p=strstr(output_p,"//GL_ES_out"))!=NULL)
+     {
+        char tmp[50];
+        output_p+=12;
+        char * lineend=strstr(output_p," ");
+        assert(lineend-output_p+1 <= 50);
+        snprintf(tmp, lineend-output_p+1, "%s", output_p);
+        replaceAll(tmp, " ", "_");
+        output_list_types.push_back(tmp);
      }
   }
 
@@ -322,17 +336,17 @@ compile_cgc (const char * /*name*/,
     //Replace texture reads with their coresponding reconstructing input function
     while((uniform_p=strstr(uniform_p,"texture2D"))!=NULL)
     {
-       char tmp[50];
+       char line[50];
        char * lineend=strstr(uniform_p,"\n");
        char * linestart=uniform_p;
        while(*(--linestart)!='\n');
        assert(lineend-uniform_p+1 <= 50);
        //get the entire line
-       snprintf(tmp, lineend-linestart, "%s", linestart+1);
+       snprintf(line, lineend-linestart, "%s", linestart+1);
        uniform_p=lineend;
        char t0[50], t1[50];
        //read input variable and sampler name
-       sscanf(tmp, "%s = texture2D(%s);", t0, t1);
+       sscanf(line, "%s = texture2D(%s);", t0, t1);
 
        //find the type of the input variable based on the sampler name
        for(int i=0; i<uniform_list_names.size(); i++)
@@ -340,12 +354,38 @@ compile_cgc (const char * /*name*/,
            if(strcmp(uniform_list_names[i].c_str(),t0)!=0)
            {
                //change the reconstruction function
-               char tmp2[50];
-               snprintf(tmp, 50, "reconstruct_%s(%s.x, ", uniform_list_types[i].c_str(), t0);
-               snprintf(tmp2, 50, "%s = texture2D(", t0);
-               replaceAll(fpcode, tmp2, tmp);
+               char replacement_str[50];
+               snprintf(replacement_str, 50, "reconstruct_%s(%s.x, ", uniform_list_types[i].c_str(), t0);
+               snprintf(line, 50, "%s = texture2D(", t0);
+               replaceAll(fpcode, line, replacement_str);
            }
        }
+    }
+
+    char * output_p=fpcode;
+    //Use the corresponding encoding function for the output based on its type
+    while((output_p=strstr(output_p,"gl_FragColor"))!=NULL)
+    {
+       char line[255];
+       char * delim=strstr(output_p,"=");
+       char * lineend=strstr(output_p,"\n");
+
+       assert(lineend-output_p+1 <= 255);
+       //get the entire line
+       snprintf(line, lineend-output_p+1, "%s", output_p);
+       output_p+=(lineend-output_p);
+
+       assert(lineend-delim <= 255);
+       char rvalue[255];
+       //get the entire line
+       snprintf(rvalue, lineend-delim-1, "%s", delim+1);
+
+       //get the type of the output variable and add the appropriate encoding function
+       //GLES can only have a single 4-component output at most
+       assert(output_list_types.size() == 1);
+       char replacement_str[255];
+       snprintf(replacement_str, 255, "encode_output_%s(%s);", output_list_types[0].c_str(), rvalue);
+       replaceAll(fpcode, line, replacement_str);
     }
     strcpy(fpcodenew, fpcode);
   }

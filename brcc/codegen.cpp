@@ -538,7 +538,14 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
 
       shader << "\t\t\tout float4 __output_" << outr;
       shader << " : COLOR" << (outr - inFirstOutput);
-      shader << ",\n\t\t\t";
+
+      //print the stream type in a comment to be used later from the GLES or other backend
+      std::stringstream s;
+      s << ",//GL_ES_";
+      form->printBase(s,0);
+      shader << s.str();
+
+      shader << "\n\t\t\t";
       shader << "#else\n\t";
 
       if( mask & BT_UserType )
