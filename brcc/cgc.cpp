@@ -13,6 +13,8 @@
 #include <sstream>
 #include <iomanip>
 #include <fstream>
+#include <vector>
+#include <string>
 extern "C" {
 #include <stdio.h>
 #include <string.h>
@@ -23,6 +25,8 @@ extern "C" {
 #include "decl.h"
 #include "subprocess.h"
 #include "cgc.h"
+
+using namespace std;
 
 #define CG_VERSION_HEADER "cgc version "
 
@@ -82,6 +86,9 @@ compile_cgc (const char * /*name*/,
   const char define_gles[] = "-DGL_ES";
   const char * cgversion=NULL;
 
+  vector<string> uniform_list_names;
+  vector<string> uniform_list_types;
+
   switch (target) {
   case CODEGEN_PS20:
      argv[4] = ps20;
@@ -136,6 +143,28 @@ compile_cgc (const char * /*name*/,
   default: 
      fprintf(stderr, "Unsupported Cgc target.\n");
      return NULL;
+  }
+
+  if(CODEGEN_GLES==target) {
+     char * uniform_p=tempCode;
+     //detect all input stream names and their types
+     while((uniform_p=strstr(uniform_p,"uniform _stype"))!=NULL)
+     {
+        char tmp[50];
+        uniform_p+=16;
+        char * lineend=strstr(uniform_p," ");
+        assert(lineend-uniform_p+1 <= 50);
+        snprintf(tmp, lineend-uniform_p+1, "%s", uniform_p);
+        uniform_list_names.push_back(tmp);
+
+        char * type_p=strstr(uniform_p,"//");
+        lineend=strstr(uniform_p,"\n");
+        char *type_name;
+        assert(lineend-(type_p+2) <= 50);
+        snprintf(tmp, lineend-(type_p+2), "%s", type_p+2);
+        replaceAll(tmp, " ", "_");
+        uniform_list_types.push_back(tmp);
+     }
   }
 
   /* Run CGC */
@@ -287,6 +316,38 @@ compile_cgc (const char * /*name*/,
 	  {
 		  strcpy(fpcodenew, fpcode);
 	  }
+  }
+  else if(CODEGEN_GLES==target) {
+    char * uniform_p=fpcode;
+    //Replace texture reads with their coresponding reconstructing input function
+    while((uniform_p=strstr(uniform_p,"texture2D"))!=NULL)
+    {
+       char tmp[50];
+       char * lineend=strstr(uniform_p,"\n");
+       char * linestart=uniform_p;
+       while(*(--linestart)!='\n');
+       assert(lineend-uniform_p+1 <= 50);
+       //get the entire line
+       snprintf(tmp, lineend-linestart, "%s", linestart+1);
+       uniform_p=lineend;
+       char t0[50], t1[50];
+       //read input variable and sampler name
+       sscanf(tmp, "%s = texture2D(%s);", t0, t1);
+
+       //find the type of the input variable based on the sampler name
+       for(int i=0; i<uniform_list_names.size(); i++)
+       {
+           if(strcmp(uniform_list_names[i].c_str(),t0)!=0)
+           {
+               //change the reconstruction function
+               char tmp2[50];
+               snprintf(tmp, 50, "reconstruct_%s(%s.x, ", uniform_list_types[i].c_str(), t0);
+               snprintf(tmp2, 50, "%s = texture2D(", t0);
+               replaceAll(fpcode, tmp2, tmp);
+           }
+       }
+    }
+    strcpy(fpcodenew, fpcode);
   }
   else strcpy(fpcodenew, fpcode);
   // Wasn't escaping backslashes on Windows either
