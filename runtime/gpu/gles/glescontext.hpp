@@ -37,6 +37,9 @@ namespace brook {
   class GLESSLPixelShader : public GLESPixelShader
   {
     std::string constant_types[256], sampler_names[32];
+
+    //In GLSLES we have to define both fragment and pixel shaders
+    const char *vShader;
   public:
     unsigned int programid;
     unsigned int vid;
@@ -44,6 +47,7 @@ namespace brook {
     ~GLESSLPixelShader();
     virtual void bindConstant( unsigned int inIndex, const float4& inValue );
     virtual void bindPixelShader();
+    unsigned int createShader( const char* inSource, GLenum shaderType );
 
     //Let's define a trivial vertex shader:
 
@@ -247,9 +251,6 @@ namespace brook {
     bool _isUsingAddressTranslation, _isUsingOutputDomain;
 
     void writeToTexture(GLESTexture *glesTexture, GLint x, GLint y, GLint w, GLint h, const void *inData);
-
-    //In GLSLES we have to define both fragment and pixel shaders
-    const char *vShader;
   };
 
 }

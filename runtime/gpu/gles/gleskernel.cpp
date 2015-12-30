@@ -146,7 +146,10 @@ GLESPixelShader::GLESPixelShader(unsigned int _id, const char * _program_string)
 }
 
 GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_string, unsigned int _vid):
-  GLESPixelShader(_id, program_string), programid(0), vid(_vid) {
+  GLESPixelShader(_id, program_string), programid(0), vid(_vid), vShader(trivial_GLSLES_vshader) {
+
+  this->vid = createShader(vShader, GL_VERTEX_SHADER );
+  this->id = createShader(program_string, GL_FRAGMENT_SHADER );
   GLint status = 0;
   programid = glCreateProgram();
   //attach the trivial vertex shader
@@ -339,6 +342,12 @@ assert(0);
 unsigned int 
 GLESContext::createShader( const char* shader, GLenum shaderType ) 
 {
+return 0;
+}
+
+unsigned int 
+GLESSLPixelShader::createShader( const char* shader, GLenum shaderType ) 
+{
   unsigned int id;
   if(strncmp(shader, "!!ARBfp", 7)) {
     // This is a GLSL shader
@@ -369,10 +378,7 @@ GLESContext::createShader( const char* shader, GLenum shaderType )
 GPUContext::PixelShaderHandle
 GLESContext::createPixelShader( const char* shader ) 
 {
-	unsigned int id, vid;
-	vid = createShader(vShader, GL_VERTEX_SHADER );
-	id = createShader(shader, GL_FRAGMENT_SHADER );
-    return (GPUContext::PixelShaderHandle) new GLESSLPixelShader(id,shader,vid);
+    return (GPUContext::PixelShaderHandle) new GLESSLPixelShader(0,shader,0);
 }
 
 void 

@@ -67,8 +67,7 @@ GLESContext::GLESContext():
   _maxTextureExtent(1024),
   _maxOutputCount(1), 
   _boundPixelShader(NULL), 
-  _wnd(NULL),
-  vShader(trivial_GLSLES_vshader)
+  _wnd(NULL)
 {
   int i;
   for (i=0; i<32; i++) {
