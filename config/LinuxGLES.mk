@@ -46,3 +46,5 @@ AR_OUTPUT_FLAG	 :=
 RUNTIME_LIBS     := brook gles cpu gpu X11 Xt GLESv2 EGL pthread
 
 RANLIB           := ranlib
+#Compile all benchmarks for gles and cpu backends
+BRCCFLAGS        += -k -p gles -p cpu
