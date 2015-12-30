@@ -156,13 +156,26 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   std::string unmodified_program(program_string);
   std::string custom_program;
 
-  custom_program+=reconstruct_float_header_str;
-  custom_program+=reconstruct_float_highp_str;
-  custom_program+=reconstruct_float_epilogue_str;
-  custom_program+=unmodified_program;
+  program_string=this->program_string;
+  bool float_input=false;
+  //Check the input stream types and add their helper functions in the shader source
+  while (*program_string&&(program_string=strstr(program_string,"reconstruct_"))!=NULL) {
+    program_string+=12;
+    if(!float_input && (strncmp(program_string, "float", 5)==0))
+    {
+       custom_program+=reconstruct_float_header_str;
+#ifdef GLES_HIGH_FP
+       custom_program+=reconstruct_float_highp_str;
+#endif
+       custom_program+=reconstruct_float_epilogue_str;
+       custom_program+=unmodified_program;
+       float_input=true;
+    }
+  }
 
   // Fetch the constant names
   unsigned int highest=0;
+  program_string=this->program_string;
   while (*program_string&&(program_string=strstr(program_string,"//var "))!=NULL) {
     const char *name;
     unsigned int len=0;
@@ -226,6 +239,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     }
   }
 
+  this->program_string=custom_program.c_str();
   this->vid = createShader(vShader, GL_VERTEX_SHADER );
   this->id = createShader(custom_program.c_str(), GL_FRAGMENT_SHADER );
   GLint status = 0;
