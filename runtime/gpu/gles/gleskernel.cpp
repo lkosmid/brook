@@ -126,10 +126,10 @@ static const char passthrough_pixel[] =
       "  u_split.y = (floor((tmp - 256.0*256.0*256.0*floor(tmp*0.00000005960464477539))*1.52587890625e-05)+sign_value)*0.00392156862745098 ;"\
       "  u_split.z = (floor((tmp - 256.0*256.0*floor(tmp*1.52587890625e-05))*0.00390625)*0.00392156862745098) ;"
 
-#define encode_output_float_high_p\
+#define encode_output_float_highp\
       "  u_split.w = ((tmp- 256.0*floor(tmp*0.00390625))*0.00392156862745098) ;"
 
-#define encode_output_float_low_p\
+#define encode_output_float_lowp\
       "  u_split.w = 0.0 ;"
 
 #define encode_output_float_epilogue\
@@ -140,6 +140,11 @@ static const std::string reconstruct_unsigned_int_str(reconstruct_unsigned_int);
 static const std::string reconstruct_float_header_str(reconstruct_float_header);
 static const std::string reconstruct_float_highp_str(reconstruct_float_highp);
 static const std::string reconstruct_float_epilogue_str(reconstruct_float_epilogue);
+
+static const std::string encode_output_float_header_str(encode_output_float_header);
+static const std::string encode_output_float_highp_str(encode_output_float_highp);
+static const std::string encode_output_float_lowp_str(encode_output_float_lowp);
+static const std::string encode_output_float_epilogue_str(encode_output_float_epilogue);
 
 GLESPixelShader::GLESPixelShader(unsigned int _id, const char * _program_string):
   id(_id), program_string(_program_string), largest_constant(0) {
@@ -168,10 +173,28 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
        custom_program+=reconstruct_float_highp_str;
 #endif
        custom_program+=reconstruct_float_epilogue_str;
-       custom_program+=unmodified_program;
        float_input=true;
     }
   }
+
+  program_string=this->program_string;
+  //Check the input stream types and add their helper functions in the shader source
+  while (*program_string&&(program_string=strstr(program_string,"encode_output_"))!=NULL) {
+    program_string+=14;
+    if(strncmp(program_string, "float", 5)==0)
+    {
+       custom_program+=encode_output_float_header_str;
+#ifdef GLES_HIGH_FP
+       custom_program+=encode_output_float_highp_str;
+#else
+       custom_program+=encode_output_float_lowp_str;
+#endif
+       custom_program+=encode_output_float_epilogue_str;
+       break; //only one input supported in GLES and no need to check since we did it during compilation
+    }
+  }
+
+  custom_program+=unmodified_program;
 
   // Fetch the constant names
   unsigned int highest=0;
