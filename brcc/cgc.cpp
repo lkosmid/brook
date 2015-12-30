@@ -151,17 +151,17 @@ compile_cgc (const char * /*name*/,
      //detect all input stream names and their types
      while((uniform_p=strstr(uniform_p,"uniform _stype"))!=NULL)
      {
-        char tmp[50];
+        char tmp[1024];
         uniform_p+=16;
         char * lineend=strstr(uniform_p," ");
-        assert(lineend-uniform_p+1 <= 50);
+        assert(lineend-uniform_p+1 <= 1024);
         snprintf(tmp, lineend-uniform_p+1, "%s", uniform_p);
         uniform_list_names.push_back(tmp);
 
         char * type_p=strstr(uniform_p,"//");
         lineend=strstr(uniform_p,"\n");
         char *type_name;
-        assert(lineend-(type_p+2) <= 50);
+        assert(lineend-(type_p+2) <= 1024);
         snprintf(tmp, lineend-(type_p+2), "%s", type_p+2);
         replaceAll(tmp, " ", "_");
         uniform_list_types.push_back(tmp);
@@ -171,10 +171,10 @@ compile_cgc (const char * /*name*/,
      //detect all output types
      while((output_p=strstr(output_p,"//GL_ES_out"))!=NULL)
      {
-        char tmp[50];
+        char tmp[1024];
         output_p+=12;
         char * lineend=strstr(output_p," ");
-        assert(lineend-output_p+1 <= 50);
+        assert(lineend-output_p+1 <= 1024);
         snprintf(tmp, lineend-output_p+1, "%s", output_p);
         replaceAll(tmp, " ", "_");
         output_list_types.push_back(tmp);
