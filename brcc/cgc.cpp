@@ -374,15 +374,22 @@ compile_cgc (const char * /*name*/,
        //get the entire line
        snprintf(line, lineend-output_p+1, "%s", output_p);
        output_p+=(lineend-output_p);
+//printf("---%s\n", line);
 
        assert(lineend-delim <= 255);
        char rvalue[255];
        //get the entire line
        snprintf(rvalue, lineend-delim-1, "%s", delim+1);
+//printf("---%s\n", rvalue);
 
        //get the type of the output variable and add the appropriate encoding function
        //GLES can only have a single 4-component output at most
-       assert(output_list_types.size() == 1);
+       if(output_list_types.size() != 1)
+       {
+          printf("Error in brcc OpenGL ES 2.0 backend: In GLES 2.0 the output is restricted in <= 32 bits\n");
+          printf("Please rewrite your kernel to use it with the GLSL ES backend\n");
+          exit(-1);
+       }
        char replacement_str[255];
        snprintf(replacement_str, 255, "encode_output_%s(%s);", output_list_types[0].c_str(), rvalue);
        replaceAll(fpcode, line, replacement_str);

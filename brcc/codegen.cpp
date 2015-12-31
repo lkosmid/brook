@@ -534,19 +534,29 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
 
       shader << "#else\n";
 
-      shader << "\t\t\t#ifdef GL_ES\n";
-      //In GLES 2.0 we only have one output and must be declared float, independently of our custom encoding
-      shader << "\t\t\tout float __output_" << outr;
-      shader << " : COLOR" << (outr - inFirstOutput);
+      bool GLES_compliance=true;
 
       //print the stream type in a comment to be used later from the GLES or other backend
       std::stringstream s;
       s << ",//GL_ES_";
       form->printBase(s,0);
-      shader << s.str();
 
-      shader << "\n\t\t\t";
-      shader << "#else\n\t";
+      if(s.str().find("4")!=std::string::npos)
+      {
+         GLES_compliance=false;
+      }
+
+      if(GLES_compliance)
+      {
+         shader << "\t\t\t#ifdef GL_ES\n";
+         //In GLES 2.0 we only have one output and must be declared float, independently of our custom encoding
+         shader << "\t\t\tout float __output_" << outr;
+         shader << " : COLOR" << (outr - inFirstOutput);
+
+         shader << s.str();
+         shader << "\n\t\t\t";
+         shader << "#else\n\t";
+      }
 
       if( mask & BT_UserType )
       {
@@ -591,7 +601,9 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       shader << " : COLOR" << (outr - inFirstOutput);
       shader << ",\n\t\t";
       
-      shader << "\t#endif\n\t\t";
+      if(GLES_compliance)
+         shader << "\t#endif\n\t\t";
+
       shader << "#endif\n";
 
       outPass.addOutput( inArgumentIndex, inComponentIndex );
