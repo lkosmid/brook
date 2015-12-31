@@ -10,6 +10,9 @@ Created: 23rd Nov 2007
 
 #define ITERATIONS 16
 
+#ifdef BUILD_GLES
+#define float4 float
+#endif
 extern void  benchmark (::brook::stream out,
 		::brook::stream in);
 
@@ -55,7 +58,7 @@ float Go(const char *runtime=0)
 	{
 		printf("\nBenchmarking '%s' runtime ...\n", runtime);
         runBenchmark(t1, t2, t3, runtime);
-		printf("Your GPU did around %f GFLOP/sec\n", 1024*1024*512/t1/1000000000);
+		printf("Your GPU did around %f GFLOP/sec\n", 1024*1024*512/t1/(1000000000/(sizeof(float4)/sizeof(float))));
 		printf("CPU to GPU was %f Mb/sec\n", (1024*1024*sizeof(float4)/t2)/(1024*1024));
 		printf("GPU to CPU was %f Mb/sec\n", (1024*1024*sizeof(float4)/t3)/(1024*1024));
 	}
@@ -85,7 +88,11 @@ int main(void)
     printf("\nCompiled without OpenMP - single processor usage only\n");
 #endif
     float cputime=0;
+#ifdef BUILD_GLES
+    printf("Time to write 1Mb of data, perform 0.5 billion operations and read 1Mb of data ...\n");
+#else
     printf("Time to write 4Mb of data, perform 2 billion operations and read 4Mb of data ...\n");
+#endif
     for(dev=devs; *dev; ++dev)
     {
         float time=Go(*dev);
