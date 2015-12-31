@@ -99,7 +99,7 @@ namespace brook {
 #ifdef BUILD_CTM
     *dev++=(char *) "ctm";
 #endif
-#if defined(BUILD_OGL) || defined(BUILD_DX9)
+#if defined(BUILD_OGL) || defined(BUILD_DX9) || defined(BUILD_GLES)
 #ifdef WIN32
     DISPLAY_DEVICE odd, dd={ sizeof(DISPLAY_DEVICE) };
     for(n=0; dev<devs+(sizeof(devs)/sizeof(char *))-1; n++)
@@ -180,6 +180,24 @@ namespace brook {
               }
               XFree(visual);
             }
+#endif
+#ifdef BUILD_GLES
+            //Keep it simple for the moment to make it work without hassle
+            const char *vendor="";
+            const char *renderer="";
+            *dev=(char *) brmalloc(4+4+strlen(DisplayString(dh))+(vendor ? 2+strlen(vendor)+strlen(renderer) : 0));
+            strcpy(*dev, GLES_RUNTIME_STRING":");
+            strcat(*dev, DisplayString(dh));
+            char *d=strchr(*dev, 0);
+            if(d[-2]=='.') d-=2;
+            sprintf(d, ".%d", n);
+            if(vendor){
+              strcat(*dev, ":");
+              strcat(*dev, vendor);
+              strcat(*dev, " ");
+              strcat(*dev, renderer);
+            }
+            dev++;
 #endif
         }
         XCloseDisplay(dh);
