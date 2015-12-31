@@ -1,0 +1,69 @@
+Framebuffer created:70001
+Compiling Vertex shader with source:
+attribute vec4 vPosition;
+attribute vec4 aTEX0;      
+attribute vec4 aTEX1;      
+varying vec4 TEX0;         
+varying vec4 TEX1;         
+void main()                
+{                          
+   gl_Position = vPosition; 
+   TEX0 = aTEX0; 
+   TEX1 = aTEX1; 
+}                           
+
+Compiling Fragment shader with source:
+#define encode_output_float(reconstructed){  highp vec4 u_split;  highp float exponent;  highp float tmp;  exponent = (floor(log2(abs(reconstructed))) + 127.0) ;  u_split.x = ((exponent - 256.0*floor(exponent*0.00390625))*0.00392156862745098) ;  tmp = clamp(abs(reconstructed*exp2(-floor(log2(abs(reconstructed))))) -1.0, 0.0, 1.0);  tmp = tmp*exp2(23.0);  highp float sign_value = step(0.0, reconstructed)*128.0;  u_split.y = (floor((tmp - 256.0*256.0*256.0*floor(tmp*0.00000005960464477539))*1.52587890625e-05)+sign_value)*0.00392156862745098 ;  u_split.z = (floor((tmp - 256.0*256.0*floor(tmp*1.52587890625e-05))*0.00390625)*0.00392156862745098) ;  u_split.w = 0.0 ;  gl_FragColor = u_split;}
+// glesf output by Cg compiler
+// cgc version 3.1.0013, build date Apr 18 2012
+// command line args: -quiet -DCGC=1 -profile glesf -DGL_ES
+// source file: /tmp/brookqOpQa2
+//vendor NVIDIA Corporation
+//version 3.1.0.13
+//profile glesf
+//program main
+//semantic main.n : C0
+//semantic main.a : C1
+//semantic main.b : C2
+//semantic main.c : C3
+//semantic main.d : C4
+//semantic main.__workspace : C5
+//var float a : C1 : _a2 : 1 : 1
+//var float __output_0 : $vout.COLOR0 : COL : 5 : 1
+
+precision mediump float;
+
+struct double_struct {
+    vec2 _x;
+};
+
+struct double2_struct {
+    vec4 _xy;
+};
+
+float _output_01;
+uniform float _a2;
+vec4 _s0006;
+
+ // main procedure, the original name was main
+void main()
+{
+
+
+    _s0006 = vec4(_a2, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00);
+    _output_01 = _s0006.x;
+    encode_output_float4( _s0006.x);
+} //  
+//!!BRCC
+//narg:6
+//c:1:n
+//c:1:a
+//c:2:b
+//c:3:c
+//c:4:d
+//o:4:s
+//workspace:1024
+//!!multipleOutputInfo:0:1:
+//!!fullAddressTrans:0:
+//!!reductionFactor:0:
+

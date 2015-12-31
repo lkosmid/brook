@@ -1,0 +1,231 @@
+/* constant.br --
+ *
+ *      This program tests handling of constant arguments to kernels.
+ *
+ */
+
+
+#include <stdio.h>
+
+
+/*
+ * k1 --
+ *
+ *      Copies the first constant argument into the output stream.
+ */
+
+kernel void
+k1(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = a;
+}
+
+
+/*
+ * k2 --
+ *
+ *      Copies the second constant argument into the output stream.
+ */
+
+kernel void
+k2a(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = b.x;
+}
+
+kernel void
+k2b(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = b.y;
+}
+
+
+/*
+ * k3 --
+ *
+ *      Copies the third constant argument into the output stream.
+ */
+
+kernel void
+k3a(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = c.x;
+}
+
+kernel void
+k3b(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = c.y;
+}
+
+kernel void
+k3c(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = c.z;
+}
+
+/*
+ * k4 --
+ *
+ *      Copies the fourth constant argument into the output stream.
+ */
+
+kernel void
+k4a(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = d.x;
+}
+
+kernel void
+k4b(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = d.y;
+}
+
+kernel void
+k4c(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = d.z;
+}
+
+kernel void
+k4d(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   s = d.w;
+}
+
+/*
+ * k --
+ *
+ *      Copies the n-th constant argument into the output stream.
+ */
+
+kernel void
+ka(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   if (n == 1.0) {
+      s = a;
+   } else if (n == 2.0) {
+      s = b.x;
+   } else if (n == 3.0) {
+      s = c.x;
+   } else if (n == 4.0) {
+      s = d;
+   } else {
+      s = 0;
+   }
+}
+
+kernel void
+kb(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   if (n == 1.0) {
+      s = n;
+   } else if (n == 2.0) {
+      s = b.y;
+   } else if (n == 3.0) {
+      s = c.y;
+   } else if (n == 4.0) {
+      s = 0;
+   } else {
+      s = 0;
+   }
+}
+
+kernel void
+kc(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   if (n == 1.0) {
+      s = 0;
+   } else if (n == 2.0) {
+      s = 0;
+   } else if (n == 3.0) {
+      s = c.z;
+   } else if (n == 4.0) {
+      s = 0;
+   } else {
+      s = 0;
+   }
+}
+
+kernel void
+kd(float n, float a, float2 b, float3 c, float4 d, out float s<>)
+{
+   if (n == 1.0) {
+      s = 0;
+   } else if (n == 2.0) {
+      s = 0;
+   } else if (n == 3.0) {
+      s = c.z;
+   } else if (n == 4.0) {
+      s = 0;
+   } else {
+      s = 0;
+   }
+}
+
+int
+main(int argc, char *argv[])
+{
+   float4 data[10];
+   float s<10>;
+   float4 d = float4(5.1f, 1.5f, 4.2f, 2.4f);
+   float3 c = float3(0.1f, 0.2f, 0.3f);
+   float2 b = float2(67.89f, 98.76f);
+   float a = 12.34f;
+   int i;
+
+   for (i = 1; i <= 4; i++) {
+      int j;
+
+      switch(i) {
+      case 1:
+         k1(i * 1.0f, a, b, c, d, s);
+         break;
+      case 2:
+         k2a(i * 1.0f, a, b, c, d, s);
+         k2b(i * 1.0f, a, b, c, d, s);
+         break;
+      case 3:
+         k3a(i * 1.0f, a, b, c, d, s);
+         k3b(i * 1.0f, a, b, c, d, s);
+         k3c(i * 1.0f, a, b, c, d, s);
+         break;
+      case 4:
+         k4a(i * 1.0f, a, b, c, d, s);
+         k4b(i * 1.0f, a, b, c, d, s);
+         k4c(i * 1.0f, a, b, c, d, s);
+         k4d(i * 1.0f, a, b, c, d, s);
+         break;
+      default:
+         break;
+      }
+      streamWrite(s, data);
+
+      printf("Results with n = %d and a static kernel:\n", i);
+      printf("00: ");
+      for (j = 0; j < (int) (sizeof data / sizeof data[0]); j++) {
+         printf("(%4.2f, %4.2f, %4.2f, %4.2f) ",
+                data[j].x, data[j].y, data[j].z, data[j].w);
+         if ((j % 2) == 1) printf("\n%02d: ", j+1);
+      }
+      printf("\n\n");
+
+      ka(i * 1.0f, a, b, c, d, s);
+      kb(i * 1.0f, a, b, c, d, s);
+      kc(i * 1.0f, a, b, c, d, s);
+      kd(i * 1.0f, a, b, c, d, s);
+      streamWrite(s, data);
+
+      printf("Results with n = %d and a conditional kernel:\n", i);
+      printf("00: ");
+      for (j = 0; j < (int) (sizeof data / sizeof data[0]); j++) {
+         printf("(%4.2f, %4.2f, %4.2f, %4.2f) ",
+                data[j].x, data[j].y, data[j].z, data[j].w);
+         if ((j % 2) == 1) printf("\n%02d: ", j+1);
+      }
+      printf("\n\n");
+   }
+
+   return 0;
+}
