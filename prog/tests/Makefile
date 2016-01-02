@@ -21,7 +21,7 @@ REGRESSIONDIRS := accumulate allocate constant$(MOBILEPROFILE) convert_iter_to_s
 #endif
 #endif
 
-SUBDIRS := $(REGRESSIONDIRS) streamcopy #writeQuery
+SUBDIRS := $(REGRESSIONDIRS) streamcopy$(MOBILEPROFILE) #writeQuery
 # big  fft infinite tessellate
 
 include $(ROOTDIR)/common.mk

@@ -1,0 +1,99 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+#include <math.h>
+
+kernel void copyKernel(float src<>, out float dst<>) {
+  dst = src;
+}
+
+
+void doCopy(float* src, float* dst, int dimx, int dimy) {
+  
+  float srcStream<dimx, dimy>;
+  float dstStream<dimx, dimy>;
+  
+  streamRead(srcStream, src);
+  copyKernel(srcStream, dstStream);
+  streamWrite(dstStream, dst);
+
+}
+
+int fequals(float a, float b) {
+  
+  float TOLERANCE = 0.05f;
+  
+  return (fabs(a-b) < TOLERANCE);
+
+}
+
+
+int main(int argc, char* argv[]) {
+
+  int i,j,k;
+  int verbose = 0;
+  int success;
+
+  int minx, maxx;
+  int miny, maxy;
+  int numElements;
+
+  float* src;
+  float* dst;
+
+  i=1;
+  if (i<argc && strcmp(argv[i], "-v")==0) {
+    i++;
+    verbose = 1;
+  }
+  
+  if((i+4)>argc) {
+    fprintf(stderr, "Too few commandline arguments.\n");
+    fprintf(stderr, "Usage: %s [-v] minx maxx miny maxy\n", argv[0]);
+    exit(1);
+  }
+  
+  minx = atoi(argv[i]);
+  maxx = atoi(argv[i+1]);
+  miny = atoi(argv[i+2]);
+  maxy = atoi(argv[i+3]);
+
+  assert(minx!=0 && maxx!=0 && 
+	 miny!=0 && maxy!=0);
+
+  for (j=miny;j<=maxy;j++) {
+    for (i=minx;i<=maxx;i++) {
+
+      success = 1;
+      numElements = i * j;
+
+      src = (float*)brmalloc( sizeof(float) * numElements);
+      dst = (float*)brmalloc( sizeof(float) * numElements);
+      
+      for (k=0;k<numElements;k++) {
+	/* keep elements small, prevent overflow */
+	src[k] = (float)(k % 100);
+	dst[k] = 0.0f;
+      }
+
+      doCopy(src, dst, i, j);
+
+      for (k=0;k<numElements;k++) {
+
+	if (!fequals(src[k], dst[k])) {
+	  if (verbose) 
+	    printf("[stream size %dx%d] pixel (%d,%d)[%d]: expected %f obtained %f\n",
+		    i, j, k % i, k / i, k, src[k], dst[k]);
+	  success = 0;
+	}
+      }
+      
+      if (!success)
+	printf("stream size %dx%d failed.\n", i, j);
+	
+     
+    }
+  }
+
+}
