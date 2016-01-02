@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     verbose = 1;
   }
   
-  if(i+4<argc) {
+  if((i+4)>argc) {
     fprintf(stderr, "Too few commandline arguments.\n");
     fprintf(stderr, "Usage: %s [-v] minx maxx miny maxy\n", argv[0]);
     exit(1);
@@ -68,8 +68,8 @@ int main(int argc, char* argv[]) {
       success = 1;
       numElements = 4 * i * j;
 
-      src = (float*)malloc( sizeof(float) * numElements);
-      dst = (float*)malloc( sizeof(float) * numElements);
+      src = (float*)brmalloc( sizeof(float) * numElements);
+      dst = (float*)brmalloc( sizeof(float) * numElements);
       
       for (k=0;k<numElements;k++) {
 	/* keep elements small, prevent overflow */
