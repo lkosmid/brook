@@ -83,13 +83,18 @@ static void mapTexture(GLESTexture *glesTexture)
   glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
              GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &id);
   CHECK_GL();
+
+#ifdef GLES_DEBUG
   printf("GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE in map texture:%x\n", id);
+#endif
   if(id)
   {
     glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
              GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &id);
   CHECK_GL();
+#ifdef GLES_DEBUG
   printf("id:%d, glesTexture->id():%d\n", id, glesTexture->id());
+#endif
   }
   if(id!=(int) glesTexture->id())
   {
@@ -97,14 +102,13 @@ static void mapTexture(GLESTexture *glesTexture)
            GL_TEXTURE_2D, glesTexture->id(), 0);
   CHECK_GL();
   }
-  CHECK_GL();
-//#ifdef _DEBUG
+#ifdef _DEBUG
   glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
              GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &id);
   CHECK_GL();
   printf("id:%d, glesTexture->id():%d\n", id, glesTexture->id());
   assert(id==glesTexture->id());
-//#endif
+#endif
 }
 
 // Writes data into a texture
@@ -183,12 +187,11 @@ GLESContext::setTextureData(TextureHandle inTexture,
   bool fastPath = glesTexture->isFastSetPath( inStrideBytes, 
                                              rectW, rectH,
                                              inComponentCount );
-  CHECK_GL();
   fastPath = fastPath && !inUsesAddressTranslation;
 
-//#ifdef GLES_PRINTOPS
+#ifdef GLES_PRINTOPS
   printf("Writing to texture %u\n", glesTexture->id());
-//#endif
+#endif
   if (fastPath) {
 	  assert(0);
     writeToTexture(glesTexture, minX, minY,
@@ -230,26 +233,24 @@ GLESContext::setTextureData(TextureHandle inTexture,
   }
   else
   {
+#ifdef GLES_DEBUG
 	  printf("inStrideBytes:%d\n", inStrideBytes);
+#endif
     glesTexture->copyToTextureFormat(inData, 
                                     inStrideBytes, 
                                     inComponentCount,
                                     t);
-  CHECK_GL();
 
     writeToTexture(glesTexture, minX, minY, 
         maxX - minX, //glesTexture->width(), 
         maxY - minY, //glesTexture->height(),  
         t);
-  CHECK_GL();
   }
   brfree(t); t=0;
-  CHECK_GL();
 out:
 //#if defined(_DEBUG) && 0
   if(inStrideBytes==glesTexture->atomsize()*glesTexture->components())
   {
-  CHECK_GL();
     //In OpenGL ES we read all 4 components when input is not char
     void *t2 = brmalloc (4*glesTexture->bytesize());
     getTextureData(inTexture, (float *) t2, inStrideBytes, inComponentCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation);
@@ -302,6 +303,7 @@ GLESContext::getTextureData( TextureHandle inTexture,
    }
 
    glPixelStorei(GL_PACK_ALIGNMENT,1);
+   CHECK_GL();
    // read back the whole thing, 
    unsigned int elemsize=glesTexture->numInternalComponents();//we're always reading from a float pbuffer, therefore we have to give it a reasonable constant for FLOAT, not for BYTE... luminance is wrong here.
 
@@ -343,7 +345,6 @@ GLESContext::getTextureData( TextureHandle inTexture,
      }
      brfree(t);
    }
-  CHECK_GL();
 }
 
 

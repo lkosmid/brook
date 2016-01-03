@@ -267,37 +267,46 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   this->id = createShader(custom_program.c_str(), GL_FRAGMENT_SHADER );
   GLint status = 0;
   programid = glCreateProgram();
+  CHECK_GL();
   //attach the trivial vertex shader
   glAttachShader(programid, vid);
+  CHECK_GL();
   glAttachShader(programid, id);
+  CHECK_GL();
   glLinkProgram(programid);
+  CHECK_GL();
 
   glGetProgramiv(programid, GL_LINK_STATUS, &status);
+  CHECK_GL();
   if(GL_TRUE!=status) {
     char *errlog;
     glGetProgramiv(programid, GL_INFO_LOG_LENGTH, &status);
+    CHECK_GL();
     errlog=(char *) brmalloc(status);
     glGetProgramInfoLog(programid, status, NULL, errlog);
+    CHECK_GL();
     fprintf ( stderr, "GL: Program Error. Linker output:\n%s\n", errlog);
     fflush(stderr);
     brfree(errlog);
     assert(0);
     exit(1);
   }
-
-  CHECK_GL();
 }
 
 GLESSLPixelShader::~GLESSLPixelShader() {
   glDeleteProgram(programid);
+  CHECK_GL();
   glDeleteShader(id);
+  CHECK_GL();
   glDeleteShader(vid);
+  CHECK_GL();
 }  
 
 void 
 GLESSLPixelShader::bindConstant( unsigned int inIndex, const float4& inValue ) {
   bindPixelShader();
   GLint cid = glGetUniformLocation(programid, constant_names[inIndex].c_str());
+  CHECK_GL();
   if(-1!=cid) {
     if(!strcmp(constant_types[inIndex].c_str(), "float"))
       glUniform1fv(cid, 1, (const GLfloat *) &inValue);
@@ -308,8 +317,8 @@ GLESSLPixelShader::bindConstant( unsigned int inIndex, const float4& inValue ) {
     else if(!strcmp(constant_types[inIndex].c_str(), "vec4"))
       glUniform4fv(cid, 1, (const GLfloat *) &inValue);
     else { assert(0); }
+    CHECK_GL();
   }
-  CHECK_GL();
 
   if (inIndex >= largest_constant)
     largest_constant = inIndex+1;
@@ -333,7 +342,9 @@ GLESSLPixelShader::bindPixelShader() {
     std::vector<int> values(items);
     for(std::vector<int>::iterator it=values.begin(); it!=values.end(); ++it)
       *it=v++;
+#ifdef GLES_DEBUG
 printf("I have to check for uniform types\n");
+#endif
     glUniform1iv(glGetUniformLocation(programid, samplername.c_str()), items, &values.front());
 	CHECK_GL();
   }
@@ -405,16 +416,24 @@ GLESSLPixelShader::createShader( const char* shader, GLenum shaderType )
     GLint status = 0, shaderlen = strlen(shader);
 
     id = glCreateShader(shaderType);
-	glShaderSource(id, 1, &shader, &shaderlen);
+    CHECK_GL();
+    glShaderSource(id, 1, &shader, &shaderlen);
+    CHECK_GL();
     glCompileShader(id);
+    CHECK_GL();
     glGetShaderiv(id, GL_COMPILE_STATUS, &status);
+    CHECK_GL();
+#ifdef GLES_DEBUG
 	printf("Compiling %s shader with source:\n%s\n", 
 			(shaderType==/*GL_FRAGMENT_PROGRAM_ARB*/GL_FRAGMENT_SHADER)?"Fragment":"Vertex", shader);
+#endif
     if(GL_TRUE!=status) {
       char *errlog;
       glGetShaderiv(id, GL_INFO_LOG_LENGTH, &status);
+      CHECK_GL();
       errlog=(char *) brmalloc(status);
       glGetShaderInfoLog(id, status, NULL, errlog);
+      CHECK_GL();
       fprintf ( stderr, "GL: Program Error. Compiler output:\n%s\n", errlog);
       fflush(stderr);
       brfree(errlog);
@@ -502,6 +521,8 @@ GLESContext::get1DInterpolant( const float4 &start,
                               const float4 &end,
                               const unsigned int w,
                               GPUInterpolant &interpolant) const {
+//the code below it doesn't seem to affect anything, although I think it is wrong and must be updated
+//keep it like this for moment
 assert(0);
   if (w == 1) {
     interpolant.vertices[0] = start;
@@ -710,6 +731,7 @@ GLESContext::getStreamReduceOutputRegion( const TextureHandle inTexture,
                                          const unsigned int maxY,
                                          GPURegion &region) const
 {
+assert(0);
   region.vertices[0].x = -1;
   region.vertices[0].y = -1;
 
@@ -776,7 +798,6 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
         }
       }
     }
-  CHECK_GL();
 
   _wnd->bindFBO();
   {
@@ -796,7 +817,6 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
         glBindTexture(GL_TEXTURE_2D, _boundTextures[i]->id());
         CHECK_GL();
     }
-    CHECK_GL();
 
     // Bind the outputs
     for(i=0; i<numOutputs; i++) {
@@ -821,7 +841,6 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
 		}
 
     }
-    CHECK_GL();
 
     // Bind the constants
     for (i=0; i<_boundPixelShader->largest_constant; i++) {
@@ -831,7 +850,6 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
 
   }
   
-  CHECK_GL();
 #if 0
   // TIM: hacky magic magic
   if( _isUsingAddressTranslation && _isUsingOutputDomain )
@@ -882,10 +900,10 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
 
 //  assert(0);
 //  glDrawBuffers (numOutputs, outputEnums); 
+#ifdef GLES_DEBUG
   printf("numOutputs:%d\n", numOutputs);
+#endif
 
-  CHECK_GL();
-  
   /*
    * We execute our kernel by using it to a rectangular texture with normalised coordinates 
    * (-1, -1), (-1, 1), (1, 1), (1, -1), composed by two triangles since GLES only supports triangle primitives
@@ -898,15 +916,15 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
   int width = maxX - minX;
   int height = maxY - minY;
 
-  CHECK_GL();
-
   glViewport( minX, minY, width, height );
   CHECK_GL();
+#ifdef GLES_DEBUG
 printf("minX=%d, minY=%d, width=%d, height=%d\n",  minX, minY, width, height );
 
   //Immediate mode is not supported in GLES. We need to port this...
   //assert(0);
 printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
+#endif
 
   GLint vertex_index=glGetAttribLocation(((GLESSLPixelShader*)_boundPixelShader)->programid, "vPosition"); 
   CHECK_GL();
@@ -920,12 +938,13 @@ printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
 
   for (i=0; i<numInterpolants; i++)
   {
-  	  CHECK_GL();
 	  char name[20];
 	  //sprintf(name, "gl_MultiTexCoord%d", numInterpolants);
 	  sprintf(name, "aTEX%d", i);
+#ifdef GLES_DEBUG
 		printf("Looking for Attribute %s at %s:%i\n", name, __FILE__, __LINE__);
 		printf("program id:%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
+#endif
   	  texture_locations[i]=glGetAttribLocation(((GLESSLPixelShader*)_boundPixelShader)->programid, name); 
   	  CHECK_GL();
   	  if(texture_locations[i] == -1)
@@ -939,6 +958,7 @@ printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
   	  CHECK_GL();
 	  //glTexCoordPointer(4, GL_FLOAT, 0, (GLfloat*) (interpolants[i].vertices));
   	  glVertexAttribPointer( texture_locations[i], 4, GL_FLOAT, 0, 0, (GLfloat*) (interpolants[i].vertices));
+#ifdef GLES_DEBUG
 for(int cn=0; cn<6; cn++ )
 {
 	printf("Text Coord[%d].x=%f\n",cn, interpolants[i].vertices[cn].x);
@@ -946,6 +966,7 @@ for(int cn=0; cn<6; cn++ )
 	printf("Text Coord[%d].z=%f\n",cn, interpolants[i].vertices[cn].z);
 	printf("Text Coord[%d].w=%f\n",cn, interpolants[i].vertices[cn].w);
 }
+#endif
 
   	  CHECK_GL();
   }
@@ -957,6 +978,7 @@ for(int cn=0; cn<6; cn++ )
   //glVertexPointer(2, GL_FLOAT, sizeof(float4), outputRegion.vertices);
   glVertexAttribPointer( vertex_index, 2, GL_FLOAT, 0, sizeof(float4), outputRegion.vertices);
   CHECK_GL();
+#ifdef GLES_DEBUG
 for(int cn=0; cn<6; cn++ )
 {
 	printf("Vert[%d].x=%f\n",cn,  outputRegion.vertices[cn].x);
@@ -973,6 +995,7 @@ glGetIntegerv(GL_MAX_VIEWPORT_DIMS, dim);
 CHECK_GL();
 printf("MAX Viewport.width=%d\n", dim[0]);
 printf("MAX Viewport.height=%d\n", dim[1]);
+#endif
 
   glDrawArrays(GL_TRIANGLES,0,6);
   CHECK_GL();
@@ -995,7 +1018,9 @@ printf("MAX Viewport.height=%d\n", dim[1]);
 //assert(0);
 glBindFramebuffer(GL_FRAMEBUFFER,0);
 CHECK_GL();
+#ifdef GLES_DEBUG
 printf("Unbind framebuffer to stop drawing\n");
+#endif
 
   _wnd->swapBuffers();
 
@@ -1030,7 +1055,9 @@ printf("Unbind framebuffer to stop drawing\n");
     if (_boundTextures[i]) {
       printf("Unsetting texture %u from input %d\n", _boundTextures[i]->id(), i);
       glActiveTexture(GL_TEXTURE0+i);
+      CHECK_GL();
       glBindTexture(GL_TEXTURE_2D, 0);
+      CHECK_GL();
     }
 #endif
   for (i=0; i<numOutputs; i++) {
@@ -1039,6 +1066,7 @@ printf("Unbind framebuffer to stop drawing\n");
       printf("Unsetting texture %u from output %d\n", outputTextures[i]->id(), i);
       glFramebufferTexture2D(GL_FRAMEBUFFER, outputEnums[i], 
                  GL_TEXTURE_2D, 0, 0);
+      CHECK_GL();
     }
 #endif
     if(_outputTextures[i] && outputTextures[i]!=_outputTextures[i]) {

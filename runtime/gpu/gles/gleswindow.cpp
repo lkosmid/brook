@@ -502,7 +502,9 @@ GLESWindow::initFBO() {
   glGenFramebuffers(1, &fbo);
   CHECK_GL();
   firstrun=true;
+#ifdef GLES_DEBUG
 printf("Framebuffer created:%d\n", fbo);
+#endif
 }
 
 
@@ -539,7 +541,9 @@ GLESWindow::bindFBO() {
     CHECK_GL();
   }
 
+#ifdef GLES_DEBUG
 printf("Bound Framebuffer:%d\n", fbo);
+#endif
   
   return switched_contexts;
 
@@ -569,6 +573,7 @@ GLESWindow::~GLESWindow()
   EGL_CHECK(eglMakeCurrent(sEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
   EGL_CHECK(eglDestroyContext(sEGLDisplay, sEGLContext));
   if (fbo)
+  {
     glDeleteFramebuffers(1, &fbo);
 #ifndef RPI_NO_X 
   XDestroyWindow(pDisplay, window);

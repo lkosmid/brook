@@ -127,15 +127,22 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    _nativeFormat = glFormat[_components-1][_elementType];
 
    glGenTextures(1, &_id);
+   CHECK_GL();
    //printf("Creating texture %u\n", _id);
    glActiveTexture(GL_TEXTURE0);
+   CHECK_GL();
    glBindTexture (GL_TEXTURE_2D, _id);
    CHECK_GL();
    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+   CHECK_GL();
    glPixelStorei(GL_PACK_ALIGNMENT,1);
+   CHECK_GL();
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   CHECK_GL();
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   CHECK_GL();
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   CHECK_GL();
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    CHECK_GL();
 
@@ -145,7 +152,10 @@ GLESTexture::GLESTexture (GLESContext *ctx,
      width = height;
    else
      height = width;
-   
+  
+   //TODO: In case that the GPU memory allocation fails, or texture sizes
+   //exceed implementation limits, we should fall back to the CPU backend
+
    // Create a texture with NULL data
    glTexImage2D (GL_TEXTURE_2D, 0, 
 #ifdef GLES3
