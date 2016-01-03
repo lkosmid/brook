@@ -570,6 +570,7 @@ GLESWindow::~GLESWindow()
   EGL_CHECK(eglMakeCurrent(sEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
   EGL_CHECK(eglDestroyContext(sEGLDisplay, sEGLContext));
   if (fbo)
+  {
     glDeleteFramebuffers(1, &fbo);
 #ifndef RPI_NO_X 
   XDestroyWindow(pDisplay, window);
