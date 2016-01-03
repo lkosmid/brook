@@ -394,6 +394,8 @@ compile_cgc (const char * /*name*/,
        snprintf(replacement_str, 255, "encode_output_%s(%s);", output_list_types[0].c_str(), rvalue);
        replaceAll(fpcode, line, replacement_str);
     }
+    //Finally force high precision to have arithmetic accuracy instead of the default medium that cgc generates
+    replaceAll(fpcode, "precision mediump float;", "precision highp float;");
     strcpy(fpcodenew, fpcode);
   }
   else strcpy(fpcodenew, fpcode);
