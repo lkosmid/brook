@@ -138,6 +138,14 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    CHECK_GL();
+
+   //many implementations require square textures, so give it to them
+   //this may waste precious GPU memory, but works
+   if(width < height)
+     width = height;
+   else
+     height = width;
+   
    // Create a texture with NULL data
    glTexImage2D (GL_TEXTURE_2D, 0, 
 #ifdef GLES3
