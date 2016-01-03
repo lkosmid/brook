@@ -521,55 +521,16 @@ GLESContext::get1DInterpolant( const float4 &start,
                               const float4 &end,
                               const unsigned int w,
                               GPUInterpolant &interpolant) const {
-//the code below it doesn't seem to affect anything, although I think it is wrong and must be updated
-//keep it like this for moment
-assert(0);
-  if (w == 1) {
-    interpolant.vertices[0] = start;
-    interpolant.vertices[1] = start;
-    interpolant.vertices[2] = start;
-    return;
-  }
-
-  float4 f1, f2;
-  float bias = 0.00001f;
-  
-  float x1 = start.x;
-  float y1 = start.y;
-  float z1 = start.z;
-  float w1 = start.w;
-
-  float x2 = end.x;
-  float y2 = end.y;
-  float z2 = end.z;
-  float w2 = end.w;
-
-  float sx = x2-x1;
-  float sy = y2-y1;
-  float sz = z2-z1;
-  float sw = w2-w1;
-  float ratiox = sx / w;
-  float ratioy = sy / w;
-  float ratioz = sz / w;
-  float ratiow = sw / w;
-  float shiftx = ratiox * 0.5f;
-  float shifty = ratioy * 0.5f;
-  float shiftz = ratioz * 0.5f;
-  float shiftw = ratiow * 0.5f;
-
-  f1.x = x1 - shiftx + bias;
-  f1.y = y1 - shifty + bias;
-  f1.z = z1 - shiftz + bias;
-  f1.w = w1 - shiftw + bias;
-
-  f2.x = (x1+2*sx) - shiftx + bias;
-  f2.y = (y1+2*sy) - shifty + bias;
-  f2.z = (z1+2*sz) - shiftz + bias;
-  f2.w = (w1+2*sw) - shiftw + bias;
-
-  interpolant.vertices[0] = f1;
-  interpolant.vertices[1] = f2; 
-  interpolant.vertices[2] = f1;
+  unsigned int _w= w ? w:1;
+  unsigned int _h= 1;
+  //bottom-left triangle
+  interpolant.vertices[0] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[1] = float4(start.x/_w, start.y/_h, 0.0f, 1.0f);
+  interpolant.vertices[2] = float4(end.x/_w,   start.y/_h, 0.0f, 1.0f);
+   //upper-right triangle
+  interpolant.vertices[3] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[4] = float4(end.x/_w,   end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[5] = float4(end.x/_w,   start.y/_h, 0.0f, 1.0f);
 }
 
 
