@@ -781,9 +781,8 @@ expandStreamStructureSamplerDecls(std::ostream& shader,
                 << "_" << argumentName;
          shader << " : register (s" << ioSamplerReg++ << ")";
 
-assert(0);
          std::stringstream s;
-         s << ",//";
+         s << ",//GL_ES_in";
          base->printBase(s,0);
          shader << s.str();
 
@@ -830,7 +829,7 @@ expandStreamSamplerDecls(std::ostream& shader,
 
      //print the stream type in a comment to be used later from the GLES or other backend
      std::stringstream s;
-     s << ",//";
+     s << ",//GL_ES_in ";
      inForm->printBase(s,0);
      shader << s.str();
 
@@ -1351,6 +1350,7 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg, int i,
    int rank = getGatherRank(arg->form);
 
    if (globals.enableGPUAddressTranslation) {
+      assert(0);
       shader << "uniform _stype" << rank << " " << argName;
       shader << "[" << samplerCount << "] : register (s" << samplerreg << ")";
       samplerreg += samplerCount;
@@ -1381,7 +1381,13 @@ generate_shader_gather_arg(std::ostream& shader, Decl *arg, int i,
       for(int s = 0; s < samplerCount; s++)
         outPass.addSampler( (i+1), s );
 
-      shader <<  ",\n\t\t";
+      //print the stream type in a comment to be used later from the GLES or other backend
+      std::stringstream s;
+      s << ",//GL_ES_in ";
+      arg->form->printBase(s,0);
+      shader << s.str();
+
+      shader <<  "\n\t\t";
       shader << "uniform float4 __gatherconst_" << argName
              << " : register (c" << constreg++ << ")";
       shader <<  ",\n\t\t";

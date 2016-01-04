@@ -158,11 +158,12 @@ compile_cgc (const char * /*name*/,
         snprintf(tmp, lineend-uniform_p+1, "%s", uniform_p);
         uniform_list_names.push_back(tmp);
 
-        char * type_p=strstr(uniform_p,"//");
+        char * type_p=strstr(uniform_p,"//GL_ES_in");
+        type_p+=11;
         lineend=strstr(uniform_p,"\n");
         char *type_name;
-        assert(lineend-(type_p+2) <= 1024);
-        snprintf(tmp, lineend-(type_p+2), "%s", type_p+2);
+        assert((lineend-type_p) <= 1024);
+        snprintf(tmp, lineend-type_p, "%s", type_p);
         replaceAll(tmp, " ", "_");
         uniform_list_types.push_back(tmp);
      }
