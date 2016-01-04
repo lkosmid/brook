@@ -521,8 +521,13 @@ GLESContext::get1DInterpolant( const float4 &start,
                               const float4 &end,
                               const unsigned int w,
                               GPUInterpolant &interpolant) const {
-  unsigned int _w= w ? w:1;
+  assert(w);
+  //OpenGL ES works with normalised coordinates, so we don't care about the output size, but we need the actual texture size
+  //Assume all inputs have the same size //TODO make the common gpu runtime aware of this, so that it passes the correct values
+  //In the case of an iterator, there is no bound texture, so use the passed values
+  unsigned int _w = _boundTextures[0]? _boundTextures[0]->width() : w;
   unsigned int _h= 1;
+  assert(_w);
   //bottom-left triangle
   interpolant.vertices[0] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
   interpolant.vertices[1] = float4(start.x/_w, start.y/_h, 0.0f, 1.0f);
@@ -540,8 +545,16 @@ GLESContext::get2DInterpolant( const float2 &start,
                               const unsigned int w,
                               const unsigned int h,
                               GPUInterpolant &interpolant) const {
-  unsigned int _w= w ? w:1;
-  unsigned int _h= h ? h:1;
+  assert(w);
+  assert(h);
+  //OpenGL ES works with normalised coordinates, so we don't care about the output size, but we need the actual texture size
+  //Assume all inputs have the same size //TODO make the common gpu runtime aware of this, so that it passes the correct values
+  //In the case of an iterator, there is no bound texture, so use the passed values
+  unsigned int _w = _boundTextures[0]? _boundTextures[0]->width() : w;
+  unsigned int _h = _boundTextures[0]? _boundTextures[0]->height() : h;
+  assert(_w);
+  assert(_h);
+
   //bottom-left triangle
   interpolant.vertices[0] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
   interpolant.vertices[1] = float4(start.x/_w, start.y/_h, 0.0f, 1.0f);
@@ -564,6 +577,7 @@ float4
 GLESContext::getStreamGatherConstant(
                                     unsigned int inRank, const unsigned int* inDomainMin,
                                     const unsigned int* inDomainMax, const unsigned int* inExtents ) const {
+assert(0);
   float scaleX = 1.0f;
   float scaleY = 1.0f;
   float offsetX = 0.0f;
