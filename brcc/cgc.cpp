@@ -353,6 +353,16 @@ compile_cgc (const char * /*name*/,
        {
            if(strcmp(uniform_list_names[i].c_str(),t0)!=0)
            {
+               //GLES can only have inputs up to 32 bits wide
+               if( (uniform_list_types[0].find("2")!=std::string::npos) || 
+                   (uniform_list_types[0].find("3")!=std::string::npos) || 
+                   (uniform_list_types[0].find("4")!=std::string::npos)
+                 )
+               {
+                  printf("Error in brcc OpenGL ES 2.0 backend: In GLES 2.0 each input is restricted in <= 32 bits\n");
+                  printf("Please rewrite your kernel to use it with the GLSL ES backend\n");
+                  exit(-1);
+               }
                //change the reconstruction function
                char replacement_str[50];
                snprintf(replacement_str, 50, "reconstruct_%s(%s.x, ", uniform_list_types[i].c_str(), t0);
@@ -384,7 +394,11 @@ compile_cgc (const char * /*name*/,
 
        //get the type of the output variable and add the appropriate encoding function
        //GLES can only have a single 4-component output at most
-       if(output_list_types.size() != 1)
+       if( (output_list_types.size() != 1) || 
+           (output_list_types[0].find("2")!=std::string::npos) || 
+           (output_list_types[0].find("3")!=std::string::npos) || 
+           (output_list_types[0].find("4")!=std::string::npos)
+         )
        {
           printf("Error in brcc OpenGL ES 2.0 backend: In GLES 2.0 the output is restricted in <= 32 bits\n");
           printf("Please rewrite your kernel to use it with the GLSL ES backend\n");
