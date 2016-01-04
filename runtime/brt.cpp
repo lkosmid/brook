@@ -299,30 +299,32 @@ namespace brook {
       fprintf (stderr,"* runtime.                       *\n");
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* CPU Backend:                   *\n");
-      fprintf (stderr,"* BRT_RUNTIME = cpu              *\n");
+      fprintf (stderr,"* BRT_RUNTIME=cpu                *\n");
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* OpenGL Backend:                *\n");
 #ifdef BUILD_OGL
-      fprintf (stderr,"* BRT_RUNTIME = %s               *\n", OGL_RUNTIME_STRING);
+      fprintf (stderr,"* BRT_RUNTIME=%s                 *\n", OGL_RUNTIME_STRING);
 #else
       fprintf (stderr,"* Not supported on this platform *\n");
 #endif
+      fprintf (stderr,"*                                *\n");
+      fprintf (stderr,"* OpenGL ES Backend:             *\n");
 #ifdef BUILD_GLES
-      fprintf (stderr,"* BRT_RUNTIME = %s               *\n", GLES_RUNTIME_STRING);
+      fprintf (stderr,"* BRT_RUNTIME=%s               *\n", GLES_RUNTIME_STRING);
 #else
       fprintf (stderr,"* Not supported on this platform *\n");
 #endif
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* DirectX9 Backend:              *\n");
 #ifdef BUILD_DX9                                       
-      fprintf (stderr,"* BRT_RUNTIME = %s               *\n", DX9_RUNTIME_STRING);
+      fprintf (stderr,"* BRT_RUNTIME=%s                 *\n", DX9_RUNTIME_STRING);
 #else
       fprintf (stderr,"* Not supported on this platform *\n");
 #endif
       fprintf (stderr,"*                                *\n");
       fprintf (stderr,"* CTM Backend:                   *\n");
 #ifdef BUILD_CTM                                       
-      fprintf (stderr,"* BRT_RUNTIME = %s               *\n", CTM_RUNTIME_STRING);
+      fprintf (stderr,"* BRT_RUNTIME=%s                 *\n", CTM_RUNTIME_STRING);
 #else
       fprintf (stderr,"* Not supported on this platform *\n");
 #endif
