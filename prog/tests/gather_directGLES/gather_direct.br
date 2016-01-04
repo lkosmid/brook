@@ -1,0 +1,46 @@
+// gather_direct.br
+// Minimal acceptance test for gather functionality.
+// It confirms that when we perform a gather with
+// a constant index, the expected stream element
+// is fetched.
+
+#include <stdio.h>
+
+kernel void gather1( float indexx, float indexy, float a[100], out float b<> ) {
+        float2 index=float2(indexx, indexy);
+	b = a[ index ];
+}
+
+int main() {
+	int i, j;
+	float indexx = 3;
+        //This argument is ignored since it is a single dimentional stream
+	float indexy = 4;
+	float a1< 100 >;
+	float b1< 100 >;
+	float input_a1[100];
+	float output_b1[100];
+	
+	// initialize data
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+		{
+			input_a1[10*i+j] = (float)(10*i+j);
+		}
+	}
+	streamRead( a1, input_a1 );
+	
+	gather1( indexx, indexy, a1, b1 );
+	
+	streamWrite( b1, output_b1 );
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+			printf( "%3.2f ", output_b1[10*i+j] );
+		printf("\n");
+	}
+	
+	return 0;
+}
