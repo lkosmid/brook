@@ -120,10 +120,7 @@ void GLESContext::writeToTexture(GLESTexture *glesTexture, GLint x, GLint y, GLi
   glBindTexture (GL_TEXTURE_2D, glesTexture->id());
   CHECK_GL();
   if(!_havePBOs) {
-    //subimage2d in gles fails if teximage2d hasn't been used previously. We need to make the runtime to remember or use always tex2d for now
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, inData);
-#if 0
-    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, 128, 128,
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w , h,
 #ifdef GLES3
                  /* glesTexture->nativeFormat(), // */ elemsize==1?GL_RED:(elemsize==3?GL_RGB:GL_RGBA),
                  glesTexture->elementType()==GLESTexture::GLES_FIXED?GL_UNSIGNED_BYTE:(glesTexture->elementType()==GLESTexture::GLES_SHORTFIXED?GL_UNSIGNED_SHORT:GL_FLOAT), 
@@ -134,7 +131,6 @@ void GLESContext::writeToTexture(GLESTexture *glesTexture, GLint x, GLint y, GLi
                  GL_UNSIGNED_BYTE, 
 #endif
                  inData);
-#endif
     CHECK_GL();
   }
 #ifdef GLES3
