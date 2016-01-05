@@ -475,7 +475,21 @@ namespace brook
 
     float4 GPUStream::getGatherConstant() const
     {
-      return _data->_context->getStreamGatherConstant( getRank(), _domainMin, _domainMax, getExtents() );
+      float4 ret;
+      if(_data->_context->needsNormalizedTexCoords())
+      {
+        unsigned int w=getTextureWidth();
+        unsigned int h=getTextureHeight();
+        assert(w);
+        assert(h);
+        ret = _data->_context->getStreamGatherConstant( getRank(), _domainMin, _domainMax, getExtents() );
+        ret = float4( ret.x / w, ret.y / h, ret.z / w, ret.w / h);
+      }
+      else
+      {
+        ret = _data->_context->getStreamGatherConstant( getRank(), _domainMin, _domainMax, getExtents() );
+      }
+      return ret;
     }
 
   Stream* GPUStream::Domain(int inMin, int inMax)
