@@ -159,6 +159,10 @@ namespace brook {
        getStreamReduceOutputRegion( texture, minSecondary, maxSecondary, minPrimary, maxPrimary, region );
    }
 
+    /* Whether or not the Texture Coordinates for this context need to be normalized */
+    virtual bool
+    needsNormalizedTexCoords(void) const = 0;
+
     /* Create a texture */
     virtual TextureHandle 
     createTexture2D( unsigned int inWidth, 

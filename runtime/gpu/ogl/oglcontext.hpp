@@ -117,6 +117,9 @@ namespace brook {
                                 const unsigned int maxY,
                                 GPURegion &region) const; 
 
+    virtual bool
+    needsNormalizedTexCoords(void) const { return false; }
+
     virtual TextureHandle 
     createTexture2D( unsigned int inWidth,
                      unsigned int inHeight,

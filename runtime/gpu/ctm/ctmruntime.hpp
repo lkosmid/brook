@@ -104,6 +104,9 @@ namespace brook
                                           const unsigned int maxY,
                                           GPURegion &region) const;
         
+        bool
+        needsNormalizedTexCoords(void) const { return false; }
+
         //! Create a texture - This will allocate a CTM buffer on the GPU memory
         TextureHandle createTexture2D( unsigned int inWidth, 
                                        unsigned int inHeight, 
