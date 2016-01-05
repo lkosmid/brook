@@ -66,7 +66,7 @@ static const char passthrough_pixel[] =
       "  tmp = floor(256.0*u_split.y - (u_split.y/255.0));"\
       "  reconstructed = (tmp*0.0078125) ;" \
       "  if(exponent >= -126.0) if(reconstructed < 1.0) reconstructed += 1.0 ;" \
-      "  highp float sign_value = -sign(127.1 - tmp) ;" \
+      "  highp float sign_value = -sign(tmp - 127.1) ;" \
       "  tmp = floor(256.0*u_split.z - (u_split.z/255.0));"\
       "  reconstructed += (tmp*0.000030517578125);" 
 
@@ -122,7 +122,7 @@ static const char passthrough_pixel[] =
       "  u_split.x = ((exponent - 256.0*floor(exponent*0.00390625))*0.00392156862745098) ;"\
       "  tmp = clamp(abs(reconstructed*exp2(-floor(log2(abs(reconstructed))))) -1.0, 0.0, 1.0);"\
       "  tmp = tmp*exp2(23.0);"\
-      "  highp float sign_value = step(0.0, reconstructed)*128.0;"\
+      "  highp float sign_value = step(reconstructed, -exp2(-20.0))*128.0;"\
       "  u_split.y = (floor((tmp - 256.0*256.0*256.0*floor(tmp*0.00000005960464477539))*1.52587890625e-05)+sign_value)*0.00392156862745098 ;"\
       "  u_split.z = (floor((tmp - 256.0*256.0*floor(tmp*1.52587890625e-05))*0.00390625)*0.00392156862745098) ;"
 
