@@ -395,18 +395,32 @@ compile_cgc (const char * /*name*/,
 
        //get the type of the output variable and add the appropriate encoding function
        //GLES can only have a single 4-component output at most
-       if( (output_list_types.size() != 1) || 
-           (output_list_types[0].find("2")!=std::string::npos) || 
-           (output_list_types[0].find("3")!=std::string::npos) || 
-           (output_list_types[0].find("4")!=std::string::npos)
+       if( (output_list_types.size() > 1) || 
+           (output_list_types.size() && (
+             (output_list_types[0].find("2")!=std::string::npos) || 
+             (output_list_types[0].find("3")!=std::string::npos) || 
+             (output_list_types[0].find("4")!=std::string::npos)
+                                        )
+           )
          )
        {
           printf("Error in brcc OpenGL ES 2.0 backend: In GLES 2.0 the output is restricted in <= 32 bits\n");
           printf("Please rewrite your kernel to use it with the GLSL ES backend\n");
           exit(-1);
        }
+       //if this fails, then we need to update the backend because it is a special case
+       // eg. gathreop, no output specifier, reduce
+       //assert(output_list_types.size());
        char replacement_str[255];
-       snprintf(replacement_str, 255, "encode_output_%s(%s);", output_list_types[0].c_str(), rvalue);
+       if(output_list_types.size())
+         snprintf(replacement_str, 255, "encode_output_%s(%s);", output_list_types[0].c_str(), rvalue);
+       else
+       {
+         printf("Warning brcc: Output type for kernel is missing, defaulting to float. ");
+         printf("You may have to check the backend for that case.\n");
+         //TODO this should be done properly in the backend so that it outputs the type always
+         snprintf(replacement_str, 255, "encode_output_float(%s);", rvalue);
+       }
        replaceAll(fpcode, line, replacement_str);
     }
     //Finally force high precision to have arithmetic accuracy instead of the default medium that cgc generates
