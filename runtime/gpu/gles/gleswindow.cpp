@@ -320,9 +320,6 @@ EGLint aEGLContextAttributes[] = {
         EGL_NONE
     };
 
-EGLConfig	aEGLConfigs[1];
-EGLint		cEGLConfigs;
-
 GLESWindow::GLESWindow(const char *device) {
 //  int attrib[] = { GLX_RGBA, None };
 #ifndef RPI_NO_X
@@ -363,10 +360,9 @@ GLESWindow::GLESWindow(const char *device) {
 #ifndef RPI_NO_X
   iScreen  = DefaultScreen(pDisplay);
 
-  EGLConfig FBConfig = aEGLConfigs[0];
   int vID,n;
 
-  EGL_CHECK(eglGetConfigAttrib(sEGLDisplay, FBConfig, EGL_NATIVE_VISUAL_ID, &vID));
+  EGL_CHECK(eglGetConfigAttrib(sEGLDisplay, aEGLConfigs[0], EGL_NATIVE_VISUAL_ID, &vID));
   temp.visualid = vID;
   visual = XGetVisualInfo(pDisplay, VisualIDMask, &temp, &n);
   if (!visual) {
