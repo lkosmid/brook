@@ -9,9 +9,11 @@
 
 /* this test should make a matrix of 1 and a diagonal of 0's*/
 kernel void
-bar1(float d_prime<>, float d[][], out float e<>, float4 indexofe)
+bar1(float d_prime<>, float d[][], out float e<>, float4 indexofe, float x, float y)
 {
-  e = d[floor(10*indexof(d_prime))];
+  float4 indx= indexof(d_prime);
+  indx= floor(float4(x*indx.x, y*indx.y, 1, 1));
+  e = d[indx];
 }
 
 kernel void
@@ -33,9 +35,9 @@ bar4(float d_prime<>, float d[][], out float e<>, float4 indexofe)
 }
 
 kernel void
-foo1(float d_prime<>, float d[][],out float e<>)
+foo1(float d_prime<>, float d[][],out float e<>, float x, float y)
 {
-   bar1(d_prime,d,e,floor(10*indexof(e)));
+   bar1(d_prime,d,e,floor(10*indexof(e)), x, y);
 }
 
 kernel void
@@ -101,7 +103,7 @@ int main(void)
   }
   printf ("\n");
 
-  foo1(d,d,ex);
+  foo1(d,d,ex, 10, 10);
   foo2(d,d,ey);
   foo3(d,d,ez);
   foo4(d,d,ew);
