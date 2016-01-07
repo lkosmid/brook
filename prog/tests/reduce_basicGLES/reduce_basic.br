@@ -1,0 +1,98 @@
+// reduce_basic.br
+// A minimal test of reduction functionality.
+// It confirms that we can reduce streams of
+// various sizes to single values.
+
+#include <stdio.h>
+
+reduce void SUM( float a<>, reduce float b <>) {
+	b = b + a;
+}
+
+int main () {
+
+  float ax< 10, 10 >;
+  float ay< 10, 10 >;
+  float az< 10, 10 >;
+  float aw< 10, 10 >;
+  float bx< 9, 9 >;
+  float by< 9, 9 >;
+  float bz< 9, 9 >;
+  float bw< 9, 9 >;
+  float cx< 11, 10 >;
+  float cy< 11, 10 >;
+  float cz< 11, 10 >;
+  float cw< 11, 10 >;
+  
+  float data_ax[10][10];
+  float data_ay[10][10];
+  float data_az[10][10];
+  float data_aw[10][10];
+  float data_bx[9][9];
+  float data_by[9][9];
+  float data_bz[9][9];
+  float data_bw[9][9];
+  float data_cx[11][10];
+  float data_cy[11][10];
+  float data_cz[11][10];
+  float data_cw[11][10];
+  float resultx;
+  float resulty;
+  float resultz;
+  float resultw;
+
+  int i,j;
+
+  for (i=0; i<10; i++)
+    for (j=0; j<10; j++) {
+      data_ax[i][j] = (float)i;
+      data_ay[i][j] = (float)j;
+      data_az[i][j] = (float)1;
+      data_aw[i][j] = (float)2;
+    }
+  streamRead(ax, data_ax);
+  streamRead(ay, data_ay);
+  streamRead(az, data_az);
+  streamRead(aw, data_aw);
+  SUM(ax,resultx);
+  SUM(ay,resulty);
+  SUM(az,resultz);
+  SUM(aw,resultw);
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", resultx,resulty,resultz,resultw);
+
+  for (i=0; i<9; i++)
+    for (j=0; j<9; j++) {
+      data_bx[i][j] = (float)i;
+      data_by[i][j] = (float)j;
+      data_bz[i][j] = (float)1;
+      data_bw[i][j] = (float)2;
+    }
+  streamRead(bx, data_bx);
+  streamRead(by, data_by);
+  streamRead(bz, data_bz);
+  streamRead(bw, data_bw);
+  SUM(bx,resultx);
+  SUM(by,resulty);
+  SUM(bz,resultz);
+  SUM(bw,resultw);
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", resultx,resulty,resultz,resultw);
+
+  for (i=0; i<11; i++)
+    for (j=0; j<10; j++) {
+      data_cx[i][j] = (float)i;
+      data_cy[i][j] = (float)j;
+      data_cz[i][j] = (float)1;
+      data_cw[i][j] = (float)2;
+    }
+  streamRead(cx, data_cx);
+  streamRead(cy, data_cy);
+  streamRead(cz, data_cz);
+  streamRead(cw, data_cw);
+  SUM(cx,resultx);
+  SUM(cy,resulty);
+  SUM(cz,resultz);
+  SUM(cw,resultw);
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", resultx,resulty,resultz,resultw);
+    
+  return 0;
+}
