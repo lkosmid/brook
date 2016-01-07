@@ -60,7 +60,7 @@ static void threadcode(void *_runtime)
         streamWrite(output_s, output_a);
     }
     finalize();
-    tr->result=memcmp(input_a, output_a, sizeof(output_a));
+    tr->result=memcmp(input_a, output_a, 1000*1000*sizeof(float4));
     brfree(output_a);
 }
 
@@ -68,11 +68,12 @@ int main(void)
 {
     int ret=0;
 	const char **devs=brook::runtimeTargets(), **dev1, **dev2, **end;
-    bool haveCTM=false, haveOGL=false, haveDX9=false;
+    bool haveCTM=false, haveOGL=false, haveGLES=false, haveDX9=false;
     for(end=devs; *end; ++end)
     {
         if(!haveCTM && !strncmp(*end, "ctm", 3)) haveCTM=true;
         if(!haveOGL && !strncmp(*end, "ogl", 3)) haveOGL=true;
+        if(!haveGLES && !strncmp(*end, "gles", 3)) haveOGL=true;
         if(!haveDX9 && !strncmp(*end, "dx9", 3)) { haveDX9=true; ++end; break; }
     }
     struct BackendResult
@@ -87,7 +88,7 @@ int main(void)
         {
             runtimes[0].runtime=*dev1;
             runtimes[1].runtime=*dev2;
-            //printf("Testing %s vs %s\n", *dev1, *dev2);
+            printf("Testing %s vs %s\n", *dev1, *dev2);
             THREADINIT(&runtimes[0].h, &runtimes[0]);
             THREADINIT(&runtimes[1].h, &runtimes[1]);
             THREADWAIT(runtimes[0].h);
