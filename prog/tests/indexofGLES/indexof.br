@@ -17,15 +17,18 @@ bar1(float d_prime<>, float d[][], out float e<>, float4 indexofe, float x, floa
 }
 
 kernel void
-bar2(float d_prime<>, float d[][], out float e<>, float4 indexofe)
+bar2(float d_prime<>, float d[][], out float e<>, float4 indexofe, int x, int y)
 {
-  e = d[floor(10*indexof(d_prime).xy)];
+  float4 indx= indexof(d_prime);
+  indx= floor(float4(x*indx.x, y*indx.y, 1, 1));
+  e = d[indx];
 }
 
 kernel void
-bar3(float d_prime<>, float d[][], out float e<>, float4 indexofe)
+bar3(float d_prime<>, float d[][], out float e<>, float4 indexofe, float2 dim)
 {
-  e = d[floor(10*indexof(d_prime).xy)];
+  float2 indx= floor(indexof(d_prime).xy * dim);
+  e = d[indx];
 }
 
 kernel void
@@ -41,15 +44,15 @@ foo1(float d_prime<>, float d[][],out float e<>, float x, float y)
 }
 
 kernel void
-foo2(float d_prime<>, float d[][],out float e<>)
+foo2(float d_prime<>, float d[][],out float e<>, int x, int y)
 {
-   bar2(d_prime,d,e,floor(10*indexof(e)));
+   bar2(d_prime,d,e,floor(10*indexof(e)), x, y);
 }
 
 kernel void
-foo3(float d_prime<>, float d[][],out float e<>)
+foo3(float d_prime<>, float d[][],out float e<>, float2 dim)
 {
-   bar3(d_prime,d,e,floor(10*indexof(e)));
+   bar3(d_prime,d,e,floor(10*indexof(e)), dim);
 }
 
 kernel void
@@ -104,8 +107,8 @@ int main(void)
   printf ("\n");
 
   foo1(d,d,ex, 10, 10);
-  foo2(d,d,ey);
-  foo3(d,d,ez);
+  foo2(d,d,ey, 10, 10);
+  foo3(d,d,ez, float2(10,10));
   foo4(d,d,ew);
   streamWrite(ex, data_ex);
   streamWrite(ey, data_ey);
