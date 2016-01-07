@@ -439,6 +439,7 @@ static bool expandOutputArgumentStructureDecl(std::ostream& shader,
           if( outr >= inFirstOutput
               && outr < inFirstOutput+inOutputCount )
             {
+assert(0);
               used = true;
               // it had better be just a floatN
               shader << "#ifdef DXPIXELSHADER\n\t\t";
@@ -1591,12 +1592,22 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
           } else if (!hasDoneIndexofOutput &&
                      FunctionProp[functionName].contains(i)) {
              hasDoneIndexofOutput= true;
-             shader << "\t" << "float4 __indexofoutput = "
+             shader << "#ifndef GL_ES\n"
+                    << "\t" << "float4 __indexofoutput = "
                     << "_computeindexof( "
                     << "_tex_" << *args[i]->name << "_pos, "
                     << "floor(float4( _tex_" << *args[i]->name << "_pos*"
                     << "_const_" << *args[i]->name << "_invscalebias.xy + "
-                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n";
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n"
+                    << "#else \n"
+                    //In GLES texture coordinates are normalised, so don't use floor
+                    << "\t" << "float4 __indexofoutput = "
+                    << "_computeindexof( "
+                    << "_tex_" << *args[i]->name << "_pos, "
+                    << "(float4( _tex_" << *args[i]->name << "_pos*"
+                    << "_const_" << *args[i]->name << "_invscalebias.xy + "
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n"
+                    << "#endif\n";
           }
         } else {
           if (globals.enableGPUAddressTranslation) {
@@ -1618,12 +1629,22 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
           expandStreamFetches(shader, args[i]->name->name, args[i]->form);
           if (!globals.enableGPUAddressTranslation &&
               FunctionProp[functionName].contains(i)) {
-             shader << "\t" << "float4 __indexof_" << *args[i]->name << " = "
+             shader << "#ifndef GL_ES\n"
+                    << "\t" << "float4 __indexof_" << *args[i]->name << " = "
                     << "_computeindexof( "
                     << "_tex_" << *args[i]->name << "_pos, "
                     << "floor(float4( _tex_" << *args[i]->name << "_pos*"
                     << "_const_" << *args[i]->name << "_invscalebias.xy + "
-                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n";
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n"
+                    << "#else \n"
+                    //In GLES texture coordinates are normalised, so don't use floor
+                    << "\t" << "float4 __indexof_" << *args[i]->name << " = "
+                    << "_computeindexof( "
+                    << "_tex_" << *args[i]->name << "_pos, "
+                    << "(float4( _tex_" << *args[i]->name << "_pos*"
+                    << "_const_" << *args[i]->name << "_invscalebias.xy + "
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n"
+                    << "#endif\n";
           }
         }
      }
