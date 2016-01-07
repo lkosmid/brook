@@ -57,13 +57,16 @@ void swapBuffers();
      Window     window;
      Colormap cmap;
      XVisualInfo *visual;
+#else
+     EGLNativeWindowType window;
 #endif
      //GLXFBConfig *glxConfig[4];
      //GLXContext  glxContext;
      EGLSurface sEGLSurface;
      EGLContext sEGLContext;
      EGLDisplay sEGLDisplay;
-     EGLNativeWindowType window;
+     EGLConfig aEGLConfigs[1];
+     EGLint cEGLConfigs;
 #endif
     
   };
