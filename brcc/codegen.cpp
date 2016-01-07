@@ -784,7 +784,7 @@ expandStreamStructureSamplerDecls(std::ostream& shader,
          shader << " : register (s" << ioSamplerReg++ << ")";
 
          std::stringstream s;
-         s << ",//GL_ES_in";
+         s << ",//GL_ES_in ";
          base->printBase(s,0);
          shader << s.str();
 
