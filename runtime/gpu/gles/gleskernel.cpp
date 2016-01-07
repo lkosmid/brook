@@ -624,8 +624,8 @@ GLESContext::getStreamInterpolant( const TextureHandle texture,
       maxY = domainMax[0];
   }
 
-  float2 start(minX + 0.005f, minY + 0.005f);
-  float2 end(maxX + 0.005f, maxY + 0.005f);
+  float2 start(minX /*+ 0.005f*/, minY /*+ 0.005f*/);
+  float2 end(maxX /*+ 0.005f*/, maxY /*+ 0.005f*/);
 
   get2DInterpolant(  start, end, w, h, interpolant); 
 }
