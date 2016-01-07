@@ -13,7 +13,7 @@ namespace brook {
     { \
         EGLint eglError = eglGetError(); \
         if(eglError != EGL_SUCCESS) { \
-            fprintf(stderr, "eglGetError() = %i (0x%.8x) at line %i in file %s\n", eglError, eglError, __LINE__, __FILE__); \
+            fprintf(stderr, "eglGetError() = %p (0x%.8x) at line %i in file %s\n", eglError, eglError, __LINE__, __FILE__); \
             exit(1); \
         } \
     }
