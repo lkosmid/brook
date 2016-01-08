@@ -11,24 +11,19 @@
 kernel void
 bar1(float d_prime<>, float d[][], out float e<>, float4 indexofe, float x, float y)
 {
-  float4 indx= indexof(d_prime);
-  indx= floor(float4(x*indx.x, y*indx.y, 1, 1));
-  e = d[indx];
+  e = d[indexof(d_prime)];
 }
 
 kernel void
 bar2(float d_prime<>, float d[][], out float e<>, float4 indexofe, int x, int y)
 {
-  float4 indx= indexof(d_prime);
-  indx= floor(float4(x*indx.x, y*indx.y, 1, 1));
-  e = d[indx];
+  e = d[indexof(d_prime)];
 }
 
 kernel void
 bar3(float d_prime<>, float d[][], out float e<>, float4 indexofe, float2 dim)
 {
-  float2 indx= floor(indexof(d_prime).xy * dim);
-  e = d[indx];
+  e = d[indexof(d_prime).xy];
 }
 
 kernel void
@@ -40,25 +35,25 @@ bar4(float d_prime<>, float d[][], out float e<>, float4 indexofe)
 kernel void
 foo1(float d_prime<>, float d[][],out float e<>, float x, float y)
 {
-   bar1(d_prime,d,e,floor(10*indexof(e)), x, y);
+   bar1(d_prime,d,e,indexof(e), x, y);
 }
 
 kernel void
 foo2(float d_prime<>, float d[][],out float e<>, int x, int y)
 {
-   bar2(d_prime,d,e,floor(10*indexof(e)), x, y);
+   bar2(d_prime,d,e,indexof(e), x, y);
 }
 
 kernel void
 foo3(float d_prime<>, float d[][],out float e<>, float2 dim)
 {
-   bar3(d_prime,d,e,floor(10*indexof(e)), dim);
+   bar3(d_prime,d,e,indexof(e), dim);
 }
 
 kernel void
 foo4(float d_prime<>, float d[][],out float e<>)
 {
-   bar4(d_prime,d,e,floor(10*indexof(e)));
+   bar4(d_prime,d,e,indexof(e));
 }
 
 kernel void
@@ -97,10 +92,7 @@ int main(void)
   printf("Here are the results from the simple indexof test:\n");
   for (i=0; i<10; i++) {
     for (j=0; j<10; j++) {
-      //here is a catch when GLES is used:
-      //if the result of indexof should be used on the CPU should be converted to non-normalised
-      //TODO: add a stream function to do this conversion? Should be easy, since the stream already knows the dimension
-      printf ("%3.2f  ", floor(10.0*data_c[i][j]));
+      printf ("%3.2f  ", data_c[i][j]);
     }
     printf ("\n");
   }
