@@ -287,7 +287,7 @@ compile_cgc (const char * /*name*/,
   }
   
   // Trim off the warning messages
-  memcpy (fpcode, startline, endline - startline);
+  memmove (fpcode, startline, endline - startline);
 
   // ned: Many hacks to fix up broken GLSL output from cgc
   char *fpcodenew = (char *) malloc(strlen(fpcode)+16384);
@@ -333,7 +333,8 @@ compile_cgc (const char * /*name*/,
 	  }
   }
   else if(CODEGEN_GLES==target) {
-    char * uniform_p=fpcode;
+    strcpy(fpcodenew, fpcode);
+    char * uniform_p=fpcodenew;
     //Replace texture reads with their coresponding reconstructing input function
     while((uniform_p=strstr(uniform_p,"texture2D"))!=NULL)
     {
@@ -368,12 +369,12 @@ compile_cgc (const char * /*name*/,
                char replacement_str[50];
                snprintf(replacement_str, 50, "reconstruct_%s(%s.x, ", uniform_list_types[i].c_str(), t0);
                snprintf(line, 50, "%s = texture2D(", t0);
-               replaceAll(fpcode, line, replacement_str);
+               replaceAll(fpcodenew, line, replacement_str);
            }
        }
     }
 
-    char * output_p=fpcode;
+    char * output_p=fpcodenew;
     //Use the corresponding encoding function for the output based on its type
     while((output_p=strstr(output_p,"gl_FragColor"))!=NULL)
     {
@@ -421,11 +422,10 @@ compile_cgc (const char * /*name*/,
          //TODO this should be done properly in the backend so that it outputs the type always
          snprintf(replacement_str, 255, "encode_output_float(%s);", rvalue);
        }
-       replaceAll(fpcode, line, replacement_str);
+       replaceAll(fpcodenew, line, replacement_str);
     }
     //Finally force high precision to have arithmetic accuracy instead of the default medium that cgc generates
-    replaceAll(fpcode, "precision mediump float;", "precision highp float;");
-    strcpy(fpcodenew, fpcode);
+    replaceAll(fpcodenew, "precision mediump float;", "precision highp float;");
   }
   else strcpy(fpcodenew, fpcode);
   // Wasn't escaping backslashes on Windows either
