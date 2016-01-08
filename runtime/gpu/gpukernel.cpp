@@ -1355,6 +1355,13 @@ HME - we are going to the slop buffer,  not the input buffer
     case kStreamConstant_ATDomainMin:
         return stream->getATDomainMinConstant();
         break;
+    case StreamDim:
+        {
+           size_t inputWidth = stream->getTextureWidth();
+           size_t inputHeight = stream->getTextureHeight();
+           return float4(inputWidth, inputHeight, 1, 1);
+        }
+        break;
     }
     GPUError("not implemented");
     return float4(0,0,0,0);
@@ -1503,6 +1510,13 @@ HME - we are going to the slop buffer,  not the input buffer
     case kOutputConstant_Indexof:
       return stream->getIndexofConstant();
       break;
+    case StreamDim:
+        {
+           size_t inputWidth = stream->getTextureWidth();
+           size_t inputHeight = stream->getTextureHeight();
+           return float4(inputWidth, inputHeight, 1, 1);
+        }
+        break;
     }
     GPUError("not implemented");
     return float4(0,0,0,0);

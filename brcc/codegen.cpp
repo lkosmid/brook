@@ -1236,7 +1236,7 @@ generate_shader_iter_arg(std::ostream& shader, Decl *arg, int i, int& texcoord, 
 static void
 generate_shader_out_arg(std::ostream& shader, Decl *arg,
                         bool& hasDoneIndexofOutput, bool needIndexOfArg,
-                        int i, int& texcoord, int &constreg, pass_info& outPass)
+                        int i, int& texcoord, int &constreg, pass_info& outPass, bool& hasDoneStreamDim)
 {
    std::string argName = arg->name->name;
 
@@ -1253,6 +1253,18 @@ generate_shader_out_arg(std::ostream& shader, Decl *arg,
 
       outPass.addConstant( (i+1), "kOutputConstant_Indexof" );
       outPass.addInterpolant( (i+1), "kOutputInterpolant_Position" );
+
+      if(!hasDoneStreamDim)
+      {
+         hasDoneStreamDim=true;
+	 //In GLES indexof returns normalised cordinates. We need to scale them
+	 //based on the size of the stream, so we get them as argument in StreamDim
+         shader << "#ifdef GL_ES\n\t\t"
+                << "uniform float4 StreamDim"
+                << " : register (c" << constreg++ << ")";
+         shader <<  ",\n\t\t#endif\n\t\t";
+         outPass.addConstant( (i+1), "StreamDim" );
+      }
    }
 }
 
@@ -1300,7 +1312,8 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
 
 static void
 generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg, int i,
-                        int& texcoord, int& constreg, int& samplerreg, pass_info& outPass )
+                        int& texcoord, int& constreg, int& samplerreg, pass_info& outPass, 
+                        bool& hasDoneStreamDim)
 {
    std::string argName = arg->name->name;
 
@@ -1335,6 +1348,17 @@ generate_map_stream_arg(std::ostream& shader, Decl *arg, bool needIndexOfArg, in
                 << " : register (c" << constreg++ << ")";
          shader <<  ",\n\t\t";
          outPass.addConstant( (i+1), "kStreamConstant_Indexof" );
+         
+         if(!hasDoneStreamDim) {
+            hasDoneStreamDim= true;
+	    //In GLES indexof returns normalised cordinates. We need to scale them
+	    //based on the size of the stream, so we get them as argument in StreamDim
+            shader << "#ifdef GL_ES\n\t\t"
+                   << "uniform float4 StreamDim"
+                   << " : register (c" << constreg++ << ")";
+            shader <<  ",\n\t\t#endif\n\t\t";
+            outPass.addConstant( (i+1), "StreamDim" );
+         }
       }
       shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << texcoord++;
       shader <<  ",\n\t\t";
@@ -1410,7 +1434,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
   std::vector<int> reductionStreamArguments;
   int texcoord, constreg, samplerreg, outputReg, i;
   bool reductionArgumentComesBeforeStreamArgument = false;
-  bool isReduction, hasDoneIndexofOutput;
+  bool isReduction, hasDoneIndexofOutput, hasDoneStreamDim;
 
   isReduction = false;
   for (i=0; i < nArgs; i++) {
@@ -1435,6 +1459,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
    */
 
   hasDoneIndexofOutput = false;
+  hasDoneStreamDim = false;
   constreg = texcoord = samplerreg = outputReg = 0;
   for (i=0; i < nArgs; i++) {
      std::string argName = args[i]->name->name;
@@ -1453,7 +1478,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
            generate_shader_iter_arg(shader, args[i], i, texcoord, constreg, outPass);
         } else if ((qual & TQ_Out) != 0) {
            generate_shader_out_arg(shader, args[i], hasDoneIndexofOutput,
-                                   needIndexOfArg, i, texcoord, constreg, outPass);
+                                   needIndexOfArg, i, texcoord, constreg, outPass, hasDoneStreamDim);
         } else {
            if (isReduction) {
               assert(!needIndexOfArg && "can't use indexof in a reduction" );
@@ -1464,7 +1489,8 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
                                             samplerreg, outPass);
            } else {
               generate_map_stream_arg(shader, args[i], needIndexOfArg, i,
-                                      texcoord, constreg, samplerreg, outPass);
+                                      texcoord, constreg, samplerreg, outPass, 
+                                      hasDoneStreamDim);
            }
         }
      } else if (args[i]->isArray()) {
@@ -1600,13 +1626,13 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
                     << "_const_" << *args[i]->name << "_invscalebias.xy + "
                     << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n"
                     << "#else \n"
-                    //In GLES texture coordinates are normalised, so don't use floor
+                    //In GLES texture coordinates are normalised, so first scale by the texture dimensions and then floor
                     << "\t" << "float4 __indexofoutput = "
-                    << "_computeindexof( "
+                    << "floor(StreamDim*_computeindexof( "
                     << "_tex_" << *args[i]->name << "_pos, "
                     << "(float4( _tex_" << *args[i]->name << "_pos*"
                     << "_const_" << *args[i]->name << "_invscalebias.xy + "
-                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n"
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0))));\n"
                     << "#endif\n";
           }
         } else {
@@ -1637,13 +1663,13 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
                     << "_const_" << *args[i]->name << "_invscalebias.xy + "
                     << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n"
                     << "#else \n"
-                    //In GLES texture coordinates are normalised, so don't use floor
+                    //In GLES texture coordinates are normalised, so first scale by the texture dimensions and then floor
                     << "\t" << "float4 __indexof_" << *args[i]->name << " = "
-                    << "_computeindexof( "
+                    << "floor(StreamDim*_computeindexof( "
                     << "_tex_" << *args[i]->name << "_pos, "
                     << "(float4( _tex_" << *args[i]->name << "_pos*"
                     << "_const_" << *args[i]->name << "_invscalebias.xy + "
-                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0)));\n"
+                    << "_const_" << *args[i]->name << "_invscalebias.zw,0,0))));\n"
                     << "#endif\n";
           }
         }
