@@ -1196,7 +1196,7 @@ generate_shader_support(std::ostream& shader)
 }
 
 static void
-generate_shader_iter_arg(std::ostream& shader, Decl *arg, int i, int& texcoord, int& constant, pass_info& outPass)
+generate_shader_iter_arg(std::ostream& shader, Decl *arg, int i, int& texcoord, int& constant, pass_info& outPass, bool& hasDoneStreamDim)
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
@@ -1229,6 +1229,19 @@ generate_shader_iter_arg(std::ostream& shader, Decl *arg, int i, int& texcoord, 
       shader <<  ",\n\t\t";
 
       outPass.addInterpolant( (i+1), "kIteratorInterpolant_Value" );
+   }
+
+   //in GLES we need StreamDim for iterators because they are normalised
+   if(!hasDoneStreamDim)
+   {
+      hasDoneStreamDim=true;
+      //In GLES indexof returns normalised cordinates. We need to scale them
+      //based on the size of the stream, so we get them as argument in StreamDim
+      shader << "#ifdef GL_ES\n\t\t"
+             << "uniform float4 StreamDim"
+             << " : register (c" << constant++ << ")";
+      shader <<  ",\n\t\t#endif\n\t\t";
+      outPass.addConstant( (i+1), "StreamDim" );
    }
 }
 
@@ -1475,7 +1488,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
 
      if (args[i]->isStream() || (qual & TQ_Reduce) != 0) {
         if ((qual & TQ_Iter) != 0) {
-           generate_shader_iter_arg(shader, args[i], i, texcoord, constreg, outPass);
+           generate_shader_iter_arg(shader, args[i], i, texcoord, constreg, outPass, hasDoneStreamDim);
         } else if ((qual & TQ_Out) != 0) {
            generate_shader_out_arg(shader, args[i], hasDoneIndexofOutput,
                                    needIndexOfArg, i, texcoord, constreg, outPass, hasDoneStreamDim);
@@ -1594,8 +1607,16 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
 
      if ((qual & TQ_Iter) != 0)
      {
-         if (!globals.enableGPUAddressTranslation)
+         if (!globals.enableGPUAddressTranslation) {
+
+             shader << "#ifdef GL_ES\n"
+                    //In GLES iterator values are normalised, so first scale by the texture dimensions and then floor
+                    << "\t" << *args[i]->name << " = "
+                    << "floor(StreamDim * " << *args[i]->name << " ); \n"
+                    << "#endif\n";
+
              continue; /* No texture fetch for iterators */
+        }
 
         if (!fullAddressTrans) {
             shader << "\tfloat4 __indexof_" << argName << " = __indexofoutput;\n";

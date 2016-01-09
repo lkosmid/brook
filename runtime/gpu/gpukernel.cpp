@@ -1411,6 +1411,15 @@ HME - we are going to the slop buffer,  not the input buffer
     case kIteratorConstant_ATValueOffset4:
         return iter->getValueOffset4Constant();
         break;
+    case StreamDim:
+        {
+           //for iterator in GLES we need the texture dimensions because they are normalised
+           GPUStream* stream = inKernel->_outputArguments[ inIndex ];
+           size_t inputWidth = stream->getTextureWidth();
+           size_t inputHeight = stream->getTextureHeight();
+           return float4(inputWidth, inputHeight, 1, 1);
+        }
+        break;
     }
     GPUError("not implemented");
     return float4(0,0,0,0);
