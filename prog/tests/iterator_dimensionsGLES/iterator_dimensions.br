@@ -1,0 +1,86 @@
+// iterator_dimensions.br
+// Tests the various dimensionalities of iterator streams allowed.
+// We allow 1-dimension iterators to use float, float2, float3 and float4
+// values, while 2-dimensional iterators use only float2.
+
+#include <stdio.h>
+
+kernel void copy1( iter float i<>, out float output<> ) {
+	output = i;
+}
+
+void test1( int extent, float min, float max )
+{
+	iter float iterator< extent > = iter( min, max );
+	float stream< extent >;
+	float* stream_data;
+	int i, count;
+
+	copy1( iterator, stream );
+	stream_data = (float*)brmalloc( extent*sizeof(float) );
+	streamWrite( stream, stream_data );
+	count = 0;
+	for( i = 0; i < extent; i++ )
+	{
+		if( count++ == 10 )
+		{
+			printf( "\n" );
+			count = 1;
+		}
+		printf( "%6.3f ", stream_data[i] );
+	}
+	printf( "\n" );
+	brfree( stream_data );
+}
+
+void test2( int extent, float minX, float minY, float maxX, float maxY )
+{
+	iter float iteratorx< extent > = iter( minX, maxX );
+	iter float iteratory< extent > = iter( minY, maxY );
+	float streamx< extent >;
+	float streamy< extent >;
+	float* stream_datax;
+	float* stream_datay;
+	int i, count;
+	
+	copy1( iteratorx, streamx );
+	copy1( iteratory, streamy );
+	
+	stream_datax = (float*)brmalloc( extent*sizeof(float) );
+	stream_datay = (float*)brmalloc( extent*sizeof(float) );
+	streamWrite( streamx, stream_datax );
+	streamWrite( streamy, stream_datay );
+	count = 0;
+	for( i = 0; i < extent; i++ )
+	{
+		if( count++ == 10 )
+		{
+			printf( "\n" );
+			count = 1;
+		}
+		printf( "{%6.3f %6.3f} ", stream_datax[i], stream_datay[i] );
+	}
+	printf( "\n" );
+	
+	brfree( stream_datax );
+	brfree( stream_datay );
+}
+
+
+int main()
+{
+	printf( " -- 1D, float, 10 elements, 0 - 10\n" );
+	test1( 10, 0.0f, 10.0f );
+	printf( " -- 1D, float, 10 elements, 10 - 0\n" );
+	test1( 10, 9.0f, -1.0f );
+	printf( " -- 1D, float, 10 elements, 5 - 10\n" );
+	test1( 10, 5.0f, 10.0f );
+	printf( " -- 1D, float, 128 elements, 0 - 64\n" );
+	test1( 128, 0.0f, 64.0f );
+	printf( " -- 1D, float, 128 elements, 0 - 64\n" );
+	test1( 128, 0.0f, 32.0f );
+	printf( " -- 1D, float2, 8 elements, (0,0) - (8,4)\n" );
+	test2( 8, 0.0f, 0.0f, 8.0f, 4.0f );
+	printf( " -- 1D, float3, 4 elements, (0,0,0) - (8,4,2)\n" );
+	return 0;
+}
