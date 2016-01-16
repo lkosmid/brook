@@ -185,8 +185,6 @@ compile_cgc (const char * /*name*/,
   /* Run CGC */
   fpcode = Subprocess_Run(argv, tempCode, true);
 
-  free( tempCode );
-
   if (fpcode == NULL) {
      fprintf(stderr, "%s resulted in an error, skipping ",
              argv[0]);
@@ -224,9 +222,15 @@ compile_cgc (const char * /*name*/,
     }   
     fprintf(stderr, "\n");
 
+    fprintf(stderr, "Faulty code is following:\n");
+    fprintf(stderr, "%s\n", tempCode);
+
+    free( tempCode );
 
     return NULL;
   }
+
+  free( tempCode );
 
   if (target == CODEGEN_PS20 ||
       target == CODEGEN_PS2B ||
