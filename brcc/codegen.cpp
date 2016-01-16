@@ -1232,16 +1232,21 @@ generate_shader_iter_arg(std::ostream& shader, Decl *arg, int i, int& texcoord, 
    }
 
    //in GLES we need StreamDim for iterators because they are normalised
+   //We also need a bias to shift it, equal to (StreamEnd - StreamStart)/2 which the runtime passes to us
    if(!hasDoneStreamDim)
    {
       hasDoneStreamDim=true;
-      //In GLES indexof returns normalised cordinates. We need to scale them
-      //based on the size of the stream, so we get them as argument in StreamDim
       shader << "#ifdef GL_ES\n\t\t"
              << "uniform float4 StreamDim"
              << " : register (c" << constant++ << ")";
-      shader <<  ",\n\t\t#endif\n\t\t";
+      shader <<  ",\n\t\t";
       outPass.addConstant( (i+1), "StreamDim" );
+
+      shader << "uniform float4 IteratorBias"
+             << " : register (c" << constant++ << ")";
+      shader <<  ",\n\t\t#endif\n\t\t";
+
+      outPass.addConstant( (i+1), "IteratorBias" );
    }
 }
 
@@ -1609,10 +1614,11 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
      {
          if (!globals.enableGPUAddressTranslation) {
 
+             hasDoneStreamDim= true;
              shader << "#ifdef GL_ES\n"
-                    //In GLES iterator values are normalised, so first scale by the texture dimensions and then floor
+                    //In GLES iterator values are normalised, so scale them by the texture dimensions
                     << "\t" << *args[i]->name << " = "
-                    << "floor(StreamDim * " << *args[i]->name << " ); \n"
+                    << "StreamDim * " << *args[i]->name << " - IteratorBias ; \n"
                     << "#endif\n";
 
              continue; /* No texture fetch for iterators */

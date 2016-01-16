@@ -1414,10 +1414,21 @@ HME - we are going to the slop buffer,  not the input buffer
     case StreamDim:
         {
            //for iterator in GLES we need the texture dimensions because they are normalised
-           GPUStream* stream = inKernel->_outputArguments[ inIndex ];
-           size_t inputWidth = stream->getTextureWidth();
-           size_t inputHeight = stream->getTextureHeight();
+           size_t inputWidth = inKernel->_outTextureWidth;
+           size_t inputHeight = inKernel->_outTextureHeight;
            return float4(inputWidth, inputHeight, 1, 1);
+        }
+        break;
+    case IteratorBias:
+        {
+           //We also need a bias equal to (StreamEnd - StreamStart)/2
+           GPUInterpolant outInterpolant;
+           iter->getInterpolant( inKernel->_outTextureWidth, inKernel->_outTextureHeight, outInterpolant );
+           float start=outInterpolant.vertices[1].x;
+           float end=outInterpolant.vertices[2].x;
+           //TODO complete the code for higher 2D and higher order streams
+           float4 ret = float4( (end-start)/2.0, 1.0, 1.0, 1.0);
+           return ret;
         }
         break;
     }
