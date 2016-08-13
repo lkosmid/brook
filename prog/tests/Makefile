@@ -7,8 +7,8 @@ REGRESSIONDIRS := accumulate allocate constant$(MOBILEPROFILE) convert_iter_to_s
 		  gather_direct$(MOBILEPROFILE) gatherop indexof indexof_output \
 		  input_output iterator iterator_dimensions$(MOBILEPROFILE) multiple_output$(MOBILEPROFILE) \
 		  multibackend read_write reduce reduce_basic reducetostream \
-		  replication_stride struct_input \
-		  struct_output sum toy scatter scan \
+		  replication_stride struct_gather struct_input \
+		  struct_output sum toy scatter scan$(MOBILEPROFILE) \
 		  domain_streamreadwrite read_write_domain pack_vout vout
 #gatherop indexof struct_gather 
 
