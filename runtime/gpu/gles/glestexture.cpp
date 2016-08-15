@@ -278,7 +278,7 @@ GLESTexture::convert_fp_from_gpu(void *dst, const void *src) const
 
    f.exp=_src[0];
    f.mant = ((_src[1] & 0x7F) << 16) ;
-   f.sign= ((_src[1] & 0x80)!=0) ;
+   f.sign= ((_src[1] & 0x80)) ;
    f.mant = (f.mant & 0x7F0000) | (_src[2] << 8) ;
    f.mant = (f.mant & 0x7FFF00) | _src[3] ;
 

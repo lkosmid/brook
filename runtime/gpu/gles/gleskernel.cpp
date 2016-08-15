@@ -66,7 +66,7 @@ static const char passthrough_pixel[] =
       "  tmp = floor(256.0*u_split.y - (u_split.y/255.0));"\
       "  reconstructed = (tmp*0.0078125) ;" \
       "  if(exponent >= -126.0) if(reconstructed < 1.0) reconstructed += 1.0 ;" \
-      "  highp float sign_value = -sign(tmp - 127.1) ;" \
+      "  highp float sign_value = sign(127.1 - tmp) ;" \
       "  tmp = floor(256.0*u_split.z - (u_split.z/255.0));"\
       "  reconstructed += (tmp*0.000030517578125);" 
 
