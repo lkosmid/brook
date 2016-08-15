@@ -55,8 +55,8 @@ kernel void CountToRight (float value [][],
    output = value[indexof(output)]+neighbor;
 }
 
-void CountValues(float list_stream<4,3>,
-                 float (*output_stream)<4,3>,
+void CountValues(float list_stream<4,4>,
+                 float (*output_stream)<4,4>,
                  int WIDTH, 
                  int LENGTH, 
                  int sign) {
@@ -81,22 +81,23 @@ void CountValues(float list_stream<4,3>,
 }
 
 int main () {
-	float inputindexx<4,3>;
-	float inputindexy<4,3>;
-	float outputindexx<4,3>;
-	float outputindexy<4,3>;
-        float inputval<4,3>;
-	float outputval<4,3>;
-	float indx[4][3];
-	float indy[4][3];
-	float indz[4][3];
-	float indw[4][3];
+/*FIXME: It seems that this benchmark works only with POT square streams, so changed streams from 4x3 to 4x4 */
+	float inputindexx<4,4>;
+	float inputindexy<4,4>;
+	float outputindexx<4,4>;
+	float outputindexy<4,4>;
+        float inputval<4,4>;
+	float outputval<4,4>;
+	float indx[4][4];
+	float indy[4][4];
+	float indz[4][4];
+	float indw[4][4];
 	float2 max;
-        float val[4][3];
+        float val[4][4];
 	int i,j;
-	max.x=3;max.y=4;
+	max.x=4;max.y=4;
 	for (i=0;i<4;++i) {
-		for (j=0;j<3;++j) {
+		for (j=0;j<4;++j) {
 			indx[i][j]=(float)j;
 			indy[i][j]=(float)i;indz[i][j]=indw[i][j]=0.0f;
                         val[i][j]=0;
@@ -107,17 +108,20 @@ int main () {
 	streamRead(inputindexy,indy);
 	streamRead(inputval,val);
 	if (0) {
+           printf ("inputindexx\n");
            streamPrint(inputindexx);
+           printf ("inputindexy\n");
            streamPrint(inputindexy);
            printf ("\n");
            getIndexAtX(inputindexx,inputindexy,-8,max,outputindexx);
+           printf ("outputindexx\n");
            streamPrint(outputindexx);
            getIndexAtY(inputindexy,inputindexy,-8,max,outputindexy);
            streamPrint(outputindexy);
 	} else {
            printf ("input\n");
            streamPrint(inputval);
-           CountValues(inputval,&outputval,4,3,-1);
+           CountValues(inputval,&outputval,4,4,-1);
            printf ("\noutput\n");
            streamPrint(outputval);
 	}
