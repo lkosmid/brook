@@ -1,0 +1,135 @@
+// read_write_domain.br
+
+// confirm that streamRead and streamWrite
+// interact properly with domain
+
+#include <stdio.h>
+
+typedef struct Pair_t {
+	float field1;
+} Pair;
+
+#define SIZE_X1 333
+
+#define START_X1 127
+#define END_X1 305
+#define DOMAIN_X1 (END_X1 - START_X1)
+
+#define SIZE_X2 427
+#define SIZE_Y2 987
+
+#define START_X2 0
+#define END_X2 199
+#define DOMAIN_X2 (END_X2 - START_X2)
+
+#define START_Y2 576
+#define END_Y2 987
+#define DOMAIN_Y2 (END_Y2 - START_Y2)
+
+kernel void clear2( out float result<> ) {
+	result = -1;
+}
+
+kernel void clearPair( out Pair result<> ) {
+	result.field1 = -1;
+}
+
+void check( const char* name, const char* dim, int xidx, int yidx, int expected, float actual )
+{
+	if( (float)expected == actual ) return;
+	
+	printf("fail: %s[%d][%d].%s = %f, expected %d\n", name, yidx, xidx, dim, actual, expected );
+	exit(-1);
+}
+
+void check1( const char* name, const float* data )
+{
+	int i;
+	int dx, dy;
+	for( i = 0; i < SIZE_X1; i++ )
+	{
+		dx = -1;
+		dy = -1;
+		
+		if( i >= START_X1 && i < END_X1 )
+		{
+			dx = i - START_X1;
+			dy = i - START_X1;
+		}
+	
+		check( name, "x", i, 0, dx, data[i] );
+	}
+}
+
+void check2( const char* name, const float* data )
+{
+	int i, j;
+	int dx, dy;
+	for( j = 0; j < SIZE_Y2; j++ )
+	for( i = 0; i < SIZE_X2; i++ )
+	{
+		dx = -1;
+		dy = -1;
+		
+		if( i >= START_X2 && i < END_X2
+			&& j >= START_Y2 && j < END_Y2 )
+		{
+			dx = i - START_X2;
+			dy = j - START_Y2;
+		}
+
+		check( name, "x", i, j, dx, data[j*SIZE_X2+i] );
+	}
+}
+
+int main()
+{
+	int i, j;
+	float a1< SIZE_X1 >;
+	Pair b1< SIZE_X1 >;
+	float a2< SIZE_Y2, SIZE_X2 >;
+	Pair b2< SIZE_Y2, SIZE_X2 >;
+	
+	float* input1 = (float*) brmalloc( DOMAIN_X1 * sizeof(float) );
+	float* input2 = (float*) brmalloc( DOMAIN_Y2 * DOMAIN_X2 * sizeof(float) );
+
+	float* a1_data = (float*) brmalloc( SIZE_X1 * sizeof(float) );
+	float* b1_data = (float*) brmalloc( SIZE_X1 * sizeof(float) );
+	float* a2_data = (float*) brmalloc( SIZE_Y2 * SIZE_X2 * sizeof(float) );
+	float* b2_data = (float*) brmalloc( SIZE_Y2 * SIZE_X2 * sizeof(float) );
+	
+	for( i = 0; i < DOMAIN_X1; i++ )
+	{
+		input1[ i ] = (float)i;
+	}
+
+	for( j = 0; j < DOMAIN_Y2; j++ )
+	for( i = 0; i < DOMAIN_X2; i++ )
+	{
+		input2[ j*DOMAIN_X2 + i ] = (float)i;
+	}
+	
+	clear2( a1 );
+	clear2( a2 );
+	
+	clearPair( b1 );
+	clearPair( b2 );
+	
+	streamRead( a1.domain( START_X1, END_X1 ), input1 );
+	streamRead( b1.domain( START_X1, END_X1 ), input1 );
+	streamRead( a2.domain( int2( START_X2, START_Y2 ), int2( END_X2, END_Y2 ) ), input2 );
+	streamRead( b2.domain( int2( START_X2, START_Y2 ), int2( END_X2, END_Y2 ) ), input2 );
+	
+	streamWrite( a1, a1_data );
+	streamWrite( b1, b1_data );
+	streamWrite( a2, a2_data );
+	streamWrite( b2, b2_data );
+	
+	check1( "a1", a1_data );
+	check1( "b1", b1_data );
+	check2( "a2", a2_data );
+	check2( "b2", b2_data );
+
+	printf( "pass\n" );
+	return 0;
+}

@@ -9,8 +9,7 @@ REGRESSIONDIRS := accumulate allocate constant$(MOBILEPROFILE) convert_iter_to_s
 		  multibackend read_write reduce reduce_basic reducetostream \
 		  replication_stride struct_gather struct_input \
 		  struct_output sum toy scatter scan$(MOBILEPROFILE) \
-		  domain_streamreadwrite read_write_domain pack_vout vout
-#gatherop indexof struct_gather 
+		  domain_streamreadwrite read_write_domain$(MOBILEPROFILE)
 
 #don't remove vout--otherwise it'll break again with some random change
 
