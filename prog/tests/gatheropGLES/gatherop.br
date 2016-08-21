@@ -1,0 +1,86 @@
+// gatherop.br
+// Tests the gatherop runtime function, as well
+// as fallback onto the CPU runtime when a
+// GPU runtime cannot support native gatherop.
+
+#include <stdio.h>
+
+reduce void mydec1(float a <>, reduce float b <> ) {
+   b = a - 1;
+}
+reduce void myfetch1(float a <>, reduce float b <> ) {
+  b = a;
+}
+reduce void myinc1(float a <>, reduce float b <> ) {
+  b = a + 1;
+}
+
+void print_dataf (float4 data_f [2][2]) {
+   int i,j;
+     for (i=0;i<2;++i) {
+        for (j=0;j<2;++j) {
+           printf("{%3.2f %3.2f %3.2f %3.2f}",
+                  data_f[i][j].x,
+                  data_f[i][j].y,
+                  data_f[i][j].z,
+                  data_f[i][j].w);
+        }
+        printf("\n");
+     }
+}
+
+void printarray1 (float data[][10]) {
+  unsigned int i,j;
+  for (i=0; i<10; i++) {
+    for (j=0; j<10; j++) {
+      printf ("%3.2f ", data[i][j]);
+    }
+    printf ("\n");
+  }
+}
+
+int main () {
+
+  float  a<10, 10>;
+  float2 b<10, 10>;
+  float  e<10, 10>;
+  float4 f<2,2>;
+  float4 g<2,2>;
+  float2 index<2,2>;
+
+  float  data_a[10][10];
+  float2 data_b[10][10];
+  float  data_e[10][10];
+  float4 data_f[2][2]={ { float4(0,0,0,0), float4(1,-1,1,-1) },
+                        { float4(2,-2,2,-2), float4(3,-3,3,-3) } };
+  float4 data_g[2][2];
+  float2 data_i[2][2]={ { float2(0,1),float2(1,0) },
+                        { float2(1,1),float2(0,0) } };
+  int i,j;
+
+  for (i=0; i<10; i++)
+    for (j=0; j<10; j++) {
+      data_a[i][j] = (float)(i+10*j);
+      data_b[i][j].x = (float)(9-(i));
+      data_b[i][j].y = (float)(9-(j));
+    }
+
+  /***** Test 1 *******/
+  streamRead(a, data_a);
+  streamRead(b, data_b);
+
+//always the streamGatherOp is executed on the CPU backend (see include/brook/brt.hpp:760)
+//Currently it fails because we use a different format from the CPU
+//However it might also be a combination with another problem
+  streamGatherOp(e,b,a,mydec1);
+  streamGatherOp(e,b,a,mydec1);
+  
+  streamWrite(e, data_e);
+  streamWrite(a, data_a);
+  printarray1(data_e);
+  printarray1(data_a);
+  printf ("\n");
+
+  return 0;
+}
+
