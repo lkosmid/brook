@@ -1,0 +1,28 @@
+// reduce_simplest.br
+// The simplest A minimal test of reduction functionality.
+// It confirms that we can reduce a 2x2 stream to a single value.
+
+#include <stdio.h>
+
+reduce void SUM( float a<>, reduce float b <>) {
+	b = b + a;
+}
+
+int main () {
+
+  float a< 2, 2 >;
+  float b< 2, 2 >;
+  float input_a[2][2]={{0,1},{2,3}};
+  float input_b[2][2]={{0,0},{0,0}};
+  float output[2][2];
+
+  streamRead( a, input_a );
+  streamRead( b, input_b );
+  SUM(a,b);
+  streamWrite( b, output);
+  //this should print only the sum of all elements in [0][0] that is 6. However
+  //it does't print it correctly neither in the CPU nor in the GPU
+  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", output[0][0], output[0][1], output[1][0], output[1][1]);
+
+  return 0;
+}

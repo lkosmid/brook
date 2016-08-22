@@ -6,7 +6,7 @@ REGRESSIONDIRS := accumulate allocate cachetest constant$(MOBILEPROFILE) convert
 		  domain_read domain_write gather_dependent$(MOBILEPROFILE) \
 		  gather_direct$(MOBILEPROFILE) gatherop indexof indexof_output \
 		  input_output iterator iterator_dimensions$(MOBILEPROFILE) multiple_output$(MOBILEPROFILE) \
-		  multibackend read_write reduce reduce_basic reducetostream \
+		  multibackend read_write reduce reduce_basic reduce_simplest reducetostream \
 		  replication_stride struct_gather struct_input \
 		  struct_output sum toy scatter scan$(MOBILEPROFILE) \
 		  domain_streamreadwrite read_write_domain$(MOBILEPROFILE)
