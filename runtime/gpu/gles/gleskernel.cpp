@@ -10,11 +10,13 @@ static const char passthrough_vertex[] =
 "not used";
 
 static const char passthrough_pixel[] =
-"!!ARBfp1.0\n"
-"ATTRIB tex0 = fragment.texcoord[0];\n"
-"OUTPUT oColor = result.color;\n"
-"TEX oColor, tex0, texture[0], RECT;\n"
-"END\n";
+"precision highp float;\n"
+"uniform highp sampler2D textureUnit0;\n"
+"varying vec4 TEX0;\n"
+"void main()\n"
+"{\n"
+"  gl_FragColor = texture2D(textureUnit0, TEX0.xy);\n"
+"}\n";
 
 #define reconstruct_unsigned_int \
       "#define reconstruct_unsigned_int(reconstructed, textureUnit0, vTexCoord0)"\
@@ -354,52 +356,18 @@ printf("I have to check for uniform types\n");
 
 GPUContext::VertexShaderHandle 
 GLESContext::getPassthroughVertexShader( const char* inShaderFormat ) {
-#if 0
-  if (!_passthroughVertexShader) {
-    GLuint id;
-    glGenProgramsARB(1, &id);
-    glBindProgramARB(GL_VERTEX_PROGRAM, id);
-    glProgramStringARB(GL_VERTEX_PROGRAM, GL_PROGRAM_FORMAT_ASCII,
-                       strlen(passthrough_vertex), 
-                       (GLubyte *) passthrough_vertex);
-    CHECK_GL();
-    _passthroughVertexShader = (GPUContext::VertexShaderHandle) id;
-  }
-  return _passthroughVertexShader;
-#else
   return (GPUContext::VertexShaderHandle) 1;
-#endif
 }
 
 
-//Probably this needs to be removed, since it seems ARB related
 GPUContext::PixelShaderHandle 
 GLESContext::getPassthroughPixelShader( const char* inShaderFormat ) {
-assert(0);
- /* 
-  //fprintf (stderr, "getPassthroughPixelShader: this=0x%p\n", this);
-
   if (!_passthroughPixelShader) {
-    GLuint id;
-    //these are no longer required with GLES
-    //fprintf (stderr, "Calling glGenProgramsARB...\n");
-    //glGenProgramsARB(1, &id);
-    //fprintf (stderr, "Calling glBindProgramARB...\n");
-    //glBindProgramARB(GL_FRAGMENT_SHADER, id);
-    //fprintf (stderr, "Loading String: \n");
-    //fprintf (stderr, "%s\n", passthrough_pixel);
-    //glProgramStringARB(GL_FRAGMENT_SHADER, GL_PROGRAM_FORMAT_ASCII,
-    //                      strlen(passthrough_pixel), 
-    //                      (GLubyte *) passthrough_pixel);
-    //fprintf (stderr, "Mallocing PixelShader\n");
-    //_passthroughPixelShader = new GLESARBPixelShader(id,passthrough_pixel);
-    //fprintf (stderr, "Checking GL\n");
-    CHECK_GL();
+    _passthroughPixelShader = new GLESSLPixelShader(0,passthrough_pixel,0);
   }
 
-  //fprintf (stderr, "  returning 0x%p\n ", _passthroughPixelShader);
   return (GPUContext::PixelShaderHandle) _passthroughPixelShader;
-*/}
+}
 
 unsigned int 
 GLESContext::createShader( const char* shader, GLenum shaderType ) 
