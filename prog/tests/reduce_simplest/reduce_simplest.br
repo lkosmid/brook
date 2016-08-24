@@ -11,18 +11,18 @@ reduce void SUM( float a<>, reduce float b <>) {
 int main () {
 
   float a< 2, 2 >;
-  float b< 2, 2 >;
+  float b< 1, 1 >;
   float input_a[2][2]={{0,1},{2,3}};
-  float input_b[2][2]={{0,0},{0,0}};
-  float output[2][2];
+  //in order the reduce to be executed, the output stream needs to be smaller
+  float input_b[1][1]={0};
+  float output[1][1];
 
   streamRead( a, input_a );
   streamRead( b, input_b );
   SUM(a,b);
   streamWrite( b, output);
-  //this should print only the sum of all elements in [0][0] that is 6. However
-  //it does't print it correctly neither in the CPU nor in the GPU
-  printf ("{%3.2f %3.2f %3.2f %3.2f}\n", output[0][0], output[0][1], output[1][0], output[1][1]);
+  //Now it is printed correctly in the CPU but not in the GPU
+  printf ("{%3.2f}\n", output[0][0]);
 
   return 0;
 }
