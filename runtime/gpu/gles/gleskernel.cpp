@@ -5,6 +5,7 @@
 #include "glestexture.hpp"
 #include "gleswindow.hpp"
 using namespace brook;
+#define MAX(x,y) (((x)>=(y))?(x):(y))
 
 static const char passthrough_vertex[] = 
 "not used";
@@ -493,7 +494,8 @@ GLESContext::get1DInterpolant( const float4 &start,
   //OpenGL ES works with normalised coordinates, so we don't care about the output size, but we need the actual texture size
   //Assume all inputs have the same size //TODO make the common gpu runtime aware of this, so that it passes the correct values
   //In the case of an iterator, there is no bound texture, so use the passed values
-  unsigned int _w = _boundTextures[0]? _boundTextures[0]->width() : w;
+  //In the case of reductions the size is always smaller than the input sizes
+  unsigned int _w = _boundTextures[0]? _boundTextures[0]->width() : MAX(w,end.x);
   unsigned int _h= 1;
   assert(_w);
   //bottom-left triangle
@@ -518,8 +520,9 @@ GLESContext::get2DInterpolant( const float2 &start,
   //OpenGL ES works with normalised coordinates, so we don't care about the output size, but we need the actual texture size
   //Assume all inputs have the same size //TODO make the common gpu runtime aware of this, so that it passes the correct values
   //In the case of an iterator, there is no bound texture, so use the passed values
-  unsigned int _w = _boundTextures[0]? _boundTextures[0]->width() : w;
-  unsigned int _h = _boundTextures[0]? _boundTextures[0]->height() : h;
+  //In the case of reductions the size is always smaller than the input sizes
+  unsigned int _w = _boundTextures[0]? _boundTextures[0]->width() : MAX(w,end.x);
+  unsigned int _h = _boundTextures[0]? _boundTextures[0]->height() : MAX(h,end.y);
   assert(_w);
   assert(_h);
 
@@ -657,11 +660,15 @@ GLESContext::getStreamReduceInterpolant( const TextureHandle inTexture,
                                         const unsigned int maxY,
                                         GPUInterpolant &interpolant) const
 {
-assert(0);
-    float2 start(0.005f + minX, 0.005f + minY);
-    float2 end(0.005f + maxX, 0.005f + maxY);
-
-    get2DInterpolant( start, end, outputWidth, outputHeight, interpolant); 
+//assert(0);
+    //GLES uses normalised texture coordinates
+    //In order get2DInterpolant to be able to compute them properly, it needs
+    //the input texture size, since the output is always smaller
+    GLESTexture *glesTexture = (GLESTexture *) inTexture;
+    assert(glesTexture);
+    float2 start(-1.0/2048 + minX, -1.0/2048 + minY);
+    float2 end(/*0.005f +*/ glesTexture->width(), /*0.005f +*/ glesTexture->height());
+    get2DInterpolant( start, end, /*glesTexture->width()*/outputWidth, /*glesTexture->height()*/outputHeight, interpolant); 
 }
 
 void
@@ -672,6 +679,7 @@ GLESContext::getStreamReduceOutputRegion( const TextureHandle inTexture,
                                          const unsigned int maxY,
                                          GPURegion &region) const
 {
+printf("in getStreamReduceOutputRegion\n");
   //bottom-left triangle
   region.vertices[0].x = -1;
   region.vertices[0].y =  1;
