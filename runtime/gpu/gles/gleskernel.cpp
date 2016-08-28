@@ -668,7 +668,29 @@ GLESContext::getStreamReduceInterpolant( const TextureHandle inTexture,
     assert(glesTexture);
     float2 start(-1.0/2048 + minX, -1.0/2048 + minY);
     float2 end(/*0.005f +*/ glesTexture->width(), /*0.005f +*/ glesTexture->height());
-    get2DInterpolant( start, end, /*glesTexture->width()*/outputWidth, /*glesTexture->height()*/outputHeight, interpolant); 
+  unsigned int _w ;
+  unsigned int _h ;
+if(_boundTextures[0])
+{
+  _w = MAX(_boundTextures[0]->width(),glesTexture->width());
+  _h = MAX(_boundTextures[0]->height(),glesTexture->height());
+}
+else
+{
+  _w = glesTexture->width();
+  _h = glesTexture->height();
+}
+  assert(_w);
+  assert(_h);
+
+  //bottom-left triangle
+  interpolant.vertices[0] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[1] = float4(start.x/_w, start.y/_h, 0.0f, 1.0f);
+  interpolant.vertices[2] = float4(end.x/_w,   start.y/_h, 0.0f, 1.0f);
+   //upper-right triangle
+  interpolant.vertices[3] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[4] = float4(end.x/_w,   end.y/_h,   0.0f, 1.0f);
+  interpolant.vertices[5] = float4(end.x/_w,   start.y/_h, 0.0f, 1.0f);
 }
 
 void
@@ -769,7 +791,7 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
     for (i=0; i<32; i++) 
       if (_boundTextures[i]) {
 #ifdef GLES_PRINTOPS
-        printf("Setting texture %u as input %d\n", _boundTextures[i]->id(), i);
+        printf("Setting texture %u as input %d with size:%d,%d\n", _boundTextures[i]->id(), i, _boundTextures[i]->width(), _boundTextures[i]->height());
 #endif
         glActiveTexture(GL_TEXTURE0+i);
         CHECK_GL();
@@ -780,7 +802,7 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
     // Bind the outputs
     for(i=0; i<numOutputs; i++) {
 #ifdef GLES_PRINTOPS
-        printf("Setting texture %u as output %d\n", outputTextures[i]->id(), i);
+        printf("Setting texture %u as output %d with size:%d,%d\n", outputTextures[i]->id(), i, _outputTextures[i]->width(), _outputTextures[i]->height());
 #endif
 #ifndef GLES3
 	//OpenGL ES 2.0 doesn't support multiple outputs
