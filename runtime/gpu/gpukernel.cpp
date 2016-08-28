@@ -858,6 +858,7 @@ and then we need to multiply by the outputExtent.
     // move any slop out to the slop buffer
     if( slopFactor )
     {
+assert(0);
       size_t slopWidth = ioState.slopBufferWidth;
       size_t slopHeight = ioState.slopBufferHeight;
       size_t slopExtents[2];
@@ -986,7 +987,7 @@ HME - we are going to the slop buffer,  not the input buffer
     // slop buffer over our results...
 
     if( ioState.slopCount == 0 ) return;
-
+assert(0);
     size_t dim = ioState.currentDimension;
     size_t outputWidth = ioState.currentExtents[0];
     size_t outputHeight = ioState.currentExtents[1];
@@ -1035,9 +1036,18 @@ HME - we are going to the slop buffer,  not the input buffer
 
     TextureHandle outputBuffer = ioState.outputTexture;
 
+#ifndef BUILD_GLES
+
     _context->bindVertexShader( _context->getPassthroughVertexShader() );
     _context->bindPixelShader( _context->getPassthroughPixelShader() );
     _context->bindTexture( 0, inputBuffer );
+//the second texture is already bound and has a weird size
+//eliminate the possibility that is causes problem by setting it in the same texture
+//ideally we should Disable it but...
+//unbinding the input textures after kernel execution does not solve it
+//we need to set their actual values to 0, then it does not work properly see gleskernel.cpp:1086
+//TODO Check if we have the same problem when running a kernel with multiple inputs followed by a kernel with few of them
+    _context->bindTexture( 1, inputBuffer );
     _context->bindOutput( 0, outputBuffer );
 
     GPUInterpolant interpolant;
@@ -1062,6 +1072,18 @@ HME - we are going to the slop buffer,  not the input buffer
 #endif
 
     clearArguments();
+#else
+    //For some reason, copying with the pass through shaders does not work when a reduction is performed.
+    //Alternatively we just copy the data directly from the texture
+    //Despite the conversions, we only copy a few bytes, it must be cheaper than compiling, setting and 
+    //executing a passthrough shader
+    float reductionResult[4][4];
+    unsigned int domainMin[2] = { 0, 0 };
+    unsigned int domainMax[2] = { 1, 1 };
+    unsigned int extents[2] = { 1, 1 };
+    _context->getTextureData( inputBuffer, (float*)reductionResult, sizeof(float), 1, 2, domainMin, domainMax, extents, false );
+    _context->setTextureData( outputBuffer, (float*)reductionResult, sizeof(float), 1, 2, domainMin, domainMax, extents, false );
+#endif /*! GLES*/
   }
 
   void GPUKernel::dumpReductionState( ReductionState& ioState )
