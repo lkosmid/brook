@@ -10,13 +10,13 @@ reduce void SUM( float a<>, reduce float b <>) {
 
 int main () {
 //2x2
-/*  float a< 2, 2 >;
+  float a< 2, 2 >;
   float b< 1, 1 >;
   float input_a[2][2]={{0,1},{2,3}};
   //in order the reduce to be executed, the output stream needs to be smaller
   float input_b[1][1]={0};
   float output[1][1];
-*/
+
   float a2< 4, 4 >;
   float b2< 1, 1 >;
   float input_a2[4][4]={
@@ -28,14 +28,14 @@ int main () {
   //in order the reduce to be executed, the output stream needs to be smaller
   float input_b2[1][1]={0};
   float output2[1][1];
-/*
+
   streamRead( a, input_a );
   streamRead( b, input_b );
   SUM(a,b);
   streamWrite( b, output);
   //Now it is printed correctly in the CPU but not in the GPU
   printf ("{%3.2f}\n", output[0][0]);
-*/
+
 
   streamRead( a2, input_a2 );
   streamRead( b2, input_b2 );

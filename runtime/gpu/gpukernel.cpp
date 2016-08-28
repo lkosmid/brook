@@ -1066,12 +1066,6 @@ assert(0);
     // TIM: used to have to deal with flushing caches here
     // but I think the DX9 context no longer needs it
 
-#ifdef BROOK_GPU_ENABLE_REDUCTION_LOG
-    GPULOG(3) << "************ Result *************";
-    dumpReductionBuffer( outputBuffer, 1, 1, 1, 1 );
-#endif
-
-    clearArguments();
 #else
     //For some reason, copying with the pass through shaders does not work when a reduction is performed.
     //Alternatively we just copy the data directly from the texture
@@ -1084,6 +1078,13 @@ assert(0);
     _context->getTextureData( inputBuffer, (float*)reductionResult, sizeof(float), 1, 2, domainMin, domainMax, extents, false );
     _context->setTextureData( outputBuffer, (float*)reductionResult, sizeof(float), 1, 2, domainMin, domainMax, extents, false );
 #endif /*! GLES*/
+
+#ifdef BROOK_GPU_ENABLE_REDUCTION_LOG
+    GPULOG(3) << "************ Result *************";
+    dumpReductionBuffer( outputBuffer, 1, 1, 1, 1 );
+#endif
+
+    clearArguments();
   }
 
   void GPUKernel::dumpReductionState( ReductionState& ioState )
