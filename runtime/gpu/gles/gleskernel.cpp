@@ -667,7 +667,7 @@ GLESContext::getStreamReduceInterpolant( const TextureHandle inTexture,
     GLESTexture *glesTexture = (GLESTexture *) inTexture;
     assert(glesTexture);
     float2 start(-1.0/2048 + minX, -1.0/2048 + minY);
-    float2 end(/*0.005f +*/ glesTexture->width(), /*0.005f +*/ glesTexture->height());
+    float2 end(/*0.005f +*/ (maxX>glesTexture->width())?glesTexture->width():maxX, /*0.005f +*/ (maxY>glesTexture->height())?glesTexture->height():maxY);
   unsigned int _w ;
   unsigned int _h ;
 if(_boundTextures[0])
