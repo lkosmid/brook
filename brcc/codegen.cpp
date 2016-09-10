@@ -1901,10 +1901,14 @@ generate_c_code( const std::vector<technique_info>& techniques, const char *name
 
     for( std::vector<technique_info>::const_iterator i = techniques.begin(); i != techniques.end(); ++i )
     {
+      const technique_info& t = (*i);
+      //GLES implementations have low limits for textures accesses 
+      //so we limit the reduction factor size
+      if( (strncmp(id, "gles", 4)==0) && (t.reductionFactor > 2 ) )
+        break;
+
       out << std::endl;
       out << "\t\t.technique( gpu_technique_desc()" << std::endl;
-
-      const technique_info& t = (*i);
 
       if( t.reductionFactor >= 2 )
         out << "\t\t\t.reduction_factor(" << t.reductionFactor << ")" << std::endl;
