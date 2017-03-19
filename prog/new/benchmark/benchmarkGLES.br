@@ -1,6 +1,6 @@
 kernel void benchmark(out float output<>, float input<>)
 {
-  output=0.0f;
+  output=2.0f;
   output+=input*output;
   output+=input*output;
   output+=input*output;
