@@ -28,7 +28,9 @@
 #ifdef WIN32
 #include <windows.h>
 #else
+#ifndef RPI_NO_X
 #include <X11/Xlib.h>
+#endif
 #ifdef BUILD_OGL
 #include <GL/gl.h>
 #include <GL/glx.h>
@@ -128,6 +130,7 @@ namespace brook {
 #endif
     }
 #else
+#ifndef RPI_NO_X
     // Maybe consider upgrading this to use Xinerama and XRandR
     XInitThreads();
     Display *dh=XOpenDisplay(NULL);
@@ -135,6 +138,7 @@ namespace brook {
     {
         for(n=0; n<ScreenCount(dh); n++)
         {
+#endif
 #ifdef BUILD_OGL
             int attrib[] = { GLX_RGBA, None };
             XVisualInfo *visual = glXChooseVisual(dh, n, attrib);
@@ -182,6 +186,10 @@ namespace brook {
             }
 #endif
 #ifdef BUILD_GLES
+#ifdef RPI_NO_X
+            #define DisplayString(dh) "0"
+            n=0;
+#endif
             //Keep it simple for the moment to make it work without hassle
             const char *vendor="";
             const char *renderer="";
@@ -199,9 +207,11 @@ namespace brook {
             }
             dev++;
 #endif
+#ifndef RPI_NO_X
         }
         XCloseDisplay(dh);
     }
+#endif
 #endif
 #endif
     return (const char **) devs;
