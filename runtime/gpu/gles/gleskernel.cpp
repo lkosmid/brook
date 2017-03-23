@@ -302,6 +302,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     fprintf ( stderr, "GL: Program Error. Linker output:\n%s\n", errlog);
     fflush(stderr);
     brfree(errlog);
+    fprintf( stderr, "Shader source:\n%s\n", custom_program.c_str());
     assert(0);
     exit(1);
   }
