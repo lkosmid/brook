@@ -64,15 +64,15 @@ static const char passthrough_pixel[] =
       "{"\
       "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
       "  highp vec4 tmp;"\
-      "  tmp.wzyx = floor(u_split.wzyx*255.996078431372549 );"\
-      "  tmp.yzw = tmp.yzw*vec3(0.0078125, 0.000030517578125, 0.00000011920928955078);"\
-      "  reconstructed = tmp.y ;"\
-      "  if(tmp.x != 0.0 ) reconstructed += step(reconstructed, 0.9921875) ;"\
-      "  tmp.xz  = tmp.xz + vec2(- 127.0, tmp.w);"\
-      "  highp float exponent  = exp2(tmp.x);"\
-      "  reconstructed += tmp.z;"\
+      "  tmp.xyzw = floor(u_split.xyzw*255.996078431372549 );"\
+      "  tmp.zyx = tmp.zyx*vec3(0.0078125, 0.000030517578125, 0.00000011920928955078);"\
+      "  reconstructed = tmp.z ;"\
+      "  if(tmp.w != 0.0 ) reconstructed += step(reconstructed, 0.9921875) ;"\
+      "  tmp.wy  = tmp.wy + vec2(- 127.0, tmp.x);"\
+      "  highp float exponent  = exp2(tmp.w);"\
+      "  reconstructed += tmp.y;"\
       "  reconstructed = exponent*reconstructed;"\
-      "  if(u_split.y > 0.5) reconstructed = -reconstructed;"\
+      "  if(u_split.z > 0.5) reconstructed = -reconstructed;"\
       "}\n" 
 
 #define reconstruct_float_highp\
@@ -147,7 +147,7 @@ static const char passthrough_pixel[] =
       ""
 
 #define encode_output_float_epilogue\
-      "  gl_FragColor = u_split.wzyx;"\
+      "  gl_FragColor = u_split;"\
       "}\n" 
 
 static const std::string reconstruct_unsigned_int_str(reconstruct_unsigned_int);

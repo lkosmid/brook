@@ -270,20 +270,14 @@ GLESTexture::copyFromTextureFormat(const void *src,
 void 
 GLESTexture::convert_fp_from_gpu(void *dst, const void *src) const
 {
-   const unsigned char* _src= (unsigned char*) src;
    __float_t_ f;
 
    assert(sizeof(float) == sizeof(f));
-   memset(&f, 0, sizeof(f));
 
-   f.exp=_src[0];
-   f.mant = ((_src[1] & 0x7F) << 16) ;
-   f.sign= ((_src[1] & 0x80)) ;
-   f.mant = (f.mant & 0x7F0000) | (_src[2] << 8) ;
-   f.mant = (f.mant & 0x7FFF00) | _src[3] ;
+   register unsigned int u32=*((unsigned int*) src);
+   f.u32 = ((u32 << 8 ) & 0x80000000) |  ((u32 >> 1) & 0x7F800000) | ((u32 & 0x7FFFFF));
 
    memcpy(dst,&f,sizeof(f));
-//   *((float*)dst)=f.f;
 }
 
 void 
@@ -294,10 +288,10 @@ GLESTexture::convert_fp_to_gpu(void *dst, const void *src) const
 
    f.f= *((float*) src);
 
-   _dst[0] = f.exp;
-   _dst[1] = (f.sign<<7) | (f.mant >> 16);
-   _dst[2] = (f.mant >> 8) & 0x00FF;
-   _dst[3] = f.mant & 0x00FF;
+   //copy the entire number in a register
+   register unsigned int u32=f.u32;
+   //better uint32_t
+   *((unsigned int*) (_dst)) = ((u32 << 1) & 0xFF000000) | ((u32 & 0x80000000) >> 8) | (u32 & 0x7FFFFF);
 }
 
 void GLESTexture::getRectToCopy(

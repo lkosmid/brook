@@ -106,6 +106,7 @@ namespace brook {
 
     union __float_t_{	
        float f;
+       unsigned int u32;
        struct{
           unsigned int mant:23;
           unsigned int exp:8;
