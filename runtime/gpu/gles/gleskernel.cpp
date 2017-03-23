@@ -63,23 +63,23 @@ static const char passthrough_pixel[] =
       "#define reconstruct_float(reconstructed, textureUnit0, vTexCoord0)"\
       "{"\
       "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
-      "  highp float tmp;"\
-      "  tmp = floor(256.0*u_split.x - (u_split.x/255.0));"\
-      "  float exponent = tmp - 127.0;"\
-      "  tmp = floor(256.0*u_split.y - (u_split.y/255.0));"\
-      "  reconstructed = (tmp*0.0078125) ;" \
-      "  if(exponent >= -126.0) if(reconstructed < 1.0) reconstructed += 1.0 ;" \
-      "  highp float sign_value = sign(127.1 - tmp) ;" \
-      "  tmp = floor(256.0*u_split.z - (u_split.z/255.0));"\
-      "  reconstructed += (tmp*0.000030517578125);" 
+      "  highp vec4 tmp;"\
+      "  tmp.wzyx = floor(u_split.wzyx*255.996078431372549 );"\
+      "  tmp.yzw = tmp.yzw*vec3(0.0078125, 0.000030517578125, 0.00000011920928955078);"\
+      "  reconstructed = tmp.y ;"\
+      "  if(tmp.x != 0.0 ) reconstructed += step(reconstructed, 0.9921875) ;"\
+      "  tmp.xz  = tmp.xz + vec2(- 127.0, tmp.w);"\
+      "  highp float exponent  = exp2(tmp.x);"\
+      "  reconstructed += tmp.z;"\
+      "  reconstructed = exponent*reconstructed;"\
+      "  if(u_split.y > 0.5) reconstructed = -reconstructed;"\
+      "}\n" 
 
 #define reconstruct_float_highp\
-      "  tmp = floor(256.0*u_split.w - (u_split.w/255.0));"\
-      "  reconstructed += (tmp*0.00000011920928955078);" 
+      ""
 
 #define reconstruct_float_epilogue\
-      "  reconstructed = sign_value*reconstructed*exp2(exponent);" \
-      "}\n" 
+      "" 
 
 #define encode_output_unsigned_int\
       "#define encode_output_unsigned_int(reconstructed)"\
@@ -119,24 +119,35 @@ static const char passthrough_pixel[] =
       "#define encode_output_float(reconstructed)"\
       "{" \
       "  highp vec4 u_split;"\
-      "  highp float exponent;"\
+      "  highp float sign_value=1.0;"\
+      "  float exponent;"\
       "  highp float tmp;"\
-      "  exponent = (floor(log2(abs(reconstructed))) + 127.0) ;"\
-      "  u_split.x = ((exponent - 256.0*floor(exponent*0.00390625))*0.00392156862745098) ;"\
-      "  tmp = clamp(abs(reconstructed*exp2(-floor(log2(abs(reconstructed))))) -1.0, 0.0, 1.0);"\
-      "  tmp = tmp*exp2(23.0);"\
-      "  highp float sign_value = step(reconstructed, -exp2(-20.0))*128.0;"\
-      "  u_split.y = (floor((tmp - 256.0*256.0*256.0*floor(tmp*0.00000005960464477539))*1.52587890625e-05)+sign_value)*0.00392156862745098 ;"\
-      "  u_split.z = (floor((tmp - 256.0*256.0*floor(tmp*1.52587890625e-05))*0.00390625)*0.00392156862745098) ;"
+      "  highp vec4 tmp2;"\
+      "  highp vec4 tmp3;"\
+      "  tmp3.w = abs(reconstructed);"\
+      "  tmp = floor(log2(tmp3.w));"\
+      "  tmp2.wzy = exp2( vec3(-125.0, -tmp, 23.0) ) ;"\
+      "  tmp3.z = (tmp + 127.0) ;"\
+      "  tmp2.w = step(tmp2.w,tmp3.w) ;"\
+      "  tmp2.wz = tmp2.wz*tmp3.zw ;"\
+      "  tmp = clamp(tmp2.z -1.0, 0.0, 1.0);"\
+      "  if(reconstructed < 0.0 ) sign_value = tmp2.y;"\
+      "  tmp2.zy = tmp*tmp2.y + vec2(sign_value,0.0) ;"\
+      "  tmp3.wzyx = floor(tmp2.wzyy*vec4(0.00390625, 0.00000005960464477539, 1.52587890625e-05, 0.00390625)) ;"\
+      "  tmp3.wzyx = tmp3.wzyx*256.0 ;"\
+      "  tmp3.wzyx = tmp2.wzyy*vec4(1.0, 1.52587890625e-05, 0.00390625, 1.0)  - tmp3.wzyx ;"\
+      "  tmp3.zy = floor(tmp3.zy) ;"\
+      "  tmp3.wzyx =  tmp3.wzyx * 0.00392156862745098 ;"\
+      "  u_split = tmp3 ;"
 
 #define encode_output_float_highp\
-      "  u_split.w = ((tmp- 256.0*floor(tmp*0.00390625))*0.00392156862745098) ;"
+      ""
 
 #define encode_output_float_lowp\
-      "  u_split.w = 0.0 ;"
+      ""
 
 #define encode_output_float_epilogue\
-      "  gl_FragColor = u_split;"\
+      "  gl_FragColor = u_split.wzyx;"\
       "}\n" 
 
 static const std::string reconstruct_unsigned_int_str(reconstruct_unsigned_int);
