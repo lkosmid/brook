@@ -1,0 +1,59 @@
+// sgemm.br
+// simple single pass implementation for sgemm
+
+#include <stdio.h>
+
+kernel void sum( float indexx<>, float indexy<>, float a[][], float b[][], out float c<> ) {
+        float sum=0.0;
+        float i;
+        for(i=0.0; i< 4.0; i+=1.0)
+        {
+           float2 index_a=float2(i, indexy);
+           float2 index_b=float2(indexx, i);
+	   sum += a[index_a] * b[index_b];
+        }
+        c=sum;
+}
+
+int main() {
+	int i, j;
+	float a2< 4, 4 >;
+	float b2< 4, 4 >;
+	float c2< 4, 4 >;
+	float index2x< 4, 4 >;
+	float index2y< 4, 4 >;
+	float input_index2x[4][4];
+	float input_index2y[4][4];
+	float input_a2[4][4];
+	float input_b2[4][4];
+	float output_c2[4][4];
+	
+	// initialize data
+	for( i = 0; i < 4; i++ )
+	{
+		for( j = 0; j < 4; j++ )
+		{
+			input_a2[i][j] = (float)i*4+j;
+			input_b2[i][j] = (float)i*4+j;
+			input_index2x[i][j] = (float)j;
+			input_index2y[i][j] = (float)i;
+		}
+	}
+	streamRead( a2, input_a2 );
+	streamRead( b2, input_b2 );
+	streamRead( index2x, input_index2x );
+	streamRead( index2y, input_index2y );
+	
+	sum( index2x, index2y, a2, b2, c2 );
+	
+	streamWrite( c2, output_c2 );
+	
+	for( i = 0; i < 4; i++ )
+	{
+		for( j = 0; j < 4; j++ )
+			printf( "%3.2f ", output_c2[i][j] );
+		printf("\n");
+	}
+	
+	return 0;
+}
