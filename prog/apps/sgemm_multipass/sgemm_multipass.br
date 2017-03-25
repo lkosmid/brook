@@ -1,0 +1,70 @@
+// sgemm.br
+// multi-pass implementation for sgemm
+// SIZE: 512x512
+// TILE_SIZE=16.0
+
+#include <stdio.h>
+
+kernel void sum( float indexx<>, float indexy<>, float a[][], float b[][], float interm[][], float tile, out float c<> ) {
+        float sum=0.0;
+        float i;
+        float2 index=float2(indexx, indexy);
+        for(i=0.0; i< 16.0; i+=1.0)
+        {
+           float2 index_a=float2(i+16.0*tile, indexy);
+           float2 index_b=float2(indexx, i+ 16.0*tile);
+	   sum += a[index_a] * b[index_b];
+        }
+        c=sum+interm[index.xy];
+}
+
+int main() {
+	int i, j;
+        float tile=0.0;
+	float a2< 512, 512 >;
+	float b2< 512, 512 >;
+	float c2< 512, 512 >;
+	float interm< 512, 512 >;
+	float index2x< 512, 512 >;
+	float index2y< 512, 512 >;
+	float input_index2x[512][512];
+	float input_index2y[512][512];
+	float input_a2[512][512];
+	float input_b2[512][512];
+	float output_c2[512][512];
+	
+	// initialize data
+	for( i = 0; i < 512; i++ )
+	{
+		for( j = 0; j < 512; j++ )
+		{
+			input_a2[i][j] = (float)i*512+j;
+			input_b2[i][j] = (float)i*512+j;
+			input_index2x[i][j] = (float)j;
+			input_index2y[i][j] = (float)i;
+		}
+	}
+	streamRead( a2, input_a2 );
+	streamRead( b2, input_b2 );
+	streamRead( index2x, input_index2x );
+	streamRead( index2y, input_index2y );
+
+        for(tile=0; tile< (512/(int)16.0); tile+=1.0)
+        {
+           if( ( (int)tile % 2) == 1 )
+	      sum( index2x, index2y, a2, b2, interm, tile, c2 );
+           else
+	      sum( index2x, index2y, a2, b2, c2, tile, interm );
+        }
+	
+	streamWrite( c2, output_c2 );
+	
+/*	for( i = 0; i < 512; i++ )
+	{
+		for( j = 0; j < 512; j++ )
+			printf( "%3.2f ", output_c2[i][j] );
+		printf("\n");
+	}
+*/	
+	return 0;
+}
