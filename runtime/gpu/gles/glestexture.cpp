@@ -149,9 +149,9 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    //many implementations require square textures, so give it to them
    //this may waste precious GPU memory, but works
    if(width < height)
-     width = height;
+     _width = width = height;
    else
-     height = width;
+     _height = height = width;
   
    //TODO: In case that the GPU memory allocation fails, or texture sizes
    //exceed implementation limits, we should fall back to the CPU backend
