@@ -109,7 +109,7 @@ GLESTexture::GLESTexture (GLESContext *ctx,
       _components = 4;
       break;
    default: 
-      GPUError("Unkown Texture Format");
+      GPUError("Unknown Texture Format");
    }
    /* { GLES_FLOAT, GLES_FIXED, GLES_SHORTFIXED }
    One component

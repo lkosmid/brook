@@ -1,6 +1,8 @@
 // reduce_simplest.br
-// The simplest A minimal test of reduction functionality.
+// The simplest minimal test of reduction functionality.
 // It confirms that we can reduce a 2x2 stream to a single value.
+// Also tests other power of two streams
+// This tests explicitly copies the reduction stream to output
 
 #include <stdio.h>
 
@@ -29,6 +31,23 @@ int main () {
   float input_b2[1][1]={0};
   float output2[1][1];
 
+  float a3< 8, 8 >;
+  float b3< 1, 1 >;
+  float input_a3[8][8]={
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7}
+};
+
+  //in order the reduce to be executed, the output stream needs to be smaller
+  float input_b3[1][1]={0};
+  float output3[1][1];
+
   streamRead( a, input_a );
   streamRead( b, input_b );
   SUM(a,b);
@@ -42,6 +61,13 @@ int main () {
   SUM(a2,b2);
   streamWrite( b2, output2);
   printf ("{%3.2f}\n", output2[0][0]);
+
+  streamRead( a3, input_a3 );
+  streamRead( b3, input_b3 );
+  SUM(a3,b3);
+  streamWrite( b3, output3);
+  //Now it is printed correctly in the CPU but not in the GPU
+  printf ("{%3.2f}\n", output3[0][0]);
 
   return 0;
 }
