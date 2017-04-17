@@ -1,0 +1,63 @@
+// reduce_simplest_nocopy.br
+// The simplest minimal test of reduction functionality.
+// It confirms that we can reduce a 2x2 stream to a single value.
+// Also tests other power of two streams
+// Is the same with reduce_simplest with the difference that the reduce
+// parameter is a float instead of a stream, so it doesn't need an explicit
+// copy with streamWrite 
+
+#include <stdio.h>
+
+reduce void SUM( float a<>, reduce float b <>) {
+	b = b + a;
+}
+
+int main () {
+//2x2
+  float a< 2, 2 >;
+  float input_a[2][2]={{0,1},{2,3}};
+  //in order the reduce to be executed, the output stream needs to be smaller
+  float output;
+
+  float a2< 4, 4 >;
+  float input_a2[4][4]={
+		{0,1,2,3},
+		{0,1,2,3},
+		{0,1,2,3},
+		{0,1,2,3}
+};
+  //in order the reduce to be executed, the output stream needs to be smaller
+  float output2;
+
+  float a3< 8, 8 >;
+  float input_a3[8][8]={
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7},
+		{0,1,2,3,4,5,6,7}
+};
+
+  //in order the reduce to be executed, the output stream needs to be smaller
+  float output3;
+
+  streamRead( a, input_a );
+  SUM(a,output);
+  //Now it is printed correctly in the CPU but not in the GPU
+  printf ("{%3.2f}\n", output);
+
+
+  streamRead( a2, input_a2);
+  SUM(a2,output2);
+  printf ("{%3.2f}\n", output2);
+
+  streamRead( a3, input_a3);
+  SUM(a3,output3);
+  //Now it is printed correctly in the CPU but not in the GPU
+  printf ("{%3.2f}\n", output3);
+
+  return 0;
+}
