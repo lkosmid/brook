@@ -1069,14 +1069,15 @@ assert(0);
 #else
     //For some reason, copying with the pass through shaders does not work when a reduction is performed.
     //Alternatively we just copy the data directly from the texture
-    //Despite the conversions, we only copy a few bytes, it must be cheaper than compiling, setting and 
+    //Despite the conversions, we (usually) only copy a few bytes, it must be cheaper than compiling, setting and 
     //executing a passthrough shader
-    float reductionResult[4][4];
+    static float4* reductionResult= new float4[2048*2048];
     unsigned int domainMin[2] = { 0, 0 };
-    unsigned int domainMax[2] = { 1, 1 };
-    unsigned int extents[2] = { 1, 1 };
-    _context->getTextureData( inputBuffer, (float*)reductionResult, sizeof(float), 1, 2, domainMin, domainMax, extents, false );
-    _context->setTextureData( outputBuffer, (float*)reductionResult, sizeof(float), 1, 2, domainMin, domainMax, extents, false );
+    unsigned int domainMax[2] = { outputHeight, outputWidth };
+    unsigned int extents[2] = { outputHeight, outputWidth };
+//TODO:we can directly write in the outputBuffer
+    _context->getTextureData( inputBuffer, (float*)reductionResult, sizeof(float4), outputWidth*outputHeight, 2, domainMin, domainMax, extents, false );
+    _context->setTextureData( outputBuffer, (float*)reductionResult, sizeof(float4), outputWidth*outputHeight, 2, domainMin, domainMax, extents, false );
 #endif /*! GLES*/
 
 #ifdef BROOK_GPU_ENABLE_REDUCTION_LOG
