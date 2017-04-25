@@ -1036,8 +1036,6 @@ assert(0);
 
     TextureHandle outputBuffer = ioState.outputTexture;
 
-#ifndef BUILD_GLES
-
     _context->bindVertexShader( _context->getPassthroughVertexShader() );
     _context->bindPixelShader( _context->getPassthroughPixelShader() );
     _context->bindTexture( 0, inputBuffer );
@@ -1065,20 +1063,6 @@ assert(0);
 
     // TIM: used to have to deal with flushing caches here
     // but I think the DX9 context no longer needs it
-
-#else
-    //For some reason, copying with the pass through shaders does not work when a reduction is performed.
-    //Alternatively we just copy the data directly from the texture
-    //Despite the conversions, we (usually) only copy a few bytes, it must be cheaper than compiling, setting and 
-    //executing a passthrough shader
-    static float4* reductionResult= new float4[2048*2048];
-    unsigned int domainMin[2] = { 0, 0 };
-    unsigned int domainMax[2] = { outputHeight, outputWidth };
-    unsigned int extents[2] = { outputHeight, outputWidth };
-//TODO:we can directly write in the outputBuffer
-    _context->getTextureData( inputBuffer, (float*)reductionResult, sizeof(float4), outputWidth*outputHeight, 2, domainMin, domainMax, extents, false );
-    _context->setTextureData( outputBuffer, (float*)reductionResult, sizeof(float4), outputWidth*outputHeight, 2, domainMin, domainMax, extents, false );
-#endif /*! GLES*/
 
 #ifdef BROOK_GPU_ENABLE_REDUCTION_LOG
     GPULOG(3) << "************ Result *************";
