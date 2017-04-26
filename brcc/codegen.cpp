@@ -1904,7 +1904,7 @@ generate_c_code( const std::vector<technique_info>& techniques, const char *name
       const technique_info& t = (*i);
       //GLES implementations have low limits for textures accesses 
       //so we limit the reduction factor size
-      if( (strncmp(id, "gles", 4)==0) && (t.reductionFactor > 2 ) )
+      if( (strncmp(id, "gles", 4)==0) && (t.reductionFactor > 7 ) )
         break;
 
       out << std::endl;

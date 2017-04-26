@@ -55,13 +55,28 @@ namespace brook {
 	    "attribute vec4 vPosition;\n"\
 	    "attribute vec4 aTEX0;      \n"\
 	    "attribute vec4 aTEX1;      \n"\
+	    "attribute vec4 aTEX2;      \n"\
+	    "attribute vec4 aTEX3;      \n"\
+	    "attribute vec4 aTEX4;      \n"\
+	    "attribute vec4 aTEX5;      \n"\
+	    "attribute vec4 aTEX6;      \n"\
 	    "varying vec4 TEX0;         \n"\
 	    "varying vec4 TEX1;         \n"\
+	    "varying vec4 TEX2;         \n"\
+	    "varying vec4 TEX3;         \n"\
+	    "varying vec4 TEX4;         \n"\
+	    "varying vec4 TEX5;         \n"\
+	    "varying vec4 TEX6;         \n"\
 		"void main()                \n"\
 		"{                          \n"\
 		"   gl_Position = vPosition; \n"\
 		"   TEX0 = aTEX0; \n"\
 		"   TEX1 = aTEX1; \n"\
+		"   TEX2 = aTEX2; \n"\
+		"   TEX3 = aTEX3; \n"\
+		"   TEX4 = aTEX4; \n"\
+		"   TEX5 = aTEX5; \n"\
+		"   TEX6 = aTEX6; \n"\
 		"}                           \n"
   };
 
