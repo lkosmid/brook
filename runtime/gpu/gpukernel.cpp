@@ -858,7 +858,6 @@ and then we need to multiply by the outputExtent.
     // move any slop out to the slop buffer
     if( slopFactor )
     {
-assert(0);
       size_t slopWidth = ioState.slopBufferWidth;
       size_t slopHeight = ioState.slopBufferHeight;
       size_t slopExtents[2];
@@ -987,7 +986,6 @@ HME - we are going to the slop buffer,  not the input buffer
     // slop buffer over our results...
 
     if( ioState.slopCount == 0 ) return;
-assert(0);
     size_t dim = ioState.currentDimension;
     size_t outputWidth = ioState.currentExtents[0];
     size_t outputHeight = ioState.currentExtents[1];
@@ -1368,6 +1366,19 @@ assert(0);
            size_t inputWidth = stream->getTextureWidth();
            size_t inputHeight = stream->getTextureHeight();
            return float4(inputWidth, inputHeight, 1, 1);
+        }
+        break;
+    case outStreamDim:
+        {
+           //obtain pointers to the output stream
+           ReduceArgumentInfo reduceArgument = inKernel->_reduceArguments[0];
+           void* outputReductionData = reduceArgument.data;
+           Stream* outputStreamBase = *((const ::brook::stream*)outputReductionData);
+           GPUStream* outputStream = (GPUStream*)outputStreamBase;
+
+           size_t outputWidth = outputStream->getTextureWidth();
+           size_t outputHeight = outputStream->getTextureWidth();
+           return float4(outputWidth, outputHeight, 1, 1);
         }
         break;
     }

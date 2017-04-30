@@ -39,7 +39,7 @@ namespace brook
       kStreamConstant_ATLinearize,
       kStreamConstant_ATTextureShape,
       kStreamConstant_ATDomainMin,
-      StreamDim, IteratorBias
+      StreamDim, IteratorBias, outStreamDim
     };
     enum
     {

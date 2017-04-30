@@ -912,7 +912,7 @@ expandStreamStructureFetches(std::ostream& shader,
 
 static void
 expandStreamFetches(std::ostream& shader, const std::string& argumentName,
-                    Type* inForm, const char* inPositionName = NULL)
+                    Type* inForm, const char* inPositionName = NULL, const char* lvalueName=NULL)
 {
   StructDef* structure = NULL;
   Type* elementType = NULL;
@@ -937,7 +937,10 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
      expandStreamStructureFetches(shader, positionName, argumentName,
                                   structure, index, positionName);
   } else {
-     shader << positionName << " = ";
+     if(lvalueName)
+        shader << lvalueName << " = ";
+     else
+        shader << positionName << " = ";
 #define TIMISnotCRAZY
 #ifdef TIMISCRAZY
      shader << "float4(_tex_" << positionName << "_pos,0,0);\n";
@@ -985,8 +988,12 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
         break;
      }
 
-     shader << "(_tex_" << argumentName << ", _tex_"
-            << positionName << "_pos );\n";
+     shader << "(_tex_" << argumentName ;
+     //when we provide lvalueName it means that we use a custom positionName so don't mangle it
+     if(lvalueName)
+            shader << ", " << positionName << " );\n";
+     else
+            shader << ", _tex_" << positionName << "_pos );\n";
 #endif
   }
 }
@@ -1292,7 +1299,8 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
                               bool& reductionArgumentComesBeforeStreamArgument,
                               std::vector<int>& reductionStreamArguments,
                               int reductionFactor, int i,
-                              int& texcoord, int& samplerreg, pass_info& outPass)
+                              int& texcoord, int& samplerreg, pass_info& outPass, 
+                              CodeGenTarget target, int &constreg, bool& hasDoneStreamDim, bool& hasDoneOutStreamDim)
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
@@ -1304,6 +1312,9 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
 
    if (reductionStreamArguments.size() == 2) {
       expandStreamSamplerDecls(shader, argName, 0, 1, arg->form, samplerreg, outPass );
+      //In gles we use only one texture which we adjust appropriately
+      //so don't generate new additional arguments
+      if( target != CODEGEN_GLES )
       for (int r = 2; r < reductionFactor; r++) {
           std::stringstream s;
           s << "__reduce" << r;
@@ -1324,7 +1335,30 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
    shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << texcoord++;
    shader <<  ",\n\t\t";
 
-   outPass.addInterpolant( 0, (reductionStreamArguments.size() == 2) ? reductionFactor-1 : 0 );
+   //As above, don't generate an interpolant for the result variable, which holds the second reduction fetch
+   if( (target == CODEGEN_GLES) && (reductionStreamArguments.size() !=2 ) )
+      outPass.addInterpolant( 0, (reductionStreamArguments.size() == 2) ? reductionFactor-1 : 0 );
+
+   
+   if(!hasDoneStreamDim) {
+      hasDoneStreamDim= true;
+      //In GLES we need the StreamDim to adjust appropriately the normalised coordinates
+      shader << "#ifdef GL_ES\n\t\t"
+             << "uniform float4 StreamDim"
+             << " : register (c" << constreg++ << ")";
+      shader <<  ",\n\t\t#endif\n\t\t";
+      outPass.addConstant( (i+1), "StreamDim" );
+   }
+
+   if(!hasDoneOutStreamDim) {
+      hasDoneOutStreamDim= true;
+      //In GLES we need the outStreamDim to adjust appropriately the normalised coordinates
+      shader << "#ifdef GL_ES\n\t\t"
+             << "uniform float4 outStreamDim"
+             << " : register (c" << constreg++ << ")";
+      shader <<  ",\n\t\t#endif\n\t\t";
+      outPass.addConstant( (i+1), "outStreamDim" );
+   }
 }
 
 
@@ -1446,13 +1480,13 @@ static char *
 generate_shader_code (Decl **args, int nArgs, const char* functionName,
                       int inFirstOutput, int inOutputCount,
                       bool fullAddressTrans, int reductionFactor,
-                      pass_info& outPass)
+                      pass_info& outPass, CodeGenTarget target)
 {
   std::ostringstream shader;
   std::vector<int> reductionStreamArguments;
   int texcoord, constreg, samplerreg, outputReg, i;
   bool reductionArgumentComesBeforeStreamArgument = false;
-  bool isReduction, hasDoneIndexofOutput, hasDoneStreamDim;
+  bool isReduction, hasDoneIndexofOutput, hasDoneStreamDim, hasDoneOutStreamDim;
 
   isReduction = false;
   for (i=0; i < nArgs; i++) {
@@ -1478,6 +1512,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
 
   hasDoneIndexofOutput = false;
   hasDoneStreamDim = false;
+  hasDoneOutStreamDim = false;
   constreg = texcoord = samplerreg = outputReg = 0;
   for (i=0; i < nArgs; i++) {
      std::string argName = args[i]->name->name;
@@ -1500,11 +1535,12 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
         } else {
            if (isReduction) {
               assert(!needIndexOfArg && "can't use indexof in a reduction" );
+printf("%s:%d\n", __FUNCTION__, __LINE__);
               generate_reduction_stream_arg(shader, args[i],
                                             reductionArgumentComesBeforeStreamArgument,
                                             reductionStreamArguments,
                                             reductionFactor, i, texcoord,
-                                            samplerreg, outPass);
+                                            samplerreg, outPass, target, constreg, hasDoneStreamDim, hasDoneOutStreamDim);
            } else {
               generate_map_stream_arg(shader, args[i], needIndexOfArg, i,
                                       texcoord, constreg, samplerreg, outPass, 
@@ -1593,6 +1629,24 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
      }
   }
 
+  //For reductions in GLES we get the texture coordinates of the first texture and adjust it
+  //This is always the first 
+  if( target == CODEGEN_GLES && isReduction)
+  {
+     //cgc complains about putting everything in the vec2 constructor so let's do it in two steps
+     //We define coordinates and step, which will be used for the indexing and its adjustment
+     shader << "\tvec2 coordinates = vec2(0.0) ;\n";
+     shader << "\tfloat step = 1.0/StreamDim.x ;\n";
+     //By default, we get interpoted indices at the center of each interval (0.5, 1.5 etc) so we have to correct them:
+     //First sample at the left edge of the interval instead of its center
+     //multiply by stream dimension to get the integer index
+     //use ceil to compensate for rounding errors
+     //normalise it by the stream size
+     //and finally add the minimum bias that will not produce indexing the
+     //wrong sample even with the maximum stream size reduction (2048)
+     shader << "\tcoordinates.x = ceil((" << "_tex_"<< *args[0]->name << "_pos" << " - 1.0/(2.0*outStreamDim.x) )*StreamDim.x)*step +1.0/4096.0;\n";
+  }
+
   if (globals.enableGPUAddressTranslation) {
      // set up output position values
      shader << "\tfloat4 __indexofoutput;\n";
@@ -1679,7 +1733,16 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
             }
           }
 
-          expandStreamFetches(shader, args[i]->name->name, args[i]->form);
+          //if it is GLES and we have a reduction we use a single adjusted interpolant (coordinates)
+          if( target == CODEGEN_GLES && isReduction)
+          {
+             //if this is the second fetch (result variable) adjust coordinated again
+             if(i == 1)
+                shader << "coordinates.x += step;\n";
+             expandStreamFetches(shader, args[i]->name->name, args[i]->form, "coordinates", args[i]->name->name.c_str());
+          }
+          else
+             expandStreamFetches(shader, args[i]->name->name, args[i]->form);
           if (!globals.enableGPUAddressTranslation &&
               FunctionProp[functionName].contains(i)) {
              shader << "#ifndef GL_ES\n"
@@ -1771,7 +1834,13 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
         shader << "\t";
         leftArgumentForm->printBase( shader, 0);
         shader << " " << argName << ";\n";
-
+        if( target == CODEGEN_GLES && (texcoord >1) )
+        {
+           shader << "coordinates.x += step;\n";
+           expandStreamFetches(shader, leftArgumentName,
+                            leftArgumentForm, "coordinates", argName.c_str());
+        }
+        else
         // do a new fetch for the reduction arg
         expandStreamFetches(shader, leftArgumentName,
                             leftArgumentForm, argName.c_str());
@@ -2002,7 +2071,7 @@ generateShaderPass(Decl** args, int nArgs, const char* name, int firstOutput,
 
   char* fpcode;
   char* fpcode_with_brccinfo;
-  char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor, outPass );
+  char* shadercode = generate_shader_code( args, nArgs, name, firstOutput, outputCount, fullAddressTrans, reductionFactor, outPass, target );
   if (shadercode) {
      //if (globals.verbose)
      // std::cerr << "\n***Produced this shader:\n" << shadercode << "\n";
