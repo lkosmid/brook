@@ -945,7 +945,7 @@ printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
   	  CHECK_GL();
   	  if(texture_locations[i] == -1)
   	  {
-		printf("Attribute not found at %s:%i\n", __FILE__, __LINE__);
+		printf("Attribute %s not found at %s:%i\n", name, __FILE__, __LINE__);
         	assert(0);
   	  }
 	  //glEnableClientState(GL_TEXTURE_COORD_ARRAY);
