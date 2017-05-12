@@ -831,8 +831,10 @@ namespace brook
     _globalOutputs.resize(1);
     _globalOutputs[0] = outputBuffer;
 
-    _globalInterpolants.resize( reductionFactor );
-    for( size_t i = 0; i < reductionFactor; i++ )
+//we only use 2 interpolants, just to find the step between elements
+//TODO Port this solution to the rest of the backends, too
+    _globalInterpolants.resize( 2 );
+    for( size_t i = 0; i < 2; i++ )
     {
 /*      _context->getStreamReduceInterpolant( inputBuffer, resultExtents[0], resultExtents[1],
         i, remainingExtent+i, 0, otherExtent, dim, _globalInterpolants[i] );

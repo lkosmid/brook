@@ -295,6 +295,9 @@ compile_cgc (const char * /*name*/,
 
   // ned: Many hacks to fix up broken GLSL output from cgc
   char *fpcodenew = (char *) malloc(strlen(fpcode)+16384);
+  //Remove the fake definition of gl_FragCoord and remove _ from the name
+  replaceAll(fpcode, "vec4 _gl_FragCoord;", "");
+  replaceAll(fpcode, "_gl_FragCoord", "gl_FragCoord");
   if(CODEGEN_GLSL==target) {
 	  //Versions prior to 3.1.0013 required fixes
 	  if(strncmp(cgversion, "3.1.0013", strlen("3.1.0013") > 0))

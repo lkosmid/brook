@@ -685,8 +685,8 @@ GLESContext::getStreamReduceInterpolant( const TextureHandle inTexture,
   unsigned int _h ;
 if(_boundTextures[0])
 {
-  _w = MAX(_boundTextures[0]->width(),glesTexture->width());
-  _h = MAX(_boundTextures[0]->height(),glesTexture->height());
+  _w = glesTexture->width();
+  _h = glesTexture->height();
 }
 else
 {
@@ -699,13 +699,13 @@ else
   assert(_h);
 
   //bottom-left triangle
-  interpolant.vertices[0] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
-  interpolant.vertices[1] = float4(start.x/_w, start.y/_h, 0.0f, 1.0f);
-  interpolant.vertices[2] = float4(end.x/_w,   start.y/_h, 0.0f, 1.0f);
+  interpolant.vertices[0] = float4(start.x, end.y,   0.0f, 1.0f);
+  interpolant.vertices[1] = float4(start.x, start.y, 0.0f, 1.0f);
+  interpolant.vertices[2] = float4(end.x,   start.y, 0.0f, 1.0f);
    //upper-right triangle
-  interpolant.vertices[3] = float4(start.x/_w, end.y/_h,   0.0f, 1.0f);
-  interpolant.vertices[4] = float4(end.x/_w,   end.y/_h,   0.0f, 1.0f);
-  interpolant.vertices[5] = float4(end.x/_w,   start.y/_h, 0.0f, 1.0f);
+  interpolant.vertices[3] = float4(start.x, end.y,   0.0f, 1.0f);
+  interpolant.vertices[4] = float4(end.x,   end.y,   0.0f, 1.0f);
+  interpolant.vertices[5] = float4(end.x,   start.y, 0.0f, 1.0f);
 }
 
 void
@@ -949,7 +949,7 @@ printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
         	assert(0);
   	  }
 	  //glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	  //glActiveTexture(GL_TEXTURE0+i);
+	  glActiveTexture(GL_TEXTURE0+i);
           glEnableVertexAttribArray( texture_locations[i]);
   	  CHECK_GL();
 	  //glTexCoordPointer(4, GL_FLOAT, 0, (GLfloat*) (interpolants[i].vertices));

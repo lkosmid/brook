@@ -1332,12 +1332,10 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
      expandStreamSamplerDecls(shader, argName, 0, 0, arg->form, samplerreg, outPass );
    }
 
-   shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << texcoord++;
+   shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << (reductionStreamArguments.size() == 2) ? 1 : 0;
    shader <<  ",\n\t\t";
 
-   //As above, don't generate an interpolant for the result variable, which holds the second reduction fetch
-   if( (target == CODEGEN_GLES) && (reductionStreamArguments.size() !=2 ) )
-      outPass.addInterpolant( 0, (reductionStreamArguments.size() == 2) ? reductionFactor-1 : 0 );
+      outPass.addInterpolant( 0, (reductionStreamArguments.size() == 2) ? 1 : 0 );
 
    
    if(!hasDoneStreamDim) {
@@ -1635,16 +1633,13 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
   {
      //cgc complains about putting everything in the vec2 constructor so let's do it in two steps
      //We define coordinates and step, which will be used for the indexing and its adjustment
-     shader << "\tvec2 coordinates = vec2(0.0) ;\n";
-     shader << "\tfloat step = 1.0/StreamDim.x ;\n";
-     //By default, we get interpoted indices at the center of each interval (0.5, 1.5 etc) so we have to correct them:
-     //First sample at the left edge of the interval instead of its center
-     //multiply by stream dimension to get the integer index
-     //use ceil to compensate for rounding errors
-     //normalise it by the stream size
-     //and finally add the minimum bias that will not produce indexing the
-     //wrong sample even with the maximum stream size reduction (2048)
-     shader << "\tcoordinates.x = ceil((" << "_tex_"<< *args[0]->name << "_pos" << " - 1.0/(2.0*outStreamDim.x) )*StreamDim.x)*step +1.0/4096.0;\n";
+     //We take the coordinates of each element with gl_FragCoord
+     //However, cgc doesn't allow its use, so let's define it with _ and 
+     //remove it when we generate the kernel at cgc.cpp
+     shader << "\tvec4 _gl_FragCoord;\n";
+     shader << "\tvec2 coordinates = _gl_FragCoord.xy + 0.5 ;\n";
+     //We just use the two interpolants in order to obtain the correct step (next element of the reduction)
+     shader << "\tvec2 step = " << " abs( _tex_"<< *args[1]->name << "_pos.xy" << " - _tex_"<< *args[0]->name << "_pos.xy )" << ";\n";
   }
 
   if (globals.enableGPUAddressTranslation) {
@@ -1738,8 +1733,8 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
           {
              //if this is the second fetch (result variable) adjust coordinated again
              if(i == 1)
-                shader << "coordinates.x += step;\n";
-             expandStreamFetches(shader, args[i]->name->name, args[i]->form, "coordinates", args[i]->name->name.c_str());
+                shader << "coordinates += step;\n";
+             expandStreamFetches(shader, args[i]->name->name, args[i]->form, "coordinates/StreamDim.xy", args[i]->name->name.c_str());
           }
           else
              expandStreamFetches(shader, args[i]->name->name, args[i]->form);
@@ -1834,11 +1829,11 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
         shader << "\t";
         leftArgumentForm->printBase( shader, 0);
         shader << " " << argName << ";\n";
-        if( target == CODEGEN_GLES && (texcoord >1) )
+        if( target == CODEGEN_GLES )
         {
-           shader << "coordinates.x += step;\n";
+           shader << "coordinates += step;\n";
            expandStreamFetches(shader, leftArgumentName,
-                            leftArgumentForm, "coordinates", argName.c_str());
+                            leftArgumentForm, "coordinates/StreamDim.xy", argName.c_str());
         }
         else
         // do a new fetch for the reduction arg
