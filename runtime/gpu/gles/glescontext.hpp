@@ -145,6 +145,14 @@ namespace brook {
     virtual bool
     needsNormalizedTexCoords(void) const { return true; }
 
+    /* get context dependent texture width */
+    virtual unsigned int 
+    get_texture_width(TextureHandle textureId) const ;
+
+    /* get context dependent texture width */
+    virtual unsigned int 
+    get_texture_height(TextureHandle textureId) const ;
+
     virtual TextureHandle 
     createTexture2D( unsigned int inWidth,
                      unsigned int inHeight,

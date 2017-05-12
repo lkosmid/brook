@@ -163,6 +163,15 @@ namespace brook {
     virtual bool
     needsNormalizedTexCoords(void) const = 0;
 
+    //TODO: Those could have been avoided if TextureHandle was polypmorphic
+    /* get context dependent texture width */
+    virtual unsigned int 
+    get_texture_width(TextureHandle textureId) const = 0;
+
+    /* get context dependent texture height*/
+    virtual unsigned int 
+    get_texture_height(TextureHandle textureId) const = 0;
+
     /* Create a texture */
     virtual TextureHandle 
     createTexture2D( unsigned int inWidth, 

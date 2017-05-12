@@ -139,3 +139,17 @@ IWriteQuery *GLESContext::createWriteQuery(void)
    return new GLESWriteQuery();
 }
 
+/* get context dependent texture width */
+unsigned int 
+GLESContext::get_texture_width(TextureHandle textureId) const 
+{
+  return ((GLESTexture*) textureId )->width();
+}
+
+/* get context dependent texture height*/
+unsigned int 
+GLESContext::get_texture_height(TextureHandle textureId) const 
+{
+  return ((GLESTexture*) textureId )->height();
+}
+

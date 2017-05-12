@@ -1363,8 +1363,14 @@ HME - we are going to the slop buffer,  not the input buffer
         break;
     case StreamDim:
         {
-           size_t inputWidth = stream->getTextureWidth();
-           size_t inputHeight = stream->getTextureHeight();
+           //These give the stream visible sizes (similar to blockDim.x in CUDA)
+           //size_t inputWidth = stream->getTextureWidth();
+           //size_t inputHeight = stream->getTextureHeight();
+           //These give the real texture sizes (eg for supporting square/POT textures),
+           //used to normalise coordinates
+           //These could have been avoided if TextureHandles were using polymorphism
+           size_t inputWidth = inKernel->_context->get_texture_width(inKernel->_reduction_state.inputTexture);
+           size_t inputHeight = inKernel->_context->get_texture_height(inKernel->_reduction_state.inputTexture); 
            return float4(inputWidth, inputHeight, 1, 1);
         }
         break;
