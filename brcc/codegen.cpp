@@ -176,8 +176,8 @@ CodeGen_Init(void) {
  */
 static void generate_shader_subroutines(std::ostream&  out, const char * nam) {
    TransUnit * tu = gProject->units.back();
-   Statement *ste, *prev;
-   for (ste=tu->head, prev=NULL; ste; prev = ste, ste=ste->next) {
+   Statement *ste;
+   for (ste=tu->head; ste; ste=ste->next) {
       if (ste->isFuncDef()) {
          FunctionDef * fd = static_cast<FunctionDef *> (ste);
 //TIM: I'm unsure why we don't output the reductions
@@ -390,8 +390,8 @@ static void generate_shader_type_declaration( std::ostream& out,
 
 static void generate_shader_structure_definitions( std::ostream& out ) {
 	TransUnit * tu = gProject->units.back();
-	Statement *ste, *prev;
-	for (ste=tu->head, prev=NULL; ste; prev = ste, ste=ste->next) {
+	Statement *ste;
+	for (ste=tu->head; ste; ste=ste->next) {
 		if(ste->isDeclaration() || ste->isTypedef())
 		{
 			DeclStemnt* decl = static_cast<DeclStemnt*>(ste);
