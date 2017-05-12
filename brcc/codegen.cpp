@@ -1332,10 +1332,10 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
      expandStreamSamplerDecls(shader, argName, 0, 0, arg->form, samplerreg, outPass );
    }
 
-   shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << (reductionStreamArguments.size() == 2) ? 1 : 0;
+   shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << (reductionStreamArguments.size() == 2) ;
    shader <<  ",\n\t\t";
 
-      outPass.addInterpolant( 0, (reductionStreamArguments.size() == 2) ? 1 : 0 );
+      outPass.addInterpolant( 0, (reductionStreamArguments.size() == 2) );
 
    
    if(!hasDoneStreamDim) {
