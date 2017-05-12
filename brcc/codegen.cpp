@@ -1314,6 +1314,7 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
       expandStreamSamplerDecls(shader, argName, 0, 1, arg->form, samplerreg, outPass );
       //In gles we use only one texture which we adjust appropriately
       //so don't generate new additional arguments
+      //TODO Implement this for all backends so the entire loop will be gone
       if( target != CODEGEN_GLES )
       for (int r = 2; r < reductionFactor; r++) {
           std::stringstream s;
