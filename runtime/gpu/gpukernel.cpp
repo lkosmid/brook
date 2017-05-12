@@ -589,7 +589,7 @@ namespace brook
       secondDimension = 0;
     }
 
-    ReductionState state;
+    ReductionState& state=_reduction_state;
     state.inputTexture = inputStream->getIndexedFieldTexture(0);
     state.outputTexture = outputBuffer;
     state.whichBuffer = -1; // data starts in the input
@@ -831,10 +831,8 @@ namespace brook
     _globalOutputs.resize(1);
     _globalOutputs[0] = outputBuffer;
 
-//we only use 2 interpolants, just to find the step between elements
-//TODO Port this solution to the rest of the backends, too
-    _globalInterpolants.resize( 2 );
-    for( size_t i = 0; i < 2; i++ )
+    _globalInterpolants.resize( reductionFactor );
+    for( size_t i = 0; i < reductionFactor; i++ )
     {
 /*      _context->getStreamReduceInterpolant( inputBuffer, resultExtents[0], resultExtents[1],
         i, remainingExtent+i, 0, otherExtent, dim, _globalInterpolants[i] );
@@ -1372,6 +1370,7 @@ HME - we are going to the slop buffer,  not the input buffer
         break;
     case outStreamDim:
         {
+//TODO This is not required anymore for reductions, but it may be usefull for other stuff
            //obtain pointers to the output stream
            ReduceArgumentInfo reduceArgument = inKernel->_reduceArguments[0];
            void* outputReductionData = reduceArgument.data;
@@ -1380,7 +1379,19 @@ HME - we are going to the slop buffer,  not the input buffer
 
            size_t outputWidth = outputStream->getTextureWidth();
            size_t outputHeight = outputStream->getTextureWidth();
+size_t nextBuffer = (inKernel->_reduction_state.whichBuffer + 1) % 2;
+    size_t dim = inKernel->_reduction_state.currentDimension; // the dimension we are reducing
+           size_t outputWidth = inKernel->_reduction_state.reductionBufferWidths[dim];
+           size_t outputHeight = inKernel->_reduction_state.reductionBufferHeights[dim]; 
+
            return float4(outputWidth, outputHeight, 1, 1);
+        }
+        break;
+    case ReductionStep:
+        {
+           //returns the reduction step to access the next element in a reduction
+           bool dimension = inKernel->_reduction_state.currentDimension; 
+           return float4( (float) (!dimension), (float) dimension, 0, 0 );
         }
         break;
     }

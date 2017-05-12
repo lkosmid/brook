@@ -263,6 +263,8 @@ namespace brook {
       size_t componentCount; // float1/2/3/4?
     };
 
+    ReductionState _reduction_state;
+
     // internal methods
     void pushArgument( ArgumentType* inType, size_t inIndex );
     void clearArguments();

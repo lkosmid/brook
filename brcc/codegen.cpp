@@ -1300,7 +1300,7 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
                               std::vector<int>& reductionStreamArguments,
                               int reductionFactor, int i,
                               int& texcoord, int& samplerreg, pass_info& outPass, 
-                              CodeGenTarget target, int &constreg, bool& hasDoneStreamDim, bool& hasDoneOutStreamDim)
+                              CodeGenTarget target, int &constreg, bool& hasDoneStreamDim, bool& hasDoneOutStreamDim, bool& hasDoneReductionStep)
 {
    std::string argName = arg->name->name;
    TypeQual qual = arg->form->getQualifiers();
@@ -1333,10 +1333,7 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
      expandStreamSamplerDecls(shader, argName, 0, 0, arg->form, samplerreg, outPass );
    }
 
-   shader << "float2 _tex_" << argName << "_pos : TEXCOORD" << (reductionStreamArguments.size() == 2) ;
-   shader <<  ",\n\t\t";
 
-      outPass.addInterpolant( 0, (reductionStreamArguments.size() == 2) );
 
    
    if(!hasDoneStreamDim) {
@@ -1349,6 +1346,7 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
       outPass.addConstant( (i+1), "StreamDim" );
    }
 
+   //TODO This is not required anymore for reductions, but it may be usefull for other stuff
    if(!hasDoneOutStreamDim) {
       hasDoneOutStreamDim= true;
       //In GLES we need the outStreamDim to adjust appropriately the normalised coordinates
@@ -1357,6 +1355,17 @@ generate_reduction_stream_arg(std::ostream& shader, Decl *arg,
              << " : register (c" << constreg++ << ")";
       shader <<  ",\n\t\t#endif\n\t\t";
       outPass.addConstant( (i+1), "outStreamDim" );
+   }
+
+   if(!hasDoneReductionStep) {
+      hasDoneReductionStep= true;
+      //In GLES we need the ReductionStep to adjust appropriately the indices (coordinates)
+      //TODO other GPU backends to be updated as well to use this technique
+      shader << "#ifdef GL_ES\n\t\t"
+             << "uniform float4 ReductionStep"
+             << " : register (c" << constreg++ << ")";
+      shader <<  ",\n\t\t#endif\n\t\t";
+      outPass.addConstant( (i+1), "ReductionStep" );
    }
 }
 
@@ -1485,7 +1494,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
   std::vector<int> reductionStreamArguments;
   int texcoord, constreg, samplerreg, outputReg, i;
   bool reductionArgumentComesBeforeStreamArgument = false;
-  bool isReduction, hasDoneIndexofOutput, hasDoneStreamDim, hasDoneOutStreamDim;
+  bool isReduction, hasDoneIndexofOutput, hasDoneStreamDim, hasDoneOutStreamDim, hasDoneReductionStep;
 
   isReduction = false;
   for (i=0; i < nArgs; i++) {
@@ -1516,6 +1525,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
   hasDoneIndexofOutput = false;
   hasDoneStreamDim = false;
   hasDoneOutStreamDim = false;
+  hasDoneReductionStep = false;
   constreg = texcoord = samplerreg = outputReg = 0;
   for (i=0; i < nArgs; i++) {
      std::string argName = args[i]->name->name;
@@ -1543,7 +1553,7 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
                                             reductionArgumentComesBeforeStreamArgument,
                                             reductionStreamArguments,
                                             reductionFactor, i, texcoord,
-                                            samplerreg, outPass, target, constreg, hasDoneStreamDim, hasDoneOutStreamDim);
+                                            samplerreg, outPass, target, constreg, hasDoneStreamDim, hasDoneOutStreamDim, hasDoneReductionStep);
            } else {
               generate_map_stream_arg(shader, args[i], needIndexOfArg, i,
                                       texcoord, constreg, samplerreg, outPass, 
@@ -1644,7 +1654,6 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
      shader << "\tvec4 _gl_FragCoord;\n";
      shader << "\tvec2 coordinates = _reductionFactor*_gl_FragCoord.xy + 0.5 ;\n";
      //We just use the two interpolants in order to obtain the correct step (next element of the reduction)
-     shader << "\tvec2 step = " << " abs( _tex_"<< *args[1]->name << "_pos.xy" << " - _tex_"<< *args[0]->name << "_pos.xy )" << ";\n";
   }
 
   if (globals.enableGPUAddressTranslation) {
@@ -1738,7 +1747,7 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
           {
              //if this is the second fetch (result variable) adjust coordinated again
              if(i == 1)
-                shader << "coordinates += step;\n";
+                shader << "coordinates += ReductionStep.xy;\n";
              expandStreamFetches(shader, args[i]->name->name, args[i]->form, "coordinates/StreamDim.xy", args[i]->name->name.c_str());
           }
           else
@@ -1836,7 +1845,7 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
         shader << " " << argName << ";\n";
         if( target == CODEGEN_GLES )
         {
-           shader << "coordinates += step;\n";
+           shader << "coordinates += ReductionStep.xy;\n";
            expandStreamFetches(shader, leftArgumentName,
                             leftArgumentForm, "coordinates/StreamDim.xy", argName.c_str());
         }
