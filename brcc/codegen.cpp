@@ -1502,6 +1502,10 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
   generate_shader_structure_definitions(shader);
   generate_shader_subroutines(shader,functionName);
 
+  //Define _reductionFactor as a global constant to be used by reduction index computation
+  if (isReduction)
+     shader << "static const float _reductionFactor=" << reductionFactor << ";\n\n";
+
   shader << "void main (\n\t\t";
 
   /*
@@ -1637,7 +1641,7 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
      //However, cgc doesn't allow its use, so let's define it with _ and 
      //remove it when we generate the kernel at cgc.cpp
      shader << "\tvec4 _gl_FragCoord;\n";
-     shader << "\tvec2 coordinates = _gl_FragCoord.xy + 0.5 ;\n";
+     shader << "\tvec2 coordinates = _reductionFactor*_gl_FragCoord.xy + 0.5 ;\n";
      //We just use the two interpolants in order to obtain the correct step (next element of the reduction)
      shader << "\tvec2 step = " << " abs( _tex_"<< *args[1]->name << "_pos.xy" << " - _tex_"<< *args[0]->name << "_pos.xy )" << ";\n";
   }
