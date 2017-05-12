@@ -708,6 +708,30 @@ else
   interpolant.vertices[5] = float4(end.x,   start.y, 0.0f, 1.0f);
 }
 
+void 
+GLESContext::getStreamPassThroughInterpolant( const TextureHandle texture,
+                                         const unsigned int Width,
+                                         const unsigned int Height, 
+                                         GPUInterpolant &interpolant) const 
+{
+  assert(Width);
+  assert(Height);
+  GLESTexture *glesTexture = (GLESTexture *) texture;
+  unsigned int _w = glesTexture->width();
+  unsigned int _h = glesTexture->height(); 
+  assert(_w);
+  assert(_h);
+
+  //bottom-left triangle
+  interpolant.vertices[0] = float4(0.0f, Height/_h,   0.0f, 1.0f);
+  interpolant.vertices[1] = float4(0.0f, 0.0f, 0.0f, 1.0f);
+  interpolant.vertices[2] = float4(Width/_w,   0.0f, 0.0f, 1.0f);
+   //upper-right triangle
+  interpolant.vertices[3] = float4(0.0f, Height/_h,   0.0f, 1.0f);
+  interpolant.vertices[4] = float4(Width/_w,   Height/_h,   0.0f, 1.0f);
+  interpolant.vertices[5] = float4(Width/_w,   0.0f, 0.0f, 1.0f);
+}
+
 void
 GLESContext::getStreamReduceOutputRegion( const TextureHandle inTexture,
                                          const unsigned int minX,

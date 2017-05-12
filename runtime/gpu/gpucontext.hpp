@@ -121,6 +121,12 @@ namespace brook {
       const unsigned int maxY,
       GPUInterpolant &interpolant) const = 0; 
 
+    virtual void 
+    getStreamPassThroughInterpolant( const TextureHandle texture,
+      const unsigned int Width,
+      const unsigned int Height, 
+      GPUInterpolant &interpolant) const = 0; 
+
     void getStreamReduceInterpolant( const TextureHandle texture,
       const unsigned int outputWidth,
       const unsigned int outputHeight, 

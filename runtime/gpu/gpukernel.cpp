@@ -1047,8 +1047,8 @@ HME - we are going to the slop buffer,  not the input buffer
     _context->bindOutput( 0, outputBuffer );
 
     GPUInterpolant interpolant;
-    _context->getStreamReduceInterpolant( inputBuffer,
-      outputWidth, outputHeight, 0, outputWidth, 0, outputHeight, interpolant );
+    _context->getStreamPassThroughInterpolant( inputBuffer,
+      outputWidth, outputHeight, interpolant );
     _inputInterpolants.push_back( interpolant );
 
     _context->getStreamReduceOutputRegion( outputBuffer, 0, outputWidth, 0, outputHeight, _outputRegion );
