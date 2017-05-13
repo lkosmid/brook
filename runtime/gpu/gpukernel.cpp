@@ -1369,8 +1369,14 @@ HME - we are going to the slop buffer,  not the input buffer
            //These give the real texture sizes (eg for supporting square/POT textures),
            //used to normalise coordinates
            //These could have been avoided if TextureHandles were using polymorphism
-           size_t inputWidth = inKernel->_context->get_texture_width(inKernel->_reduction_state.inputTexture);
-           size_t inputHeight = inKernel->_context->get_texture_height(inKernel->_reduction_state.inputTexture); 
+           TextureHandle inputBuffer = NULL;
+           if( inKernel->_reduction_state.whichBuffer == -1 )
+              inputBuffer = inKernel->_reduction_state.inputTexture; // this the first pass, the data is still in the input
+           else
+              inputBuffer = inKernel->_reduction_state.reductionBuffers[inKernel->_reduction_state.whichBuffer];
+
+           size_t inputWidth = inKernel->_context->get_texture_width(inputBuffer);
+           size_t inputHeight = inKernel->_context->get_texture_height(inputBuffer); 
            return float4(inputWidth, inputHeight, 1, 1);
         }
         break;
