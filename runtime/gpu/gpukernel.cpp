@@ -831,6 +831,10 @@ namespace brook
     _globalOutputs.resize(1);
     _globalOutputs[0] = outputBuffer;
 
+#ifndef OLD_GPU_REDUCTIONS
+//we only use 2 interpolants, just to find the step between elements
+    _globalInterpolants.resize( 0 );
+#else
     _globalInterpolants.resize( reductionFactor );
     for( size_t i = 0; i < reductionFactor; i++ )
     {
@@ -847,6 +851,7 @@ and then we need to multiply by the outputExtent.
       _context->getStreamReduceInterpolant( inputBuffer, resultExtents[0], resultExtents[1],
         i, (remainingFactor-slopFactor)*outputExtent+i, 0, otherExtent, dim, _globalInterpolants[i] );
     }
+#endif
     size_t newExtent = resultExtents[dim];
     ioState.currentExtents[dim] = newExtent;
 
@@ -888,6 +893,7 @@ and then we need to multiply by the outputExtent.
         _context->bindTexture( 0, inputBuffer );
 
         size_t offset = remainingFactor-1;
+#ifdef OLD_GPU_REDUCTIONS
         GPUInterpolant interpolant;
 /*        _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
           offset, remainingFactor+offset, 0, otherExtent, dim, interpolant );
@@ -896,6 +902,7 @@ HME - remainingFactor+offset is too big
           _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
             offset, outputExtent+offset, 0, otherExtent, dim, interpolant );
         _inputInterpolants.push_back( interpolant );
+#endif
 
         _context->bindOutput( 0, slopBuffer );
         
@@ -916,6 +923,7 @@ HME - remainingFactor+offset is too big
         _globalSamplers[1] = inputBuffer;
         _globalOutputs[0] = slopBuffer;
 
+#ifdef OLD_GPU_REDUCTIONS
         for( size_t i = 0; i < slopFactor; i++ )
         {
           size_t offset = slopFactor - i;
@@ -928,6 +936,7 @@ HME - remainingExtent+outputBuffer is too high
           _context->getStreamReduceInterpolant( inputBuffer, slopExtents[0], slopExtents[1],
             offset, outputExtent+offset, 0, otherExtent, dim, _globalInterpolants[i] );
         }
+#endif
         _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
 
         executeReductionTechnique( slopFactor );
@@ -945,6 +954,7 @@ HME - remainingExtent+outputBuffer is too high
         _globalSamplers[1] = slopBuffer;
         _globalOutputs[0] = slopBuffer;
 
+#ifdef OLD_GPU_REDUCTIONS
         for( size_t i = 0; i < slopFactor; i++ )
         {
           size_t offset = slopFactor - i;
@@ -962,6 +972,7 @@ HME - we are going to the slop buffer,  not the input buffer
 */
         _context->getStreamReduceInterpolant( slopBuffer, slopExtents[0], slopExtents[1],
           0, outputExtent, 0, otherExtent, dim, _globalInterpolants[slopFactor] );
+#endif
         _context->getStreamReduceOutputRegion( slopBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
 
         executeReductionTechnique( slopFactor+1 );
@@ -1005,10 +1016,12 @@ HME - we are going to the slop buffer,  not the input buffer
     _globalSamplers[1] = slopBuffer;
     _globalOutputs[0] = outputBuffer;
 
+#ifdef OLD_GPU_REDUCTIONS
     _context->getStreamReduceInterpolant( inputBuffer, outputWidth, outputHeight,
       0, outputExtent, 0, otherExtent, dim, _globalInterpolants[0] );
     _context->getStreamReduceInterpolant( slopBuffer, outputWidth, outputHeight,
       0, outputExtent, 0, otherExtent, dim, _globalInterpolants[1] );
+#endif
     _context->getStreamReduceOutputRegion( outputBuffer, 0, outputExtent, 0, otherExtent, dim, _outputRegion );
 
     // execute the 2-argument reduction technique
