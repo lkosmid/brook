@@ -1652,7 +1652,16 @@ printf("%s:%d\n", __FUNCTION__, __LINE__);
      //However, cgc doesn't allow its use, so let's define it with _ and 
      //remove it when we generate the kernel at cgc.cpp
      shader << "\tvec4 _gl_FragCoord;\n";
-     shader << "\tvec2 coordinates = _reductionFactor*_gl_FragCoord.xy + 0.5 ;\n";
+     //The coordinates of the dimension we are reducing (for which reduction
+     //step is not 0) need to be scaled by reduction factor, so that for each
+     //output point we visit reduction factor samples
+     //For the dimension which we are not reducing we will simply use the the glFragCoord
+     //TODO: Those expensive conditionals which are the same for each pixel
+     //could be avoided by passing this infomation as uniform
+     shader << "vec2 CoordScaling;\n";
+     shader << "if( ReductionStep.x == 0.0) CoordScaling.x = 1.0; else CoordScaling.x = _reductionFactor;\n";
+     shader << "if( ReductionStep.y == 0.0) CoordScaling.y = 1.0; else CoordScaling.y = _reductionFactor;\n";
+     shader << "\tvec2 coordinates = CoordScaling.xy*_gl_FragCoord.xy + 0.5 ;\n";
      //We just use the two interpolants in order to obtain the correct step (next element of the reduction)
   }
 
