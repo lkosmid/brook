@@ -1396,16 +1396,7 @@ HME - we are going to the slop buffer,  not the input buffer
     case outStreamDim:
         {
 //TODO This is not required anymore for reductions, but it may be usefull for other stuff
-           //obtain pointers to the output stream
-           ReduceArgumentInfo reduceArgument = inKernel->_reduceArguments[0];
-           void* outputReductionData = reduceArgument.data;
-           Stream* outputStreamBase = *((const ::brook::stream*)outputReductionData);
-           GPUStream* outputStream = (GPUStream*)outputStreamBase;
-
-           size_t outputWidth = outputStream->getTextureWidth();
-           size_t outputHeight = outputStream->getTextureWidth();
-size_t nextBuffer = (inKernel->_reduction_state.whichBuffer + 1) % 2;
-    size_t dim = inKernel->_reduction_state.currentDimension; // the dimension we are reducing
+           size_t dim = inKernel->_reduction_state.currentDimension; // the dimension we are reducing
            size_t outputWidth = inKernel->_reduction_state.reductionBufferWidths[dim];
            size_t outputHeight = inKernel->_reduction_state.reductionBufferHeights[dim]; 
 
