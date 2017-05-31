@@ -1,0 +1,504 @@
+/****************************************************************************
+
+Copyright (c) 2007, Advanced Micro Devices, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of Advanced Micro Devices, Inc nor the names of its contributors
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+/*****************************************************************************
+  \file black_scholes.br
+  \brief The black Scholes options pricing equation is not a parallel problem
+         but we are trying to solve multiple instances of the problem in parallel.
+         The Black Scholes model, being computationally expensive, is a good
+         problem to solve in such a manner.
+         (Like computing interest on multiple accounts in parallel - computing
+          interest is not a parallel problem, but if it were computationally
+          expensive and we have a large number of accounts, then we need as much
+          floating point processing bandwidth as we can get.)
+
+  From Wikipedia:
+  http://en.wikipedia.org/wiki/Black-Scholes#The_model
+ ****************************************************************************/
+#include <math.h>
+
+#include "common.h"
+#include "Timer.h"
+#include <stdio.h>
+#include <assert.h>
+
+static int retval = 0;
+
+#define S_LOWER_LIMIT 10.0f
+#define S_UPPER_LIMIT 100.0f
+#define K_LOWER_LIMIT 10.0f
+#define K_UPPER_LIMIT 100.0f
+#define T_LOWER_LIMIT 1.0f
+#define T_UPPER_LIMIT 10.0f
+#define r_LOWER_LIMIT 0.01f
+#define r_UPPER_LIMIT 0.05f
+#define sigma_LOWER_LIMIT 0.01f
+#define sigma_UPPER_LIMIT 0.10f
+
+
+/**
+@brief  Abromowitz Stegun approxmimation for PHI (Cumulative Normal Distribution Function)
+*/
+kernel float4 PHI(float4 X)
+{
+    float4 y;
+    float4 absX;
+    float4 t;
+    float4 result;
+
+    const float4 c1 = float4(0.319381530f, 0.319381530f, 0.319381530f, 0.319381530f);
+    const float4 c2 = float4(-0.356563782f, -0.356563782f, -0.356563782f, -0.356563782f);
+    const float4 c3 = float4(1.781477937f, 1.781477937f, 1.781477937f, 1.781477937f);
+    const float4 c4 = float4(-1.821255978f, -1.821255978f, -1.821255978f, -1.821255978f);
+    const float4 c5 = float4(1.330274429f, 1.330274429f, 1.330274429f, 1.330274429f);
+
+    const float4 zero = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    const float4 one = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    const float4 two = float4(2.0f, 2.0f, 2.0f, 2.0f);
+    const float4 temp4 = float4(0.2316419f, 0.2316419f, 0.2316419f, 0.2316419f);
+
+    const float4 one_by_sqrt_2_pi = float4(0.398942280f, 0.398942280f, 0.398942280f, 0.398942280f);
+
+    absX = abs(X);
+    t = one/(one + temp4 * absX);
+
+    y = one - one_by_sqrt_2_pi * exp(-X*X/two) *
+    t * (c1 +
+            t * (c2 +
+                t * (c3 +
+                    t * (c4 + t * c5))));
+
+    result.x = (X.x < zero.x)? (one.x - y.x) : y.x;
+    result.y = (X.y < zero.y)? (one.y - y.y) : y.y;
+    result.z = (X.z < zero.z)? (one.z - y.z) : y.z;
+    result.w = (X.w < zero.w)? (one.w - y.w) : y.w;
+
+    return result;
+}
+
+/**
+@brief  Black Scholes Options Pricing equation
+                http://en.wikipedia-1.821255978f;.org/wiki/Black-Scholes#The_model
+*/
+kernel void
+black_scholes(float4 S<>, float4 sigma<>, float4 K<>, float4 T<>, float4 R<>,
+                     out float4 call<>, out float4 put<>)
+{
+    float4 d1, d2;
+    float4 sigma_sqrt_T;
+    float4 K_exp_minus_r_T;
+    float4 two = float4(2.0f, 2.0f, 2.0f, 2.0f);
+
+    sigma_sqrt_T = sigma * sqrt(T);
+
+    d1 = (log(S/K) + (R + sigma * sigma / two)* T)/ sigma_sqrt_T;
+    d2 = d1 - sigma_sqrt_T;
+
+    K_exp_minus_r_T = K * exp(-R * T);
+    call = S * PHI(d1) - K_exp_minus_r_T * PHI(d2);
+    put  = K_exp_minus_r_T * PHI(-d2) - S * PHI(-d1);
+}
+
+/**
+@brief  Abromowitz Stegun approxmimation for PHI on the CPU(Cumulative Normal Distribution Function)
+*/
+float PHI_cpu(float X)
+{
+    float y, absX, t;
+
+    // the coeffs
+    const float c1 =  0.319381530f;
+    const float c2 = -0.356563782f;
+    const float c3 =  1.781477937f;
+    const float c4 = -1.821255978f;
+    const float c5 =  1.330274429f;
+
+    const float one_by_sqrt_2_pi = 0.398942280f;
+
+    absX = fabs(X);
+    t = 1.0f/(1.0f + 0.2316419f * absX);
+
+    y = 1.0f - one_by_sqrt_2_pi * exp(-X*X/2.0f) *
+        t * (c1 +
+                t * (c2 +
+                    t * (c3 +
+                        t * (c4 + t * c5))));
+
+    return (X < 0) ? (1.0f - y) : y;
+}
+
+/**
+@brief  CPU version of black scholes
+*/
+void black_scholes_cpu(float* S, float* K, float* T, float* r, float* sigma, float* call, float* put, unsigned int Width)
+{
+    unsigned int y;
+    for (y = 0; y < Width; ++y)
+    {
+    float d1, d2;
+    float sigma_sqrt_T;
+    float K_exp_minus_r_T;
+
+    sigma_sqrt_T = sigma[y] * sqrt(T[y]);
+
+    d1 = (log(S[y]/K[y]) + (r[y] + sigma[y]*sigma[y]/2.0f)*T[y]) / sigma_sqrt_T;
+    d2 = d1 - sigma_sqrt_T;
+
+    K_exp_minus_r_T = K[y] * exp(-r[y] * T[y]);
+    call[y] = S[y] * PHI_cpu(d1) - K_exp_minus_r_T * PHI_cpu(d2);
+    put[y]  = K_exp_minus_r_T * PHI_cpu(-d2) - S[y] * PHI_cpu(-d1);
+    }
+}
+
+/**
+@brief Randomization function to create initial data set
+*/
+float frand(float lowerLimit, float upperLimit)
+{
+    unsigned int intRand;
+    float t;
+
+    assert(upperLimit > lowerLimit);
+
+    intRand = rand();
+    t = (float)intRand/(float)RAND_MAX;
+
+    return lowerLimit * t + upperLimit * (1.0f - t);
+}
+
+int main(int argc, char** argv)
+{
+    unsigned int i;
+
+    float *inputArray[5] = {NULL};
+    float *callArray     =  NULL;
+    float *putArray      =  NULL;
+
+    struct infoRec cmd;
+    unsigned int Width;
+
+    unsigned int dim1;
+    unsigned int dim2;
+
+        /////////////////////////////////////////////////////////////////////////
+    // Setup the timers
+        // 0 = GPU Total Time
+        // 1 = CPU Total Time
+        /////////////////////////////////////////////////////////////////////////
+    Setup(0);
+        Setup(1);
+
+    ParseCommandLine(argc, argv, &cmd);
+    srand(cmd.Seed);
+    Width = cmd.Width;
+
+    // The implementation modification involves the use of 2-D stream to avoid address
+    // translation and float4 data type. The minimum width is taken 4, for implementation
+    // specific reasons.
+
+
+    // Kernel operates on vectorized data. So the Width should be multiple of 4.
+    if(Width < 4)
+    {
+        // Set the Width 4, the minimum width.
+        Width = 4;
+        dim1 = 1;
+        dim2 = 1;
+    }
+    // Calculate approximate dim1, dim2 such that dim1 * dim2 * 4 comes around Width.
+    else
+    {
+        unsigned int tempVar1 = (unsigned int)sqrt((double)Width);
+        unsigned int tempVar2 = tempVar1 / 4;
+        dim1 = tempVar2 * 4;
+        dim2 = tempVar2;
+    }
+
+    // Reset the Width.
+    Width = dim1 * dim2 * 4;
+        cmd.Width = Width;
+
+    // Print the Width if modified.
+    if(Width != cmd.Width)
+    {
+        printf("The modified width is : %u\n", Width);
+    }
+
+    // Warn user if s/he has entered the "-y" option that it is ignored.
+    // However, this will fail to warn in case the value given equals the default
+    // This is because here, the input size is just "number of options" - and thus
+    // a one dimensional problem. So, we just need to take either "Width" or "Height"
+    // and we chose "Width"
+    if (cmd.Height != DEFAULT_HEIGHT)
+    {
+        fprintf(stderr, "Warning: \n\t'Height' is not taken from the commandline.\n");
+        fprintf(stderr, "\tIt is not used in this Brook sample.\n");
+        fprintf(stderr, "\tPlease use 'Width' if you wish to change the number of options.\n\n");
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Allocate memory
+        /////////////////////////////////////////////////////////////////////////
+    callArray = allocate_mat_f(1, Width);
+    putArray = allocate_mat_f(1, Width);
+    if (!putArray || !callArray)
+    {
+        fprintf(stderr, "Error: Memory Allocation.\n");
+        retval = -1;
+        goto cleanup;
+
+    }
+    for (i = 0; i < 5; ++i)
+    {
+        if (!(inputArray[i] = allocate_mat_f(1, Width)))
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+            goto cleanup;
+        }
+    }
+    for (i = 0; i < Width; ++i)
+    {
+        // S
+        inputArray[0][i] = frand(S_LOWER_LIMIT, S_UPPER_LIMIT);
+        // K
+        inputArray[1][i] = frand(K_LOWER_LIMIT, K_UPPER_LIMIT);
+        // T
+        inputArray[2][i] = frand(T_LOWER_LIMIT, T_UPPER_LIMIT);
+        // R
+        inputArray[3][i] = frand(r_LOWER_LIMIT, r_UPPER_LIMIT);
+        // Sigma
+        inputArray[4][i] = frand(sigma_LOWER_LIMIT, sigma_UPPER_LIMIT);
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Print input data
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("S Array: ", "%lf ", inputArray[0], 1, Width);
+        print_mat_f("K Array: ", "%lf ", inputArray[1], 1, Width);
+        print_mat_f("T Array: ", "%lf ", inputArray[2], 1, Width);
+        print_mat_f("R Array: ", "%lf ", inputArray[3], 1, Width);
+        print_mat_f("Sigma Array: ", "%lf ", inputArray[4], 1, Width);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("S Array: ", "%3.2lf ", inputArray[0], 1, Width);
+        print_mat_f("K Array: ", "%3.2lf ", inputArray[1], 1, Width);
+        print_mat_f("T Array: ", "%3.2lf ", inputArray[2], 1, Width);
+        print_mat_f("R Array: ", "%3.2lf ", inputArray[3], 1, Width);
+        print_mat_f("Sigma Array: ", "%3.2lf ", inputArray[4], 1, Width);
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+    // Brook code block
+        /////////////////////////////////////////////////////////////////////////
+    {
+        // Declare all input parameters as the 2-D streams.
+        float4 S_stream <dim1, dim2>;
+        float4 K_stream <dim1, dim2>;
+        float4 T_stream <dim1, dim2>;
+        float4 r_stream <dim1, dim2>;
+        float4 sigma_stream <dim1, dim2>;
+
+        float4 call_stream <dim1, dim2>;
+        float4 put_stream <dim1, dim2>;
+
+                // Record GPU Total Time
+        Start(0);
+        for(i = 0; i < cmd.Iterations; ++i)
+        {
+                        // Read all streams.
+                        streamRead(S_stream, inputArray[0]);
+                        streamRead(K_stream, inputArray[1]);
+                        streamRead(T_stream, inputArray[2]);
+                        streamRead(r_stream, inputArray[3]);
+                        streamRead(sigma_stream, inputArray[4]);
+
+                        // Run the brook kernel for Black Scholes.
+                        black_scholes(  S_stream, sigma_stream, K_stream, T_stream, r_stream, call_stream,
+                                                        put_stream);
+
+                        // Write data back from stream
+                        streamWrite(call_stream, callArray);
+                        streamWrite(put_stream, putArray);
+        }
+        Stop(0);
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Print results if requested
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Call: ", "%lf ", callArray, 1, Width);
+        print_mat_f("Put: ", "%lf ", putArray, 1, Width);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("Call: ", "%3.2lf ", callArray, 1, Width);
+        print_mat_f("Put: ", "%3.2lf ", putArray, 1, Width);
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Print timing information if requested
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Timing)
+    {
+                double time = GetElapsedTime(0);
+                printf( "%-8s%-8s%-16s%-16s\n","Width","Height","Iterations",
+                                "GPU Total Time");
+                printf( "%-8d%-8d%-16d%-16lf", cmd.Width, cmd.Height,
+                                cmd.Iterations, time);
+                printf("\n\n");
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Verify against CPU implementation
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Verify)
+    {
+        int res = 0;
+        float *call;
+        float *put;
+
+        call = allocate_mat_f(1, Width);
+        put = allocate_mat_f(1, Width);
+        if (!call || !put)
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+            goto cpu_cleanup;
+        }
+
+                printf("-e Verify correct output.\n");
+                printf("Performing Black Scholes Pricing on CPU ... ");
+
+        black_scholes_cpu(inputArray[0], inputArray[1], inputArray[2], inputArray[3], inputArray[4], call, put, Width);
+
+                printf("Done\n");
+
+                // Compare CPU and GPU results for correctness
+        res += compare_mat_f(callArray, call, 1, Width);
+        res += compare_mat_f(putArray, put, 1, Width);
+        if (res)
+        {
+            printf("%s: Failed!\n\n", argv[0]);
+            retval = -1;
+        }
+        else
+        {
+            printf("%s: Passed!\n\n", argv[0]);
+            retval = 0;
+        }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Compare performance with CPU if requested
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Performance)
+    {
+                double cpu_time = 0.0;
+                double gpu_time = 0.0;
+        float *call;
+        float *put;
+
+        call = allocate_mat_f(1, Width);
+        put = allocate_mat_f(1, Width);
+        if (!call || !put)
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+            goto cpu_cleanup;
+        }
+
+                printf("-p Compare performance with CPU.\n");
+
+                // Record CPU Total Time
+                Start(1);
+                for (i = 0; i < cmd.Iterations; ++i)
+        {
+                black_scholes_cpu(inputArray[0], inputArray[1], inputArray[2], inputArray[3], inputArray[4], call, put, Width);
+                }
+                Stop(1);
+
+                // Print CPU timing and speedup
+                cpu_time = GetElapsedTime(1);
+                gpu_time = GetElapsedTime(0);
+                printf( "%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+                                "CPU Total Time","GPU Total Time","Speedup");
+                printf( "%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height,
+                                cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
+                printf("\n\n");
+        }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Clean up
+        /////////////////////////////////////////////////////////////////////////
+cpu_cleanup:
+        if(call)
+        {
+            free(call);
+        }
+        if (put)
+        {
+            free(put);
+        }
+    }
+cleanup:
+    if (callArray)
+    {
+        free(callArray);
+    }
+    if (putArray)
+    {
+        free(putArray);
+    }
+    for (i = 0; i < 5; ++i)
+    {
+        if (inputArray[i])
+        {
+            free(inputArray[i]);
+        }
+    }
+
+    if (!cmd.Verify)
+    {
+        printf("\nPress enter to exit...\n");
+        getchar();
+    }
+
+        return retval;
+}
