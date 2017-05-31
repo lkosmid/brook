@@ -740,7 +740,6 @@ GLESContext::getStreamReduceOutputRegion( const TextureHandle inTexture,
                                          const unsigned int maxY,
                                          GPURegion &region) const
 {
-printf("in getStreamReduceOutputRegion\n");
   //bottom-left triangle
   region.vertices[0].x = -1;
   region.vertices[0].y =  1;
