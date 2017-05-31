@@ -1,0 +1,73 @@
+// domain_gather.br
+
+// test that gathering from a domain works
+
+#include <stdio.h>
+
+kernel void gatherFetch( float indexx<>,  float indexy<>, float g[][], out float result<> )
+{
+        float2 index=float2(indexx, indexy);
+	result = g[ index ];
+}
+
+int main()
+{
+	int i, j;
+	float x, y;
+	float indexStreamx< 100 >;
+	float indexStreamy< 100 >;
+	float gatherStreamx< 20, 20 >;
+	float gatherStreamy< 20, 20 >;
+	float resultStreamx< 100 >;
+	float resultStreamy< 100 >;
+	
+	float index_datax[ 100 ];
+	float index_datay[ 100 ];
+	float gather_datax[ 20 ][ 20 ];
+	float gather_datay[ 20 ][ 20 ];
+	float result_datax[ 100 ];
+	float result_datay[ 100 ];
+
+	// initialize index data
+	for( i = 0; i < 100; i++ )
+	{
+		index_datax[ i ] = (float)( i % 10 );
+		index_datay[ i ] = (float)( i / 10 );
+	}
+	
+	// initialize gather data
+	for( i = 0; i < 20; i++ )
+	for( j = 0; j < 20; j++ )
+	{
+		gather_datax[ i ][ j ] = (float)i;
+		gather_datay[ i ][ j ] = (float)j;
+	}
+	
+	streamRead( indexStreamx, index_datax );
+	streamRead( indexStreamy, index_datay );
+	streamRead( gatherStreamx, gather_datax );
+	streamRead( gatherStreamy, gather_datay );
+	
+	gatherFetch( indexStreamx, indexStreamy, gatherStreamx.domain( int2( 0, 7 ), int2( 10, 17 ) ), resultStreamx );
+	
+	streamWrite( resultStreamx, result_datax );
+
+	gatherFetch( indexStreamx, indexStreamy, gatherStreamy.domain( int2( 0, 7 ), int2( 10, 17 ) ), resultStreamy );
+	
+	streamWrite( resultStreamy, result_datay );
+	
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+		{
+			x = result_datax[ j*10 + i ];
+			y = result_datay[ j*10 + i ];
+			
+			printf( "<%f %f> ", x, y );
+		}
+		printf( "\n" );
+	}
+	
+	return 0;
+}

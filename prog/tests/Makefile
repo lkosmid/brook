@@ -3,7 +3,7 @@ ROOTDIR := ../..
 include $(ROOTDIR)/config/DetectOS.mk
 
 REGRESSIONDIRS := accumulate allocate cachetest constant$(MOBILEPROFILE) convert_iter_to_stream \
-		  domain_read domain_write gather_dependent$(MOBILEPROFILE) \
+		  domain_read domain_write domain_gather$(MOBILEPROFILE) gather_dependent$(MOBILEPROFILE) \
 		  gather_direct$(MOBILEPROFILE) gatherop indexof indexof_output \
 		  input_output iterator iterator_dimensions$(MOBILEPROFILE) multiple_output$(MOBILEPROFILE) \
 		  multibackend read_write reduce_basic$(MOBILEPROFILE) reduce_simplest reduce_simplest_nocopy reducetostream\
