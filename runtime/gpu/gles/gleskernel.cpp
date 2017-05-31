@@ -966,18 +966,20 @@ printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
 		printf("program id:%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
 #endif
   	  texture_locations[i]=glGetAttribLocation(((GLESSLPixelShader*)_boundPixelShader)->programid, name); 
-  	  CHECK_GL();
+  	  CHECK_GL_NOT_FATAL();
   	  if(texture_locations[i] == -1)
   	  {
 		printf("Attribute %s not found at %s:%i\n", name, __FILE__, __LINE__);
-        	assert(0);
   	  }
-	  //glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	  glActiveTexture(GL_TEXTURE0+i);
-          glEnableVertexAttribArray( texture_locations[i]);
-  	  CHECK_GL();
-	  //glTexCoordPointer(4, GL_FLOAT, 0, (GLfloat*) (interpolants[i].vertices));
-  	  glVertexAttribPointer( texture_locations[i], 4, GL_FLOAT, 0, 0, (GLfloat*) (interpolants[i].vertices));
+          else
+          {
+	        //glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	        glActiveTexture(GL_TEXTURE0+i);
+                glEnableVertexAttribArray( texture_locations[i]);
+  	        CHECK_GL();
+	        //glTexCoordPointer(4, GL_FLOAT, 0, (GLfloat*) (interpolants[i].vertices));
+  	        glVertexAttribPointer( texture_locations[i], 4, GL_FLOAT, 0, 0, (GLfloat*) (interpolants[i].vertices));
+          }
 #ifdef GLES_DEBUG
 for(int cn=0; cn<6; cn++ )
 {
@@ -1029,7 +1031,7 @@ printf("MAX Viewport.height=%d\n", dim[1]);
 	  CHECK_GL();
 	  //glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	  glDisableVertexAttribArray( texture_locations[i]);
-	  CHECK_GL();
+	  CHECK_GL_NOT_FATAL();
   }
 
   free(texture_locations);

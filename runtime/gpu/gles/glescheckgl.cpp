@@ -54,7 +54,7 @@ static bool checkFramebufferStatus() {
 	return false;
 }
 
-void brook::__check_gles(int line, const char *file) {
+void brook::__check_gles(int line, const char *file, bool fatal) {
   GLenum r = glGetError();
 
 #if defined(WIN32) && defined(_DEBUG) && 0
@@ -83,8 +83,8 @@ void brook::__check_gles(int line, const char *file) {
                 << glError_txt[r - GL_INVALID_ENUM]
                 << " on line "<< line << " of " << file << "\n";
     checkFramebufferStatus();
-	CHECK_GL();
-    assert (r==GL_NO_ERROR);
+    if(fatal)
+       assert (r==GL_NO_ERROR);
   }
   return;
 }

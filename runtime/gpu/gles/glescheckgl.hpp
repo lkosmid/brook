@@ -4,9 +4,10 @@
 
 namespace brook {
 
-#define CHECK_GL() __check_gles(__LINE__, __FILE__)
+#define CHECK_GL() __check_gles(__LINE__, __FILE__, 1)
+#define CHECK_GL_NOT_FATAL() __check_gles(__LINE__, __FILE__, 0)
 
-  void __check_gles(int line, const char *file);
+  void __check_gles(int line, const char *file, bool fatal);
 
 #define EGL_CHECK(x) \
     x; \
