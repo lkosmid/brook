@@ -261,6 +261,12 @@ namespace brook {
       size_t slopCount;
 
       size_t componentCount; // float1/2/3/4?
+
+      ReductionState(void)
+      {
+       reductionBufferWidths[0] = 0;
+       reductionBufferHeights[0] = 0;
+      }
     };
 
     ReductionState _reduction_state;

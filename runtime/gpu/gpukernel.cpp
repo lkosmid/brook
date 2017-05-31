@@ -1382,14 +1382,29 @@ HME - we are going to the slop buffer,  not the input buffer
            //These give the real texture sizes (eg for supporting square/POT textures),
            //used to normalise coordinates
            //These could have been avoided if TextureHandles were using polymorphism
-           TextureHandle inputBuffer = NULL;
-           if( inKernel->_reduction_state.whichBuffer == -1 )
-              inputBuffer = inKernel->_reduction_state.inputTexture; // this the first pass, the data is still in the input
-           else
-              inputBuffer = inKernel->_reduction_state.reductionBuffers[inKernel->_reduction_state.whichBuffer];
+           size_t inputWidth;
+           size_t inputHeight; 
 
-           size_t inputWidth = inKernel->_context->get_texture_width(inputBuffer);
-           size_t inputHeight = inKernel->_context->get_texture_height(inputBuffer); 
+           if( inKernel->_reduction_state.reductionBufferWidths[0])
+           {
+               //It's a reduction, so let's retrieve the actual size of the
+               //currently used buffer
+               TextureHandle inputBuffer = NULL;
+               inputBuffer = inKernel->_reduction_state.reductionBuffers[inKernel->_reduction_state.whichBuffer];
+               if( inKernel->_reduction_state.whichBuffer == -1 )
+                  inputBuffer = inKernel->_reduction_state.inputTexture; // this the first pass, the data is still in the input
+               else
+                  inputBuffer = inKernel->_reduction_state.reductionBuffers[inKernel->_reduction_state.whichBuffer];
+
+               inputWidth = inKernel->_context->get_texture_width(inputBuffer);
+               inputHeight = inKernel->_context->get_texture_height(inputBuffer);
+           }
+           else
+           {
+               //It's a normal kernel, just give the input size
+               inputWidth = stream->getTextureWidth();
+               inputHeight = stream->getTextureHeight();
+           }
            return float4(inputWidth, inputHeight, 1, 1);
         }
         break;
