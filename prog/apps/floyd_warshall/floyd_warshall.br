@@ -1,0 +1,404 @@
+/****************************************************************************
+
+Copyright (c) 2007, Advanced Micro Devices, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of Advanced Micro Devices, Inc nor the names of its contributors
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+
+/*****************************************************************************
+  \file floyd_warshall.br
+  \brief Find the shortest path in a weighted directed graph
+
+  From Wikipedia(10/15/2007):
+  The Floyd-Warshall algorithm compares all possible paths through the 
+  graph between each pair of vertices. Amazingly, it is able to do this
+  with only V3 comparisons (this is remarkable considering that there 
+  may be up to V2 edges in the graph, and every combination of edges 
+  is tested). It does so by incrementally improving an estimate on the
+  shortest path between two vertices, until the estimate is known to 
+  be optimal.
+  http://en.wikipedia.org/wiki/Floyd-Warshall_algorithm
+
+  How to interpret the results:
+    The distance/cost matrix is the distance/cost from one node to another.
+
+    The path matrix is the node from which you arrive at any particular node.
+    eg: - if the cell corresponding to moving from node 4 to node 6 says '3'
+          then, you will have to be going from 4 to 3 to 6. 
+          Next, you will have to see how you get to 3 from 4 and this 
+          may again be through other nodes and so on.
+ ****************************************************************************/
+#include "common.h"
+#include "Timer.h"
+#include <stdio.h>
+
+static int retval = 0;
+
+kernel void floyd_warshall(float inputDist[][], float inputPos[][], out float outDist<>, out float outPos<>, float step)
+{
+    float dirDist;
+    float indirDist;
+    float2 it = indexof(outDist).xy;
+
+    float2 idx1 = float2(it.x, step);
+    float2 idx2 = float2(step, it.y);
+
+    dirDist = inputDist[it.y][it.x];
+    indirDist = inputDist[idx1.y][idx1.x] + inputDist[idx2.y][idx2.x];
+
+    outDist = (dirDist < indirDist) ? dirDist : indirDist;
+    outPos  = (dirDist < indirDist) ? inputPos[it.y][it.x] : inputPos[idx1.y][idx1.x];
+}
+
+void floyd_warshall_cpu_inner(float* idist, float* ipos, float* odist, float* opos, int step, unsigned int Height, unsigned int Width)
+{
+    unsigned int y;
+    for (y = 0; y < Height; ++y)
+    {
+        unsigned int x;
+        for (x = 0; x < Width; ++x)
+        {
+            float dirDist;
+            float indirDist;
+            int idx1 = step * Width + x;
+            int idx2 = y * Width + step;
+            int index = y * Width + x;
+            dirDist = idist[index];
+            indirDist = idist[idx1] + idist[idx2];
+
+            odist[index]= (dirDist < indirDist) ? dirDist: indirDist;
+            opos[index]  = (dirDist < indirDist) ? ipos[index]: ipos[idx1];
+        }
+    }
+}
+
+void floyd_warshall_cpu(float* idist, float* ipos, float* odist, float* opos, unsigned int Length, unsigned int Height, unsigned int Width)
+{
+    unsigned int inp = 0;
+    unsigned int i;
+    float *tmp[4] = {NULL};
+    for (i = 0; i < 4; ++i)
+    {
+        if(!(tmp[i] = allocate_mat_f(1, Length)))
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            goto tmp_cleanup;
+        }
+    }
+
+    memcpy(tmp[0], idist, sizeof *idist * Length);
+    memcpy(tmp[1], ipos, sizeof *ipos * Length);
+    for (i = 0; i < Height; ++i)
+    {
+        if (!inp)
+        {
+            floyd_warshall_cpu_inner(tmp[0], tmp[1], tmp[2], tmp[3], i, Height, Width);
+        }
+        else
+        {
+            floyd_warshall_cpu_inner(tmp[2], tmp[3], tmp[0], tmp[1], i, Height, Width);
+        }
+        inp = 1 - inp;
+    }
+    if (!inp)
+    {
+        memcpy(odist, tmp[0], sizeof *odist * Length);
+        memcpy(opos, tmp[1], sizeof *opos * Length);
+    }
+    else
+    {
+        memcpy(odist, tmp[2], sizeof *odist * Length);
+        memcpy(opos, tmp[3], sizeof *opos * Length);
+    }
+tmp_cleanup:
+    for (i = 0; i < 4; ++i)
+    {
+        if (tmp[i])
+        {
+            free(tmp[i]);
+        }
+    }
+}
+
+int main(int argc, char** argv)
+{
+    unsigned int i;
+
+    float *input[2]  = {NULL}; 
+    float *output[2] = {NULL};
+	float *cpu[2] = {NULL};
+    int   inp = 0;
+    struct infoRec cmd;
+    unsigned int Height = 0;
+    unsigned int Width  = 0;
+    unsigned int Length = 0;
+
+	/////////////////////////////////////////////////////////////////////////
+    // Setup the timers 
+	// 0 = GPU Total Time
+	// 1 = CPU Total Time
+	/////////////////////////////////////////////////////////////////////////
+    Setup(0);
+    Setup(1);
+
+    ParseCommandLine(argc, argv, &cmd);
+    srand(cmd.Seed);
+    Width = cmd.Width;
+
+    // Both the rows and columns correspond to the same nodes (All pairs shortest path finding algorithm).
+    // Therefore Height and Width are the same
+    Height = Width;
+
+    // Warn user if s/he has entered the "-y" option that it is ignored.
+    // However, this will fail to warn in case the value given equals the default
+    if (cmd.Height != DEFAULT_HEIGHT) 
+    {
+        fprintf(stderr, "\nWarning: \n\t'Height' is not taken from the commandline.\n");
+        fprintf(stderr, "\tIt is forced to equal 'Width'.\n");
+        fprintf(stderr, "\tPlease use 'Width' if you wish to change the number of nodes.\n\n");
+    }
+
+    Length = Height * Width;
+
+   	/////////////////////////////////////////////////////////////////////////
+    // Allocate memory
+   	/////////////////////////////////////////////////////////////////////////
+    for (i = 0; i < 2; ++i)
+    {
+        input[i] = allocate_mat_f(1, Length);
+        output[i] = allocate_mat_f(1, Length);
+        if (!input || !output)
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+            goto cleanup;
+        }
+    }
+    fill_mat_f(input[0], Height, Width, 100, RANDOM);
+    fill_mat_f(input[1], Height, Width, Width, POSY);
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print input data
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Input Dist: ", "%lf ", input[0], Height, Width);
+        print_mat_f("Input Pos: ", "%lf ", input[1], Height, Width);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("Input Dist: ", "%4.0lf ", input[0], 1, Width);
+        print_mat_f("Input Pos: ", "%4.0lf ", input[1], 1, Width);
+    }
+
+   	/////////////////////////////////////////////////////////////////////////
+	// Brook code block
+	/////////////////////////////////////////////////////////////////////////
+    {
+        float distStream0 <Height, Width>;
+        float distStream1 <Height, Width>;
+        float nextPosStream0 <Height, Width>;
+        float nextPosStream1 <Height, Width>;
+		unsigned int j;
+
+        // Record GPU Total time
+		Start(0);
+		for (j = 0; j < cmd.Iterations; ++j)
+        {
+			// Write to stream 
+			streamRead(distStream0, input[0]);
+			streamRead(nextPosStream0, input[1]);
+
+			// This is a multi-pass algorithm. We call the kernel as many times as there are number of nodes in the  graph.
+			// Run the brook program here
+			for (i = 0; i < Height; ++i)
+			{
+				if (!inp)
+				{
+					floyd_warshall(distStream0, nextPosStream0, distStream1, nextPosStream1, (float)i);
+				}
+				else
+				{
+					floyd_warshall(distStream1, nextPosStream1, distStream0, nextPosStream0, (float)i);
+				}
+				inp = 1 - inp;
+			}
+
+			// Write data back from stream 
+			if (!inp)
+			{
+				streamWrite(distStream0, output[0]);
+				streamWrite(nextPosStream0, output[1]);
+			}
+			else
+			{
+				streamWrite(distStream1, output[0]);
+				streamWrite(nextPosStream1, output[1]);
+			}
+		}
+        Stop(0);
+    }
+
+   	/////////////////////////////////////////////////////////////////////////
+	// Print results if requested
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Distances: ", "%4.0f ", output[0], Height, Width);
+        print_mat_f("Path: ", "%4.0f ", output[1], Height, Width);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("Distances: ", "%4.0f ", output[0], 1, Width);
+        print_mat_f("Path: ", "%4.0f ", output[1], 1, Width);
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print timing information if requested 
+	/////////////////////////////////////////////////////////////////////////
+	if (cmd.Timing)
+    {
+		double time = GetElapsedTime(0);
+		printf(	"%-8s%-8s%-16s%-16s\n","Width","Height","Iterations",
+				"GPU Total Time");
+		printf( "%-8d%-8d%-16d%-16lf", cmd.Width, cmd.Height, 
+				cmd.Iterations, time);
+		printf("\n\n");
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Verify against CPU implementation if requested 
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verify)
+    {
+        int res = 0;
+
+        cpu[0] = allocate_mat_f(1, Length);
+        cpu[1] = allocate_mat_f(1, Length);
+		if (!cpu[0] || !cpu[1])
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+        }
+
+		else
+		{
+			printf("-e Verify correct output.\n");
+			printf("Performing Floyd Warshall on CPU ... ");
+
+			floyd_warshall_cpu(input[0], input[1], cpu[0], cpu[1], Length, Height, Width);
+
+			printf("Done\n");
+
+			res += compare_mat_f(output[0], cpu[0], 1, Length);
+			res += compare_mat_f(output[1], cpu[1], 1, Length);
+			if (res)
+			{
+				printf("%s: Failed!\n\n", argv[0]);
+				retval = -1;
+			}
+			else
+			{
+				printf("%s: Passed!\n\n", argv[0]);
+				retval = 0;
+			}
+			free(cpu[0]);
+			free(cpu[1]);
+		}
+	}
+
+	/////////////////////////////////////////////////////////////////////////
+	// Compare performance with CPU if requested
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Performance)
+    {
+		unsigned int i = 0;
+		double cpu_time = 0.0;
+		double gpu_time = 0.0;
+
+        cpu[0] = allocate_mat_f(1, Length);
+        cpu[1] = allocate_mat_f(1, Length);
+        if (!cpu[0] || !cpu[1])
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+        }
+
+		else
+		{
+			printf("-p Compare performance with CPU.\n");
+
+			// Record CPU Total Time 
+			Start(1);
+			for( i = 0; i < cmd.Iterations; i ++)
+			{
+				floyd_warshall_cpu(input[0], input[1], cpu[0], cpu[1], Length, Height, Width);
+			}
+			Stop(1);
+
+			// Print CPU timing and speedup
+			cpu_time = GetElapsedTime(1);
+			gpu_time = GetElapsedTime(0);
+			printf(	"%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+					"CPU Total Time","GPU Total Time","Speedup");
+			printf(	"%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height, 
+					cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
+			printf("\n\n");
+			free(cpu[0]);
+			free(cpu[1]);
+		}
+	}
+
+	/////////////////////////////////////////////////////////////////////////
+	// Clean up
+   	/////////////////////////////////////////////////////////////////////////
+cleanup:
+    for (i = 0; i < 2; ++i)
+    {
+        if (input[i])
+        {
+            free(input[i]);
+        }
+        if (output[i])
+        {
+            free(output[i]);
+        }
+    }
+
+    if (!cmd.Verify)
+    {
+        printf("\nPress enter to exit...\n");
+        getchar();
+    }
+
+	return retval;
+}
