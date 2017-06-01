@@ -69,25 +69,25 @@ static int retval = 0;
 /**
 @brief  Abromowitz Stegun approxmimation for PHI (Cumulative Normal Distribution Function)
 */
-kernel float PHI(float X)
+kernel float2 PHI(float2 X)
 {
-    float y;
-    float absX;
-    float t;
-    float result;
+    float2 y;
+    float2 absX;
+    float2 t;
+    float2 result;
 
-    const float c1 = 0.319381530f;
-    const float c2 = -0.356563782f;
-    const float c3 = 1.781477937f;
-    const float c4 = -1.821255978f;
-    const float c5 = 1.330274429f;
+    const float2 c1 = float2(0.319381530f, 0.319381530f);
+    const float2 c2 = float2(-0.356563782f, -0.356563782f);
+    const float2 c3 = float2(1.781477937f, 1.781477937f);
+    const float2 c4 = float2(-1.821255978f, -1.821255978f);
+    const float2 c5 = float2(1.330274429f, 1.330274429f);
 
-    const float zero = 0.0f;
-    const float one = 1.0f;
-    const float two = 2.0f;
-    const float temp4 = 0.2316419f;
+    const float2 zero = float2(0.0f, 0.0f);
+    const float2 one = float2(1.0f, 1.0f);
+    const float2 two = float2(2.0f, 2.0f);
+    const float2 temp4 = float2(0.2316419f, 0.2316419f);
 
-    const float one_by_sqrt_2_pi = 0.398942280f;
+    const float2 one_by_sqrt_2_pi = float2(0.398942280f, 0.398942280f);
 
     absX = abs(X);
     t = one/(one + temp4 * absX);
@@ -98,7 +98,8 @@ kernel float PHI(float X)
                 t * (c3 +
                     t * (c4 + t * c5))));
 
-    result = (X < zero)? (one - y) : y;
+    result.x = (X.x < zero.x)? (one.x - y.x) : y.x;
+    result.y = (X.y < zero.y)? (one.y - y.y) : y.y;
 
     return result;
 }
@@ -111,36 +112,42 @@ kernel void
 black_scholes_call(float S<>, float sigma<>, float K<>, float T<>, float R<>,
                      out float call<>)
 {
-    float d1, d2;
+    float2 d;
     float sigma_sqrt_T;
     float K_exp_minus_r_T;
     float two = 2.0f;
+    float2 temp, temp2;
 
     sigma_sqrt_T = sigma * sqrt(T);
 
-    d1 = (log(S/K) + (R + sigma * sigma / two)* T)/ sigma_sqrt_T;
-    d2 = d1 - sigma_sqrt_T;
+    d.x = (log(S/K) + (R + sigma * sigma / two)* T)/ sigma_sqrt_T;
+    d.y = d.x - sigma_sqrt_T;
 
     K_exp_minus_r_T = K * exp(-R * T);
-    call = S * PHI(d1) - K_exp_minus_r_T * PHI(d2);
+    temp= float2(S, K_exp_minus_r_T);
+    temp2 = temp* PHI(d);
+    call = temp2.x - temp2.y;
 }
 
 kernel void
 black_scholes_put(float S<>, float sigma<>, float K<>, float T<>, float R<>,
                      out float put<>)
 {
-    float d1, d2;
+    float2 d;
     float sigma_sqrt_T;
     float K_exp_minus_r_T;
     float two = 2.0f;
+    float2 temp, temp2;
 
     sigma_sqrt_T = sigma * sqrt(T);
 
-    d1 = (log(S/K) + (R + sigma * sigma / two)* T)/ sigma_sqrt_T;
-    d2 = d1 - sigma_sqrt_T;
+    d.y = (log(S/K) + (R + sigma * sigma / two)* T)/ sigma_sqrt_T;
+    d.x = d.y - sigma_sqrt_T;
 
     K_exp_minus_r_T = K * exp(-R * T);
-    put  = K_exp_minus_r_T * PHI(-d2) - S * PHI(-d1);
+    temp= float2(K_exp_minus_r_T, S);
+    temp2 = temp* PHI(-d);
+    put  = temp2.x-temp2.y;
 }
 
 /**
