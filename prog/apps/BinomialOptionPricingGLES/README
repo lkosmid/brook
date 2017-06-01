@@ -1,0 +1,116 @@
+-------------------------------------------------------------------------------
+  				        AMD BROOK+
+			 GPU-Accelerated Binomial Option Pricing for European Options
+-------------------------------------------------------------------------------
+
+Introduction
+------------
+This application provides Binomial Option Pricing for European Options, implementation on 
+AMD's BROOK+ with CAL (Compute Abstraction Layer) as backend. 
+
+The Binomial Option Pricing 
+---------------------------
+The common definition of an option is an agreement between two parties, the option seller and the option buyer, whereby the option buyer is granted a right
+(but not an obligation), secured by the option seller, to carry out some operation (or exercise the option) at some moment in the future. The predetermined
+price is referred to as strike price, and future date is called expiration date.
+ 
+Options come in several varieties:
+1. A call option grants its holder the right to buy the underlying asset at a strike price at some moment in the future.
+2. A put option gives its holder the right to sell the underlying asset at a strike price at some moment in the future.
+
+There are several types of options, mostly depending on when the option can be exercised.The European Options are excercised after certain time period where
+as American-style options are flexible as they may be exercised at any time up to and including expiration date and as such, they are generally priced at 
+least as high as corresponding European options. Other types of options are path-dependent or have multiple exercise dates (Asian, Bermudian). For a call option, the profit made at exercise date is the difference between the 
+price of the asset on that date and the strike price, minus the option price paid. For a put option, the profit made at exercise date is the difference 
+between the strike price and the price of the asset on that date, minus the option price paid. The price of the asset at expiration date and the strike 
+price therefore strongly influence how much one would be willing to pay for an option.
+
+Other important factors in the price of an option are:
+
+1. The time to the expiration date, T: Longer periods imply wider range of possible values for the underlying asset on the expiration date, and thus more
+uncertainty about the value of the option.
+
+2. The riskless rate of return, r, which is the annual interest rate of bonds or other “risk-free” investment: Any amount P of dollars is guaranteed to be 
+worth P * e^rT dollars T years from now if placed today in one of theses investments or in other words, if an asset is worth P dollars T years from now, it 
+is worth P * e^rT today.
+This example demonstrates a BROOK+ implementation of the binomial model for European options.
+
+The binomial option pricing model is an iterative solution that models the price evolution over the whole option validity period. For some types of options, 
+such as the American options, using an iterative model is the only choice since there is no known closed-form solution that predicts price over time.
+
+
+More precisely, the binomial model represents the price evolution of the option’s underlying asset as the binomial tree of all possible prices at 
+equally-spaced time steps from today under the assumption that at each step, the price can only move up and down at fixed rates and with respective 
+pseudo-probabilities Pu and Pd. In other words, the root node is today’s price, each column of the tree represents all the possible prices at a given time, 
+and each node of value S has two child nodes of values u * S and d * S , where u and d are the factors of upward and downward movements for a single 
+time-step dT. u and d are derived from volatility v : u = e^(v* sqrt(dT)) , d = e^(-v * sqrt(dT)); (u * d = 1). Pd is simply equal to (1 - Pu) and Pu is 
+derived from the assumption that over a period of dT the underlying asset yields the same profit as a riskless investment on average, so that if it is 
+worth S at time t , then it is worth S * e^(r*dT) at time (t + dT) . 
+This leads to the following equation: S * e^(r * dT) = (Pu * u * S + (1 - Pd )* d * S), from which we deduce Pu :
+
+Pu = (e^(r * dT) - d) / ( u - d).
+
+From the binomial tree representation, we can then iteratively derive the option price for each node of the tree, starting at the leaves. At each leaf of 
+the tree (i.e. at option expiry) deriving call and put option price is simple: 
+
+Vcall = max(S - X ,0): Indeed, if market price S at expiry date is greater
+than strike price X , a call option returns its holder (S - X) dollars of profit—for a same-day sale transaction—or zero profit otherwise.
+
+Vput = max(X - S,0): Similarly, if market price S at expiry date is lower than strike price X , a put option gives its holder X - S dollars of profit, 
+or zero profit otherwise.
+
+Having calculated all possible option prices at expiry date, we start moving back to the root, using the following formula: 
+Vt = ((Pu * Vu,t+1) + (Pd * Vd,t+1)) * e ^(-r * dT), where Vt is the option price for one of the nodes at time t and Vu,t+1 and Vd,t+1 are the prices of 
+its two child nodes. This formula is derived from the observation that an option that is worth Vt at time t , is worth at time t + dT ,Vt * e ^(r * dT)
+on one hand, and its expected value on the other hand, which is ((Pu * Vu,t+1) + (Pd * Vd,t+1)) by definition.
+
+
+Software Pre-requisites
+-----------------------
+1) AMD CAL SDK
+2) AMD BROOK SDK
+
+
+Compilation
+-----------
+
+1) Set environment variables:-
+
+    i.e. while building, the PATH environment variable would look like:-
+	PATH=<some-directories-set-by-system>;%BROOKROOT%
+	PATH=<some-directories-set-by-system>;%CALROOT%
+
+2) The binaries will be created in the following manner:-
+
+   Win32/debug      : samples\bin\xp_x86_32\BinomialOptionPricing_d.exe
+   Win32/release    : samples\bin\xp_x86_32\BinomialOptionPricing.exe
+
+Source Description
+------------------
+Here's a brief decription of the contents of the various source files in BinomialOptionPricing.
+
+BinomialOptionPricing.h	  - Contains the class definition with the relevant functions  
+                        for Binomial Option Pricing.
+Main.cpp	  - Contains all menu handling and invokation of Binomial Option Pricing functions.
+
+Timer.cpp    - Used to time the execution 
+
+Execution
+---------
+The compilation creates BinomialOptionPricing.exe 
+
+Usage: BinomialOptionPricing.exe <options>
+Options:-
+     -h        This help information
+     -float    Flag to run for float data type.
+Examples,
+
+    a) For running binomial option pricing, 
+    $BinomialOptionPricing.exe -float
+
+    b) 
+    $BinomialOptionPricing.exe -float 12 4096000
+    
+Known Issues/Limitations
+------------------------
+* It has been assumed that Options take place at maximumum of one year time period. So number of time steps allowed here is 12, maximum.
