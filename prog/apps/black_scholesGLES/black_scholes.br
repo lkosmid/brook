@@ -116,12 +116,14 @@ black_scholes_call(float S<>, float sigma<>, float K<>, float T<>, float R<>,
     float sigma_sqrt_T;
     float K_exp_minus_r_T;
     float two = 2.0f;
-    float2 temp, temp2;
+    float2 temp, temp2, temp3, temp4, temp5;
 
-    sigma_sqrt_T = sigma * sqrt(T);
+    temp3 = float2(sigma, sigma);
+    temp4 = float2(sqrt(T), sigma); 
+    temp5 = temp3*temp4; //temp5.x = sigma_sqrt_T
 
-    d.x = (log(S/K) + (R + sigma * sigma / two)* T)/ sigma_sqrt_T;
-    d.y = d.x - sigma_sqrt_T;
+    d.x = (log(S/K) + (R + temp5.y / two)* T)/ temp5.x;
+    d.y = d.x - temp5.x;
 
     K_exp_minus_r_T = K * exp(-R * T);
     temp= float2(S, K_exp_minus_r_T);
@@ -137,12 +139,14 @@ black_scholes_put(float S<>, float sigma<>, float K<>, float T<>, float R<>,
     float sigma_sqrt_T;
     float K_exp_minus_r_T;
     float two = 2.0f;
-    float2 temp, temp2;
+    float2 temp, temp2, temp3, temp4, temp5;
 
-    sigma_sqrt_T = sigma * sqrt(T);
+    temp3 = float2(sigma, sigma);
+    temp4 = float2(sqrt(T), sigma); 
+    temp5 = temp3*temp4; //temp5.x = sigma_sqrt_T
 
-    d.y = (log(S/K) + (R + sigma * sigma / two)* T)/ sigma_sqrt_T;
-    d.x = d.y - sigma_sqrt_T;
+    d.y = (log(S/K) + (R + temp5.y / two)* T)/ temp5.x;
+    d.x = d.y - temp5.x;
 
     K_exp_minus_r_T = K * exp(-R * T);
     temp= float2(K_exp_minus_r_T, S);
