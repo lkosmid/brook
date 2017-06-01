@@ -3,7 +3,6 @@
 
 #include "float.h"
 #include <math.h>
-#include "brook/VectorDataType.h"
 
 
 #define ZERO        0 // Flag to fill with zero's
@@ -94,7 +93,7 @@ float* allocate_mat_f(unsigned int height, unsigned int width);
 int floatCompare(float, float);
 void save_mat_f(const char* filename, float* matrix, unsigned int height, unsigned int width);
 void normalize_mat_f(float* matrix, unsigned int height, unsigned int width, float min, float max);
-
+/*
 // Single precision float2 functions
 void fill_mat_f2(float2* dst, unsigned int height, unsigned int width, unsigned int bound, unsigned int type);
 void print_mat_f2(const char* title, const char* fmt, const float2* array, unsigned int height, unsigned int width);
@@ -117,9 +116,9 @@ void normalize_mat_f3(float3* matrix, unsigned int height, unsigned int width, f
 void fill_mat_f4(struct float4* dst, unsigned int height, unsigned int width, unsigned int bound, unsigned int type);
 void print_mat_f4(const char* title, const char* fmt, const struct float4* array, unsigned int height, unsigned int width);
 int compare_mat_f4(const struct float4* mat1, const struct float4* mat2, int height, int width);
-float4* load_mat_f4(const char* filename, unsigned int* height, unsigned int* width);
-float4* allocate_mat_f4(unsigned int height, unsigned int width);
-void save_mat_f4(const char* filename, float4* matrix, unsigned int height, unsigned int width);
+float4* load_mat_f4(const char* filename, unsigned int* height, unsigned int* width);*/
+float* allocate_mat_f4(unsigned int height, unsigned int width);
+/*void save_mat_f4(const char* filename, float4* matrix, unsigned int height, unsigned int width);
 void normalize_mat_f4(float4* matrix, unsigned int height, unsigned int width, float min, float max);
 
 //double precision double functions
@@ -142,6 +141,6 @@ int* load_mat_i(const char* filename, unsigned int* height, unsigned int* width)
 int* allocate_mat_i(unsigned int height, unsigned int width);
 int intCompare(int, int);
 void save_mat_i(const char* filename, int* matrix, unsigned int height, unsigned int width);
-void normalize_mat_i(float* matrix, unsigned int height, unsigned int width, float min, float max);
+void normalize_mat_i(float* matrix, unsigned int height, unsigned int width, float min, float max);*/
 
 #endif

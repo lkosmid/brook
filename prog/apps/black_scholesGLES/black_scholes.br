@@ -47,6 +47,8 @@ POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 #include <math.h>
 
+#include "common.h"
+#include "Timer.h"
 #include <stdio.h>
 #include <assert.h>
 
@@ -228,7 +230,7 @@ int main(int argc, char** argv)
         // 1 = CPU Total Time
         /////////////////////////////////////////////////////////////////////////
     Setup(0);
-        Setup(1);
+    Setup(1);
 
     ParseCommandLine(argc, argv, &cmd);
     srand(cmd.Seed);
@@ -239,26 +241,24 @@ int main(int argc, char** argv)
     // specific reasons.
 
 
-    // Kernel operates on vectorized data. So the Width should be multiple of 4.
     if(Width < 4)
     {
-        // Set the Width 4, the minimum width.
-        Width = 4;
+        // Set the Width 1, the minimum width.
+        Width = 1;
         dim1 = 1;
         dim2 = 1;
     }
-    // Calculate approximate dim1, dim2 such that dim1 * dim2 * 4 comes around Width.
+    // Calculate approximate dim1, dim2 such that dim1 * dim2 comes around Width.
     else
     {
         unsigned int tempVar1 = (unsigned int)sqrt((double)Width);
-        unsigned int tempVar2 = tempVar1 / 4;
-        dim1 = tempVar2 * 4;
-        dim2 = tempVar2;
+        dim1 = tempVar1;
+        dim2 = tempVar1;
     }
 
     // Reset the Width.
-    Width = dim1 * dim2 * 4;
-        cmd.Width = Width;
+    Width = dim1 * dim2 ;
+    cmd.Width = Width;
 
     // Print the Width if modified.
     if(Width != cmd.Width)

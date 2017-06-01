@@ -40,8 +40,8 @@ const short BITMAP_MAGIC_NUMBER = 19778;
 const int RGB_BYTE_SIZE = 3;
 const unsigned int Offset = 54;
 
-float4* openBMPimage(const char* filename, unsigned int* height, unsigned int* width);
-void saveBMPimage(const char* filename, float4* data, unsigned int height, unsigned int width);
+//float4* openBMPimage(const char* filename, unsigned int* height, unsigned int* width);
+void saveBMPimage(const char* filename, float* data, unsigned int height, unsigned int width);
 
 unsigned int DEFAULT_WIDTH  = 64;
 unsigned int DEFAULT_HEIGHT = 64;
@@ -414,7 +414,7 @@ float* allocate_mat_f(unsigned int height, unsigned int width)
 
 void save_mat_f(const char* filename, float* matrix, unsigned int height, unsigned int width)
 {
-    float4 *data = NULL;
+    float *data = NULL;
     unsigned int y, x;
     if (!(data = allocate_mat_f4(height, width)))
     {
@@ -425,10 +425,10 @@ void save_mat_f(const char* filename, float* matrix, unsigned int height, unsign
         for (x = 0; x < width; ++x)
         {
             unsigned int index = y * width + x;
-            data[index].x = matrix[index];
-            data[index].y = matrix[index];
-            data[index].z = matrix[index];
-            data[index].w = matrix[index];
+            data[4*index] = matrix[index];
+            data[4*index+1] = matrix[index];
+            data[4*index+2] = matrix[index];
+            data[4*index+3] = matrix[index];
         }
     }
     saveBMPimage(filename, data, height, width);
@@ -451,7 +451,7 @@ void normalize_mat_f(float* matrix, unsigned int height, unsigned int width, flo
     }while(++ptr < (matrix + size));
 }
 
-
+/*
 void fill_mat_f2(float2* dst, unsigned int height, unsigned int width, unsigned int bound, unsigned int type)
 {
     unsigned int y = 0;
@@ -770,18 +770,18 @@ int compare_mat_f4(const struct float4* mat1, const struct float4* mat2, int hei
 float4* load_mat_f4(const char* filename, unsigned int* height, unsigned int* width)
 {
     return openBMPimage(filename, height, width);
-}
+}*/
 
-float4* allocate_mat_f4(unsigned int height, unsigned int width)
+float* allocate_mat_f4(unsigned int height, unsigned int width)
 {
-    float4* ptr = (float4*)malloc(sizeof *ptr * height * width);
+    float* ptr = (float*)malloc(4 * sizeof *ptr * height * width);
     if (ptr)
     {
         memset(ptr, 0, sizeof *ptr * height * width);
     }
     return ptr;
 }
-
+/*
 void save_mat_f4(const char* filename, float4* matrix, unsigned int height, unsigned int width)
 {
     saveBMPimage(filename, matrix, height, width);
@@ -1134,8 +1134,8 @@ void normalize_mat_i(int* matrix, unsigned int height, unsigned int width, int m
 
 
 float4* convert8(unsigned char* data, unsigned int height, unsigned int width, RGBQUAD* colors);
-float4* convert24(unsigned char* data, unsigned int height, unsigned int width);
-void saveBMPimage(const char* filename, float4* matrix, unsigned int height, unsigned int width)
+float4* convert24(unsigned char* data, unsigned int height, unsigned int width);*/
+void saveBMPimage(const char* filename, float* matrix, unsigned int height, unsigned int width)
 {
     BITMAPFILEHEADER bmfh = {0, 0, 0, 0, 0};
     BITMAPINFOHEADER bmih = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -1165,7 +1165,7 @@ void saveBMPimage(const char* filename, float4* matrix, unsigned int height, uns
     diff = width * height * RGB_BYTE_SIZE;
     byteWidth = padWidth = (width * bmih.biBitCount) >> 3;
     datasize = (byteWidth * height);
-    normalize_mat_f4(matrix, height, width, 0.0, 255.0);
+    normalize_mat_f(matrix, height, 4*width, 0.0, 255.0);
     while((padWidth % 4) != 0) padWidth++;
     if (height > 0)
     {
@@ -1177,9 +1177,9 @@ void saveBMPimage(const char* filename, float4* matrix, unsigned int height, uns
             {
                 i += offset;
             }
-            fprintf(fid,"%c",(char)((int)(matrix[j].z)));
-            fprintf(fid,"%c",(char)((int)(matrix[j].y)));
-            fprintf(fid,"%c",(char)((int)(matrix[j].x)));
+            fprintf(fid,"%c",(char)((int)(matrix[4*j+2])));
+            fprintf(fid,"%c",(char)((int)(matrix[4*j+1])));
+            fprintf(fid,"%c",(char)((int)(matrix[4*j])));
             ++j;
         }
     }
@@ -1193,15 +1193,15 @@ void saveBMPimage(const char* filename, float4* matrix, unsigned int height, uns
             {
                 i += offset;
             }
-            fprintf(fid,"%c",(char)((int)(matrix[j].z)));
-            fprintf(fid,"%c",(char)((int)(matrix[j].y)));
-            fprintf(fid,"%c",(char)((int)(matrix[j].x)));
+            fprintf(fid,"%c",(char)((int)(matrix[4*j+2])));
+            fprintf(fid,"%c",(char)((int)(matrix[4*j+1])));
+            fprintf(fid,"%c",(char)((int)(matrix[4*j])));
             --j;
         }
     }
     fclose(fid);
 }
-float4* openBMPimage(const char* filename, unsigned int* height, unsigned int* width)
+/*float4* openBMPimage(const char* filename, unsigned int* height, unsigned int* width)
 {
     float4* image   = NULL;
     FILE *fid       = NULL;
@@ -1386,4 +1386,4 @@ float4* convert16(unsigned char* data, unsigned int height, unsigned int width)
 float4* convert32(unsigned char* data, unsigned int height, unsigned int width)
 {
     return NULL;
-}
+}*/

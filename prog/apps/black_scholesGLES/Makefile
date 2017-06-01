@@ -40,7 +40,8 @@ FILES := \
 	common \
 	black_scholes \
 	Timer
-
+CFLAGS += -I../../common
+LIBRARIES = $(RUNTIME_LIBS)
 
 
 include $(ROOTDIR)/common.mk
