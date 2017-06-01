@@ -76,18 +76,18 @@ kernel float2 PHI(float2 X)
     float2 t;
     float2 result;
 
-    const float2 c1 = float2(0.319381530f, 0.319381530f);
-    const float2 c2 = float2(-0.356563782f, -0.356563782f);
-    const float2 c3 = float2(1.781477937f, 1.781477937f);
-    const float2 c4 = float2(-1.821255978f, -1.821255978f);
-    const float2 c5 = float2(1.330274429f, 1.330274429f);
+    const float c1 = 0.319381530f;
+    const float c2 = -0.356563782f;
+    const float c3 = 1.781477937f;
+    const float c4 = -1.821255978f;
+    const float c5 = 1.330274429f;
 
-    const float2 zero = float2(0.0f, 0.0f);
-    const float2 one = float2(1.0f, 1.0f);
-    const float2 two = float2(2.0f, 2.0f);
-    const float2 temp4 = float2(0.2316419f, 0.2316419f);
+    const float zero = 0.0f;
+    const float one = 1.0f;
+    const float two = 2.0f;
+    const float temp4 = 0.2316419f;
 
-    const float2 one_by_sqrt_2_pi = float2(0.398942280f, 0.398942280f);
+    const float one_by_sqrt_2_pi = 0.398942280f;
 
     absX = abs(X);
     t = one/(one + temp4 * absX);
@@ -98,8 +98,8 @@ kernel float2 PHI(float2 X)
                 t * (c3 +
                     t * (c4 + t * c5))));
 
-    result.x = (X.x < zero.x)? (one.x - y.x) : y.x;
-    result.y = (X.y < zero.y)? (one.y - y.y) : y.y;
+    result.x = (X.x < zero)? (one - y.x) : y.x;
+    result.y = (X.y < zero)? (one - y.y) : y.y;
 
     return result;
 }
@@ -113,19 +113,24 @@ black_scholes_call(float S<>, float sigma<>, float K<>, float T<>, float R<>,
                      out float call<>)
 {
     float2 d;
-    float sigma_sqrt_T;
+    //float sigma_sqrt_T;
     float K_exp_minus_r_T;
     float two = 2.0f;
-    float2 temp, temp2, temp3, temp4, temp5;
+    float2 temp, temp2; 
+    float3 temp3, temp4, temp5, temp6;
 
-    temp3 = float2(sigma, sigma);
-    temp4 = float2(sqrt(T), sigma); 
+    temp3 = float3(sigma, sigma, -R);
+    temp4 = float3(sqrt(T), sigma, T); 
     temp5 = temp3*temp4; //temp5.x = sigma_sqrt_T
 
-    d.x = (log(S/K) + (R + temp5.y / two)* T)/ temp5.x;
+    temp4.xy = float2(K, two);
+    temp3.xy = float2(S, temp5.y);
+    temp6.xy=temp3.xy/temp4.xy;
+
+    d.x = (log(temp6.x) + (R + temp6.y)* T)/ temp5.x;
     d.y = d.x - temp5.x;
 
-    K_exp_minus_r_T = K * exp(-R * T);
+    K_exp_minus_r_T = K * exp(temp5.z);
     temp= float2(S, K_exp_minus_r_T);
     temp2 = temp* PHI(d);
     call = temp2.x - temp2.y;
@@ -136,19 +141,24 @@ black_scholes_put(float S<>, float sigma<>, float K<>, float T<>, float R<>,
                      out float put<>)
 {
     float2 d;
-    float sigma_sqrt_T;
+    //float sigma_sqrt_T;
     float K_exp_minus_r_T;
     float two = 2.0f;
-    float2 temp, temp2, temp3, temp4, temp5;
+    float2 temp, temp2;
+    float3 temp3, temp4, temp5, temp6;
 
-    temp3 = float2(sigma, sigma);
-    temp4 = float2(sqrt(T), sigma); 
+    temp3 = float3(sigma, sigma, -R);
+    temp4 = float3(sqrt(T), sigma, T); 
     temp5 = temp3*temp4; //temp5.x = sigma_sqrt_T
 
-    d.y = (log(S/K) + (R + temp5.y / two)* T)/ temp5.x;
+    temp4.xy = float2(K, two);
+    temp3.xy = float2(S, temp5.y);
+    temp6.xy=temp3.xy/temp4.xy;
+
+    d.y = (log(temp6.x) + (R + temp6.y)* T)/ temp5.x;
     d.x = d.y - temp5.x;
 
-    K_exp_minus_r_T = K * exp(-R * T);
+    K_exp_minus_r_T = K * exp(temp5.z);
     temp= float2(K_exp_minus_r_T, S);
     temp2 = temp* PHI(-d);
     put  = temp2.x-temp2.y;
