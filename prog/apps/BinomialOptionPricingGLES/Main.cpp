@@ -40,6 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common.h"
 #include "BinomialOptionPricing.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 
 // Default values for command line flags.
@@ -170,7 +171,7 @@ main(int argc, char **argv)
 
     // Adjust sample size to avoid address translation
     unsigned int temp = (unsigned int)sqrt((float)cmd.NumSamples);
-    temp = temp * temp * 4;
+    temp = temp * temp ;
     printf("Adjusting sample size to avoid address translation\n");
     printf("Adjusted Sample Size = \t%u\n", temp);
 

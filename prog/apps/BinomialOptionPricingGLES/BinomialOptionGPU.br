@@ -52,21 +52,23 @@ POSSIBILITY OF SUCH DAMAGE.
 * 
 * @return 
 */
-kernel void 
-gpu_constructTree(float4 numSteps4, float j, float s, float x, 
-		  float vsdt, out float4 A<>)
+kernel float 
+gpu_constructTree(float numSteps4, float j, float s, float x, 
+		  float vsdt)
 {
-    float4 price4;
-    float4 j4 = float4(j, j + 1.0f, j + 2.0f, j + 3.0f);
-    float4 s4 = float4(s, s, s, s);
-    float4 x4 = float4(x, x, x, x);
-    float4 vsdt4 = float4(vsdt, vsdt, vsdt, vsdt);
+    float A;
+    float price4;
+    float j4 = j;
+    float s4 = s;
+    float x4 = x;
+    float vsdt4 = vsdt;
     
-    float4 two4 = float4(2.0f, 2.0f, 2.0f, 2.0f);
-    float4 zero4 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float two4 = 2.0f;
+    float zero4 = 0.0f;
 
-    price4.xyzw = s4.xyzw * exp(vsdt4.xyzw * (two4.xyzw * j4.xyzw - numSteps4.xyzw));
-    A.xyzw = max(price4.xyzw - x4.xyzw, zero4.xyzw);
+    price4 = s4 * exp(vsdt4 * (two4 * j4 - numSteps4));
+    A = max(price4 - x4, zero4);
+    return A;
 }
 
 /** 
@@ -80,15 +82,14 @@ gpu_constructTree(float4 numSteps4, float j, float s, float x,
 * 
 * @return 
 */
-kernel void 
-gpu_backwardTraverseFirst(float lastElement, float puByr, float pdByr, float4 A, out float4 B<>)
+kernel float 
+gpu_backwardTraverseFirst(float lastElement, float puByr, float pdByr, float A)
 {
-    float4 temp4;
-    temp4.x = pdByr * A.x + puByr * A.y;
-    temp4.y = pdByr * A.y + puByr * A.z;
-    temp4.z = pdByr * A.z + puByr * A.w;
-    temp4.w = pdByr * A.w + puByr * lastElement;
+    float B;
+    float temp4;
+    temp4 = pdByr * A + puByr * lastElement;
     B = temp4;
+    return B;
 }
 
 /** 
@@ -101,7 +102,7 @@ gpu_backwardTraverseFirst(float lastElement, float puByr, float pdByr, float4 A,
 * 
 * @return 
 */
-kernel void
+/*kernel void
 gpu_backwardTraverse4(float puByr, float pdByr, float4 A, out float4 A1<>)
 {
     float4 temp4;
@@ -121,7 +122,7 @@ gpu_backwardTraverse4(float puByr, float pdByr, float4 A, out float4 A1<>)
     temp4.x = pdByr * temp4.x + puByr * temp4.y;
     temp4.y = 0.0f;
     A1 = temp4;
-}
+}*/
 
 /** 
 * @brief       		 performs the backward traversal for the leaf nodes of tree of 8 time steps.
@@ -134,7 +135,7 @@ gpu_backwardTraverse4(float puByr, float pdByr, float4 A, out float4 A1<>)
 * 
 * @return 
 */
-kernel void 
+/*kernel void 
 gpu_backwardTraverse8(float puByr, float pdByr, float4 A, float4 B, out float4 A1<>)
 {
     float4 temp41;
@@ -185,7 +186,7 @@ gpu_backwardTraverse8(float puByr, float pdByr, float4 A, float4 B, out float4 A
     temp41.x = pdByr * temp41.x + puByr * temp41.y;
     temp41.y = 0.0f;
     A1 = temp41;
-}
+}*/
 
 /** 
 * @brief		performs the backward traversal for the leaf nodes of the tree of 12 time steps. 
@@ -199,7 +200,7 @@ gpu_backwardTraverse8(float puByr, float pdByr, float4 A, float4 B, out float4 A
 * 
 * @return 
 */
-kernel void 
+/*kernel void 
 gpu_backwardTraverse12(float puByr, float pdByr, float4 A, float4 B, float4 C, out float4 D<>)
 {
     float4 temp41;
@@ -297,7 +298,7 @@ gpu_backwardTraverse12(float puByr, float pdByr, float4 A, float4 B, float4 C, o
     temp41.x = pdByr * temp41.x + puByr * temp41.y;
     temp41.y = 0.0f;
     D = temp41;
-}
+}*/
 
 /** 
 * @brief			implements binomial option pricing for 4 time steps. 
@@ -319,78 +320,40 @@ gpu_backwardTraverse12(float puByr, float pdByr, float4 A, float4 B, float4 C, o
 */
 kernel void 
 mainGPU4(float N, float numSteps, float riskFactor, float volatility, 
-	 float4 stockPrice<>, float4 optionStrike<>, float4 optionYears<>, 
-	 out float4 resultGPU<>, out float4 A1<>, out float4 A2<>, 
-	 out float4 A3<>, out float4 A4<>)
+	 float stockPrice<>, float optionStrike<>, float optionYears<>, 
+	 out float resultGPU<>)
 {
-    float4 N4 = float4(N, N, N, N);
-    float4 numSteps4 = float4(numSteps, numSteps, numSteps, numSteps);
-    float4 risk4 = float4(riskFactor, riskFactor, riskFactor, riskFactor);
-    float4 vol4 = float4(volatility, volatility, volatility, volatility);
-    
-    float4 one4 = float4(1.0f, 1.0f, 1.0f, 1.0f);
-    float4 zero4 = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float one = 1.0f;
+    float zero = 0.0f;
+    float A1;
 
-    float4 dt4 = optionYears *(one4 / N4);
-    float4 vsdt4 = vol4 * sqrt(dt4);
-    float4 rdt4 = risk4 * dt4;
-    float4 r4 = exp(rdt4);
-    float4 rInv4 = one4 / r4;
+    float dt4 = optionYears *(one / N);
+    float vsdt4 = volatility * sqrt(dt4);
+    float rdt4 = riskFactor * dt4;
+    float r4 = exp(rdt4);
+    float rInv4 = one / r4;
 
-    float4 u4 = exp(vsdt4);
-    float4 d4 = one4 / u4;
-    float4 pu4 = (r4 - d4)/(u4 - d4);
-    float4 pd4 = one4 - pu4;
-    float4 puByr4 = pu4 * rInv4;
-    float4 pdByr4 = pd4 * rInv4;
-    float4 price4 = stockPrice * exp(vsdt4 * numSteps4);
-    float4 tempPrice4 = max(price4 - optionStrike, zero4);
-    float4 temp4;
+    float u4 = exp(vsdt4);
+    float d4 = one / u4;
+    float pu4 = (r4 - d4)/(u4 - d4);
+    float pd4 = one - pu4;
+    float puByr4 = pu4 * rInv4;
+    float pdByr4 = pd4 * rInv4;
+    float price4 = stockPrice * exp(vsdt4 * numSteps);
+    float tempPrice4 = max(price4 - optionStrike, zero);
+    float temp4;
     
     float j;
     //Construct Binomial Option Tree for the first sample.  
     j = 0.0f;
-    gpu_constructTree(numSteps4, j, stockPrice.x, optionStrike.x, vsdt4.x, A1);
+    A1=gpu_constructTree(numSteps, j, stockPrice, optionStrike, vsdt4);
       
     //Perform a backward traversal and reduction on the Binomial Option Tree.
-    gpu_backwardTraverseFirst(tempPrice4.x, puByr4.x, pdByr4.x, A1, A1);
-    gpu_backwardTraverse4(puByr4.x, pdByr4.x, A1, A1);
+    A1=gpu_backwardTraverseFirst(tempPrice4, puByr4, pdByr4, A1);
+//    gpu_backwardTraverse4(puByr4, pdByr4, A1, A1);
     
     //Store the results in resultGPU stream.
-    resultGPU.x = A1.x;
-    
-    //Construct Binomial Option Tree for the first sample.  
-    j = 0.0f;
-    gpu_constructTree(numSteps4, j, stockPrice.y, optionStrike.y, vsdt4.y, A2);
-      
-    //Perform a backward traversal and reduction on the Binomial Option Tree.
-    gpu_backwardTraverseFirst(tempPrice4.y, puByr4.y, pdByr4.y, A2, A2);
-    gpu_backwardTraverse4(puByr4.y, pdByr4.y, A2, A2);
-    
-    //Store the results in resultGPU stream.
-    resultGPU.y = A2.x;
-
-    //Construct Binomial Option Tree for the first sample.  
-    j = 0.0f;
-    gpu_constructTree(numSteps4, j, stockPrice.z, optionStrike.z, vsdt4.z, A3);
-      
-    //Perform a backward traversal and reduction on the Binomial Option Tree.
-    gpu_backwardTraverseFirst(tempPrice4.z, puByr4.z, pdByr4.z, A3, A3);
-    gpu_backwardTraverse4(puByr4.z, pdByr4.z, A3, A3);
-    
-    //Store the results in resultGPU stream.
-    resultGPU.z = A3.x;
-
-    //Construct Binomial Option Tree for the first sample.  
-    j = 0.0f;
-    gpu_constructTree(numSteps4, j, stockPrice.w, optionStrike.w, vsdt4.w, A4);
-      
-    //Perform a backward traversal and reduction on the Binomial Option Tree.
-    gpu_backwardTraverseFirst(tempPrice4.w, puByr4.w, pdByr4.w, A4, A4);
-    gpu_backwardTraverse4(puByr4.w, pdByr4.w, A4, A4);
-    
-    //Store the results in resultGPU stream.
-    resultGPU.w = A4.x;
+    resultGPU = A1;
 }
 
 /** 
@@ -411,7 +374,7 @@ mainGPU4(float N, float numSteps, float riskFactor, float volatility,
 *
 *@ return
 */
-kernel void 
+/*kernel void 
 mainGPU8(float N, float numSteps, float riskFactor, float volatility, float4 stockPrice<>, float4 optionStrike<>,
                     float4 optionYears<>, out float4 resultGPU<>, out float4 A1<>, out float4 A2<>, out float4 A3<>,
                     out float4 A4<>, out float4 A5<>, out float4 A6<>)
@@ -496,7 +459,7 @@ mainGPU8(float N, float numSteps, float riskFactor, float volatility, float4 sto
     
     //Store the results in resultGPU stream.
     resultGPU.w = A1.x;
-}
+}*/
 
 /**
 * @brief                  implements binomial option pricing for 12 time steps.
@@ -514,7 +477,7 @@ mainGPU8(float N, float numSteps, float riskFactor, float volatility, float4 sto
 * @param A5               output stream, used as temporary variable for calculation (invoking sub kernels).
 * @param A6               output stream, used as temporary variable for calculation (invoking sub kernels).
 */
-kernel void 
+/*kernel void 
 mainGPU12(float N, float numSteps, float riskFactor, float volatility, float4 stockPrice<>, float4 optionStrike<>,
                     float4 optionYears<>, out float4 resultGPU<>, out float4 A1<>, out float4 A2<>, out float4 A3<>,
                     out float4 A4<>, out float4 A5<>, out float4 A6<>)
@@ -611,7 +574,7 @@ mainGPU12(float N, float numSteps, float riskFactor, float volatility, float4 st
     
     //Store the results in resultGPU stream.
     resultGPU.w = A4.x;
-}
+}*/
 /**
 * @brief                  implements gpu kernel handler for 4 time steps.
  
@@ -628,23 +591,17 @@ void
 mainGPUHandller4(float *stockPrice, float *optionStrike, float *optionYears, float *resultGPU,const float riskFactor,
                      const float volatility, const unsigned int n, const unsigned int numSteps)
 {
-    unsigned int temp = n / 4;
+    unsigned int temp = n ;
     unsigned int temp2 = (unsigned int)sqrt((float)temp);
     
     unsigned int dim = temp2;
     
-    float4 s4<dim, dim>;
-    float4 x4<dim, dim>;
-    float4 t4<dim, dim>;
+    float s4<dim, dim>;
+    float x4<dim, dim>;
+    float t4<dim, dim>;
     
     // Stream responsible for storing the results of GPU computation...
-    float4 result<dim, dim>;
-    
-    // Streams needed for temporary computations inside kernel...
-    float4 A1<dim, dim>;
-    float4 A2<dim, dim>;
-    float4 A3<dim, dim>;
-    float4 A4<dim, dim>;
+    float result<dim, dim>;
     
     // Read stockPrice, optionStrike, and optionYears into vectorized streams...
     streamRead(s4, stockPrice);
@@ -652,7 +609,7 @@ mainGPUHandller4(float *stockPrice, float *optionStrike, float *optionYears, flo
     streamRead(t4, optionYears);
     
     // Call the GPU kernel for time steps = 4...
-    mainGPU4((float)n, (float)numSteps, riskFactor, volatility, s4, x4, t4, result, A1, A2, A3, A4);
+    mainGPU4((float)n, (float)numSteps, riskFactor, volatility, s4, x4, t4, result);
     
     // Copy the results...
     streamWrite(result, resultGPU);
@@ -672,7 +629,7 @@ mainGPUHandller4(float *stockPrice, float *optionStrike, float *optionYears, flo
 *
 * @return
 */
-void
+/*void
 mainGPUHandller8(float *stockPrice, float *optionStrike, float *optionYears, float *resultGPU,const float riskFactor,
                      const float volatility, const unsigned int n, const unsigned int numSteps)
 {
@@ -707,7 +664,7 @@ mainGPUHandller8(float *stockPrice, float *optionStrike, float *optionYears, flo
     
     // Copy the results...
     streamWrite(result, resultGPU);
-}
+}*/
 
 /**
 brief                  	  implements gpu kernel handler for 12 time steps.
@@ -721,7 +678,7 @@ brief                  	  implements gpu kernel handler for 12 time steps.
 * @param N                total number of samples.
 * @param numSteps         total number of time steps which is 4. 
 */
-void 
+/*void 
 mainGPUHandller12(float *stockPrice, float *optionStrike, float *optionYears, float *resultGPU,const float riskFactor,
                      const float volatility, const unsigned int n, const unsigned int numSteps)
 {
@@ -755,4 +712,4 @@ mainGPUHandller12(float *stockPrice, float *optionStrike, float *optionYears, fl
     
     // Copy the results...
     streamWrite(result, resultGPU);
-}
+}*/

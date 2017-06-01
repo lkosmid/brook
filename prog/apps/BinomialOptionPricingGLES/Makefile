@@ -36,7 +36,7 @@ ROOTDIR := ../../..
 vpath %.cpp ../../common
 EXECUTABLE = BinomialOptionPricingGLES
 FILES := BinomialOptionGPU Main Timer common
-CFLAGS += -I../../common
+CFLAGS += -I../../common -fpermissive
 LIBRARIES = $(RUNTIME_LIBS)
 
 

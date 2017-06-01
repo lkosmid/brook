@@ -38,6 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <cmath>
 #include<cstring>
+#include<stdlib.h>
 
 using namespace std;
 
@@ -116,7 +117,7 @@ void mainGPUHandller4(float *stockPrice, float *optionStrike, float *optionYears
                       const unsigned int numSteps);
 
 //Function prototype declaration for gpuKernelHandler, defined in .br file...
-void mainGPUHandller8(float *stockPrice, float *optionStrike, float *optionYears,
+/*void mainGPUHandller8(float *stockPrice, float *optionStrike, float *optionYears,
                       float *resultGPU, const float riskFactor,
                       const float volatility, const unsigned int n,
                       const unsigned int numSteps);
@@ -125,7 +126,7 @@ void mainGPUHandller8(float *stockPrice, float *optionStrike, float *optionYears
 void mainGPUHandller12(float *stockPrice, float *optionStrike, float *optionYears,
                       float *resultGPU, const float riskFactor,
                       const float volatility, const unsigned int n,
-                      const unsigned int numSteps);
+                      const unsigned int numSteps);*/
 
 template <class T>
 class BinomialOptionPricing {
@@ -388,10 +389,10 @@ BinomialOptionPricing<T>::binomialOptionGPU(){
     //Invoke appropriate gpuKernelHandler according to number of time steps for GPU computation...
     switch(_numSteps)
     {
-    case 12: mainGPUHandller12(_stockPrice, _optionStrike, _optionYears, _resultGPU, RISKFREE, VOLATILITY, _numSamples, _numSteps);
+/*    case 12: mainGPUHandller12(_stockPrice, _optionStrike, _optionYears, _resultGPU, RISKFREE, VOLATILITY, _numSamples, _numSteps);
         break;
     case 8: mainGPUHandller8(_stockPrice, _optionStrike, _optionYears, _resultGPU, RISKFREE, VOLATILITY, _numSamples, _numSteps);
-        break;
+        break;*/
     case 4: mainGPUHandller4(_stockPrice, _optionStrike, _optionYears, _resultGPU, RISKFREE, VOLATILITY, _numSamples, _numSteps);
         break;
     default:
