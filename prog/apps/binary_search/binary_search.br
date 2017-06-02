@@ -57,13 +57,16 @@ static int retval = 0;
  *						in a list \i array and return the index in \i index 
  */
 
-kernel void binary_search(float searchValue<>, float array[], out float index<>, float arraySize, float lgWidth) {
+#define ARRAYSIZE 2048
+#define LGWIDTH 11 
+
+kernel void binary_search(float searchValue<>, float array[], out float index<>, float arraySize) {
  
   float i;
 
   // Note: preprocessor not run on Brook code, so have to explicitly set numIter
   // here.  Must keep this consistent with LG_Width for correctness.
-  float numIter = lgWidth;  
+  const float numIter = 11.0;  
   float stride;
   float compareValue, dir;
 
@@ -145,13 +148,15 @@ int main(int argc, char** argv)
 
     // Standardize the seed so that testing is easier
     srand(cmd.Seed);
-    Length = cmd.Height * cmd.Width;
-    Searches = cmd.Width;
+    Length = cmd.Width;
+    Searches = cmd.Height;
 
 	/////////////////////////////////////////////////////////////////////////
     // Allocate memory 
 	/////////////////////////////////////////////////////////////////////////
-    array = allocate_mat_f(1, Length);
+    //Always allocate the maximum size since we cannot change it without recompilation
+    //However the computation is always adapted to the actual size (Length)
+    array = allocate_mat_f(1, ARRAYSIZE);
     searchValues = allocate_mat_f(1, Searches);
     if (!array || !searchValues)
     {
@@ -219,7 +224,7 @@ int main(int argc, char** argv)
 
 			// Execute parallel binary search
 			binary_search(	searchValueStream, arrayStream, 
-							indicesStream, (float)(Length), (float)lgWidth); 
+							indicesStream, Length); 
 
 			// Copy results from stream
 			streamWrite(indicesStream, indices[0]);			
@@ -250,9 +255,9 @@ int main(int argc, char** argv)
 	if (cmd.Timing)
     {
 		double time = GetElapsedTime(0);
-		printf(	"%-8s%-8s%-16s%-16s\n","Width","Height","Iterations",
+		printf(	"%-12s%-10s%-16s%-16s\n","Array Size","Searches","Iterations",
 				"GPU Total Time");
-		printf(	"%-8d%-8d%-16d%-16lf", cmd.Width, cmd.Height, 
+		printf(	"%-12d%-10d%-16d%-16lf", Length, Searches, 
 				cmd.Iterations, time);
 		printf("\n\n");
     }
@@ -308,9 +313,9 @@ int main(int argc, char** argv)
 		// Print CPU timing and speedup
 		cpu_time = GetElapsedTime(1);
 		gpu_time = GetElapsedTime(0);
-		printf(	"%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+		printf(	"%-12s%-10s%-16s%-16s%-16s%-16s\n","Array Size","Searches","Iterations",
 				"CPU Total Time","GPU Total Time","Speedup");
-		printf(	"%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height, 
+		printf(	"%-12d%-10d%-16d%-16lf%-16lf%-16lf", Length, Searches, 
 				cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
 		printf("\n\n");
 	}

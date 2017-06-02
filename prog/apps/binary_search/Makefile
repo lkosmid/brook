@@ -32,12 +32,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-ROOTDIR := ../../../..
+ROOTDIR := ../../..
 vpath %.cpp ../../common
-OUTPUTBASE := samples/bin/legacy
+EXECUTABLE = binary_search
 FILES := binary_search common Timer
-SDKLIBS := brook
+CFLAGS += -I../../common
+LIBRARIES = $(RUNTIME_LIBS)
 
-GENERATE_EXECUTABLE := binary_search
-include $(ROOTDIR)/samples/utils/build/main.mk
-INCLUDEDIR += $(C_INCLUDE_FLAG)"../../common/"
+
+include $(ROOTDIR)/common.mk
