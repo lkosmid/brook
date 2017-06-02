@@ -1,0 +1,339 @@
+/****************************************************************************
+
+Copyright (c) 2003, Stanford University
+All rights reserved.
+
+Copyright (c) 2007, Advanced Micro Devices, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of Stanford University nor the names of any contributors 
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+ 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+/***************************************************************************
+  \file binary_search.br
+  \brief A brook app that implements the parallel binary search algorithm.
+
+  Parallel Binary Search
+  Finds index of first occurance in an array of Width floats of each of a given
+  set of NUM_SEARCHES values.  If value not present found, search produces -1.
+****************************************************************************/
+
+#include "common.h"
+#include "Timer.h"
+
+static int retval = 0;
+
+/**
+ * @param searchValue	Search Key
+ * @param array			List of elements to be searched 
+ * @param index			Index of searched element of insert position
+ * @param arraySize		Size of search list
+ * @param lgWidth		
+ * @brief				Brook kernel to search for an element \i searchValue 
+ *						in a list \i array and return the index in \i index 
+ */
+
+kernel void binary_search(float searchValue<>, float array[], out float index<>, float arraySize, float lgWidth) {
+ 
+  float i;
+
+  // Note: preprocessor not run on Brook code, so have to explicitly set numIter
+  // here.  Must keep this consistent with LG_Width for correctness.
+  float numIter = lgWidth;  
+  float stride;
+  float compareValue, dir;
+
+  float idx = stride = floor((arraySize * 0.5f) + 0.5f);
+
+  index = 0.0f;
+
+  for (i = 0.0f; i < (numIter); i += 1.0f) {
+    stride = floor((stride * 0.5f) + 0.5f);
+    compareValue = array[idx];
+    dir = (searchValue <= compareValue) ? -1.0f : 1.0f;
+    idx = idx + dir * stride;
+  }
+    
+  // last iteration has stride fixed at 1
+  compareValue = array[idx];
+  idx = idx + ((searchValue <= compareValue) ? -1.0f : 1.0f);
+
+  // last pass check (we could be pointing
+  compareValue = array[idx];
+  idx = idx + ((searchValue <= compareValue) ? 0.0f : 1.0f);
+  if (idx < 0.0f)
+  {
+      idx = 0.0f;
+  }
+
+  // if we've found the value, write the array index into the output, otherwise, write -1
+  compareValue = array[idx];
+  idx = (abs(searchValue - compareValue) < 0.000001f) ? idx : -1.0f;
+  
+  index = idx;
+}
+
+/**
+ * @param array Array of searchable data
+ * @param search array of data to find
+ * @param results array to store the results
+ * @brief searches for each value of \i search in \i array and stores
+ * location of found value in \i results or -1 if not found
+ */
+void search_cpu(float* array, float* search, float* results, unsigned int numSearches, unsigned int Length)
+{
+    unsigned int i = 0;
+    for (i = 0; i < numSearches; ++i)
+    {
+        unsigned int y = 0;
+        float val = -1.0f;
+        for (y = 0; y < Length; ++y)
+        {
+            if (fabs(array[y] - search[i]) <= 0.0f)
+            {
+                val = (float)y;
+            }
+        }
+        results[i] = val;
+    }
+}
+
+
+int main(int argc, char** argv)
+{
+    unsigned int     i   = 0;
+    unsigned int lgWidth = 0;
+    float*  array        = NULL;
+    float*  searchValues = NULL;
+    float*  indices[2]   = { NULL };
+    unsigned int Length, Searches;
+    struct infoRec cmd;
+
+	/////////////////////////////////////////////////////////////////////////
+    // Setup the timers 
+	// 0 = GPU Total Time
+	// 1 = CPU Total Time
+	/////////////////////////////////////////////////////////////////////////
+    Setup(0); 
+	Setup(1);
+
+    ParseCommandLine(argc, argv, &cmd);
+
+    // Standardize the seed so that testing is easier
+    srand(cmd.Seed);
+    Length = cmd.Height * cmd.Width;
+    Searches = cmd.Width;
+
+	/////////////////////////////////////////////////////////////////////////
+    // Allocate memory 
+	/////////////////////////////////////////////////////////////////////////
+    array = allocate_mat_f(1, Length);
+    searchValues = allocate_mat_f(1, Searches);
+    if (!array || !searchValues)
+    {
+        fprintf(stderr, "Error: Memory allocation!\n");
+        retval = -1;
+        goto cleanup;
+    }
+
+    for (i = 0; i < 2; ++i)
+    {
+        if (!(indices[i] = (float*)malloc(sizeof *indices[i] * Searches)))
+        {
+            fprintf(stderr, "Error: Memory allocation!\n");
+            retval = -1;
+            goto cleanup;
+        }
+    }
+    for (i = Length; i > 1; i >>= 1)
+    {
+        lgWidth++;
+    }
+    
+	// Randomly fill the data and search arrays
+    // Making sure that previous value is always smaller than current
+    fill_mat_f(array, 1, Length, 2, PREVRAND);
+    fill_mat_f(searchValues, 1, Searches, 2, PREVRAND);
+
+    // Force some array values to exist in searchValues
+	for (i = 0; i < Searches; ++i) 
+	{
+		if ((rand() & 0x01) == 0) searchValues[i] = array[rand() % Length];
+	}
+    
+	/////////////////////////////////////////////////////////////////////////
+    // Print number of parallel searches, array size and the array list
+	/////////////////////////////////////////////////////////////////////////
+	if (cmd.Verbose)			
+    {
+        printf("Performing %d parallel searches on an array of size %d\n", Searches, Length);
+        print_mat_f("Original List:", "%lf ", array, 1, Length);
+    } 
+    else if (!cmd.Quiet)		
+    {
+        printf("Performing %d parallel searches on an array of size %d\n", Searches, Length);
+        printf("Printing first 10 values of data.\n");
+        print_mat_f("Original List:", "%lf ", array, 1, (unsigned int)sqrt((float)Length));
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+    // Brook code block
+	/////////////////////////////////////////////////////////////////////////
+    {
+        float   searchValueStream<Searches>;
+        float   indicesStream<Searches>;
+        float   arrayStream<Length>;
+
+		// Record GPU Total Time 
+        Start(0);
+
+        for (i = 0; i < cmd.Iterations; ++i)
+		{
+			// Copy searchable data and search keys to streams			
+			streamRead(arrayStream, array);					
+			streamRead(searchValueStream, searchValues);	
+
+			// Execute parallel binary search
+			binary_search(	searchValueStream, arrayStream, 
+							indicesStream, (float)(Length), (float)lgWidth); 
+
+			// Copy results from stream
+			streamWrite(indicesStream, indices[0]);			
+		}
+
+        Stop(0);
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print results if requested
+	/////////////////////////////////////////////////////////////////////////
+	if (cmd.Verbose)
+    {
+        print_mat_f("Search Values: ", "%lf ", searchValues, 1, Searches);
+        print_mat_f("Search Results: ", "%lf ", indices[0], 1, Searches);
+    } 
+	
+	else if (!cmd.Quiet)
+    {
+        printf("Showing first 10 values, use -v for more.\n");
+        print_mat_f("Search Values: ", "%lf ", searchValues, 1, (unsigned int)sqrt((float)Searches));
+        print_mat_f("Search Results: ", "%lf ", indices[0], 1, (unsigned int)sqrt((float)Searches));
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print timing information if requested
+	/////////////////////////////////////////////////////////////////////////
+	if (cmd.Timing)
+    {
+		double time = GetElapsedTime(0);
+		printf(	"%-8s%-8s%-16s%-16s\n","Width","Height","Iterations",
+				"GPU Total Time");
+		printf(	"%-8d%-8d%-16d%-16lf", cmd.Width, cmd.Height, 
+				cmd.Iterations, time);
+		printf("\n\n");
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Verify against CPU implementation if requested 
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verify)
+    {
+        int res = 0;
+
+		printf("-e Verify correct output.\n");
+		printf("Performing Binary Searches on CPU ... ");
+
+		for (i = 0; i < cmd.Iterations; ++i)
+		{
+			search_cpu(array, searchValues, indices[1], Searches, Length);
+		}
+
+		printf("Done\n");
+
+        res += compare_mat_f(indices[0], indices[1], 1, Searches);
+        if (res)
+        {
+            printf("%s: Failed!\n\n", argv[0]);
+            retval = -1;
+        }
+        else
+        {
+            printf("%s: Passed!\n\n", argv[0]);
+            retval = 0;
+        }
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Compare performance with CPU if requested
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Performance)
+    {
+		double cpu_time = 0.0;
+		double gpu_time = 0.0;
+
+		printf("-p Compare performance with CPU.\n");
+
+		// Record CPU Total Time 
+		Start(1);
+        for (i = 0; i < cmd.Iterations; ++i)
+		{
+			search_cpu(array, searchValues, indices[1], Searches, Length);
+		}
+		Stop(1);
+
+		// Print CPU timing and speedup
+		cpu_time = GetElapsedTime(1);
+		gpu_time = GetElapsedTime(0);
+		printf(	"%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+				"CPU Total Time","GPU Total Time","Speedup");
+		printf(	"%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height, 
+				cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
+		printf("\n\n");
+	}
+
+	/////////////////////////////////////////////////////////////////////////
+	// Clean up
+	/////////////////////////////////////////////////////////////////////////
+cleanup:
+    if (array)
+    {
+        free(array);
+    }
+    if (searchValues)
+    {
+        free(searchValues);
+    }
+    for (i = 0; i < 2; ++i)
+    {
+        if (indices[i])
+        {
+            free(indices[i]);
+        }
+    }
+
+    return retval;
+}
