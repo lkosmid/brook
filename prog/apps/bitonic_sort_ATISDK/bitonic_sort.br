@@ -1,0 +1,410 @@
+/****************************************************************************
+
+Copyright (c) 2003, Stanford University
+All rights reserved.
+
+Copyright (c) 2007, Advanced Micro Devices, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of Stanford University nor the names of any contributors
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+/***************************************************************************
+  \file bitonic_sort.br
+  \brief A brook implementation of the parallel bitonic sort alogorithm
+  Parallel Bitonic Sort
+
+  Sorts Length numbers in O(Length * lg^2(Length) ) time.
+  Length should be a power of two
+
+  A good explanation of the parallel sorting algorithm can be found at:
+  http://www.iti.fh-flensburg.de/lang/algorithmen/sortieren/bitonic/bitonicen.htm
+
+****************************************************************************/
+
+#include "common.h"
+#include "Timer.h"
+#include <stdio.h>
+
+static int retval = 0;
+
+kernel void bitonic(float input[], out float output<>, float stageWidth, float offset, float twoOffset)
+{
+    float idx2;
+    float sign, dir;
+    float min, max;
+    float idx1 = indexof(output).x;
+
+    // Either compared with element above or below
+    sign = (fmod(idx1, twoOffset) < offset) ? 1.0f : -1.0f;
+
+    // "Arrow" direction in the bitonic search algorithm (see above reference)
+    dir = (abs(fmod(floor(idx1 / stageWidth), 2.0f) - 0.0f) < 0.000001f) ? 1.0f: -1.0f;
+
+    // comparing elements idx1 and idx2
+    idx2 = idx1 + sign * offset;
+
+    min = (input[idx1] < input[idx2]) ? input[idx1] : input[idx2];
+    max = (input[idx1] > input[idx2]) ? input[idx1] : input[idx2];
+
+    output = (abs(sign - dir) < 0.000001f) ? min : max;
+}
+
+kernel void bitonic_2D(float input[][], out float output<>, float stageWidth, float offset, float twoOffset,float2 maxvalue)
+{
+
+  float2 idx1=indexof(output).xy;
+  float2 idx2;
+  float idx;
+  float sign, dir;
+  float min, max;
+  idx = idx1.x + maxvalue.x * idx1.y;
+
+  // either compared with element above or below
+  sign = ( fmod(idx, twoOffset) < offset) ? 1.0f : -1.0f;
+
+  // "arrow" direction in the bitonic search algorithm  (see above reference)
+  dir =  ( abs(fmod( floor(idx/stageWidth), 2.0f) - 0.0f) < 0.000001f) ? 1.0f : -1.0f;
+
+  // Calculating the index of the second location
+  idx2.x = idx1.x + (sign * offset);
+  idx2.y = idx1.y + floor(idx2.x / maxvalue.x);
+  idx2.x = fmod(idx2.x, maxvalue.x);
+  if (idx2.x < 0.0f)
+  {
+      idx2.x += maxvalue.x; // only necessary if shiftRight < 0
+  }
+
+  // comparing elements idx1 and idx2
+ min = (input[idx1.y][idx1.x] < input[idx2.y][idx2.x]) ? input[idx1.y][idx1.x] : input[idx2.y][idx2.x];
+  max = (input[idx1.y][idx1.x] > input[idx2.y][idx2.x]) ? input[idx1.y][idx1.x] : input[idx2.y][idx2.x];
+
+  output = (abs(sign - dir) < 0.000001f) ? min : max;
+}
+
+
+/**
+  @param input          The randomize input matrix to be sorted
+  @param height         The height of the matrix
+  @param width          The width of the matrix
+  @brief                        runs qsort on the data
+                                        qsort implementation taken from a public domain implementation at:
+                                        http://alienryderflex.com/quicksort
+                                        This public-domain C implementation by Darel Rex Finley.
+*/
+void sort_cpu(float* input, int height, int width)
+{
+    float  piv = 0;
+    int beg[1000] = { 0 };
+    int end[1000] = { 0 };
+    int i = 0;
+    int L = 0;
+    int R = 0;
+    int swap = 0;
+
+    beg[0] = 0;
+    end[0] = width * height;
+    while (i >= 0) {
+        L = beg[i];
+        R = end[i] - 1;
+        if (L < R)
+        {
+            piv = input[L];
+            while (L < R)
+            {
+                while (input[R] >= piv && L < R)
+                {
+                    R--;
+                }
+                if (L < R)
+                {
+                    input[L++] = input[R];
+                }
+                while (input[L] <= piv && L < R)
+                {
+                    L++;
+                }
+                if (L < R)
+                {
+                    input[R--] = input[L];
+                }
+            }
+            input[L] = piv;
+            beg[i + 1] = L + 1;
+            end[i + 1] = end[i];
+            end[i++] = L;
+            if ((end[i] - beg[i]) > (end[i - 1] - beg[i - 1]))
+            {
+                swap = beg[i];
+                beg[i] = beg[i - 1];
+                beg[i - 1] = swap;
+                swap = end[i];
+                end[i] = end[i - 1];
+                end[i - 1] = swap;
+            }
+        }
+        else
+        {
+            i--;
+        }
+    }
+}
+
+int main(int argc, char** argv)
+{
+    int    lgArraySize  = 0;
+    int    flip         = 0;
+    int    stage        = 0;
+    float  *input       =  NULL;
+    float  *output      =  NULL;
+    float  *array[3]    = {NULL};
+    struct infoRec cmd;
+    unsigned int i, Height, Width, Length;
+
+        /////////////////////////////////////////////////////////////////////////
+    // Setup the timers
+        // 0 = GPU Total Time
+        // 1 = CPU Total Time
+        /////////////////////////////////////////////////////////////////////////
+    Setup(0);
+    Setup(1);
+
+    ParseCommandLine(argc, argv, &cmd);
+    srand(cmd.Seed);
+    Height = cmd.Height;
+    Width = cmd.Width;
+    Length = Height * Width;
+
+    for (stage = Length >> 1; stage; lgArraySize++)
+    {
+        stage >>= 1;
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+    // Allocate memory
+        /////////////////////////////////////////////////////////////////////////
+    input = allocate_mat_f(Height, Width);
+    output = allocate_mat_f(Height, Width);
+    if (!input || !output)
+    {
+        fprintf(stderr, "Error: Memory Allocation.\n");
+        retval = -1;
+        goto cleanup;
+    }
+    for (i = 0; i < 3; ++i)
+    {
+        if (!(array[i] = allocate_mat_f(1, Length)))
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+            goto cleanup;
+        }
+    }
+
+        // Randomly write float values between 0 and 100 to array
+    fill_mat_f(array[0], 1, Length, 100, RANDOM);
+    fill_mat_f((float*)input, Height, Width, 100, RANDOM);
+
+        /////////////////////////////////////////////////////////////////////////
+    // Print input data
+        /////////////////////////////////////////////////////////////////////////
+        if (cmd.Verbose)
+    {
+        printf("N = %d (requires lg(2) = %d stages)\n", Length, lgArraySize);
+        print_mat_f("Input Data 1D:", "%3.2lf ", array[0], 1, Length);
+        print_mat_f("Input Data 2D:", "%3.2lf ", (float*)input, Height, Width);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("N = %d (requires lg(2) = %d stages)\n", Length, lgArraySize);
+        printf("Printing first 10 unsorted values out of %d, for more use -v\n", Length);
+        print_mat_f("Input Data 1D:", "%3.2f ", array[0], 1, Width);
+        print_mat_f("Input Data 2D:", "%3.2lf ", (float*)input, 1, Width);
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+    // Brook code block
+        /////////////////////////////////////////////////////////////////////////
+    {
+        float2 maxvalue = float2((float)Height, (float)Width);
+        float   sorted1Strm<Length>;
+        float   sorted2Strm<Length>;
+        float   input2D<Height, Width>;
+        float   output2D<Height, Width>;
+
+                // Record GPU Total time
+        Start(0);
+        for (i = 0; i < cmd.Iterations; ++i)
+        {
+                        // Write data to streams
+                        streamRead(sorted1Strm, array[0]);
+                        //streamRead(input2D, input);
+
+                        // Run Brook program
+                        // lg(Length) stages
+                        for (stage = 1; stage <= lgArraySize; ++stage)
+                        {
+                                int     step        = 0;
+
+                                // Width of each sorted segment to be sorted in parallel (2, 4, 8, ...)
+                                float   segWidth    = (float)pow(2.0f, stage);
+
+                                for (step = 1; step <= stage; ++step)
+                                {
+                                        // offset = (stageWidth/2, stageWidth/4, ... , 2, 1)
+                                        float offset = (float)pow(2.0f, stage - step);
+
+                                        // two buffers required since non-sequential gather is performaed
+                                        // from scratch buffer each step.
+
+                                        // flip source and target streams each iteration
+                                        if (!flip)
+                                        {
+                                                        bitonic(sorted1Strm, sorted2Strm, segWidth, offset, offset * 2.0f);
+                                                        //bitonic_2D(input2D, output2D, segWidth, offset, 2 * offset, maxvalue);
+                                        }
+                                        else
+                                        {
+                                                        bitonic(sorted2Strm, sorted1Strm, segWidth, offset, offset * 2.0f);
+                                                        //bitonic_2D(output2D, input2D, segWidth, offset, 2 * offset, maxvalue);
+                                        }
+                                        flip ^= 0x01; // XOR flip w/ 0b1 which flips the flip variable between 0 and 1
+                                }
+                        }
+
+                        // Write data back from streams
+                        streamWrite((flip) ? sorted2Strm : sorted1Strm, array[1]);
+                        //streamWrite((flip) ? output2D : input2D, output);
+                }
+        Stop(0);
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+    // Print results if requested
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Sorted Output 1D:", "%3.2lf ", array[1], 1, Length);
+        print_mat_f("Sorted Output 2D:", "%3.2lf ", (float*)output, Height, Width);
+    }
+    else if(!cmd.Quiet)
+    {
+        printf("Printing first 10 sorted values out of %d, for more use -v\n",Length);
+        print_mat_f("Sorted Output 1D:", "%3.2lf ", array[1], 1, Width);
+        print_mat_f("Sorted Output 2D:", "%3.2lf ", (float*)output, 1, Height);
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Print timing information if requested
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Timing)
+    {
+                double time = GetElapsedTime(0);
+                double gflop = 0.00;
+                printf("%-8s%-8s%-16s%-16s%\n","Width","Height","Iterations","GPU Total Time");
+                printf("%-8d%-8d%-16d%-16lf", cmd.Width, cmd.Height, cmd.Iterations, time);
+                printf("\n\n");
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Verify against CPU implementation if requested
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Verify)
+    {
+        int res = 0;
+
+                printf("-e Verify correct output.\n");
+                printf("Performing Bitonic Sort on CPU ... ");
+
+        sort_cpu((float*)array[0], 1, Length);
+        //sort_cpu((float*)input, Height, Width);
+
+                printf("Done\n");
+
+        res += compare_mat_f(array[1], array[0], 1, Length);
+        //res += compare_mat_f((float*)output, (float*)input, Height, Width);
+        if (res)
+        {
+            printf("%s: Failed!\n\n", argv[0]);
+            retval = -1;
+        }
+        else
+        {
+            printf("%s: Passed!\n\n", argv[0]);
+            retval = 0;
+        }
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Compare performance with CPU if requested
+        /////////////////////////////////////////////////////////////////////////
+    if (cmd.Performance)
+    {
+                double cpu_time = 0.0;
+                double gpu_time = 0.0;
+
+                printf("-p Compare performance with CPU.\n");
+
+                Start(1);
+                for(i = 0; i < cmd.Iterations; i ++)
+                {
+                        sort_cpu((float*)array[0], 1, Length);
+                        //sort_cpu((float*)input, Height, Width);
+                }
+                Stop(1);
+
+                // Print CPU timing and speedup
+                cpu_time = GetElapsedTime(1);
+                gpu_time = GetElapsedTime(0);
+                printf( "%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+                                "CPU Total Time","GPU Total Time","Speedup");
+                printf( "%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height,
+                                cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
+                printf("\n\n");
+    }
+
+        /////////////////////////////////////////////////////////////////////////
+        // Clean up
+        /////////////////////////////////////////////////////////////////////////
+cleanup:
+    if (input)
+    {
+        free(input);
+    }
+    if (output)
+    {
+        free(output);
+    }
+
+    if (!cmd.Verify)
+    {
+        printf("\nPress enter to exit...\n");
+        getchar();
+    }
+
+    return retval;
+}
