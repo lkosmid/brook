@@ -74,7 +74,7 @@ kernel void bitonic(float input[], out float output<>, float stageWidth, float o
     float idx2, tmp, tmp2;
     float sign, dir;
     float min, max;
-    float idx1 = indexof(output).x;
+    float idx1 = indexof(output).x+0.1;
 
     // Either compared with element above or below
     tmp = round_(fmod(idx1, twoOffset));
@@ -82,7 +82,7 @@ kernel void bitonic(float input[], out float output<>, float stageWidth, float o
     sign = (tmp2 < offset) ? 1.0f : -1.0f;
 
     // "Arrow" direction in the bitonic search algorithm (see above reference)
-    tmp = round_(fmod(floor((idx1+0.1) / stageWidth), 2.0f)) ;
+    tmp = round_(fmod(floor((idx1) / stageWidth), 2.0f)) ;
     tmp2 = (tmp == 2.0)? 0.0 : tmp; ;
     dir = (abs(tmp2 - 0.0f) < 0.000001f) ? 1.0f: -1.0f;
 
@@ -100,29 +100,37 @@ kernel void bitonic_2D(float input[][], out float output<>, float stageWidth, fl
 
   float2 idx1=indexof(output).xy;
   float2 idx2;
-  float idx;
+  float idx, tmp, tmp2;
   float sign, dir;
   float min, max;
+  float in_idx1, in_idx2;
   idx = idx1.x + maxvalue.x * idx1.y;
 
   // either compared with element above or below
-  sign = ( fmod(idx, twoOffset) < offset) ? 1.0f : -1.0f;
+  tmp = round_(fmod(idx, twoOffset));
+  tmp2 = (tmp == twoOffset)? 0.0 : tmp;
+  sign = ( tmp2 < offset) ? 1.0f : -1.0f;
 
   // "arrow" direction in the bitonic search algorithm  (see above reference)
-  dir =  ( abs(fmod( floor(idx/stageWidth), 2.0f) - 0.0f) < 0.000001f) ? 1.0f : -1.0f;
+  tmp = round_(fmod(floor((idx+0.1) / stageWidth), 2.0f)) ;
+  tmp2 = (tmp == 2.0)? 0.0 : tmp; ;
+  dir =  ( abs(tmp2 - 0.0f) < 0.000001f) ? 1.0f : -1.0f;
 
   // Calculating the index of the second location
   idx2.x = idx1.x + (sign * offset);
-  idx2.y = idx1.y + floor(idx2.x / maxvalue.x);
-  idx2.x = fmod(idx2.x, maxvalue.x);
+  idx2.y = idx1.y + floor((idx2.x+0.1) / maxvalue.x);
+  tmp = fmod(idx2.x, maxvalue.x);
+  idx2.x = (abs(tmp - maxvalue.x) < 1.0 )? 0.0 : tmp; ;
   if (idx2.x < 0.0f)
   {
       idx2.x += maxvalue.x; // only necessary if shiftRight < 0
   }
 
   // comparing elements idx1 and idx2
-  min = (input[idx1.y][idx1.x] < input[idx2.y][idx2.x]) ? input[idx1.y][idx1.x] : input[idx2.y][idx2.x];
-  max = (input[idx1.y][idx1.x] > input[idx2.y][idx2.x]) ? input[idx1.y][idx1.x] : input[idx2.y][idx2.x];
+  in_idx1 = input[idx1.y][idx1.x];
+  in_idx2 = input[idx2.y][idx2.x];
+  min = (in_idx1 < in_idx2) ? in_idx1 : in_idx2;
+  max = (in_idx1 > in_idx2) ? in_idx1 : in_idx2;
 
   output = (abs(sign - dir) < 0.000001f) ? min : max;
 }
@@ -204,7 +212,7 @@ int main(int argc, char** argv)
     float  *output      =  NULL;
     float  *array[3]    = {NULL};
     struct infoRec cmd;
-    unsigned int i, Height, Width, Length;
+    unsigned int i, Height, Width, Length, Elements;
 
     /////////////////////////////////////////////////////////////////////////
     // Setup the timers
@@ -220,7 +228,11 @@ int main(int argc, char** argv)
     Width = cmd.Width;
     Length = Width;
 
-    for (stage = Length >> 1; stage; lgArraySize++)
+    if(Height == 0) 
+       Elements = Width;
+    else
+       Elements = Width*Height;
+    for (stage = Elements >> 1; stage; lgArraySize++)
     {
         stage >>= 1;
     }
@@ -261,7 +273,7 @@ int main(int argc, char** argv)
     /////////////////////////////////////////////////////////////////////////
     if (cmd.Verbose)
     {
-        printf("N = %d (requires lg(2) = %d stages)\n", Length, lgArraySize);
+        printf("N = %d (requires lg(2) = %d stages)\n", Elements, lgArraySize);
         if(Height == 0)
             print_mat_f("Input Data 1D:", "%3.2lf ", array[0], 1, Length);
         else
@@ -269,7 +281,7 @@ int main(int argc, char** argv)
     }
     else if (!cmd.Quiet)
     {
-        printf("N = %d (requires lg(2) = %d stages)\n", Length, lgArraySize);
+        printf("N = %d (requires lg(2) = %d stages)\n", Elements, lgArraySize);
         printf("Printing first 10 unsorted values out of %d, for more use -v\n", Length);
         if(Height == 0)
             print_mat_f("Input Data 1D:", "%3.2f ", array[0], 1, Length);
@@ -362,7 +374,7 @@ int main(int argc, char** argv)
         if(Height == 0)
            print_mat_f("Sorted Output 1D:", "%3.2lf ", array[1], 1, Width);
         else
-           print_mat_f("Sorted Output 2D:", "%3.2lf ", (float*)output, 1, Height);
+           print_mat_f("Sorted Output 2D:", "%3.2lf ", (float*)output, 1, Width);
     }
 
     /////////////////////////////////////////////////////////////////////////
