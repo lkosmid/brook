@@ -1,0 +1,305 @@
+/****************************************************************************
+
+Copyright (c) 2007, Advanced Micro Devices, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+  * Neither the name of Advanced Micro Devices, Inc nor the names of its contributors
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+
+/*****************************************************************************
+    \file Mandelbrot.br
+    \brief A fractal generator that calculates the mandelbrot set.
+
+    http://en.wikipedia.org/wiki/Mandelbrot_set
+
+****************************************************************************/
+#include "common.h"
+#include "Timer.h"
+#include <stdio.h>
+
+static int retval = 0;
+
+/**
+ *  @brief Generates an image using mandelbrot fractal generator
+ *
+ *  @param scale             Represents the distance from which the fractal is being seen
+ *                           if this is greater more area and less detail is seen
+ *  @param maxIterations     More iterations gives more accurate mandelbrot image
+ *  @param size              size of image
+ *  @param mandelbrotStream  output image stream
+ *
+ *  @return
+ */
+kernel void mandelbrot(float scale, float size, out float mandelbrotStream<>)
+{
+    float2 vPos = indexof(mandelbrotStream).xy;
+    float2 pointt = vPos;
+    float x, y, x2, y2;
+    float iteration_counter, iteration, scaleSquare;
+    const float maxIterations=27.0;
+
+    pointt.x = (pointt.x - size/2.0f) * scale;
+    pointt.y = (pointt.y - size/2.0f) * scale;
+    
+    x = pointt.x;
+    y = pointt.y;
+
+    x2 = x*x;
+    y2 = y*y;
+
+    scaleSquare = scale * scale * size * size;
+    for(iteration_counter = 0.0f; iteration_counter < maxIterations ; iteration_counter += 1.0f)
+    {
+        iteration = iteration_counter;
+
+        if( x2+y2 > scaleSquare ) 
+           break;
+
+        y = 2.0f*(x*y) + pointt.y;
+        x = (x2 - y2) + pointt.x;
+
+        x2 = x*x;
+        y2 = y*y;
+    }
+    mandelbrotStream = iteration/maxIterations;
+}
+
+/**
+ *  @brief Generates an image using mandelbrot fractal generator on the CPU
+ *
+ *  @param scale             Represents the distance from which the fractal is being seen
+ *                           if this is greater more area and less detail is seen
+ *  @param maxIterations     More iterations gives more accurate mandelbrot image
+ *  @param mandelbrotCPU     output image
+ *  @param size              size of image
+ *
+ *  @return
+ */
+void mandelbrot_cpu(float scale, float maxIterations, float* mandelbrotCPU, int size)
+{
+    int i, j;
+    float iteration;
+    float x,y,x0,y0,x2,y2;
+    float scaleSquare;
+
+    for(i=0; i<size; i++)
+        for(j=0; j<size; j++)
+        {
+            x0 = ((2*j) - size) * scale/2.0f;
+            y0 = ((2*i) - size) * scale/2.0f;
+
+            x  = x0;
+            y  = y0;
+
+            x2 = x*x;
+            y2 = y*y;
+
+            scaleSquare = scale * scale * size * size;
+            for(iteration = 0.0f; (x2+y2 < scaleSquare) && (iteration < maxIterations); iteration += 1.0f)
+            {
+                y = 2.0f*(x*y) + y0;
+                x = (x2 - y2)  + x0;
+
+                x2  = x*x;
+                y2  = y*y;
+            }
+            mandelbrotCPU[i*size + j] = iteration/maxIterations;
+			//printf("%f ", mandelbrotCPU[i*size + j]);
+        }
+}
+
+int main(int argc, char** argv)
+{
+    float* mandelbrotArray = NULL;
+    float *mandelbrotCPU = NULL;
+    struct infoRec cmd;
+    unsigned int i;
+
+    float scale       = 3.0f;
+    float maxIterations = 27.0f;
+    unsigned int size;
+
+    /////////////////////////////////////////////////////////////////////////
+    // Setup the timers
+    // 0 = GPU Total Time
+    // 1 = CPU Total Time
+    /////////////////////////////////////////////////////////////////////////
+    Setup(0);
+    Setup(1);
+
+    ParseCommandLine(argc, argv, &cmd);
+    srand(cmd.Seed);
+    size = cmd.Width;
+
+    /////////////////////////////////////////////////////////////////////////
+    // Allocate memory
+    /////////////////////////////////////////////////////////////////////////
+    if(! (mandelbrotArray = allocate_mat_f(size, size)))
+    {
+        retval = -1;
+        goto cleanup;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Brook code block
+    /////////////////////////////////////////////////////////////////////////
+    {
+        float mandelbrotStream< size, size >;
+
+        // Record GPU Total time
+        Start(0);
+        for(i = 0; i < cmd.Iterations; ++i)
+        {
+            // Running Mandelbrot
+            mandelbrot(scale, (float)size, mandelbrotStream);
+        }
+        Stop(0);
+
+        // Write data back from stream
+        streamWrite(mandelbrotStream, mandelbrotArray);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Print results if requested
+    /////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Output Matrix: ", "%f ", mandelbrotArray, size, size);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("Output Matrix: ", "%f ", mandelbrotArray, 1, size);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Print timing information
+    /////////////////////////////////////////////////////////////////////////
+    if (cmd.Timing)
+    {
+        double time = GetElapsedTime(0);
+        printf( "%-8s%-8s%-16s%-16s\n","Width","Height","Iterations",
+                "GPU Total Time");
+        printf( "%-8d%-8d%-16d%-16lf", cmd.Width, cmd.Height,
+                cmd.Iterations, time);
+        printf("\n\n");
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Verify against CPU implementation if requested
+    /////////////////////////////////////////////////////////////////////////
+    if (cmd.Verify)
+    {
+        int res = 0;
+
+        if(! (mandelbrotCPU = allocate_mat_f(size, size)))
+        {
+            retval = -1;
+            goto cpu_cleanup;
+        }
+
+        printf("-e Verify correct output.\n");
+        printf("Computing Mandelbrot set on CPU ... ");
+
+        mandelbrot_cpu( scale, maxIterations, mandelbrotCPU, size);
+
+        printf("Done\n");
+
+        if (cmd.Verbose)
+            print_mat_f("Output Matrix: ","%f ",mandelbrotArray,size,size);
+
+        res += compare_mat_f(mandelbrotCPU, mandelbrotArray, size, size);
+        if (res)
+        {
+            printf("%s: Failed!\n\n", argv[0]);
+            retval = -1;
+        }
+        else
+        {
+            printf("%s: Passed!\n\n", argv[0]);
+            retval = 0;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Compare performance with CPU if requested
+    /////////////////////////////////////////////////////////////////////////
+    if (cmd.Performance)
+    {
+        double cpu_time = 0.0;
+        double gpu_time = 0.0;
+
+        if(! (mandelbrotCPU = allocate_mat_f(size, size)))
+        {
+            retval = -1;
+            goto cpu_cleanup;
+        }
+
+        printf("-p Compare performance with CPU.\n");
+
+        // Record CPU Total time
+        Start(1);
+        for(i = 0; i < cmd.Iterations; i ++)
+        {
+            mandelbrot_cpu( scale, maxIterations, mandelbrotCPU, size);
+        }
+        Stop(1);
+
+        // Print CPU timing and speedup
+        cpu_time = GetElapsedTime(1);
+        gpu_time = GetElapsedTime(0);
+        printf( "%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+                "CPU Total Time","GPU Total Time","Speedup");
+        printf( "%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height,
+                cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
+        printf("\n\n");
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Clean up
+    /////////////////////////////////////////////////////////////////////////
+cpu_cleanup:
+    if(mandelbrotCPU)
+    {
+        free(mandelbrotCPU);
+    }
+cleanup:
+    if(mandelbrotArray)
+    {
+        free(mandelbrotArray);
+    }
+
+    if (!cmd.Verify)
+    {
+        printf("\nPress enter to exit...\n");
+        getchar();
+    }
+
+	return(retval);
+}
