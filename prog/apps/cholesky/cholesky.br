@@ -1,0 +1,639 @@
+/****************************************************************************
+
+Copyright (c) 2003, Stanford University
+All rights reserved.
+
+Copyright (c) 2007, Advanced Micro Devices, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+  * Neither the name of Stanford University nor the names of any contributors
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+/*****************************************************************************
+
+  \file block_cholesky.br
+  \brief Brook program to compute the Cholesky decomposition of a positive definite matrix.
+
+  This sample demonstrates performance gain for computation of the
+  Cholesky Factorization of a symmetric positive definite matrix on the GPU
+  using an iterative algorithm. It uses a blocked implementation using
+  block sizes of 4x4. Each block of 4x4 is stored as a list of four float4
+  elements. The main steps of the algorithm are just like the steps for a
+  dense computation except here we use matrix blocks instead of single elements:
+
+  | A11 | A12 |      | L11 * L11_T |        L11 * L21_T        |
+  |----- -----|  =   |------------- ---------------------------|
+  | A21 | A22 |      | L21 * L11_T | L21 * L21_T + L22 * L22_T |
+
+  1. Square Rooting: L11 = cholesky(A11)
+  This is nothing but a dense Cholesky Factorization of a 4x4 matrix (stored
+  as four float4 elements)
+
+  2. Normalization: L21 = A21 * L11_inv_T
+  The inverse transpose of the 4x4 Cholesky factor computed above is used to
+  normalize the matrix block A21.
+
+  3. Sub-matrix Update: A22 = A22 - L21*L21_T
+  Update the residue matrix before computing next iteration.
+
+  Note: It is assumed that the input matrix is positive definite and symmetric.
+  There is no check performed since we are strictly concerned with demonstrating
+  the power of the GPU in the computation of the Cholesky Factorization. Also note,
+  that this sample only allows matrices with dimensions that are exact multiples of
+  4. This can be got around by padding.
+
+****************************************************************************/
+
+#include "common.h"
+#include "Timer.h"
+#include <stdio.h>
+
+static int retval = 0;
+
+/**
+ *
+ * \param input:  Input stream
+ * \param output: Output stream
+ * \brief:                Simple copy kernel
+ *
+ */
+kernel void
+stream_copy(float4 input<>, out float4 output<>)
+{
+    output = input ;
+}
+
+/**
+ *
+ * \param irow1-irow4:   Rows of the input 4x4 matrix
+ * \param orow1-orow4:   Rows of the 4x4 lower triangular cholesky factor
+ * \brief:                               Computes the Cholesky Factorization of a 4x4 matrix
+ *
+ */
+kernel void
+cholesky4x4_gather(float4 A11[][],
+                   out float4 orow1<>, out float4 orow2<>, out float4 orow3<>, out float4 orow4<>)
+{
+    float square_root;
+    float sr;
+    float2 sr2;
+    float3 sr3;
+    float4 sr4;
+    float4 t1,t2,t3,t4;
+    float4 irow1, irow2, irow3, irow4;
+    float4 icol1, icol2, icol3, icol4;
+    
+    irow1 = A11[0][0];
+    irow2 = A11[1][0];
+    irow3 = A11[2][0];
+    irow4 = A11[3][0];
+
+    icol1 = float4(irow1.x, irow2.x, irow3.x, irow4.x);
+    icol2 = float4(irow1.y, irow2.y, irow3.y, irow4.y);
+    icol3 = float4(irow1.z, irow2.z, irow3.z, irow4.z);
+    icol4 = float4(irow1.w, irow2.w, irow3.w, irow4.w);
+
+    //sqr root and normalization
+    sr = sqrt(icol1.x);
+    sr4 = float4(sr, sr, sr, sr);
+    t1 = icol1 / sr4;
+
+    //sub_matrix update
+    t2 = icol2 - t1 * t1.yyyy;
+
+    //sqr root and normalization
+    sr = sqrt(t2.y);
+    sr3 = float3(sr, sr, sr);
+    t2.x = 0.0f;
+    t2.yzw /= sr3;
+
+    //sub_matrix update
+    t3 = float4(0.0f,0.0f,icol3.z - (t1.z*t1.z + t2.z*t2.z),
+                icol3.w - (t1.w*t1.w + t2.z*t2.z));
+
+    //sqr root and normalization
+    sr = sqrt(t3.z);
+    sr2 = float2(sr, sr);
+    t3.zw /= sr2;
+
+    //sub_matrix update
+    t4 = float4(0.0f,0.0f,0.0f,icol4.w - (t1.w*t1.w + t2.w*t2.w + t3.w*t3.w));
+
+    //sqr root and normalization
+    t4.w /= sqrt(t4.w);
+
+    orow1 = float4(t1.x,t2.x,t3.x,t4.x);
+    orow2 = float4(t1.y,t2.y,t3.y,t4.y);
+    orow3 = float4(t1.z,t2.z,t3.z,t4.z);
+    orow4 = float4(t1.w,t2.w,t3.w,t4.w);
+}
+
+/**
+ *
+ * \param A21:    Input matrix block
+ * \param L11:    Cholesky factor of A11, we want the inverse transpose of this
+ * \param result: Output, normalized block L21
+ * \brief:                Performs the blocked normalization step: L21 = A21 * L11_inv_T
+ *
+ */
+kernel void
+normalize_gather(float4 A21[][], float4 L11[][], out float4 result<>)
+{
+    float4 irow1, irow2, irow3, irow4;
+    float4 orow1, orow2, orow3, orow4;
+    float4 row, temp;
+
+     irow1 = L11[0][0];
+    irow2 = L11[1][0];
+    irow3 = L11[2][0];
+    irow4 = L11[3][0];
+
+    // invert
+    orow1.x = 1.0f/irow1.x;
+    orow1.y = 0.0f;
+    orow1.z = 0.0f;
+    orow1.w = 0.0f;
+
+    orow2.x = -irow2.x*orow1.x / irow2.y;
+    orow2.y = 1.0f/irow2.y;
+    orow2.z = 0.0f;
+    orow2.w = 0.0f;
+
+    orow3.x = (-irow3.x*orow1.x - irow3.y*orow2.x) / irow3.z;
+    orow3.y = (-irow3.y*orow2.y) / irow3.z;
+    orow3.z = 1.0f / irow3.z;
+    orow3.w = 0.0f;
+
+    orow4.x = (-irow4.x*orow1.x - irow4.y*orow2.x - irow4.z*orow3.x) / irow4.w;
+    orow4.y = (-irow4.y*orow2.y - irow4.z*orow3.y) / irow4.w;
+    orow4.z = (-irow4.z*orow3.z) / irow4.w;
+    orow4.w = 1.0f / irow4.w;
+
+    // normalize
+    row = A21[instance().y][0];
+
+    temp = row*orow1;
+    result.x = temp.x + temp.y + temp.z + temp.w;
+    temp = row*orow2;
+    result.y = temp.x + temp.y + temp.z + temp.w;
+    temp = row*orow3;
+    result.z = temp.x + temp.y + temp.z + temp.w;
+    temp = row*orow4;
+    result.w = temp.x + temp.y + temp.z + temp.w;
+}
+
+/**
+ *
+ * \param irow1-irow4: rows of the input 4x4 matrix
+ * \param result orow1-orow4: rows of the 4x4 lower triangular cholesky factor
+ * \brief computes the cholesky factorization of a 4x4 matrix
+ *
+ */
+kernel void
+matrix_update(float4 A21[][], float4 L21[][], out float4 result<>)
+{
+    // Output row
+    int i = instance().y;
+
+    // Output column
+    int j = instance().x;
+
+    int pos = 4 * j;
+    float4 _l21, _l21T, temp, temp2, a21;
+
+    _l21 = L21[i][0];
+
+    _l21T = L21[pos][0];
+    temp = _l21 * _l21T;
+    temp2.x = temp.x + temp.y + temp.z + temp.w;
+
+    _l21T = L21[pos + 1][0];
+    temp = _l21 * _l21T;
+    temp2.y =       temp.x + temp.y + temp.z + temp.w;
+
+    _l21T = L21[pos + 2][0];
+    temp = _l21 * _l21T;
+    temp2.z = temp.x + temp.y + temp.z + temp.w;
+
+    _l21T = L21[pos + 3][0];
+    temp = _l21 * _l21T;
+    temp2.w = temp.x + temp.y + temp.z + temp.w;
+
+    a21 = A21[i][j];
+    result  = a21 - temp2;
+}
+
+/**
+ *
+ * \param input:         Input matrix
+ * \param output:    Lower triangular output matrix
+ * \brief:                       Zeroes out all entries above the diagonal
+ *
+ */
+kernel void
+lower_triangularize(float4 input<>, out float4 output<>)
+{
+    float2 vPos = indexof(output).xy;
+    if( vPos.x*4.0f > vPos.y )
+        output = float4(0.0f,0.0f,0.0f,0.0f);
+    else
+        output = input;
+}
+
+/**
+ *
+ * \param w:             The width of the desired input matrix
+ * \param h:             The height of the desired input matrix
+ * \param I:             float array to hold generated input matrix
+ * \param M:             float4 array for efficient computation
+ * \brief:               Generates a symmetric, positive-definite,
+ *                               square matrix of desired dimension and
+ *                               arranges the entries in a float4 array
+ *                               for efficient computation on the GPU.
+ *
+ */
+int GenerateInputMatrix(unsigned int w, unsigned int h, float* I, float4* M)
+{
+    unsigned int  index = 0, srcindex = 0, dstindex = 0;
+    unsigned int  k = 0, j = 0, i = 0;
+    float  value = 0.000000;
+
+    // Check for null pointers
+    if(! I || ! M)
+    {
+        printf("Null pointer!\n");
+        return 0;
+    }
+
+    // Fill up the input matrix
+    for (i = 0; i < h; i++)
+    {
+        for (j = 0; j < w; j++)
+        {
+            if (j <= i)
+            {
+                value = 0.000000;
+                for (k = 0; k <= j; k++)
+                {
+                    value += (k + 1) * (k + 1);
+                }
+            }
+
+            index = i * w + j;
+            I[index] = value;
+        }
+    }
+
+    // Arrange it row wise in a float4 array
+    for (i = 0; i < h; i++)
+    {
+        for (j = 0; j < w; j+=4)
+        {
+            // source
+            srcindex = i * w + j;
+
+            //destination
+            dstindex = i * w/4 + j/4;                                       // row-wise
+            M[dstindex].x = I[srcindex];
+            M[dstindex].y = I[srcindex+1];
+            M[dstindex].z = I[srcindex+2];
+            M[dstindex].w = I[srcindex+3];
+        }
+    }
+
+    return 1;
+}
+
+/**
+ *
+ * \param w:             The width of the input matrix as input by user
+ * \param h:             The height of the input matrix as input by user
+ * \brief:               Adjusts the matrix dimension to suit the implementation.
+ *                               Since only square matrices of dimension that are
+ *                               multiples of 4 are allowed, we first select the larger
+ *                               dimension input by the user and set the size to the next
+ *                               higher multiple of 4.
+ *
+ */
+unsigned int AdjustSampleSize(unsigned int w, unsigned int h)
+{
+    unsigned int final_dimension = w;
+
+    // Make square by selecting the larger dimension
+    if( w != h )
+    {
+        final_dimension = (w > h) ? w : h;
+        printf("Only square matrices allowed. Setting dimension = %dx%d\n", final_dimension, final_dimension);
+    }
+
+    // Make multiple of 4
+    if( final_dimension % 4 != 0 )
+    {
+        final_dimension = 4 * (final_dimension / 4 + 1);
+        printf("Dimension must be multiple of 4. Setting dimension = %dx%d\n", final_dimension, final_dimension);
+    }
+
+    printf("Adjusted Matrix Dimensions: %dx%d\n", final_dimension, final_dimension);
+    return final_dimension;
+}
+
+
+/**
+ *
+ * \param w:             The width of the input matrix
+ * \param h:             The height of the input matrix
+ * \param L:             The input matrix
+ * \brief:               Computes Cholesky Factorization of the input
+ *                               matrix L on the CPU
+ *
+ */
+void CholeskyCPU(unsigned int width, unsigned int height, float *L)
+{
+    float dot_product,sqrt_Akk;
+    unsigned int k = 0, i = 0, j = 0, p = 0;
+
+    for(k = 0; k < width - 1; k ++) {
+
+        // Square root
+        sqrt_Akk = sqrt(L[k*width+k]);
+        L[k*width+k] /= sqrt_Akk;
+
+        // Normalization
+        for(i = k+1; i < width; i ++)   {
+            L[i*width+k] /= sqrt_Akk;
+        }
+
+        // Submatrix update
+        for(j = k+1; j < width; j ++)   {
+            float temp = L[j*width + k+1];
+            dot_product = 0.0;
+
+            for(p = 0; p <= k; p ++)
+            {
+                dot_product += (L[j*width + p] * L[(k+1)*width + p]);
+            }
+
+            temp -= dot_product;
+            L[j*width + k + 1] = temp;
+        }
+    }
+
+    L[(height-1)*width+height-1] /= sqrt(L[(height-1)*width+height-1]);
+
+    // Triangularize
+    for(i = 0; i < height; i ++)
+    {
+        for(j = 0; j < width; j++)
+        {
+            if( j > i )
+            {
+                L[i*width +j] = 0.0;
+            }
+        }
+    }
+}
+
+
+/**
+ *
+ * Compute Cholesky decomposition of a positive definite matrix
+ * Blocked implementation, block size = 4x4
+ * | A11 | A12 |      | L11 * L11_T |        L11 * L21_T        |
+ * |----- -----|  =   |------------- ---------------------------|
+ * | A21 | A22 |      | L21 * L11_T | L21 * L21_T + L22 * L22_T |
+ *
+ */
+int main(int argc, char** argv)
+{
+    float4 r1, r2, r3, r4;
+    float4 *L   = NULL;
+    float *input_matrix = NULL;
+    unsigned int itr = 0, i = 0, j = 0, Height, Width, dim;
+    struct infoRec cmd;
+    char buffer[40];
+
+    /////////////////////////////////////////////////////////////////////////
+    // Setup the timers
+    // 0 = GPU Total Time
+    // 1 = GPU Compute Time
+    // 2 = CPU Total Time
+    /////////////////////////////////////////////////////////////////////////
+    Setup(0);
+    Setup(1);
+    Setup(2);
+
+    ParseCommandLine(argc, argv, &cmd);
+    srand(cmd.Seed);
+    dim = AdjustSampleSize(cmd.Width, cmd.Height);
+    Height = dim;
+    Width = dim/4;
+
+    /////////////////////////////////////////////////////////////////////////
+    // Allocate memory
+    /////////////////////////////////////////////////////////////////////////
+    L = allocate_mat_f4(Height, Width);
+    input_matrix = allocate_mat_f(Height, Width*4);
+
+    if (!L)
+    {
+        retval = -1;
+        goto cleanup;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Prepare and print input data
+    /////////////////////////////////////////////////////////////////////////
+
+    // Fill the input matrices with data
+    GenerateInputMatrix(Width*4, Height, input_matrix, L);
+
+    if (cmd.Verbose)
+    {
+        sprintf(buffer,"Input Matrix M:\n");
+        print_mat_f(buffer, "%3.2lf ", (float*)input_matrix, Height, Width*4);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing the first row, use -v for more.\n");
+        sprintf(buffer,"Input Matrix M:\n");
+        print_mat_f(buffer, "%3.2lf ", (float*)L, 1, Width*4);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Brook code block
+    /////////////////////////////////////////////////////////////////////////
+    {
+        unsigned int wx4 = Width * 4;
+        float  input<Height,wx4>;
+        float4 o1<1,1>, o2<1,1>, o3<1,1>, o4<1,1>;
+        float4 Astream<Height,Width>;
+        float4 Lstream<Height,Width>;
+        float4 output<Height,Width>;
+
+        // Record GPU Total Time
+        Start(0);
+
+        for(itr = 0; itr < cmd.Iterations; itr ++)
+        {
+            streamRead(Astream, L);
+            streamRead(Lstream, L);
+
+            for (i = 0; i < Width; i++)
+            {
+                //Compute Cholesky factorization of 4x4 block L11 = cholesky(A11)
+                cholesky4x4_gather(Astream.domain(int2(i,i*4),int2(i+1,(i+1)*4)), o1, o2, o3, o4);
+                stream_copy(o1, Lstream.domain(int2(i,i*4+0),int2(i+1,i*4+1)));
+                stream_copy(o2, Lstream.domain(int2(i,i*4+1),int2(i+1,i*4+2)));
+                stream_copy(o3, Lstream.domain(int2(i,i*4+2),int2(i+1,i*4+3)));
+                stream_copy(o4, Lstream.domain(int2(i,i*4+3),int2(i+1,i*4+4)));
+
+
+                //Block Normalize L21 = A21 * L11_inv_T
+                normalize_gather( Astream.domain(int2(i, (i + 1) * 4 - 1), int2(i + 1, Height)),
+                                  Lstream.domain(int2(i,i*4),int2(i+1,(i+1)*4)),
+                                  Lstream.domain(int2(i, (i + 1) * 4 - 1), int2(i + 1, Height)));
+
+
+                //Update sub-matrix A22 = A22 - L21*L21_T
+                matrix_update(Astream.domain(int2(i + 1, (i + 1) * 4), int2(Width, Height)),
+                              Lstream.domain(int2(i, (i + 1) * 4 - 1), int2(i + 1, Height)),
+                              Lstream.domain(int2(i + 1, (i + 1) * 4), int2(Width, Height)));
+
+                //Copy output stream to input stream for next pass
+                stream_copy( Lstream.domain(int2(i + 1, (i + 1) * 4), int2(Width, Height)),
+                             Astream.domain(int2(i + 1, (i + 1) * 4), int2(Width, Height)) );
+            }
+
+            //Lower triangularize to produce the final result
+            lower_triangularize(Lstream, output);
+
+            streamWrite(output,L);
+        }
+
+        Stop(0);
+
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Print results if requested
+    /////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Output Matrix L = cholesky(M):\n", "%3.2lf ", (float*)L, Height, Width*4);
+    }
+
+    else if (!cmd.Quiet)
+    {
+        printf("Printing out first row of output L = cholesky(M), use -v for more info.\n");
+        print_mat_f("", "%3.2lf ", (float*)L, 1, Width*4);
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Print timing information if requested
+    /////////////////////////////////////////////////////////////////////////
+    if (cmd.Timing)
+    {
+        double time = GetElapsedTime(0);
+        double gflop = 0.00;
+        printf("%-8s%-8s%-16s%-16s\n","Width","Height","Iterations","GPU Total Time");
+        printf("%-8d%-8d%-16d%-16lf", dim, dim, cmd.Iterations, time);
+        printf("\n\n");
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Verify against CPU implementation if requested
+    /////////////////////////////////////////////////////////////////////////
+    if(cmd.Verify)
+    {
+        int res = 0;
+
+        printf("-e Verify correct output.\n");
+        printf("Performing Cholesky Factorization on CPU ... ");
+
+        CholeskyCPU(Width*4, Height, input_matrix);
+
+        printf("Done\n");
+
+        // Compare CPU and GPU results for correctness
+        res = compare_mat_f(input_matrix, (float*)L, Height, Width*4);
+        if( res > 0 )
+        {
+            printf("%s: Failed!\n\n", argv[0]);
+            retval = -1;
+        }
+        else
+        {
+            printf("Passed! %d wrong\n\n", res);
+            retval = 0;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Compare performance with CPU if requested
+    /////////////////////////////////////////////////////////////////////////
+    if(cmd.Performance)
+    {
+        double cpu_time = 0.0;
+        double gpu_time = 0.0;
+
+        printf("-p Compare performance with CPU.\n");
+
+        // Record CPU Total Time
+        Start(1);
+        for (i = 0; i < cmd.Iterations; ++i)
+        {
+            CholeskyCPU(Width*4, Height, input_matrix);
+        }
+        Stop(1);
+
+        // Print CPU timing and speedup
+        cpu_time = GetElapsedTime(1);
+        gpu_time = GetElapsedTime(0);
+        printf( "%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+                "CPU Total Time","GPU Total Time","Speedup");
+        printf( "%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height,
+                cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
+        printf("\n\n");
+    }
+
+
+cleanup:
+    if (L)    {
+        free(L);
+    }
+    if (input_matrix)    {
+        free(input_matrix);
+    }
+
+    if (!cmd.Verify)
+    {
+        printf("\nPress enter to exit...\n");
+        getchar();
+    }
+
+	return retval;
+}
