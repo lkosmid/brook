@@ -68,6 +68,10 @@ kernel void copy(float input<>, out float output<>)
 /**
  * \brief    Streaming 1D Haar Wavelet Transform 
 */
+//This doesn't work for 2D, We need a different version for 1D and 2D when the the size is bigger than one matrix line
+//Anyway the code will be complicated and so far it doesn't seem to payoff
+//since the kernel has low arithmetic intensity, a lot of copies and a
+//potentially not working output domain
 kernel void haar_wavelet_w0(float vec[][], out float o_wave_0<>, float isqrt2)
 {
     float2 idx1 = indexof(o_wave_0).xy;
