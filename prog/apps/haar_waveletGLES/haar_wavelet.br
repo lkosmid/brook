@@ -68,18 +68,22 @@ kernel void copy(float input<>, out float output<>)
 /**
  * \brief    Streaming 1D Haar Wavelet Transform 
 */
-kernel void haar_wavelet_w0(float vec[], out float o_wave_0<>, float isqrt2)
+kernel void haar_wavelet_w0(float vec[][], out float o_wave_0<>, float isqrt2)
 {
-    float idx1 = 2.0f * (indexof (o_wave_0).x);
-    float idx2 = idx1 + 1.0f;
-    o_wave_0 = (vec[idx1] + vec[idx2]) * isqrt2;
+    float2 idx1 = indexof(o_wave_0).xy;
+    float2 idx2 = idx1;
+    idx1.x = 2.0f * idx1.x;
+    idx2.x = idx1.x + 1.0f;
+    o_wave_0 = (vec[idx1.y][idx1.x] + vec[idx2.y][idx2.x]) * isqrt2;
 }
 
-kernel void haar_wavelet_w1(float vec[], out float o_wave_1<>, float isqrt2)
+kernel void haar_wavelet_w1(float vec[][], out float o_wave_1<>, float isqrt2)
 {
-    float idx1 = 2.0f * (indexof (o_wave_1).x);
-    float idx2 = idx1 + 1.0f;
-    o_wave_1 = (vec[idx1] - vec[idx2]) * isqrt2;
+    float2 idx1 = indexof (o_wave_1).xy;
+    float2 idx2 = idx1;
+    idx1.x = 2.0f * idx1.x;
+    idx2.x = idx1.x + 1.0f;
+    o_wave_1 = (vec[idx1.y][idx1.x] - vec[idx2.y][idx2.x]) * isqrt2;
 }
 
 /**
@@ -133,29 +137,50 @@ int main(int argc, char** argv)
     srand(cmd.Seed);
     Height = cmd.Height;
     Width = cmd.Width;
-    Length = Height * Width;
+    Length = Width;
 
-       /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
     // Allocate memory
-       /////////////////////////////////////////////////////////////////////////
-    for (i = 0; i < 2; ++i)
+    /////////////////////////////////////////////////////////////////////////
+    if(Height > 0)
     {
-        if (!(io[i] = allocate_mat_f(1, Length)))
+        for (i = 0; i < 2; ++i)
         {
-            fprintf(stderr, "Error: Memory Allocation.\n");
-            retval = -1;
-            goto cleanup;
+            if (!(io[i] = allocate_mat_f(Height, Width)))
+            {
+                fprintf(stderr, "Error: Memory Allocation.\n");
+                retval = -1;
+                goto cleanup;
+            }
+        }
+    }
+    else
+    {
+        for (i = 0; i < 2; ++i)
+        {
+            if (!(io[i] = allocate_mat_f(1, Length)))
+            {
+                fprintf(stderr, "Error: Memory Allocation.\n");
+                retval = -1;
+                goto cleanup;
+            }
         }
     }
 
-    fill_mat_f(io[0], 1, Length, 1, RANDOM);
+    if(Height == 0)
+       fill_mat_f(io[0], 1, Length, 1, RANDOM);
+    else
+       fill_mat_f(io[0], Height, Width, 1, RANDOM);
 
     /////////////////////////////////////////////////////////////////////////
     // Print input data
     /////////////////////////////////////////////////////////////////////////
     if (cmd.Verbose)
     {
-        print_mat_f("Input Vector: ", "%lf ", io[0], 1, Length);
+        if(Height == 0)
+            print_mat_f("Input Vector: ", "%lf ", io[0], 1, Length);
+        else
+            print_mat_f("Input Vector 2D: ", "%lf ", io[0], Height, Width);
     }
     else if (!cmd.Quiet)
     {
@@ -169,8 +194,12 @@ int main(int argc, char** argv)
     {
         float stream0<Length>;
         float stream1<Length>;
+        float stream02D<Height, Width>;
+        float stream12D<Height, Width>;
         float avgStream<Length>;
         float diffStream<Length>;
+        float avgStream2D<Height, Width>;
+        float diffStream2D<Height, Width>;
         // Record GPU Total time
         Start(0);
         
@@ -180,42 +209,84 @@ int main(int argc, char** argv)
             int w = Length;
 
             // Write to stream
-            streamRead(stream0, io[0]);
+            streamRead( (Height==0)? stream0: stream02D, io[0]);
 
-            // Run the brook program 
-            while (w > 1)
+            if(Height == 0)
             {
-                w >>= 1;
-                if (!inp)
-                {
-                    copy(stream0, stream1);
-                    haar_wavelet_w0(stream0, avgStream.domain(0, w), 1.0f / sqrt2);
-                    haar_wavelet_w1(stream0, diffStream.domain(0, w), 1.0f / sqrt2);
-
-                    copy(avgStream.domain(0,w) , stream1.domain(0,w));
-                    copy(diffStream.domain(0,w), stream1.domain(w,(w<<1)));
+                while (w > 1)
+                 {
+                   w >>= 1;
+                   if (!inp)
+                   {
+                       copy(stream0,stream1);
+                       haar_wavelet_w0(stream0,avgStream.domain(0,w),1.000000f / sqrt2);
+                       haar_wavelet_w1(stream0,diffStream.domain(0,w),1.000000f / sqrt2);
+                       copy(avgStream.domain(0,w),stream1.domain(0,w));
+                       copy(diffStream.domain(0,w),stream1.domain(w,w << 1));
+                   }
+           
+                   else
+                   {
+                       copy(stream1,stream0);
+                       haar_wavelet_w0(stream1,avgStream.domain(0,w),1.000000f / sqrt2);
+                       haar_wavelet_w1(stream1,diffStream.domain(0,w),1.000000f / sqrt2);
+                       copy(avgStream.domain(0,w),stream0.domain(0,w));
+                       copy(diffStream.domain(0,w),stream0.domain(w,w << 1));
+                   }
+           
+                   inp = 1 - inp;
                 }
-                else
+            }
+            else
+            {
+                int  h=Height;
+                int  oldw;
+                int  oldh;
+      
+                while (w > 1)
                 {
-                    copy(stream1, stream0);
-                    haar_wavelet_w0(stream1, avgStream.domain(0, w), 1.0f / sqrt2);
-                    haar_wavelet_w1(stream1, diffStream.domain(0, w), 1.0f / sqrt2);
-
-                    copy(avgStream.domain(0,w) , stream0.domain(0,w));
-                    copy(diffStream.domain(0,w), stream0.domain(w,(w<<1)));
+                   if(h>2)
+                   {
+                       oldw = w;
+                       oldh = h;
+                       h >>= 1;
+                   }
+                   else
+                   {
+                       oldw = w;
+                       oldh = h;
+                       w >>= 1;
+                   }
+        
+                   if (!inp)
+                   {
+                       copy(stream02D, stream12D);
+                       haar_wavelet_w0(stream02D, avgStream2D.domain( int2(0, 0), int2(w, h) ),1.000000f / sqrt2);
+                       haar_wavelet_w1(stream02D, diffStream2D.domain( int2(0, 0), int2(w, h) ),1.000000f / sqrt2);
+                       copy(avgStream2D.domain( int2(0, 0), int2(w, h) ), stream12D.domain( int2(0,0) , int2(w, h) ) );
+                       copy(diffStream2D.domain( int2(0, 0), int2(w, h) ), stream12D.domain( int2(w, h), int2(oldw, oldh) ) );
+                   }
+                   else
+                   {
+                       copy(stream12D, stream02D);
+                       haar_wavelet_w0(stream12D, avgStream2D.domain( int2(0, 0), int2(w, h) ), 1.000000f / sqrt2);
+                       haar_wavelet_w1(stream12D, diffStream2D.domain( int2(0, 0), int2(w, h) ), 1.000000f / sqrt2);
+                       copy(avgStream2D.domain( int2(0, 0), int2(w, h) ), stream02D.domain( int2(0, 0), int2(w, h) ) );
+                       copy(diffStream2D.domain( int2(0, 0), int2(w, h) ), stream02D.domain( int2(w, h), int2(oldw, oldh) ) );
+                   }
+            
+                   inp = 1 - inp;
                 }
-                inp = 1 - inp;
-    
             }
 
             // Write data back from stream 
             if(!inp)
             {
-                streamWrite(stream0, io[1]);
+                streamWrite( (Height == 0)? stream0 : stream02D, io[1]);
             }
             else
             {
-                streamWrite(stream1, io[1]);
+                streamWrite( (Height == 0)? stream1 : stream12D, io[1]);
             }
         }
 
@@ -227,12 +298,19 @@ int main(int argc, char** argv)
     /////////////////////////////////////////////////////////////////////////
     if (cmd.Verbose)
     {
-        print_mat_f("Output vector: ", "%lf ", io[1], 1, Length);
+        if(Height == 0)
+            print_mat_f("Output vector: ", "%lf ", io[1], 1, Length);
+        else
+            print_mat_f("Output vector: ", "%lf ", io[1], Height, Width);
+
     }
     else if (!cmd.Quiet)
     {
         printf("Printing first row of data, for more use -v\n");
-        print_mat_f("Output vector: ", "%3.2lf ", io[1], 1, Width);
+        if(Height == 0)
+            print_mat_f("Output vector: ", "%3.2lf ", io[1], 1, Width);
+        else
+            print_mat_f("Output vector: ", "%3.2lf ", io[1], Height, Width);
     }
 
     /////////////////////////////////////////////////////////////////////////
@@ -255,20 +333,39 @@ int main(int argc, char** argv)
     {
         int res = 0;
         float* cpu = NULL;
-        if (cpu = allocate_mat_f(1, Length))
+        if(Height == 0)
+            cpu = allocate_mat_f(1, Length);
+        else
+            cpu = allocate_mat_f(Height, Width);
+
+        if (cpu)
         {
             printf("-e Verify correct output.\n");
             printf("Computing Haar Wavelet Transform on CPU ... ");
 
-            copy_mat_f(io[0], cpu, 0, 0, 1, Length, Length);
-            haar_wavelet_cpu(cpu, Length, sqrt2);
+            if(Height == 0)
+            {
+                copy_mat_f(io[0], cpu, 0, 0, 1, Length, Length);
+                haar_wavelet_cpu(cpu, Length, sqrt2);
+            }
+            else
+            {
+                copy_mat_f(io[0], cpu, 0, 0, Height, Width, Width);
+                haar_wavelet_cpu(cpu, Height*Width, sqrt2);
+            }
 
             printf("Done\n");
 
-            res += compare_mat_f(io[1], cpu, Height, Width);
+            if(Height == 0)
+                res += compare_mat_f(io[1], cpu, 1, Length);
+            else
+                res += compare_mat_f(io[1], cpu, Height, Width);
             if (!cmd.Quiet)
             {
-                print_mat_f("CPU Vector: ", "%lf ", cpu, 1, Length);
+                if(Height == 0)
+                    print_mat_f("CPU Vector: ", "%lf ", cpu, 1, Length);
+                else
+                    print_mat_f("CPU Vector: ", "%lf ", cpu, Height, Width);
             }
             if (res)
             {
@@ -299,7 +396,13 @@ int main(int argc, char** argv)
         double cpu_time = 0.0;
         double gpu_time = 0.0;
 
-        if (cpu = allocate_mat_f(1, Length))
+        if( Height == 0)
+           cpu = allocate_mat_f(1, Length);
+        else
+           cpu = allocate_mat_f(Height, Width);
+
+
+        if (cpu)
         {
             printf("-p Compare performance with CPU.\n");
 
@@ -307,8 +410,16 @@ int main(int argc, char** argv)
             Start(1);
             for( i = 0; i < cmd.Iterations; i ++)
             {
-                copy_mat_f(io[0], cpu, 0, 0, 1, Length, Length);
-                haar_wavelet_cpu(cpu, Length, sqrt2);
+                if(Height == 0)
+                {
+                    copy_mat_f(io[0], cpu, 0, 0, 1, Length, Length);
+                    haar_wavelet_cpu(cpu, Length, sqrt2);
+                }
+                else
+                {
+                    copy_mat_f(io[0], cpu, 0, 0, Height, Width, Width);
+                    haar_wavelet_cpu(cpu, Height*Width, sqrt2);
+                }
             }
             Stop(1);
 
@@ -331,7 +442,7 @@ int main(int argc, char** argv)
 
     /////////////////////////////////////////////////////////////////////////
     // Clean up
-       /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
 cleanup:
     if (io[0])
     {
