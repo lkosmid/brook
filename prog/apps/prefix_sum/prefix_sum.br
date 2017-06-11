@@ -1,0 +1,347 @@
+/****************************************************************************
+
+Copyright (c) 2003, Stanford University
+All rights reserved.
+
+Copyright (c) 2007, Advanced Micro Devices, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of Stanford University nor the names of any contributors 
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+ 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+/*****************************************************************************
+  \file prefix_sum.br
+  \brief Brook sample that performs a prefix sum in 2 dimensions
+
+  From Wikipedia:
+  http://en.wikipedia.org/wiki/Prefix_sum
+  The prefix sum (also known as the scan, prefix reduction, or partial sum)
+  of a list (array) in computing is a list in which each element is obtained
+  from the sum of those which precede it. For example, the prefix sum of:
+  (5, 3, 9, 3) is (5, 5+3, 5+3+9, 5+3+9+3) = (5, 8, 17, 20)
+  Scans may be performed with any associative operation applicable to the
+  elements of the list.
+
+  Since a 1D vector can be transformed into a 2D matrix, a 1D version is
+  not provided.
+ ****************************************************************************/
+#include "common.h"
+#include "Timer.h"
+#include <stdio.h>
+
+static int retval = 0;
+/**
+ *
+ * \brief			Brook kernel to perform prefix scan
+ *
+ * \param input		Input array
+ * \param output	Output containing prefix sums
+ * \param twotoi	2 raised to the power of i (i is the iteration #)
+ * \param max		Dimensions of the input matrix
+ *
+*/
+kernel void scan(float input[][], out float output<>, float twotoi, float2 max)
+{
+    float2 i = indexof(output).xy;
+    float2 index;
+
+    // Decide which neighbor to use
+    index.x = i.x + twotoi;
+    index.y = i.y + floor((.5f + index.x) / max.x);
+    index.x = round(fmod(round(index.x), max.x));
+    if (index.x <= 0.0f)
+    {
+        index.x += max.x;	//only necessary if shiftRight<0
+    }
+    if (index.x >= max.x)
+    {
+        index.x = 0.0f;		// necessary if the x value is larger than width
+    }
+
+    // Check that we aren't on the outsides of the matrix
+    // and just copy the current value if we are, otherwise
+    // add the decided neighbor to the current input value
+    if (index.y >= max.y || index.y < 0.0f)
+   {
+        output = input[i.y][i.x];
+    }
+    else
+    {
+        output = input[i.y][i.x] + input[index.y][index.x];
+    }
+}
+
+/**
+ *
+ * \brief			Reference CPU program to perform prefix scan
+ *
+ * \param input		Input array
+ * \param output	Output containing prefix sums
+ * \param len		Length of the input array
+ *
+*/
+void prefix_sum_cpu(float* input, float* output, int len)
+{
+    float temp = 0.0f;
+    int y;
+    for (y = 0; y < len; ++y)
+    {
+        temp += input[y];
+        output[y] = temp;
+    }
+}
+
+int main(int argc, char** argv)
+{
+    float *input  = NULL;
+    float *output = NULL;
+    unsigned int Length;
+    unsigned int i;
+    unsigned int Height;
+    unsigned int Width;
+    struct infoRec cmd;
+
+	/////////////////////////////////////////////////////////////////////////
+    // Setup the timers 
+	// 0 = GPU Total Time
+	// 1 = CPU Total Time
+	/////////////////////////////////////////////////////////////////////////
+    Setup(0);
+    Setup(1);
+
+    ParseCommandLine(argc, argv, &cmd);
+    srand(cmd.Seed);
+    Width = cmd.Width;
+    Height = cmd.Height;
+    Length = Width * Height;
+    
+   	/////////////////////////////////////////////////////////////////////////
+    // Allocate memory
+   	/////////////////////////////////////////////////////////////////////////
+	input = allocate_mat_f(Height, Width);
+    output =  allocate_mat_f(Height, Width);
+
+    if (!input || !output)
+    {
+        fprintf(stderr, "Error: Memory Allocation.\n");
+        retval = -1;
+        goto cleanup;
+    }
+    fill_mat_f((float*)input, Height, Width, 1, RANDOM);
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print input data
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Input Matrix: ", "%lf ", (float*)input, Height, Width);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("Input Matrix: ", "%3.2lf ", (float*)input, Height, Width);
+    }
+
+   	/////////////////////////////////////////////////////////////////////////
+	// Brook code block
+	/////////////////////////////////////////////////////////////////////////
+    {
+        float si2<Height, Width>;
+        float istream<Height, Width>;
+        float so2<Height, Width>;
+		float2 maxvalue   = float2(0.0f, 0.0f);
+        int sign = -1;
+        unsigned int logN = 0, j = 0;
+
+        // Record GPU Total time
+        Start(0);
+        for (i = 0; i < cmd.Iterations; ++i)
+        {
+			// Write to stream 
+			streamRead(istream, input);
+
+            j = 0;
+			logN = (unsigned int)ceil(log((float)Height * Width)/log(2.0f));
+            maxvalue.x = (float)Width;
+            maxvalue.y = (float)Height;
+            
+	        // Run the brook program 
+            scan(istream, so2, (float)sign, maxvalue);
+
+            for (j = 1; j < logN; ++j)
+            {
+                if (j & 0x1)
+                {
+                    scan(so2, si2, (float)sign * (1 << j), maxvalue);
+                }
+                else
+                {
+                    scan(si2, so2, (float)sign * (1 << j), maxvalue);
+                }
+            }
+            if (!(logN % 2) && (Height*Width !=1))
+            {
+                // Swap si2 and so2
+                float temp<Height, Width>;
+                temp = si2;
+                si2 = so2;
+                so2 = temp;
+            }
+
+			// Write data back from stream 
+			streamWrite(so2, output);
+		}
+        Stop(0);
+
+    }
+
+   	/////////////////////////////////////////////////////////////////////////
+	// Print results if requested
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Output Matrix: ", "%lf ", (float*)output, Height, Width);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("Output Matrix: ", "%lf ", (float*)output, 1, Width);
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print timing information if requested 
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Timing)
+    {
+		double time = GetElapsedTime(0);
+		printf(	"%-8s%-8s%-16s%-16s\n","Width","Height","Iterations",
+				"GPU Total Time");
+		printf( "%-8d%-8d%-16d%-16lf", cmd.Width, cmd.Height, 
+				cmd.Iterations, time);
+		printf("\n\n");
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Verify against CPU implementation if requested 
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verify)
+    {
+        int res = 0;
+        float *outputCPU;
+        if (outputCPU = allocate_mat_f(Height, Width))
+        {
+			printf("-e Verify correct output.\n");
+			printf("Performing Prefix Sum on CPU ... ");
+
+            prefix_sum_cpu((float*)input, (float*)outputCPU, Height * Width);
+
+			printf("Done\n");
+
+			res += compare_mat_f((float*)output, (float*)outputCPU, Height, Width);
+            if (res)
+            {
+                printf("%s: Failed!\n\n", argv[0]);
+                retval = -1;
+            }
+            else
+            {
+                printf("%s: Passed!\n\n", argv[0]);
+                retval = 0;
+            }
+            free(outputCPU);
+        }
+        else
+        {
+            retval = -1;
+            fprintf(stderr, "Error: Memory Allocation.\n");
+        }
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Compare performance with CPU if requested
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Performance)
+    {
+		unsigned int i = 0;
+		double cpu_time = 0.0;
+		double gpu_time = 0.0;
+        float *outputCPU;
+
+        if (outputCPU = allocate_mat_f(Height, Width))
+        {
+			printf("-p Compare performance with CPU.\n");
+
+			// Record CPU Total time
+			Start(1);
+			for(i = 0; i < cmd.Iterations; i ++)
+			{
+				prefix_sum_cpu((float*)input, (float*)outputCPU, Height * Width);
+			}
+			Stop(1);
+
+			// Print CPU timing and speedup
+			cpu_time = GetElapsedTime(1);
+			gpu_time = GetElapsedTime(0);
+			printf(	"%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+					"CPU Total Time","GPU Total Time","Speedup");
+			printf(	"%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height, 
+					cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
+			printf("\n\n");
+            free(outputCPU);
+        }
+        else
+        {
+            retval = -1;
+            fprintf(stderr, "Error: Memory Allocation.\n");
+        }
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Clean up
+   	/////////////////////////////////////////////////////////////////////////
+cleanup:
+    if (input)
+    {
+        free(input);
+    }
+    if (output)
+    {
+        free(output);
+    }
+
+    if (!cmd.Verify)
+    {
+        printf("\nPress enter to exit...\n");
+        getchar();
+    }
+
+	return retval;
+}
+
+
+
+
