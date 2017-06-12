@@ -30,7 +30,7 @@ namespace {
 				"// glesf output by Cg compiler\n"
 				"// cgc version 3.1.0013, build date Apr 18 2012\n"
 				"// command line args: -quiet -DCGC=1 -profile glesf -DGL_ES\n"
-				"// source file: /tmp/brookTBzij0\n"
+				"// source file: /tmp/brookziweBt\n"
 				"//vendor NVIDIA Corporation\n"
 				"//version 3.1.0.13\n"
 				"//profile glesf\n"
@@ -42,7 +42,8 @@ namespace {
 				"//semantic main._const_output_invscalebias : C2\n"
 				"//semantic main.StreamDim : C3\n"
 				"//semantic main.column : C4\n"
-				"//semantic main.__workspace : C5\n"
+				"//semantic main.tile : C5\n"
+				"//semantic main.__workspace : C6\n"
 				"//var sampler2D A[0] : TEXUNIT0 : _A2[0] 0 : 0 : 1\n"
 				"//var float4 __gatherconst_A : C0 : _gatherconst_A1 : 1 : 1\n"
 				"//var sampler2D L[0] : TEXUNIT1 : _L2[0] 1 : 2 : 1\n"
@@ -50,6 +51,7 @@ namespace {
 				"//var float4 _const_output_invscalebias : C2 : _const_output_invscalebias1 : 5 : 1\n"
 				"//var float4 StreamDim : C3 : _StreamDim1 : 7 : 1\n"
 				"//var float column : C4 : _column2 : 8 : 1\n"
+				"//var float tile : C5 : _tile2 : 9 : 1\n"
 				"//var float __output_0 : $vout.COLOR0 : COL : 4 : 1\n"
 				"//var float2 _tex_output_pos : $vin.TEXCOORD0 : TEXCOORD0 : 6 : 1\n"
 				"\n"
@@ -63,11 +65,14 @@ namespace {
 				"    vec4 _xy;\n"
 				"};\n"
 				"\n"
+				"float _output_01;\n"
+				"vec2 _TMP8;\n"
+				"vec4 _TMP9;\n"
+				"vec2 _TMP6;\n"
+				"vec2 _TMP5;\n"
 				"vec2 _TMP4;\n"
-				"vec4 _TMP5;\n"
+				"float _TMP10;\n"
 				"vec2 _TMP3;\n"
-				"vec2 _TMP2;\n"
-				"float _TMP6;\n"
 				"vec2 _TMP1;\n"
 				"vec2 _TMP0;\n"
 				"uniform sampler2D _A2[1];\n"
@@ -77,20 +82,25 @@ namespace {
 				"uniform vec4 _const_output_invscalebias1;\n"
 				"uniform vec4 _StreamDim1;\n"
 				"uniform float _column2;\n"
-				"vec4 _x0017;\n"
-				"float _output0018;\n"
-				"float _Akk0018;\n"
-				"float _sum0018;\n"
-				"float _i0018;\n"
-				"float _temp0018;\n"
-				"float _Lkk0018;\n"
-				"vec2 _index0020;\n"
-				"vec2 _index0026;\n"
-				"float _a0032;\n"
-				"vec2 _index0036;\n"
-				"vec2 _index0042;\n"
-				"vec2 _index0048;\n"
-				"float _TMP53;\n"
+				"uniform float _tile2;\n"
+				"vec4 _x0022;\n"
+				"float _output0023;\n"
+				"float _sum0023;\n"
+				"float _i0023;\n"
+				"float _tiled_i0023;\n"
+				"float _temp0023;\n"
+				"float _Akk0023;\n"
+				"float _Lkk0023;\n"
+				"vec2 _index0025;\n"
+				"vec2 _index0031;\n"
+				"vec2 _index0037;\n"
+				"float _a0043;\n"
+				"vec2 _index0047;\n"
+				"vec2 _index0053;\n"
+				"vec2 _index0059;\n"
+				"vec2 _index0065;\n"
+				"float _TMP70;\n"
+				"float _TMP71;\n"
 				"varying vec4 TEX0;\n"
 				"\n"
 				" // main procedure, the original name was main\n"
@@ -98,144 +108,203 @@ namespace {
 				"{\n"
 				"\n"
 				"    vec4 _indexofoutput;\n"
-				"    vec2 _TMP15;\n"
+				"    vec2 _TMP20;\n"
 				"\n"
-				"    _TMP15 = TEX0.xy*_const_output_invscalebias1.xy + _const_output_invscalebias1.zw;\n"
-				"    _x0017 = _StreamDim1*vec4(_TMP15.x, _TMP15.y, 0.00000000E+00, 0.00000000E+00);\n"
-				"    _indexofoutput = floor(_x0017);\n"
+				"    _TMP20 = TEX0.xy*_const_output_invscalebias1.xy + _const_output_invscalebias1.zw;\n"
+				"    _x0022 = _StreamDim1*vec4(_TMP20.x, _TMP20.y, 0.00000000E+00, 0.00000000E+00);\n"
+				"    _indexofoutput = floor(_x0022);\n"
 				"    if (_column2 == _indexofoutput.x) { // if begin\n"
 				"        if (_indexofoutput.x > _indexofoutput.y) { // if begin\n"
-				"            _output0018 = 0.00000000E+00;\n"
+				"            _output0023 = 0.00000000E+00;\n"
 				"        } else {\n"
-				"            _index0020 = vec2(_indexofoutput.x, _indexofoutput.x);\n"
-				"            _TMP0 = _index0020*_gatherconst_A1.xy + _gatherconst_A1.zw;\n"
-				"            reconstruct_float(_TMP5.x, _A2[0], _TMP0);\n"
-				"            _Akk0018 = _TMP5.x;\n"
-				"            _sum0018 = 0.00000000E+00;\n"
-				"            _i0018 = 0.00000000E+00;\n"
-				"            _TMP53 = 0.00000000E+00;\n"
-				"            if (0.00000000E+00 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
-				"                _TMP53 = -1.00000000E+00;\n"
+				"            _sum0023 = 0.00000000E+00;\n"
+				"            _i0023 = 0.00000000E+00;\n"
+				"            _TMP70 = 0.00000000E+00;\n"
+				"            _tiled_i0023 = 4.00000000E+00*_tile2;\n"
+				"            if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                _TMP70 = -1.00000000E+00;\n"
 				"            } // end if\n"
-				"            if (_TMP53 == 0.00000000E+00) { // if begin\n"
-				"                _index0026 = vec2(0.00000000E+00, _indexofoutput.x);\n"
-				"                _TMP1 = _index0026*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"                reconstruct_float(_TMP5.x, _L2[0], _TMP1);\n"
-				"                _sum0018 = _TMP5.x*_TMP5.x;\n"
+				"            if (_TMP70 == 0.00000000E+00) { // if begin\n"
+				"                _index0025 = vec2(_tiled_i0023, _indexofoutput.x);\n"
+				"                _TMP0 = _index0025*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                reconstruct_float(_TMP9.x, _L2[0], _TMP0);\n"
+				"                _sum0023 = _TMP9.x*_TMP9.x;\n"
 				"            } // end if\n"
-				"            if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                _i0018 = 1.00000000E+00;\n"
+				"            if (_TMP70 >= 0.00000000E+00) { // if begin\n"
+				"                _i0023 = 1.00000000E+00;\n"
 				"            } // end if\n"
-				"            if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                if (_i0018 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
-				"                    _TMP53 = -1.00000000E+00;\n"
+				"            if (_TMP70 >= 0.00000000E+00) { // if begin\n"
+				"                _tiled_i0023 = _i0023 + 4.00000000E+00*_tile2;\n"
+				"                if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                    _TMP70 = -1.00000000E+00;\n"
 				"                } // end if\n"
-				"                if (_TMP53 == 0.00000000E+00) { // if begin\n"
-				"                    _index0026 = vec2(_i0018, _indexofoutput.x);\n"
-				"                    _TMP1 = _index0026*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"                    reconstruct_float(_TMP5.x, _L2[0], _TMP1);\n"
-				"                    _sum0018 = _sum0018 + _TMP5.x*_TMP5.x;\n"
+				"                if (_TMP70 == 0.00000000E+00) { // if begin\n"
+				"                    _index0025 = vec2(_tiled_i0023, _indexofoutput.x);\n"
+				"                    _TMP0 = _index0025*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                    reconstruct_float(_TMP9.x, _L2[0], _TMP0);\n"
+				"                    _sum0023 = _sum0023 + _TMP9.x*_TMP9.x;\n"
 				"                } // end if\n"
-				"                if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                    _i0018 = _i0018 + 1.00000000E+00;\n"
+				"                if (_TMP70 >= 0.00000000E+00) { // if begin\n"
+				"                    _i0023 = _i0023 + 1.00000000E+00;\n"
 				"                } // end if\n"
-				"                if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                    if (_i0018 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
-				"                        _TMP53 = -1.00000000E+00;\n"
+				"                if (_TMP70 >= 0.00000000E+00) { // if begin\n"
+				"                    _tiled_i0023 = _i0023 + 4.00000000E+00*_tile2;\n"
+				"                    if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                        _TMP70 = -1.00000000E+00;\n"
 				"                    } // end if\n"
-				"                    if (_TMP53 == 0.00000000E+00) { // if begin\n"
-				"                        _index0026 = vec2(_i0018, _indexofoutput.x);\n"
-				"                        _TMP1 = _index0026*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"                        reconstruct_float(_TMP5.x, _L2[0], _TMP1);\n"
-				"                        _sum0018 = _sum0018 + _TMP5.x*_TMP5.x;\n"
+				"                    if (_TMP70 == 0.00000000E+00) { // if begin\n"
+				"                        _index0025 = vec2(_tiled_i0023, _indexofoutput.x);\n"
+				"                        _TMP0 = _index0025*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                        reconstruct_float(_TMP9.x, _L2[0], _TMP0);\n"
+				"                        _sum0023 = _sum0023 + _TMP9.x*_TMP9.x;\n"
 				"                    } // end if\n"
-				"                    if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                        _i0018 = _i0018 + 1.00000000E+00;\n"
+				"                    if (_TMP70 >= 0.00000000E+00) { // if begin\n"
+				"                        _i0023 = _i0023 + 1.00000000E+00;\n"
 				"                    } // end if\n"
-				"                    if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                        if (_i0018 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
-				"                            _TMP53 = -1.00000000E+00;\n"
+				"                    if (_TMP70 >= 0.00000000E+00) { // if begin\n"
+				"                        _tiled_i0023 = _i0023 + 4.00000000E+00*_tile2;\n"
+				"                        if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                            _TMP70 = -1.00000000E+00;\n"
 				"                        } // end if\n"
-				"                        if (_TMP53 == 0.00000000E+00) { // if begin\n"
-				"                            _index0026 = vec2(_i0018, _indexofoutput.x);\n"
-				"                            _TMP1 = _index0026*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"                            reconstruct_float(_TMP5.x, _L2[0], _TMP1);\n"
-				"                            _sum0018 = _sum0018 + _TMP5.x*_TMP5.x;\n"
+				"                        if (_TMP70 == 0.00000000E+00) { // if begin\n"
+				"                            _index0025 = vec2(_tiled_i0023, _indexofoutput.x);\n"
+				"                            _TMP0 = _index0025*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                            reconstruct_float(_TMP9.x, _L2[0], _TMP0);\n"
+				"                            _sum0023 = _sum0023 + _TMP9.x*_TMP9.x;\n"
 				"                        } // end if\n"
-				"                        if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                            _i0018 = _i0018 + 1.00000000E+00;\n"
-				"                        } // end if\n"
-				"                        if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                            if (_i0018 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
-				"                                _TMP53 = -1.00000000E+00;\n"
-				"                            } // end if\n"
-				"                            if (_TMP53 == 0.00000000E+00) { // if begin\n"
-				"                                _index0026 = vec2(_i0018, _indexofoutput.x);\n"
-				"                                _TMP1 = _index0026*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"                                reconstruct_float(_TMP5.x, _L2[0], _TMP1);\n"
-				"                                _sum0018 = _sum0018 + _TMP5.x*_TMP5.x;\n"
-				"                            } // end if\n"
-				"                            if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                                _i0018 = _i0018 + 1.00000000E+00;\n"
-				"                            } // end if\n"
-				"                            if (_TMP53 >= 0.00000000E+00) { // if begin\n"
-				"                                if (_i0018 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
-				"                                    _TMP53 = -1.00000000E+00;\n"
-				"                                } // end if\n"
-				"                                if (_TMP53 == 0.00000000E+00) { // if begin\n"
-				"                                    _index0026 = vec2(_i0018, _indexofoutput.x);\n"
-				"                                    _TMP1 = _index0026*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"                                    reconstruct_float(_TMP5.x, _L2[0], _TMP1);\n"
-				"                                    _sum0018 = _sum0018 + _TMP5.x*_TMP5.x;\n"
-				"                                } // end if\n"
-				"                            } // end if\n"
+				"                        if (_TMP70 >= 0.00000000E+00) { // if begin\n"
+				"                            _i0023 = _i0023 + 1.00000000E+00;\n"
 				"                        } // end if\n"
 				"                    } // end if\n"
 				"                } // end if\n"
 				"            } // end if\n"
-				"            _a0032 = _Akk0018 - _sum0018;\n"
-				"            _TMP6 = inversesqrt(_a0032);\n"
-				"            _Lkk0018 = 1.00000000E+00/_TMP6;\n"
-				"            if (_indexofoutput.x == _indexofoutput.y) { // if begin\n"
-				"                _output0018 = _Lkk0018;\n"
+				"            _tiled_i0023 = _i0023 + 4.00000000E+00*_tile2;\n"
+				"            _index0031 = vec2(_indexofoutput.x, _indexofoutput.x);\n"
+				"            _TMP1 = _index0031*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"            reconstruct_float(_TMP9.x, _L2[0], _TMP1);\n"
+				"            _sum0023 = _sum0023 + _TMP9.x;\n"
+				"            if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                _index0037 = vec2(_indexofoutput.x, _indexofoutput.x);\n"
+				"                _TMP3 = _index0037*_gatherconst_A1.xy + _gatherconst_A1.zw;\n"
+				"                reconstruct_float(_TMP9.x, _A2[0], _TMP3);\n"
+				"                _Akk0023 = _TMP9.x;\n"
+				"                _a0043 = _TMP9.x - _sum0023;\n"
+				"                _TMP10 = inversesqrt(_a0043);\n"
+				"                _Lkk0023 = 1.00000000E+00/_TMP10;\n"
 				"            } else {\n"
-				"                _sum0018 = 0.00000000E+00;\n"
-				"                for (float _i0019 = 0.0; _i0019 < 6.00000000E+00; _i0019 = _i0019 + 1.00000000E+00) { // for begin\n"
-				"                    if (_i0019 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
-				"                        { // break begin\n"
-				"                            break;\n"
-				"                        } // end break\n"
+				"                _Lkk0023 = _sum0023;\n"
+				"            } // end if\n"
+				"            if (_indexofoutput.x == _indexofoutput.y) { // if begin\n"
+				"                _output0023 = _Lkk0023;\n"
+				"            } else {\n"
+				"                _sum0023 = 0.00000000E+00;\n"
+				"                _i0023 = 0.00000000E+00;\n"
+				"                _TMP71 = 0.00000000E+00;\n"
+				"                _tiled_i0023 = 4.00000000E+00*_tile2;\n"
+				"                if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                    _TMP71 = -1.00000000E+00;\n"
+				"                } // end if\n"
+				"                if (_TMP71 == 0.00000000E+00) { // if begin\n"
+				"                    _index0047 = vec2(_tiled_i0023, _indexofoutput.y);\n"
+				"                    _TMP4 = _index0047*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                    reconstruct_float(_TMP9.x, _L2[0], _TMP4);\n"
+				"                    _temp0023 = _TMP9.x;\n"
+				"                    _index0053 = vec2(_tiled_i0023, _indexofoutput.y);\n"
+				"                    _TMP5 = _index0053*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                    reconstruct_float(_TMP9.x, _L2[0], _TMP5);\n"
+				"                    _sum0023 = _temp0023*_TMP9.x;\n"
+				"                } // end if\n"
+				"                if (_TMP71 >= 0.00000000E+00) { // if begin\n"
+				"                    _i0023 = 1.00000000E+00;\n"
+				"                } // end if\n"
+				"                if (_TMP71 >= 0.00000000E+00) { // if begin\n"
+				"                    _tiled_i0023 = _i0023 + 4.00000000E+00*_tile2;\n"
+				"                    if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                        _TMP71 = -1.00000000E+00;\n"
 				"                    } // end if\n"
-				"                    _index0036 = vec2(_i0019, _indexofoutput.y);\n"
-				"                    _TMP2 = _index0036*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"                    reconstruct_float(_TMP5.x, _L2[0], _TMP2);\n"
-				"                    _temp0018 = _TMP5.x;\n"
-				"                    _index0042 = vec2(_i0019, _indexofoutput.y);\n"
-				"                    _TMP3 = _index0042*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"                    reconstruct_float(_TMP5.x, _L2[0], _TMP3);\n"
-				"                    _sum0018 = _sum0018 + _temp0018*_TMP5.x;\n"
-				"                } // end for\n"
-				"                _output0018 = (1.00000000E+00/_Lkk0018)*(_Akk0018 - _sum0018);\n"
+				"                    if (_TMP71 == 0.00000000E+00) { // if begin\n"
+				"                        _index0047 = vec2(_tiled_i0023, _indexofoutput.y);\n"
+				"                        _TMP4 = _index0047*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                        reconstruct_float(_TMP9.x, _L2[0], _TMP4);\n"
+				"                        _temp0023 = _TMP9.x;\n"
+				"                        _index0053 = vec2(_tiled_i0023, _indexofoutput.y);\n"
+				"                        _TMP5 = _index0053*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                        reconstruct_float(_TMP9.x, _L2[0], _TMP5);\n"
+				"                        _sum0023 = _sum0023 + _temp0023*_TMP9.x;\n"
+				"                    } // end if\n"
+				"                    if (_TMP71 >= 0.00000000E+00) { // if begin\n"
+				"                        _i0023 = _i0023 + 1.00000000E+00;\n"
+				"                    } // end if\n"
+				"                    if (_TMP71 >= 0.00000000E+00) { // if begin\n"
+				"                        _tiled_i0023 = _i0023 + 4.00000000E+00*_tile2;\n"
+				"                        if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                            _TMP71 = -1.00000000E+00;\n"
+				"                        } // end if\n"
+				"                        if (_TMP71 == 0.00000000E+00) { // if begin\n"
+				"                            _index0047 = vec2(_tiled_i0023, _indexofoutput.y);\n"
+				"                            _TMP4 = _index0047*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                            reconstruct_float(_TMP9.x, _L2[0], _TMP4);\n"
+				"                            _temp0023 = _TMP9.x;\n"
+				"                            _index0053 = vec2(_tiled_i0023, _indexofoutput.y);\n"
+				"                            _TMP5 = _index0053*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                            reconstruct_float(_TMP9.x, _L2[0], _TMP5);\n"
+				"                            _sum0023 = _sum0023 + _temp0023*_TMP9.x;\n"
+				"                        } // end if\n"
+				"                        if (_TMP71 >= 0.00000000E+00) { // if begin\n"
+				"                            _i0023 = _i0023 + 1.00000000E+00;\n"
+				"                        } // end if\n"
+				"                        if (_TMP71 >= 0.00000000E+00) { // if begin\n"
+				"                            _tiled_i0023 = _i0023 + 4.00000000E+00*_tile2;\n"
+				"                            if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                                _TMP71 = -1.00000000E+00;\n"
+				"                            } // end if\n"
+				"                            if (_TMP71 == 0.00000000E+00) { // if begin\n"
+				"                                _index0047 = vec2(_tiled_i0023, _indexofoutput.y);\n"
+				"                                _TMP4 = _index0047*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                                reconstruct_float(_TMP9.x, _L2[0], _TMP4);\n"
+				"                                _temp0023 = _TMP9.x;\n"
+				"                                _index0053 = vec2(_tiled_i0023, _indexofoutput.y);\n"
+				"                                _TMP5 = _index0053*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                                reconstruct_float(_TMP9.x, _L2[0], _TMP5);\n"
+				"                                _sum0023 = _sum0023 + _temp0023*_TMP9.x;\n"
+				"                            } // end if\n"
+				"                            if (_TMP71 >= 0.00000000E+00) { // if begin\n"
+				"                                _i0023 = _i0023 + 1.00000000E+00;\n"
+				"                            } // end if\n"
+				"                        } // end if\n"
+				"                    } // end if\n"
+				"                } // end if\n"
+				"                _tiled_i0023 = _i0023 + 4.00000000E+00*_tile2;\n"
+				"                _index0059 = vec2(_indexofoutput.x, _indexofoutput.y);\n"
+				"                _TMP6 = _index0059*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"                reconstruct_float(_TMP9.x, _L2[0], _TMP6);\n"
+				"                _sum0023 = _sum0023 + _TMP9.x;\n"
+				"                if (_tiled_i0023 > _indexofoutput.x - 1.00000000E+00) { // if begin\n"
+				"                    _output0023 = (1.00000000E+00/_Lkk0023)*(_Akk0023 - _sum0023);\n"
+				"                } else {\n"
+				"                    _output0023 = _sum0023;\n"
+				"                } // end if\n"
 				"            } // end if\n"
 				"        } // end if\n"
-				"        encode_output_float( _output0018);\n"
+				"        encode_output_float( _output0023);\n"
 				"    } else {\n"
 				"        if (_indexofoutput.x > _indexofoutput.y) { // if begin\n"
-				"            _output0018 = 0.00000000E+00;\n"
-				"            encode_output_float( _output0018);\n"
+				"            _output0023 = 0.00000000E+00;\n"
+				"            encode_output_float( _output0023);\n"
 				"        } else {\n"
-				"            _index0048 = vec2(_indexofoutput.x, _indexofoutput.y);\n"
-				"            _TMP4 = _index0048*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
-				"            gl_FragColor.xyzw = texture2D(_L2[0], _TMP4);\n"
+				"            _index0065 = vec2(_indexofoutput.x, _indexofoutput.y);\n"
+				"            _TMP8 = _index0065*_gatherconst_L1.xy + _gatherconst_L1.zw;\n"
+				"            gl_FragColor.xyzw= texture2D(_L2[0], _TMP8);\n"
 				"        } // end if\n"
 				"    } // end if\n"
 				"} //  \n"
 				"//!!BRCC\n"
-				"//narg:4\n"
+				"//narg:5\n"
 				"//c:1:A\n"
 				"//c:1:L\n"
 				"//oi:1:output\n"
 				"//c:1:column\n"
+				"//c:1:tile\n"
 				"//workspace:1024\n"
 				"//!!multipleOutputInfo:0:1:\n"
 				"//!!fullAddressTrans:0:\n"
@@ -246,6 +315,7 @@ namespace {
 				.constant(3, kOutputConstant_Indexof)
 				.constant(3, StreamDim)
 				.constant(4, 0)
+				.constant(5, 0)
 				.sampler(1, 0)
 				.sampler(2, 0)
 				.interpolant(3, kOutputInterpolant_Position)
@@ -258,16 +328,18 @@ namespace {
 static void  __cholesky_cpu_inner(const __BrtArray<__BrtFloat1  > &A,
                                  const __BrtArray<__BrtFloat1  > &L,
                                  __BrtFloat1  &output,
-                                 const __BrtFloat1  &column)
+                                 const __BrtFloat1  &column,
+                                 const __BrtFloat1  &tile)
 {
   __BrtFloat2  index = (indexof(output)).swizzle2(maskX, maskY);
   __BrtFloat1  i;
+  __BrtFloat1  tiled_i;
   __BrtFloat1  sum;
   __BrtFloat1  temp;
   __BrtFloat1  temp2;
   __BrtFloat1  Akk;
   __BrtFloat1  Lkk;
-  const __BrtFloat1  maxIter = __BrtFloat1(6.000000f);
+  const __BrtFloat1  maxIter = __BrtFloat1(4.000000f);
 
   if (column == index.swizzle1(maskX))
   {
@@ -275,17 +347,29 @@ static void  __cholesky_cpu_inner(const __BrtArray<__BrtFloat1  > &A,
       output = __BrtFloat1(0.000000f);
     else
     {
-      Akk = A[index.swizzle1(maskX)][index.swizzle1(maskX)];
       sum = __BrtFloat1(0.000000f);
       for (i = __BrtFloat1(0.000000f); i < maxIter; i += __BrtFloat1(1.000000f))
       {
-        if (i > index.swizzle1(maskX) - __BrtFloat1(1.000000f))
+        tiled_i = i + maxIter * tile;
+        if (tiled_i > index.swizzle1(maskX) - __BrtFloat1(1.000000f))
           break;
-        temp = L[index.swizzle1(maskX)][i];
+        temp = L[index.swizzle1(maskX)][tiled_i];
         sum += temp * temp;
       }
 
-      Lkk = __sqrt_cpu_inner(Akk - sum);
+      tiled_i = i + maxIter * tile;
+      sum += L[index.swizzle1(maskX)][index.swizzle1(maskX)];
+      if (tiled_i > index.swizzle1(maskX) - __BrtFloat1(1.000000f))
+      {
+        Akk = A[index.swizzle1(maskX)][index.swizzle1(maskX)];
+        Lkk = __sqrt_cpu_inner(Akk - sum);
+      }
+
+      else
+      {
+        Lkk = sum;
+      }
+
       if (index.swizzle1(maskX) == index.swizzle1(maskY))
         output = Lkk;
       else
@@ -293,14 +377,20 @@ static void  __cholesky_cpu_inner(const __BrtArray<__BrtFloat1  > &A,
         sum = __BrtFloat1(0.000000f);
         for (i = __BrtFloat1(0.000000f); i < maxIter; i += __BrtFloat1(1.000000f))
         {
-          if (i > index.swizzle1(maskX) - __BrtFloat1(1.000000f))
+          tiled_i = i + maxIter * tile;
+          if (tiled_i > index.swizzle1(maskX) - __BrtFloat1(1.000000f))
             break;
-          temp = L[index.swizzle1(maskY)][i];
-          temp2 = L[index.swizzle1(maskY)][i];
+          temp = L[index.swizzle1(maskY)][tiled_i];
+          temp2 = L[index.swizzle1(maskY)][tiled_i];
           sum += temp * temp2;
         }
 
-        output = __BrtFloat1(1.000000f) / Lkk * (Akk - sum);
+        tiled_i = i + maxIter * tile;
+        sum += L[index.swizzle1(maskY)][index.swizzle1(maskX)];
+        if (tiled_i > index.swizzle1(maskX) - __BrtFloat1(1.000000f))
+          output = __BrtFloat1(1.000000f) / Lkk * (Akk - sum);
+        else
+          output = sum;
       }
 
     }
@@ -322,6 +412,7 @@ void  __cholesky_cpu(::brook::Kernel *__k, const std::vector<void *>&args, int _
   __BrtArray<__BrtFloat1  > *arg_L = (__BrtArray<__BrtFloat1  > *) args[1];
   ::brook::StreamInterface *arg_output = (::brook::StreamInterface *) args[2];
   __BrtFloat1 *arg_column = (__BrtFloat1 *) args[3];
+  __BrtFloat1 *arg_tile = (__BrtFloat1 *) args[4];
   
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic, 16) if(!__brt_isreduce)
@@ -331,7 +422,8 @@ void  __cholesky_cpu(::brook::Kernel *__k, const std::vector<void *>&args, int _
     __cholesky_cpu_inner (*arg_A,
                           *arg_L,
                           __out_arg_output,
-                          *arg_column);
+                          *arg_column,
+                          *arg_tile);
     *reinterpret_cast<__BrtFloat1 *>(__out_arg_output.address) = __out_arg_output.castToArg(*reinterpret_cast<__BrtFloat1 *>(__out_arg_output.address));
   }
 }
@@ -339,8 +431,10 @@ void  __cholesky_cpu(::brook::Kernel *__k, const std::vector<void *>&args, int _
 extern void  cholesky (::brook::stream A,
 		::brook::stream L,
 		::brook::stream output,
-		const float  & __input_column) {
+		const float  & __input_column,
+		const float  & __input_tile) {
   float  column(__input_column);
+  float  tile(__input_tile);
   static const void *__cholesky_fp[] = {
      "fp30", __cholesky_fp30,
      "fp40", __cholesky_fp40,
@@ -363,6 +457,7 @@ extern void  cholesky (::brook::stream A,
   __k->PushGatherStream(L);
   __k->PushOutput(output);
   __k->PushConstant(column);
+  __k->PushConstant(tile);
   __k->Map();
 
 }
@@ -486,7 +581,7 @@ int  main(int  argc, char  **argv)
   float  *L = NULL;
   float  *input_matrix = NULL;
   unsigned int  itr = 0;
-  unsigned int  i = 0;
+  int  i = 0;
   unsigned int  j = 0;
   unsigned int  Height;
   unsigned int  Width;
@@ -530,6 +625,7 @@ int  main(int  argc, char  **argv)
     ::brook::stream Lstream(::brook::getStreamType(( float  *)0), Height , Width,-1);
     ::brook::stream Lstream2(::brook::getStreamType(( float  *)0), Height , Width,-1);
     float  *empty = (float *) (calloc(Height * Width,sizeof(float ) ));
+    int  j;
 
     Start(0);
     for (itr = 0; itr < cmd.Iterations; itr++)
@@ -539,9 +635,16 @@ int  main(int  argc, char  **argv)
       streamRead(Lstream2,empty);
       for (i = 0; i < Width; i++)
       {
-        cholesky(Astream,(i % 2) ? (Lstream2) : (Lstream),(i % 2) ? (Lstream) : (Lstream2),(float ) (i));
-//        streamWrite((i % 2) ? (Lstream) : (Lstream2),empty);
-//        print_mat_f("Intermediate L =:\n","%3.2lf ",(float *) (empty),Height,Width);
+        const int  maxIter = 4;
+
+        for (j = 0; j <= ((i-1)/maxIter); j++)
+        {
+//          printf("column:%d, tile:%d\n",i,j);
+          cholesky(Astream,(i % 2) ? (Lstream2) : (Lstream),(i % 2) ? (Lstream) : (Lstream2),(float ) (i),(float ) (j));
+//          streamWrite((i % 2) ? (Lstream) : (Lstream2),empty);
+//          print_mat_f("Intermediate L =:\n","%3.2lf ",(float *) (empty),Height,Width);
+        }
+
       }
 
       streamWrite((i % 2) ? (Lstream2) : (Lstream),L);
