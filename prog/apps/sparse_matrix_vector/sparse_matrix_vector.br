@@ -236,7 +236,7 @@ int main(int argc, char** argv)
         fprintf(stderr, "Warning: Matrix must be square, using Size = %d\n", Size);
     }
 
-    NzWidth = 5;
+    NzWidth = 2;
     Length = Size * NzWidth;
 
 	/////////////////////////////////////////////////////////////////////////
