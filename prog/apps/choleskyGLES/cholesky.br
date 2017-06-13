@@ -74,21 +74,15 @@ POSSIBILITY OF SUCH DAMAGE.
 
 static int retval = 0;
 
-/**
- *
- * \param input:  Input stream
- * \param output: Output stream
- * \brief:                Simple copy kernel
- *
- */
+//compute the diagonal element at column
 kernel void
-cholesky(float A[][], float L[][], out float output<>, float column, float tile)
+cholesky_diagonal(float A[][], float L[][], out float output<>, float column, float tile)
 {
     float2 index= indexof(output).xy;
     float i, tiled_i;
     float sum, temp, temp2;
     float Akk, Lkk;
-    const float maxIter = 4.0;
+    const float maxIter = 7.0;
 
     //if we are in the current processing column
     if( column == index.x )
@@ -128,6 +122,46 @@ cholesky(float A[][], float L[][], out float output<>, float column, float tile)
             //if the element is on diagonal store it
             if(index.x == index.y)
                    output = Lkk;
+        }
+    }
+    else
+    {  
+        if( index.x > index.y )
+           output = 0.0;
+        else
+           output = L[index.y][index.x];
+    }
+}
+/**
+ *
+ * \param input:  Input stream
+ * \param output: Output stream
+ * \brief:                Simple copy kernel
+ *
+ */
+kernel void
+cholesky_line(float A[][], float L[][], out float output<>, float column, float tile)
+{
+    float2 index= indexof(output).xy;
+    float i, tiled_i;
+    float sum, temp, temp2;
+    float Akk, Lkk;
+    const float maxIter = 7.0;
+
+    //if we are in the current processing column
+    if( column == index.x )
+    {
+        //if the element is above the diagonal do nothing
+        if( index.x > index.y )
+           output = 0.0;
+        else
+        {
+            //Read the element on the diagonal, which is used for all the column computations (below the diagonal)
+            Lkk = L[index.x][index.x];
+    
+            //if the element is on diagonal store it
+            if(index.x == index.y)
+                   output = Lkk;
             else
             {
                sum=0.0;
@@ -146,7 +180,10 @@ cholesky(float A[][], float L[][], out float output<>, float column, float tile)
                sum += L[index.y][index.x]; 
 
                if( tiled_i > (index.x - 1.0))
+               {
+                   Akk = A[index.x][index.x];
                    output = (1.0/Lkk)*(Akk - sum);
+               }
                else
                    output = sum;
             }
@@ -375,6 +412,7 @@ int main(int argc, char** argv)
         float Lstream2<Height,Width>;
         float* empty=(float*)calloc(Height*Width, sizeof(float));
         int j;
+        unsigned char flip=0;
 
         // Record GPU Total Time
         Start(0);
@@ -387,17 +425,26 @@ int main(int argc, char** argv)
 
             for (i = 0; i < Width; i++)
             {
-                const int maxIter=4;
+                const int maxIter=7;
                 //Compute Cholesky factorization of each column 
                 for (j = 0; j <= ((i-1)/maxIter); j++)
                 {
-printf("column:%d, tile:%d\n", i, j);
-                    cholesky(Astream, (i%2)?Lstream2:Lstream, (i%2)?Lstream:Lstream2, (float) i, (float)j);
-           streamWrite( (i%2)?Lstream:Lstream2, empty);
-           print_mat_f("Intermediate L =:\n", "%3.2lf ", (float*)empty, Height, Width);
+//                    printf("Diagonal column:%d, tile:%d\n", i, j);
+                    cholesky_diagonal(Astream, (flip)?Lstream2:Lstream, (flip)?Lstream:Lstream2, (float) i, (float)j);
+                    flip ^= 0x1;
+//                    streamWrite( (!flip)?Lstream:Lstream2, empty);
+//                    print_mat_f("Intermediate L =:\n", "%3.2lf ", (float*)empty, Height, Width);
+                }
+                for (j = 0; j <= ((i-1)/maxIter); j++)
+                {
+//                    printf("Line column:%d, tile:%d\n", i, j);
+                    cholesky_line(Astream, (flip)?Lstream2:Lstream, (flip)?Lstream:Lstream2, (float) i, (float)j);
+                    flip ^= 0x1;
+//                    streamWrite( (!flip)?Lstream:Lstream2, empty);
+//                    print_mat_f("Intermediate L =:\n", "%3.2lf ", (float*)empty, Height, Width);
                 }
             }
-            streamWrite( (i%2)?Lstream2:Lstream, L);
+            streamWrite( (!flip)?Lstream2:Lstream, L);
         }
 
         Stop(0);
