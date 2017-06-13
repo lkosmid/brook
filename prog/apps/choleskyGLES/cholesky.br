@@ -79,10 +79,10 @@ kernel void
 cholesky_diagonal(float A[][], float L[][], out float output<>, float column, float tile)
 {
     float2 index= indexof(output).xy;
-    float i, tiled_i;
+    const float maxIter = 7.0;
+    float i, tiled_i=maxIter;
     float sum, temp, temp2;
     float Akk, Lkk;
-    const float maxIter = 7.0;
 
     //if we are in the current processing column
     if( column == index.x )
@@ -103,7 +103,6 @@ cholesky_diagonal(float A[][], float L[][], out float output<>, float column, fl
                 temp = L[index.x][tiled_i];
                 sum += temp*temp;
             }
-            tiled_i = i + maxIter*tile;
             //Add the partial sum from the previous tiles
             sum += L[index.x][index.x]; 
 
@@ -143,10 +142,10 @@ kernel void
 cholesky_line(float A[][], float L[][], out float output<>, float column, float tile)
 {
     float2 index= indexof(output).xy;
-    float i, tiled_i;
+    const float maxIter = 7.0;
+    float i, tiled_i=maxIter;
     float sum, temp, temp2;
     float Akk, Lkk;
-    const float maxIter = 7.0;
 
     //if we are in the current processing column
     if( column == index.x )
@@ -175,7 +174,6 @@ cholesky_line(float A[][], float L[][], out float output<>, float column, float 
                    temp2 = L[index.y][tiled_i];
                    sum += temp*temp2;
                }
-               tiled_i = i + maxIter*tile;
                //Add the partial sum from the previous tiles
                sum += L[index.y][index.x]; 
 
