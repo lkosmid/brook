@@ -1,0 +1,480 @@
+/****************************************************************************
+
+Copyright (c) 2003, Stanford University
+All rights reserved.
+
+Copyright (c) 2007, Advanced Micro Devices, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of Stanford University nor the names of any contributors 
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+ 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+****************************************************************************/
+/*****************************************************************************
+  \file sparse_matrix_vector.br
+  \brief A Sparse Matrix-Vector multiply
+
+    Simple example of how to perform a sparse matrix vector multiplication
+  (y = Ax) where the sparse matrix A is represented in padded compressed
+  sparse row, aka ITPACK format.  Each row of the matrix is constrained
+  to have at most Width nonzero elements.
+
+  Example:  
+
+  1  0  0  3
+  2  0  1  9
+  0  4  0  0
+  0  0  0  5
+
+  The representation of the above matrix, where Width = 3 and
+  Height = 4 is:
+
+  Anz:  1 3 0  2 1 9  4 0 0  5 0 0
+  Col:  0 3 0  0 2 3  1 0 0  3 0 0 
+
+
+  Algorithm:
+
+  1. Use a gather to "arrange" the elements of vector x into the ordering
+  they will be referenced in the mat-vec multiply (ordering determined by
+  cols of nonzeros of A)
+
+  Following the above example, elements of the x vector would be gathered
+  using the following access sequence.
+
+  0 3 0  0 2 3  1 0 0  3 0 0
+
+  2. Component-wise multiply the gathered x vector with the nonzeros of A
+
+  3. Perform reduction on resulting stream, reducing via the sum operator
+  every Width elements (the rows of the matrix) to get y = Ax.
+
+ ****************************************************************************/
+#include "common.h"
+#include "Timer.h"
+
+static int retval = 0;
+
+/**
+@brief A simple gather kernel
+*/
+kernel void gather(float index<>, float x[], out float result<>) 
+{
+    result = x[index];
+}
+
+/**
+@brief	Component-wise multiply
+*/
+kernel void mult(float a<>, float b<>, out float c<>) 
+{
+    c = a*b;
+}
+
+/**
+@brief	Reduction kernel to sum elements along rows 
+*/
+reduce void sumRows(float nzValues<>, reduce float result<>) 
+{
+    result += nzValues;
+}
+
+
+/**
+ * \param matrixA			A square sparse matrix
+ * \param csrNz			Non-zero elements of matrixA
+ * \param csrCols			The columns array for the CSR format 
+ * \param csrRowStart		Row index array for the CSR format
+ * \param size				Size of the sparse matrix
+ * \param length			Length of csrNz and csrCols
+
+ * \brief					Create Compressed Sparse Row (CSR) represenation 
+						and store in csrNz, csrCols, csrRowStart.
+*/
+void createCSRFromSparseMatrix(float* matrixA, float* csrNz, int* csrCols, int* csrRowStart, unsigned int size, unsigned int length)
+{
+    unsigned int i, j, k;
+    int count;
+
+    for (i=0; i < length; i++)
+    {
+        csrNz[i] = 0;
+        csrCols[i] = 0;
+    }
+
+    csrRowStart[0] = 0;
+    k = 0;
+    for (i=0; i < size; i++) 
+    {
+        count = 0;
+        for (j=0; j < size; j++) 
+        {
+            if (fabs(matrixA[i * size + j]) > 0.0000001f) 
+            { 
+                count++; 
+                csrCols[k] = j;
+                csrNz[k] = matrixA[i * size + j];
+                k++;
+                assert (k < length);
+            }
+        }
+        csrRowStart[i+1] = csrRowStart[i] + count;
+    }
+}
+
+
+
+/** 
+@brief	Convert the CSR format into the padded ITPACK
+		representation that is easy to stream.
+*/
+void reshuffleData(float* nz, int* cols, int* rowStart,
+        float* Anz, float* Acols, unsigned int size, unsigned int nzWidth) 
+{
+    unsigned int i;
+    int j;
+
+    for (i = 0; i < size; i++) 
+    {
+        unsigned int offset = 0;
+        for (j = rowStart[i]; j < rowStart[i + 1]; j++) 
+        {
+            Anz[nzWidth * i + offset] = nz[j];
+            Acols[nzWidth * i + offset] = (float)cols[j];
+            offset++;
+        }
+        // must pad the rest of the row
+        while (offset < nzWidth) 
+        {
+            Anz[nzWidth * i + offset] = 0.0f;
+            Acols[nzWidth * i + offset] = (float)0.0f;  // this should be an invalid index.... but doesn't have to be since x multiplied by a zero here
+            offset++;
+        }
+    }
+}
+
+int main(int argc, char** argv)
+{
+    unsigned int i,j,k;
+
+    unsigned int Size = 0;
+    unsigned int Length = 0;
+    unsigned int NzWidth  = 2;    // Defined a value that is the maximum number of non zero elements in each row of matrix A.
+                                  // Note: This is not the width of matrix A, matrix A is of dimensions Size x Size
+                                  // nzWidth must be >= 2.
+
+    struct infoRec cmd;
+
+    // stores compressed sparse row representation of the matrix on disk
+    int*    csrCols = NULL;      // corresponding column
+    float*  csrNz   = NULL;         // nonzero values
+
+    // index into csrNz of first nz element in each row
+    // note: number of nz in row i = csrRowStart[i+1] - csrRowStart[i]
+    int*    csrRowStart = NULL; 
+
+    // storage for ITPACK representation of the matrix
+    float*  Anz  = NULL; // nonzeros of A
+    float*  cIdx = NULL; // column indices
+
+    float*  x = NULL; // X data
+    float*  y = NULL; // Y data
+    float* matrixA = NULL;     // Y = AX.
+
+    unsigned int n;
+
+	/////////////////////////////////////////////////////////////////////////
+    // Setup the timers 
+	// 0 = GPU Total Time
+	// 1 = CPU Total Time
+	/////////////////////////////////////////////////////////////////////////
+    Setup(0); 
+	Setup(1);
+
+    ParseCommandLine(argc, argv, &cmd);
+    srand(cmd.Seed);
+    if (cmd.Width  < 2 || cmd.Height < 2)
+    {
+        if (!cmd.Quiet)
+        {
+            fprintf(stderr, "Error: Size must be larger than 2.\n");
+        }
+        else
+        {
+            printf("%s: Passed!\n", argv[0]);
+        }
+        return retval;
+    }
+
+    Size = cmd.Height;
+    if (cmd.Width  != cmd.Height)
+    {
+        Size = cmd.Width < cmd.Height ? cmd.Width : cmd.Height;
+        fprintf(stderr, "Warning: Matrix must be square, using Size = %d\n", Size);
+    }
+
+    NzWidth = 5;
+    Length = Size * NzWidth;
+
+	/////////////////////////////////////////////////////////////////////////
+    // Allocate memory 
+	/////////////////////////////////////////////////////////////////////////
+    csrCols = (int*)malloc(sizeof *csrCols * (Length));
+    csrNz = allocate_mat_f(1, Length);
+    x = allocate_mat_f(1, Size);
+    y = allocate_mat_f(1, Size);
+    Anz = allocate_mat_f(1, Length);
+    cIdx = allocate_mat_f(1, Length);
+    csrRowStart = (int *)malloc(sizeof *csrRowStart * (Size + 1));
+    matrixA = allocate_mat_f(Size, Size);
+    if (!x || !y || !Anz || !cIdx || !csrNz || !csrRowStart || !csrCols || !matrixA)
+    {
+        fprintf(stderr, "Error: Memory Allocation.\n");
+        retval = -1;
+        goto cleanup;
+    }
+
+    // Create random vector x
+    fill_mat_f(x, 1, Size, 10, RANDOM);
+    // Create partially filled random matrix A 
+    fill_mat_f((float*)matrixA, Size, Size, 1, ZERO);
+    for (i = 0; i < Size; i++) {
+        while ((n = rand() % NzWidth) == 0);
+        for (k = 0; k < n; k++) {
+            matrixA[i * Size + (rand() % Size)] = (float) (rand() % 100);
+        }
+    }
+
+    // Prepare internal data structures
+    createCSRFromSparseMatrix(matrixA, csrNz, csrCols, csrRowStart, Size, Length);
+    // convert from pure CSR to a padded scheme better suited for streaming,
+    reshuffleData(csrNz, csrCols, csrRowStart, Anz, cIdx, Size, NzWidth);
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print input data 
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Input Sparse Matrix: ", "%lf ", (float*)matrixA, Size, Size);
+        print_mat_f("Input Vector: ", "%lf ", x, 1, Size);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("Input Sparse Matrix: ", "%lf ", (float*)matrixA, 1, Size);
+        print_mat_f("Input Vector: ", "%lf ", x, 1, Size);
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+    // Brook code block
+	/////////////////////////////////////////////////////////////////////////
+    {
+        float  AStrm<Length>;            // nonzeros of A
+        float  AStrm2<Length>;           // nonzeros of A
+        float  indices<Length>;          // column indices
+        float  tmp_indices<Length>;      // tmp indices
+        float  xStream<Size>;
+        float  yStream<Size>;
+
+        // Record GPU Total time
+        Start(0);
+        for (i = 0; i < cmd.Iterations; ++i)
+        {
+			// Write to stream 
+			streamRead(AStrm, Anz);
+			streamRead(indices, cIdx);
+			streamRead(xStream, x);
+			streamRead(yStream, y);
+
+			// Run Brook program
+            gather(indices, xStream, tmp_indices);
+            mult(AStrm, tmp_indices, AStrm2);
+            sumRows(AStrm2, yStream);
+
+			// Write data back from stream 
+			streamWrite(yStream, y);
+        }
+        Stop(0);
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print results if requested
+ 	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verbose)
+    {
+        print_mat_f("Results: ", "%lf ", y, 1, Size);
+    }
+    else if (!cmd.Quiet)
+    {
+        printf("Printing first row of data, for more use -v\n");
+        print_mat_f("Results: ", "%lf ", y, 1, Size);
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Print timing information
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Timing)
+    {
+		double time = GetElapsedTime(0);
+		printf(	"%-8s%-8s%-16s%-16s\n","Width","Height","Iterations",
+				"GPU Total Time");
+		printf( "%-8d%-8d%-16d%-16lf", cmd.Width, cmd.Height, 
+				cmd.Iterations, time);
+		printf("\n\n");
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Verify against CPU implementation if requested 
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Verify)
+    {
+        int res = 0;
+        float* vecY = NULL;
+        if (vecY = allocate_mat_f(1, Size))
+        {
+			printf("-e Verify correct output.\n");
+			printf("Performing Sparse Matrix Vector Multiplication on CPU ... ");
+
+            for (i = 0; i < Size; ++i) 
+            {
+                vecY[i] = 0;
+                for (j = 0; j < Size; ++j) {
+                    vecY[i] += x[j] * matrixA[i * Size + j];
+                }
+            }
+			
+			printf("Done\n");
+
+            res += compare_mat_f(y, vecY, 1, Size);
+            if (res)
+            {
+                printf("%s: Failed!\n\n", argv[0]);
+                retval = -1;
+            }
+            else
+            {
+                printf("%s: Passed!\n\n", argv[0]);
+                retval = 0;
+            }
+            free(vecY);
+        }
+        else
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+        }
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Compare performance with CPU if requested
+	/////////////////////////////////////////////////////////////////////////
+    if (cmd.Performance)
+    {
+		unsigned int i = 0;
+		double cpu_time = 0.0;
+		double gpu_time = 0.0;
+        float* vecY = NULL;
+        if (vecY = allocate_mat_f(1, Size))
+        {
+			printf("-p Compare performance with CPU.\n");
+
+			// Record CPU Total time
+			Start(1);
+			for(i = 0; i < cmd.Iterations; i ++)
+			{
+				for (i = 0; i < Size; ++i) 
+				{
+					vecY[i] = 0;
+					for (j = 0; j < Size; ++j) {
+						vecY[i] += x[j] * matrixA[i * Size + j];
+					}
+				}
+			}
+			Stop(1);
+
+			// Print CPU timing and speedup
+			cpu_time = GetElapsedTime(1);
+			gpu_time = GetElapsedTime(0);
+			printf(	"%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+					"CPU Total Time","GPU Total Time","Speedup");
+			printf(	"%-8d%-8d%-16d%-16lf%-16lf%-16lf", cmd.Width, cmd.Height, 
+					cmd.Iterations, cpu_time, gpu_time, cpu_time/gpu_time);
+			printf("\n\n");
+
+            free(vecY);
+        }
+        else
+        {
+            fprintf(stderr, "Error: Memory Allocation.\n");
+            retval = -1;
+        }
+    }
+
+	/////////////////////////////////////////////////////////////////////////
+	// Clean up
+	/////////////////////////////////////////////////////////////////////////
+cleanup:
+    if (x)
+    {
+        free(x);
+    }
+    if (y)
+    {
+        free(y);
+    }
+    if (cIdx)
+    {
+        free(cIdx);
+    }
+    if (Anz)
+    {
+        free(Anz);
+    }
+    if (csrNz)
+    {
+        free(csrNz);
+    }
+    if (csrRowStart)
+    {
+        free(csrRowStart);
+    }
+    if (csrCols)
+    {
+        free(csrCols);
+    }
+    if (matrixA)
+    {
+        free(matrixA);
+    }
+
+    if (!cmd.Verify)
+    {
+        printf("\nPress enter to exit...\n");
+        getchar();
+    }
+
+    return retval;
+}
