@@ -53,37 +53,23 @@ static int retval = 0;
  * \param	B Input matrix B(KxN)
  * \param	result Output matrix(MxN)
 */
-kernel void 
-simple_matmult(float Width, float A[][], float B[][], out float result<>) 
-{
-    // vPos - Position of the output matrix i.e. (x,y)
-	float2 vPos = indexof(result).xy;
-	
-    // index - coordinates of A & B from where the values are fetched
-	float4 index = float4(vPos.x, 0.0f, 0.0f, vPos.y);
-    // step - represents the step by which index is incremented
-	float4 step = float4(0.0f, 1.0f, 1.0f, 0.0f);
-	
-    // accumulator - Accumulates the result of intermediate calculation
-    // between A & B
-	float accumulator = 0.0f;
-	
-    // Running a  loop which starts from
-    // (0,vPos.y) in A and (vPos.x,0) in B
-    // and increments the 'y' value of A and the 'x' value of B
-    // which basically implies that we're fetching values from
-    // the 'vPos.y'th row of A and 'vPox.x'th column of B
-    float i0 = Width;
-    while(i0 > 0.0f)
-    {
-        // A[i][k] * B[k][j]
-        accumulator += A[index.w][index.z]*B[index.y][index.x];
-        index += step;		
-        i0 = i0 - 1.0f;
-    }
+kernel void sgemm(float a[][], float b[][], float interm[][], float tile, float tile_size, out float c<> ) {
+        float sum=0.0;
+        int i;
+        float2 index=indexof(c).xy;
+        float2 index_a, index_b;
+        const float maxiterations=16.0;
 
-    // Writing the result back to the buffer
-    result = accumulator;
+        for(i=0.0; i< maxiterations; i+=1.0)
+        {
+           if(i >= tile_size)
+              break;
+
+           index_a=float2(i+tile_size*tile, index.y);
+           index_b=float2(index.x, i+ tile_size*tile);
+	   sum += a[index_a] * b[index_b];
+        }
+        c=sum+interm[index.xy];
 }
 
 /**
@@ -118,7 +104,6 @@ matmultCPU(float* a, float* b, float* c, int m, int k, int n)
     }
 }
 
-
 int main(int argc, char** argv)
 {
     struct infoRec cmd;
@@ -128,23 +113,30 @@ int main(int argc, char** argv)
     unsigned int Width;
     unsigned int Height;
     unsigned int i;
+    unsigned int tile_size;
 
-	/////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
     // Setup the timers 
-	// 0 = GPU Total Time
-	// 1 = CPU Total Time
-	/////////////////////////////////////////////////////////////////////////
+    // 0 = GPU Total Time
+    // 1 = CPU Total Time
+    /////////////////////////////////////////////////////////////////////////
     Setup(0); 
-	Setup(1);
+    Setup(1);
 
     ParseCommandLine(argc, argv, &cmd);
     srand(cmd.Seed);
-    Height = cmd.Height;
+    Height = cmd.Width;
     Width = cmd.Width;
+    tile_size = cmd.Height;
+    if(tile_size > Width)
+    {
+       printf("Tile Size cannot be bigger than the matrix dimensions\n");
+       exit(-1);
+    }
 
-	/////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
     // Allocate memory 
-	/////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
     inputA = allocate_mat_f(Height, Width);
     inputB = allocate_mat_f(Width, Height);
     output = allocate_mat_f(Height, Height);
@@ -180,27 +172,38 @@ int main(int argc, char** argv)
         float A<Height, Width>;
         float B<Width, Height>;
         float C<Height, Height>;
+        float interm<Height, Height>;
+        unsigned int tile;
+        unsigned int Total_Tiles= Width/tile_size;
+	float index2x< Height, Width>;
+	float index2y< Height, Width>;
+
 
         // Record GPU Total time
         Start(0);
         for (i = 0; i < cmd.Iterations; ++i)
-		{
+	{
 			// Write to stream 
-			streamRead(A, inputA);
-			streamRead(B, inputB);
+		streamRead(A, inputA);
+		streamRead(B, inputB);
 
-			// Run the brook program 
-			simple_matmult((float)Width, A, B, C);
+                for(tile=0; tile< Total_Tiles; tile++)
+                {
+                   if( ( (int)tile % 2) == 1 )
+                      sgemm( A, B, interm, (float) tile, (float) tile_size, C );
+                   else
+                      sgemm( A, B, C, (float) tile, (float) tile_size, interm );
+                }
 
-			// Write data back from stream 
-			streamWrite(C, output);
-		}
+		// Write data back from stream 
+                streamWrite((tile%2)? interm: C,output);
+	}
         Stop(0);
     }
 
-	/////////////////////////////////////////////////////////////////////////
-	// Print results if requested
- 	/////////////////////////////////////////////////////////////////////////
+   /////////////////////////////////////////////////////////////////////////
+   // Print results if requested
+   /////////////////////////////////////////////////////////////////////////
    if (cmd.Verbose)
     {
         print_mat_f("Output Matrix: ", "%lf ", (float*)output, Height, Height);
@@ -218,9 +221,9 @@ int main(int argc, char** argv)
     {
         double gflop = (double)(2.0 * Width * Height * Height * cmd.Iterations)/(double)(1024 * 1024 * 1024);
 		double time = GetElapsedTime(0);
-		printf(	"%-8s%-8s%-16s%-16s%-16s\n","Width","Height","Iterations",
+		printf(	"%-8s%-8s%-16s%-16s%-16s%-16s\n","Width","Height","Tile Size", "Iterations",
 				"GPU Total Time", "Gflops");
-		printf( "%-8d%-8d%-16d%-16lf%-16lf", cmd.Width, cmd.Height, 
+		printf( "%-8d%-8d%-16d%-16d%-16lf%-16lf", Width, Height, tile_size,
 				cmd.Iterations, time, gflop/time);
 		printf("\n\n");
     }
@@ -240,6 +243,8 @@ int main(int argc, char** argv)
             matmultCPU((float*)inputA, (float*)inputB, (float*)CPU, Height, Width, Height);
 			
 			printf("Done\n");
+            if(cmd.Verbose)
+                print_mat_f("CPU output: ","%lf ",CPU,Height,Width);
 
             res += compare_mat_f((float*)CPU, (float*)output, Height, Height);
             if (res)
@@ -287,9 +292,9 @@ int main(int argc, char** argv)
 			// Print CPU timing and speedup
 			cpu_time = GetElapsedTime(1);
 			gpu_time = GetElapsedTime(0);
-			printf(	"%-8s%-8s%-16s%-16s%-16s%-16s%-16s\n","Width","Height","Iterations",
+			printf(	"%-8s%-8s%-16s%-16s%-16s%-16s%-16s%-16s\n","Width","Height","Tile Size","Iterations",
 					"CPU Total Time","GPU Total Time","Gflops","Speedup");
-			printf(	"%-8d%-8d%-16d%-16lf%-16lf%-16lf%-16lf", cmd.Width, cmd.Height, 
+			printf(	"%-8d%-8d%-16d%-16d%-16lf%-16lf%-16lf%-16lf", Width, Height, tile_size,
 					cmd.Iterations, cpu_time, gpu_time, gflop/gpu_time, cpu_time/gpu_time);
 			printf("\n\n");
             free(CPU);
