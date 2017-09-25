@@ -27,8 +27,8 @@ create_window (int window_x, int window_y, bool fullscreen) {
    * These parameters are useless since the window is never shown nor
    * rendered into.
    */
-  const int window_width = 640;
-  const int window_height = 480;
+  const int window_width = 2048;
+  const int window_height = 2048;
 
   hinstance = GetModuleHandle( NULL );
 
@@ -198,8 +198,8 @@ GLESWindow::GLESWindow(const char* device) {
   {
       settings.dmSize=sizeof(DEVMODE);
       EnumDisplaySettings(*driver ? NULL : driver, ENUM_CURRENT_SETTINGS, &settings);
-      settings.dmPelsWidth=640;
-      settings.dmPelsHeight=480;
+      settings.dmPelsWidth=2048;
+      settings.dmPelsHeight=2048;
       if(DISP_CHANGE_SUCCESSFUL==ChangeDisplaySettingsEx(*driver ? NULL : driver, &settings,
           NULL, CDS_FULLSCREEN, NULL)) fullscreen=true;
   }
@@ -311,6 +311,8 @@ EGLint aEGLAttributes[] = {
         EGL_RED_SIZE, 8,
         EGL_GREEN_SIZE, 8,
         EGL_BLUE_SIZE, 8,
+        EGL_ALPHA_SIZE, 8,
+        EGL_MIN_SWAP_INTERVAL, 0,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
         EGL_NONE
     };
@@ -464,8 +466,8 @@ GLESWindow::RaspberryWinCreate(const char *title)
    EGL_CHECK(graphics_get_display_size(0 /* LCD */, &display_width, &display_height));
    
    // You can hardcode the resolution here:
-   display_width = 640;
-   display_height = 480;
+   display_width = 2048;
+   display_height = 2048;
 
    dst_rect.x = 0;
    dst_rect.y = 0;
