@@ -302,7 +302,19 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     fprintf ( stderr, "GL: Program Error. Linker output:\n%s\n", errlog);
     fflush(stderr);
     brfree(errlog);
-    fprintf( stderr, "Shader source:\n%s\n", custom_program.c_str());
+    fprintf( stderr, "Shader source:\n");
+    //print the source with line numbers to help debugging
+    const char * line_end;
+    char * line=(char *) brmalloc(custom_program.size());
+    unsigned int line_counter=0;
+    const char * source=custom_program.c_str();
+    while(line_end=strstr(source, "\n"))
+    {
+        line_counter++;
+        snprintf(line, line_end - source+1, source);
+        fprintf ( stderr, "%d:%s\n", line_counter, line);
+        source=line_end+1;
+    }
     assert(0);
     exit(1);
   }
