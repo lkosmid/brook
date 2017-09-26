@@ -44,6 +44,18 @@ static void replaceAll(char *string, const char *find, const char *replace)
 	}
 }
 
+static void replace(char *string, const char *find, const char *replace)
+{
+	size_t len=strlen(string), flen=strlen(find), rlen=strlen(replace);
+	char *s;
+	s=strstr(string, find);
+	memmove(s+rlen, s+flen, len-(s-string));
+	memcpy(s, replace, rlen);
+	len+=rlen-flen;
+	len-=s-string;
+	string=s+rlen;
+}
+
 /*
  * compile_cgc --
  *
@@ -89,6 +101,7 @@ compile_cgc (const char * /*name*/,
   vector<string> uniform_list_names;
   vector<string> uniform_list_types;
   vector<string> output_list_types;
+  vector<string> for_list_control_vars_inits;
 
   switch (target) {
   case CODEGEN_PS20:
@@ -431,6 +444,54 @@ compile_cgc (const char * /*name*/,
        }
        replaceAll(fpcodenew, line, replacement_str);
     }
+
+    //Brook's parser doesn't allow control variables to be declared in the for control statement
+    //Also the generated cgc code misses the control variable initialisation in for statement, 
+    //instead it is placed just before it
+    //However, some glsl es compilers eg. VideoCore IV treat it as invalid
+    //detect all for loops and their control variables
+    char * for_position=fpcodenew;
+    while((for_position=strstr(for_position,"for (;"))!=NULL)
+    {
+       char tmp[1024];
+       const char * control_var=for_position-1;
+       while(*control_var-- != ';');
+       const char * nameend=control_var;
+       while(*control_var-- != '=');
+       while(isspace(*control_var)) control_var--;
+       while(!isspace(*control_var)) control_var--;
+       assert(nameend-control_var+1 <= 1024);
+       snprintf(tmp, nameend-control_var+1, "%s", control_var+1);
+       //save the entire control initialisation statement
+       for_list_control_vars_inits.push_back(tmp);
+       for_position++;
+    }
+    const char * code_pos=fpcodenew;
+    for(unsigned int i=0; i< for_list_control_vars_inits.size(); i++)
+    {
+       char tmp[1024];
+       //get the name of the control variable from the initialisation statement
+       const char* var_name = for_list_control_vars_inits[i].substr(0, for_list_control_vars_inits[i].find(" ")).c_str();
+       const char* name_start=strstr(code_pos, var_name);
+       const char* type_end=name_start-1;
+       while(isspace(*type_end)) type_end--;
+       const char* type_start=type_end;
+       while(!isspace(*type_start) && *type_start!=';') type_start--;
+       assert(type_end-type_start+1 <= 1024);
+       snprintf(tmp, type_end-type_start+1, "%s", type_start+1);
+       //delete the declaration
+       replaceAll(fpcodenew, (string(tmp)+string(" ")+string(var_name)+string(";\n")).c_str(), "");
+       //delete the initialisation
+       replaceAll(fpcodenew, (for_list_control_vars_inits[i]+string(";\n")).c_str(), "");
+       char * control_var=fpcodenew;
+       //find the for statement we want to fix
+       for(unsigned int j=0; j< for_list_control_vars_inits.size(); j++) 
+          control_var=strstr(control_var,"for (;"); 
+       //put the type and the initialisation
+       string replacement_string=string("for ( ")+string(tmp)+string(" ")+for_list_control_vars_inits[i]+string(";");
+       replace(control_var, "for (;",  replacement_string.c_str());
+    } 
+    
     //Finally force high precision to have arithmetic accuracy instead of the default medium that cgc generates
     replaceAll(fpcodenew, "precision mediump float;", "precision highp float;");
   }
