@@ -782,7 +782,7 @@ void
 GLESContext::drawRectangle( const GPURegion& outputRegion, 
                            const GPUInterpolant* interpolants, 
                            unsigned int numInterpolants ) {
-  unsigned int w, h, i, v;
+  unsigned int w, h, i, v, output_id;
   unsigned int numOutputs, maxComponent;
   GLESTexture *outputTextures[32];
   static GLenum outputEnums[32]={0};
@@ -838,7 +838,7 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
     bindPixelShader((PixelShaderHandle) _boundPixelShader);
     
     // Bind the textures
-    for (i=0; i<32; i++) 
+    for (i=0; i</*32*/7 /*TODO we should make it MAXTEXTURE UNITS-1, so that the last one is assigned to output*/; i++) 
       if (_boundTextures[i]) {
 #ifdef GLES_PRINTOPS
         printf("Setting texture %u as input %d with size:%d,%d\n", _boundTextures[i]->id(), i, _boundTextures[i]->width(), _boundTextures[i]->height());
@@ -1084,7 +1084,7 @@ printf("Unbind framebuffer to stop drawing\n");
   */
 
 #if defined(_DEBUG) && 0
-  for (i=0; i<32; i++) 
+  for (i=0; i<7 /*TODO see earlier comment*/; i++) 
     if (_boundTextures[i]) {
       printf("Unsetting texture %u from input %d\n", _boundTextures[i]->id(), i);
       glActiveTexture(GL_TEXTURE0+i);
