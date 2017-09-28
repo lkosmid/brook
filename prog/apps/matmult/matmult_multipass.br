@@ -168,16 +168,16 @@ int main(int argc, char** argv)
     Height = cmd.Width;
     Width = cmd.Width;
     tile_size = cmd.Height;
-    if(tile_size > Width)
+    if(tile_size > 16)
     {
        tile_size = tile_size/16;
        transposed=1;
        printf("Tile Size > 16, so the multiplication will be transposed\n");
        printf("Tile Size=%d\n", tile_size);
       
-       if(tile_size > 256)
+       if(tile_size > 16)
        {
-          printf("Tile Size cannot be bigger than the matrix dimensions\n");
+          printf("Tile Size cannot be bigger than 16\n");
           exit(-1);
        }
     }
