@@ -784,10 +784,15 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
                            unsigned int numInterpolants ) {
   unsigned int w, h, i, v, output_id;
   unsigned int numOutputs, maxComponent;
-  GLESTexture *outputTextures[32];
-  static GLenum outputEnums[32]={0};
+#ifndef GLES3
+#define NOUTPUTS 1
+#else
+#define NOUTPUTS 32 //TODO: to be checked with GLES3 limits
+#endif
+  GLESTexture *outputTextures[NOUTPUTS];
+  static GLenum outputEnums[NOUTPUTS]={0};
   if(outputEnums[0]!=GL_COLOR_ATTACHMENT0)
-    for(i=0; i<32; i++)
+    for(i=0; i<NOUTPUTS; i++)
       outputEnums[i]=GL_COLOR_ATTACHMENT0+i;
 
   /* Here we assume that all of the outputs are of the same size */
@@ -804,7 +809,7 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
         maxComponent = outputTextures[i]->components();
     }
   }
-  for (i=0; i<32; i++) 
+  for (i=0; i<NOUTPUTS; i++) 
     if (_boundTextures[i]) {
       for(v=0; v<numOutputs; v++) {
         if(_boundTextures[i]==outputTextures[v]) {
