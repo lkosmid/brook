@@ -976,7 +976,7 @@ printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
   {
 	  char name[20];
 	  //sprintf(name, "gl_MultiTexCoord%d", numInterpolants);
-	  sprintf(name, "aTEX%d", i);
+	  snprintf(name, 20, "aTEX%d", i);
 #ifdef GLES_DEBUG
 		printf("Looking for Attribute %s at %s:%i\n", name, __FILE__, __LINE__);
 		printf("program id:%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
