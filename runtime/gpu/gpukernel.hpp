@@ -5,6 +5,10 @@
 #include "gpubase.hpp"
 #include "gpucontext.hpp"
 
+#ifdef PROFILING
+#include <sys/time.h>
+#endif
+
 namespace brook {
 
   class GPURuntime;
@@ -33,6 +37,13 @@ namespace brook {
   private:
     GPURuntime* _runtime;
     GPUContext* _context;
+    #ifdef PROFILING
+    //members to keep track kernel execution rate
+    struct timeval t1, t2;
+    struct timezone tz;
+    float totaltime;
+    unsigned int kernels;
+    #endif
 
     GPUKernel( GPURuntime* inRuntime );
     bool initialize( const void* inSource[] );

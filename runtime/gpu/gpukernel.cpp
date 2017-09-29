@@ -32,6 +32,11 @@ namespace brook
     : _runtime(inRuntime), _context(NULL)
   {
     _context = inRuntime->getContext();
+    #ifdef PROFILING
+    totaltime = 0.0;
+    kernels = 0;
+    gettimeofday ( &t1 , &tz );
+    #endif
   }
   
   GPUKernel::~GPUKernel()
@@ -496,11 +501,30 @@ namespace brook
 
   void GPUKernel::executeTechnique( const Technique& inTechnique )
   {
+    #ifdef PROFILING
+    float deltatime;
+    #endif
+
     PassList::const_iterator i;
     for( i = inTechnique.passes.begin(); i != inTechnique.passes.end(); i++ )
       {
+        #ifdef PROFILING
+        gettimeofday(&t2, &tz);
+        deltatime = (float)(t2.tv_sec - t1.tv_sec + (t2.tv_usec - t1.tv_usec) * 1e-6);
+        t1 = t2;
+        #endif
         executePass( *i );
         //      clearInputs();
+        #ifdef PROFILING
+        totaltime += deltatime;
+        kernels++;
+        if (totaltime >  2.0f)
+        {
+            printf("%4d kernels executed in %1.4f seconds -> KPS=%3.4f\n", kernels, totaltime, kernels/totaltime);
+            totaltime -= 2.0f;
+            kernels = 0;
+        }
+        #endif
       }
   }
   
