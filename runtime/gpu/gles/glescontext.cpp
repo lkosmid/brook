@@ -70,7 +70,7 @@ GLESContext::GLESContext():
   _wnd(NULL)
 {
   int i;
-  for (i=0; i<32; i++) {
+  for (i=0; i<_maxOutputCount; i++) {
     _outputTextures[i] = NULL;
     _outputTexturesCache[i] = NULL;
     _boundTextures[i] = NULL;
