@@ -987,7 +987,6 @@ for(int cn=0; cn<6; cn++ )
 }
 #endif
   }
-  _wnd->bindFBO();
  
   glVertexAttribPointer( vertex_index, 2, GL_FLOAT, 0, sizeof(float4), outputRegion.vertices);
   CHECK_GL();
