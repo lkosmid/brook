@@ -287,6 +287,9 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   CHECK_GL();
   glAttachShader(programid, id);
   CHECK_GL();
+  //Make sure that the vertices are in attribute 0
+  glBindAttribLocation ( programid, 0, "vPosition" );
+  CHECK_GL();
   glLinkProgram(programid);
   CHECK_GL();
 
@@ -789,6 +792,7 @@ GLESContext::drawRectangle( const GPURegion& outputRegion,
 #else
 #define NOUTPUTS 32 //TODO: to be checked with GLES3 limits
 #endif
+  GLint vertex_index=0;
   GLESTexture *outputTextures[NOUTPUTS];
   static GLenum outputEnums[NOUTPUTS]={0};
   if(outputEnums[0]!=GL_COLOR_ATTACHMENT0)
@@ -962,40 +966,17 @@ printf("minX=%d, minY=%d, width=%d, height=%d\n",  minX, minY, width, height );
 printf("Program id=%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
 #endif
 
-  GLint vertex_index=glGetAttribLocation(((GLESSLPixelShader*)_boundPixelShader)->programid, "vPosition"); 
-  CHECK_GL();
-  if(vertex_index == -1)
-  {
-        printf("Attribute not found at %s:%i\n", __FILE__, __LINE__);
-        assert(0);
-  }
-
   GLint * texture_locations=(GLint*)malloc(sizeof(void*)*numInterpolants); 
 
   for (i=0; i<numInterpolants; i++)
   {
-	  char name[20];
-	  //sprintf(name, "gl_MultiTexCoord%d", numInterpolants);
-	  snprintf(name, 20, "aTEX%d", i);
-#ifdef GLES_DEBUG
-		printf("Looking for Attribute %s at %s:%i\n", name, __FILE__, __LINE__);
-		printf("program id:%d\n", ((GLESSLPixelShader*)_boundPixelShader)->programid);
-#endif
-  	  texture_locations[i]=glGetAttribLocation(((GLESSLPixelShader*)_boundPixelShader)->programid, name); 
-  	  CHECK_GL_NOT_FATAL();
-  	  if(texture_locations[i] == -1)
-  	  {
-		printf("Attribute %s not found at %s:%i\n", name, __FILE__, __LINE__);
-  	  }
-          else
-          {
-	        //glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	        glActiveTexture(GL_TEXTURE0+i);
-                glEnableVertexAttribArray( texture_locations[i]);
-  	        CHECK_GL();
-	        //glTexCoordPointer(4, GL_FLOAT, 0, (GLfloat*) (interpolants[i].vertices));
-  	        glVertexAttribPointer( texture_locations[i], 4, GL_FLOAT, 0, 0, (GLfloat*) (interpolants[i].vertices));
-          }
+      //the vertices are bound to position 1, so after that we have the texture coordinates
+      texture_locations[i]= i+1; 
+      glVertexAttribPointer( texture_locations[i], 4, GL_FLOAT, 0, 0, (GLfloat*) (interpolants[i].vertices));
+      CHECK_GL();
+      glActiveTexture(GL_TEXTURE0+i);
+      glEnableVertexAttribArray( texture_locations[i]);
+      CHECK_GL();
 #ifdef GLES_DEBUG
 for(int cn=0; cn<6; cn++ )
 {
@@ -1005,16 +986,12 @@ for(int cn=0; cn<6; cn++ )
 	printf("Text Coord[%d].w=%f\n",cn, interpolants[i].vertices[cn].w);
 }
 #endif
-
-  	  CHECK_GL();
   }
   _wnd->bindFBO();
  
-  //glEnableClientState(GL_VERTEX_ARRAY);
-  glEnableVertexAttribArray( vertex_index);
-  CHECK_GL();
-  //glVertexPointer(2, GL_FLOAT, sizeof(float4), outputRegion.vertices);
   glVertexAttribPointer( vertex_index, 2, GL_FLOAT, 0, sizeof(float4), outputRegion.vertices);
+  CHECK_GL();
+  glEnableVertexAttribArray( vertex_index);
   CHECK_GL();
 #ifdef GLES_DEBUG
 for(int cn=0; cn<6; cn++ )
