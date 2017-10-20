@@ -46,9 +46,7 @@ FILES := \
 CFLAGS += -I../../common 
 LIBRARIES = $(RUNTIME_LIBS)
 
-$(EXECUTABLE): $(FILES)
-
 include $(ROOTDIR)/common.mk
 
-built/main.cpp: ./built/matmult_multipass.hpp 
+built/main.cpp: built/matmult_multipass.hpp 
 
