@@ -45,6 +45,7 @@
 #include "main.h"
 
 #include "token.h"
+#include "brtstemnt.h"
 extern int err_cnt;
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
@@ -273,10 +274,25 @@ TransUnit::findFunctionDef( fnFunctionCallback cb )
 
     for (ste=head, prev=NULL; ste; prev = ste, ste=ste->next) {
         // Function definition can only occur at the top level.
-        if (ste->isFuncDef()) {
+        if (ste->isFuncDef() || /*get also the kernel prototypes so that we can print them if we are processing a header*/
+               ( ste->isDeclaration() && ((DeclStemnt*)ste)->decls.size()==1 && 
+                 (  ((DeclStemnt*)ste)->decls[0]->isKernel() || ((DeclStemnt*)ste)->decls[0]->isReduce() ) 
+               ) 
+           ) 
+        {
+
            FunctionDef *newDef;
 
-           newDef = (cb)((FunctionDef*) ste);
+           if(ste->isDeclaration())
+           {
+               //it's a kernel prototype, so let's make a definition object
+               newDef = new FunctionDef(NoLocation);
+               newDef->decl = ((DeclStemnt*)ste)->decls[0];
+               ((DeclStemnt*)ste)->decls[0]->name->entry->u2FunctionDef = newDef;
+           }
+           else
+               newDef = (cb)((FunctionDef*) ste);
+
            if (newDef == NULL) { continue; }
 
 
@@ -380,7 +396,10 @@ operator<<(std::ostream& out, const TransUnit& tu)
 			if (stemnt->isInclude())
 				inInclude++;
 
-        	out << *stemnt << std::endl;
+			if (stemnt->isFuncDef() && globals.isHeader)
+				((BRTKernelDef*)stemnt)->printStub(out, true);
+			else
+				out << *stemnt << std::endl;
 		}
 	}
 

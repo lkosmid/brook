@@ -20,7 +20,7 @@ class BRTKernelDef : public FunctionDef
        return new BRTKernelDef(*static_cast<const FunctionDef*>(this)); };
     void print(std::ostream& out, int level) const;
 
-    void printStub(std::ostream& out) const;
+    void printStub(std::ostream& out, bool only_prototype=false) const;
     virtual void PrintVoutPrefix(std::ostream & out)const;
     virtual void PrintVoutDimensionalShift(std::ostream & out,
                                            Decl * decl, 

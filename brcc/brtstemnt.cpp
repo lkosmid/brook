@@ -397,7 +397,7 @@ static void printPrototypes(std::ostream & out, std::string type) {
 }
 
 void
-BRTKernelDef::printStub(std::ostream& out) const
+BRTKernelDef::printStub(std::ostream& out, bool only_prototype) const
 {
   if (!returnsVoid())return;
    FunctionType *fType;
@@ -473,7 +473,14 @@ BRTKernelDef::printStub(std::ostream& out) const
             fType->args[i]->form->printType(out,&name,true,0);
          }
       }
-      out << ") {\n";
+      out << ") ";
+      if(only_prototype)
+      {
+         out << ";\n";
+      }
+      else
+      {
+      out << "{\n";
       // ned: We need to duplicate those inputs locally to prevent values being aliased
       for (i = 0; i < NumArgs; i++) {
          if ((fType->args[i]->form->getQualifiers()&TQ_Reduce)!=0){
@@ -547,6 +554,7 @@ BRTKernelDef::printStub(std::ostream& out) const
       if (vout)
          PrintVoutPostfix(out);
       out << "\n}\n\n";
+      }
    }while (incrementBoolVec(streamOrVal));
 }
 

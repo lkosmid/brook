@@ -29,7 +29,7 @@ struct globals_struct {
       printLineDirectives=false,allowDX9MultiOut=false;
       enableGPUAddressTranslation=false;
       allowKernelToKernel=true,noTypeChecks=false;
-      favorcompiler=0,arch=0;
+      favorcompiler=0,arch=0,isHeader=false;
   }             
   bool verbose;
   bool parseOnly;
@@ -50,6 +50,7 @@ struct globals_struct {
   int arch;
   // TIM: hacked flag for now
   bool enableKernelSplitting;
+  bool isHeader;
 };
 
 extern struct globals_struct globals;

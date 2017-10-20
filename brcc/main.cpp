@@ -196,13 +196,13 @@ parse_args (int argc, char *argv[]) {
 
   n = strlen(globals.sourcename);
   int suffixLength;
-  bool isHeader = false;
+  globals.isHeader = false;
   if (n >= 3 && !strcmp (globals.sourcename + n - 3, ".br")) {
     suffixLength = 3;
   }
   else if (n >= 4 && !strcmp(globals.sourcename + n - 4, ".brh")) {
     suffixLength = 4;
-    isHeader = true;
+    globals.isHeader = true;
   }
   else {
     usage();
@@ -217,7 +217,7 @@ parse_args (int argc, char *argv[]) {
 
   globals.coutputname = (char *) malloc (strlen(outputprefix) +
 					 suffixLength + 2);
-  if( isHeader ) {
+  if( globals.isHeader ) {
     sprintf (globals.coutputname, "%s.hpp",outputprefix);
   } else {
     sprintf (globals.coutputname, "%s.cpp",outputprefix);
