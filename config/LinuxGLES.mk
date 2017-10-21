@@ -1,5 +1,6 @@
 ## Linux settings
 
+CPP              := cpp 
 CC               := g++ 
 LD               := g++
 AR               := ar
@@ -15,7 +16,6 @@ SYSTEM_LIBS      :=
 
 CFLAGS           += -DBUILD_GLES -DRPI_NO_X
 #CFLAGS           += -fopenmp 
-C_CPP_FLAG	 := -E
 C_INCLUDE_FLAG   := -I
 C_DEBUG_FLAG     := -g3 -Wall 
 C_RELEASE_FLAG   := -O3 -funroll-all-loops  -fexpensive-optimizations -ffast-math -finline-functions -frerun-loop-opt 

@@ -149,7 +149,7 @@ endif
 
 ##  Compile .brhi files  ##
 $(OBJDIR)/%.hpp: %.brhi
-	$(CC) $(C_CPP_FLAG) $< > $(OBJDIR)/$*.brh
+	$(CPP) $< > $(OBJDIR)/$*.brh
 	$(BRCC) $(BRCCFLAGS) -o $(OBJDIR)/$* $(OBJDIR)/$*.brh
 
 
@@ -182,7 +182,7 @@ endif
 
 ##  Compile .bri files ##
 $(OBJDIR)/%.cpp: %.bri
-	$(CC) $(C_CPP_FLAG) $< > $(OBJDIR)/$*.br
+	$(CPP) $< > $(OBJDIR)/$*.br
 ifndef COMPILER_ECHOES
 	@$(ECHO) $*.br
 endif
