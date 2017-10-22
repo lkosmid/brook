@@ -463,7 +463,22 @@ InclStemnt::print(std::ostream& out, int level) const
 #endif
 
     out << "#include " << (isStandard ? '<' : '"');
-    out << filename << (isStandard ? '>' : '"') << std::endl;
+    //if we include a .brhi header, include the corresponding generated hpp 
+    if(filename.find(".brhi") != std::string::npos)
+    {
+        std::string output_file(globals.coutputname); 
+        size_t prefix_pos = output_file.find_last_of("\/\\");
+        std::string prefix = output_file.substr(0,prefix_pos);
+
+        if(prefix_pos != std::string::npos)
+                out << prefix << "/" ;
+
+        out << filename.substr(0, filename.length()-5) + std::string(".hpp");
+    }
+    else
+        out << filename;
+
+    out << (isStandard ? '>' : '"') << std::endl;
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

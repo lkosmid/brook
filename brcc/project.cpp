@@ -275,7 +275,7 @@ TransUnit::findFunctionDef( fnFunctionCallback cb )
     for (ste=head, prev=NULL; ste; prev = ste, ste=ste->next) {
         // Function definition can only occur at the top level.
         if (ste->isFuncDef() || /*get also the kernel prototypes so that we can print them if we are processing a header*/
-               ( ste->isDeclaration() && ((DeclStemnt*)ste)->decls.size()==1 && 
+               ( globals.isHeader && ste->isDeclaration() && ((DeclStemnt*)ste)->decls.size()==1 && 
                  (  ((DeclStemnt*)ste)->decls[0]->isKernel() || ((DeclStemnt*)ste)->decls[0]->isReduce() ) 
                ) 
            ) 
