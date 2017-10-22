@@ -50,19 +50,16 @@ POSSIBILITY OF SUCH DAMAGE.
  * \param	B Input matrix B(KxN)
  * \param	result Output matrix(MxN)
 */
+#include "define.h"
 
 kernel void sgemm(float a[][], float b[][], float interm[][], float tile, float tile_size, out float c<> ) {
         float sum=0.0;
         int i;
         float2 index=indexof(c).xy;
         float2 index_a, index_b;
-        const float maxiterations=16.0;
 
-        for(i=0.0; i< maxiterations; i+=1.0)
+        for(i=0.0; i< MAX_ITERATIONS; i+=1.0)
         {
-           if(i >= tile_size)
-              break;
-
            index_a=float2(i+tile_size*tile, index.y);
            index_b=float2(index.x, i+ tile_size*tile);
 	   sum += a[index_a] * b[index_b];
@@ -75,13 +72,9 @@ kernel void sgemm_transposed(float a[][], float b[][], float interm[][], float t
         int i;
         float2 index=indexof(c).xy;
         float2 index_a;
-        const float maxiterations=16.0;
 
-        for(i=0.0; i< maxiterations; i+=1.0)
+        for(i=0.0; i< MAX_ITERATIONS; i+=1.0)
         {
-           if(i >= tile_size)
-              break;
-
            index_a=float2(i+tile_size*tile, index.y);
 	   sum += a[index_a] * b[index_a];
         }

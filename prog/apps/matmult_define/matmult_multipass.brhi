@@ -1,3 +1,4 @@
+#include "define.h"
 
 kernel void sgemm(float a[][], float b[][], float interm[][], float tile, float tile_size, out float c<> ) ;
 kernel void sgemm_transposed(float a[][], float b[][], float interm[][], float tile, float tile_size, out float c<> ) ;

@@ -1,0 +1,1 @@
+#define MAX_ITERATIONS 16.0

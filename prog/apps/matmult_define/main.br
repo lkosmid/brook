@@ -124,11 +124,11 @@ int main(int argc, char** argv)
     Height = cmd.Width;
     Width = cmd.Width;
     tile_size = cmd.Height;
-    if(tile_size > 16)
+    if(tile_size > MAX_ITERATIONS)
     {
-       tile_size = tile_size/16;
+       tile_size = tile_size/MAX_ITERATIONS;
        transposed=1;
-       printf("Tile Size > 16, so the multiplication will be transposed\n");
+       printf("Tile Size > %d, so the multiplication will be transposed\n", (int) MAX_ITERATIONS);
        printf("Tile Size=%d\n", tile_size);
       
        if(tile_size > 16)
@@ -136,6 +136,11 @@ int main(int argc, char** argv)
           printf("Tile Size cannot be bigger than 16\n");
           exit(-1);
        }
+    }
+    if(tile_size != MAX_ITERATIONS)
+    {
+       printf("Tile Size=%d cannot be different than MAX_ITERATIONS=%d\n", tile_size, (int) MAX_ITERATIONS);
+       exit(-1);
     }
 
     /////////////////////////////////////////////////////////////////////////
