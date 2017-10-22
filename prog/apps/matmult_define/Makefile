@@ -48,5 +48,6 @@ LIBRARIES = $(RUNTIME_LIBS)
 
 include $(ROOTDIR)/common.mk
 
+built/matmult_multipass.cpp: built/matmult_multipass.hpp 
 built/main.cpp: built/matmult_multipass.hpp 
 

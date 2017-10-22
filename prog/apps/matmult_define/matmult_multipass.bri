@@ -50,7 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
  * \param	B Input matrix B(KxN)
  * \param	result Output matrix(MxN)
 */
-#include "define.h"
+#include "matmult_multipass.brhi"
 
 kernel void sgemm(float a[][], float b[][], float interm[][], float tile, float tile_size, out float c<> ) {
         float sum=0.0;
