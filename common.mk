@@ -138,11 +138,19 @@ $(DEPDIR)/%.depend: %.cpp
 	@$(ECHO) "Rebuilding dependencies for $<"
 	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
 
-$(DEPDIR)/%.depend: %.br
+$(DEPDIR)/%.depend: $(OBJDIR)/%.hpp
+	@$(ECHO) "Rebuilding dependencies for $*.brhi"
+	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $*.brhi > $@
+	@$(ECHO) "Rebuilding dependencies for $<"
+	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
+	@$(ECHO) "Rebuilding dependencies for $*.bri"
+	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $*.bri > $@
+
+$(DEPDIR)/%.depend: %.bri
 	@$(ECHO) "Rebuilding dependencies for $<"
 	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
 
-$(DEPDIR)/%.depend: %.bri
+$(DEPDIR)/%.depend: %.br
 	@$(ECHO) "Rebuilding dependencies for $<"
 	@$(PERL) $(FASTDEPS) -I. -I$(INCLUDEDIR) --obj-suffix='$(OBJSUFFIX)' --obj-prefix='$(OBJDIR)/' $< > $@
 endif

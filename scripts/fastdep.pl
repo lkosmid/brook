@@ -139,7 +139,22 @@ foreach $file ( @files ) {
     $obj .= " " . $t;
   }
   foreach $deps ( depends($file) ) {
-    print "$obj: $deps\n";
+    $basefile = $obj_prefix . $1;
+    $target = $basefile . ".o";
+    if ($file =~ /(.*)\.bri$/) {
+        $target = $basefile . ".br";
+        if ($deps =~ /(.*)\.h$/) {
+           $target = $basefile . ".cpp";
+        }
+    }
+    elsif ($file =~ /(.*)\.brhi$/) {
+        $target = $basefile . ".hpp";
+    }
+    elsif ($file =~ /(.*)\.br$/) {
+        $target = $basefile . ".cpp";
+    }
+
+    print "$target: $deps\n";
   }
 
   if ($file =~ /(.*)\.br$/) {
@@ -149,13 +164,17 @@ foreach $file ( @files ) {
      print "$obj_prefix$basefile.cpp: \$(BROOKDIR)/bin/brcc\$(BINSUFFIX)\n";
      print "$obj_prefix$basefile.cpp: $file\n";
   }
-
-  if ($file =~ /(.*)\.bri$/) {
+  elsif($file =~ /(.*)\.bri$/) {
      $basefile = $1;
 
      print "$obj: $obj_prefix$basefile.cpp\n";
      print "$obj_prefix$basefile.cpp: \$(BROOKDIR)/bin/brcc\$(BINSUFFIX)\n";
      print "$obj_prefix$basefile.cpp: $obj_prefix$basefile.br\n";
-     print "$obj_prefix$basefile.br: $file\n";
+  }
+  elsif($file =~ /(.*)\.brhi$/) {
+     $basefile = $1;
+
+     print "$obj_prefix$basefile.brh: $file\n";
+     print "$obj_prefix$basefile.hpp: $obj_prefix$basefile.brh\n";
   }
 }
