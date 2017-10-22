@@ -146,6 +146,10 @@ foreach $file ( @files ) {
         if ($deps =~ /(.*)\.h$/) {
            $target = $basefile . ".cpp";
         }
+        elsif ($deps =~ /(.*)\.brhi$/) {
+           $target = $basefile . ".cpp";
+	   print "$target: $basefile" . ".hpp\n";
+        }
     }
     elsif ($file =~ /(.*)\.brhi$/) {
         $target = $basefile . ".hpp";
