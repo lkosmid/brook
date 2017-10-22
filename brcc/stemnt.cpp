@@ -453,6 +453,20 @@ InclStemnt::dup0() const
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
+static void
+replace_brhi_by_hpp(std::ostream& out, std::string include_file) 
+{
+       std::string output_file(globals.coutputname); 
+       size_t prefix_pos = output_file.find_last_of("\/\\");
+       std::string prefix = output_file.substr(0,prefix_pos);
+
+       if(prefix_pos != std::string::npos)
+               out << prefix << "/" ;
+
+       out << include_file.substr(0, include_file.length()-5) + std::string(".hpp");
+}
+
+// o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 void
 InclStemnt::print(std::ostream& out, int level) const
 {
@@ -465,16 +479,7 @@ InclStemnt::print(std::ostream& out, int level) const
     out << "#include " << (isStandard ? '<' : '"');
     //if we include a .brhi header, include the corresponding generated hpp 
     if(filename.find(".brhi") != std::string::npos)
-    {
-        std::string output_file(globals.coutputname); 
-        size_t prefix_pos = output_file.find_last_of("\/\\");
-        std::string prefix = output_file.substr(0,prefix_pos);
-
-        if(prefix_pos != std::string::npos)
-                out << prefix << "/" ;
-
-        out << filename.substr(0, filename.length()-5) + std::string(".hpp");
-    }
+        replace_brhi_by_hpp(out, filename);
     else
         out << filename;
 
@@ -1659,7 +1664,17 @@ PPDirective::print(std::ostream& out, int level) const
   out << ">$";
 #endif
 
-  out << directive << "\n";
+  if(directive.find(".brhi") != std::string::npos)
+  {
+       size_t filename_start = directive.find('"');
+       size_t filename_end = directive.find_last_of('"');
+       std::string filename = directive.substr(filename_start+1, filename_end - filename_start -1);
+       out << "#include " << '"';
+       replace_brhi_by_hpp(out, filename);
+       out << "\"\n";
+  }
+  else
+      out << directive << "\n";
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
