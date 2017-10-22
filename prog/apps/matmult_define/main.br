@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 #include "common.h"
 #include "Timer.h"
-#include "built/matmult_multipass.hpp"
+#include "matmult_multipass.brhi"
 static int retval = 0;
 
 
