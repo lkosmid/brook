@@ -252,6 +252,8 @@ out:
     getTextureData(inTexture, (float *) t2, inStrideBytes, inComponentCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation);
     for(unsigned int n=0; n<inComponentCount; n++)
 	{
+		if(glesTexture->format() == GLESTexture::GLES_FLOAT)
+		{
 			printf("inData[%d]:%f\n",n, /*(int)*/((float *)inData)[n]);
 			printf("t2[%d]:%f\n",n, /*(int)*/((float *)t2)[n]);
         if(fabs(((float *)inData)[n]-((float *)t2)[n])>0.0001)
@@ -261,6 +263,24 @@ out:
             printf("Texture contents do not match what was just written to it!\n");
             abort();
         }
+		}
+		else if(glesTexture->format() == GLESTexture::GLES_CHAR)
+		{
+			printf("inData[%d]:%f\n",n, ((unsigned char *)inData)[n]);
+			printf("t2[%d]:%f\n",n, ((unsigned char *)t2)[n]);
+ 			if(((unsigned char *)inData)[n] != ((unsigned char *)t2)[n])
+ 			{
+			   printf("inData[%d]:%d\n",n, (int)((unsigned char *)inData)[n]);
+			   printf("t2[%d]:%f\n",n, (int)((unsigned char *)t2)[n]);
+ 			   printf("Texture contents do not match what was just written to it!\n");
+ 			   abort();
+ 			}
+ 		}
+		else 
+		{
+ 			   printf("Unknown format, cannot ensure that texture contents match what was just written to it!\n");
+ 			   abort();
+ 		}
 	}
 	brfree(t2);
   }

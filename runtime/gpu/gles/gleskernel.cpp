@@ -43,6 +43,17 @@ static const char passthrough_pixel[] =
       "  reconstructed = tmp;"\
       "}\n" 
 
+//TODO: all the char reconstruct/encode code is just a copy of the unsigned version
+//it needs to be replaced with the signed one
+#define reconstruct_char \
+      "#define reconstruct_char(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp float tmp;"\
+      "  tmp = floor(256.0*u_split.x - (u_split.x/255.0));"\
+      "  reconstructed = tmp;"\
+      "}\n" 
+
 #define reconstruct_int\
       "#define reconstruct_int(reconstructed, textureUnit0, vTexCoord0)"\
       "{"\
@@ -102,6 +113,15 @@ static const char passthrough_pixel[] =
       "  gl_FragColor = u_split;"\
       "}\n" 
 
+#define encode_output_char\
+      "#define encode_output_char(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  u_split.x = fract((reconstructed - 256.0*floor(reconstructed*0.00390625))/255.0) ;"\
+      "  u_split.yzw = vec3(0.0) ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
 #define encode_output_int\
       "#define encode_output_int(reconstructed)"\
       "{" \
@@ -150,11 +170,13 @@ static const char passthrough_pixel[] =
       "  gl_FragColor = u_split;"\
       "}\n" 
 
+static const std::string reconstruct_char_str(reconstruct_char);
 static const std::string reconstruct_unsigned_int_str(reconstruct_unsigned_int);
 static const std::string reconstruct_float_header_str(reconstruct_float_header);
 static const std::string reconstruct_float_highp_str(reconstruct_float_highp);
 static const std::string reconstruct_float_epilogue_str(reconstruct_float_epilogue);
 
+static const std::string encode_output_char_str(encode_output_char);
 static const std::string encode_output_float_header_str(encode_output_float_header);
 static const std::string encode_output_float_highp_str(encode_output_float_highp);
 static const std::string encode_output_float_lowp_str(encode_output_float_lowp);
@@ -177,6 +199,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
 
   program_string=this->program_string;
   bool float_input=false;
+  bool char_input=false;
   //Check the input stream types and add their helper functions in the shader source
   while (*program_string&&(program_string=strstr(program_string,"reconstruct_"))!=NULL) {
     program_string+=12;
@@ -188,6 +211,11 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
 #endif
        custom_program+=reconstruct_float_epilogue_str;
        float_input=true;
+    }
+    else if(!char_input && (strncmp(program_string, "char", 4)==0))
+    {
+       custom_program+=reconstruct_char_str;
+       char_input=true;
     }
   }
 
@@ -205,6 +233,11 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
 #endif
        custom_program+=encode_output_float_epilogue_str;
        break; //only one input supported in GLES and no need to check since we did it during compilation
+    }
+    else if(strncmp(program_string, "char", 4)==0)
+    {
+       custom_program+=encode_output_char_str;
+       break; 
     }
   }
 

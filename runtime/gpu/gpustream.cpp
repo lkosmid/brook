@@ -156,6 +156,10 @@ namespace brook
         size_t fieldComponentCount;
         
         switch (fieldType) {
+        case __BRTCHAR:
+          fieldComponentCount=1;
+          fieldTextureFormat = GPUContext::kTextureFormat_Char1;
+          break;
         case __BRTFLOAT:
           fieldComponentCount=1;
           fieldTextureFormat = GPUContext::kTextureFormat_Float1;

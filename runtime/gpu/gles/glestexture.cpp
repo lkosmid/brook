@@ -8,6 +8,9 @@
 
 using namespace brook;
 
+//TODO: all the code that uses these arrays needs to be rewritten since it
+//results in out of bounds accesses and probably incorrect values
+
 // These are the official OpenGL formats. No vendor fully supports these yet for FBO's
 static const unsigned int glFormatSTD[4][1] = {
                     {GL_LUMINANCE},
@@ -68,6 +71,9 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    _elementType=GLES_FLOAT;
    
    switch (_format) {
+   case GPUContext::kTextureFormat_Char1:
+       _elementType=GLES_CHAR;
+       break;
    case GPUContext::kTextureFormat_Float1:
    case GPUContext::kTextureFormat_Float2:
    case GPUContext::kTextureFormat_Float3:
@@ -88,6 +94,7 @@ GLESTexture::GLESTexture (GLESContext *ctx,
        break;
    }
    switch (_format) {
+   case GPUContext::kTextureFormat_Char1:
    case GPUContext::kTextureFormat_Float1:
    case GPUContext::kTextureFormat_Fixed1:
    case GPUContext::kTextureFormat_ShortFixed1:
@@ -213,7 +220,7 @@ GLESTexture::copyToTextureFormat(const void *src,
    case 3:
    case 4:
       for (i=0; i<srcElemCount; i++) {
-         if(1)//type==floating point
+         if(_elementType == GLES_FLOAT)//type==floating point
          {
             convert_fp_to_gpu(dst, src);
             dst = (((unsigned char *) (dst)) + srcStrideBytes);
@@ -222,9 +229,9 @@ GLESTexture::copyToTextureFormat(const void *src,
          else
          {
             //In GLES 2.0 we read 4 components except in the case of char streams
-            memcpy(dst,src,4*_atomsize*_components);
+            memcpy(dst,src,1/*_atomsize*_components*/);
             src = (((unsigned char *) (src)) + srcStrideBytes);
-            dst = ((unsigned char *)dst) + 4*_elemsize*_atomsize;
+            dst = ((unsigned char *)dst) + 4/*_elemsize*_atomsize*/;
          }
       }
       break;
@@ -240,14 +247,14 @@ GLESTexture::copyFromTextureFormat(const void *src,
                                   unsigned int dstElemCount,
                                   void *dst) const {
    unsigned int i;
-   
+
    switch (_components) {
    case 1:
    case 2: 
    case 3:
    case 4:
       for (i=0; i<dstElemCount; i++) {
-         if(1)//type==floating point
+         if(_elementType == GLES_FLOAT)//type==floating point
          {
             convert_fp_from_gpu(dst, src);
             dst = (((unsigned char *) (dst)) + dstStrideBytes);
@@ -256,9 +263,9 @@ GLESTexture::copyFromTextureFormat(const void *src,
          else
          {
             //In GLES 2.0 we read 4 components except in the case of char streams
-            memcpy(dst,src,4*_atomsize*_components);
+            memcpy(dst,src,1/*_atomsize*_components*/);
             dst = (((unsigned char *) (dst)) + dstStrideBytes);
-            src = ((unsigned char *)src) + 4*_elemsize*_atomsize;
+            src = ((unsigned char *)src) + 4/*_elemsize*_atomsize*/;
          }
       }
       break;
