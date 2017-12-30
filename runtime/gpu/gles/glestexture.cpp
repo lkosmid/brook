@@ -9,18 +9,18 @@
 using namespace brook;
 
 // These are the official OpenGL formats. No vendor fully supports these yet for FBO's
-static const unsigned int glFormatSTD[4][3] = {
-                    {GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE},
-                    {GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA},
-                    {GL_RGB, GL_RGB, GL_RGB},
-                    {GL_RGBA, GL_RGBA, GL_RGBA}};
-static const unsigned int glTypeSTD[4][3] = {
-                {GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE},
-                {GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA},
-                {GL_RGB, GL_RGB, GL_RGB},
-                {GL_RGBA, GL_RGBA, GL_RGBA}};
-static const unsigned int sizeFactorSTD[4][3] = { {1,1,1}, {2,2,2}, {3,3,3}, {4,4,4} };
-static const unsigned int atomSizeSTD  [4][3] = { {4,2,1}, {4,2,1}, {4,2,1}, {4,2,1} };
+static const unsigned int glFormatSTD[4][GLESTexture::GLES_NUMFORMATS] = {
+                    {GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE},
+                    {GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA},
+                    {GL_RGB, GL_RGB, GL_RGB, GL_RGB},
+                    {GL_RGBA, GL_RGBA, GL_RGBA, GL_RGBA}};
+static const unsigned int glTypeSTD[4][GLESTexture::GLES_NUMFORMATS] = {
+                {GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE},
+                {GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA},
+                {GL_RGB, GL_RGB, GL_RGB, GL_RGB},
+                {GL_RGBA, GL_RGBA, GL_RGBA, GL_RGBA}};
+static const unsigned int sizeFactorSTD[4][GLESTexture::GLES_NUMFORMATS] = { {1,1,1,1}, {2,2,2,2}, {3,3,3,3}, {4,4,4,4} };
+static const unsigned int atomSizeSTD  [4][GLESTexture::GLES_NUMFORMATS] = { {1,2,1,4}, {4,2,1,1}, {4,2,1,1}, {4,2,1,1} };
 
 #if 0
 
@@ -121,10 +121,10 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    Three components
    Four components
    */
-   unsigned int glFormat  [4][3]; memcpy(glFormat,   glFormatSTD,   sizeof(glFormatSTD));
-   unsigned int glType    [4][3]; memcpy(glType,     glTypeSTD,     sizeof(glTypeSTD));
-   unsigned int sizeFactor[4][3]; memcpy(sizeFactor, sizeFactorSTD, sizeof(sizeFactorSTD));
-   unsigned int atomSize  [4][3]; memcpy(atomSize,   atomSizeSTD,   sizeof(atomSizeSTD));
+   unsigned int glFormat  [4][GLESTexture::GLES_NUMFORMATS]; memcpy(glFormat,   glFormatSTD,   sizeof(glFormatSTD));
+   unsigned int glType    [4][GLESTexture::GLES_NUMFORMATS]; memcpy(glType,     glTypeSTD,     sizeof(glTypeSTD));
+   unsigned int sizeFactor[4][GLESTexture::GLES_NUMFORMATS]; memcpy(sizeFactor, sizeFactorSTD, sizeof(sizeFactorSTD));
+   unsigned int atomSize  [4][GLESTexture::GLES_NUMFORMATS]; memcpy(atomSize,   atomSizeSTD,   sizeof(atomSizeSTD));
    _atomsize = atomSize[_components-1][_elementType];
    _bytesize = _width*_height*sizeFactor[_components-1][_elementType]*_atomsize;
    _elemsize = sizeFactor[_components-1][_elementType];
