@@ -269,12 +269,12 @@ out:
 		}
 		else if(glesTexture->elementType() == GLESTexture::GLES_CHAR)
 		{
-			printf("inData[%d]:%f\n",n, ((unsigned char *)inData)[n]);
-			printf("t2[%d]:%f\n",n, ((unsigned char *)t2)[n]);
+			printf("inData[%d]:%d\n",n, ((unsigned char *)inData)[n]);
+			printf("t2[%d]:%d\n",n, ((unsigned char *)t2)[n]);
  			if(((unsigned char *)inData)[n] != ((unsigned char *)t2)[n])
  			{
 			   printf("inData[%d]:%d\n",n, (int)((unsigned char *)inData)[n]);
-			   printf("t2[%d]:%f\n",n, (int)((unsigned char *)t2)[n]);
+			   printf("t2[%d]:%d\n",n, (int)((unsigned char *)t2)[n]);
  			   printf("Texture contents do not match what was just written to it!\n");
  			   abort();
  			}

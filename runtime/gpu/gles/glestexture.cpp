@@ -229,9 +229,9 @@ GLESTexture::copyToTextureFormat(const void *src,
          else
          {
             //In GLES 2.0 we read 4 components except in the case of char streams
-            memcpy(dst,src,1/*_atomsize*_components*/);
+            memcpy(dst,src,_atomsize*_components);
             src = (((unsigned char *) (src)) + srcStrideBytes);
-            dst = ((unsigned char *)dst) + 4/*_elemsize*_atomsize*/;
+            dst = ((unsigned char *)dst) + _elemsize*_atomsize;
          }
       }
       break;
@@ -263,9 +263,9 @@ GLESTexture::copyFromTextureFormat(const void *src,
          else
          {
             //In GLES 2.0 we read 4 components except in the case of char streams
-            memcpy(dst,src,1/*_atomsize*_components*/);
+            memcpy(dst,src,_atomsize*_components);
             dst = (((unsigned char *) (dst)) + dstStrideBytes);
-            src = ((unsigned char *)src) + 4/*_elemsize*_atomsize*/;
+            src = ((unsigned char *)src) + _elemsize*_atomsize;
          }
       }
       break;
