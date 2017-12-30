@@ -43,14 +43,13 @@ static const char passthrough_pixel[] =
       "  reconstructed = tmp;"\
       "}\n" 
 
-//TODO: all the char reconstruct/encode code is just a copy of the unsigned version
-//it needs to be replaced with the signed one
 #define reconstruct_char \
       "#define reconstruct_char(reconstructed, textureUnit0, vTexCoord0)"\
       "{"\
       "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
       "  highp float tmp;"\
-      "  tmp = floor(256.0*u_split.x - (u_split.x/255.0));"\
+      "  if(u_split.x > 0.5) u_split.x -= 1.00392156862745098;"\
+      "  tmp = floor(u_split.x*255.996078431372549);"\
       "  reconstructed = tmp;"\
       "}\n" 
 
@@ -117,7 +116,8 @@ static const char passthrough_pixel[] =
       "#define encode_output_char(reconstructed)"\
       "{" \
       "  highp vec4 u_split;"\
-      "  u_split.x = fract((reconstructed - 256.0*floor(reconstructed*0.00390625))/255.0) ;"\
+      "  if(reconstructed < 0.0) reconstructed += 256.0;"\
+      "  u_split.x = (reconstructed - 256.0*floor(reconstructed*0.00390625))*0.00392156862745098 ;"\
       "  u_split.yzw = vec3(0.0) ;"\
       "  gl_FragColor = u_split;"\
       "}\n" 
