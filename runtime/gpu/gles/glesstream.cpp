@@ -255,7 +255,7 @@ out:
     getTextureData(inTexture, (float *) t2, inStrideBytes, inComponentCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation);
     for(unsigned int n=0; n<inComponentCount; n++)
 	{
-		if(glesTexture->format() == GLESTexture::GLES_FLOAT)
+		if(glesTexture->elementType() == GLESTexture::GLES_FLOAT)
 		{
 			printf("inData[%d]:%f\n",n, /*(int)*/((float *)inData)[n]);
 			printf("t2[%d]:%f\n",n, /*(int)*/((float *)t2)[n]);
@@ -267,7 +267,7 @@ out:
             abort();
         }
 		}
-		else if(glesTexture->format() == GLESTexture::GLES_CHAR)
+		else if(glesTexture->elementType() == GLESTexture::GLES_CHAR)
 		{
 			printf("inData[%d]:%f\n",n, ((unsigned char *)inData)[n]);
 			printf("t2[%d]:%f\n",n, ((unsigned char *)t2)[n]);
