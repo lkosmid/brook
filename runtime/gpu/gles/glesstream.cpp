@@ -205,7 +205,7 @@ GLESContext::setTextureData(TextureHandle inTexture,
   // by only allocating as much memory as the
   // domain needs
   //In OpenGL ES we read all 4 components when input is not char
-  t = brmalloc (4*glesTexture->bytesize());
+  t = brmalloc (glesTexture->bytesize());
   CHECK_GL();
   if( !fullStream && inUsesAddressTranslation )
   {
@@ -251,7 +251,7 @@ out:
   if(inStrideBytes==glesTexture->atomsize()*glesTexture->components())
   {
     //In OpenGL ES we read all 4 components when input is not char
-    void *t2 = brmalloc (4*glesTexture->bytesize());
+    void *t2 = brmalloc (glesTexture->bytesize());
     getTextureData(inTexture, (float *) t2, inStrideBytes, inComponentCount, inRank, inDomainMin, inDomainMax, inExtents, inUsesAddressTranslation);
     for(unsigned int n=0; n<inComponentCount; n++)
 	{
@@ -318,7 +318,7 @@ GLESContext::getTextureData( TextureHandle inTexture,
    if (!fastPath)
    {
      //In OpenGL ES we read all 4 components when input is not char
-     t = brmalloc (glesTexture->bytesize()*4);
+     t = brmalloc (glesTexture->bytesize());
    }
 
    glPixelStorei(GL_PACK_ALIGNMENT,1);

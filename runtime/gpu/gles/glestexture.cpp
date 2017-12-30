@@ -20,7 +20,7 @@ static const unsigned int glTypeSTD[4][GLESTexture::GLES_NUMFORMATS] = {
                 {GL_RGB, GL_RGB, GL_RGB, GL_RGB},
                 {GL_RGBA, GL_RGBA, GL_RGBA, GL_RGBA}};*/
 static const unsigned int sizeFactorSTD[4][GLESTexture::GLES_NUMFORMATS] = { {1,1,1,1}, {2,2,2,2}, {3,3,3,3}, {4,4,4,4} };
-static const unsigned int atomSizeSTD  [4][GLESTexture::GLES_NUMFORMATS] = { {1,2,1,4}, {4,2,1,1}, {4,2,1,1}, {4,2,1,1} };
+static const unsigned int atomSizeSTD  [4][GLESTexture::GLES_NUMFORMATS] = { {4,2,1,4}, {4,2,1,1}, {4,2,1,1}, {4,2,1,1} };
 
 #if 0
 
@@ -65,6 +65,14 @@ GLESTexture::GLESTexture (GLESContext *ctx,
                         unsigned int height,
                         GPUContext::TextureFormat format):
    _width(width), _height(height), _format(format) {
+
+   //many implementations require square textures, so give it to them
+   //this may waste precious GPU memory, but works
+   if(width < height)
+     _width = _height = width = height;
+   else
+     _height = _width = height = width;
+  
    _elementType=GLES_FLOAT;
    
    switch (_format) {
@@ -150,13 +158,6 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    CHECK_GL();
 
-   //many implementations require square textures, so give it to them
-   //this may waste precious GPU memory, but works
-   if(width < height)
-     _width = width = height;
-   else
-     _height = height = width;
-  
    //TODO: In case that the GPU memory allocation fails, or texture sizes
    //exceed implementation limits, we should fall back to the CPU backend
 
@@ -223,7 +224,7 @@ GLESTexture::copyToTextureFormat(const void *src,
          {
             convert_fp_to_gpu(dst, src);
             dst = (((unsigned char *) (dst)) + srcStrideBytes);
-            src = ((unsigned char *)src) + 4*_elemsize*_atomsize;
+            src = ((unsigned char *)src) + _elemsize*_atomsize;
          }
          else
          {
@@ -257,7 +258,7 @@ GLESTexture::copyFromTextureFormat(const void *src,
          {
             convert_fp_from_gpu(dst, src);
             dst = (((unsigned char *) (dst)) + dstStrideBytes);
-            src = ((unsigned char *)src) + 4*_elemsize*_atomsize;
+            src = ((unsigned char *)src) + _elemsize*_atomsize;
          }
          else
          {
