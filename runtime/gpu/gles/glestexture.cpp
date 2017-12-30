@@ -190,8 +190,9 @@ GLESTexture::isFastSetPath( unsigned int inStrideBytes,
                            unsigned int inWidth,
                            unsigned int inHeight,
                            unsigned int inElemCount ) const {
-   return (inStrideBytes == _elemsize*_atomsize &&
-           inElemCount   == inWidth*inHeight);
+/*   return (inStrideBytes == _elemsize*_atomsize &&
+           inElemCount   == inWidth*inHeight);*/
+return false;
 }
 
 bool
@@ -199,8 +200,9 @@ GLESTexture::isFastGetPath( unsigned int inStrideBytes,
                            unsigned int inWidth,
                            unsigned int inHeight,
                            unsigned int inElemCount ) const {
-   return (inStrideBytes == _elemsize*_atomsize &&
-           inElemCount   == inWidth*inHeight);
+/*   return (inStrideBytes == _elemsize*_atomsize &&
+           inElemCount   == inWidth*inHeight);*/
+return false;
 }
 
 

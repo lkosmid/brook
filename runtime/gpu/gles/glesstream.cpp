@@ -185,6 +185,9 @@ GLESContext::setTextureData(TextureHandle inTexture,
                                              inComponentCount );
   fastPath = fastPath && !inUsesAddressTranslation;
 
+  //TODO: enable fastPath processing if possible. For the moment we disable it:
+  fastPath = false;
+
 #ifdef GLES_PRINTOPS
   printf("Writing to texture %u\n", glesTexture->id());
 #endif
