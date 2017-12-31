@@ -187,7 +187,7 @@ compile_cgc (const char * /*name*/,
      {
         char tmp[1024];
         output_p+=12;
-        char * lineend=strstr(output_p," ");
+        char * lineend=strstr(output_p," \n");
         assert(lineend-output_p+1 <= 1024);
         snprintf(tmp, lineend-output_p+1, "%s", output_p);
         replaceAll(tmp, " ", "_");

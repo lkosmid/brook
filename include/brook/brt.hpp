@@ -330,6 +330,11 @@ namespace brook {
      return result;
   }
 
+  template<>
+  inline const ::brook::StreamType* getStreamType(unsigned char*) {
+     static const ::brook::StreamType result[] = {__BRTCHAR,__BRTNONE};
+     return result;
+  }
 
   template<>
   inline const ::brook::StreamType* getStreamType(double*) {

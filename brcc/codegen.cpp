@@ -567,6 +567,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       }
       switch(mask) {
       case BT_Char:
+      case BT_UnSigned|BT_Char:
         shader << "\t\tout float";
         break;
       case BT_Float:
@@ -642,6 +643,9 @@ static void expandSimpleOutputArgumentWrite(
   switch(base->typemask) {
   case BT_Char:
     shader << "char4( " << argumentName << ", 0, 0, 0);\n";
+    break;
+  case BT_UnSigned|BT_Char:
+    shader << "unsigned_char4( " << argumentName << ", 0, 0, 0);\n";
     break;
   case BT_Float:
   case BT_Fixed:
@@ -990,6 +994,9 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
       case BT_Char:
         shader << "__fetch_char";
         break;
+      case BT_UnSigned|BT_Char:
+        shader << "__fetch_unsigned_char";
+        break;
      default:
         fprintf(stderr, "Can't fetch from unknown stream type ");
         base->printBase(std::cerr, 0);
@@ -1102,6 +1109,9 @@ generate_shader_support(std::ostream& shader)
   shader << "float __fetch_char( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
   shader << "float __fetch_char( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
   shader << "float __fetch_char( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";
+  shader << "float __fetch_unsigned_char( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
+  shader << "float __fetch_unsigned_char( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
+  shader << "float __fetch_unsigned_char( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";
 
   shader << "\n\n";
 

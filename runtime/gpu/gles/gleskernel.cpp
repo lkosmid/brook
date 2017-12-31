@@ -171,12 +171,14 @@ static const char passthrough_pixel[] =
       "}\n" 
 
 static const std::string reconstruct_char_str(reconstruct_char);
+static const std::string reconstruct_unsigned_char_str(reconstruct_unsigned_char);
 static const std::string reconstruct_unsigned_int_str(reconstruct_unsigned_int);
 static const std::string reconstruct_float_header_str(reconstruct_float_header);
 static const std::string reconstruct_float_highp_str(reconstruct_float_highp);
 static const std::string reconstruct_float_epilogue_str(reconstruct_float_epilogue);
 
 static const std::string encode_output_char_str(encode_output_char);
+static const std::string encode_output_unsigned_char_str(encode_output_unsigned_char);
 static const std::string encode_output_float_header_str(encode_output_float_header);
 static const std::string encode_output_float_highp_str(encode_output_float_highp);
 static const std::string encode_output_float_lowp_str(encode_output_float_lowp);
@@ -200,6 +202,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   program_string=this->program_string;
   bool float_input=false;
   bool char_input=false;
+  bool uchar_input=false;
   //Check the input stream types and add their helper functions in the shader source
   while (*program_string&&(program_string=strstr(program_string,"reconstruct_"))!=NULL) {
     program_string+=12;
@@ -216,6 +219,11 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     {
        custom_program+=reconstruct_char_str;
        char_input=true;
+    }
+    else if(!uchar_input && (strncmp(program_string, "unsigned_char", 13)==0))
+    {
+       custom_program+=reconstruct_unsigned_char_str;
+       uchar_input=true;
     }
   }
 
@@ -237,6 +245,11 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     else if(strncmp(program_string, "char", 4)==0)
     {
        custom_program+=encode_output_char_str;
+       break; 
+    }
+    else if(strncmp(program_string, "unsigned_char", 13)==0)
+    {
+       custom_program+=encode_output_unsigned_char_str;
        break; 
     }
   }
