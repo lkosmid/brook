@@ -39,7 +39,7 @@ static const char passthrough_pixel[] =
       "{"\
       "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
       "  highp float tmp;"\
-      "  tmp = floor(256.0*u_split.x - (u_split.x/255.0));"\
+      "  tmp = floor(u_split.x*255.996078431372549);"\
       "  reconstructed = tmp;"\
       "}\n" 
 
@@ -107,7 +107,7 @@ static const char passthrough_pixel[] =
       "#define encode_output_unsigned_char(reconstructed)"\
       "{" \
       "  highp vec4 u_split;"\
-      "  u_split.x = fract((reconstructed - 256.0*floor(reconstructed*0.00390625))/255.0) ;"\
+      "  u_split.x = (reconstructed - 256.0*floor(reconstructed*0.00390625))*0.00392156862745098 ;"\
       "  u_split.yzw = vec3(0.0) ;"\
       "  gl_FragColor = u_split;"\
       "}\n" 
