@@ -279,6 +279,18 @@ out:
  			   abort();
  			}
  		}
+		else if(glesTexture->elementType() == GLESTexture::GLES_INT)
+		{
+			printf("inData[%d]:%d\n",n, ((unsigned int *)inData)[n]);
+			printf("t2[%d]:%d\n",n, ((unsigned int *)t2)[n]);
+ 			if(((unsigned int *)inData)[n] != ((unsigned int *)t2)[n])
+ 			{
+			   printf("inData[%d]:%d\n",n, ((unsigned int *)inData)[n]);
+			   printf("t2[%d]:%d\n",n, ((unsigned int *)t2)[n]);
+ 			   printf("Texture contents do not match what was just written to it!\n");
+ 			   abort();
+ 			}
+ 		}
 		else 
 		{
  			   printf("Unknown format, cannot ensure that texture contents match what was just written to it!\n");

@@ -34,7 +34,8 @@ namespace brook {
       kTextureFormat_ShortFixed2,
       kTextureFormat_ShortFixed3,
       kTextureFormat_ShortFixed4,
-      kTextureFormat_Char1
+      kTextureFormat_Char1,
+      kTextureFormat_Int1
     };
 
     virtual int

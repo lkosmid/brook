@@ -212,6 +212,7 @@ enum __BRTStreamType {
     __BRTDOUBLE=13,
     __BRTDOUBLE2=14,
     __BRTCHAR=15,
+    __BRTINT=16,
 };
 float getSentinel();
 
@@ -247,6 +248,7 @@ namespace brook {
     __BRTDOUBLE=13,
     __BRTDOUBLE2=14,
     __BRTCHAR=15,
+    __BRTINT=16,
   };
   unsigned int getElementSize(StreamType);
   template<typename T>
@@ -333,6 +335,12 @@ namespace brook {
   template<>
   inline const ::brook::StreamType* getStreamType(unsigned char*) {
      static const ::brook::StreamType result[] = {__BRTCHAR,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(unsigned int*) {
+     static const ::brook::StreamType result[] = {__BRTINT,__BRTNONE};
      return result;
   }
 

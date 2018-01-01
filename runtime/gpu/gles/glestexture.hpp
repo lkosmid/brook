@@ -18,6 +18,7 @@ namespace brook {
        GLES_SHORTFIXED,
        GLES_FIXED,
        GLES_CHAR,
+       GLES_INT,
        GLES_NUMFORMATS
     };
 
