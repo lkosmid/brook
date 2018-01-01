@@ -1,0 +1,66 @@
+// sum.br
+// The absolute minimal test. It tests
+// using a kernel to sum both 1-dimensional
+// and two-dimensional input streams.
+
+#include <stdio.h>
+
+kernel void sum( unsigned int a<>, unsigned int b<>, out unsigned int c<> ) {
+	c = a + b;
+}
+
+int main() {
+	int i, j;
+	unsigned int a1< 100 >;
+	unsigned int b1< 100 >;
+	unsigned int c1< 100 >;
+	unsigned int a2< 10, 10 >;
+	unsigned int b2< 10, 10 >;
+	unsigned int c2< 10, 10 >;
+	unsigned int input_a1[100];
+	unsigned int input_b1[100];
+	unsigned int output_c1[100];
+	unsigned int input_a2[10][10];
+	unsigned int input_b2[10][10];
+	unsigned int output_c2[10][10];
+	
+	// initialize data
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+		{
+			//in the GPU the integers are emulated with floats
+			//therefore their useful accuracy is 24 bits due to float limitations
+			input_a1[10*i+j] = (unsigned int)1<<23;
+			input_b1[10*i+j] = (unsigned int)10*i+j;
+			input_a2[i][j] = (unsigned int)1<<23;
+			input_b2[i][j] = (unsigned int)10*i+j;
+		}
+	}
+	streamRead( a1, input_a1 );
+	streamRead( b1, input_b1 );
+	streamRead( a2, input_a1 );
+	streamRead( b2, input_b2 );
+	
+	sum( a1, b1, c1 );
+	sum( a2, b2, c2 );
+	
+	streamWrite( c1, output_c1 );
+	streamWrite( c2, output_c2 );
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+			printf( "%d ", output_c1[10*i+j] );
+		printf("\n");
+	}
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+			printf( "%d ", output_c2[i][j] );
+		printf("\n");
+	}
+	
+	return 0;
+}
