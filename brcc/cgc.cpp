@@ -373,7 +373,9 @@ compile_cgc (const char * /*name*/,
        //find the type of the input variable based on the sampler name
        for(int i=0; i<uniform_list_names.size(); i++)
        {
-           if(strcmp(uniform_list_names[i].c_str(),t0)!=0)
+           //we only need to patch when non-fixed types are used
+           if((strncmp(uniform_list_types[i].c_str(),"fixed",5)!=0) &&
+              (strcmp(uniform_list_names[i].c_str(),t0)!=0))
            {
                //GLES can only have inputs up to 32 bits wide
                if( (uniform_list_types[0].find("2")!=std::string::npos) || 
@@ -434,7 +436,13 @@ compile_cgc (const char * /*name*/,
        //assert(output_list_types.size());
        char replacement_str[255];
        if(output_list_types.size())
-         snprintf(replacement_str, 255, "encode_output_%s(%s);", output_list_types[0].c_str(), rvalue);
+       {
+         //if it's not fixed we need to covert the output with the correponding encoding function
+         if(strncmp(output_list_types[0].c_str(), "fixed", 5)!=0)
+           snprintf(replacement_str, 255, "encode_output_%s(%s);", output_list_types[0].c_str(), rvalue);
+         else //otherwise just do nothing
+           strncpy(replacement_str, line, 255);
+       }
        else
        {
          printf("Warning brcc: Output type for kernel is missing, defaulting to float. ");

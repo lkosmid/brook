@@ -267,7 +267,8 @@ out:
             abort();
         }
 		}
-		else if(glesTexture->elementType() == GLESTexture::GLES_CHAR)
+		else if((glesTexture->elementType() == GLESTexture::GLES_CHAR)
+		|| (glesTexture->elementType() == GLESTexture::GLES_FIXED))
 		{
 			printf("inData[%d]:%d\n",n, ((unsigned char *)inData)[n]);
 			printf("t2[%d]:%d\n",n, ((unsigned char *)t2)[n]);
