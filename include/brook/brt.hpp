@@ -345,6 +345,12 @@ namespace brook {
   }
 
   template<>
+  inline const ::brook::StreamType* getStreamType(int*) {
+     static const ::brook::StreamType result[] = {__BRTINT,__BRTNONE};
+     return result;
+  }
+
+  template<>
   inline const ::brook::StreamType* getStreamType(double*) {
      static const ::brook::StreamType result[] = {__BRTDOUBLE,__BRTNONE};
      return result;

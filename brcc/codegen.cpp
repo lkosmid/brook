@@ -599,6 +599,9 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       case BT_UnSigned|BT_Int:
         shader << "\t\tout unsigned int";
         break;
+      case BT_Int:
+        shader << "\t\tout int";
+        break;
       default:
         fprintf(stderr, "Strange stream base type: ");
         form->getBase()->printBase(std::cerr, 0);
@@ -676,6 +679,9 @@ static void expandSimpleOutputArgumentWrite(
   case BT_UnSigned:
   case BT_UnSigned|BT_Int:
     shader << "uint4( " << argumentName << ", 0, 0, 0);\n";
+    break;
+  case BT_Int:
+    shader << "int( " << argumentName << ", 0, 0, 0);\n";
     break;
   default:
     fprintf(stderr, "Strange stream base type: ");
@@ -991,6 +997,9 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
       case BT_UnSigned|BT_Int:
         shader << "__fetch_unsigned_int";
         break;
+      case BT_Int:
+        shader << "__fetch_int";
+        break;
       case BT_Char:
         shader << "__fetch_char";
         break;
@@ -1106,6 +1115,9 @@ generate_shader_support(std::ostream& shader)
   shader << "float __fetch_unsigned_int( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
   shader << "float __fetch_unsigned_int( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
   shader << "float __fetch_unsigned_int( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";
+  shader << "float __fetch_int( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
+  shader << "float __fetch_int( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
+  shader << "float __fetch_int( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";
   shader << "float __fetch_char( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
   shader << "float __fetch_char( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
   shader << "float __fetch_char( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";
