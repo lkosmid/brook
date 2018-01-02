@@ -385,6 +385,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     while(line_end=strstr(source, "\n"))
     {
         line_counter++;
+//TODO there is a warning here, it needs to be fixed
         snprintf(line, line_end - source+1, source);
         fprintf ( stderr, "%d:%s\n", line_counter, line);
         source=line_end+1;
