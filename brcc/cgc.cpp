@@ -418,12 +418,13 @@ compile_cgc (const char * /*name*/,
 
        //get the type of the output variable and add the appropriate encoding function
        //GLES can only have a single 4-component output at most
-       if( (output_list_types.size() > 1) || 
-           (output_list_types.size() && (
+       if( (output_list_types.size() && 
+           (output_list_types[0].find("fixed") == std::string::npos) && 
+            (
              (output_list_types[0].find("2")!=std::string::npos) || 
              (output_list_types[0].find("3")!=std::string::npos) || 
              (output_list_types[0].find("4")!=std::string::npos)
-                                        )
+            )
            )
          )
        {

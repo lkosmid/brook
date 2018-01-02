@@ -539,8 +539,10 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
 
       //print the stream type in a comment to be used later from the GLES or other backend
       std::stringstream s;
+      std::stringstream typeonly;
       s << ",//GL_ES_";
       form->printBase(s,0);
+      form->printBase(typeonly,0);
 
       if((s.str().find("4")!=std::string::npos) || (outr>0))
       {
@@ -553,7 +555,14 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       {
          shader << "\t\t\t#ifdef GL_ES\n";
          //In GLES 2.0 we only have one output and must be declared float, independently of our custom encoding
-         shader << "\t\t\tout float __output_" << outr;
+         shader << "\t\t\t" ;
+
+         if(typeonly.str().find("fixed")!=std::string::npos)
+           shader << typeonly.str() ;
+         else
+           shader << "out float";
+
+         shader << " __output_" << outr;
          shader << " : COLOR" << (outr - inFirstOutput);
 
          shader << s.str();
