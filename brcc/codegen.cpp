@@ -544,7 +544,14 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       form->printBase(s,0);
       form->printBase(typeonly,0);
 
-      if((s.str().find("4")!=std::string::npos) || (outr>0))
+      if( (outr>0) ||
+           (typeonly.str().find("fixed") == std::string::npos) && 
+            (
+             (typeonly.str().find("2")!=std::string::npos) || 
+             (typeonly.str().find("3")!=std::string::npos) || 
+             (typeonly.str().find("4")!=std::string::npos)
+            )
+        )
       {
          GLES_compliance=false;
          printf("Error: This kernel is cannot be used with the GLES backend, because it outputs more than a 32-bit value. GLES code generation is skipped. If you want to be used with GLES, please rewrite the kernel.\n");
