@@ -229,6 +229,8 @@ std::string undecoratedBase(Decl * decl) {
       return "char2";
    if (typemask&BT_Char3)
       return "char3";
+   if (typemask&BT_Char4)
+      return "char4";
    return "float";
          
 }

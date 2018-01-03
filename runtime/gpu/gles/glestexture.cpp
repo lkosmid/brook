@@ -79,6 +79,7 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    case GPUContext::kTextureFormat_Char1:
    case GPUContext::kTextureFormat_Char2:
    case GPUContext::kTextureFormat_Char3:
+   case GPUContext::kTextureFormat_Char4:
        _elementType=GLES_CHAR;
        break;
    case GPUContext::kTextureFormat_Int1:
@@ -123,6 +124,7 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    case GPUContext::kTextureFormat_Fixed3:
       _components = 3;
       break;
+   case GPUContext::kTextureFormat_Char4:
    case GPUContext::kTextureFormat_Float4:
    case GPUContext::kTextureFormat_ShortFixed4:
    case GPUContext::kTextureFormat_Fixed4:

@@ -110,6 +110,12 @@ char *toksym(int tok, int white)
         else
           return("char3");
 
+    case CHAR4:
+        if (white)
+          return("char4 ");
+        else
+          return("char4");
+
     case CONST:
         if (white)
           return("const ");

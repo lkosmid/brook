@@ -141,6 +141,17 @@ typedef struct char3 {
   typedef float TYPE;
 } char3;
 
+typedef struct char4 {
+  char4(char _x, char _y, char _z, char _w) { x = _x;y=_y;z=_z;w=_w;}
+  char4(void) {}
+  char x,y,z,w;
+   operator __BrtFloat4() const{return __BrtFloat4(((float)x),((float)y),((float)z),((float)w));}
+  template <class T> T castToArg(const T&dummy)const{return T(((float)x),((float)y),((float)z),((float)w));}
+  float getAt(int i) const {__BrtFloat4 tmp; return castToArg(tmp).getAt(i);}
+  typedef float TYPE;
+
+} char4;
+
 typedef struct float2 {
   float2(float _x, float _y) { x = _x; y = _y; }
   float2(void) {}
@@ -233,7 +244,8 @@ enum __BRTStreamType {
     __BRTCHAR=15,
     __BRTCHAR2=16,
     __BRTCHAR3=17,
-    __BRTINT=18,
+    __BRTCHAR4=18,
+    __BRTINT=19,
 };
 float getSentinel();
 
@@ -271,7 +283,8 @@ namespace brook {
     __BRTCHAR=15,
     __BRTCHAR2=16,
     __BRTCHAR3=17,
-    __BRTINT=18,
+    __BRTCHAR4=18,
+    __BRTINT=19,
   };
   unsigned int getElementSize(StreamType);
   template<typename T>
@@ -364,6 +377,12 @@ namespace brook {
   template<>
   inline const ::brook::StreamType* getStreamType(char3*) {
      static const ::brook::StreamType result[] = {__BRTCHAR3,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(char4*) {
+     static const ::brook::StreamType result[] = {__BRTCHAR4,__BRTNONE};
      return result;
   }
 

@@ -359,6 +359,8 @@ bool BaseType::printStructureStreamShape( std::ostream& out )
         out << "__BRTCHAR2, ";
     else if (typemask & BT_Char3)
         out << "__BRTCHAR3, ";
+    else if (typemask & BT_Char4)
+        out << "__BRTCHAR4, ";
     else
     {
       StructDef* s = findStructureDef(this);
@@ -386,6 +388,8 @@ BaseType::printBase(std::ostream& out, int level) const
         out << "char2 ";
     else if (typemask & BT_Char3)
         out << "char3 ";
+    else if (typemask & BT_Char4)
+        out << "char4 ";
     else if (typemask & BT_Short)
         out << "short ";
     else if ((typemask & BT_Float)||(0&typemask & BT_Fixed)||(0&typemask & BT_ShortFixed))
