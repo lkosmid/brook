@@ -19,7 +19,7 @@ static const unsigned int glTypeSTD[4][GLESTexture::GLES_NUMFORMATS] = {
                 {GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA},
                 {GL_RGB, GL_RGB, GL_RGB, GL_RGB},
                 {GL_RGBA, GL_RGBA, GL_RGBA, GL_RGBA}};*/
-static const unsigned int sizeFactorSTD[4][GLESTexture::GLES_NUMFORMATS] = { {1,1,4,1,1}, {2,2,4,4,2}, {3,3,4,3,3}, {4,4,4,4,4} };
+static const unsigned int sizeFactorSTD[4][GLESTexture::GLES_NUMFORMATS] = { {1,1,4,1,1}, {2,2,4,4,2}, {3,3,4,4,3}, {4,4,4,4,4} };
 static const unsigned int atomSizeSTD  [4][GLESTexture::GLES_NUMFORMATS] = { {4,2,1,4,4}, {4,2,1,1,1}, {4,2,1,1,4}, {4,2,1,1,4} };
 
 #if 0
@@ -78,6 +78,7 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    switch (_format) {
    case GPUContext::kTextureFormat_Char1:
    case GPUContext::kTextureFormat_Char2:
+   case GPUContext::kTextureFormat_Char3:
        _elementType=GLES_CHAR;
        break;
    case GPUContext::kTextureFormat_Int1:
@@ -116,6 +117,7 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    case GPUContext::kTextureFormat_ShortFixed2:
       _components = 2;
       break;
+   case GPUContext::kTextureFormat_Char3:
    case GPUContext::kTextureFormat_Float3:
    case GPUContext::kTextureFormat_ShortFixed3:
    case GPUContext::kTextureFormat_Fixed3:

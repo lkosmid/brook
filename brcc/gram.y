@@ -89,7 +89,7 @@ void baseTypeFixup(BaseType * bt,Decl * decl) {
 %token <storage>    AUTO EXTRN REGISTR STATIC TYPEDEF
 %token <base>       VOID SHORT INT LONG SGNED UNSGNED
 /* IMPORTANT: Keep all the FLOATN's next to each other in order! */
-%token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4 FIXED FIXED2 FIXED3 FIXED4 SHORTFIXED SHORTFIXED2 SHORTFIXED3 SHORTFIXED4 DOUBLE DOUBLE2 CHAR CHAR2
+%token <base>       FLOAT FLOAT2 FLOAT3 FLOAT4 FIXED FIXED2 FIXED3 FIXED4 SHORTFIXED SHORTFIXED2 SHORTFIXED3 SHORTFIXED4 DOUBLE DOUBLE2 CHAR CHAR2 CHAR3
 %token <typeSpec>   ENUM STRUCT UNION 
 
 %token <loc>        BREAK CASE CONT DEFLT DO ELSE
@@ -959,7 +959,21 @@ constructor_expr: FLOAT2 LPAREN assign_expr COMMA assign_expr RPAREN
             delete $4;
             delete $6;
         }
+                | CHAR3 LPAREN assign_expr COMMA
+		                assign_expr COMMA assign_expr RPAREN
+        {
+	    Expression *exprs[] = { $3, $5, $7 };
+            $$ = new ConstructorExpr($1, exprs, NoLocation);
+            delete $2;
+            delete $4;
+            delete $6;
+            delete $8;
+        }
                 | CHAR2 LPAREN error RPAREN
+	{
+	   $$ = (Expression *) NULL;
+	}
+                | CHAR3 LPAREN error RPAREN
 	{
 	   $$ = (Expression *) NULL;
 	}
@@ -1771,6 +1785,7 @@ type_spec_reentrance: enum_type_define
          |  SGNED
          |  UNSGNED
          |  CHAR2
+         |  CHAR3
         ;
 
 typedef_name:  TYPEDEF_NAME

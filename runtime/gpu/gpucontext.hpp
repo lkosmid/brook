@@ -36,6 +36,7 @@ namespace brook {
       kTextureFormat_ShortFixed4,
       kTextureFormat_Char1,
       kTextureFormat_Char2,
+      kTextureFormat_Char3,
       kTextureFormat_Int1
     };
 

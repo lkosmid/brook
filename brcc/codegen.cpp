@@ -569,6 +569,8 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
            shader << typeonly.str() ;
          else if(typeonly.str().find("2")!=std::string::npos)
            shader << "out float2";
+         else if(typeonly.str().find("3")!=std::string::npos)
+           shader << "out float3";
          else
            shader << "out float";
 
@@ -605,6 +607,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       case BT_Fixed3:
       case BT_ShortFixed3:
       case BT_Float3:
+      case BT_Char3:
         shader << "\t\tout float";
         shader << "3";
         break;
@@ -672,6 +675,9 @@ static void expandSimpleOutputArgumentWrite(
     break;
   case BT_Char2:
     shader << "char4( " << argumentName << ", 0, 0);\n";
+    break;
+  case BT_Char3:
+    shader << "char4( " << argumentName << ", 0);\n";
     break;
   case BT_Float:
   case BT_Fixed:
@@ -1029,6 +1035,9 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
       case BT_Char2:
         shader << "__fetch_char2";
         break;
+      case BT_Char3:
+        shader << "__fetch_char3";
+        break;
       case BT_UnSigned|BT_Char:
         shader << "__fetch_unsigned_char";
         break;
@@ -1150,6 +1159,9 @@ generate_shader_support(std::ostream& shader)
   shader << "float2 __fetch_char2( _stype1 s, float i ) { return __sample1(s,i).xy; }\n";
   shader << "float2 __fetch_char2( _stype2 s, float2 i ) { return __sample2(s,i).xy; }\n";
   shader << "float2 __fetch_char2( _stype3 s, float3 i ) { return __sample3(s,i).xy; }\n";
+  shader << "float3 __fetch_char3( _stype1 s, float i ) { return __sample1(s,i).xyz; }\n";
+  shader << "float3 __fetch_char3( _stype2 s, float2 i ) { return __sample2(s,i).xyz; }\n";
+  shader << "float3 __fetch_char3( _stype3 s, float3 i ) { return __sample3(s,i).xyz; }\n";
   shader << "float __fetch_unsigned_char( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
   shader << "float __fetch_unsigned_char( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
   shader << "float __fetch_unsigned_char( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";

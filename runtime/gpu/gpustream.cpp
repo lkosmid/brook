@@ -164,6 +164,10 @@ namespace brook
           fieldComponentCount=2;
           fieldTextureFormat = GPUContext::kTextureFormat_Char2;
           break;
+        case __BRTCHAR3:
+          fieldComponentCount=3;
+          fieldTextureFormat = GPUContext::kTextureFormat_Char3;
+          break;
         case __BRTINT:
           fieldComponentCount=1;
           fieldTextureFormat = GPUContext::kTextureFormat_Int1;

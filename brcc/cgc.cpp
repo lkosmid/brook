@@ -395,6 +395,8 @@ compile_cgc (const char * /*name*/,
                written = snprintf(replacement_str, 50, "reconstruct_%s(%s", uniform_list_types[i].c_str(), t0);
                if(uniform_list_types[0].find("2")!=std::string::npos)  
                   written = snprintf(replacement_str + written, 50, ".xy, ");
+               else if(uniform_list_types[0].find("3")!=std::string::npos)  
+                  written = snprintf(replacement_str + written, 50, ".xyz, ");
                else
                   written = snprintf(replacement_str + written, 50, ".x, ");
                snprintf(line, 50, "%s = texture2D(", t0);

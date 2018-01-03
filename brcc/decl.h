@@ -89,6 +89,7 @@ const BaseTypeSpec BT_ShortFixed4       = 0x00800000;
 
 const BaseTypeSpec BT_Char         = 0x1000000;
 const BaseTypeSpec BT_Char2        = 0x2000000;
+const BaseTypeSpec BT_Char3        = 0x4000000;
 
 const BaseTypeSpec BT_BaseMask     = 0x0FFFFFFF;
 

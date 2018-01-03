@@ -277,6 +277,7 @@ class BaseType1:public BaseType {public:
     int special =
       BT_Char     |
       BT_Char2    |
+      BT_Char3    |
       BT_Int      |
       BT_Float    |
       BT_Float2   |
@@ -306,6 +307,8 @@ class BaseType1:public BaseType {public:
          out << "__BrtChar1 ";
       else if (typemask & BT_Char2)
          out << "__BrtChar2 ";
+      else if (typemask & BT_Char3)
+         out << "__BrtChar3 ";
       else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_ShortFixed)))){
          out << "__BrtFloat1 ";
       }else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_ShortFixed2))))
