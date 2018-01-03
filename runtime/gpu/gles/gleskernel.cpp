@@ -53,6 +53,17 @@ static const char passthrough_pixel[] =
       "  reconstructed = tmp;"\
       "}\n" 
 
+#define reconstruct_char2 \
+      "#define reconstruct_char2(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp vec2 tmp;"\
+      "  bvec2 IsNegative = greaterThan(u_split.xy, vec2(0.5));"\
+      "  u_split.xy -= 1.00392156862745098*step( 1.0, vec2(IsNegative));"\
+      "  tmp = floor(u_split.xy*255.996078431372549);"\
+      "  reconstructed = tmp;"\
+      "}\n" 
+
 #define reconstruct_int\
       "#define reconstruct_int(reconstructed, textureUnit0, vTexCoord0)"\
       "{"\
@@ -122,6 +133,17 @@ static const char passthrough_pixel[] =
       "  gl_FragColor = u_split;"\
       "}\n" 
 
+#define encode_output_char2\
+      "#define encode_output_char2(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  bvec2 IsNegative = lessThan(reconstructed.xy, vec2(0.0));"\
+      "  reconstructed.xy += 256.0*step( 1.0, vec2(IsNegative));"\
+      "  u_split.xy = (reconstructed.xy - 256.0*floor(reconstructed.xy*0.00390625))*0.00392156862745098 ;"\
+      "  u_split.zw = vec2(0.0) ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
 #define encode_output_int\
       "#define encode_output_int(reconstructed)"\
       "{" \
@@ -171,6 +193,7 @@ static const char passthrough_pixel[] =
       "}\n" 
 
 static const std::string reconstruct_char_str(reconstruct_char);
+static const std::string reconstruct_char2_str(reconstruct_char2);
 static const std::string reconstruct_unsigned_char_str(reconstruct_unsigned_char);
 static const std::string reconstruct_int_str(reconstruct_int);
 static const std::string reconstruct_unsigned_int_str(reconstruct_unsigned_int);
@@ -179,6 +202,7 @@ static const std::string reconstruct_float_highp_str(reconstruct_float_highp);
 static const std::string reconstruct_float_epilogue_str(reconstruct_float_epilogue);
 
 static const std::string encode_output_char_str(encode_output_char);
+static const std::string encode_output_char2_str(encode_output_char2);
 static const std::string encode_output_unsigned_char_str(encode_output_unsigned_char);
 static const std::string encode_output_int_str(encode_output_int);
 static const std::string encode_output_unsigned_int_str(encode_output_unsigned_int);
@@ -205,6 +229,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   program_string=this->program_string;
   bool float_input=false;
   bool char_input=false;
+  bool char2_input=false;
   bool uchar_input=false;
   bool uint_input=false;
   bool int_input=false;
@@ -224,6 +249,11 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     {
        custom_program+=reconstruct_char_str;
        char_input=true;
+    }
+    else if(!char2_input && (strncmp(program_string, "char2", 5)==0))
+    {
+       custom_program+=reconstruct_char2_str;
+       char2_input=true;
     }
     else if(!uchar_input && (strncmp(program_string, "unsigned_char", 13)==0))
     {
@@ -259,7 +289,14 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     }
     else if(strncmp(program_string, "char", 4)==0)
     {
-       custom_program+=encode_output_char_str;
+       switch(program_string[4])
+       {
+        case '2':
+          custom_program+=encode_output_char2_str;
+          break;
+        default:
+          custom_program+=encode_output_char_str;
+       }
        break; 
     }
     else if(strncmp(program_string, "unsigned_char", 13)==0)

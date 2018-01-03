@@ -378,9 +378,11 @@ compile_cgc (const char * /*name*/,
               (strcmp(uniform_list_names[i].c_str(),t0)!=0))
            {
                //GLES can only have inputs up to 32 bits wide
-               if( (uniform_list_types[0].find("2")!=std::string::npos) || 
+               if( (strncmp(uniform_list_types[i].c_str(),"char",4)!=0) &&
+                  ((uniform_list_types[0].find("2")!=std::string::npos) || 
                    (uniform_list_types[0].find("3")!=std::string::npos) || 
                    (uniform_list_types[0].find("4")!=std::string::npos)
+                  )
                  )
                {
                   printf("Error in brcc OpenGL ES 2.0 backend: In GLES 2.0 each input is restricted in <= 32 bits\n");
@@ -389,7 +391,12 @@ compile_cgc (const char * /*name*/,
                }
                //change the reconstruction function
                char replacement_str[50];
-               snprintf(replacement_str, 50, "reconstruct_%s(%s.x, ", uniform_list_types[i].c_str(), t0);
+               int written;
+               written = snprintf(replacement_str, 50, "reconstruct_%s(%s", uniform_list_types[i].c_str(), t0);
+               if(uniform_list_types[0].find("2")!=std::string::npos)  
+                  written = snprintf(replacement_str + written, 50, ".xy, ");
+               else
+                  written = snprintf(replacement_str + written, 50, ".x, ");
                snprintf(line, 50, "%s = texture2D(", t0);
                replaceAll(fpcodenew, line, replacement_str);
            }
@@ -420,6 +427,7 @@ compile_cgc (const char * /*name*/,
        //GLES can only have a single 4-component output at most
        if( (output_list_types.size() && 
            (output_list_types[0].find("fixed") == std::string::npos) && 
+           (output_list_types[0].find("char") == std::string::npos) && 
             (
              (output_list_types[0].find("2")!=std::string::npos) || 
              (output_list_types[0].find("3")!=std::string::npos) || 

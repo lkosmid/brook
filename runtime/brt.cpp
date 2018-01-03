@@ -436,6 +436,8 @@ namespace brook {
       {
       case __BRTCHAR:
           return sizeof(char);
+      case __BRTCHAR2:
+          return sizeof(char2);
       case __BRTINT:
           return sizeof(uint32_t);
       case __BRTDOUBLE:

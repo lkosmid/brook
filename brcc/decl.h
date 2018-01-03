@@ -52,11 +52,10 @@ class SplitTreeBuilder;
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 
-typedef unsigned long BaseTypeSpec;
+typedef unsigned long long BaseTypeSpec;
 
 const BaseTypeSpec BT_NoType       = 0x00000000;  // no type provided
 const BaseTypeSpec BT_Void         = 0x00000001;  // explicitly no type
-const BaseTypeSpec BT_Char         = 0x00000002;
 const BaseTypeSpec BT_Short        = 0x00000004;
 const BaseTypeSpec BT_Int          = 0x00000008;
 const BaseTypeSpec BT_Double       = 0x00000010;
@@ -88,15 +87,19 @@ const BaseTypeSpec BT_ShortFixed2       = 0x00200000;
 const BaseTypeSpec BT_ShortFixed3       = 0x00400000;
 const BaseTypeSpec BT_ShortFixed4       = 0x00800000;
 
-const BaseTypeSpec BT_BaseMask     = 0x00FFFFFF;
+const BaseTypeSpec BT_Char         = 0x1000000;
+const BaseTypeSpec BT_Char2        = 0x2000000;
+
+const BaseTypeSpec BT_BaseMask     = 0x0FFFFFFF;
 
 
 // Sign indicator
-const BaseTypeSpec BT_Signed       = 0x01000000;
-const BaseTypeSpec BT_UnSigned     = 0x02000000;
-const BaseTypeSpec BT_SignMask     = 0x03000000;
+const BaseTypeSpec BT_Signed       = 0x010000000;
+const BaseTypeSpec BT_UnSigned     = 0x020000000;
+const BaseTypeSpec BT_SignMask     = 0x030000000;
 
-const BaseTypeSpec BT_TypeError    = 0x10000000;
+const BaseTypeSpec BT_TypeError    = 0x100000000;
+
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
 struct TypeQual{

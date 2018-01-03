@@ -258,6 +258,12 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->base = new BaseType(BT_Char);
                       return(err_tok = CHAR);
                     }
+<INITIAL>"char"[2-4] {
+		      int n = yytext[yyleng -1] - '1'; /* There is no char1 */
+
+                      lvalp->base = new BaseType(BT_Char * (1<<n));
+                      return(err_tok = CHAR + n);
+                    }
 <INITIAL>"short"    {
                       lvalp->base = new BaseType(BT_Short);
                       return(err_tok = SHORT);

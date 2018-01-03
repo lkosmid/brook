@@ -258,6 +258,9 @@ BrtIterType::printType( std::ostream& out, Symbol *name,
     out << "__BRTFLOAT2, ";
   }else if (base->getBase()->typemask&BT_Float) {
     out << "__BRTFLOAT, ";
+  }else if (base->getBase()->typemask&BT_Char2) {
+    assert(0);
+    out << "__BRTCHAR2, ";
   }else {
     std::cerr << "Warning: Unsupported iterator type ";
     base->printBase(std::cerr,0);
