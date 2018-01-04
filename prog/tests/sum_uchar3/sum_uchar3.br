@@ -1,0 +1,72 @@
+// sum.br
+// The absolute minimal test. It tests
+// using a kernel to sum both 1-dimensional
+// and two-dimensional input streams.
+
+#include <stdio.h>
+
+kernel void sum( uchar3 a<>, uchar3 b<>, out uchar3 c<> ) {
+	c = a + b;
+}
+
+int main() {
+	int i, j;
+	uchar3 a1< 100 >;
+	uchar3 b1< 100 >;
+	uchar3 c1< 100 >;
+	uchar3 a2< 10, 10 >;
+	uchar3 b2< 10, 10 >;
+	uchar3 c2< 10, 10 >;
+	uchar3 input_a1[100];
+	uchar3 input_b1[100];
+	uchar3 output_c1[100];
+	uchar3 input_a2[10][10];
+	uchar3 input_b2[10][10];
+	uchar3 output_c2[10][10];
+	
+	// initialize data
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+		{
+			input_a1[10*i+j].x = (unsigned char)200;
+			input_a1[10*i+j].y = (unsigned char)200;
+			input_a1[10*i+j].z = (unsigned char)200;
+			input_b1[10*i+j].x = (unsigned char)((10*i+j)&0xFF);
+			input_b1[10*i+j].y = (unsigned char)((10*i+j)&0xFF);
+			input_b1[10*i+j].z = (unsigned char)((10*i+j)&0xFF);
+			input_a2[i][j].x = (unsigned char)(200);
+			input_a2[i][j].y = (unsigned char)(200);
+			input_a2[i][j].z = (unsigned char)(200);
+			input_b2[i][j].x = (unsigned char)((10*i+j)&0xFF);
+			input_b2[i][j].y = (unsigned char)((10*i+j)&0xFF);
+			input_b2[i][j].z = (unsigned char)((10*i+j)&0xFF);
+		}
+	}
+	streamRead( a1, input_a1 );
+	streamRead( b1, input_b1 );
+	streamRead( a2, input_a1 );
+	streamRead( b2, input_b2 );
+	
+	sum( a1, b1, c1 );
+	sum( a2, b2, c2 );
+	
+	streamWrite( c1, output_c1 );
+	streamWrite( c2, output_c2 );
+
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+			printf( "(%u,%u,%u) ", output_c1[10*i+j].x, output_c1[10*i+j].y, output_c1[10*i+j].z );
+		printf("\n");
+	}
+	
+	for( i = 0; i < 10; i++ )
+	{
+		for( j = 0; j < 10; j++ )
+			printf( "(%u,%u,%u) ", output_c2[i][j].x, output_c2[i][j].y, output_c1[10*i+j].z );
+		printf("\n");
+	}
+	
+	return 0;
+}
