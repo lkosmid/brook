@@ -590,6 +590,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       }
       switch(mask) {
       case BT_Char:
+      case BT_UChar:
       case BT_UnSigned|BT_Char:
         shader << "\t\tout float";
         break;
@@ -603,6 +604,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       case BT_ShortFixed2:
       case BT_Double:
       case BT_Char2:
+      case BT_UChar2:
         shader << "\t\tout float";
         shader << "2";
         break;
@@ -610,6 +612,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       case BT_ShortFixed3:
       case BT_Float3:
       case BT_Char3:
+      case BT_UChar3:
         shader << "\t\tout float";
         shader << "3";
         break;
@@ -618,6 +621,7 @@ static bool expandOutputArgumentDecl(std::ostream& shader,
       case BT_Float4:
       case BT_Double2:
       case BT_Char4:
+      case BT_UChar4:
         shader << "\t\tout float";
         shader << "4";
         break;
@@ -673,9 +677,6 @@ static void expandSimpleOutputArgumentWrite(
   case BT_Char:
     shader << "char4( " << argumentName << ", 0, 0, 0);\n";
     break;
-  case BT_UnSigned|BT_Char:
-    shader << "unsigned_char4( " << argumentName << ", 0, 0, 0);\n";
-    break;
   case BT_Char2:
     shader << "char4( " << argumentName << ", 0, 0);\n";
     break;
@@ -684,6 +685,19 @@ static void expandSimpleOutputArgumentWrite(
     break;
   case BT_Char4:
     shader << "char4( " << argumentName << " );\n";
+    break;
+  case BT_UnSigned|BT_Char:
+  case BT_UChar:
+    shader << "unsigned_char4( " << argumentName << ", 0, 0, 0);\n";
+    break;
+  case BT_UChar2:
+    shader << "unsigned_char4( " << argumentName << ", 0, 0);\n";
+    break;
+  case BT_UChar3:
+    shader << "unsigned_char4( " << argumentName << ", 0);\n";
+    break;
+  case BT_UChar4:
+    shader << "unsigned_char4( " << argumentName << " );\n";
     break;
   case BT_Float:
   case BT_Fixed:
@@ -1047,6 +1061,18 @@ expandStreamFetches(std::ostream& shader, const std::string& argumentName,
       case BT_Char4:
         shader << "__fetch_char4";
         break;
+      case BT_UChar:
+        shader << "__fetch_unsigned_char";
+        break;
+      case BT_UChar2:
+        shader << "__fetch_unsigned_char2";
+        break;
+      case BT_UChar3:
+        shader << "__fetch_unsigned_char3";
+        break;
+      case BT_UChar4:
+        shader << "__fetch_unsigned_char4";
+        break;
       case BT_UnSigned|BT_Char:
         shader << "__fetch_unsigned_char";
         break;
@@ -1177,6 +1203,15 @@ generate_shader_support(std::ostream& shader)
   shader << "float __fetch_unsigned_char( _stype1 s, float i ) { return __sample1(s,i).x; }\n";
   shader << "float __fetch_unsigned_char( _stype2 s, float2 i ) { return __sample2(s,i).x; }\n";
   shader << "float __fetch_unsigned_char( _stype3 s, float3 i ) { return __sample3(s,i).x; }\n";
+  shader << "float2 __fetch_unsigned_char2( _stype1 s, float i ) { return __sample1(s,i).xy; }\n";
+  shader << "float2 __fetch_unsigned_char2( _stype2 s, float2 i ) { return __sample2(s,i).xy; }\n";
+  shader << "float2 __fetch_unsigned_char2( _stype3 s, float3 i ) { return __sample3(s,i).xy; }\n";
+  shader << "float3 __fetch_unsigned_char3( _stype1 s, float i ) { return __sample1(s,i).xyz; }\n";
+  shader << "float3 __fetch_unsigned_char3( _stype2 s, float2 i ) { return __sample2(s,i).xyz; }\n";
+  shader << "float3 __fetch_unsigned_char3( _stype3 s, float3 i ) { return __sample3(s,i).xyz; }\n";
+  shader << "float4 __fetch_unsigned_char4( _stype1 s, float i ) { return __sample1(s,i).xyzw; }\n";
+  shader << "float4 __fetch_unsigned_char4( _stype2 s, float2 i ) { return __sample2(s,i).xyzw; }\n";
+  shader << "float4 __fetch_unsigned_char4( _stype3 s, float3 i ) { return __sample3(s,i).xyzw; }\n";
 
   shader << "\n\n";
 
@@ -1224,6 +1259,11 @@ generate_shader_support(std::ostream& shader)
   shader << "#define unsigned \n";
   shader << "#define int float\n";
   shader << "#endif\n";
+
+  shader << "typedef packed unsigned char uchar[1];\n";
+  shader << "typedef packed unsigned char uchar2[2];\n";
+  shader << "typedef packed unsigned char uchar3[3];\n";
+  shader << "typedef packed unsigned char uchar4[4];\n";
 
   if (globals.enableGPUAddressTranslation) {
     shader << "\n\n";

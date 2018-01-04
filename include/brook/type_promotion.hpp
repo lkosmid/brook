@@ -89,6 +89,21 @@ template <> class LCM<double,char> {public:
 template <> class LCM<char,double> {public:
     typedef double type;
 };
+template <> class LCM<unsigned char,float> {public:
+    typedef float type;
+};
+template <> class LCM<float,unsigned char> {public:
+    typedef float type;
+};
+template <> class LCM<unsigned char,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class LCM<double,unsigned char> {public:
+    typedef double type;
+};
+template <> class LCM<unsigned char,double> {public:
+    typedef double type;
+};
 
 template <> class LCM<float,int> {public:
     typedef float type;
@@ -109,6 +124,12 @@ template <> class LCM<char,int> {public:
     typedef int type;
 };
 template <> class LCM<int,char> {public:
+    typedef int type;
+};
+template <> class LCM<unsigned char,int> {public:
+    typedef int type;
+};
+template <> class LCM<int,unsigned char> {public:
     typedef int type;
 };
 
@@ -166,6 +187,36 @@ template <> class LCM<vec<char,1>,double> {public:
     typedef double type;
 };
 template <> class LCM<char,vec<double,1> > {public:
+    typedef double type;
+};
+template <> class LCM<unsigned char,vec<float,1> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<unsigned char,1>,float> {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<unsigned char,1> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,1>,unsigned char> {public:
+    typedef float type;
+};
+template <> class LCM<unsigned char,vec<unsigned char,1> > {public:
+    typedef unsigned char type;
+};
+template <> class LCM<vec<unsigned char,1>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class LCM<double,vec<unsigned char,1> > {public:
+    typedef double type;
+};
+template <> class LCM<vec<double,1>,unsigned char> {public:
+    typedef double type;
+};
+template <> class LCM<vec<unsigned char,1>,double> {public:
+    typedef double type;
+};
+template <> class LCM<unsigned char,vec<double,1> > {public:
     typedef double type;
 };
 
@@ -310,6 +361,36 @@ template <> class LCM<vec<char,3>,double> {public:
 template <> class LCM<char,vec<double,3> > {public:
     typedef double type;
 };
+template <> class LCM<unsigned char,vec<float,3> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<unsigned char,3>,float> {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<unsigned char,3> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,3>,unsigned char> {public:
+    typedef float type;
+};
+template <> class LCM<unsigned char,vec<unsigned char,3> > {public:
+    typedef unsigned char type;
+};
+template <> class LCM<vec<unsigned char,3>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class LCM<double,vec<unsigned char,3> > {public:
+    typedef double type;
+};
+template <> class LCM<vec<double,3>,unsigned char> {public:
+    typedef double type;
+};
+template <> class LCM<vec<unsigned char,3>,double> {public:
+    typedef double type;
+};
+template <> class LCM<unsigned char,vec<double,3> > {public:
+    typedef double type;
+};
 
 
 template <> class LCM<vec<float,4>,float> {public:
@@ -365,6 +446,36 @@ template <> class LCM<vec<char,4>,double> {public:
     typedef double type;
 };
 template <> class LCM<char,vec<double,4> > {public:
+    typedef double type;
+};
+template <> class LCM<unsigned char,vec<float,4> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<unsigned char,4>,float> {public:
+    typedef float type;
+};
+template <> class LCM<float,vec<unsigned char,4> > {public:
+    typedef float type;
+};
+template <> class LCM<vec<float,4>,unsigned char> {public:
+    typedef float type;
+};
+template <> class LCM<unsigned char,vec<unsigned char,4> > {public:
+    typedef unsigned char type;
+};
+template <> class LCM<vec<unsigned char,4>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class LCM<double,vec<unsigned char,4> > {public:
+    typedef double type;
+};
+template <> class LCM<vec<double,4>,unsigned char> {public:
+    typedef double type;
+};
+template <> class LCM<vec<unsigned char,4>,double> {public:
+    typedef double type;
+};
+template <> class LCM<unsigned char,vec<double,4> > {public:
     typedef double type;
 };
 
@@ -683,3 +794,317 @@ template <> class COMMON_CHAR<vec<char,4>,double> {public:
 template <> class COMMON_CHAR<char,vec<double,4> > {public:
     typedef char type;
 };
+
+
+template <class A, class B> class COMMON_UCHAR {
+public:
+   typedef vec<typename COMMON_UCHAR<typename A::TYPE , 
+                                    typename B::TYPE>::type,
+               LUB<A::size,B::size>::size> type;
+};
+template <> class COMMON_UCHAR<float,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<int,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,int> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<int,int> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,int> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<int,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<int,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,int> {public:
+    typedef unsigned char type;
+};
+
+
+
+template <> class COMMON_UCHAR<vec<float,1>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<float,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,1>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<double,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<float,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,1>,float > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,1>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<double,1> > {public:
+    typedef unsigned char type;
+};
+
+template <> class COMMON_UCHAR<unsigned char,vec<float,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,1>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<unsigned char,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,1>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,vec<unsigned char,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,1>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<unsigned char,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,1>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,1>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,vec<double,1> > {public:
+    typedef unsigned char type;
+};
+
+template <> class COMMON_UCHAR<int,vec<float,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<int,1>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<int,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,1>,int> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<int,vec<int,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<int,1>,int> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<int,1> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,1>,int> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<int,1>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<int,vec<double,1> > {public:
+    typedef unsigned char type;
+};
+
+
+template <> class COMMON_UCHAR<vec<float,2>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<float,2> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,2>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<double,2> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<float,2> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,2>,float > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,2>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<double,2> > {public:
+    typedef unsigned char type;
+};
+
+template <> class COMMON_UCHAR<unsigned char,vec<float,2> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,2>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<unsigned char,2> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,2>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,vec<unsigned char,2> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,2>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<unsigned char,2> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,2>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,2>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,vec<double,2> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,3>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<float,3> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,3>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<double,3> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<float,3> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,3>,float > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,3>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<double,3> > {public:
+    typedef unsigned char type;
+};
+
+template <> class COMMON_UCHAR<unsigned char,vec<float,3> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,3>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<unsigned char,3> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,3>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,vec<unsigned char,3> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,3>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<unsigned char,3> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,3>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,3>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,vec<double,3> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,4>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<float,4> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,4>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<double,4> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<float,4> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,4>,float > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,4>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<double,4> > {public:
+    typedef unsigned char type;
+};
+
+template <> class COMMON_UCHAR<unsigned char,vec<float,4> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,4>,float> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<float,vec<unsigned char,4> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<float,4>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,vec<unsigned char,4> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,4>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<double,vec<unsigned char,4> > {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<double,4>,unsigned char> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<vec<unsigned char,4>,double> {public:
+    typedef unsigned char type;
+};
+template <> class COMMON_UCHAR<unsigned char,vec<double,4> > {public:
+    typedef unsigned char type;
+};
+
+

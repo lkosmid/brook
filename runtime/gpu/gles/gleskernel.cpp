@@ -86,6 +86,42 @@ static const char passthrough_pixel[] =
       "  reconstructed = tmp;"\
       "}\n" 
 
+#define reconstruct_uchar \
+      "#define reconstruct_uchar(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp float tmp;"\
+      "  tmp = floor(u_split.x*255.996078431372549);"\
+      "  reconstructed = tmp;"\
+      "}\n" 
+
+#define reconstruct_uchar2 \
+      "#define reconstruct_uchar2(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp vec2 tmp;"\
+      "  tmp = floor(u_split.xy*255.996078431372549);"\
+      "  reconstructed = tmp;"\
+      "}\n" 
+
+#define reconstruct_uchar3 \
+      "#define reconstruct_uchar3(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp vec3 tmp;"\
+      "  tmp = floor(u_split.xyz*255.996078431372549);"\
+      "  reconstructed = tmp;"\
+      "}\n" 
+
+#define reconstruct_uchar4 \
+      "#define reconstruct_uchar4(reconstructed, textureUnit0, vTexCoord0)"\
+      "{"\
+      "  highp vec4 u_split= texture2D(textureUnit0, vTexCoord0);"\
+      "  highp vec4 tmp;"\
+      "  tmp = floor(u_split.xyzw*255.996078431372549);"\
+      "  reconstructed = tmp;"\
+      "}\n" 
+
 #define reconstruct_int\
       "#define reconstruct_int(reconstructed, textureUnit0, vTexCoord0)"\
       "{"\
@@ -135,7 +171,6 @@ static const char passthrough_pixel[] =
       "  gl_FragColor = u_split;"\
       "}\n" 
 
-
 #define encode_output_unsigned_char\
       "#define encode_output_unsigned_char(reconstructed)"\
       "{" \
@@ -183,6 +218,41 @@ static const char passthrough_pixel[] =
       "  highp vec4 u_split;"\
       "  bvec4 IsNegative = lessThan(reconstructed.xyzw, vec4(0.0));"\
       "  reconstructed.xyzw += 256.0*step( 1.0, vec4(IsNegative));"\
+      "  u_split.xyzw = (reconstructed.xyzw - 256.0*floor(reconstructed.xyzw*0.00390625))*0.00392156862745098 ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
+#define encode_output_uchar\
+      "#define encode_output_uchar(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  u_split.x = (reconstructed - 256.0*floor(reconstructed*0.00390625))*0.00392156862745098 ;"\
+      "  u_split.yzw = vec3(0.0) ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
+#define encode_output_uchar2\
+      "#define encode_output_uchar2(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  u_split.xy = (reconstructed.xy - 256.0*floor(reconstructed.xy*0.00390625))*0.00392156862745098 ;"\
+      "  u_split.zw = vec2(0.0) ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
+#define encode_output_uchar3\
+      "#define encode_output_uchar3(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
+      "  u_split.xyz = (reconstructed.xyz - 256.0*floor(reconstructed.xyz*0.00390625))*0.00392156862745098 ;"\
+      "  u_split.w = 0.0 ;"\
+      "  gl_FragColor = u_split;"\
+      "}\n" 
+
+#define encode_output_uchar4\
+      "#define encode_output_uchar4(reconstructed)"\
+      "{" \
+      "  highp vec4 u_split;"\
       "  u_split.xyzw = (reconstructed.xyzw - 256.0*floor(reconstructed.xyzw*0.00390625))*0.00392156862745098 ;"\
       "  gl_FragColor = u_split;"\
       "}\n" 
@@ -240,6 +310,10 @@ static const std::string reconstruct_char2_str(reconstruct_char2);
 static const std::string reconstruct_char3_str(reconstruct_char3);
 static const std::string reconstruct_char4_str(reconstruct_char4);
 static const std::string reconstruct_unsigned_char_str(reconstruct_unsigned_char);
+static const std::string reconstruct_uchar_str(reconstruct_uchar);
+static const std::string reconstruct_uchar2_str(reconstruct_uchar2);
+static const std::string reconstruct_uchar3_str(reconstruct_uchar3);
+static const std::string reconstruct_uchar4_str(reconstruct_uchar4);
 static const std::string reconstruct_int_str(reconstruct_int);
 static const std::string reconstruct_unsigned_int_str(reconstruct_unsigned_int);
 static const std::string reconstruct_float_header_str(reconstruct_float_header);
@@ -251,6 +325,10 @@ static const std::string encode_output_char2_str(encode_output_char2);
 static const std::string encode_output_char3_str(encode_output_char3);
 static const std::string encode_output_char4_str(encode_output_char4);
 static const std::string encode_output_unsigned_char_str(encode_output_unsigned_char);
+static const std::string encode_output_uchar_str(encode_output_uchar);
+static const std::string encode_output_uchar2_str(encode_output_uchar2);
+static const std::string encode_output_uchar3_str(encode_output_uchar3);
+static const std::string encode_output_uchar4_str(encode_output_uchar4);
 static const std::string encode_output_int_str(encode_output_int);
 static const std::string encode_output_unsigned_int_str(encode_output_unsigned_int);
 static const std::string encode_output_float_header_str(encode_output_float_header);
@@ -280,6 +358,9 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   bool char3_input=false;
   bool char4_input=false;
   bool uchar_input=false;
+  bool uchar2_input=false;
+  bool uchar3_input=false;
+  bool uchar4_input=false;
   bool uint_input=false;
   bool int_input=false;
   //Check the input stream types and add their helper functions in the shader source
@@ -318,6 +399,21 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     {
        custom_program+=reconstruct_unsigned_char_str;
        uchar_input=true;
+    }
+    else if(!uchar2_input && (strncmp(program_string, "uchar2", 6)==0))
+    {
+       custom_program+=reconstruct_uchar2_str;
+       uchar2_input=true;
+    }
+    else if(!uchar3_input && (strncmp(program_string, "uchar3", 6)==0))
+    {
+       custom_program+=reconstruct_uchar3_str;
+       uchar3_input=true;
+    }
+    else if(!uchar4_input && (strncmp(program_string, "uchar4", 6)==0))
+    {
+       custom_program+=reconstruct_uchar4_str;
+       uchar4_input=true;
     }
     else if(!int_input && (strncmp(program_string, "int", 3)==0))
     {
@@ -364,9 +460,26 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
        }
        break; 
     }
-    else if(strncmp(program_string, "unsigned_char", 13)==0)
+    else if(strncmp(program_string, "unsigned_char", 5)==0)
     {
-       custom_program+=encode_output_unsigned_char_str;
+          custom_program+=encode_output_unsigned_char_str;
+    }
+    else if(strncmp(program_string, "uchar", 5)==0)
+    {
+       switch(program_string[5])
+       {
+        case '2':
+          custom_program+=encode_output_uchar2_str;
+          break;
+        case '3':
+          custom_program+=encode_output_uchar3_str;
+          break;
+        case '4':
+          custom_program+=encode_output_uchar4_str;
+          break;
+        default:
+          custom_program+=encode_output_uchar_str;
+       }
        break; 
     }
     else if(strncmp(program_string, "int", 3)==0)

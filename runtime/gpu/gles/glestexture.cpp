@@ -80,6 +80,10 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    case GPUContext::kTextureFormat_Char2:
    case GPUContext::kTextureFormat_Char3:
    case GPUContext::kTextureFormat_Char4:
+   case GPUContext::kTextureFormat_UChar1:
+   case GPUContext::kTextureFormat_UChar2:
+   case GPUContext::kTextureFormat_UChar3:
+   case GPUContext::kTextureFormat_UChar4:
        _elementType=GLES_CHAR;
        break;
    case GPUContext::kTextureFormat_Int1:
@@ -106,6 +110,7 @@ GLESTexture::GLESTexture (GLESContext *ctx,
    }
    switch (_format) {
    case GPUContext::kTextureFormat_Char1:
+   case GPUContext::kTextureFormat_UChar1:
    case GPUContext::kTextureFormat_Int1:
    case GPUContext::kTextureFormat_Float1:
    case GPUContext::kTextureFormat_Fixed1:
@@ -113,18 +118,21 @@ GLESTexture::GLESTexture (GLESContext *ctx,
       _components = 1;
       break;
    case GPUContext::kTextureFormat_Char2:
+   case GPUContext::kTextureFormat_UChar2:
    case GPUContext::kTextureFormat_Float2:
    case GPUContext::kTextureFormat_Fixed2:
    case GPUContext::kTextureFormat_ShortFixed2:
       _components = 2;
       break;
    case GPUContext::kTextureFormat_Char3:
+   case GPUContext::kTextureFormat_UChar3:
    case GPUContext::kTextureFormat_Float3:
    case GPUContext::kTextureFormat_ShortFixed3:
    case GPUContext::kTextureFormat_Fixed3:
       _components = 3;
       break;
    case GPUContext::kTextureFormat_Char4:
+   case GPUContext::kTextureFormat_UChar4:
    case GPUContext::kTextureFormat_Float4:
    case GPUContext::kTextureFormat_ShortFixed4:
    case GPUContext::kTextureFormat_Fixed4:

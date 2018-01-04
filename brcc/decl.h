@@ -92,15 +92,20 @@ const BaseTypeSpec BT_Char2        = 0x2000000;
 const BaseTypeSpec BT_Char3        = 0x4000000;
 const BaseTypeSpec BT_Char4        = 0x8000000;
 
-const BaseTypeSpec BT_BaseMask     = 0x0FFFFFFF;
+const BaseTypeSpec BT_UChar         = 0x10000000;
+const BaseTypeSpec BT_UChar2        = 0x20000000;
+const BaseTypeSpec BT_UChar3        = 0x40000000;
+const BaseTypeSpec BT_UChar4        = 0x80000000;
+
+const BaseTypeSpec BT_BaseMask     = 0xFFFFFFFF;
 
 
 // Sign indicator
-const BaseTypeSpec BT_Signed       = 0x010000000;
-const BaseTypeSpec BT_UnSigned     = 0x020000000;
-const BaseTypeSpec BT_SignMask     = 0x030000000;
+const BaseTypeSpec BT_Signed       = 0x0100000000;
+const BaseTypeSpec BT_UnSigned     = 0x0200000000;
+const BaseTypeSpec BT_SignMask     = 0x0300000000;
 
-const BaseTypeSpec BT_TypeError    = 0x100000000;
+const BaseTypeSpec BT_TypeError    = 0x1000000000;
 
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o

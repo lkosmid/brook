@@ -378,7 +378,7 @@ compile_cgc (const char * /*name*/,
               (strcmp(uniform_list_names[i].c_str(),t0)!=0))
            {
                //GLES can only have inputs up to 32 bits wide
-               if( (strncmp(uniform_list_types[i].c_str(),"char",4)!=0) &&
+               if( (uniform_list_types[i].find("char")==std::string::npos) &&
                   ((uniform_list_types[0].find("2")!=std::string::npos) || 
                    (uniform_list_types[0].find("3")!=std::string::npos) || 
                    (uniform_list_types[0].find("4")!=std::string::npos)

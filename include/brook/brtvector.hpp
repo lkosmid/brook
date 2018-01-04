@@ -921,6 +921,10 @@ VECX_CLASS(__BrtChar1,char,1);
 VECX_CLASS(__BrtChar2,char,2);
 VECX_CLASS(__BrtChar3,char,3);
 VECX_CLASS(__BrtChar4,char,4);
+VECX_CLASS(__BrtUChar1,unsigned char,1);
+VECX_CLASS(__BrtUChar2,unsigned char,2);
+VECX_CLASS(__BrtUChar3,unsigned char,3);
+VECX_CLASS(__BrtUChar4,unsigned char,4);
 VECX_CLASS(__BrtDouble1,double,1);
 VECX_CLASS(__BrtDouble2,double,2);
 #undef VECX_CLASS
@@ -948,7 +952,6 @@ MATRIXXY_CLASS(__BrtFloat,1,3);
 MATRIXXY_CLASS(__BrtFloat,1,2);
 MATRIXXY_CLASS(__BrtFloat,1,1);
 
-
 MATRIXXY_CLASS(__BrtChar,4,4);
 MATRIXXY_CLASS(__BrtChar,4,3);
 MATRIXXY_CLASS(__BrtChar,4,2);
@@ -966,6 +969,22 @@ MATRIXXY_CLASS(__BrtChar,1,3);
 MATRIXXY_CLASS(__BrtChar,1,2);
 MATRIXXY_CLASS(__BrtChar,1,1);
 
+MATRIXXY_CLASS(__BrtUChar,4,4);
+MATRIXXY_CLASS(__BrtUChar,4,3);
+MATRIXXY_CLASS(__BrtUChar,4,2);
+MATRIXXY_CLASS(__BrtUChar,4,1);
+MATRIXXY_CLASS(__BrtUChar,3,4);
+MATRIXXY_CLASS(__BrtUChar,3,3);
+MATRIXXY_CLASS(__BrtUChar,3,2);
+MATRIXXY_CLASS(__BrtUChar,3,1);
+MATRIXXY_CLASS(__BrtUChar,2,4);
+MATRIXXY_CLASS(__BrtUChar,2,3);
+MATRIXXY_CLASS(__BrtUChar,2,2);
+MATRIXXY_CLASS(__BrtUChar,2,1);
+MATRIXXY_CLASS(__BrtUChar,1,4);
+MATRIXXY_CLASS(__BrtUChar,1,3);
+MATRIXXY_CLASS(__BrtUChar,1,2);
+MATRIXXY_CLASS(__BrtUChar,1,1);
 #undef MATRIXXY_CLASS
 
 

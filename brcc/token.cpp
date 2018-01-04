@@ -116,6 +116,30 @@ char *toksym(int tok, int white)
         else
           return("char4");
 
+    case UCHAR:
+        if (white)
+          return("uchar ");
+        else
+          return("uchar");
+
+    case UCHAR2:
+        if (white)
+          return("uchar2 ");
+        else
+          return("uchar2");
+
+    case UCHAR3:
+        if (white)
+          return("uchar3 ");
+        else
+          return("uchar3");
+
+    case UCHAR4:
+        if (white)
+          return("uchar4 ");
+        else
+          return("uchar4");
+
     case CONST:
         if (white)
           return("const ");

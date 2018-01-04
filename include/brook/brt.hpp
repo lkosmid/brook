@@ -152,6 +152,37 @@ typedef struct char4 {
 
 } char4;
 
+typedef struct uchar2 {
+  uchar2(unsigned char _x, unsigned char _y) { x = _x; y=_y;}
+  uchar2(void) {}
+  unsigned char x,y;//,pad2,pad3;
+  operator __BrtFloat2() const{return __BrtFloat2((float)x,(float)y);}
+  template <class T> T castToArg(const T &dummy) const{return T(((float)x),((float)y));}
+  float getAt(int i) const {__BrtFloat2 tmp; return castToArg(tmp).getAt(i);}
+  typedef float TYPE;
+} uchar2;
+
+typedef struct uchar3 {
+  uchar3(unsigned char _x, unsigned char _y, unsigned char _z) { x = _x;y=_y;z=_z;}
+  uchar3(void) {}
+  operator __BrtFloat3() const{return __BrtFloat3(((float)x),((float)y),((float)z));}
+  template <class T> T castToArg(const T&dummy) const {return T(((float)x),((float)y),((float)z));}
+  unsigned char x,y,z;//,pad3;
+  float getAt(int i) const {__BrtFloat4 tmp; return castToArg(tmp).getAt(i);}
+  typedef float TYPE;
+} uchar3;
+
+typedef struct uchar4 {
+  uchar4(unsigned char _x, unsigned char _y, unsigned char _z, unsigned char _w) { x = _x;y=_y;z=_z;w=_w;}
+  uchar4(void) {}
+  unsigned char x,y,z,w;
+   operator __BrtFloat4() const{return __BrtFloat4(((float)x),((float)y),((float)z),((float)w));}
+  template <class T> T castToArg(const T&dummy)const{return T(((float)x),((float)y),((float)z),((float)w));}
+  float getAt(int i) const {__BrtFloat4 tmp; return castToArg(tmp).getAt(i);}
+  typedef float TYPE;
+
+} uchar4;
+
 typedef struct float2 {
   float2(float _x, float _y) { x = _x; y = _y; }
   float2(void) {}
@@ -389,6 +420,24 @@ namespace brook {
   template<>
   inline const ::brook::StreamType* getStreamType(unsigned char*) {
      static const ::brook::StreamType result[] = {__BRTCHAR,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(uchar2*) {
+     static const ::brook::StreamType result[] = {__BRTCHAR2,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(uchar3*) {
+     static const ::brook::StreamType result[] = {__BRTCHAR3,__BRTNONE};
+     return result;
+  }
+
+  template<>
+  inline const ::brook::StreamType* getStreamType(uchar4*) {
+     static const ::brook::StreamType result[] = {__BRTCHAR4,__BRTNONE};
      return result;
   }
 

@@ -264,6 +264,16 @@ pp_strt         ^{whitespace}*"#"{whitespace}*
                       lvalp->base = new BaseType(BT_Char * (1<<n));
                       return(err_tok = CHAR + n);
                     }
+<INITIAL>"uchar"     {
+                      lvalp->base = new BaseType(BT_UChar);
+                      return(err_tok = UCHAR);
+                    }
+<INITIAL>"uchar"[2-4] {
+		      int n = yytext[yyleng -1] - '1'; /* There is no uchar1 */
+
+                      lvalp->base = new BaseType(BT_UChar * (1<<n));
+                      return(err_tok = UCHAR + n);
+                    }
 <INITIAL>"short"    {
                       lvalp->base = new BaseType(BT_Short);
                       return(err_tok = SHORT);

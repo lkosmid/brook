@@ -279,6 +279,10 @@ class BaseType1:public BaseType {public:
       BT_Char2    |
       BT_Char3    |
       BT_Char4    |
+      BT_UChar     |
+      BT_UChar2    |
+      BT_UChar3    |
+      BT_UChar4    |
       BT_Int      |
       BT_Float    |
       BT_Float2   |
@@ -312,6 +316,14 @@ class BaseType1:public BaseType {public:
          out << "__BrtChar3 ";
       else if (typemask & BT_Char4)
          out << "__BrtChar4 ";
+      else if (typemask & BT_UChar)
+         out << "__BrtUChar1 ";
+      else if (typemask & BT_UChar2)
+         out << "__BrtUChar2 ";
+      else if (typemask & BT_UChar3)
+         out << "__BrtUChar3 ";
+      else if (typemask & BT_UChar4)
+         out << "__BrtUChar4 ";
       else if ((typemask & BT_Float)||(raw==false&&((typemask &BT_Fixed)||(typemask&BT_ShortFixed)))){
          out << "__BrtFloat1 ";
       }else if ((typemask & BT_Float2)||(raw==false&&((typemask &BT_Fixed2)||(typemask&BT_ShortFixed2))))

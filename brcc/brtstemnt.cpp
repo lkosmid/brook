@@ -225,12 +225,22 @@ std::string undecoratedBase(Decl * decl) {
       return "shortfixed3";
    if (typemask&BT_ShortFixed4)
       return "shortfixed4";
+   if (typemask&BT_Char)
+      return "char";
    if (typemask&BT_Char2)
       return "char2";
    if (typemask&BT_Char3)
       return "char3";
    if (typemask&BT_Char4)
       return "char4";
+   if (typemask&BT_UChar)
+      return "unsigned char";
+   if (typemask&BT_UChar2)
+      return "uchar2";
+   if (typemask&BT_UChar3)
+      return "uchar3";
+   if (typemask&BT_UChar4)
+      return "uchar4";
    return "float";
          
 }
