@@ -673,10 +673,10 @@ Decl*	ReverseList( Decl* dList );
 static inline int
 FloatDimension(BaseTypeSpec bt)
 {
-   if ((bt & BT_Float)||(bt&BT_Fixed)||(bt&BT_ShortFixed)||(bt&BT_Double)) return 1;
-   else if ((bt & BT_Float2)||(bt&BT_Fixed2)||(bt&BT_ShortFixed2)||(bt&BT_Double2)) return 2;
-   else if ((bt & BT_Float3)||(bt&BT_Fixed3)||(bt&BT_ShortFixed3)) return 3;
-   else if ((bt & BT_Float4)||(bt&BT_Fixed4)||(bt&BT_ShortFixed4)) return 4;
+   if ((bt & BT_Float)||(bt&BT_Fixed)||(bt&BT_ShortFixed)||(bt&BT_Double)||(bt&BT_Char)||(bt&BT_UChar)) return 1;
+   else if ((bt & BT_Float2)||(bt&BT_Fixed2)||(bt&BT_ShortFixed2)||(bt&BT_Double2)||(bt&BT_Char2)||(bt&BT_UChar2)) return 2;
+   else if ((bt & BT_Float3)||(bt&BT_Fixed3)||(bt&BT_ShortFixed3)||(bt&BT_Char3)||(bt&BT_UChar3)) return 3;
+   else if ((bt & BT_Float4)||(bt&BT_Fixed4)||(bt&BT_ShortFixed4)||(bt&BT_Char4)||(bt&BT_UChar4)) return 4;
    else return 0;
 }
 static inline int FloatGPUDimension(BaseTypeSpec bt)
