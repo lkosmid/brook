@@ -12,7 +12,7 @@
 	|| defined(__INTEL_COMPILER)
 // We can use SSE intrinsics
   #ifndef BRT_USE_SSE
-    #define BRT_USE_SSE 1
+    #define BRT_USE_SSE 0
   #endif
   #if BRT_USE_SSE >= 1
     #include <xmmintrin.h>
@@ -236,7 +236,7 @@ public:
     VALUE &unsafeGetAt (unsigned int i) {return f[i];}
     // This might be dangerous, but we skip several copy constructions
     //typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
-    const vec<VALUE,1> &operator [] (int i) const { return *(const vec<VALUE,1> *) &unsafeGetAt(i); }
+    typename BracketType<VALUE>::type operator [] (int i)const {return BracketOp<VALUE>()(*this,i);}
     vec<VALUE,tsize>& gather() {
         return *this;
     }
@@ -350,14 +350,6 @@ public:
     ASSIGN_OP(*=);
     ASSIGN_OP(%=);
 #undef ASSIGN_OP
-// ned 7th Aug 2007: Specialise for same to same op
-    vec<VALUE,tsize>& operator = (const vec<VALUE,tsize>& in) {
-        f[0]=in.f[0];
-        if(tsize>1) f[1]=in.f[1];
-        if(tsize>2) f[2]=in.f[2];
-        if(tsize>3) f[3]=in.f[3];
-        return *this;
-    }
 #undef GENERAL_TEMPLATIZED_FUNCTIONS
 #define VECTOR_TEMPLATIZED_FUNCTIONS
     template <class BRT_TYPE>
@@ -623,11 +615,11 @@ public:
 	   const BRT_TYPE &iny, 
 	   const BRT_TYPE &inz, 
 	   const BRT_TYPE& inw) {
-        //f[0]=inx;
-        //if (size>1) f[1]=iny;
-        //if (size>2) f[2]=inz;
-        //if (size>3) f[3]=inw;
-       v=_mm_set_ps(inw, inz, iny, inx);
+        f[0]=inx;
+        if (size>1) f[1]=iny;
+        if (size>2) f[2]=inz;
+        if (size>3) f[3]=inw;
+       //v=_mm_set_ps(inw, inz, iny, inx);
     }
     template <class BRT_TYPE> vec (const BRT_TYPE& inx, 
 				   const BRT_TYPE& iny, 
