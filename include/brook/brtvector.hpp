@@ -29,6 +29,7 @@
 #else
   #define BRT_USE_SSE 0
 #endif
+typedef unsigned char uchar;
 
 template <class VALUE, unsigned int tsize> class vec;
 
@@ -117,6 +118,9 @@ template <> class GetValueOf <unsigned int> {public:
 template <> class GetValueOf <char> {public:
     typedef char type;
 };
+template <> class GetValueOf <uchar> {public:
+    typedef uchar type;
+};
 template <> class GetValueOf <bool> {public:
     typedef bool type;
 };
@@ -136,6 +140,7 @@ public: \
 HOLDER(float);
 HOLDER(double);
 HOLDER(char);
+HOLDER(uchar);
 HOLDER(unsigned int);
 HOLDER(int);
 HOLDER(bool);
@@ -151,6 +156,7 @@ template <class T> static typename GetValueOf<T>::type GetAt (const T& in,int i)
 SPECIALGETAT(int)
 SPECIALGETAT(unsigned int)
 SPECIALGETAT(char)
+SPECIALGETAT(uchar)
 SPECIALGETAT(float)
 SPECIALGETAT(double)
 SPECIALGETAT(bool)
@@ -167,6 +173,9 @@ template <> class BracketType <int> {public:
 };
 template <> class BracketType <char> {public:
   typedef vec<char,1> type;
+};
+template <> class BracketType <uchar> {public:
+  typedef vec<uchar,1> type;
 };
 template <class T> class BracketOp {public:
   template <class U> T& operator ()(const U&u, unsigned int i) {
@@ -189,6 +198,11 @@ template <> class BracketOp <int> {public:
 template <> class BracketOp <char> {public:
   template <class U> U operator ()(const U&u, unsigned int i) {
      return vec<char,1>(u.unsafeGetAt(i));
+  }
+};
+template <> class BracketOp <uchar> {public:
+  template <class U> U operator ()(const U&u, unsigned int i) {
+     return vec<uchar,1>(u.unsafeGetAt(i));
   }
 };
 
@@ -218,7 +232,7 @@ INITBASECLASS(double);
 INITBASECLASS(int);
 INITBASECLASS(unsigned int);
 INITBASECLASS(char);
-INITBASECLASS(unsigned char);
+INITBASECLASS(uchar);
 
 
 template <> class InitializeClass<bool> { 
@@ -996,10 +1010,10 @@ VECX_CLASS(__BrtChar1,char,1);
 VECX_CLASS(__BrtChar2,char,2);
 VECX_CLASS(__BrtChar3,char,3);
 VECX_CLASS(__BrtChar4,char,4);
-VECX_CLASS(__BrtUChar1,unsigned char,1);
-VECX_CLASS(__BrtUChar2,unsigned char,2);
-VECX_CLASS(__BrtUChar3,unsigned char,3);
-VECX_CLASS(__BrtUChar4,unsigned char,4);
+VECX_CLASS(__BrtUChar1,uchar,1);
+VECX_CLASS(__BrtUChar2,uchar,2);
+VECX_CLASS(__BrtUChar3,uchar,3);
+VECX_CLASS(__BrtUChar4,uchar,4);
 VECX_CLASS(__BrtDouble1,double,1);
 VECX_CLASS(__BrtDouble2,double,2);
 #undef VECX_CLASS

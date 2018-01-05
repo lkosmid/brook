@@ -1268,6 +1268,19 @@ generate_shader_support(std::ostream& shader)
   shader << "float4 __gather_char4( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
   shader << "float4 __gather_char4( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyzw; }\n";
 
+  shader << "float __gather_uchar( _stype1 s[1], float i ) { return __sample1(s[0],i).x; }\n";
+  shader << "float __gather_uchar( _stype2 s[1], float2 i ) { return __sample2(s[0],i).x; }\n";
+  shader << "float __gather_uchar( _stype3 s[1], float3 i ) { return __sample3(s[0],i).x; }\n";
+  shader << "float2 __gather_uchar2( _stype1 s[1], float i ) { return __sample1(s[0],i).xy; }\n";
+  shader << "float2 __gather_uchar2( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xy; }\n";
+  shader << "float2 __gather_uchar2( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xy; }\n";
+  shader << "float3 __gather_uchar3( _stype1 s[1], float i ) { return __sample1(s[0],i).xyz; }\n";
+  shader << "float3 __gather_uchar3( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyz; }\n";
+  shader << "float3 __gather_uchar3( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyz; }\n";
+  shader << "float4 __gather_uchar4( _stype1 s[1], float i ) { return __sample1(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_uchar4( _stype2 s[1], float2 i ) { return __sample2(s[0],i).xyzw; }\n";
+  shader << "float4 __gather_uchar4( _stype3 s[1], float3 i ) { return __sample3(s[0],i).xyzw; }\n";
+
   shader << "#ifdef GL_ES\n";
   shader << "#define unsigned \n";
   shader << "#define int float\n";
