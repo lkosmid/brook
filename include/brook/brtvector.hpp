@@ -61,6 +61,32 @@ template <> inline vec<float,4> singlequestioncolon (const vec<float,4> &a,
                                                      const vec<float,4> &b,
                                                      const vec<float,4> &c);
 
+template <> inline vec<int,1> singlequestioncolon (const vec<int,1> &a,
+                                                   const vec<int,1> &b,
+                                                   const vec<int,1> &c);
+template <> inline vec<int,2> singlequestioncolon (const vec<int,2> & a,
+                                                   const vec<int,2> &b,
+                                                   const vec<int,2> &c);
+template <> inline vec<int,3> singlequestioncolon (const vec<int,3> &a,
+                                                   const vec<int,3> &b,
+                                                   const vec<int,3> &c);
+template <> inline vec<int,4> singlequestioncolon (const vec<int,4> &a,
+                                                   const vec<int,4> &b,
+                                                   const vec<int,4> &c);
+
+template <> inline vec<char,1> singlequestioncolon (const vec<char,1> &a,
+                                                    const vec<char,1> &b,
+                                                    const vec<char,1> &c);
+template <> inline vec<char,2> singlequestioncolon (const vec<char,2> & a,
+                                                    const vec<char,2> &b,
+                                                    const vec<char,2> &c);
+template <> inline vec<char,3> singlequestioncolon (const vec<char,3> &a,
+                                                    const vec<char,3> &b,
+                                                    const vec<char,3> &c);
+template <> inline vec<char,4> singlequestioncolon (const vec<char,4> &a,
+                                                    const vec<char,4> &b,
+                                                    const vec<char,4> &c);
+
 template <typename T> T step_float (T a, T x){
    return (T)((x>=a)?1.0f:0.0f);
 }
@@ -882,7 +908,61 @@ template <> inline vec<float,4> singlequestioncolon (const vec<float,4> &a,
 }
 
 
+template <> inline vec<int,1> singlequestioncolon (const vec<int,1> &a,
+                                                   const vec<int,1> &b,
+                                                   const vec<int,1> &c) {
+    return a.unsafeGetAt(0)?b:c;
+}
 
+template <> inline vec<int,2> singlequestioncolon (const vec<int,2> & a,
+                                                   const vec<int,2> &b,
+                                                   const vec<int,2> &c) {
+    return vec<int,2> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1));
+}
+template <> inline vec<int,3> singlequestioncolon (const vec<int,3> &a,
+                                              const vec<int,3> &b,
+                                              const vec<int,3> &c) {
+    return vec<int,3> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1),
+                         a.unsafeGetAt(2)?b.unsafeGetAt(2):c.unsafeGetAt(2));
+}
+template <> inline vec<int,4> singlequestioncolon (const vec<int,4> &a,
+                                              const vec<int,4> &b,
+                                              const vec<int,4> &c) {
+    return vec<int,4> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1),
+                         a.unsafeGetAt(2)?b.unsafeGetAt(2):c.unsafeGetAt(2),
+                         a.unsafeGetAt(3)?b.unsafeGetAt(3):c.unsafeGetAt(3));
+}
+
+template <> inline vec<char,1> singlequestioncolon (const vec<char,1> &a,
+                                                    const vec<char,1> &b,
+                                                    const vec<char,1> &c) {
+    return a.unsafeGetAt(0)?b:c;
+}
+
+template <> inline vec<char,2> singlequestioncolon (const vec<char,2> & a,
+                                                    const vec<char,2> &b,
+                                                    const vec<char,2> &c) {
+    return vec<char,2> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1));
+}
+template <> inline vec<char,3> singlequestioncolon (const vec<char,3> &a,
+                                              const vec<char,3> &b,
+                                              const vec<char,3> &c) {
+    return vec<char,3> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1),
+                         a.unsafeGetAt(2)?b.unsafeGetAt(2):c.unsafeGetAt(2));
+}
+template <> inline vec<char,4> singlequestioncolon (const vec<char,4> &a,
+                                              const vec<char,4> &b,
+                                              const vec<char,4> &c) {
+    return vec<char,4> (a.unsafeGetAt(0)?b.unsafeGetAt(0):c.unsafeGetAt(0),
+                         a.unsafeGetAt(1)?b.unsafeGetAt(1):c.unsafeGetAt(1),
+                         a.unsafeGetAt(2)?b.unsafeGetAt(2):c.unsafeGetAt(2),
+                         a.unsafeGetAt(3)?b.unsafeGetAt(3):c.unsafeGetAt(3));
+}
 
 template <class T> 
   std::ostream& operator^ (std::ostream& os, const T & a){
@@ -905,6 +985,9 @@ inline std::ostream& operator << (std::ostream&a,const vec<TYPE,X> & b) { \
 typedef vec<TYPE,X> NAME
 
 VECX_CLASS(__BrtInt1,int,1);
+VECX_CLASS(__BrtInt2,int,2);
+VECX_CLASS(__BrtInt3,int,3);
+VECX_CLASS(__BrtInt4,int,4);
 VECX_CLASS(__BrtFloat1,float,1);
 VECX_CLASS(__BrtFloat2,float,2);
 VECX_CLASS(__BrtFloat3,float,3);
@@ -943,6 +1026,23 @@ MATRIXXY_CLASS(__BrtFloat,1,4);
 MATRIXXY_CLASS(__BrtFloat,1,3);
 MATRIXXY_CLASS(__BrtFloat,1,2);
 MATRIXXY_CLASS(__BrtFloat,1,1);
+
+MATRIXXY_CLASS(__BrtInt,4,4);
+MATRIXXY_CLASS(__BrtInt,4,3);
+MATRIXXY_CLASS(__BrtInt,4,2);
+MATRIXXY_CLASS(__BrtInt,4,1);
+MATRIXXY_CLASS(__BrtInt,3,4);
+MATRIXXY_CLASS(__BrtInt,3,3);
+MATRIXXY_CLASS(__BrtInt,3,2);
+MATRIXXY_CLASS(__BrtInt,3,1);
+MATRIXXY_CLASS(__BrtInt,2,4);
+MATRIXXY_CLASS(__BrtInt,2,3);
+MATRIXXY_CLASS(__BrtInt,2,2);
+MATRIXXY_CLASS(__BrtInt,2,1);
+MATRIXXY_CLASS(__BrtInt,1,4);
+MATRIXXY_CLASS(__BrtInt,1,3);
+MATRIXXY_CLASS(__BrtInt,1,2);
+MATRIXXY_CLASS(__BrtInt,1,1);
 
 MATRIXXY_CLASS(__BrtChar,4,4);
 MATRIXXY_CLASS(__BrtChar,4,3);
