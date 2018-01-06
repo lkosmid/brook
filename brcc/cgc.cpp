@@ -166,7 +166,7 @@ compile_cgc (const char * /*name*/,
      {
         char tmp[1024];
         uniform_p+=16;
-        char * lineend=strstr(uniform_p," ");
+        char * lineend=strstr(uniform_p,"[");
         assert(lineend-uniform_p+1 <= 1024);
         snprintf(tmp, lineend-uniform_p+1, "%s", uniform_p);
         uniform_list_names.push_back(tmp);
@@ -375,13 +375,13 @@ compile_cgc (const char * /*name*/,
        {
            //we only need to patch when non-fixed types are used
            if((strncmp(uniform_list_types[i].c_str(),"fixed",5)!=0) &&
-              (strcmp(uniform_list_names[i].c_str(),t0)!=0))
+              (strncmp(t1+1, uniform_list_names[i].c_str(), strlen(uniform_list_names[i].c_str())-1)==0))
            {
                //GLES can only have inputs up to 32 bits wide
                if( (uniform_list_types[i].find("char")==std::string::npos) &&
-                  ((uniform_list_types[0].find("2")!=std::string::npos) || 
-                   (uniform_list_types[0].find("3")!=std::string::npos) || 
-                   (uniform_list_types[0].find("4")!=std::string::npos)
+                  ((uniform_list_types[i].find("2")!=std::string::npos) || 
+                   (uniform_list_types[i].find("3")!=std::string::npos) || 
+                   (uniform_list_types[i].find("4")!=std::string::npos)
                   )
                  )
                {
@@ -393,11 +393,11 @@ compile_cgc (const char * /*name*/,
                char replacement_str[50];
                int written;
                written = snprintf(replacement_str, 50, "reconstruct_%s(%s", uniform_list_types[i].c_str(), t0);
-               if(uniform_list_types[0].find("2")!=std::string::npos)  
+               if(uniform_list_types[i].find("2")!=std::string::npos)  
                   written = snprintf(replacement_str + written, 50, ".xy, ");
-               else if(uniform_list_types[0].find("3")!=std::string::npos)  
+               else if(uniform_list_types[i].find("3")!=std::string::npos)  
                   written = snprintf(replacement_str + written, 50, ".xyz, ");
-               else if(uniform_list_types[0].find("4")!=std::string::npos)  
+               else if(uniform_list_types[i].find("4")!=std::string::npos)  
                   written = snprintf(replacement_str + written, 50, ".xyzw, ");
                else
                   written = snprintf(replacement_str + written, 50, ".x, ");
