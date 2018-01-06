@@ -1284,6 +1284,7 @@ generate_shader_support(std::ostream& shader)
   shader << "#ifdef GL_ES\n";
   shader << "#define unsigned \n";
   shader << "#define int float\n";
+  shader << "#define char float\n";
   shader << "#endif\n";
 
   shader << "typedef packed unsigned char uchar[1];\n";
