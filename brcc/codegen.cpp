@@ -1548,7 +1548,7 @@ generate_shader_code (Decl **args, int nArgs, const char* functionName,
         } else {
            if (isReduction) {
               assert(!needIndexOfArg && "can't use indexof in a reduction" );
-printf("%s:%d\n", __FUNCTION__, __LINE__);
+//printf("%s:%d\n", __FUNCTION__, __LINE__);
               generate_reduction_stream_arg(shader, args[i],
                                             reductionArgumentComesBeforeStreamArgument,
                                             reductionStreamArguments,
