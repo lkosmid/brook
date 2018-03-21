@@ -1,4 +1,5 @@
 Copyright (c) 2003, Stanford University
+Copyright (c) 2013-2018, Barcelona Supercomputing Center and Universitat Politècnica de Catalunya 
 All rights reserved.
  
 The BRCC portion of BrookGPU is derived from the cTool project
@@ -8,6 +9,12 @@ Please see the file COPYING in the brcc directory for more information.
 The two files runtime/nv30gl/nv30glext.h and runtime/nv30gl/wglext.h are from
 NVIDIA and covered by the copyright and license described at the top of each
 file.
+
+The applications BinomialOptionPricing, bitonic_sort_ATISDK, black_scholes,
+cholesky, floyd_warshall, haar_wavelet, image_filter, sparse_matrix_vector, as
+well as their utility library files under prog/common are from ATI's/AMD's Brook+ 
+https://sourceforge.net/projects/brookplus and covered by the copyright and
+license described at the top of each.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
