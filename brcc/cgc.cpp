@@ -375,7 +375,7 @@ compile_cgc (const char * /*name*/,
        {
            //we only need to patch when non-fixed types are used
            if((strncmp(uniform_list_types[i].c_str(),"fixed",5)!=0) &&
-              (strncmp(t1+1, uniform_list_names[i].c_str(), strlen(uniform_list_names[i].c_str())-1)==0))
+              (strncmp(t1+1, uniform_list_names[i].c_str(), strlen(t1)-2)))
            {
                //GLES can only have inputs up to 32 bits wide
                if( (uniform_list_types[i].find("char")==std::string::npos) &&
