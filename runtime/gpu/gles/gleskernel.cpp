@@ -1,4 +1,7 @@
 #include <string.h>
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+#include <EGL/egl.h>
 #include "glesfunc.hpp"
 #include "glescontext.hpp"
 #include "glescheckgl.hpp"
@@ -607,6 +610,43 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     }
     assert(0);
     exit(1);
+  }
+  else
+  {
+    GLint binaryLength;
+    void* binary;
+    FILE* outfile;
+    const char * filename_start;
+    const char * line_end;
+    char filename[128];
+    GLenum binaryFormat;
+
+    //get kernel's name to create the filename
+    filename_start=strstr(this->program_string, "!!function:");
+    filename_start+=11;
+    line_end=strstr(filename_start, "\n");
+    size_t filename_len= line_end - filename_start;
+    assert(filename_len <= 128);
+    strncpy(filename, filename_start, filename_len);
+    strncpy(filename+filename_len, ".bin", 4);
+
+    //get the pointer to the glGetProgramBinaryOES function
+    PFNGLGETPROGRAMBINARYOESPROC glGetProgramBinaryOES = (PFNGLGETPROGRAMBINARYOESPROC)eglGetProcAddress("glGetProgramBinaryOES");
+    if (glGetProgramBinaryOES == NULL) {
+        printf("The device doesn't support glGetProgramBinaryOES");
+        return;
+    }
+
+    //Get the binary from the program object
+    glGetProgramiv(programid, GL_PROGRAM_BINARY_LENGTH_OES, &binaryLength);
+    binary = (void*)malloc(binaryLength);
+    glGetProgramBinaryOES(programid, binaryLength, NULL, &binaryFormat, binary);
+    
+    //Write the program binary
+    outfile = fopen(filename, "wb");
+    fwrite(binary, binaryLength, 1, outfile);
+    fclose(outfile);
+    free(binary);
   }
 }
 

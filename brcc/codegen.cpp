@@ -2078,8 +2078,10 @@ append_argument_information (const char *commentstring, char *fpcode,
 
   fp << fpcode;
 
+  /* Add the function name so that we can distinguish the precompiled kernel binaries */
+  fp << " \n" << commentstring << "!!function:" << functionName;
   /* Add the brcc flag */
-  fp << " \n" << commentstring << "!!BRCC\n";
+  fp << "\n" << commentstring << "!!BRCC\n";
 
   /* Include the program aguments */
   fp << commentstring << "narg:" << nArgs << std::endl;
