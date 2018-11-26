@@ -351,6 +351,25 @@ GLESPixelShader::GLESPixelShader(unsigned int _id, const char * _program_string)
 GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_string, unsigned int _vid):
   GLESPixelShader(_id, program_string), programid(0), vid(_vid), vShader(trivial_GLSLES_vshader) {
 
+  bool use_precompiled_kernel=false;
+  GLint binaryLength=0;
+  GLenum binaryFormat;
+  const void* binary=NULL;
+
+  if(strncmp("// ", program_string, 3))
+  {
+    printf("we can directly load the precompiled shader\n");
+    use_precompiled_kernel = true;
+    binaryLength = *((GLint*) program_string);
+    program_string += sizeof(GLint);
+    binary = program_string;
+    binaryFormat= *((GLenum*) program_string);
+    program_string += sizeof(GLenum);
+    binary = program_string;
+    program_string += binaryLength;
+    this->program_string=program_string;
+  }
+
   std::string unmodified_program(program_string);
   std::string custom_program;
 
@@ -366,7 +385,9 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   bool uchar4_input=false;
   bool uint_input=false;
   bool int_input=false;
+
   //Check the input stream types and add their helper functions in the shader source
+  if(!use_precompiled_kernel)
   while (*program_string&&(program_string=strstr(program_string,"reconstruct_"))!=NULL) {
     program_string+=12;
     if(!float_input && (strncmp(program_string, "float", 5)==0))
@@ -432,6 +453,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
 
   program_string=this->program_string;
   //Check the input stream types and add their helper functions in the shader source
+  if(!use_precompiled_kernel)
   while (*program_string&&(program_string=strstr(program_string,"encode_output_"))!=NULL) {
     program_string+=14;
     if(strncmp(program_string, "float", 5)==0)
@@ -566,11 +588,14 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   }
 
   this->program_string=custom_program.c_str();
-  this->vid = createShader(vShader, GL_VERTEX_SHADER );
-  this->id = createShader(custom_program.c_str(), GL_FRAGMENT_SHADER );
   GLint status = 0;
   programid = glCreateProgram();
   CHECK_GL();
+
+  if(!use_precompiled_kernel)
+{
+  this->vid = createShader(vShader, GL_VERTEX_SHADER );
+  this->id = createShader(custom_program.c_str(), GL_FRAGMENT_SHADER );
   //attach the trivial vertex shader
   glAttachShader(programid, vid);
   CHECK_GL();
@@ -581,6 +606,19 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
   CHECK_GL();
   glLinkProgram(programid);
   CHECK_GL();
+}
+else
+{
+  //get the pointer to glProgramBinaryOES
+  PFNGLPROGRAMBINARYOESPROC glProgramBinaryOES = (PFNGLPROGRAMBINARYOESPROC)eglGetProcAddress("glProgramBinaryOES");
+  if (glProgramBinaryOES == NULL) {
+    printf("loading precompiled binary is not supported\n");
+    assert(0);
+  }
+
+  glProgramBinaryOES(programid, binaryFormat, binary, binaryLength);
+  CHECK_GL();
+}
 
   glGetProgramiv(programid, GL_LINK_STATUS, &status);
   CHECK_GL();
@@ -642,9 +680,15 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
     binary = (void*)malloc(binaryLength);
     glGetProgramBinaryOES(programid, binaryLength, NULL, &binaryFormat, binary);
     
-    //Write the program binary
     outfile = fopen(filename, "wb");
-    fwrite(binary, binaryLength, 1, outfile);
+    //write first the size
+    fwrite(&binaryLength, 1, sizeof(GLint), outfile);
+    //now the binaryFormat
+    fwrite(&binaryFormat, 1, sizeof(GLenum), outfile);
+    //Write the program binary
+    fwrite(binary, 1, binaryLength, outfile);
+    //append also the program source for future use
+    fwrite(unmodified_program.c_str(), 1, unmodified_program.size(), outfile);
     fclose(outfile);
     free(binary);
   }

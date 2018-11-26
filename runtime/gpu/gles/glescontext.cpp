@@ -86,7 +86,9 @@ unsigned int GLESContext::getMaximumOutputCount() const {
 }
 
 int GLESContext::getShaderFormatRank (const char *name) const {
-  if( strcmp(name, "gles") == 0 )
+  if( strcmp(name, "gles_bin") == 0 )
+    return 4;
+  else if( strcmp(name, "gles") == 0 )
     return 3;
   return -1;
 }
