@@ -460,7 +460,7 @@ GLESSLPixelShader::GLESSLPixelShader(unsigned int _id, const char *program_strin
        }
        break; 
     }
-    else if(strncmp(program_string, "unsigned_char", 5)==0)
+    else if(strncmp(program_string, "unsigned_char", 13)==0)
     {
           custom_program+=encode_output_unsigned_char_str;
     }
