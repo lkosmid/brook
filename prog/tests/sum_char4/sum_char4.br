@@ -61,14 +61,14 @@ int main() {
 	for( i = 0; i < 10; i++ )
 	{
 		for( j = 0; j < 10; j++ )
-			printf( "(%d,%d,%d,%d) ", output_c1[10*i+j].x, output_c1[10*i+j].y, output_c1[10*i+j].z, output_c1[10*i+j].w );
+			printf( "(%hhd,%hhd,%hhd,%hhd) ", output_c1[10*i+j].x, output_c1[10*i+j].y, output_c1[10*i+j].z, output_c1[10*i+j].w );
 		printf("\n");
 	}
 	
 	for( i = 0; i < 10; i++ )
 	{
 		for( j = 0; j < 10; j++ )
-			printf( "(%d,%d,%d,%d) ", output_c2[i][j].x, output_c2[i][j].y, output_c1[10*i+j].z, output_c2[i][j].z );
+			printf( "(%hhd,%hhd,%hhd,%hhd) ", output_c2[i][j].x, output_c2[i][j].y, output_c1[10*i+j].z, output_c2[i][j].z );
 		printf("\n");
 	}
 	
