@@ -247,7 +247,7 @@ GLESContext::setTextureData(TextureHandle inTexture,
   }
   brfree(t); t=0;
 out:
-//#if defined(_DEBUG) && 0
+#if defined(_DEBUG) && 0
   if(inStrideBytes==glesTexture->atomsize()*glesTexture->components())
   {
     //In OpenGL ES we read all 4 components when input is not char
@@ -300,7 +300,7 @@ out:
 	}
 	brfree(t2);
   }
-//#endif
+#endif
   CHECK_GL();
 }
 
