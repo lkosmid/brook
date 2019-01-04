@@ -12,7 +12,8 @@ file.
 
 The applications BinomialOptionPricing, bitonic_sort_ATISDK, black_scholes,
 cholesky, floyd_warshall, haar_wavelet, image_filter, sparse_matrix_vector, as
-well as their utility library files under prog/common are from ATI's/AMD's Brook+ 
+well as their utility library files under prog/common and portions of the file
+include/brook/brtvector.hpp are from ATI's/AMD's Brook+ 
 https://sourceforge.net/projects/brookplus and covered by the copyright and
 license described at the top of each.
 
