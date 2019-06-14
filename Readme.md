@@ -98,7 +98,7 @@ GPU project pages at: http://graphics.stanford.edu/projects/brookgpu/
 For information about the OpenGL ES 2 backend you can take a look in the
 following publications:
 
-   * Matina Maria Trompouki, Leonidas Kosmidis, Brook Auto: High-Level Certification-Friendly Programming for GPU-powered Automotive Systems, DAC '18, Proceedings of the 55h Annual Design Automation Conference 2018 [ACM](https://dl.acm.org/citation.cfm?id=3196002) [pre-print](https://upcommons.upc.edu/handle/2117/116182?locale-attribute=en)
-   * Matina Maria Trompouki, Leonidas Kosmidis, Brook GLES Pi: Democratising Accelerator Programming, HPG '18 Proceedings of the Conference on High-Performance Graphics 2018 [ACM](https://dl.acm.org/citation.cfm?id=3196002) [pre-print](https://upcommons.upc.edu/handle/2117/116182?locale-attribute=en)
+   * Matina Maria Trompouki, Leonidas Kosmidis, Brook Auto: High-Level Certification-Friendly Programming for GPU-powered Automotive Systems, DAC '18, Proceedings of the 55h Annual Design Automation Conference 2018 [\[ACM\]](https://dl.acm.org/citation.cfm?id=3196002) [\[pre-print\]](https://upcommons.upc.edu/handle/2117/116182?locale-attribute=en)
+   * Matina Maria Trompouki, Leonidas Kosmidis, Brook GLES Pi: Democratising Accelerator Programming, HPG '18 Proceedings of the Conference on High-Performance Graphics 2018 [\[ACM\]](https://dl.acm.org/citation.cfm?id=3231582) [\[pre-print\]](https://upcommons.upc.edu/handle/2117/125336?locale-attribute=en)
 
 In the case you use our OpenGL ES 2 Brook implementation for a publication, we would appreciate a citation to the above publications.
