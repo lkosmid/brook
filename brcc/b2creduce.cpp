@@ -253,7 +253,7 @@ Expression *ChangeFirstReduceFunction (Expression * e) {
                         Variable * v = static_cast<Variable*>(fc->args[i]);                        
                         if (v->name->entry&&v->name->entry->uVarDecl) {
                            if (v->name->entry->uVarDecl->isReduce()) {
-                              unsigned int inner=sym->name.find("_cpu_inner");
+                              size_t inner=sym->name.find("_cpu_inner");
                               if (sym->name.find(functionmodifier)==std::string::npos) {
                                  sym->name = tmp.substr(0,inner)+functionmodifier+tmp.substr(inner);
                               }

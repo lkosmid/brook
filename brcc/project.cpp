@@ -93,7 +93,7 @@ bool Project::gDebug = false;
 char  *StdPath[] = { "/usr/include/", NULL, NULL };
 
 std::string ReadFile (std::istream & is) {
-  unsigned int length;
+  std::streampos length;
   char * buffer;
   // get length of file:
   is.seekg (0, std::ios::end);

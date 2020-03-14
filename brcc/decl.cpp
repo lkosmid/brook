@@ -1761,7 +1761,7 @@ void Decl::printStructureStreamHelpers( std::ostream& out ) const
           return;
        stringout << ";\n";
        std::string tmp= stringout.str();
-       std::string::value_type where= tmp.find("{");
+       size_t where= tmp.find("{");
        if (where!=std::string::npos) {
           tmp = tmp.substr(0,where+1)+"\n  template <typename T> T castToArg(const T& dummy)const{\n"+PrintCastToBody(form->getBase()->stDefn)+"\n  }\n"+tmp.substr(where+1);
        }

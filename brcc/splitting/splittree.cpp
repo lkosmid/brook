@@ -978,7 +978,7 @@ bool SplitTree::rdsMergeSome( SplitNode* n, const NodeList& inUnsavedChildren, s
 //    dumpFile << "subset chosen was " << subsetBitfield << std::endl;
 
     for( size_t i = 0; i < unsavedChildCount; i++ )
-      unsavedChildren[i]->_splitHere = (subsetBitfield & (1 << i)) == 0;
+      unsavedChildren[i]->_splitHere = (subsetBitfield & (1LL << i)) == 0;
 
     SplitShaderHeuristics subsetHeuristics;
     if( rdsCompile( n, subsetHeuristics ) )
@@ -1016,7 +1016,7 @@ bool SplitTree::rdsMergeSome( SplitNode* n, const NodeList& inUnsavedChildren, s
   // the chosen subset
   for( i = 0; i < unsavedChildCount; i++ )
   {
-    if( (bestSubset & (1 << i)) == 0 )
+    if( (bestSubset & (1LL << i)) == 0 )
     {
       unsavedChildren[i]->_splitHere = true;
 
