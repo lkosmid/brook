@@ -8,6 +8,7 @@
 #include <string>
 
 #include <sstream> 
+#include <assert.h> 
 #include "ps2arb.h"
 
 #define YY_INPUT(buf,result,max_size) {            \
@@ -130,7 +131,7 @@ R_ENDLESS_COMMENT   ("//"|";")[^\n^\r]*
 			while (yyt[0]==';'||yyt[0]=='/'||yyt[0]=='#') yyt++;
 			ps_lineno++;
 			ps2arb_lval.s = copy_string (yyt);
-			unsigned int n=strlen(ps2arb_lval.s);
+			size_t n=strlen(ps2arb_lval.s);
 			if (n)
 				ps2arb_lval.s[n-1]=0;
 			return PS_COMMENT;

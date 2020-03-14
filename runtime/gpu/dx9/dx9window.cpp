@@ -78,13 +78,13 @@ void DX9Window::registerWindowClass()
 
 LRESULT WINAPI DX9Window::windowCallback( HWND inWindowHandle, UINT inMessage, WPARAM wParam, LPARAM lParam )
 {
-	DX9Window* window = (DX9Window*)GetWindowLong( inWindowHandle, GWL_USERDATA );
+	DX9Window* window = (DX9Window*)GetWindowLong( inWindowHandle, /*GWL_USERDATA*/-21 );
 
 	if( inMessage == WM_CREATE )
 	{
 		CREATESTRUCT* creationInfo = (CREATESTRUCT*)(lParam);
 		window = (DX9Window*)creationInfo->lpCreateParams;
-		SetWindowLong( inWindowHandle, GWL_USERDATA, (long)window );
+		SetWindowLong( inWindowHandle, /*GWL_USERDATA*/-21, (long)window );
 	}
 
 	if( window == NULL )

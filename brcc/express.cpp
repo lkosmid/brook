@@ -563,7 +563,7 @@ StringConstant::~StringConstant()
 }
 
 // o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o+o
-int
+size_t
 StringConstant::length() const
 {
     return buff.size();

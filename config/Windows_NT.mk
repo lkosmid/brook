@@ -1,10 +1,10 @@
 ##  MS Vis Studio settings
 
-#COMPILER_ECHOS   := 1
+COMPILER_ECHOS   := 1
 
 CC               := cl
-LD               := link
-AR               := link /lib
+LD               := "/cygdrive/c/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.24.28314/bin/HostX64/x64/link"
+AR               := "/cygdrive/c/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.24.28314/bin/HostX64/x64/link" /lib
 PERL             := perl
 OBJSUFFIX        := .obj
 LIBPREFIX        := 
@@ -27,7 +27,7 @@ CFLAGS   += /nologo /W3 /DBUILD_OGL /DBUILD_DX9 /DWIN32 /DWINDOWS /EHsc /Zm500 /
 
 ifndef I_AM_SLOPPY
 # /WX: Make warnings fatal
-CFLAGS           += /WX 
+CFLAGS           += #/WX
 endif
 
 C_CPP_FLAG	 := /nologo /EP

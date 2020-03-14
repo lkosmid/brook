@@ -338,7 +338,7 @@ public:
 		float x,y,z,w;
 		
 	} properties;
-	int lineno;
+	size_t lineno;
 	bool operator ==(const Symbol & a)const {
 		return type==a.type&&registerindex==a.registerindex&&properties.texturetarget==a.properties.texturetarget;
 	}
@@ -358,7 +358,7 @@ public:
 	bool makeTemporaries(std::vector <Symbol> &ret, int num, int maxTemporaries);
 	void SpecifySymbol(std::string name, const Symbol &sym);
 	Symbol findSymbol(string s);
-	unsigned int nextInstructionNumber() {
+	size_t nextInstructionNumber() {
 		return stmt.size();
 	}
 	void AddCommentOrNewline (Statement * s) {

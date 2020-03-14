@@ -17,7 +17,7 @@ public:
   {
     _end = 0;
     for( size_t i = 0; i < _subsetSize; i++ )
-      _end |= 1 << (i + (_setSize-_subsetSize));
+      _end |= 1LL << (i + (_setSize-_subsetSize));
     _current = 0xFFFFFFFF;
   }
 
@@ -53,7 +53,7 @@ public:
     _current = 0;
     for( size_t i = 0; i < _subsetSize; i++ )
     {
-      _current |= 1 << _state[i];
+      _current |= 1LL << _state[i];
     }
     return _current;
   }

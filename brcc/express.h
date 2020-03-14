@@ -287,7 +287,7 @@ class StringConstant : public Constant
                    bool isWide=false );
    ~StringConstant();
 
-    int length() const;
+    size_t length() const;
 
     Expression *dup0() const;
     void print(std::ostream& out) const;

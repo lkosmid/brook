@@ -197,15 +197,15 @@ namespace brook
       const unsigned int maxY,
       GPURegion &region) const;
 
-    virtual TextureHandle createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat, bool read_only =false);
+    virtual TextureHandle createTexture2D( unsigned int inWidth, unsigned int inHeight, TextureFormat inFormat, bool read_only =false);
     virtual void releaseTexture( TextureHandle inTexture );
 
-    virtual void setTextureData( TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount,
+    virtual void setTextureData( TextureHandle inTexture, const float* inData, unsigned int inStrideBytes, unsigned int inComponentCount,
       unsigned int inRank,
       const unsigned int* inDomainMin,
       const unsigned int* inDomainMax,
       const unsigned int* inExtents, bool inUsesAddressTranslation );
-    virtual void getTextureData( TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount,
+    virtual void getTextureData( TextureHandle inTexture, float* outData, unsigned int inStrideBytes, unsigned int  inComponentCount,
       unsigned int inRank,
       const unsigned int* inDomainMin,
       const unsigned int* inDomainMax,
@@ -228,10 +228,10 @@ namespace brook
     virtual void beginScene();
     virtual void endScene();
 
-    virtual void bindConstant( PixelShaderHandle ps, size_t inIndex, const float4& inValue );
-    virtual void bindTexture( size_t inIndex, TextureHandle inTexture );
-    virtual void bindOutput( size_t inIndex, TextureHandle inTexture );
-    virtual void disableOutput( size_t inIndex );
+    virtual void bindConstant( PixelShaderHandle ps, unsigned int inIndex, const float4& inValue );
+    virtual void bindTexture( unsigned int inIndex, TextureHandle inTexture );
+    virtual void bindOutput( unsigned int inIndex, TextureHandle inTexture );
+    virtual void disableOutput( unsigned int inIndex );
 
     virtual void bindPixelShader( PixelShaderHandle inPixelShader );
     virtual void bindVertexShader( VertexShaderHandle inVertexShader );
@@ -792,7 +792,7 @@ namespace brook
       region.viewport.maxY = maxY;
   }
 
-  GPUContextDX9Impl::TextureHandle GPUContextDX9Impl::createTexture2D( size_t inWidth, size_t inHeight, TextureFormat inFormat ,bool read_only)
+  GPUContextDX9Impl::TextureHandle GPUContextDX9Impl::createTexture2D( unsigned int inWidth, unsigned int inHeight, TextureFormat inFormat ,bool read_only)
   {
     int components;
     DX9Texture::ComponentType componentType;
@@ -859,7 +859,7 @@ namespace brook
   }
 
   void GPUContextDX9Impl::setTextureData(
-    TextureHandle inTexture, const float* inData, size_t inStrideBytes, size_t inComponentCount,
+    TextureHandle inTexture, const float* inData, unsigned int inStrideBytes, unsigned int inComponentCount,
     unsigned int inRank,
     const unsigned int* inDomainMin,
     const unsigned int* inDomainMax,
@@ -871,7 +871,7 @@ namespace brook
   }
 
   void GPUContextDX9Impl::getTextureData(
-    TextureHandle inTexture, float* outData, size_t inStrideBytes, size_t inComponentCount,
+    TextureHandle inTexture, float* outData, unsigned int inStrideBytes, unsigned int inComponentCount,
     unsigned int inRank,
     const unsigned int* inDomainMin,
     const unsigned int* inDomainMax,
@@ -967,13 +967,13 @@ namespace brook
 
 
   void GPUContextDX9Impl::bindConstant( PixelShaderHandle /* unused */, 
-                                    size_t inIndex, const float4& inValue )
+                                    unsigned int inIndex, const float4& inValue )
   {
     HRESULT result = _device->SetPixelShaderConstantF( inIndex, (const float*)&inValue, 1 );
     GPUAssert( !FAILED(result), "SetPixelShaderConstantF failed" );
   }
 
-  void GPUContextDX9Impl::bindTexture( size_t inIndex, TextureHandle inTexture )
+  void GPUContextDX9Impl::bindTexture( unsigned int inIndex, TextureHandle inTexture )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     _boundTextures[inIndex] = texture;
@@ -986,7 +986,7 @@ namespace brook
     GPUAssert( !FAILED(result), "SetSamplerState failed" );
   }
 
-  void GPUContextDX9Impl::bindOutput( size_t inIndex, TextureHandle inTexture )
+  void GPUContextDX9Impl::bindOutput( unsigned int inIndex, TextureHandle inTexture )
   {
     DX9Texture* texture = (DX9Texture*)inTexture;
     _boundOutputs[inIndex] = texture;
@@ -994,7 +994,7 @@ namespace brook
     GPUAssert( !FAILED(result), "SetRenderTarget failed" );
   }
 
-  void GPUContextDX9Impl::disableOutput( size_t inIndex )
+  void GPUContextDX9Impl::disableOutput( unsigned int inIndex )
   {
     _boundOutputs[inIndex] = NULL;
     HRESULT result = _device->SetRenderTarget( inIndex, NULL );
@@ -1169,8 +1169,8 @@ namespace brook
     GPURegion outputRegion;
     GPUInterpolant inputInterpolant;
 
-    size_t domainMin[2] = {0,0};
-    size_t domainMax[2] = {_depthStencilHeight,_depthStencilWidth};
+    unsigned int domainMin[2] = {0,0};
+    unsigned int domainMax[2] = {_depthStencilHeight,_depthStencilWidth};
 
     getStreamOutputRegion( _depthStencilOutput, 2, domainMin, domainMax, outputRegion );
     getStreamInterpolant( inTexture, 2, domainMin, domainMax,
