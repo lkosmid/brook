@@ -725,7 +725,7 @@ GLESSLPixelShader::createShader( const char* shader, GLenum shaderType )
     }
     return id;
   }
-  else assert(0);
+  else assert(0); return 0;
 }
 
 GPUContext::PixelShaderHandle

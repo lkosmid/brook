@@ -6,6 +6,7 @@
 
 void brook::initglesfunc(void) {
    struct HasItem { GLboolean has; const char *description; } hasItems[]={
+      { 0,            "Nothing" }
 /*      { GLEE_VERSION_1_3,            "OpenGL v1.3 or later" },
       { GLEE_ARB_fragment_program,   "ARB_fragment_program" },
       { GLEE_ARB_occlusion_query,    "ARB_occlusion_query" },

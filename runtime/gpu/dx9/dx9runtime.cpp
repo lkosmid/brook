@@ -140,6 +140,18 @@ namespace brook
         return _device;
     }
 
+	virtual unsigned int
+	get_texture_width(TextureHandle textureId) const
+	{
+		return ((DX9Texture*) textureId )->getWidth();
+	}
+
+	virtual unsigned int
+	get_texture_height(TextureHandle textureId) const
+	{
+		return ((DX9Texture*) textureId )->getHeight();
+	}
+
     virtual int getShaderFormatRank( const char* inNameString ) const;
     virtual bool isTextureExtentValid( unsigned int inExtent ) const {
         return inExtent <= 4096; // TIM: arbitrary and hardcoded... bad

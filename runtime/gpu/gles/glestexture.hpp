@@ -114,7 +114,7 @@ namespace brook {
           unsigned int exp:8;
           unsigned int sign:1;
        };
-    }__attribute__ ((packed));
+    };
 
     //Converts a floating point element from GPU to CPU representation
     void convert_fp_from_gpu(void *dst, const void *src) const;

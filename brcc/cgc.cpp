@@ -276,7 +276,7 @@ compile_cgc (const char * /*name*/,
 	  const char * versionstart = strstr(fpcode, CG_VERSION_HEADER);
 	  versionstart+=strlen(CG_VERSION_HEADER);
 	  const char * endversion = strstr(fpcode, ",");
-	  cgversion=strndup(versionstart, endversion-versionstart);
+	  cgversion=strdup(versionstart);
 	  fprintf(stderr, "Cg version: %s\n", cgversion);
   }
   
