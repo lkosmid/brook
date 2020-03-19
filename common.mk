@@ -183,9 +183,7 @@ endif
 	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
 $(OBJDIR)/%$(OBJSUFFIX): $(OBJDIR)/%.cpp
-ifndef COMPILER_ECHOS
-	@$(ECHO) $<
-endif
+	@$(ECHO) $(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 	$(CC) $(CFLAGS)$(C_OUTPUT_FLAG)$@ $(C_COMPILE_FLAG) $<
 
 ##  Compile .bri files ##
@@ -216,6 +214,7 @@ ifdef STATIC_LIBRARY
 	$(AR) $(ARFLAGS) $(AR_OUTPUT_FLAG)$@ $(OBJS)
 	$(RANLIB) $@
 else
+	@$(ECHO) $(LD) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LDFLAGS)
 	$(LD) $(LD_OUTPUT_FLAG)$@ $(OBJS) $(LDFLAGS)
 endif
 

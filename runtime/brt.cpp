@@ -128,6 +128,26 @@ namespace brook {
         strcat(*dev, dd.DeviceString);
         dev++;
 #endif
+#ifdef BUILD_GLES
+            #define DisplayString(dh) "0"
+            n=0;
+            //Keep it simple for the moment to make it work without hassle
+            const char *vendor="";
+            const char *renderer="";
+            *dev=(char *) brmalloc(4+4+strlen(DisplayString(dh))+(vendor ? 2+strlen(vendor)+strlen(renderer) : 0));
+            strcpy(*dev, GLES_RUNTIME_STRING":");
+            strcat(*dev, DisplayString(dh));
+            char *d=strchr(*dev, 0);
+            if(d[-2]=='.') d-=2;
+            sprintf(d, ".%d", n);
+            if(vendor){
+              strcat(*dev, ":");
+              strcat(*dev, vendor);
+              strcat(*dev, " ");
+              strcat(*dev, renderer);
+            }
+            dev++;
+#endif
     }
 #else
 #ifndef RPI_NO_X

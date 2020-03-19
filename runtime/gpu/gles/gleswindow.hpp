@@ -44,7 +44,7 @@ void swapBuffers();
     unsigned int fbo;
 	bool firstrun, fullscreen;
 #ifdef WIN32
-    HGLRC hglrc_window;
+//    HGLRC hglrc_window;
     HWND hwnd;
     HDC hwindowdc;
     DEVMODE settings;
@@ -60,6 +60,7 @@ void swapBuffers();
 #else
      EGLNativeWindowType window;
 #endif
+#endif /*WIN32*/
      //GLXFBConfig *glxConfig[4];
      //GLXContext  glxContext;
      EGLSurface sEGLSurface;
@@ -67,7 +68,6 @@ void swapBuffers();
      EGLDisplay sEGLDisplay;
      EGLConfig aEGLConfigs[1];
      EGLint cEGLConfigs;
-#endif
     
   };
 

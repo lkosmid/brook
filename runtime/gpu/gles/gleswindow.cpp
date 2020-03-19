@@ -14,6 +14,22 @@ using namespace brook;
 
 static const char window_name[] = "Brook GL Render Window";
 
+EGLint aEGLAttributes[] = {
+        EGL_RED_SIZE, 8,
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE, 8,
+        EGL_ALPHA_SIZE, 8,
+        EGL_MIN_SWAP_INTERVAL, 0,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_NONE
+    };
+
+EGLint aEGLContextAttributes[] = {
+        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_NONE
+    };
+
+
 #ifdef WIN32
 
 static HWND
@@ -79,7 +95,7 @@ create_window (int window_x, int window_y, bool fullscreen) {
  * This function creates a default GL context which is never really used by
  * Brook but is needed to construct a pbuffer
  */
-
+#if 0
 static BOOL
 bSetupPixelFormat(HDC hdc)
 {
@@ -135,6 +151,7 @@ bSetupPixelFormat(HDC hdc)
  
   return TRUE;
 }
+#endif
 
 static BOOL CALLBACK CollectHMonitors(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
@@ -145,7 +162,7 @@ static BOOL CALLBACK CollectHMonitors(HMONITOR hMonitor, HDC hdcMonitor, LPRECT 
 }
 
 GLESWindow::GLESWindow(const char* device) {
-  BOOL status;
+  //BOOL status;
   char driver[64]="";
   int winx=CW_USEDEFAULT, winy=CW_USEDEFAULT;
 
@@ -228,27 +245,52 @@ GLESWindow::GLESWindow(const char* device) {
             "Unable to create display context for specified device");
 
   /* Initialize the initial window GL_context */
-  status = bSetupPixelFormat(hwindowdc);
+/*  status = bSetupPixelFormat(hwindowdc);
   GPUAssert(status,
             "Unable to set window pixel format");
-
-  hglrc_window = wglCreateContext(hwindowdc);
+*/
+/*  hglrc_window = wglCreateContext(hwindowdc);
   GPUAssert(hglrc_window,
-            "Unable to create window GL context");
+            "Unable to create window GL context");*/
+  sEGLDisplay = EGL_CHECK(eglGetDisplay(hwindowdc));
+  assert( sEGLDisplay != EGL_NO_DISPLAY );
 
-  status = wglMakeCurrent(hwindowdc, hglrc_window);
-  GPUAssert(status,
-            "Unable to make current the window GL context");
+  EGL_CHECK(eglInitialize(sEGLDisplay, NULL, NULL));
+  EGL_CHECK(eglGetConfigs(sEGLDisplay, NULL, 0, &cEGLConfigs));
+  EGL_CHECK(eglChooseConfig(sEGLDisplay, aEGLAttributes, aEGLConfigs, 1, &cEGLConfigs));
 
+  if (cEGLConfigs == 0) {
+	  printf("No EGL configurations were returned.\n");
+	  exit(-1);
+  }
 
-  initglesfunc();
+  sEGLSurface = EGL_CHECK(eglCreateWindowSurface(sEGLDisplay, aEGLConfigs[0], (EGLNativeWindowType)hwnd, NULL));
+  if (sEGLSurface == EGL_NO_SURFACE) {
+	  printf("Failed to create EGL surface.\n");
+	  exit(-1);
+  }
+
+  sEGLContext = EGL_CHECK(eglCreateContext(sEGLDisplay, aEGLConfigs[0], EGL_NO_CONTEXT, aEGLContextAttributes));
+
+  if (sEGLContext == EGL_NO_CONTEXT) {
+        printf("Failed to create EGL context.\n");
+        exit(-1);
+  }
+
+  EGL_CHECK(eglMakeCurrent(sEGLDisplay, sEGLSurface, sEGLSurface, sEGLContext));
+
+//  glFinish();
+
+//  initglesfunc();
 
   fbo = NULL;
 }
 
 GLESWindow::~GLESWindow() {
-  wglMakeCurrent(hwindowdc, NULL);
-  wglDeleteContext(hglrc_window);
+  /*wglMakeCurrent(hwindowdc, NULL);
+  wglDeleteContext(hglrc_window);*/
+  EGL_CHECK(eglMakeCurrent(sEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+  EGL_CHECK(eglDestroyContext(sEGLDisplay, sEGLContext));
 
   if (fbo)
     glDeleteFramebuffers(1, &fbo);
@@ -264,6 +306,9 @@ GLESWindow::initFBO() {
   glGenFramebuffers(1, &fbo);
   CHECK_GL();
   firstrun=true;
+//#ifdef GLES_DEBUG
+fprintf(stderr, "Framebuffer created:%d\n", fbo);
+//#endif
 }
 
 
@@ -271,12 +316,10 @@ bool
 GLESWindow::bindFBO() {
 
   bool switched_contexts=false;
-  BOOL status;
+  //BOOL status;
 
-  if(firstrun || wglGetCurrentContext()!=hglrc_window) {
-    status = wglMakeCurrent(hwindowdc, hglrc_window);
-    GPUAssert(status,
-              "Unable to make current the window GL context");
+  if(firstrun || eglGetCurrentContext()!=sEGLContext) {
+    EGL_CHECK(eglMakeCurrent(sEGLDisplay, sEGLSurface, sEGLSurface, sEGLContext));
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     CHECK_GL();
@@ -289,38 +332,38 @@ GLESWindow::bindFBO() {
 	switched_contexts=true;
 	firstrun=false;
   }
+  else
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    CHECK_GL();
+  }
+
+#ifdef GLES_DEBUG
+printf("Bound Framebuffer:%d\n", fbo);
+#endif
   
   return switched_contexts;
 }
 
+void
+GLESWindow::swapBuffers() {
+	EGL_CHECK(eglSwapBuffers(sEGLDisplay, sEGLSurface));
+}
+
 void GLESWindow::makeCurrent()
 {
-  wglMakeCurrent( hwindowdc, hglrc_window );
+  EGL_CHECK(eglMakeCurrent(sEGLDisplay, sEGLSurface, sEGLSurface, sEGLContext));
 }
 
 void GLESWindow::shareLists( HGLRC inContext )
 {
-  wglShareLists( hglrc_window, inContext );
+  GPUAssert( false, "Haven't implemented share lists under wgl..." );
+  //wglShareLists( hglrc_window, inContext );
 }
 
 #else
 
 /* Linux version */
-
-EGLint aEGLAttributes[] = {
-        EGL_RED_SIZE, 8,
-        EGL_GREEN_SIZE, 8,
-        EGL_BLUE_SIZE, 8,
-        EGL_ALPHA_SIZE, 8,
-        EGL_MIN_SWAP_INTERVAL, 0,
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_NONE
-    };
-
-EGLint aEGLContextAttributes[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE
-    };
 
 GLESWindow::GLESWindow(const char *device) {
 //  int attrib[] = { GLX_RGBA, None };
@@ -507,6 +550,7 @@ bool
 GLESWindow::bindFBO() {
 
   bool switched_contexts=false;
+  BOOL status;
 
   if(firstrun || eglGetCurrentContext()!=sEGLContext) {
     //glXMakeCurrent(pDisplay, window, glxContext);

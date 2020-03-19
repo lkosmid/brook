@@ -706,10 +706,10 @@ GLESSLPixelShader::createShader( const char* shader, GLenum shaderType )
     CHECK_GL();
     glGetShaderiv(id, GL_COMPILE_STATUS, &status);
     CHECK_GL();
-#ifdef GLES_DEBUG
-	printf("Compiling %s shader with source:\n%s\n", 
+//#ifdef GLES_DEBUG
+	fprintf(stderr, "Compiling %s shader with source:\n%s\n", 
 			(shaderType==/*GL_FRAGMENT_PROGRAM_ARB*/GL_FRAGMENT_SHADER)?"Fragment":"Vertex", shader);
-#endif
+//#endif
     if(GL_TRUE!=status) {
       char *errlog;
       glGetShaderiv(id, GL_INFO_LOG_LENGTH, &status);
