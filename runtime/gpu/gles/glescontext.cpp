@@ -69,11 +69,12 @@ GLESContext::GLESContext():
   _boundPixelShader(NULL), 
   _wnd(NULL)
 {
-  int i;
-  for (i=0; i<_maxOutputCount; i++) {
+  unsigned int i;
+  for (i=0; i<MAXBOUNDTEXTURES; i++) {
     _outputTextures[i] = NULL;
     _outputTexturesCache[i] = NULL;
     _boundTextures[i] = NULL;
+    _PBOs[i] = NULL;
   }
 }
 
