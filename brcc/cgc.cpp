@@ -167,6 +167,14 @@ compile_cgc (const char * /*name*/,
         char tmp[1024];
         uniform_p+=16;
         char * lineend=strstr(uniform_p,"[");
+        //if [ is not found the kernel is using a single dimentional stream for input
+        if(lineend==0)
+        {
+           lineend=strstr(uniform_p,":");
+           assert(lineend != 0);
+           //there is an empty space between : and the variable name, remove it
+           lineend--;
+        }
         assert(lineend-uniform_p+1 <= 1024);
         snprintf(tmp, lineend-uniform_p+1, "%s", uniform_p);
         uniform_list_names.push_back(tmp);
@@ -188,6 +196,7 @@ compile_cgc (const char * /*name*/,
         char tmp[1024];
         output_p+=12;
         char * lineend=strstr(output_p," \n");
+        assert(lineend != 0);
         assert(lineend-output_p+1 <= 1024);
         snprintf(tmp, lineend-output_p+1, "%s", output_p);
         replaceAll(tmp, " ", "_");
